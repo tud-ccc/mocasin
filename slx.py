@@ -1,3 +1,9 @@
+# Copyright (C) 2017 TU Dresden
+# All Rights Reserved
+#
+# Authors: Christian Menard
+
+
 import xml.etree.ElementTree as ET
 import logging
 

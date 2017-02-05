@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+# Copyright (C) 2017 TU Dresden
+# All Rights Reserved
+#
+# Authors: Christian Menard
+
+
 import argparse
 import logging
 
