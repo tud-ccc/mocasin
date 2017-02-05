@@ -1,3 +1,9 @@
+# Copyright (C) 2017 TU Dresden
+# All Rights Reserved
+#
+# Authors: Christian Menard
+
+
 from pytrm import Platform
 from pytrm import Link
 from pytrm import XYRouter
