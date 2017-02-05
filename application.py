@@ -1,3 +1,9 @@
+# Copyright (C) 2017 TU Dresden
+# All Rights Reserved
+#
+# Authors: Christian Menard
+
+
 class KpnProcess(object):
 
     def __init__(self, name):
