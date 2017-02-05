@@ -13,7 +13,7 @@ from pytrm import KpnProcess
 from pytrm import Mapping
 from pytrm import SchedulerInfo
 from pytrm import ChannelInfo
-from scheduler import SchedulingPolicy
+from pytrm import SchedulingPolicy
 
 log = logging.getLogger(__name__)
 

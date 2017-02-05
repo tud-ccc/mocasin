@@ -9,10 +9,10 @@
 import argparse
 import logging
 
+from pytrm import System
 from slx import SlxMapping
 from tomahawk import Tomahawk2Platform
 from slx import SlxApplication
-from pytrm import System
 
 
 log = logging.getLogger(__name__)
