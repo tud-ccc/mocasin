@@ -9,7 +9,7 @@ import simpy
 
 from enum import Enum
 
-from process import ProcessState
+from .process import ProcessState
 
 log = logging.getLogger(__name__)
 
