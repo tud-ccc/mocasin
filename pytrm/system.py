@@ -8,9 +8,9 @@ import logging
 import timeit
 import simpy
 
-from channel import Channel
-from process import Process
-from scheduler import Scheduler
+from .channel import Channel
+from .process import Process
+from .scheduler import Scheduler
 
 
 log = logging.getLogger(__name__)
