@@ -119,7 +119,7 @@ class Process(object):
             elif isinstance(entry, ReadEntry):
                 channel = self.channels[entry.channel]
 
-                cycles = channel.getDelayProduceTokens(entry.tokens)
+                cycles = channel.getConsumeCycles(entry.tokens)
                 ticks = self.processor.cyclesToTicks(cycles)
 
                 log.debug('{0:16}'.format(self.env.now + delay) +
@@ -141,9 +141,9 @@ class Process(object):
             elif isinstance(entry, WriteEntry):
                 channel = self.channels[entry.channel]
 
-                produceCycles = channel.getDelayProduceTokens(entry.tokens)
+                produceCycles = channel.getProduceCycles(entry.tokens)
                 produceTicks = self.processor.cyclesToTicks(produceCycles)
-                transferCycles = channel.getDelayTransferTokens(entry.tokens)
+                transferCycles = channel.getTransportCycles(entry.tokens)
                 transferTicks = self.processor.cyclesToTicks(transferCycles)
 
                 log.debug('{0:16}'.format(self.env.now + delay) +
