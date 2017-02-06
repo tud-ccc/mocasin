@@ -5,3 +5,4 @@ from .platform import *
 from .process import *
 from .scheduler import *
 from .system import *
+from .trace import *

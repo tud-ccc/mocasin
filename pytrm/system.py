@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 
 class System:
 
-    def __init__(self, platform, application, mapping, tracedir):
+    def __init__(self, platform, application, mapping, tracedir, TraceReader):
 
         # Create a simpy environment
         self.env = simpy.Environment()
@@ -63,7 +63,8 @@ class System:
 
             processes = []
             for pn in s.processNames:
-                processes.append(Process(self.env, pn, self.channels))
+                processes.append(Process(self.env, pn, self.channels,
+                                         TraceReader))
 
             processors = []
             for pn in s.processorNames:
