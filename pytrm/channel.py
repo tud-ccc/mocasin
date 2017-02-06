@@ -31,8 +31,7 @@ class Channel(object):
             return False
 
     def getDelayProduceTokens(self, num):
-        # TODO implement!
-        return 200
+        return self.primitive.getProduceCosts(num)
 
     def produceTokens(self, num):
 
@@ -47,8 +46,7 @@ class Channel(object):
             str(self.capacity)]))
 
     def getDelayTransferTokens(self, num):
-        # TODO implement!
-        return 200
+        return self.primitive.getTransportCosts(num)
 
     def transferTokens(self, num):
         assert self.consumer_filled + num <= self.capacity, \
@@ -70,8 +68,7 @@ class Channel(object):
             return False
 
     def getDelayConsumeTokens(self, num):
-        # TODO implement!
-        return 200
+        return self.primitive.getConsumeCosts(num)
 
     def consumeTokens(self, num):
 
