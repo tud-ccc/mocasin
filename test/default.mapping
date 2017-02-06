@@ -88,13 +88,13 @@
         <Scheduler2Group GroupID="7" SchedulerID="7"/>
       </Schedulers2Groups>
       <ChannelMappings>
-        <ChannelMapping CommPrimitive="noc_cp" Memory="sp6" PnChannel="sink" ProcessFrom="w6" ProcessTo="sink" ProcessorFrom="PE6" ProcessorTo="PE7"/>
-        <ChannelMapping CommPrimitive="noc_cp" Memory="sp5" PnChannel="c5" ProcessFrom="w5" ProcessTo="w6" ProcessorFrom="PE5" ProcessorTo="PE6"/>
-        <ChannelMapping CommPrimitive="noc_cp" Memory="sp4" PnChannel="c4" ProcessFrom="w4" ProcessTo="w5" ProcessorFrom="PE4" ProcessorTo="PE5"/>
-        <ChannelMapping CommPrimitive="noc_cp" Memory="sp2" PnChannel="c2" ProcessFrom="w2" ProcessTo="w3" ProcessorFrom="PE2" ProcessorTo="PE3"/>
-        <ChannelMapping CommPrimitive="noc_cp" Memory="sp3" PnChannel="c3" ProcessFrom="w3" ProcessTo="w4" ProcessorFrom="PE3" ProcessorTo="PE4"/>
-        <ChannelMapping CommPrimitive="noc_cp" Memory="sp1" PnChannel="c1" ProcessFrom="w1" ProcessTo="w2" ProcessorFrom="PE1" ProcessorTo="PE2"/>
-        <ChannelMapping CommPrimitive="noc_cp" Memory="sp0" PnChannel="src" ProcessFrom="src" ProcessTo="w1" ProcessorFrom="PE0" ProcessorTo="PE1"/>
+        <ChannelMapping CommPrimitive="producer_cp" Memory="sp6" PnChannel="sink" ProcessFrom="w6" ProcessTo="sink" ProcessorFrom="PE6" ProcessorTo="PE7"/>
+        <ChannelMapping CommPrimitive="producer_cp" Memory="sp5" PnChannel="c5" ProcessFrom="w5" ProcessTo="w6" ProcessorFrom="PE5" ProcessorTo="PE6"/>
+        <ChannelMapping CommPrimitive="producer_cp" Memory="sp4" PnChannel="c4" ProcessFrom="w4" ProcessTo="w5" ProcessorFrom="PE4" ProcessorTo="PE5"/>
+        <ChannelMapping CommPrimitive="producer_cp" Memory="sp2" PnChannel="c2" ProcessFrom="w2" ProcessTo="w3" ProcessorFrom="PE2" ProcessorTo="PE3"/>
+        <ChannelMapping CommPrimitive="producer_cp" Memory="sp3" PnChannel="c3" ProcessFrom="w3" ProcessTo="w4" ProcessorFrom="PE3" ProcessorTo="PE4"/>
+        <ChannelMapping CommPrimitive="producer_cp" Memory="sp1" PnChannel="c1" ProcessFrom="w1" ProcessTo="w2" ProcessorFrom="PE1" ProcessorTo="PE2"/>
+        <ChannelMapping CommPrimitive="producer_cp" Memory="sp0" PnChannel="src" ProcessFrom="src" ProcessTo="w1" ProcessorFrom="PE0" ProcessorTo="PE1"/>
       </ChannelMappings>
     </OutMapperInfo>
   </MapperDesc>
