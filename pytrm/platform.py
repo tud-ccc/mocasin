@@ -127,8 +127,8 @@ class Link:
 
 class Primitive:
 
-    def __init__(self, typename, _from, _to, _via, f_produce, f_consume,
-                 f_transport):
+    def __init__(self, typename, _from, _to, _via, f_consume, f_transport,
+                 f_produce):
         self.typename = typename
         self._from = _from
         self._to = _to
