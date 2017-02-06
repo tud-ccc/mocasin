@@ -96,6 +96,8 @@ class Process(object):
             log.debug('{0:16}'.format(self.env.now) + ': process ' +
                       self.name + ' resumes execution')
 
+        delay = 0
+
         while not self.state == ProcessState.Finished:
 
             entry = None
@@ -107,22 +109,27 @@ class Process(object):
             if isinstance(entry, ProcessEntry):
                 cycles = entry.cycles
                 ticks = int(cycles / float(self.processor.frequency) * 1000000)
-                log.debug('{0:16}'.format(self.env.now) + ': process ' +
-                          self.name + ' processes for ' + str(cycles) +
-                          ' cycles (' + str(ticks) + ' ticks)')
-                yield self.env.timeout(ticks)
+                log.debug('{0:16}'.format(self.env.now + delay) +
+                          ': process ' + self.name + ' processes for ' +
+                          str(cycles) + ' cycles (' + str(ticks) + ' ticks)')
+
+                # When we process we don't have to synchronize and simply
+                # advance in local time
+                delay += ticks
             elif isinstance(entry, ReadEntry):
                 channel = self.channels[entry.channel]
 
                 cycles = channel.getDelayProduceTokens(entry.tokens)
                 ticks = int(cycles / float(self.processor.frequency) * 1000000)
 
-                log.debug('{0:16}'.format(self.env.now) + ': process ' +
-                          self.name + ' reads ' + str(entry.tokens) +
-                          ' tokens from channel ' + entry.channel)
+                log.debug('{0:16}'.format(self.env.now + delay) +
+                          ': process ' + self.name + ' reads ' +
+                          str(entry.tokens) + ' tokens from channel ' +
+                          entry.channel)
 
                 if channel.canConsumeTokens(entry.tokens):
-                    yield self.env.timeout(ticks)
+                    yield self.env.timeout(ticks + delay)
+                    delay = 0
                     channel.consumeTokens(entry.tokens)
                 else:
                     log.debug('                  Not enough tokens in ' +
@@ -141,12 +148,14 @@ class Process(object):
                 transferTicks = int(transferCycles /
                                     float(self.processor.frequency) * 1000000)
 
-                log.debug('{0:16}'.format(self.env.now) + ': process ' +
-                          self.name + ' writes ' + str(entry.tokens) +
-                          ' tokens to channel ' + entry.channel)
+                log.debug('{0:16}'.format(self.env.now + delay) +
+                          ': process ' + self.name + ' writes ' +
+                          str(entry.tokens) + ' tokens to channel ' +
+                          entry.channel)
 
                 if channel.canProduceTokens(entry.tokens):
-                    yield self.env.timeout(produceTicks)
+                    yield self.env.timeout(produceTicks + delay)
+                    delay = 0
                     channel.produceTokens(entry.tokens)
 
                     # schedule an event at the end of the transfer
@@ -163,6 +172,7 @@ class Process(object):
                     channel.event_consume.callbacks.append(self.unblock)
                     return
             elif isinstance(entry, TerminateEntry):
+                yield self.env.timeout(delay)
                 self.state = ProcessState.Finished
             else:
                 assert False, "found an unexpected trace entry"
