@@ -30,9 +30,8 @@ class Channel(object):
         else:
             return False
 
-    def getDelayProduceTokens(self, num):
-        # TODO implement!
-        return 200
+    def getProduceCycles(self, num):
+        return round(self.primitive.getProduceCosts(num * self.token_size))
 
     def produceTokens(self, num):
 
@@ -46,9 +45,8 @@ class Channel(object):
             ' succeeded. New filling level: ', str(self.producer_filled), '/',
             str(self.capacity)]))
 
-    def getDelayTransferTokens(self, num):
-        # TODO implement!
-        return 200
+    def getTransportCycles(self, num):
+        return round(self.primitive.getTransportCosts(num * self.token_size))
 
     def transferTokens(self, num):
         assert self.consumer_filled + num <= self.capacity, \
@@ -69,9 +67,8 @@ class Channel(object):
         else:
             return False
 
-    def getDelayConsumeTokens(self, num):
-        # TODO implement!
-        return 200
+    def getConsumeCycles(self, num):
+        return round(self.primitive.getConsumeCosts(num * self.token_size))
 
     def consumeTokens(self, num):
 

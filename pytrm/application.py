@@ -18,7 +18,7 @@ class KpnChannel(object):
         self.name = name
         self.from_process = None
         self.to_process = None
-        self.token_size = None
+        self.token_size = token_size
 
 
 class KpnApplication:

@@ -108,7 +108,7 @@ class Process(object):
 
             if isinstance(entry, ProcessEntry):
                 cycles = entry.cycles
-                ticks = int(cycles / float(self.processor.frequency) * 1000000)
+                ticks = self.processor.cyclesToTicks(cycles)
                 log.debug('{0:16}'.format(self.env.now + delay) +
                           ': process ' + self.name + ' processes for ' +
                           str(cycles) + ' cycles (' + str(ticks) + ' ticks)')
@@ -119,8 +119,8 @@ class Process(object):
             elif isinstance(entry, ReadEntry):
                 channel = self.channels[entry.channel]
 
-                cycles = channel.getDelayProduceTokens(entry.tokens)
-                ticks = int(cycles / float(self.processor.frequency) * 1000000)
+                cycles = channel.getConsumeCycles(entry.tokens)
+                ticks = self.processor.cyclesToTicks(cycles)
 
                 log.debug('{0:16}'.format(self.env.now + delay) +
                           ': process ' + self.name + ' reads ' +
@@ -141,12 +141,10 @@ class Process(object):
             elif isinstance(entry, WriteEntry):
                 channel = self.channels[entry.channel]
 
-                produceCycles = channel.getDelayProduceTokens(entry.tokens)
-                produceTicks = int(produceCycles /
-                                   float(self.processor.frequency) * 1000000)
-                transferCycles = channel.getDelayTransferTokens(entry.tokens)
-                transferTicks = int(transferCycles /
-                                    float(self.processor.frequency) * 1000000)
+                produceCycles = channel.getProduceCycles(entry.tokens)
+                produceTicks = self.processor.cyclesToTicks(produceCycles)
+                transferCycles = channel.getTransportCycles(entry.tokens)
+                transferTicks = self.processor.cyclesToTicks(transferCycles)
 
                 log.debug('{0:16}'.format(self.env.now + delay) +
                           ': process ' + self.name + ' writes ' +

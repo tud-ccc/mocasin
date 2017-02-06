@@ -5,6 +5,7 @@
 
 
 from enum import Enum
+import parser
 
 
 class Memory:
@@ -22,6 +23,10 @@ class Processor:
         self.type = type
         self.frequency = frequency
         self.endpoint = None
+
+    def cyclesToTicks(self, cycles):
+        tmp = float(cycles) * 1000000000 / float(self.frequency)
+        return int(tmp)
 
 
 class Endpoint:
@@ -122,24 +127,54 @@ class Link:
 
 class Primitive:
 
-    def __init__(self, platform, typename, _from, _to, _via,
-                 f_produce, f_consume, f_transport):
+    def __init__(self, typename, _from, _to, _via, f_consume, f_transport,
+                 f_produce):
         self.typename = typename
         self._from = _from
         self._to = _to
         self._via = _via
-        self.f_produce = f_produce
-        self.f_consume = f_consume
-        self.f_transport = f_transport
+        self.f_produce = parser.expr(f_produce).compile()
+        self.f_consume = parser.expr(f_consume).compile()
+        self.f_transport = parser.expr(f_transport).compile()
 
-        self.route_to_mem = platform.find_route(_from.endpoint, _via.endpoint)
-        self.route_from_mem = platform.find_route(_via.endpoint, _to.endpoint)
+    def getConsumeCosts(self, x):
+        return eval(self.f_consume)
 
-        pass
+    def getTransportCosts(self, x):
+        return eval(self.f_transport)
+
+    def getProduceCosts(self, x):
+        return eval(self.f_produce)
 
 
-# Primitive = namedtuple("Primitive", "name from_processor to_processor
-# via_memory f_produce f_consume f_transport")
+class NocPrimitive(Primitive):
+
+    def __init__(self, typename, _from, _to, _via, f_consume, f_transport,
+                 f_produce, consumeHops, consumeBandwidth, transportHops,
+                 transportBandwidth, produceHops, produceBandwidth):
+        Primitive.__init__(self, typename, _from, _to, _via, f_consume,
+                           f_transport, f_produce)
+        self.consumeHops = consumeHops
+        self.consumeBandwidth = consumeBandwidth
+        self.produceHops = produceHops
+        self.produceBandwidth = produceBandwidth
+        self.transportHops = transportHops
+        self.transportBandwidth = transportBandwidth
+
+    def getConsumeCosts(self, x):
+        hops = self.consumeHops
+        bw = self.consumeBandwidth
+        return eval(self.f_consume)
+
+    def getTransportCosts(self, x):
+        hops = self.transportHops
+        bw = self.transportBandwidth
+        return eval(self.f_transport)
+
+    def getProduceCosts(self, x):
+        hops = self.produceHops
+        bw = self.produceBandwidth
+        return eval(self.f_produce)
 
 
 class Platform(object):
