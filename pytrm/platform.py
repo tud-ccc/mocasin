@@ -147,6 +147,36 @@ class Primitive:
         return eval(self.f_produce)
 
 
+class NocPrimitive(Primitive):
+
+    def __init__(self, typename, _from, _to, _via, f_consume, f_transport,
+                 f_produce, consumeHops, consumeBandwidth, transportHops,
+                 transportBandwidth, produceHops, produceBandwidth):
+        Primitive.__init__(self, typename, _from, _to, _via, f_consume,
+                           f_transport, f_produce)
+        self.consumeHops = consumeHops
+        self.consumeBandwidth = consumeBandwidth
+        self.produceHops = produceHops
+        self.produceBandwidth = produceBandwidth
+        self.transportHops = transportHops
+        self.transportBandwidth = transportBandwidth
+
+    def getConsumeCosts(self, x):
+        hops = self.consumeHops
+        bw = self.consumeBandwidth
+        return eval(self.f_consume)
+
+    def getTransportCosts(self, x):
+        hops = self.transportHops
+        bw = self.transportBandwidth
+        return eval(self.f_transport)
+
+    def getProduceCosts(self, x):
+        hops = self.produceHops
+        bw = self.produceBandwidth
+        return eval(self.f_produce)
+
+
 class Platform(object):
     routers = []
     links = []
