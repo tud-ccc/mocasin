@@ -50,8 +50,19 @@ class System:
                                    c.name + ' that is not defined in the ' +
                                    'application')
 
+            primitive = None
+            for p in platform.primitives:
+                if p.typename == c.primitive and \
+                   p._from.name == c.processorFrom and \
+                   p._via.name == c.viaMemory and \
+                   p._to.name == c.processorTo:
+                    primitive = p
+            if primitive is None:
+                raise RuntimeError('Requested a communication primitive that' +
+                                   ' the platform does not provide!')
+
             self.channels.append(Channel(self.env, c.name, c.capacity,
-                                         kpn_channel.token_size, c.primitive))
+                                         kpn_channel.token_size, primitive))
 
         self.schedulers = []
 
