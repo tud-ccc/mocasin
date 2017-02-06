@@ -23,6 +23,10 @@ class Processor:
         self.frequency = frequency
         self.endpoint = None
 
+    def cyclesToTicks(self, cycles):
+        tmp = float(cycles) / float(self.frequency)
+        return int(tmp*1000000000)
+
 
 class Endpoint:
 
