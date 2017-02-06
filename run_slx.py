@@ -13,6 +13,7 @@ from pytrm import System
 from slx import SlxMapping
 from platform import Tomahawk2Platform
 from slx import SlxApplication
+from slx import SlxTraceReader
 
 
 log = logging.getLogger(__name__)
@@ -52,7 +53,8 @@ def main():
     mapping = SlxMapping(args.mapping)
 
     # Create the system
-    system = System(platform, application, mapping, args.tracedir)
+    system = System(platform, application, mapping, args.tracedir,
+                    SlxTraceReader)
 
     # Run the simulation
     system.simulate()
