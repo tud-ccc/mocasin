@@ -82,7 +82,7 @@ class Channel(object):
 
         self.consumer_filled = self.consumer_filled - num
         self.producer_filled = self.producer_filled - num
-        logging.debug(''.join([
+        log.debug(''.join([
             '{0:16}'.format(self.env.now), ': consuming ', str(num),
             ' tokens on channel ', self.name,
             ' succeeded. New filling level: ', str(self.consumer_filled), '/',
