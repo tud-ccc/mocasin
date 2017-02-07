@@ -103,4 +103,6 @@ class System:
         stop = timeit.default_timer()
 
         print('=== End Simulation ===')
-        print('needed ' + str(stop-start) + ' seconds for simulation')
+        exec_time = float(self.env.now) / 1000000000.0
+        print('Total execution time: ' + str(exec_time) + ' ms')
+        print('Total simulation time: ' + str(stop-start) + ' s')
