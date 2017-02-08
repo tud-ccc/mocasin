@@ -6,7 +6,6 @@
 
 import logging
 import timeit
-import simpy
 
 from .channel import Channel
 from .process import Process
@@ -18,11 +17,9 @@ log = logging.getLogger(__name__)
 
 class System:
 
-    def __init__(self, platform, application, mapping, tracedir, TraceReader):
-
-        # Create a simpy environment
-        self.env = simpy.Environment()
-
+    def __init__(self, env, platform, application, mapping, tracedir,
+                 TraceReader):
+        self.env = env
         self.platform = platform
         self.application = application
         self.mapping = mapping
