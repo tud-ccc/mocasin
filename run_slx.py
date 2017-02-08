@@ -9,10 +9,12 @@
 import argparse
 import logging
 
-from pytrm import System
-from slx import SlxMapping
+import simpy
+
 from platform import Tomahawk2Platform
+from pytrm import System
 from slx import SlxApplication
+from slx import SlxMapping
 from slx import SlxTraceReader
 
 
@@ -43,8 +45,11 @@ def main():
     else:
         logging.basicConfig(level=logging.WARNING)
 
+    # Create a simpy environment
+    env = simpy.Environment()
+
     # Create the platform
-    platform = Tomahawk2Platform()
+    platform = Tomahawk2Platform(env)
 
     # Create an Application
     application = SlxApplication('app', args.pngraph)
@@ -53,7 +58,7 @@ def main():
     mapping = SlxMapping(args.mapping)
 
     # Create the system
-    system = System(platform, application, mapping, args.tracedir,
+    system = System(env, platform, application, mapping, args.tracedir,
                     SlxTraceReader)
 
     # Run the simulation
