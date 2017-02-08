@@ -17,7 +17,7 @@ class Tomahawk2Platform(Platform):
         super(Platform, self).__init__()
 
         for i in range(0, 8):
-            processor = Processor("PE" + str(i), 'RISC', 200000)
+            processor = Processor("PE" + str(i), 'RISC', 200000000)
             self.processors.append(processor)
             memory = Memory("sp" + str(i), 32768)
             self.memories.append(memory)
