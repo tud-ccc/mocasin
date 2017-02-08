@@ -50,9 +50,9 @@ class System:
             primitive = None
             for p in platform.primitives:
                 if p.typename == c.primitive and \
-                   p._from.name == c.processorFrom and \
-                   p._via.name == c.viaMemory and \
-                   p._to.name == c.processorTo:
+                   p.from_.name == c.processorFrom and \
+                   p.via.name == c.viaMemory and \
+                   p.to.name == c.processorTo:
                     primitive = p
             if primitive is None:
                 raise RuntimeError('Requested a communication primitive that' +
