@@ -127,8 +127,8 @@ class Link:
 
 class Primitive:
 
-    def __init__(self, typename, _from, _to, _via, f_consume, f_transport,
-                 f_produce):
+    def __init__(self, typename, _from, _to, _via, f_produce, f_transport,
+                 f_consume):
         self.typename = typename
         self._from = _from
         self._to = _to
@@ -149,17 +149,17 @@ class Primitive:
 
 class NocPrimitive(Primitive):
 
-    def __init__(self, typename, _from, _to, _via, f_consume, f_transport,
-                 f_produce, consumeHops, consumeBandwidth, transportHops,
-                 transportBandwidth, produceHops, produceBandwidth):
-        Primitive.__init__(self, typename, _from, _to, _via, f_consume,
-                           f_transport, f_produce)
-        self.consumeHops = consumeHops
-        self.consumeBandwidth = consumeBandwidth
+    def __init__(self, typename, _from, _to, _via, f_produce, f_transport,
+                 f_consume, produceHops, produceBandwidth, transportHops,
+                 transportBandwidth, consumeHops, consumeBandwidth):
+        Primitive.__init__(self, typename, _from, _to, _via, f_produce,
+                           f_transport, f_consume)
         self.produceHops = produceHops
         self.produceBandwidth = produceBandwidth
         self.transportHops = transportHops
         self.transportBandwidth = transportBandwidth
+        self.consumeHops = consumeHops
+        self.consumeBandwidth = consumeBandwidth
 
     def getConsumeCosts(self, x):
         hops = self.consumeHops
