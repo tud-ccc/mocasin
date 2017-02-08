@@ -4,6 +4,8 @@
 # Authors: Christian Menard
 
 
+from simpy.resources.resource import Resource
+
 from enum import Enum
 import parser
 
@@ -27,6 +29,13 @@ class Processor:
     def cyclesToTicks(self, cycles):
         tmp = float(cycles) * 1000000000000 / float(self.frequency)
         return int(tmp)
+
+
+class CommunicationResource(Resource):
+
+    def __init__(self, env, name):
+        super(Resource, self).__init__(env, 1)
+        self.name = name
 
 
 class Endpoint:
@@ -134,6 +143,7 @@ class Primitive:
     f_produce = None
     f_consume = None
     f_transport = None
+    resources = []
 
     def setConsumeCostFunc(self, func):
         self.f_consume = parser.expr(func).compile()
@@ -152,6 +162,14 @@ class Primitive:
 
     def getProduceCosts(self, x):
         return eval(self.f_produce)
+
+    def requestAllResources(self):
+        for r in self.resources:
+            r.request()
+
+    def releaseAllResources(self):
+        for r in self.resources:
+            r.request()
 
 
 class NocPrimitive(Primitive):
