@@ -4,12 +4,13 @@
 # Authors: Christian Menard
 
 
-from pytrm import CommunicationResource
 from pytrm import CostModel
 from pytrm import Memory
 from pytrm import Platform
 from pytrm import Primitive
 from pytrm import Processor
+
+from simpy.resources.resource import Resource
 
 
 class Tomahawk2Platform(Platform):
@@ -33,10 +34,12 @@ class Tomahawk2Platform(Platform):
         p.to = self.processors[to]
         p.via = self.memories[via]
 
-        p.consume = CostModel("299.2+x/bw", bw=8.0)
-        p.produce = CostModel("164")
+        p.produce = CostModel("299", bw=8.0)
+        p.producerTransport = CostModel("x/bw", bw=8.0)
+        p.consume = CostModel("164")
 
-        p.produceBandwidth = 8.0
+        p.producerTransport.resources.append(self.nis[from_])
+        p.producerTransport.resources.append(self.nis[to])
 
         return p
 
@@ -48,7 +51,11 @@ class Tomahawk2Platform(Platform):
         p.via = self.memories[via]
 
         p.produce = CostModel("205")
-        p.consume = CostModel("242.2+15.4*hops+x/bw", bw=8.0, hops=hops)
+        p.consumerTransport = CostModel("15.4*hops+x/bw", bw=8.0, hops=hops)
+        p.consume = CostModel("242")
+
+        p.consumerTransport.resources.append(self.nis[from_])
+        p.consumerTransport.resources.append(self.nis[to])
 
         return p
 
@@ -64,7 +71,7 @@ class Tomahawk2Platform(Platform):
             memory = Memory("sp" + str(i), 32768)
             self.memories.append(memory)
 
-            ni = CommunicationResource(env, 'ni' + str(i))
+            ni = Resource(env, capacity=1)
             self.nis.append(ni)
 
         self.ram = Memory("ram", 268435456)
