@@ -70,6 +70,23 @@ class Process(object):
         assert self.traceDir is None
         self.traceDir = traceDir
 
+    def doTransport(self, ticks, channel, tokens):
+        cm = channel.primitive.interconnectTransport
+
+        # request all resources
+        requests = []
+        for r in cm.resources:
+            req = r.request()
+            requests.append(req)
+            yield req
+
+        yield self.env.timeout(ticks)
+        channel.transferTokens(tokens)
+
+        # release all resources
+        for (res, req) in zip(cm.resources, requests):
+            res.release(req)
+
     def run(self):
         """
         A SimPy process that replays the process trace
@@ -128,10 +145,45 @@ class Process(object):
 
                     size = entry.tokens * channel.token_size
 
-                    ccm = channel.primitive.consume
-                    tcm = channel.primitive.consumerTransport
+                    pcm = channel.primitive.consumePrepare
+                    rcm = channel.primitive.consumeRequest
+                    tcm = channel.primitive.consumeTransport
 
-                    # Do the transport part of the consume
+                    # Do the prepare part of the consume, ...
+                    cycles = round(pcm.getCosts(x=size))
+                    ticks = self.processor.cyclesToTicks(cycles)
+
+                    # request all resources
+                    requests = []
+                    for r in pcm.resources:
+                        req = r.request()
+                        requests.append(req)
+                        yield req
+
+                    yield self.env.timeout(ticks)
+
+                    # release all resources
+                    for (res, req) in zip(pcm.resources, requests):
+                        res.release(req)
+
+                    # ... the request part, ...
+                    cycles = round(rcm.getCosts(x=size))
+                    ticks = self.processor.cyclesToTicks(cycles)
+
+                    # request all resources
+                    requests = []
+                    for r in rcm.resources:
+                        req = r.request()
+                        requests.append(req)
+                        yield req
+
+                    yield self.env.timeout(ticks)
+
+                    # release all resources
+                    for (res, req) in zip(rcm.resources, requests):
+                        res.release(req)
+
+                    # ... and the tranport part
                     cycles = round(tcm.getCosts(x=size))
                     ticks = self.processor.cyclesToTicks(cycles)
 
@@ -148,23 +200,7 @@ class Process(object):
                     for (res, req) in zip(tcm.resources, requests):
                         res.release(req)
 
-                    # and do the local consume
-                    cycles = round(ccm.getCosts(x=size))
-                    ticks = self.processor.cyclesToTicks(cycles)
-
-                    # request all resources
-                    requests = []
-                    for r in ccm.resources:
-                        req = r.request()
-                        requests.append(req)
-                        yield req
-
-                    yield self.env.timeout(ticks)
                     channel.consumeTokens(entry.tokens)
-
-                    # release all resources
-                    for (res, req) in zip(ccm.resources, requests):
-                        res.release(req)
                 else:
                     log.debug('                  Not enough tokens in ' +
                               'channel -> block')
@@ -188,10 +224,11 @@ class Process(object):
 
                     size = entry.tokens * channel.token_size
 
-                    pcm = channel.primitive.produce
-                    tcm = channel.primitive.producerTransport
+                    pcm = channel.primitive.producePrepare
+                    tcm = channel.primitive.produceTransport
+                    rcm = channel.primitive.produceResponse
 
-                    # do the local produce ...
+                    # Do the produce prepare, ...
                     cycles = round(pcm.getCosts(x=size))
                     ticks = self.processor.cyclesToTicks(cycles)
 
@@ -203,13 +240,12 @@ class Process(object):
                         yield req
 
                     yield self.env.timeout(ticks)
-                    channel.produceTokens(entry.tokens)
 
                     # release all resources
                     for (res, req) in zip(pcm.resources, requests):
                         res.release(req)
 
-                    # ... and the transport part of the produce
+                    # ... the transport, ...
                     cycles = round(tcm.getCosts(x=size))
                     ticks = self.processor.cyclesToTicks(cycles)
 
@@ -226,20 +262,24 @@ class Process(object):
                     for (res, req) in zip(tcm.resources, requests):
                         res.release(req)
 
-                    # we paid for all delays -> reset
-                    delay = 0
+                    # ... and the response.
+                    cycles = round(rcm.getCosts(x=size))
+                    ticks = self.processor.cyclesToTicks(cycles)
 
-                    trans = channel.primitive.interconnectTransport
-                    if trans.getCosts(x=size) != 0:
-                        raise NotImplementedError(
-                            'Paying for transport costs is not implemented!')
+                    # request all resources
+                    requests = []
+                    for r in rcm.resources:
+                        req = r.request()
+                        requests.append(req)
+                        yield req
 
-                    # TODO We actually should pay for the transport costs here.
-                    # This is not implemented yet since it is not trivial. The
-                    # transport is a process that needs to run parall to the
-                    # execution on the cores. This means we have to create
-                    # a new simpy process.
-                    channel.transferTokens(entry.tokens)
+                    yield self.env.timeout(ticks)
+
+                    # release all resources
+                    for (res, req) in zip(rcm.resources, requests):
+                        res.release(req)
+
+                    channel.produceTokens(entry.tokens)
                 else:
                     log.debug('                  Not enough free slots ' +
                               'in channel -> block')
