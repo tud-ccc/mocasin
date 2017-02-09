@@ -31,7 +31,7 @@ class Channel(object):
             return False
 
     def getProduceCycles(self, num):
-        return round(self.primitive.getProduceCosts(num * self.token_size))
+        return round(self.primitive.produce.getCosts(x=num))
 
     def produceTokens(self, num):
 
@@ -46,7 +46,7 @@ class Channel(object):
             str(self.capacity)]))
 
     def getTransportCycles(self, num):
-        return round(self.primitive.getTransportCosts(num * self.token_size))
+        return round(self.primitive.transport.getCosts(x=num))
 
     def transferTokens(self, num):
         assert self.consumer_filled + num <= self.capacity, \
@@ -68,7 +68,7 @@ class Channel(object):
             return False
 
     def getConsumeCycles(self, num):
-        return round(self.primitive.getConsumeCosts(num * self.token_size))
+        return round(self.primitive.consume.getCosts(x=num))
 
     def consumeTokens(self, num):
 

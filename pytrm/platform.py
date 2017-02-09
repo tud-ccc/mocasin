@@ -134,67 +134,28 @@ class Link:
             assert False, "Atempted to connect some unsopported objects!"
 
 
+class CostModel:
+
+    def __init__(self, func, **params):
+        self.params = params
+        self.func = parser.expr(func).compile()
+
+    def getCosts(self, **params):
+        vars().update(self.params)
+        vars().update(params)
+        return eval(self.func)
+
+
 class Primitive:
 
     typename = None
     from_ = None
     to = None
     via = None
-    f_produce = None
-    f_consume = None
-    f_transport = None
-    resources = []
 
-    def setConsumeCostFunc(self, func):
-        self.f_consume = parser.expr(func).compile()
-
-    def setProduceCostFunc(self, func):
-        self.f_produce = parser.expr(func).compile()
-
-    def setTransportCostFunc(self, func):
-        self.f_transport = parser.expr(func).compile()
-
-    def getConsumeCosts(self, x):
-        return eval(self.f_consume)
-
-    def getTransportCosts(self, x):
-        return eval(self.f_transport)
-
-    def getProduceCosts(self, x):
-        return eval(self.f_produce)
-
-    def requestAllResources(self):
-        for r in self.resources:
-            r.request()
-
-    def releaseAllResources(self):
-        for r in self.resources:
-            r.request()
-
-
-class NocPrimitive(Primitive):
-
-    produceHops = None
-    produceBandwidth = None
-    transportHops = None
-    transportBandwidth = None
-    consumeHops = None
-    consumeBandwidth = None
-
-    def getConsumeCosts(self, x):
-        hops = self.consumeHops
-        bw = self.consumeBandwidth
-        return eval(self.f_consume)
-
-    def getTransportCosts(self, x):
-        hops = self.transportHops
-        bw = self.transportBandwidth
-        return eval(self.f_transport)
-
-    def getProduceCosts(self, x):
-        hops = self.produceHops
-        bw = self.produceBandwidth
-        return eval(self.f_produce)
+    consume = CostModel('0')
+    transport = CostModel('0')
+    produce = CostModel('0')
 
 
 class Platform(object):
