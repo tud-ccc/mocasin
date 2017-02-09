@@ -121,19 +121,50 @@ class Process(object):
                           entry.channel)
 
                 if channel.canConsumeTokens(entry.tokens):
-                    cm = channel.primitive.consume
+                    # we need to pay for the delay here, since we will request
+                    # resources
+                    yield self.env.timeout(delay)
+                    delay = 0
 
-                    cycles = round(cm.getCosts(x=entry.tokens))
+                    size = entry.tokens * channel.token_size
+
+                    ccm = channel.primitive.consume
+                    tcm = channel.primitive.consumerTransport
+
+                    # Do the transport part of the consume
+                    cycles = round(tcm.getCosts(x=size))
                     ticks = self.processor.cyclesToTicks(cycles)
 
-                    # do the consume
-                    cm.requestAllResources()
-                    yield self.env.timeout(ticks + delay)
-                    channel.consumeTokens(entry.tokens)
-                    cm.releaseAllResources()
+                    # request all resources
+                    requests = []
+                    for r in tcm.resources:
+                        req = r.request()
+                        requests.append(req)
+                        yield req
 
-                    # we paid for all delays -> reset
-                    delay = 0
+                    yield self.env.timeout(ticks)
+
+                    # release all resources
+                    for (res, req) in zip(tcm.resources, requests):
+                        res.release(req)
+
+                    # and do the local consume
+                    cycles = round(ccm.getCosts(x=size))
+                    ticks = self.processor.cyclesToTicks(cycles)
+
+                    # request all resources
+                    requests = []
+                    for r in ccm.resources:
+                        req = r.request()
+                        requests.append(req)
+                        yield req
+
+                    yield self.env.timeout(ticks)
+                    channel.consumeTokens(entry.tokens)
+
+                    # release all resources
+                    for (res, req) in zip(ccm.resources, requests):
+                        res.release(req)
                 else:
                     log.debug('                  Not enough tokens in ' +
                               'channel -> block')
@@ -150,22 +181,56 @@ class Process(object):
                           entry.channel)
 
                 if channel.canProduceTokens(entry.tokens):
-                    cm = channel.primitive.produce
+                    # we need to pay for the delay here, since we will request
+                    # resources
+                    yield self.env.timeout(delay)
+                    delay = 0
 
-                    cycles = round(cm.getCosts(x=entry.tokens))
+                    size = entry.tokens * channel.token_size
+
+                    pcm = channel.primitive.produce
+                    tcm = channel.primitive.producerTransport
+
+                    # do the local produce ...
+                    cycles = round(pcm.getCosts(x=size))
                     ticks = self.processor.cyclesToTicks(cycles)
 
-                    # do the produce
-                    cm.requestAllResources()
-                    yield self.env.timeout(ticks + delay)
+                    # request all resources
+                    requests = []
+                    for r in pcm.resources:
+                        req = r.request()
+                        requests.append(req)
+                        yield req
+
+                    yield self.env.timeout(ticks)
                     channel.produceTokens(entry.tokens)
-                    cm.releaseAllResources()
+
+                    # release all resources
+                    for (res, req) in zip(pcm.resources, requests):
+                        res.release(req)
+
+                    # ... and the transport part of the produce
+                    cycles = round(tcm.getCosts(x=size))
+                    ticks = self.processor.cyclesToTicks(cycles)
+
+                    # request all resources
+                    requests = []
+                    for r in tcm.resources:
+                        req = r.request()
+                        requests.append(req)
+                        yield req
+
+                    yield self.env.timeout(ticks)
+
+                    # release all resources
+                    for (res, req) in zip(tcm.resources, requests):
+                        res.release(req)
 
                     # we paid for all delays -> reset
                     delay = 0
 
-                    trans = channel.primitive.transport
-                    if trans.getCosts(x=entry.tokens) != 0:
+                    trans = channel.primitive.interconnectTransport
+                    if trans.getCosts(x=size) != 0:
                         raise NotImplementedError(
                             'Paying for transport costs is not implemented!')
 
