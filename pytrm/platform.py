@@ -154,11 +154,12 @@ class Primitive:
     to = None
     via = None
 
-    consume = CostModel('0')
-    consumerTransport = CostModel('0')
-    interconnectTransport = CostModel('0')
-    producerTransport = CostModel('0')
-    produce = CostModel('0')
+    consumePrepare = CostModel('0')
+    consumeRequest = CostModel('0')
+    consumeTransport = CostModel('0')
+    producePrepare = CostModel('0')
+    produceTransport = CostModel('0')
+    produceResponse = CostModel('0')
 
 
 class Platform(object):
