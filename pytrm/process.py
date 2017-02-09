@@ -70,23 +70,6 @@ class Process(object):
         assert self.traceDir is None
         self.traceDir = traceDir
 
-    def doTransport(self, ticks, channel, tokens):
-        cm = channel.primitive.interconnectTransport
-
-        # request all resources
-        requests = []
-        for r in cm.resources:
-            req = r.request()
-            requests.append(req)
-            yield req
-
-        yield self.env.timeout(ticks)
-        channel.transferTokens(tokens)
-
-        # release all resources
-        for (res, req) in zip(cm.resources, requests):
-            res.release(req)
-
     def run(self):
         """
         A SimPy process that replays the process trace
