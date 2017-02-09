@@ -18,62 +18,46 @@ class Channel(object):
         self.primitive = primitive
         self.token_size = token_size
 
-        self.producer_filled = 0
-        self.consumer_filled = 0
+        self.filled = 0
 
         self.event_produce = env.event()
         self.event_consume = env.event()
 
     def canProduceTokens(self, num):
-        if self.producer_filled + num <= self.capacity:
+        if self.filled + num <= self.capacity:
             return True
         else:
             return False
 
     def produceTokens(self, num):
-
-        assert self.producer_filled + num <= self.capacity, \
+        assert self.filled + num <= self.capacity, \
             'produce called but buffer is full!'
 
-        self.producer_filled = self.producer_filled + num
+        self.filled = self.filled + num
         log.debug(''.join([
             '{0:16}'.format(self.env.now), ': producing ', str(num),
             ' tokens on channel ', self.name,
-            ' succeeded. New filling level: ', str(self.producer_filled), '/',
+            ' succeeded. New filling level: ', str(self.filled), '/',
             str(self.capacity)]))
-
-    def transferTokens(self, num):
-        assert self.consumer_filled + num <= self.capacity, \
-            'transfer called but buffer is full!'
-
-        self.consumer_filled = self.consumer_filled + num
-        log.debug(''.join([
-            '{0:16}'.format(self.env.now), ': transfer of ', str(num),
-            ' tokens on channel ', self.name, ' finished.']))
 
         if len(self.event_produce.callbacks) > 0:
             self.event_produce.succeed()
             self.event_produce = self.env.event()
 
     def canConsumeTokens(self, num):
-        if self.consumer_filled - num >= 0:
+        if self.filled - num >= 0:
             return True
         else:
             return False
 
     def consumeTokens(self, num):
+        assert self.filled - num >= 0, 'consume called but buffer is empty!'
 
-        assert self.consumer_filled - num >= 0, \
-            'consume called but buffer is empty!'
-        assert self.producer_filled - num >= 0, \
-            'consume called but buffer is empty!'
-
-        self.consumer_filled = self.consumer_filled - num
-        self.producer_filled = self.producer_filled - num
+        self.filled = self.filled - num
         log.debug(''.join([
             '{0:16}'.format(self.env.now), ': consuming ', str(num),
             ' tokens on channel ', self.name,
-            ' succeeded. New filling level: ', str(self.consumer_filled), '/',
+            ' succeeded. New filling level: ', str(self.filled), '/',
             str(self.capacity)]))
 
         # notify waiting processes and recreate the event
