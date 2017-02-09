@@ -34,7 +34,7 @@ class Processor:
 class CommunicationResource(Resource):
 
     def __init__(self, env, name):
-        super(Resource, self).__init__(env, 1)
+        super().__init__(env, 1)
         self.name = name
 
 
@@ -141,20 +141,6 @@ class CostModel:
         self.params = params
         self.func = parser.expr(func).compile()
 
-    def addResources(self, resources):
-        self.resources.extend(resources)
-
-    def addResource(self, resource):
-        self.resources.append(resource)
-
-    def requestAllResources(self):
-        for r in self.resources:
-            r.request()
-
-    def releaseAllResources(self):
-        for r in self.resources:
-            r.release()
-
     def getCosts(self, **params):
         vars().update(self.params)
         vars().update(params)
@@ -169,7 +155,9 @@ class Primitive:
     via = None
 
     consume = CostModel('0')
-    transport = CostModel('0')
+    consumerTransport = CostModel('0')
+    interconnectTransport = CostModel('0')
+    producerTransport = CostModel('0')
     produce = CostModel('0')
 
 
