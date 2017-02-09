@@ -62,10 +62,6 @@ class Process(object):
         self.event_unblock.succeed()
         self.event_unblock = self.env.event()
 
-    def finishTransfer(self, event):
-        event.channel.transferTokens(event.num)
-        event._ok = True
-
     def assignProcessor(self, processor):
         assert self.processor is None
         self.processor = processor
@@ -119,18 +115,25 @@ class Process(object):
             elif isinstance(entry, ReadEntry):
                 channel = self.channels[entry.channel]
 
-                cycles = channel.getConsumeCycles(entry.tokens)
-                ticks = self.processor.cyclesToTicks(cycles)
-
                 log.debug('{0:16}'.format(self.env.now + delay) +
                           ': process ' + self.name + ' reads ' +
                           str(entry.tokens) + ' tokens from channel ' +
                           entry.channel)
 
                 if channel.canConsumeTokens(entry.tokens):
+                    cm = channel.primitive.consume
+
+                    cycles = round(cm.getCosts(x=entry.tokens))
+                    ticks = self.processor.cyclesToTicks(cycles)
+
+                    # do the consume
+                    cm.requestAllResources()
                     yield self.env.timeout(ticks + delay)
-                    delay = 0
                     channel.consumeTokens(entry.tokens)
+                    cm.releaseAllResources()
+
+                    # we paid for all delays -> reset
+                    delay = 0
                 else:
                     log.debug('                  Not enough tokens in ' +
                               'channel -> block')
@@ -141,27 +144,37 @@ class Process(object):
             elif isinstance(entry, WriteEntry):
                 channel = self.channels[entry.channel]
 
-                produceCycles = channel.getProduceCycles(entry.tokens)
-                produceTicks = self.processor.cyclesToTicks(produceCycles)
-                transferCycles = channel.getTransportCycles(entry.tokens)
-                transferTicks = self.processor.cyclesToTicks(transferCycles)
-
                 log.debug('{0:16}'.format(self.env.now + delay) +
                           ': process ' + self.name + ' writes ' +
                           str(entry.tokens) + ' tokens to channel ' +
                           entry.channel)
 
                 if channel.canProduceTokens(entry.tokens):
-                    yield self.env.timeout(produceTicks + delay)
-                    delay = 0
-                    channel.produceTokens(entry.tokens)
+                    cm = channel.primitive.produce
 
-                    # schedule an event at the end of the transfer
-                    event = self.env.event()
-                    event.channel = channel
-                    event.num = entry.tokens
-                    event.callbacks.append(self.finishTransfer)
-                    self.env.schedule(event, delay=transferTicks)
+                    cycles = round(cm.getCosts(x=entry.tokens))
+                    ticks = self.processor.cyclesToTicks(cycles)
+
+                    # do the produce
+                    cm.requestAllResources()
+                    yield self.env.timeout(ticks + delay)
+                    channel.produceTokens(entry.tokens)
+                    cm.releaseAllResources()
+
+                    # we paid for all delays -> reset
+                    delay = 0
+
+                    trans = channel.primitive.transport
+                    if trans.getCosts(x=entry.tokens) != 0:
+                        raise NotImplementedError(
+                            'Paying for transport costs is not implemented!')
+
+                    # TODO We actually should pay for the transport costs here.
+                    # This is not implemented yet since it is not trivial. The
+                    # transport is a process that needs to run parall to the
+                    # execution on the cores. This means we have to create
+                    # a new simpy process.
+                    channel.transferTokens(entry.tokens)
                 else:
                     log.debug('                  Not enough free slots ' +
                               'in channel -> block')

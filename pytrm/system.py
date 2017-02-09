@@ -6,7 +6,6 @@
 
 import logging
 import timeit
-import simpy
 
 from .channel import Channel
 from .process import Process
@@ -18,11 +17,9 @@ log = logging.getLogger(__name__)
 
 class System:
 
-    def __init__(self, platform, application, mapping, tracedir, TraceReader):
-
-        # Create a simpy environment
-        self.env = simpy.Environment()
-
+    def __init__(self, env, platform, application, mapping, tracedir,
+                 TraceReader):
+        self.env = env
         self.platform = platform
         self.application = application
         self.mapping = mapping
@@ -53,9 +50,9 @@ class System:
             primitive = None
             for p in platform.primitives:
                 if p.typename == c.primitive and \
-                   p._from.name == c.processorFrom and \
-                   p._via.name == c.viaMemory and \
-                   p._to.name == c.processorTo:
+                   p.from_.name == c.processorFrom and \
+                   p.via.name == c.viaMemory and \
+                   p.to.name == c.processorTo:
                     primitive = p
             if primitive is None:
                 raise RuntimeError('Requested a communication primitive that' +
@@ -103,4 +100,6 @@ class System:
         stop = timeit.default_timer()
 
         print('=== End Simulation ===')
-        print('needed ' + str(stop-start) + ' seconds for simulation')
+        exec_time = float(self.env.now) / 1000000000.0
+        print('Total execution time: ' + str(exec_time) + ' ms')
+        print('Total simulation time: ' + str(stop-start) + ' s')
