@@ -137,8 +137,23 @@ class Link:
 class CostModel:
 
     def __init__(self, func, **params):
+        self.resources = []
         self.params = params
         self.func = parser.expr(func).compile()
+
+    def addResources(self, resources):
+        self.resources.extend(resources)
+
+    def addResource(self, resource):
+        self.resources.append(resource)
+
+    def requestAllResources(self):
+        for r in self.resources:
+            r.request()
+
+    def releaseAllResources(self):
+        for r in self.resources:
+            r.release()
 
     def getCosts(self, **params):
         vars().update(self.params)
