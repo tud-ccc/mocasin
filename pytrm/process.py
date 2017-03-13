@@ -92,8 +92,6 @@ class Process(object):
             log.debug('{0:16}'.format(self.env.now) + ': process ' +
                       self.name + ' resumes execution')
 
-        delay = 0
-
         while not self.state == ProcessState.Finished:
 
             entry = None
@@ -105,27 +103,20 @@ class Process(object):
             if isinstance(entry, ProcessEntry):
                 cycles = entry.cycles
                 ticks = self.processor.cyclesToTicks(cycles)
-                log.debug('{0:16}'.format(self.env.now + delay) +
+                log.debug('{0:16}'.format(self.env.now) +
                           ': process ' + self.name + ' processes for ' +
                           str(cycles) + ' cycles (' + str(ticks) + ' ticks)')
 
-                # When we process we don't have to synchronize and simply
-                # advance in local time
-                delay += ticks
+                yield self.env.timeout(ticks)
             elif isinstance(entry, ReadEntry):
                 channel = self.channels[entry.channel]
 
-                log.debug('{0:16}'.format(self.env.now + delay) +
+                log.debug('{0:16}'.format(self.env.now) +
                           ': process ' + self.name + ' reads ' +
                           str(entry.tokens) + ' tokens from channel ' +
                           entry.channel)
 
                 if channel.canConsumeTokens(entry.tokens):
-                    # we need to pay for the delay here, since we will request
-                    # resources
-                    yield self.env.timeout(delay)
-                    delay = 0
-
                     size = entry.tokens * channel.token_size
 
                     pcm = channel.primitive.consumePrepare
@@ -194,17 +185,12 @@ class Process(object):
             elif isinstance(entry, WriteEntry):
                 channel = self.channels[entry.channel]
 
-                log.debug('{0:16}'.format(self.env.now + delay) +
+                log.debug('{0:16}'.format(self.env.now) +
                           ': process ' + self.name + ' writes ' +
                           str(entry.tokens) + ' tokens to channel ' +
                           entry.channel)
 
                 if channel.canProduceTokens(entry.tokens):
-                    # we need to pay for the delay here, since we will request
-                    # resources
-                    yield self.env.timeout(delay)
-                    delay = 0
-
                     size = entry.tokens * channel.token_size
 
                     pcm = channel.primitive.producePrepare
@@ -271,7 +257,6 @@ class Process(object):
                     channel.event_consume.callbacks.append(self.unblock)
                     return
             elif isinstance(entry, TerminateEntry):
-                yield self.env.timeout(delay)
                 self.state = ProcessState.Finished
             else:
                 assert False, "found an unexpected trace entry"
