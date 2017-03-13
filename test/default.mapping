@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<slxMapping:SlxMappingDescriptor xmlns:slxMapping="slxMapping" AppName="pipeline" Name="Synthesized">
+
+  <SingleSchedulerDesc ID="0" Name="SchedulerForProcessor(PE0)" SchedulingPolicy="FIFO">
+    <OutSchedulerInfo>
+      <AttributedProcesses>
+        <Process Attribute="0" Name="src"/>
+      </AttributedProcesses>
+    </OutSchedulerInfo>
+  </SingleSchedulerDesc>
+
+  <SingleSchedulerDesc ID="1" Name="SchedulerForProcessor(PE1)" SchedulingPolicy="FIFO">
+    <OutSchedulerInfo>
+      <AttributedProcesses>
+        <Process Attribute="1" Name="w1"/>
+      </AttributedProcesses>
+    </OutSchedulerInfo>
+  </SingleSchedulerDesc>
+
+  <SingleSchedulerDesc ID="2" Name="SchedulerForProcessor(PE2)" SchedulingPolicy="FIFO">
+    <OutSchedulerInfo>
+      <AttributedProcesses>
+        <Process Attribute="2" Name="w2"/>
+      </AttributedProcesses>
+    </OutSchedulerInfo>
+  </SingleSchedulerDesc>
+
+  <SingleSchedulerDesc ID="3" Name="SchedulerForProcessor(PE3)" SchedulingPolicy="FIFO">
+    <OutSchedulerInfo>
+      <AttributedProcesses>
+        <Process Attribute="3" Name="w3"/>
+      </AttributedProcesses>
+    </OutSchedulerInfo>
+  </SingleSchedulerDesc>
+
+  <SingleSchedulerDesc ID="4" Name="SchedulerForProcessor(PE4)" SchedulingPolicy="FIFO">
+    <OutSchedulerInfo>
+      <AttributedProcesses>
+        <Process Attribute="4" Name="w4"/>
+      </AttributedProcesses>
+    </OutSchedulerInfo>
+  </SingleSchedulerDesc>
+
+  <SingleSchedulerDesc ID="5" Name="SchedulerForProcessor(PE5)" SchedulingPolicy="FIFO">
+    <OutSchedulerInfo>
+      <AttributedProcesses>
+        <Process Attribute="5" Name="w5"/>
+      </AttributedProcesses>
+    </OutSchedulerInfo>
+  </SingleSchedulerDesc>
+
+  <SingleSchedulerDesc ID="6" Name="SchedulerForProcessor(PE6)" SchedulingPolicy="FIFO">
+    <OutSchedulerInfo>
+      <AttributedProcesses>
+        <Process Attribute="6" Name="w6"/>
+      </AttributedProcesses>
+    </OutSchedulerInfo>
+  </SingleSchedulerDesc>
+
+  <SingleSchedulerDesc ID="7" Name="SchedulerForProcessor(PE7)" SchedulingPolicy="FIFO">
+    <OutSchedulerInfo>
+      <AttributedProcesses>
+        <Process Attribute="7" Name="sink"/>
+      </AttributedProcesses>
+    </OutSchedulerInfo>
+  </SingleSchedulerDesc>
+
+  <MapperDesc ID="0" MappingType="Static" Name="DefaultMapper">
+    <OutMapperInfo>
+      <GroupID2PEIDs>
+        <PeGroup GroupId="0" Processors="PE0"/>
+        <PeGroup GroupId="1" Processors="PE1"/>
+        <PeGroup GroupId="2" Processors="PE2"/>
+        <PeGroup GroupId="3" Processors="PE3"/>
+        <PeGroup GroupId="4" Processors="PE4"/>
+        <PeGroup GroupId="5" Processors="PE5"/>
+        <PeGroup GroupId="6" Processors="PE6"/>
+        <PeGroup GroupId="7" Processors="PE7"/>
+      </GroupID2PEIDs>
+      <Schedulers2Groups>
+        <Scheduler2Group GroupID="0" SchedulerID="0"/>
+        <Scheduler2Group GroupID="1" SchedulerID="1"/>
+        <Scheduler2Group GroupID="2" SchedulerID="2"/>
+        <Scheduler2Group GroupID="3" SchedulerID="3"/>
+        <Scheduler2Group GroupID="4" SchedulerID="4"/>
+        <Scheduler2Group GroupID="5" SchedulerID="5"/>
+        <Scheduler2Group GroupID="6" SchedulerID="6"/>
+        <Scheduler2Group GroupID="7" SchedulerID="7"/>
+      </Schedulers2Groups>
+      <ChannelMappings>
+        <ChannelMapping CommPrimitive="producer_cp" Memory="sp6" PnChannel="sink" ProcessFrom="w6" ProcessTo="sink" ProcessorFrom="PE6" ProcessorTo="PE7"/>
+        <ChannelMapping CommPrimitive="producer_cp" Memory="sp5" PnChannel="c5" ProcessFrom="w5" ProcessTo="w6" ProcessorFrom="PE5" ProcessorTo="PE6"/>
+        <ChannelMapping CommPrimitive="producer_cp" Memory="sp4" PnChannel="c4" ProcessFrom="w4" ProcessTo="w5" ProcessorFrom="PE4" ProcessorTo="PE5"/>
+        <ChannelMapping CommPrimitive="producer_cp" Memory="sp2" PnChannel="c2" ProcessFrom="w2" ProcessTo="w3" ProcessorFrom="PE2" ProcessorTo="PE3"/>
+        <ChannelMapping CommPrimitive="producer_cp" Memory="sp3" PnChannel="c3" ProcessFrom="w3" ProcessTo="w4" ProcessorFrom="PE3" ProcessorTo="PE4"/>
+        <ChannelMapping CommPrimitive="producer_cp" Memory="sp1" PnChannel="c1" ProcessFrom="w1" ProcessTo="w2" ProcessorFrom="PE1" ProcessorTo="PE2"/>
+        <ChannelMapping CommPrimitive="producer_cp" Memory="sp0" PnChannel="src" ProcessFrom="src" ProcessTo="w1" ProcessorFrom="PE0" ProcessorTo="PE1"/>
+      </ChannelMappings>
+    </OutMapperInfo>
+  </MapperDesc>
+
+  <AdditionalDesc>
+    <BoundInfo GlobalBound="0">
+      <BoundList>
+        <FifoBound Bound="1" Fifo="c1"/>
+        <FifoBound Bound="1" Fifo="c2"/>
+        <FifoBound Bound="1" Fifo="c3"/>
+        <FifoBound Bound="1" Fifo="c4"/>
+        <FifoBound Bound="1" Fifo="c5"/>
+        <FifoBound Bound="1" Fifo="sink"/>
+        <FifoBound Bound="1" Fifo="src"/>
+      </BoundList>
+    </BoundInfo>
+  </AdditionalDesc>
+
+</slxMapping:SlxMappingDescriptor>
