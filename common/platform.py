@@ -3,19 +3,22 @@
 #
 # Authors: Christian Menard
 
-
+import simpy
 from simpy.resources.resource import Resource
 
 from enum import Enum
 import parser
 
+import itertools
+
+import numpy as np
 
 class Memory:
 
     def __init__(self, name, size):
         self.name = name
         self.size = size
-        self.endpoint = None
+        #self.endpoint = None
 
 
 class Processor:
@@ -24,114 +27,159 @@ class Processor:
         self.name = name
         self.type = type
         self.frequency = frequency
-        self.endpoint = None
+        # self.endpoint = None
 
     def cyclesToTicks(self, cycles):
         tmp = float(cycles) * 1000000000000 / float(self.frequency)
         return int(tmp)
 
 
-class CommunicationResource(Resource):
 
-    def __init__(self, env, name):
+
+class Noc:
+
+    def __init__(self, env, routing_algo):
+        self.Routers=[]
+        self.env=env
+        self.routing_algo = routing_algo
+
+    def meshNoc(self, width,length):
+
+        routers=[[0 for w in range(width)] for l in range(length)]
+
+        for l in range(length):
+            for w in range(width):
+
+                r=Router(w,l)
+                r.outgoing_links=[None]*4
+
+                if w+1<width:
+                    r.outgoing_links[0]=Link(self.env, 8, str(w)+str(l)+'_'+str(w+1)+str(l))
+
+                if w-1>=0:
+                    r.outgoing_links[1]=Link(self.env, 8, str(w)+str(l)+'_'+str(w-1)+str(l))
+
+                if l+1<length:
+                    r.outgoing_links[2]=Link(self.env, 8, str(w)+str(l)+'_'+str(w)+str(l+1))
+
+                if l-1>=0:
+                    r.outgoing_links[3]=Link(self.env, 8, str(w)+str(l)+'_'+str(w)+str(l-1))
+
+                routers[w][l]=r
+        self.Routers=routers
+        return routers
+
+    def create_ni(self, eps, x, y):
+        ni_inst=NI(Link(self.env, 8, eps[0].name+'_'+eps[1].name+' to '+str(x)+str(y)), eps)
+        self.Routers[x][y].outgoing_links.append(Link(self.env, 8, str(x)+str(y)+' to '+eps[0].name+'_'+eps[1].name))
+        self.Routers[x][y].ni.append(ni_inst)
+
+    def get_route(self, a, b):
+        if self.routing_algo=="xy":
+            return self.get_route_xy(a, b)
+
+        if self.routing_algo=="yx":
+            return self.get_route_yx(a, b)
+
+    def get_route_xy(self, a, b):
+
+        a_loc,a_ni,b_loc,b_ni,b_link=self.find(a,b)
+        x_diff=[a_loc[0]-b_loc[0]]
+        x_diff.append(np.sign(x_diff[0]))
+        y_diff=[a_loc[1]-b_loc[1]]
+        y_diff.append(np.sign(y_diff[0]))
+
+        out=[a_ni.outgoing_link]
+        for i in range(x_diff[0]*x_diff[1]):
+
+            if x_diff[1]==-1:
+                out.append(self.Routers[a_loc[0]-i*x_diff[1]][a_loc[1]].outgoing_links[0])
+            else:
+                out.append(self.Routers[a_loc[0]-i*x_diff[1]][a_loc[1]].outgoing_links[1])
+
+        for j in range(y_diff[0]*y_diff[1]):
+
+            if y_diff[1]==-1:
+                out.append(self.Routers[b_loc[0]][a_loc[1]-j*y_diff[1]].outgoing_links[2])
+            else:
+                out.append(self.Routers[b_loc[0]][a_loc[1]-j*y_diff[1]].outgoing_links[3])
+
+        out.append(b_link)
+        return out
+
+    def get_route_yx(self, a, b):
+
+        a_loc,a_ni,b_loc,b_ni,b_link=self.find(a,b)
+        x_diff=[a_loc[0]-b_loc[0]]
+        x_diff.append(np.sign(x_diff[0]))
+        y_diff=[a_loc[1]-b_loc[1]]
+        y_diff.append(np.sign(y_diff[0]))
+
+        out=[a_ni.outgoing_link]
+
+        for j in range(y_diff[0]*y_diff[1]):
+
+            if y_diff[1]==-1:
+                out.append(self.Routers[b_loc[0]][a_loc[1]-j*y_diff[1]].outgoing_links[2])
+            else:
+                out.append(self.Routers[b_loc[0]][a_loc[1]-j*y_diff[1]].outgoing_links[3])
+
+        for i in range(x_diff[0]*x_diff[1]):
+
+            if x_diff[1]==-1:
+                out.append(self.Routers[a_loc[0]-i*x_diff[1]][a_loc[1]].outgoing_links[0])
+            else:
+                out.append(self.Routers[a_loc[0]-i*x_diff[1]][a_loc[1]].outgoing_links[1])
+
+        out.append(b_link)
+        return out
+
+    def find(self, a, b):
+        a_loc=[]
+        a_ni=0
+        b_loc=[]
+        b_ni=0
+        b_link=0
+        for i in self.Routers:
+            for j in i:
+                for ni in j.ni:
+                    for e in ni.eps:
+
+                        if e.name==a:
+                            a_loc=[j.x, j.y]
+                            a_ni= ni
+
+                        if e.name==b:
+                            b_loc=[j.x, j.y]
+                            b_ni=ni
+                            for k in j.outgoing_links:
+                                if k!=None:
+                                    if b in k.name:
+                                        b_link=k
+
+        return a_loc,a_ni,b_loc,b_ni,b_link
+
+class Link(Resource):
+
+    def __init__(self, env, bandwidth, name):
         super().__init__(env, 1)
-        self.name = name
+        self.name=name
+        self.bandwidth=bandwidth
 
 
-class Endpoint:
+class NI:
 
-    def __init__(self, processor, memory):
-        assert processor.endpoint is None
-        assert memory.endpoint is None
-
-        self.processor = processor
-        self.memory = memory
-
-        processor.endpoint = self
-        memory.endpoint = self
-
-        self.outgoing_link = None
-        self.incoming_link = None
-
+    def __init__(self, link, eps):
+        self.outgoing_link = link
+        self.eps=eps
 
 class Router:
-    outgoing_links = []
-    incoming_links = []
-
-
-class XYRouter(Router):
 
     def __init__(self, x, y):
         self.x = x
         self.y = y
-
-    def hop(self, target):
-        """
-        Do one hop into the direction of the target.
-        """
-
-        assert isinstance(target, Endpoint)
-        assert target.incoming_link is not None
-        assert isinstance(target.incoming_link._from, XYRouter)
-
-        targetRouter = target.incoming_link._from
-
-        if self.x == targetRouter.x and self.y == targetRouter.y:
-            return target.incoming_link
-
-        for link in self.outgoing_links:
-            if link.link_type == LinkType.RouterToRouter:
-                if ((self.x < targetRouter.x and link._to.x == self.x + 1 and
-                     link._to.y == self.y) or
-                    (self.x > targetRouter.x and link._to.x == self.x - 1 and
-                     link._to.y == self.y) or
-                    (self.x == targetRouter.x and self.y < targetRouter.y and
-                     link._to.y == self.y + 1 and link._to.x == self.x) or
-                    (self.x == targetRouter.x and self.y > targetRouter.y and
-                     link._to.y == self.y - 1 and link._to.x == self.x)):
-                    return link
-
-        assert False, "Did not find a valid route!"
-
-
-class LinkType(Enum):
-    RouterToRouter = 0
-    RouterToEndpoint = 1
-    EndpointToRouter = 2
-
-
-class Link:
-
-    def __init__(self, bandwidth):
-        self._to = None
-        self._from = None
-        self.link_type = None
-        self.bandwidth = bandwidth
-
-    def connect(self, _from, _to):
-        assert self._from is None and self._to is None and \
-            self.link_type is None, "link is alreay connected!"
-
-        self._from = _from
-        self._to = _to
-
-        if isinstance(_from, Router) and isinstance(_to, Router):
-            self.link_type = LinkType.RouterToRouter
-            _from.outgoing_links.append(self)
-            _to.incoming_links.append(self)
-        elif isinstance(_from, Endpoint) and isinstance(_to, Router):
-            self.link_type = LinkType.EndpointToRouter
-            assert _from.outgoing_link is None, \
-                "Endpoint is already connected!"
-            _from.outgoing_link = self
-            _to.incoming_links.append(self)
-        elif isinstance(_from, Router) and isinstance(_to, Endpoint):
-            self.link_type = LinkType.RouterToEndpoint
-            assert _to.incoming_link is None, "Endpoint is already connected!"
-            _to.incoming_link = self
-            _from.outgoing_links.append(self)
-        else:
-            assert False, "Atempted to connect some unsopported objects!"
+        self.outgoing_links = []
+        self.ni=[]
 
 
 class CostModel:
@@ -154,21 +202,16 @@ class Primitive:
     to = None
     via = None
 
-    consumePrepare = CostModel('0')
-    consumeRequest = CostModel('0')
-    consumeTransport = CostModel('0')
-    producePrepare = CostModel('0')
-    produceTransport = CostModel('0')
-    produceResponse = CostModel('0')
+    def __init__(self):
+        self.consume = []
+        self.produce = []
 
 
 class Platform(object):
+
     def __init__(self):
-        self.routers = []
-        self.links = []
         self.processors = []
         self.memories = []
-        self.endpoints = []
         self.primitives = []
 
     def find_route(self, _from, _to):
