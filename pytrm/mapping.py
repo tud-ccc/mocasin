@@ -21,5 +21,6 @@ class SchedulerInfo:
 
 
 class Mapping:
-    schedulers = []
-    channels = []
+    def __init__(self):
+        self.schedulers = []
+        self.channels = []

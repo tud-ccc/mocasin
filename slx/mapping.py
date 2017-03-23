@@ -18,6 +18,7 @@ log = logging.getLogger(__name__)
 class SlxMapping(Mapping):
 
     def __init__(self, mapping_file):
+        Mapping.__init__(self)
         tree = ET.parse(mapping_file)
         self.xmlroot = tree.getroot()
 
