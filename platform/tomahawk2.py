@@ -71,7 +71,8 @@ class Tomahawk2Platform(Platform):
         return p
 
     def __init__(self, env):
-        super(Platform, self).__init__()
+        Platform.__init__(self)
+        #super(Platform, self).__init__()
         self.env = env
 
         self.nis_in = []

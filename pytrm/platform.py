@@ -163,12 +163,13 @@ class Primitive:
 
 
 class Platform(object):
-    routers = []
-    links = []
-    processors = []
-    memories = []
-    endpoints = []
-    primitives = []
+    def __init__(self):
+        self.routers = []
+        self.links = []
+        self.processors = []
+        self.memories = []
+        self.endpoints = []
+        self.primitives = []
 
     def find_route(self, _from, _to):
         assert isinstance(_from, Endpoint)
