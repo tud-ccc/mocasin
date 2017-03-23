@@ -6,10 +6,10 @@
 
 import logging
 
-from .trace import ProcessEntry
-from .trace import ReadEntry
-from .trace import WriteEntry
-from .trace import TerminateEntry
+from common.trace import ProcessEntry
+from common.trace import ReadEntry
+from common.trace import WriteEntry
+from common.trace import TerminateEntry
 
 from enum import Enum
 

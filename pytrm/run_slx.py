@@ -11,8 +11,8 @@ import logging
 
 import simpy
 
-from platform import Tomahawk2Platform
-from pytrm import System
+from platforms import Tomahawk2Platform
+from . import System
 from slx import SlxApplication
 from slx import SlxMapping
 from slx import SlxTraceReader
