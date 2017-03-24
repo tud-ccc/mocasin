@@ -4,11 +4,11 @@
 # Authors: Christian Menard
 
 
-from pytrm import CostModel
-from pytrm import Memory
-from pytrm import Platform
-from pytrm import Primitive
-from pytrm import Processor
+from common import CostModel
+from common import Memory
+from common import Platform
+from common import Primitive
+from common import Processor
 
 from simpy.resources.resource import Resource
 

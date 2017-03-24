@@ -4,6 +4,13 @@
 # Authors: Christian Menard
 
 
+from enum import Enum
+
+
+class SchedulingPolicy(Enum):
+    FIFO = 0,
+
+
 class ChannelInfo:
     name = None
     capacity = None

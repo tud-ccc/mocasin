@@ -7,10 +7,10 @@
 import xml.etree.ElementTree as ET
 import logging
 
-from pytrm import Mapping
-from pytrm import SchedulerInfo
-from pytrm import ChannelInfo
-from pytrm import SchedulingPolicy
+from common import Mapping
+from common import SchedulerInfo
+from common import ChannelInfo
+from common import SchedulingPolicy
 
 log = logging.getLogger(__name__)
 

@@ -10,12 +10,9 @@ import simpy
 from enum import Enum
 
 from .process import ProcessState
+from common import SchedulingPolicy
 
 log = logging.getLogger(__name__)
-
-
-class SchedulingPolicy(Enum):
-    FIFO = 0,
 
 
 class Scheduler(object):
