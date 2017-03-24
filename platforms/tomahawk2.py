@@ -9,7 +9,7 @@ from common import Memory
 from common import Platform
 from common import Primitive
 from common import Processor
-from common import Noc
+from common import MeshNoc
 
 from simpy.resources.resource import Resource
 
@@ -65,8 +65,7 @@ class Tomahawk2Platform(Platform):
         Platform.__init__(self)
         #super(Platform, self).__init__()
         self.env = env
-        m=Noc(self.env,"yx")
-        m.meshNoc(2,2)
+        m=MeshNoc(self.env,"yx",2,2)
 
         for i in range(0, 8):
             processor = Processor("PE" + str(i), 'RISC', 200000000)

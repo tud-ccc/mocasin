@@ -33,17 +33,20 @@ class Processor:
         tmp = float(cycles) * 1000000000000 / float(self.frequency)
         return int(tmp)
 
-
-
-
+# This is not realy needed in the moment, but maybe we want to use
+# other NoC topologies than mesh later on.
 class Noc:
 
-    def __init__(self, env, routing_algo):
+    def get_route(self, a, b):
+        return None
+
+
+class MeshNoc(Noc):
+
+    def __init__(self, env, routing_algo, width, length):
         self.Routers=[]
         self.env=env
         self.routing_algo = routing_algo
-
-    def meshNoc(self, width,length):
 
         routers=[[0 for w in range(width)] for l in range(length)]
 
@@ -67,7 +70,6 @@ class Noc:
 
                 routers[w][l]=r
         self.Routers=routers
-        return routers
 
     def create_ni(self, eps, x, y):
         ni_inst=NI(Link(self.env, 8, eps[0].name+'_'+eps[1].name+' to '+str(x)+str(y)), eps)
@@ -213,23 +215,3 @@ class Platform(object):
         self.processors = []
         self.memories = []
         self.primitives = []
-
-    def find_route(self, _from, _to):
-        assert isinstance(_from, Endpoint)
-        assert isinstance(_to, Endpoint)
-
-        current_pos = _from
-        target_pos = _to
-
-        if current_pos is target_pos:
-            return []
-
-        hops = [current_pos.outgoing_link]
-        current_pos = current_pos.outgoing_link._to
-
-        while current_pos is not target_pos:
-            link = current_pos.hop(target_pos)
-            hops.append(link)
-            current_pos = link._to
-
-        return hops
