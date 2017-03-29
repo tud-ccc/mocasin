@@ -46,7 +46,8 @@ class Process(object):
         self.state = ProcessState.Ready
 
         self.event_unblock = env.event()
-
+        
+        self.time=0
         self.channels = {}
         for c in channels:
             self.channels[c.name] = c
@@ -57,6 +58,7 @@ class Process(object):
         assert self.state == ProcessState.Blocked
         log.debug('{0:16}'.format(self.env.now) + ': process ' + self.name +
                   ' unblocked')
+        self.time=format(self.env.now)
         self.state = ProcessState.Ready
 
         self.event_unblock.succeed()

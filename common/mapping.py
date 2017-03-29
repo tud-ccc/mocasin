@@ -8,7 +8,8 @@ from enum import Enum
 
 
 class SchedulingPolicy(Enum):
-    FIFO = 0,
+    FIFO = 0
+    RoundRobin=1
 
 
 class ChannelInfo:
