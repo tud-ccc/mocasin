@@ -34,6 +34,8 @@ def main():
     parser.add_argument('mapping')
     parser.add_argument('pngraph')
     parser.add_argument('tracedir')
+    parser.add_argument("--mappingout", metavar="mapping output dot", type=str,
+                           help = "Graphviz output for mapping visualization")
 
     args = parser.parse_args()
 
@@ -54,8 +56,11 @@ def main():
     # Create an Application
     application = SlxKpnGraph('app', args.pngraph)
 
-    # Creat the mapping
+    # Create the mapping
     mapping = SlxMapping(args.mapping)
+
+    if args.mappingout:
+        mapping.outputDot(application,args.mappingout)
 
     # Create the system
     system = System(env, platform, application, mapping, args.tracedir,
