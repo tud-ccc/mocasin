@@ -6,6 +6,7 @@
 
 import logging
 import simpy
+import sys
 
 from enum import Enum
 
@@ -33,8 +34,6 @@ class Scheduler(object):
 
         assert len(processors) > 0, \
             'each scheduler needs at least one processor'
-        #assert policy == SchedulingPolicy.FIFO, \
-        #   'Only FIFO scheduling supported'
 
         self.env = env
         self.name = name
@@ -46,17 +45,15 @@ class Scheduler(object):
         assert len(self.processors) == 1, \
             'only single processor scheduling supported'
 
-   #     assert self.policy == SchedulingPolicy.FIFO, \
-#        'only FIFO scheduling is supported'
-
         log.info('{0:16}'.format(self.env.now) + ': scheduler ' +
-                 self.name + ' starts execution')
+                self.name + ' starts execution')
 
         for process in self.processes:
             process.assignProcessor(self.processors[0])
 
 
         if self.policy==SchedulingPolicy.RoundRobin:
+            prev_process = None
             while True:
                 allProcessesFinished = True
                 allProcessesBlocked = True
@@ -69,7 +66,12 @@ class Scheduler(object):
                     elif process.state == ProcessState.Ready:
                         allProcessesBlocked = False
                         allProcessesFinished = False
+                        if prev_process!=process:
+                            yield self.env.timeout(self.processors[0].scheduling_penalty+self.processors[0].switching_in+self.processors[0].switching_out)
+                        else:
+                            yield self.env.timeout(self.processors[0].switching_in)
                         yield self.env.process(process.run())
+
                     else:
                         assert False, 'unknown process state'
 
@@ -84,10 +86,11 @@ class Scheduler(object):
                     yield simpy.events.AnyOf(self.env, events)
 
         elif self.policy == SchedulingPolicy.FIFO:
+            prev_process = None
             while True:
                 allProcessesFinished = True
                 allProcessesBlocked = True
-                min=999999999999
+                min=sys.maxsize
                 p=None
                 for process in self.processes:
                     if process.state == ProcessState.Blocked:
@@ -105,10 +108,14 @@ class Scheduler(object):
                     else:
                         assert False, 'unknown process state'
 
-
                 if p is not None:
-                    print(p.name)
+                    if p!=prev_process:
+                        yield self.env.timeout(self.processors[0].scheduling_penalty+self.processors[0].switching_in+self.processors[0].switching_out)
+                    else:
+                        yield self.env.timeout(self.processors[0].switching_in)
                     yield self.env.process(p.run())
+
+                prev_process = p
 
                 if allProcessesFinished:
                     break

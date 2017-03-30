@@ -23,11 +23,14 @@ class Memory:
 
 class Processor:
 
-    def __init__(self, name, type, frequency):
+    def __init__(self, name, type, frequency, scheduling_penalty=0, switching_in=0, switching_out=0):
         self.name = name
         self.type = type
         self.frequency = frequency
         # self.endpoint = None
+        self.scheduling_penalty = self.cyclesToTicks(scheduling_penalty)
+        self.switching_in=self.cyclesToTicks(switching_in)
+        self.switching_out=self.cyclesToTicks(switching_out)
 
     def cyclesToTicks(self, cycles):
         tmp = float(cycles) * 1000000000000 / float(self.frequency)

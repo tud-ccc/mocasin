@@ -46,7 +46,6 @@ class Process(object):
         self.state = ProcessState.Ready
 
         self.event_unblock = env.event()
-        
         self.time=0
         self.channels = {}
         for c in channels:
