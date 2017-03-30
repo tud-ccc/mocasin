@@ -13,7 +13,7 @@ import simpy
 
 from platforms import Tomahawk2Platform
 from . import System
-from slx import SlxApplication
+from slx import SlxKpnGraph
 from slx import SlxMapping
 from slx import SlxTraceReader
 
@@ -52,7 +52,7 @@ def main():
     platform = Tomahawk2Platform(env)
 
     # Create an Application
-    application = SlxApplication('app', args.pngraph)
+    application = SlxKpnGraph('app', args.pngraph)
 
     # Creat the mapping
     mapping = SlxMapping(args.mapping)
