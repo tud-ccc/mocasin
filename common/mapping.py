@@ -53,7 +53,7 @@ class Mapping:
 
 
 
-    def toPyDot(self,application,proc_labels=True,pe_labels=True,link_labels=False):
+    def toPyDot(self,kpn_graph,proc_labels=True,pe_labels=True,link_labels=False):
         process2pe = self.getProcess2PEDict()
         pe2process = { pe : [] for pe in process2pe.values()}
         for proc in process2pe:
@@ -80,11 +80,11 @@ class Mapping:
 
         # Note that this does not check if the app corresponds to the mapping!
         # If the mapping at some point supports references and not only strings we should get rid of this necessity
-        for pnchannel in application.channels:
+        for pnchannel in kpn_graph.channels:
             links_from[pnchannel.name] = []
             links_to[pnchannel.name] = []
 
-        for proc in application.processes:
+        for proc in kpn_graph.processes:
             for out_edge in  proc.outgoing_channels:
                 links_from[out_edge.name].append(proc.name)
             for in_edge in  proc.incoming_channels:
@@ -99,5 +99,5 @@ class Mapping:
                     cpn_graph.add_edge(pydot.Edge(str(v),str(w)))
         return cpn_graph
 
-    def outputDot(self,application,filename,proc_labels=True,pe_labels=True,link_labels=False):
-        self.toPyDot(application,proc_labels=proc_labels,pe_labels=pe_labels,link_labels=link_labels).write_raw(filename)
+    def outputDot(self,kpn_graph,filename,proc_labels=True,pe_labels=True,link_labels=False):
+        self.toPyDot(kpn_graph,proc_labels=proc_labels,pe_labels=pe_labels,link_labels=link_labels).write_raw(filename)
