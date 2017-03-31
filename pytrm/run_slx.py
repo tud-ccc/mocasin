@@ -12,7 +12,8 @@ import logging
 import simpy
 
 from platforms import Tomahawk2Platform
-from . import System
+from pytrm import System
+from pytrm import Application
 from slx import SlxKpnGraph
 from slx import SlxMapping
 from slx import SlxTraceReader
@@ -53,8 +54,8 @@ def main():
     # Create the platform
     platform = Tomahawk2Platform(env)
 
-    # Create an Application
-    application = SlxKpnGraph('app', args.pngraph)
+    # Create a graph
+    graph = SlxKpnGraph('app', args.pngraph)
 
     # Create the mapping
     mapping = SlxMapping(args.mapping)
@@ -62,9 +63,11 @@ def main():
     if args.mappingout:
         mapping.outputDot(application,args.mappingout)
 
+    #Create the application
+    application = Application(graph, mapping, args.tracedir, SlxTraceReader)
+
     # Create the system
-    system = System(env, platform, application, mapping, args.tracedir,
-                    SlxTraceReader)
+    system = System(env, platform, application)
 
     # Run the simulation
     system.simulate()

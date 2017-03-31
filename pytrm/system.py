@@ -6,7 +6,7 @@
 
 import logging
 import timeit
-
+from pytrm import application
 from .channel import Channel
 from .process import Process
 from .scheduler import Scheduler
@@ -17,19 +17,17 @@ log = logging.getLogger(__name__)
 
 class System:
 
-    def __init__(self, env, platform, application, mapping, tracedir,
-                 TraceReader):
+    def __init__(self, env, platform, application):
+
         self.env = env
         self.platform = platform
         self.application = application
-        self.mapping = mapping
-        self.tracedir = tracedir
 
         log.info('Initialize the system. Read the mapping.')
 
         self.channels = []
 
-        for c in mapping.channels:
+        for c in self.application.mapping.channels:
             log.debug(''.join([
                 'Found channel ', c.name, ' from ', c.processorFrom, ' to ',
                 c.processorTo, ' via ', c.viaMemory]))
@@ -39,13 +37,13 @@ class System:
                 ' communiction primitive']))
 
             kpn_channel = None
-            for app_chan in self.application.channels:
+            for app_chan in self.application.graph.channels:
                 if app_chan.name == c.name:
                     kpn_channel = app_chan
             if kpn_channel is None:
                 raise RuntimeError('The mapping references the channel ' +
                                    c.name + ' that is not defined in the ' +
-                                   'application')
+                                   'graph')
 
             primitive = None
             for p in platform.primitives:
@@ -63,7 +61,7 @@ class System:
 
         self.schedulers = []
 
-        for s in mapping.schedulers:
+        for s in self.application.mapping.schedulers:
             log.debug(''.join([
                 'Found the ', str(s.policy), ' scheduler ', s.name,
                 ' that schedules ', str(s.processNames), ' on ',
@@ -72,7 +70,7 @@ class System:
             processes = []
             for pn in s.processNames:
                 processes.append(Process(self.env, pn, self.channels,
-                                         TraceReader))
+                                         self.application.TraceReader))
 
             processors = []
             for pn in s.processorNames:
@@ -92,7 +90,7 @@ class System:
 
         # start the schedulers
         for scheduler in self.schedulers:
-            scheduler.setTraceDir(self.tracedir)
+            scheduler.setTraceDir(self.application.tracedir)
             self.env.process(scheduler.run())
 
         self.env.run()
