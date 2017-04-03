@@ -1,0 +1,9 @@
+#!/bin/bash
+EDITED=`git diff --cached --name-status | awk '$1 != "D" { print $2 }'`
+for file in $EDITED; do
+  if [ "$(uname)" == "Darwin" ]; then
+    sed -E -i "" "s/\s*$//" $file
+  else 
+    sed -E -i "s/\s*$//" $file
+  fi;	
+done;
