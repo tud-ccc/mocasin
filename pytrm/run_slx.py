@@ -13,7 +13,7 @@ import simpy
 
 from platforms import Tomahawk2Platform
 from . import System
-from slx import SlxApplication
+from slx import SlxKpnGraph
 from slx import SlxMapping
 from slx import SlxTraceReader
 
@@ -34,6 +34,8 @@ def main():
     parser.add_argument('mapping')
     parser.add_argument('pngraph')
     parser.add_argument('tracedir')
+    parser.add_argument("--mappingout", metavar="mapping output dot", type=str,
+                           help = "Graphviz output for mapping visualization")
 
     args = parser.parse_args()
 
@@ -52,10 +54,13 @@ def main():
     platform = Tomahawk2Platform(env)
 
     # Create an Application
-    application = SlxApplication('app', args.pngraph)
+    application = SlxKpnGraph('app', args.pngraph)
 
-    # Creat the mapping
+    # Create the mapping
     mapping = SlxMapping(args.mapping)
+
+    if args.mappingout:
+        mapping.outputDot(application,args.mappingout)
 
     # Create the system
     system = System(env, platform, application, mapping, args.tracedir,

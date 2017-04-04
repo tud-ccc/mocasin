@@ -46,7 +46,7 @@ class Process(object):
         self.state = ProcessState.Ready
 
         self.event_unblock = env.event()
-
+        self.time=0
         self.channels = {}
         for c in channels:
             self.channels[c.name] = c
@@ -57,6 +57,7 @@ class Process(object):
         assert self.state == ProcessState.Blocked
         log.debug('{0:16}'.format(self.env.now) + ': process ' + self.name +
                   ' unblocked')
+        self.time=format(self.env.now)
         self.state = ProcessState.Ready
 
         self.event_unblock.succeed()
@@ -119,60 +120,23 @@ class Process(object):
                 if channel.canConsumeTokens(entry.tokens):
                     size = entry.tokens * channel.token_size
 
-                    pcm = channel.primitive.consumePrepare
-                    rcm = channel.primitive.consumeRequest
-                    tcm = channel.primitive.consumeTransport
+                    consume = channel.primitive.consume
 
-                    # Do the prepare part of the consume, ...
-                    cycles = round(pcm.getCosts(x=size))
-                    ticks = self.processor.cyclesToTicks(cycles)
 
-                    # request all resources
-                    requests = []
-                    for r in pcm.resources:
-                        req = r.request()
-                        requests.append(req)
-                        yield req
+                    for c in consume:
+                        cycles = round(c.getCosts(x=size))
+                        ticks = self.processor.cyclesToTicks(cycles)
+                        # request all resources
+                        requests = []
+                        for r in c.resources:
+                            req = r.request()
+                            requests.append(req)
+                            yield req
+                        yield self.env.timeout(ticks)
 
-                    yield self.env.timeout(ticks)
-
-                    # release all resources
-                    for (res, req) in zip(pcm.resources, requests):
-                        res.release(req)
-
-                    # ... the request part, ...
-                    cycles = round(rcm.getCosts(x=size))
-                    ticks = self.processor.cyclesToTicks(cycles)
-
-                    # request all resources
-                    requests = []
-                    for r in rcm.resources:
-                        req = r.request()
-                        requests.append(req)
-                        yield req
-
-                    yield self.env.timeout(ticks)
-
-                    # release all resources
-                    for (res, req) in zip(rcm.resources, requests):
-                        res.release(req)
-
-                    # ... and the tranport part
-                    cycles = round(tcm.getCosts(x=size))
-                    ticks = self.processor.cyclesToTicks(cycles)
-
-                    # request all resources
-                    requests = []
-                    for r in tcm.resources:
-                        req = r.request()
-                        requests.append(req)
-                        yield req
-
-                    yield self.env.timeout(ticks)
-
-                    # release all resources
-                    for (res, req) in zip(tcm.resources, requests):
-                        res.release(req)
+                        # release all resources
+                        for (res, req) in zip(c.resources, requests):
+                            res.release(req)
 
                     channel.consumeTokens(entry.tokens)
                 else:
@@ -193,60 +157,24 @@ class Process(object):
                 if channel.canProduceTokens(entry.tokens):
                     size = entry.tokens * channel.token_size
 
-                    pcm = channel.primitive.producePrepare
-                    tcm = channel.primitive.produceTransport
-                    rcm = channel.primitive.produceResponse
+                    produce = channel.primitive.produce
 
-                    # Do the produce prepare, ...
-                    cycles = round(pcm.getCosts(x=size))
-                    ticks = self.processor.cyclesToTicks(cycles)
+                    for p in produce:
+                        cycles = round(p.getCosts(x=size))
+                        ticks = self.processor.cyclesToTicks(cycles)
+                        # request all resources
+                        requests = []
+                        for r in p.resources:
+                            req = r.request()
+                            requests.append(req)
+                            yield req
 
-                    # request all resources
-                    requests = []
-                    for r in pcm.resources:
-                        req = r.request()
-                        requests.append(req)
-                        yield req
+                        yield self.env.timeout(ticks)
 
-                    yield self.env.timeout(ticks)
+                        # release all resources
+                        for (res, req) in zip(p.resources, requests):
+                            res.release(req)
 
-                    # release all resources
-                    for (res, req) in zip(pcm.resources, requests):
-                        res.release(req)
-
-                    # ... the transport, ...
-                    cycles = round(tcm.getCosts(x=size))
-                    ticks = self.processor.cyclesToTicks(cycles)
-
-                    # request all resources
-                    requests = []
-                    for r in tcm.resources:
-                        req = r.request()
-                        requests.append(req)
-                        yield req
-
-                    yield self.env.timeout(ticks)
-
-                    # release all resources
-                    for (res, req) in zip(tcm.resources, requests):
-                        res.release(req)
-
-                    # ... and the response.
-                    cycles = round(rcm.getCosts(x=size))
-                    ticks = self.processor.cyclesToTicks(cycles)
-
-                    # request all resources
-                    requests = []
-                    for r in rcm.resources:
-                        req = r.request()
-                        requests.append(req)
-                        yield req
-
-                    yield self.env.timeout(ticks)
-
-                    # release all resources
-                    for (res, req) in zip(rcm.resources, requests):
-                        res.release(req)
 
                     channel.produceTokens(entry.tokens)
                 else:

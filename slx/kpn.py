@@ -7,14 +7,14 @@
 import xml.etree.ElementTree as ET
 import logging
 
-from pytrm import KpnApplication
-from pytrm import KpnChannel
-from pytrm import KpnProcess
+from common import KpnGraph
+from common import KpnChannel
+from common import KpnProcess
 
 log = logging.getLogger(__name__)
 
 
-class SlxApplication(KpnApplication):
+class SlxKpnGraph(KpnGraph):
 
     def __init__(self, name, pngraph):
         self.name = name

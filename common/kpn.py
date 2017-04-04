@@ -21,7 +21,7 @@ class KpnChannel(object):
         self.token_size = token_size
 
 
-class KpnApplication:
+class KpnGraph:
     processes = []
     channels = []
 
