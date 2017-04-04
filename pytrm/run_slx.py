@@ -64,10 +64,12 @@ def main():
         mapping.outputDot(application,args.mappingout)
 
     #Create the application
-    application = Application(graph, mapping, args.tracedir, SlxTraceReader)
+    applications=[]
+    applications.append(Application(graph, mapping, args.tracedir, SlxTraceReader))
+    applications.append(Application(graph, mapping, args.tracedir, SlxTraceReader))
 
     # Create the system
-    system = System(env, platform, application)
+    system = System(env, platform, applications)
 
     # Run the simulation
     system.simulate()
