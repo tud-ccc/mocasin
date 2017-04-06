@@ -34,7 +34,7 @@ class Process(object):
     resume = None
     traceReader = None
 
-    def __init__(self, env, name, channels, TraceReaderClass):
+    def __init__(self, env, name, channels, TraceReaderClass, application):
         """
         Constructor
 
@@ -44,6 +44,7 @@ class Process(object):
         self.env = env
         self.name = name
         self.state = ProcessState.Ready
+        self.application=application
 
         self.event_unblock = env.event()
         self.time=0
@@ -87,11 +88,11 @@ class Process(object):
         self.state = ProcessState.Running
 
         if self.resume is None:
-            log.debug('{0:16}'.format(self.env.now) + ': process ' +
-                      self.name + ' starts execution')
+            log.debug('{0:16}'.format(self.env.now) + ': process ' + self.application.name +'.'
+                      +self.name + ' starts execution')
         else:
-            log.debug('{0:16}'.format(self.env.now) + ': process ' +
-                      self.name + ' resumes execution')
+            log.debug('{0:16}'.format(self.env.now) + ': process ' + self.application.name +'.'
+                      +self.name + ' resumes execution')
 
         while not self.state == ProcessState.Finished:
 
@@ -105,7 +106,7 @@ class Process(object):
                 cycles = entry.cycles
                 ticks = self.processor.cyclesToTicks(cycles)
                 log.debug('{0:16}'.format(self.env.now) +
-                          ': process ' + self.name + ' processes for ' +
+                          ': process ' +self.application.name+'.'+ self.name + ' processes for ' +
                           str(cycles) + ' cycles (' + str(ticks) + ' ticks)')
 
                 yield self.env.timeout(ticks)
@@ -113,7 +114,7 @@ class Process(object):
                 channel = self.channels[entry.channel]
 
                 log.debug('{0:16}'.format(self.env.now) +
-                          ': process ' + self.name + ' reads ' +
+                          ': process ' +self.application.name+'.'+ self.name + ' reads ' +
                           str(entry.tokens) + ' tokens from channel ' +
                           entry.channel)
 
@@ -150,7 +151,7 @@ class Process(object):
                 channel = self.channels[entry.channel]
 
                 log.debug('{0:16}'.format(self.env.now) +
-                          ': process ' + self.name + ' writes ' +
+                          ': process ' +self.application.name+'.'+ self.name + ' writes ' +
                           str(entry.tokens) + ' tokens to channel ' +
                           entry.channel)
 
@@ -189,5 +190,5 @@ class Process(object):
             else:
                 assert False, "found an unexpected trace entry"
 
-        log.debug('{0:16}'.format(self.env.now) + ': process ' + self.name +
+        log.debug('{0:16}'.format(self.env.now) + ': process ' +self.application.name+'.'+ self.name +
                   ' finished execution')

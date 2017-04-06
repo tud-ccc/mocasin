@@ -24,11 +24,12 @@ class System:
         self.env = env
         self.platform = platform
         self.applications = applications
-        log.info('Initialize the system. Read the mapping.')
+        log.info('Initialize the system.')
 
         self.channels = []
 
         for app in self.applications:
+            log.debug('Found application  '+ app.name)
             for c in app.mapping.channels:
                 log.debug(''.join([
                     'Found channel ', c.name, ' from ', c.processorFrom, ' to ',
@@ -70,7 +71,7 @@ class System:
                 processes = []
                 for pn in s.processNames:
                     processes.append(Process(self.env, pn, self.channels,
-                                             app.TraceReader))
+                                             app.TraceReader, app))
 
                 processors = []
                 for pn in s.processorNames:
@@ -78,22 +79,30 @@ class System:
                         if pn == processor.name:
                             processors.append(processor)
 
-                flag = []
+                flag = [] # flag stores the information if all the processors are same as processsors of the scheduler
                 f = 0
+                I=[]
                 for i in System.schedulers:
                     if processors == i.processors:
                         f=1
+                        I.append(i)
                         break
 
                 flag.append(f)
 
-                if sum(flag) == 0:
+                if sum(flag) == 0: # if none of the processors match a new scheduler is created
                     System.schedulers.append(Scheduler(self.env, s.name, processors, processes, s.policy))
+                    log.debug('Creating a new scheduler  '+ s.name)
 
-                elif sum(flag) != len(flag):
-                    raise RuntimeError('Scheduler allotment not valid')
+                elif sum(flag) != len(flag): # if some of the processors match but not all error is raised
+                    raise RuntimeError('Scheduler cannot be alloted to this process')
+ 
+                elif sum(flag)==len(flag):
+                    log.debug('Using the old scheduler  '+ s.name)
+                    for i in I:
+                        i.processes.append(processes[0])
 
-                log.info('Done reading the mapping.')
+        log.info('Done reading the applications')
 
     def simulate(self):
         print('=== Start Simulation ===')
@@ -101,10 +110,10 @@ class System:
 
         # start the schedulers
         for scheduler in System.schedulers:
+            scheduler.setTraceDir(self.applications[0].tracedir)
             #for app in self.applications:
-                #TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO 
-                scheduler.setTraceDir(self.applications[0].tracedir)
-                self.env.process(scheduler.run())
+                #TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
+            self.env.process(scheduler.run())
 
         self.env.run()
 

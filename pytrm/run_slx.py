@@ -65,8 +65,8 @@ def main():
 
     #Create the application
     applications=[]
-    applications.append(Application(graph, mapping, args.tracedir, SlxTraceReader))
-    applications.append(Application(graph, mapping, args.tracedir, SlxTraceReader))
+    applications.append(Application('application0', graph, mapping, args.tracedir, SlxTraceReader))
+    applications.append(Application('application1', graph, mapping, args.tracedir, SlxTraceReader))
 
     # Create the system
     system = System(env, platform, applications)
