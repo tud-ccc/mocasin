@@ -34,7 +34,7 @@ class Process(object):
     resume = None
     traceReader = None
 
-    def __init__(self, env, name, channels, TraceReaderClass, application):
+    def __init__(self, env, name, channels, application):
         """
         Constructor
 
@@ -52,7 +52,8 @@ class Process(object):
         for c in channels:
             self.channels[c.name] = c
 
-        self.TraceReaderClass = TraceReaderClass
+        self.TraceReaderClass = application.TraceReader
+        self.traceDir=application.tracedir
 
     def unblock(self, event):
         assert self.state == ProcessState.Blocked
@@ -67,10 +68,6 @@ class Process(object):
     def assignProcessor(self, processor):
         assert self.processor is None
         self.processor = processor
-
-    def setTraceDir(self, traceDir):
-        assert self.traceDir is None
-        self.traceDir = traceDir
 
     def run(self):
         """

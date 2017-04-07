@@ -8,7 +8,6 @@
 
 import argparse
 import logging
-
 import simpy
 
 from platforms import Tomahawk2Platform
@@ -32,14 +31,13 @@ def main():
         help="increase output verbosity (e.g., -vv is more than -v)",
         dest='verbosity')
 
-    parser.add_argument('mapping')
-    parser.add_argument('pngraph')
-    parser.add_argument('tracedir')
+    parser.add_argument('-mapping', nargs='+')
+    parser.add_argument('-pngraph', nargs='+')
+    parser.add_argument('-tracedir', nargs='+')
     parser.add_argument("--mappingout", metavar="mapping output dot", type=str,
                            help = "Graphviz output for mapping visualization")
 
     args = parser.parse_args()
-
     if args.verbosity is not None:
         if args.verbosity >= 2:
             logging.basicConfig(level=logging.DEBUG)
@@ -51,22 +49,27 @@ def main():
     # Create a simpy environment
     env = simpy.Environment()
 
+    # Declare the list of applications
+    applications=[]
+
     # Create the platform
     platform = Tomahawk2Platform(env)
 
-    # Create a graph
-    graph = SlxKpnGraph('app', args.pngraph)
+    for i in range(len(args.mapping)):
 
-    # Create the mapping
-    mapping = SlxMapping(args.mapping)
+        # Create a graph
+        graph = SlxKpnGraph('graph'+str(i), args.pngraph[i])
 
-    if args.mappingout:
-        mapping.outputDot(application,args.mappingout)
+        # Create the mapping
+        mapping = SlxMapping(args.mapping[i])
 
-    #Create the application
-    applications=[]
-    applications.append(Application('application0', graph, mapping, args.tracedir, SlxTraceReader))
-    applications.append(Application('application1', graph, mapping, args.tracedir, SlxTraceReader))
+        # Create the application
+        app_name = 'app'+str(i)
+        app = Application(app_name, graph, mapping, args.tracedir[i], SlxTraceReader)
+        applications.append(app)
+
+        if args.mappingout:
+            mapping.outputDot(app, args.mappingout + app_name + '.dot')
 
     # Create the system
     system = System(env, platform, applications)

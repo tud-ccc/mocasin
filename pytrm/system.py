@@ -70,8 +70,7 @@ class System:
 
                 processes = []
                 for pn in s.processNames:
-                    processes.append(Process(self.env, pn, self.channels,
-                                             app.TraceReader, app))
+                    processes.append(Process(self.env, pn, self.channels, app))
 
                 processors = []
                 for pn in s.processorNames:
@@ -96,7 +95,7 @@ class System:
 
                 elif sum(flag) != len(flag): # if some of the processors match but not all error is raised
                     raise RuntimeError('Scheduler cannot be alloted to this process')
- 
+
                 elif sum(flag)==len(flag):
                     log.debug('Using the old scheduler  '+ s.name)
                     for i in I:
@@ -110,9 +109,6 @@ class System:
 
         # start the schedulers
         for scheduler in System.schedulers:
-            scheduler.setTraceDir(self.applications[0].tracedir)
-            #for app in self.applications:
-                #TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
             self.env.process(scheduler.run())
 
         self.env.run()

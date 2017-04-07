@@ -22,8 +22,10 @@ class KpnChannel(object):
 
 
 class KpnGraph:
-    processes = []
-    channels = []
+
+    def __init__(self):
+        self.processes = []
+        self.channels = []
 
     def connectProcessToOutgoingChannel(self, process, channel):
         assert channel.from_process is None

@@ -15,8 +15,8 @@ log = logging.getLogger(__name__)
 
 
 class SlxKpnGraph(KpnGraph):
-
     def __init__(self, name, pngraph):
+        KpnGraph.__init__(self)
         self.name = name
         tree = ET.parse(pngraph)
         xmlroot = tree.getroot()
