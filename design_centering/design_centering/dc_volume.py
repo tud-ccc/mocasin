@@ -35,19 +35,20 @@ class Cube(Volume):
         self.center = np.around(m)
         # adjust radius
         p = len(s_set.get_feasible()) / len(s_set.sample_set) 
-        if (p > target_p):
+        if (p >= target_p):
+            # cube does not support shape adaption
+            print ("exend at p: {:f} and target_p {:f}".format(p, target_p))
             self.extend()
         else:
             self.shrink()
+        return p
     
     def shrink(self):
         # shink volume by one on each border
-        print("shrink cube")
         self.radius = self.radius - 1 if (self.radius - 1 > 0) else self.radius
     
     def extend(self):
         # extend volume by one on each border
-        print("extend cube")
         self.radius = self.radius + 1 if (self.radius + 1 < conf.max_pe) else self.radius
 
 

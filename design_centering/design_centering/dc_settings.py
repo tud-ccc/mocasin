@@ -1,5 +1,5 @@
-max_samples          = 100       # maximum number of samples
-adapt_samples        = 10        # interval of samples for adaption of p-value
+max_samples          = 1000       # maximum number of samples
+adapt_samples        = 100        # interval of samples for adaption of p-value
 
 # list of p_values used as supporting points for a generated approximation polynom
 hitting_propability  = [0.1, 0.5, 0.6, 0.7, 0.9] 

@@ -6,19 +6,16 @@ import dc_settings as conf
 class Sample(object):
     
     def __init__(self):
-        print("init sample")
         self.feasible = False
         self.sample = []
     
     def gen_random_sample(self):
-        print("generate random sample")
         for _d in vol.center:
             rand_val = self.uniform_distribution(0, conf.max_pe)
             self.sample.append(rand_val)
 
 
     def gen_sample_in_vol(self, vol, distr):
-        print("generate random sample from vol")
         #foreach element check if value is between center +/- radius
         for _d in vol.center:
             if (distr == "uniform"):

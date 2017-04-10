@@ -2,12 +2,10 @@ import dc_sample
 
 class Oracle(object):
      def __init__(self):
-         print("create Oracle")
          type(self).test_set = TestSet()
 
      
      def validate(self, sample):
-         print("oracle validate")
          return type(self).test_set.test_oracle(sample.sample2tuple())
 
 
@@ -21,7 +19,9 @@ class TestSet(object):
              return 0
          x = s[0]
          y = s[1]
-         if ((x in range(1,5)) and (y in range(1,6))): # 1<=x<=4 1<=y<=5
+         if ((x in range(1,3)) and (y in range(1,3))): # 1<=x<=2 1<=y<=2
+             return 1
+         if ((x in range(7,13)) and (y in range(7,13))): # 1<=x<=5 1<=y<=5
              return 1
          else:
              return 0
