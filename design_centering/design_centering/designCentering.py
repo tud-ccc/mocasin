@@ -62,13 +62,18 @@ class DesignCentering(object):
         """ explore design space (main loop of the DC algorithm) """
         for i in range(0, conf.max_samples, conf.adapt_samples):
             s_set = dc_sample.SampleSet()
-            for j in range(0, conf.adapt_samples):
-                s = dc_sample.Sample()
-                s.gen_sample_in_vol(type(self).vol, type(self).distr)
+            s = dc_sample.SampleGeometric()
+
+            samples = s.gen_samples_in_ball(type(self).vol, type(self).distr, conf.adapt_samples)
+            for s in samples:
                 s.feasible = type(self).oracle.validate(s)
-                s_set.add_sample(s)
+
+            s_set.add_sample_list(samples)
+
+            for s in samples:
                 # add to internal overall sample set
                 type(self).samples.update({s.sample2tuple():s.feasible})
+
             if (len(s_set.get_feasible()) > 0):
                 cur_p = type(self).vol.adapt(s_set, type(self).p_value[i], type(self).s_value[i])
             else:
