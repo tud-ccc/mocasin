@@ -1,4 +1,4 @@
-import dc_sample
+import design_centering.design_centering.dc_sample as dc_sample
 
 class Oracle(object):
      def __init__(self):

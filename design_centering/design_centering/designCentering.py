@@ -3,12 +3,13 @@ import re
 import sys
 import json
 import logging
-import dc_oracle
-import dc_sample
-import dc_volume
-import dc_settings as conf
+import design_centering.design_centering.dc_oracle as dc_oracle
+import design_centering.design_centering.dc_sample as dc_sample
+import design_centering.design_centering.dc_volume as dc_volume
+import design_centering.design_centering.dc_settings as conf
 import numpy as np
 import matplotlib.pyplot as plt
+from common.representations import finiteMetricSpaceLP,exampleClusterArch
 
 class ThingPlotter(object):
     def plot_samples(self,samples):
@@ -21,7 +22,7 @@ class ThingPlotter(object):
         plt.xticks(range(0, conf.max_pe, 1))
         plt.yticks(range(0, conf.max_pe, 1))
         plt.show()
-        
+
     def plot_curve(self, data):
         interval = int(conf.max_samples/10)
         for _j in range(0, conf.max_samples, 1):
@@ -62,7 +63,9 @@ class DesignCentering(object):
         """ explore design space (main loop of the DC algorithm) """
         for i in range(0, conf.max_samples, conf.adapt_samples):
             s_set = dc_sample.SampleSet()
-            s = dc_sample.SampleGeometric()
+            #s = dc_sample.SampleGeometric()
+            M = finiteMetricSpaceLP(exampleClusterArch,d=2)
+            s = dc_sample.MetricSpaceSampleGen(M)
 
             samples = s.gen_samples_in_ball(type(self).vol, type(self).distr, conf.adapt_samples)
             for s in samples:
@@ -94,14 +97,14 @@ def main(argv):
         except ValueError:
             print(" {:s} is not a vector \n".format(argv[1]))
             sys.stderr.write("JSON decoding failed (in read file) \n")
-        
+
         if (conf.shape == "cube"):
             v = dc_volume.Cube(center, len(center))
 
         # run DC algorithm
         dc = DesignCentering(v, conf.distr, dc_oracle.Oracle())
         dc.ds_explore()
-        
+
         # plot explored design space
         tp.plot_samples(dc.samples)
         logging.info(" >>> center: {} radius: {:f}".format(dc.vol.center, dc.vol.radius))
@@ -109,7 +112,7 @@ def main(argv):
     else:
         print("usage: python designCentering [x1,x2,...,xn]\n")
 
-    
+
     return 0
 
 if __name__ == "__main__":

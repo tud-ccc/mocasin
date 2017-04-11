@@ -1,7 +1,7 @@
 import sys
 import logging
 import numpy as np
-import dc_settings as conf
+import design_centering.design_centering.dc_settings as conf
 
 class Volume(object):
 

@@ -1,22 +1,26 @@
-import dc_volume
 import numpy as np
 import random as rand
-import dc_settings as conf
-#import common.representations as rep
+
+import design_centering.design_centering.dc_volume as dc_volume
+import design_centering.design_centering.dc_settings as conf
+from common.representations import finiteMetricSpace
+
 from sys import exit
 
-        
+
 class Sample(list):
     def __init__(self,sample=None):
         self.feasible = False
         if sample is None:
             sample = []
-        self.sample = sample 
-        
+        self.sample = sample
+
     def setFeasibility(self,feasibility):
         assert type.feasibility is bool
         self.feasible = feasibility
-    
+
+    def getFeasibility(self,feasibility):
+        return self.feasible
 
     def sample2tuple(self):
         return tuple(self.sample)
@@ -28,7 +32,7 @@ class SampleGenerator():
             s = self.gen_sample_in_vol(vol,distr)
             res.append(Sample(s))
         return res
-    
+
 class SampleGeometric(SampleGenerator):
 
     def gen_random_sample(self):
@@ -51,9 +55,9 @@ class SampleGeometric(SampleGenerator):
 
     def uniform_distribution(self, min_s, max_s):
         return rand.randint(min_s, max_s)
-    
+
     def binomial_distribution(self, c, r):
-        upper = c + r 
+        upper = c + r
         lower = c - r
         if (upper > conf.max_pe):
             upper = conf.max_pe
@@ -63,12 +67,12 @@ class SampleGeometric(SampleGenerator):
         while ( val < lower or val > upper):
             val = np.random.binomial(conf.max_pe-1, 0.5, 1)
         return val[0]
-        
+
 
 class MetricSpaceSampleGen(SampleGenerator):
     def __init__(self,M):
         self.M = M
-    
+
     def gen_sample_in_vol(self,vol,distr):
         return self.gen_samples_in_ball(vol,distr,nsamples=1)
 
@@ -76,33 +80,34 @@ class MetricSpaceSampleGen(SampleGenerator):
         if distr != "uniform":
             print("Error!, distribution '" + str(distr) + "' not supported (yet).")
             exit(1)
-        return M.uniformFromBall(ball.center,ball.radius,nsamples) 
-        
-        
+        sample_ints =  self.M.uniformFromBall(ball.center,ball.radius,nsamples)
+        return map(lambda s: MetricSpaceSample(self.M,s), sample_ints)
+
+
 class MetricSpaceSample(SampleGenerator):
     # This class overrides the self.sample type from tuple to int
     # and uses the representation to convert to a tuple again
     def __init__(self,M,sample=None):
-        assert isinstance(M,FiniteMetricSpace)
+        assert isinstance(M,finiteMetricSpace)
         self.M = M
         Sample.__init__(self,None)
-        self.sample = sample 
+        self.sample = sample
 
     def sample2tuple(self):
-        return M.int2Tuple(int(self.sample))
-            
+        return self.M.int2Tuple(int(self.sample))
+
 
 class SampleSet(object):
-    
+
     def __init__(self):
         type(self).sample_set = []
-    
+
     def add_sample(self, sample):
         type(self).sample_set.append(sample)
 
     def add_sample_list(self, samples):
         type(self).sample_set += samples
-    
+
     def get_feasible(self):
         feasible_samples = []
         for _s in type(self).sample_set:
