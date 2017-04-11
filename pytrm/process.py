@@ -5,12 +5,12 @@
 
 
 import logging
-
+import time
 from common.trace import ProcessEntry
 from common.trace import ReadEntry
 from common.trace import WriteEntry
 from common.trace import TerminateEntry
-
+from vcd import VCDWriter
 from enum import Enum
 
 log = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ class Process(object):
     resume = None
     traceReader = None
 
-    def __init__(self, env, name, channels, application):
+    def __init__(self, env, name, channels, application, vcd_writer):
         """
         Constructor
 
@@ -54,6 +54,10 @@ class Process(object):
 
         self.TraceReaderClass = application.TraceReader
         self.traceDir=application.tracedir
+        self.vcd_writer=vcd_writer
+        self.processor_variable=self.vcd_writer.register_var('system.'+ application.name+'.' + name, 'running', 'integer', size=1)
+        self.vcd_writer.change(self.processor_variable, self.env.now, 0)
+
 
     def unblock(self, event):
         assert self.state == ProcessState.Blocked
@@ -90,9 +94,9 @@ class Process(object):
         else:
             log.debug('{0:16}'.format(self.env.now) + ': process ' + self.application.name +'.'
                       +self.name + ' resumes execution')
+        self.vcd_writer.change(self.processor_variable, self.env.now, 1)
 
         while not self.state == ProcessState.Finished:
-
             entry = None
             if self.resume is None:
                 entry = self.traceReader.getNextEntry()
@@ -109,7 +113,6 @@ class Process(object):
                 yield self.env.timeout(ticks)
             elif isinstance(entry, ReadEntry):
                 channel = self.channels[entry.channel]
-
                 log.debug('{0:16}'.format(self.env.now) +
                           ': process ' +self.application.name+'.'+ self.name + ' reads ' +
                           str(entry.tokens) + ' tokens from channel ' +
@@ -143,6 +146,7 @@ class Process(object):
                     self.state = ProcessState.Blocked
                     self.resume = entry
                     channel.event_produce.callbacks.append(self.unblock)
+                    self.vcd_writer.change(self.processor_variable, self.env.now,0)
                     return
             elif isinstance(entry, WriteEntry):
                 channel = self.channels[entry.channel]
@@ -181,11 +185,11 @@ class Process(object):
                     self.state = ProcessState.Blocked
                     self.resume = entry
                     channel.event_consume.callbacks.append(self.unblock)
+                    self.vcd_writer.change(self.processor_variable, self.env.now,0)
                     return
             elif isinstance(entry, TerminateEntry):
                 self.state = ProcessState.Finished
             else:
                 assert False, "found an unexpected trace entry"
-
         log.debug('{0:16}'.format(self.env.now) + ': process ' +self.application.name+'.'+ self.name +
                   ' finished execution')

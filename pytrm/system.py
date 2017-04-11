@@ -6,6 +6,8 @@
 import itertools
 import logging
 import timeit
+import sys
+from vcd import VCDWriter
 from pytrm import application
 from .channel import Channel
 from .process import Process
@@ -20,14 +22,12 @@ class System:
     schedulers =[]
 
     def __init__(self, env, platform, applications):
-
+        self.vcd_writer=VCDWriter(open('dump.vcd','w'), timescale='1 ps', date='today')
         self.env = env
         self.platform = platform
         self.applications = applications
         log.info('Initialize the system.')
-
         self.channels = []
-
         for app in self.applications:
             log.debug('Found application  '+ app.name)
             for c in app.mapping.channels:
@@ -70,7 +70,7 @@ class System:
 
                 processes = []
                 for pn in s.processNames:
-                    processes.append(Process(self.env, pn, self.channels, app))
+                    processes.append(Process(self.env, pn, self.channels, app, self.vcd_writer))
 
                 processors = []
                 for pn in s.processorNames:
@@ -119,3 +119,4 @@ class System:
         exec_time = float(self.env.now) / 1000000000.0
         print('Total execution time: ' + str(exec_time) + ' ms')
         print('Total simulation time: ' + str(stop-start) + ' s')
+        self.vcd_writer.close()

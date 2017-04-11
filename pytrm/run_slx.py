@@ -73,7 +73,6 @@ def main():
 
     # Create the system
     system = System(env, platform, applications)
-
     # Run the simulation
     system.simulate()
 
