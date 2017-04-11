@@ -73,13 +73,13 @@ class DesignCentering(object):
                 cur_p = type(self).vol.adapt(s_set, type(self).p_value[i], type(self).s_value[i])
             else:
                 cur_p = type(self).vol.adapt(s_set, type(self).p_value[i], type(self).s_value[i])
+            logging.debug(" center: {} radius: {:f} p: {}".format(type(self).vol.center, type(self).vol.radius, cur_p))
             print("center: {} radius: {:f} p: {}".format(type(self).vol.center, type(self).vol.radius, cur_p))
 
 
 def main(argv):
     print("===== run DC =====")
-    logging.basicConfig(filename="dc.log", level=logging.DEBUG)
-    logging.debug(" mu: {:f} radius: {:f}".format(1.1, 3.14))
+    logging.basicConfig(filename="dc.log", filemode = 'w', level=logging.DEBUG)
     tp = ThingPlotter()
 
     if (len(argv) > 1):
@@ -99,6 +99,7 @@ def main(argv):
         
         # plot explored design space
         tp.plot_samples(dc.samples)
+        logging.info(" >>> center: {} radius: {:f}".format(dc.vol.center, dc.vol.radius))
         print(">>> center: {} radius: {:f}".format(dc.vol.center, dc.vol.radius))
     else:
         print("usage: python designCentering [x1,x2,...,xn]\n")

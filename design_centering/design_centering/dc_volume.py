@@ -19,7 +19,6 @@ class Volume(object):
 class Cube(Volume):
 
     def __init__(self, center, dim):
-        print("create cube")
         # define initial cube with radius 1 at the given center
         if (len(center) != dim):
             print("Dimensions do not match to the given center. (-1)")
