@@ -81,7 +81,8 @@ class MetricSpaceSampleGen(SampleGenerator):
             print("Error!, distribution '" + str(distr) + "' not supported (yet).")
             exit(1)
         sample_ints =  self.M.uniformFromBall(ball.center,ball.radius,nsamples)
-        return map(lambda s: MetricSpaceSample(self.M,s), sample_ints)
+        sample_list = list(map(lambda s: MetricSpaceSample(self.M,s), sample_ints))
+        return sample_list
 
 
 class MetricSpaceSample(SampleGenerator):
@@ -94,7 +95,7 @@ class MetricSpaceSample(SampleGenerator):
         self.sample = sample
 
     def sample2tuple(self):
-        return self.M.int2Tuple(int(self.sample))
+        return tuple(self.M.int2Tuple(int(self.sample)))
 
 
 class SampleSet(object):

@@ -109,9 +109,11 @@ class finiteMetricSpaceLP(finiteMetricSpace):
             point = self.tuple2Int(p)
         elif type(p) is int:
             point = p
+        elif type(p) is float:
+            point = int(p)
         else:
             print("An error ocurred while calculating the ball, unknown point")
-            print(str(point))
+            print(str(p))
             exit(1)
         return finiteMetricSpace.ball(self,point,r)
 

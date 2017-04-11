@@ -11,11 +11,11 @@ class Volume(object):
     def adapt(vol):
         print("adapt volume")
         return vol
-    
+
     def shrink(vol):
         print("shrink volume")
         return vol
-        
+
 class Cube(Volume):
 
     def __init__(self, center, dim):
@@ -38,7 +38,7 @@ class Cube(Volume):
         m = np.mean(fs_set, axis=0)
         self.center = np.around(m)
         # adjust radius
-        p = len(s_set.get_feasible()) / len(s_set.sample_set) 
+        p = len(s_set.get_feasible()) / len(s_set.sample_set)
         if (p >= target_p):
             # cube does not support shape adaption
             print ("extend at p: {:f} target_p {:f} r: {:f}".format(p, target_p, self.radius))
@@ -47,11 +47,11 @@ class Cube(Volume):
             print ("shrink at p: {:f} target_p {:f} r: {:f}".format(p, target_p, self.radius))
             self.shrink(s_val)
         return p
-    
+
     def shrink(self, step):
         # shink volume by one on each border
         self.radius = self.radius - 1 if (self.radius - 1 > 0) else self.radius
-    
+
     def extend(self, step):
         # extend volume by one on each border
         self.radius = self.radius + step*conf.max_step if (self.radius + step*conf.max_step < conf.max_pe) else self.radius
