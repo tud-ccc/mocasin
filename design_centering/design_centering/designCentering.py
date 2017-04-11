@@ -37,25 +37,26 @@ class DesignCentering(object):
         type(self).vol = init_vol
         type(self).oracle = oracle
         type(self).samples = {}
-        type(self).p_value = self.__adapt_p_value()
+        type(self).p_value = self.__adapt_poly(conf.hitting_propability, conf.deg_p_polynomial)
+        type(self).s_value = self.__adapt_poly(conf.step_width, conf.deg_s_polynomial)
 
-    def __adapt_p_value(self):
+    def __adapt_poly(self, support_values, deg):
         tp = ThingPlotter()
-        num_p = len(conf.hitting_propability)
-        x_interval = (conf.max_samples/(num_p - 1))
+        num = len(support_values)
+        x_interval = (conf.max_samples/(num - 1))
         x = []
         y = []
-        p_v = []
-        for _i in range(0,num_p,1):
+        ret = []
+        for _i in range(0,num,1):
             x.append(_i * x_interval)
-            y.append(conf.hitting_propability[_i])
-        coeff = np.polyfit(x, y, 2)
+            y.append(support_values[_i])
+        coeff = np.polyfit(x, y, deg)
         poly = np.poly1d(coeff)
         for _j in range(0, conf.max_samples, 1):
-            p_v.append(poly(_j))
-        if (conf.show_polynom):
-            tp.plot_curve(p_v)
-        return p_v
+            ret.append(poly(_j))
+        if (conf.show_polynomials):
+            tp.plot_curve(ret)
+        return ret
 
     def ds_explore(self):
         """ explore design space (main loop of the DC algorithm) """
@@ -69,10 +70,10 @@ class DesignCentering(object):
                 # add to internal overall sample set
                 type(self).samples.update({s.sample2tuple():s.feasible})
             if (len(s_set.get_feasible()) > 0):
-                cur_p = type(self).vol.adapt(s_set, type(self).p_value[i])
+                cur_p = type(self).vol.adapt(s_set, type(self).p_value[i], type(self).s_value[i])
             else:
-                cur_p = type(self).vol.shrink()
-            print("center: {} radius: {:f} p: {:f}".format(type(self).vol.center, type(self).vol.radius, cur_p))
+                cur_p = type(self).vol.adapt(s_set, type(self).p_value[i], type(self).s_value[i])
+            print("center: {} radius: {:f} p: {}".format(type(self).vol.center, type(self).vol.radius, cur_p))
 
 
 def main(argv):

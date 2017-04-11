@@ -28,27 +28,31 @@ class Cube(Volume):
         self.radius = 0.5
         self.dim = dim
 
-    def adapt(self, s_set, target_p):
+    def adapt(self, s_set, target_p, s_val):
         # take mean of feasible points as new center
         fs_set = list(map(lambda s: s.sample,  s_set.get_feasible()))
+        # no feasible points in set
+        if not fs_set:
+            print ("shrink at p: 0! target_p {:f} p:0 r: {:f}".format(target_p, self.radius))
+            self.shrink(s_val)
+            return 0
         m = np.mean(fs_set, axis=0)
         self.center = np.around(m)
         # adjust radius
         p = len(s_set.get_feasible()) / len(s_set.sample_set) 
         if (p >= target_p):
             # cube does not support shape adaption
-            print ("exend at p: {:f} and target_p {:f}".format(p, target_p))
-            self.extend()
+            print ("extend at p: {:f} target_p {:f} r: {:f}".format(p, target_p, self.radius))
+            self.extend(s_val)
         else:
-            self.shrink()
+            print ("shrink at p: {:f} target_p {:f} r: {:f}".format(p, target_p, self.radius))
+            self.shrink(s_val)
         return p
     
-    def shrink(self):
+    def shrink(self, step):
         # shink volume by one on each border
         self.radius = self.radius - 1 if (self.radius - 1 > 0) else self.radius
     
-    def extend(self):
+    def extend(self, step):
         # extend volume by one on each border
-        self.radius = self.radius + 1 if (self.radius + 1 < conf.max_pe) else self.radius
-
-
+        self.radius = self.radius + step*conf.max_step if (self.radius + step*conf.max_step < conf.max_pe) else self.radius
