@@ -36,8 +36,12 @@ def main():
     parser.add_argument('-tracedir', nargs='+')
     parser.add_argument("--mappingout", metavar="mapping output dot", type=str,
                            help = "Graphviz output for mapping visualization")
+    parser.add_argument('-dump_on', dest='dump', action='store_true')
+    parser.add_argument('-dump_off', dest='dump', action='store_false')
+    parser.set_defaults(dump=True)
 
     args = parser.parse_args()
+
     if args.verbosity is not None:
         if args.verbosity >= 2:
             logging.basicConfig(level=logging.DEBUG)
@@ -72,7 +76,7 @@ def main():
             mapping.outputDot(app, args.mappingout + app_name + '.dot')
 
     # Create the system
-    system = System(env, platform, applications)
+    system = System(env, platform, applications, args.dump)
     # Run the simulation
     system.simulate()
 

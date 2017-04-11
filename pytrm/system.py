@@ -6,7 +6,7 @@
 import itertools
 import logging
 import timeit
-import sys
+import os
 from vcd import VCDWriter
 from pytrm import application
 from .channel import Channel
@@ -21,11 +21,17 @@ class System:
 
     schedulers =[]
 
-    def __init__(self, env, platform, applications):
-        self.vcd_writer=VCDWriter(open('dump.vcd','w'), timescale='1 ps', date='today')
+    def __init__(self, env, platform, applications, dump):
         self.env = env
         self.platform = platform
         self.applications = applications
+        if dump:
+            self.vcd_writer=VCDWriter(open('dump.vcd','w'), timescale='1 ps', date='today')
+        else:
+            self.vcd_writer=VCDWriter(open(os.devnull,'w'), timescale='1 ps', date='today')
+            self.vcd_writer.dump_off(self.env.now)
+
+
         log.info('Initialize the system.')
         self.channels = []
         for app in self.applications:
