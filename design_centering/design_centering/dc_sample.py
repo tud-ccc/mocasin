@@ -31,7 +31,7 @@ class Sample(object):
     def uniform_distribution(self, min_s, max_s):
         return rand.randint(min_s, max_s)
     
-    def binomial_distibution(self, c, r):
+    def binomial_distribution(self, c, r):
         upper = c + r 
         lower = c - r
         if (upper > conf.max_pe):
@@ -41,7 +41,7 @@ class Sample(object):
         val = -1
         while ( val < lower or val > upper):
             val = np.random.binomial(conf.max_pe-1, 0.5, 1)
-        return val
+        return val[0]
 
 class SampleSet(object):
     
