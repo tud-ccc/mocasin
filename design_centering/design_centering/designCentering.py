@@ -34,6 +34,7 @@ class ThingPlotter(object):
 class DesignCentering(object):
 
     def __init__(self, init_vol, distr, oracle):
+        np.random.seed(conf.random_seed)
         type(self).distr = distr
         type(self).vol = init_vol
         type(self).oracle = oracle
@@ -106,7 +107,8 @@ def main(argv):
         dc.ds_explore()
 
         # plot explored design space
-        tp.plot_samples(dc.samples)
+        if conf.show_points:
+            tp.plot_samples(dc.samples)
         logging.info(" >>> center: {} radius: {:f}".format(dc.vol.center, dc.vol.radius))
         print(">>> center: {} radius: {:f}".format(dc.vol.center, dc.vol.radius))
     else:
