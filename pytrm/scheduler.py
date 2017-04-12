@@ -21,7 +21,7 @@ class Scheduler(object):
     Represents a scheduler in the target Platform
     """
 
-    def __init__(self, env, name, processors, processes, policy):
+    def __init__(self, env, name, processors, processes, policy, vcd_writer):
         """
         Constructor
 
@@ -40,6 +40,8 @@ class Scheduler(object):
         self.processors = processors
         self.processes = processes
         self.policy = policy
+        self.vcd_writer=vcd_writer
+        self.scheduler=self.vcd_writer.register_var('system.'+'scheduler.'+name, 'process', 'integer', size=128, init=None)
 
     def run(self):
         assert len(self.processors) == 1, \
@@ -70,6 +72,7 @@ class Scheduler(object):
                             yield self.env.timeout(self.processors[0].scheduling_penalty+self.processors[0].switching_in+self.processors[0].switching_out)
                         else:
                             yield self.env.timeout(self.processors[0].switching_in)
+                        self.vcd_writer.change(self.scheduler, self.env.now, int(process.vcd_id[0:128],2))
                         yield self.env.process(process.run())
 
                     else:
@@ -77,6 +80,7 @@ class Scheduler(object):
 
                 if allProcessesFinished:
                     break
+
 
                 if allProcessesBlocked:
                     # collect unblock events
@@ -100,7 +104,6 @@ class Scheduler(object):
                     elif process.state == ProcessState.Ready:
                         allProcessesBlocked = False
                         allProcessesFinished = False
-                        process.name
 
                         if int(process.time) < min:
                             min=int(process.time)
@@ -110,18 +113,24 @@ class Scheduler(object):
 
                 if p is not None:
                     if p!=prev_process:
+                        self.vcd_writer.change(self.scheduler, self.env.now, None)
                         yield self.env.timeout(self.processors[0].scheduling_penalty+self.processors[0].switching_in+self.processors[0].switching_out)
                     else:
+                        self.vcd_writer.change(self.scheduler, self.env.now, None)
                         yield self.env.timeout(self.processors[0].switching_in)
+
+                    self.vcd_writer.change(self.scheduler, self.env.now, int(p.vcd_id,2))
                     yield self.env.process(p.run())
 
                 prev_process = p
 
                 if allProcessesFinished:
+                    self.vcd_writer.change(self.scheduler, self.env.now, None)
                     break
 
                 if allProcessesBlocked:
                     # collect unblock events
+                    self.vcd_writer.change(self.scheduler, self.env.now, None)
                     events = []
                     for pro in self.processes:
                         events.append(pro.event_unblock)

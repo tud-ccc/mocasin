@@ -36,9 +36,7 @@ def main():
     parser.add_argument('-tracedir', nargs='+')
     parser.add_argument("--mappingout", metavar="mapping output dot", type=str,
                            help = "Graphviz output for mapping visualization")
-    parser.add_argument('-dump_on', dest='dump', action='store_true')
-    parser.add_argument('-dump_off', dest='dump', action='store_false')
-    parser.set_defaults(dump=True)
+    parser.add_argument('-dump', nargs='*')
 
     args = parser.parse_args()
 

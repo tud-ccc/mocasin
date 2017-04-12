@@ -5,12 +5,10 @@
 
 
 import logging
-import time
 from common.trace import ProcessEntry
 from common.trace import ReadEntry
 from common.trace import WriteEntry
 from common.trace import TerminateEntry
-from vcd import VCDWriter
 from enum import Enum
 
 log = logging.getLogger(__name__)
@@ -55,9 +53,8 @@ class Process(object):
         self.TraceReaderClass = application.TraceReader
         self.traceDir=application.tracedir
         self.vcd_writer=vcd_writer
-        self.processor_variable=self.vcd_writer.register_var('system.'+ application.name+'.' + name, 'running', 'integer', size=1)
-        self.vcd_writer.change(self.processor_variable, self.env.now, 0)
-
+        self.processor_variable=self.vcd_writer.register_var('system.'+ application.name+'.'+'processes.' + name, 'running', 'integer', size=1, init=0)
+        self.vcd_id=''.join(['{0:08b}'.format(ord(c)) for c in self.name])
 
     def unblock(self, event):
         assert self.state == ProcessState.Blocked

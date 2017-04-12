@@ -26,7 +26,7 @@ class System:
         self.platform = platform
         self.applications = applications
         if dump:
-            self.vcd_writer=VCDWriter(open('dump.vcd','w'), timescale='1 ps', date='today')
+            self.vcd_writer=VCDWriter(open(dump[0],'w'), timescale='1 ps', date='today')
         else:
             self.vcd_writer=VCDWriter(open(os.devnull,'w'), timescale='1 ps', date='today')
             self.vcd_writer.dump_off(self.env.now)
@@ -66,7 +66,7 @@ class System:
                                        ' the platform does not provide!')
 
                 self.channels.append(Channel(self.env, c.name, c.capacity,
-                                             kpn_channel.token_size, primitive))
+                                             kpn_channel.token_size, primitive, app, self.vcd_writer))
 
             for s in app.mapping.schedulers:
                 log.debug(''.join([
@@ -96,7 +96,7 @@ class System:
                 flag.append(f)
 
                 if sum(flag) == 0: # if none of the processors match a new scheduler is created
-                    System.schedulers.append(Scheduler(self.env, s.name, processors, processes, s.policy))
+                    System.schedulers.append(Scheduler(self.env, s.name, processors, processes, s.policy, self.vcd_writer))
                     log.debug('Creating a new scheduler  '+ s.name)
 
                 elif sum(flag) != len(flag): # if some of the processors match but not all error is raised
