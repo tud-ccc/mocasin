@@ -1,10 +1,10 @@
-import dc_sample
+import design_centering.design_centering.dc_sample as dc_sample
 
 class Oracle(object):
      def __init__(self):
          type(self).test_set = TestSet()
 
-     
+
      def validate(self, sample):
          return type(self).test_set.test_oracle(sample.sample2tuple())
 
