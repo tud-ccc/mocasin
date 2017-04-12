@@ -26,7 +26,7 @@ class System:
         self.platform = platform
         self.applications = applications
         if dump:
-            self.vcd_writer=VCDWriter(open(dump[0],'w'), timescale='1 ps', date='today')
+            self.vcd_writer=VCDWriter(open(dump,'w'), timescale='1 ps', date='today')
         else:
             self.vcd_writer=VCDWriter(open(os.devnull,'w'), timescale='1 ps', date='today')
             self.vcd_writer.dump_off(self.env.now)

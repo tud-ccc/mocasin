@@ -31,12 +31,21 @@ def main():
         help="increase output verbosity (e.g., -vv is more than -v)",
         dest='verbosity')
 
-    parser.add_argument('-mapping', nargs='+')
-    parser.add_argument('-pngraph', nargs='+')
-    parser.add_argument('-tracedir', nargs='+')
-    parser.add_argument("--mappingout", metavar="mapping output dot", type=str,
-                           help = "Graphviz output for mapping visualization")
-    parser.add_argument('-dump', nargs='*')
+    reqNamed = parser.add_argument_group('required named arguments')
+
+    reqNamed.add_argument('-g', '--graph', nargs='+',
+                          help='List of SLX PN graph descriptor files',
+                          required=True)
+    reqNamed.add_argument('-m', '--mapping', nargs='+',
+                          help='List of SLX mapping descriptor files',
+                          required=True)
+    reqNamed.add_argument('-t', '--tracedir', nargs='+',
+                          help='List of directories conataing SLX trace files',
+                          required=True)
+    parser.add_argument("--mappingout", metavar="PREFIX", type=str,
+                        help="Graphviz output for mapping visualization")
+    parser.add_argument('--vcd', type=str,
+                        help="dump simulation state to a vcd file")
 
     args = parser.parse_args()
 
@@ -60,7 +69,7 @@ def main():
     for i in range(len(args.mapping)):
 
         # Create a graph
-        graph = SlxKpnGraph('graph'+str(i), args.pngraph[i])
+        graph = SlxKpnGraph('graph'+str(i), args.graph[i])
 
         # Create the mapping
         mapping = SlxMapping(args.mapping[i])
@@ -74,7 +83,7 @@ def main():
             mapping.outputDot(app, args.mappingout + app_name + '.dot')
 
     # Create the system
-    system = System(env, platform, applications, args.dump)
+    system = System(env, platform, applications, args.vcd)
     # Run the simulation
     system.simulate()
 
