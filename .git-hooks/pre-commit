@@ -2,9 +2,9 @@
 EDITED=`git diff --cached --name-status | awk '$1 != "D" { print $2 }'`
 for file in $EDITED; do
   if [ "$(uname)" == "Darwin" ]; then
-    grep -q -E "\s+$" $file && sed -E -i "" "s/\s*$//" $file
-  else 
-    grep -q -E "\s+$" $file && sed -E -i "s/\s*$//" $file
-  fi;	
+    grep -q -E "\s+$" $file && sed -E -i "" "s/\s*$//" $file && git add $file
+  else
+    grep -q -E "\s+$" $file && sed -E -i "s/\s*$//" $file && git add $file
+  fi;
 done;
 exit 0
