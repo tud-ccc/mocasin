@@ -27,16 +27,21 @@ class Cube(Volume):
         self.radius = 0.5
         self.dim = dim
 
-    def adapt(self, s_set, target_p, s_val):
+    def adapt_center(self, s_set):
         # take mean of feasible points as new center
         fs_set = list(map(lambda s: s.sample,  s_set.get_feasible()))
-        # no feasible points in set
         if not fs_set:
             print ("shrink at p: 0! target_p {:f} p:0 r: {:f}".format(target_p, self.radius))
             self.shrink(s_val)
             return 0
+        # take mean of feasible points as new center
         m = np.mean(fs_set, axis=0)
         self.center = np.around(m)
+        print(self.center)
+        return self.center
+
+    def adapt(self, s_set, target_p, s_val):
+        fs_set = list(map(lambda s: s.sample,  s_set.get_feasible()))
         # adjust radius
         p = len(s_set.get_feasible()) / len(s_set.sample_set) 
         if (p >= target_p):

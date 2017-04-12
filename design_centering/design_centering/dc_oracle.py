@@ -21,8 +21,11 @@ class TestSet(object):
          y = s[1]
          if ((x in range(1,3)) and (y in range(1,3))): # 1<=x<=2 1<=y<=2
              return 1
-         if ((x in range(7,13)) and (y in range(7,13))): # 1<=x<=5 1<=y<=5
+         if ((x in range(1,4)) and (y in range(13,15))):
+             return 1
+         if ((x in range(9,11)) and (y in range(9,11))):
+             return 0
+         if ((x in range(7,13)) and (y in range(7,13))):
              return 1
          else:
              return 0
-

@@ -13,5 +13,5 @@ show_polynomials      = False      # show approximation polynomials
 
 
 max_pe = 16                        # number of processors
-distr = "binomial"                  # distribution of samples (uniform, binomial)
+distr = "uniform"                  # distribution of samples (uniform, binomial)
 shape = "cube"                     # shape of the used hypervolume (cube)
