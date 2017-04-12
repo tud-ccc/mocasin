@@ -1,9 +1,10 @@
-#Andres Goens, 11.4.17
+#Andres Goens, 11-12.4.17
 from __future__ import print_function
 import numpy as np
 from sys import exit,stdout
 from numpy.random import randint
 from itertools import product
+import common.permutation as perm
 
 class finiteMetricSpace():
     def __init__(self,matrix):
@@ -26,8 +27,8 @@ class finiteMetricSpace():
     def _ballNaive(self, p, r):
         points = []
         for i in range(self.n):
-               if self.dist(p,i) <= r:
-                   points.append(i)
+            if self.dist(p,i) <= r:
+                points.append(i)
         return points
 
     def ball(self,p,r):
@@ -57,13 +58,13 @@ class finiteMetricSpaceLP(finiteMetricSpace):
             else:
                 return self.D[x,y]
 
-        elif type(x) == list and type(y) == list:
+        elif (type(x) == list and type(y) == list):
             if self.D != None:
                 x_l = self.tuple2Int(x)
                 y_l = self.tuple2Int(y)
                 return self.D[x_l,y_l]
             else:
-                return self._distCalc(x,y)
+                return finiteMetricSpaceLP._distCalc(self,x,y)
         else:
             print( "An error ocurred while trying to calculate the distance of two points (wrong types?)")
             print( str(x))
@@ -117,6 +118,146 @@ class finiteMetricSpaceLP(finiteMetricSpace):
             exit(1)
         return finiteMetricSpace.ball(self,point,r)
 
+class finiteMetricSpaceSym(finiteMetricSpace):
+    def __init__(self,M,G):
+        self.D = None
+        assert isinstance(M,finiteMetricSpace)
+        self.M = M
+        assert isinstance(G,perm.PermutationGroup)
+        self.G = G
+        orbits = G.enumerate_orbits()
+        self.elem2orb = {}
+        self.orb2elem = {}
+        for i,orb in enumerate(orbits):
+            self.elem2orb[i] = orb
+            for elem in orb:
+                self.orb2elem[elem] = i
+        self.n = i+1 # == len(orbits)
+
+    def dist(self,x,y):
+        if type(x) is int and type(y) is int:
+            if self.D is None:
+                return self._distCalc(self.elem2orb[x],self.orb2elem[y])
+            else:
+                return self.D[x,y]
+
+        elif type(x) == list and type(y) == list:
+            if self.D != None:
+                x_l = self.orb2elem[x[0]]
+                y_l = self.orb2elem[y[0]]
+                return self.D[x_l,y_l]
+            else:
+                x_orb = self.elem2orb[self.orb2elem[x[0]]]
+                y_orb = self.elem2orb[self.orb2elem[y[0]]]
+                return self._distCalc(list(x_orb),list(y_orb))
+        else:
+            print( "An error ocurred while trying to calculate the distance of two points (wrong types?)")
+            print( str(x))
+            print( str(y))
+            exit(1)
+
+
+    def _distCalc(self,x,y):
+        # lists (sets) -> (partial) orbits on self.M
+        # ints -> points on the new set
+        #since G is the orthogonal group of the distance,
+        #it is enough to iterate over one orbit
+        dists = map( lambda xs : self.M.dist(xs,y[0]), self.elem2orb[self.orb2elem[x[0]]])
+        return min(dists)
+
+    def _populateD(self):
+        print("Populating D...",end='')
+        if self.n == -1:
+            self.n = len( G.enumerate_orbits()) # should I remove this per default? Could be very expensive!
+        stdout.flush()
+        self.D = np.zeros((self.n,self.n))
+        for (x,y) in product(range(self.n),repeat=2):
+            self.D[x,y] = self._distCalc(x,y)
+        print("done.")
+
+    def elem2Tuple(self,elem):
+        return min(self.elem2orb[elem])
+
+    def ball(self, p, r):
+        if type(p) is list:
+            point = self.orb2elem[tuple(p)]
+        elif type(p) is int:
+            point = p
+        elif type(p) is float:
+            point = int(p)
+        else:
+            print("An error ocurred while calculating the ball, unknown point")
+            print(str(p))
+            exit(1)
+        return finiteMetricSpace.ball(self,point,r)
+
+
+class finiteMetricSpaceLPSym(finiteMetricSpaceLP,finiteMetricSpaceSym):
+    def __init__(self,M,G=None,d=2,p=1):
+        if isinstance(M,finiteMetricSpaceSym):
+            G = M.G
+            M = M.M # take the base space (no symmetries)
+
+        if G is None:
+            G = perm.TrivialGroup(M.n)
+        finiteMetricSpaceLP.__init__(self,M,d=d,p=p)
+        self.G =  perm.DuplicateGroup(G,times=d)
+        #print("LP, n: " + str(self.n))
+        orbits = G.enumerate_tuple_orbits(d)
+        self.elem2orb = {}
+        self.orb2elem = {}
+        for i,orb in enumerate(orbits):
+            self.elem2orb[i] = orb
+            for elem in orb:
+                self.orb2elem[elem] = i
+        self.n = i+1 # == len(orbits)
+        #print("LPSym, n: " + str(self.n))
+
+    # three types of elemnts:
+    # (1) int : representation in the size of the metric space
+    # (2) list of insts: tuples in M^d (no symmetries)
+    # (3) lists of lists of ints: orbits of the action on M^d (w/symmetries)
+
+    def dist(self,x,y):
+        if type(x) is int and type(y) is int: # (1)
+            if self.D is None:
+                return self._distCalc(list(self.elem2orb[x]),list(self.elem2orb[y]))
+            else:
+                return self.D[x,y]
+
+        elif type(x) == list and type(y) == list:
+            if type(x[0]) == list and type(y[0]) == list: # (3)
+                if self.D != None:
+                    x_l = self.orb2elem[x[0]]
+                    y_l = self.orb2elem[y[0]]
+                    return self.D[x_l,y_l]
+                else:
+                    return self._distCalc(x,y)
+            elif type(x[0]) == int and type(y[0]) == int: # (2)
+                if self.D != None:
+                    x_l = self.orb2elem[self.elem2orb[x]]
+                    y_l = self.orb2elem[self.elem2orb[y]]
+                    return self.D[x_l,y_l]
+                else:
+                    return self._distCalc([x],[y])
+
+        else:
+            print( "An error ocurred while trying to calculate the distance of two points (wrong types?)")
+            print( str(x))
+            print( str(y))
+            exit(1)
+
+    def _distCalc(self,x,y):
+        # we need to iterate over the orbits of *tuples*
+        # again one is enough
+        orb = list(self.elem2orb[self.orb2elem[tuple(x[0])]])
+        dists = map( lambda xs : finiteMetricSpaceLP.dist(self,list(xs),list(y[0])), orb)
+        #print(list(map( lambda xs : (finiteMetricSpaceLP.dist(self,list(xs),y[0]),(xs,tuple(y[0]))), self.elem2orb[self.orb2elem[tuple(x[0])]])))
+        return min(dists)
+
+    def ball(self, p, r):
+        return finiteMetricSpaceSym.ball(self,p,r)
+
 
 
 
@@ -136,7 +277,9 @@ exampleClusterArch = finiteMetricSpace( [ [0,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2],
                                           [2,2,2,2,2,2,2,2,2,2,2,2,1,0,1,1],
                                           [2,2,2,2,2,2,2,2,2,2,2,2,1,1,0,1],
                                           [2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,0]])
-
+S4 = perm.SymmetricGroupTranspositions(4)
+autExampleClusterArch = perm.ProductGroup([S4,S4,S4,S4]) # this should actually be a wreath product...
+exampleClusterArchSymmetries = finiteMetricSpaceSym(exampleClusterArch,autExampleClusterArch)
 
 
 
@@ -156,6 +299,14 @@ if __name__ == "__main__":
     print("the ball [3,2,7] , 1 (as tuples) " + str(list(map( testProdSpace.int2Tuple, oneBall ))))
     assert(len(oneBall)==10)
 
+    testSymSpace = finiteMetricSpaceLPSym(exampleClusterArchSymmetries,d=3)
+    print("sym_space with d=2 has length: " + str(finiteMetricSpaceLPSym(exampleClusterArchSymmetries,d=2).n))
+    print("dist_sym(3,4) = " + str(exampleClusterArchSymmetries.dist([3],[4]))) # should be 2, 0 if we have wreath
+    print("dist_sym(3,0) = " + str(exampleClusterArchSymmetries.dist([3],[0]))) # should be 0
+    print("dist_sym([3,2,7],[3,0,4]) = " + str(testSymSpace.dist([3,2,7],[3,0,4]))) # should be 0
+    print("dist_sym([3,4,7],[3,0,4]) = " + str(testSymSpace.dist([3,4,7],[3,0,4]))) # should be 2
+    print("dist_sym([3,4,3],[5,11,4]) = " + str(testSymSpace.dist([3,4,3],[5,11,4]))) #should be 6, 1 if we have wreath
+    #print(autExampleClusterArch.tuple_orbit([3,4,3]))
     #testLargeProdSpace = finiteMetricSpaceLP(testSpace,d=13)
     #uniformFromLargeBall = testLargeProdSpace.uniformFromBall([1,3,15,10,9,0,0,3,2,7,1,0,12],3,10)
     #print("uniform in ball [1,3,15,10,9,0,0,3,2,7,1,0,12], 3  (" + str(len(testProdSpace.ball([1,3,15,10,9,0,0,3,2,7,1,0,12],3))) +" elements): " + str(unifromFromLargeBall) + " = " + str(list(map(testProdSpace.int2Tuple,uniformFromLargeBall))))

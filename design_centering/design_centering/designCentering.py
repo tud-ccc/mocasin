@@ -9,7 +9,7 @@ import design_centering.design_centering.dc_volume as dc_volume
 import design_centering.design_centering.dc_settings as conf
 import numpy as np
 import matplotlib.pyplot as plt
-from common.representations import finiteMetricSpaceLP,exampleClusterArch
+import common.representations as reps
 
 class ThingPlotter(object):
     def plot_samples(self,samples):
@@ -65,7 +65,8 @@ class DesignCentering(object):
         for i in range(0, conf.max_samples, conf.adapt_samples):
             s_set = dc_sample.SampleSet()
             s = dc_sample.SampleGeometric()
-            #M = finiteMetricSpaceLP(exampleClusterArch,d=2)
+            #M = reps.finiteMetricSpaceLP(reps.exampleClusterArch,d=2)
+            #M = reps.finiteMetricSpaceLPSym(reps.exampleClusterArchSymmetries,d=2)
             #s = dc_sample.MetricSpaceSampleGen(M)
 
             samples = s.gen_samples_in_ball(type(self).vol, type(self).distr, conf.adapt_samples)

@@ -85,7 +85,7 @@ class MetricSpaceSampleGen(SampleGenerator):
         return sample_list
 
 
-class MetricSpaceSample(SampleGenerator):
+class MetricSpaceSample(Sample):
     # This class overrides the self.sample type from tuple to int
     # and uses the representation to convert to a tuple again
     def __init__(self,M,sample=None):
