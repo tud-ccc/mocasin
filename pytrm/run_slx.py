@@ -80,7 +80,7 @@ def main():
         applications.append(app)
 
         if args.mappingout:
-            mapping.outputDot(app, args.mappingout + app_name + '.dot')
+            mapping.outputDot(graph, args.mappingout + '.' + app_name + '.dot')
 
     # Create the system
     system = System(env, platform, applications, args.vcd)
