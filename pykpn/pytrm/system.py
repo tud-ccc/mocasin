@@ -3,12 +3,10 @@
 #
 # Authors: Christian Menard
 
-import itertools
 import logging
 import timeit
 import os
 from vcd import VCDWriter
-from pytrm import application
 from .channel import Channel
 from .process import Process
 from .scheduler import Scheduler

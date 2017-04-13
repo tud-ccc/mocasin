@@ -4,12 +4,12 @@
 # Authors: Christian Menard
 
 
-from common import CostModel
-from common import Memory
-from common import Platform
-from common import Primitive
-from common import Processor
-from common import MeshNoc
+from ..common import CostModel
+from ..common import Memory
+from ..common import Platform
+from ..common import Primitive
+from ..common import Processor
+from ..common import MeshNoc
 
 from simpy.resources.resource import Resource
 

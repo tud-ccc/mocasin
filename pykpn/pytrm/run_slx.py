@@ -10,12 +10,12 @@ import argparse
 import logging
 import simpy
 
-from platforms import Tomahawk2Platform
-from pytrm import System
-from pytrm import Application
-from slx import SlxKpnGraph
-from slx import SlxMapping
-from slx import SlxTraceReader
+from pykpn.platforms import Tomahawk2Platform
+from pykpn.pytrm import System
+from pykpn.pytrm import Application
+from pykpn.slx import SlxKpnGraph
+from pykpn.slx import SlxMapping
+from pykpn.slx import SlxTraceReader
 
 
 log = logging.getLogger(__name__)

@@ -7,9 +7,9 @@
 import xml.etree.ElementTree as ET
 import logging
 
-from common import KpnGraph
-from common import KpnChannel
-from common import KpnProcess
+from ..common import KpnGraph
+from ..common import KpnChannel
+from ..common import KpnProcess
 
 log = logging.getLogger(__name__)
 

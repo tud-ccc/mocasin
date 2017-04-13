@@ -11,7 +11,7 @@ import sys
 from enum import Enum
 
 from .process import ProcessState
-from common import SchedulingPolicy
+from ..common import SchedulingPolicy
 
 log = logging.getLogger(__name__)
 

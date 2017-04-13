@@ -6,11 +6,11 @@
 
 import os
 
-from common import TraceReader
-from common import ProcessEntry
-from common import ReadEntry
-from common import WriteEntry
-from common import TerminateEntry
+from ..common import TraceReader
+from ..common import ProcessEntry
+from ..common import ReadEntry
+from ..common import WriteEntry
+from ..common import TerminateEntry
 
 
 class SlxTraceReader(TraceReader):
