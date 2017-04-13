@@ -16,7 +16,7 @@ class Oracle(object):
 
      def validate(self, sample):
                res =  type(self).test_set.oracle(sample.sample2tuple())
-               print("oracle for: " + str(sample.sample2tuple()) + ", " + str(res))
+               #print("oracle for: " + str(sample.sample2tuple()) + ", " + str(res))
                return res
 
 # This is a temporary test class

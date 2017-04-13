@@ -9,7 +9,7 @@ import design_centering.design_centering.dc_volume as dc_volume
 import design_centering.design_centering.dc_settings as conf
 import numpy as np
 import matplotlib.pyplot as plt
-import common.representations as reps
+import representations as reps
 
 class ThingPlotter(object):
     def plot_samples(self,samples):
@@ -70,7 +70,7 @@ class DesignCentering(object):
             #s = dc_sample.MetricSpaceSampleGen(M)
 
             samples = s.gen_samples_in_ball(type(self).vol, type(self).distr, conf.adapt_samples)
-            print(str([s.sample for s in samples]))
+            #print(str([s.sample for s in samples]))
             for s in samples:
                 s.feasible = type(self).oracle.validate(s)
 
@@ -83,7 +83,7 @@ class DesignCentering(object):
             #print(s_set.get_feasible())
             old_center = type(self).vol.center
             center = type(self).vol.adapt_center(s_set)
-            if not type(self).oracle.validate(dc_sample.GeometricSample(center)):
+            if not type(self).oracle.validate(dc_sample.GeometricSample(center)): #this breaks the rest!
                 c_cur = dc_sample.GeometricSample(center)
                 c_old = dc_sample.GeometricSample(old_center)
                 new_center = type(self).vol.correct_center(s_set, c_cur, c_old)

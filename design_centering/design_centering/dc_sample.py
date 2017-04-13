@@ -3,7 +3,7 @@ import random as rand
 
 import design_centering.design_centering.dc_volume as dc_volume
 import design_centering.design_centering.dc_settings as conf
-from common.representations import finiteMetricSpace
+from representations import finiteMetricSpace
 
 from sys import exit
 

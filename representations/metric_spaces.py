@@ -1,10 +1,10 @@
-#Andres Goens, 11-12.4.17
+#Author: Andres Goens, 2017
 from __future__ import print_function
 import numpy as np
 from sys import exit,stdout
 from numpy.random import randint
 from itertools import product
-import common.permutation as perm
+import representations.permutations as perm
 
 class finiteMetricSpace():
     def __init__(self,matrix):
