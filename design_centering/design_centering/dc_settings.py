@@ -16,6 +16,7 @@ show_points           = True       # show hit and miss points
 max_pe = 16                        # number of processors
 distr = "uniform"                  # distribution of samples (uniform, binomial)
 shape = "cube"                     # shape of the used hypervolume (cube)
+oracle = "TestTwoPrKPN"            # oracle to use
 
 random_seed = 10                 # Initialization for the RNG (None means random init)
 

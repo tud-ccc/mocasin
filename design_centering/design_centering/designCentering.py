@@ -70,6 +70,7 @@ class DesignCentering(object):
             #s = dc_sample.MetricSpaceSampleGen(M)
 
             samples = s.gen_samples_in_ball(type(self).vol, type(self).distr, conf.adapt_samples)
+            print(str([s.sample for s in samples]))
             for s in samples:
                 s.feasible = type(self).oracle.validate(s)
 
@@ -79,7 +80,7 @@ class DesignCentering(object):
                 # add to internal overall sample set
                 type(self).samples.update({s.sample2tuple():s.feasible})
 
-            #print(s_set.get_feasible()) 
+            #print(s_set.get_feasible())
             old_center = type(self).vol.center
             center = type(self).vol.adapt_center(s_set)
             if not type(self).oracle.validate(dc_sample.GeometricSample(center)):

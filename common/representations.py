@@ -179,17 +179,23 @@ class finiteMetricSpaceSym(finiteMetricSpace):
         return min(self.elem2orb[elem])
 
     def ball(self, p, r):
+        #print("calculating ball around point p " + str(p) + " with radius " + str(r))
         if type(p) is list:
             point = self.orb2elem[tuple(p)]
         elif type(p) is int:
             point = p
-        elif type(p) is float:
+        elif type(p) is float or np.float64:
             point = int(p)
         else:
             print("An error ocurred while calculating the ball, unknown point")
             print(str(p))
+            print(type(p))
             exit(1)
         return finiteMetricSpace.ball(self,point,r)
+
+    def int2Tuple(self,point):
+        return self.elem2Tuple(point)
+
 
 
 class finiteMetricSpaceLPSym(finiteMetricSpaceLP,finiteMetricSpaceSym):
@@ -257,6 +263,9 @@ class finiteMetricSpaceLPSym(finiteMetricSpaceLP,finiteMetricSpaceSym):
 
     def ball(self, p, r):
         return finiteMetricSpaceSym.ball(self,p,r)
+
+    def int2Tuple(self, point):
+        return finiteMetricSpaceSym.elem2Tuple(self,point)
 
 
 
