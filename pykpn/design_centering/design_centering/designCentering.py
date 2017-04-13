@@ -93,7 +93,8 @@ class DesignCentering(object):
             print("center: {} radius: {:f} p: {}".format(type(self).vol.center, type(self).vol.radius, cur_p))
 
 
-def main(argv):
+def main():
+    argv = sys.argv
     print("===== run DC =====")
     logging.basicConfig(filename="dc.log", filemode = 'w', level=logging.DEBUG)
     tp = ThingPlotter()
@@ -125,5 +126,5 @@ def main(argv):
     return 0
 
 if __name__ == "__main__":
-    main(sys.argv)
+    main()
 
