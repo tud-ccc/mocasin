@@ -9,7 +9,7 @@ import design_centering.design_centering.dc_volume as dc_volume
 import design_centering.design_centering.dc_settings as conf
 import numpy as np
 import matplotlib.pyplot as plt
-from common.representations import finiteMetricSpaceLP,exampleClusterArch
+import common.representations as reps
 
 class ThingPlotter(object):
     def plot_samples(self,samples):
@@ -34,6 +34,7 @@ class ThingPlotter(object):
 class DesignCentering(object):
 
     def __init__(self, init_vol, distr, oracle):
+        np.random.seed(conf.random_seed)
         type(self).distr = distr
         type(self).vol = init_vol
         type(self).oracle = oracle
@@ -65,6 +66,7 @@ class DesignCentering(object):
             s_set = dc_sample.SampleSet()
             s = dc_sample.SampleGeometricGen()
             #M = finiteMetricSpaceLP(exampleClusterArch,d=2)
+            #M = reps.finiteMetricSpaceLPSym(reps.exampleClusterArchSymmetries,d=2)
             #s = dc_sample.MetricSpaceSampleGen(M)
 
             samples = s.gen_samples_in_ball(type(self).vol, type(self).distr, conf.adapt_samples)
@@ -76,7 +78,7 @@ class DesignCentering(object):
             for s in samples:
                 # add to internal overall sample set
                 type(self).samples.update({s.sample2tuple():s.feasible})
-            
+
             #print(s_set.get_feasible()) 
             old_center = type(self).vol.center
             center = type(self).vol.adapt_center(s_set)
@@ -111,7 +113,8 @@ def main(argv):
         dc.ds_explore()
 
         # plot explored design space
-        tp.plot_samples(dc.samples)
+        if conf.show_points:
+            tp.plot_samples(dc.samples)
         logging.info(" >>> center: {} radius: {:f}".format(dc.vol.center, dc.vol.radius))
         print(">>> center: {} radius: {:f}".format(dc.vol.center, dc.vol.radius))
     else:

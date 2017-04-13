@@ -10,8 +10,12 @@ deg_s_polynomial      = 2          # degree of approximation polynomial
 max_step              = 10         # maximum step size
 
 show_polynomials      = False      # show approximation polynomials
+show_points           = True       # show hit and miss points
 
 
 max_pe = 16                        # number of processors
 distr = "uniform"                  # distribution of samples (uniform, binomial)
 shape = "cube"                     # shape of the used hypervolume (cube)
+
+random_seed = 10                 # Initialization for the RNG (None means random init)
+
