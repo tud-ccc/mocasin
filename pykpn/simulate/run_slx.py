@@ -11,8 +11,8 @@ import logging
 import simpy
 
 from pykpn.platforms import Tomahawk2Platform
-from pykpn.pytrm import System
-from pykpn.pytrm import Application
+from pykpn.simulate import System
+from pykpn.simulate import Application
 from pykpn.slx import SlxKpnGraph
 from pykpn.slx import SlxMapping
 from pykpn.slx import SlxTraceReader

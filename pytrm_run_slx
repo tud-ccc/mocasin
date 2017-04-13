@@ -1,2 +1,2 @@
 #!/bin/sh
-python3 -m pykpn.pytrm.run_slx $@
+python3 -m pykpn.simulate.run_slx $@
