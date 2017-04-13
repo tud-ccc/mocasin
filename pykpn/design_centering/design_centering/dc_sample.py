@@ -1,9 +1,9 @@
 import numpy as np
 import random as rand
 
-import design_centering.design_centering.dc_volume as dc_volume
-import design_centering.design_centering.dc_settings as conf
-from representations import finiteMetricSpace
+from . import dc_volume
+from . import dc_settings as conf
+from ...representations import finiteMetricSpace
 
 from sys import exit
 

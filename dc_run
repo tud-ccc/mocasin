@@ -1,2 +1,2 @@
 #!/bin/sh
-python3 -m design_centering.design_centering.designCentering $@
+python3 -m pykpn.design_centering.design_centering.designCentering $@

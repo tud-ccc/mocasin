@@ -1,5 +1,5 @@
-import design_centering.design_centering.dc_sample as dc_sample
-import design_centering.design_centering.dc_settings as conf
+from . import dc_sample
+from . import dc_settings as conf
 
 from sys import exit
 

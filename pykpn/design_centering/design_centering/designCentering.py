@@ -3,13 +3,13 @@ import re
 import sys
 import json
 import logging
-import design_centering.design_centering.dc_oracle as dc_oracle
-import design_centering.design_centering.dc_sample as dc_sample
-import design_centering.design_centering.dc_volume as dc_volume
-import design_centering.design_centering.dc_settings as conf
+from . import dc_oracle
+from . import dc_sample
+from . import dc_volume
+from . import dc_settings as conf
 import numpy as np
 import matplotlib.pyplot as plt
-import representations as reps
+from ... import representations as reps
 
 class ThingPlotter(object):
     def plot_samples(self,samples):
@@ -114,7 +114,7 @@ def main(argv):
         dc.ds_explore()
 
         # plot explored design space
-        if conf.show_points:
+        if True:
             tp.plot_samples(dc.samples)
         logging.info(" >>> center: {} radius: {:f}".format(dc.vol.center, dc.vol.radius))
         print(">>> center: {} radius: {:f}".format(dc.vol.center, dc.vol.radius))

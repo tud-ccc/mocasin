@@ -4,7 +4,7 @@ import numpy as np
 from sys import exit,stdout
 from numpy.random import randint
 from itertools import product
-import representations.permutations as perm
+from . import permutations as perm
 
 class finiteMetricSpace():
     def __init__(self,matrix):
