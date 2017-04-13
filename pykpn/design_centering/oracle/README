@@ -1,0 +1,29 @@
+Author: Gerald Hempel
+
+Mapping Generator for DC Oracle
+===============================
+
+This python classes are intended for a cooperativ use with the SLX toolchain 
+and the DC algorithm.
+
+config.py
+- Contains paths to the SLX toolchain, an abstract description of 
+  the architecture, and the configuration of the perturbation generator.
+
+oracle.py
+- Code to run the oracle (currently used from matlab DC-implementation)
+
+perturbation.py
+- Provides a stand alone perturbation-test for found design centers.
+
+projection.py
+- A class to produce various visualizations from log-files for 
+  design-center or perturbation runs. 
+
+mapping_utils.py
+- Provides a MappingGenerator that is used to generate full SLX-mapping-XMLs 
+  from vectors.
+- This class is used from oracle, perturbation, and projection classes as well.
+
+slxmapping.py
+- Parser for SLX-mapping-XMLs that were provided by SLX toolchain.
