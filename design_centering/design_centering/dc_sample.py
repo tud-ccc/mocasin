@@ -16,7 +16,7 @@ class Sample(list):
         self.sample = sample
 
     def setFeasibility(self,feasibility):
-        assert type.feasibility is bool
+        assert type(feasibility) is bool
         self.feasible = feasibility
 
     def getFeasibility(self,feasibility):
@@ -24,6 +24,9 @@ class Sample(list):
 
     def sample2tuple(self):
         return tuple(self.sample)
+
+    def dist(self,s):
+        return None
 
 class SampleGenerator():
     def gen_samples_in_ball(self,vol,distr,nsamples=1):
@@ -33,7 +36,20 @@ class SampleGenerator():
             res.append(Sample(s))
         return res
 
-class SampleGeometric(SampleGenerator):
+class GeometricSample(Sample):
+    # This class overrides the self.sample and prvides a dist function
+    def dist(self,s):
+        # use Manhattan metric
+        return np.linalg.norm(self.sample - s.sample, 2)
+
+class SampleGeometricGen(SampleGenerator):
+
+    def gen_samples_in_ball(self,vol,distr,nsamples=1):
+        res = []
+        for _ in range(nsamples):
+            s = self.gen_sample_in_vol(vol,distr)
+            res.append(GeometricSample(s))
+        return res
 
     def gen_random_sample(self):
         for _d in vol.center:
@@ -43,7 +59,7 @@ class SampleGeometric(SampleGenerator):
 
     def gen_sample_in_vol(self, vol, distr):
         #foreach element check if value is between center +/- radius
-        sample = Sample()
+        sample = GeometricSample()
         for _d in vol.center:
             if (distr == "uniform"):
                 rand_val = self.uniform_distribution(round(_d - vol.radius), round(_d + vol.radius))
@@ -68,7 +84,6 @@ class SampleGeometric(SampleGenerator):
             val = np.random.binomial(conf.max_pe-1, 0.5, 1)
         return val[0]
 
-
 class MetricSpaceSampleGen(SampleGenerator):
     def __init__(self,M):
         self.M = M
@@ -85,7 +100,7 @@ class MetricSpaceSampleGen(SampleGenerator):
         return sample_list
 
 
-class MetricSpaceSample(SampleGenerator):
+class MetricSpaceSample(Sample):
     # This class overrides the self.sample type from tuple to int
     # and uses the representation to convert to a tuple again
     def __init__(self,M,sample=None):

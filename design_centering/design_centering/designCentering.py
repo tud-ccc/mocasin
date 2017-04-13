@@ -63,7 +63,7 @@ class DesignCentering(object):
         """ explore design space (main loop of the DC algorithm) """
         for i in range(0, conf.max_samples, conf.adapt_samples):
             s_set = dc_sample.SampleSet()
-            s = dc_sample.SampleGeometric()
+            s = dc_sample.SampleGeometricGen()
             #M = finiteMetricSpaceLP(exampleClusterArch,d=2)
             #s = dc_sample.MetricSpaceSampleGen(M)
 
@@ -76,11 +76,16 @@ class DesignCentering(object):
             for s in samples:
                 # add to internal overall sample set
                 type(self).samples.update({s.sample2tuple():s.feasible})
-
-            if (len(s_set.get_feasible()) > 0):
-                cur_p = type(self).vol.adapt(s_set, type(self).p_value[i], type(self).s_value[i])
-            else:
-                cur_p = type(self).vol.adapt(s_set, type(self).p_value[i], type(self).s_value[i])
+            
+            #print(s_set.get_feasible()) 
+            old_center = type(self).vol.center
+            center = type(self).vol.adapt_center(s_set)
+            if not type(self).oracle.validate(dc_sample.GeometricSample(center)):
+                c_cur = dc_sample.GeometricSample(center)
+                c_old = dc_sample.GeometricSample(old_center)
+                new_center = type(self).vol.correct_center(s_set, c_cur, c_old)
+                print("Correction of infeasible center: {} take {} instead".format(center, new_center))
+            cur_p = type(self).vol.adapt_volume(s_set, type(self).p_value[i], type(self).s_value[i])
             logging.debug(" center: {} radius: {:f} p: {}".format(type(self).vol.center, type(self).vol.radius, cur_p))
             print("center: {} radius: {:f} p: {}".format(type(self).vol.center, type(self).vol.radius, cur_p))
 
@@ -96,7 +101,7 @@ def main(argv):
             center = json.loads(argv[1])
         except ValueError:
             print(" {:s} is not a vector \n".format(argv[1]))
-            sys.stderr.write("JSON decoding failed (in read file) \n")
+            sys.stderr.write("JSON decoding failed (in function main) \n")
 
         if (conf.shape == "cube"):
             v = dc_volume.Cube(center, len(center))

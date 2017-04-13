@@ -16,16 +16,16 @@ class TestSet(object):
          """ test oracle function (2-dim) """
          if (len(s) != 2):
              print("test oracle requires a dimension of 2\n")
-             return 0
+             return False
          x = s[0]
          y = s[1]
          if ((x in range(1,3)) and (y in range(1,3))): # 1<=x<=2 1<=y<=2
-             return 1
+             return True
          if ((x in range(1,4)) and (y in range(13,15))):
-             return 1
+             return True
          if ((x in range(9,11)) and (y in range(9,11))):
-             return 0
+             return False
          if ((x in range(7,13)) and (y in range(7,13))):
-             return 1
+             return True
          else:
-             return 0
+             return False
