@@ -1,2 +1,0 @@
-#!/bin/sh
-python3 -m pykpn.simulate.run_slx $@
