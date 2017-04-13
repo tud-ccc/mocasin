@@ -1,0 +1,11 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/git-commands/git-subrepo#readme
+;
+[subrepo]
+	remote = julia:/net/home/cmenard/git/pykpn/pykpn-slx.git
+	branch = master
+	commit = 064fecc71c2a91509c286f055191a38ed7fec093
+	parent = f0bfea976feb3e08aa93300a9b67f5550478e79d
+	cmdver = 0.3.1
