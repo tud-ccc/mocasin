@@ -43,12 +43,10 @@ class System:
                 self.channels[name] = Channel(name, self, cm)
 
             for pm in app.mapping.processMappings:
-                log.debug('    Create process: ' + pm.kpnProcess.name)
-                process = Process(self.env,
-                                  pm.kpnProcess.name,
-                                  self.channels,
-                                  app,
-                                  self.vcd_writer)
+                name = app.name + '.' + pm.kpnProcess.name
+                log.debug('    Create process: ' + name)
+                process = Process(name, self, pm,
+                                  app.traceReaders[pm.kpnProcess.name])
 
                 log.debug('      it uses the scheduler ' + pm.scheduler.name)
 

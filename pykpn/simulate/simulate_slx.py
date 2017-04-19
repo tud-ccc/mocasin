@@ -97,7 +97,7 @@ def main():
 
         readers = {}
         for pm in mapping.processMappings:
-            name = app_name + '.' + pm.kpnProcess.name
+            name = pm.kpnProcess.name
 
             processors = pm.scheduler.processors
             type = processors[0].type
@@ -109,7 +109,7 @@ def main():
                              'for reading the process trace of ' + name)
 
             path = os.path.join(args.tracedir[i],
-                                pm.kpnProcess.name + '.' + type + '.cpntrace')
+                                name + '.' + type + '.cpntrace')
             assert os.path.isfile(path)
             readers[name] = SlxTraceReader(path)
 
