@@ -10,8 +10,7 @@ from ..common import Primitive
 from ..common import Processor
 from ..common import MeshNoc
 from ..common import TorusNoc
-
-from simpy.resources.resource import Resource
+from ..common import Scheduler
 
 
 class GenericNocPlatform(Platform):
@@ -80,6 +79,13 @@ class GenericNocPlatform(Platform):
                     self.memories.append(memory)
                     m.create_ni([memory, processor], i, j)
                     z+=1
+                    # define a scheduler per PE, the scheduling delay is
+                    # arbitrarily chosen
+                    scheduler = Scheduler("SchedulerForProcessor(PE" + str(z) +
+                                          ")",
+                                          [processor],
+                                          {'FIFO': 100, 'RoundRobin': 200})
+                    self.schedulers.append(scheduler)
 
         for i in range(0, x*y*EP_per_router):
             for j in range(0, x*y*EP_per_router):

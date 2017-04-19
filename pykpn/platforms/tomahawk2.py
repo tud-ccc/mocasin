@@ -6,12 +6,11 @@
 
 from ..common import CostModel
 from ..common import Memory
+from ..common import MeshNoc
 from ..common import Platform
 from ..common import Primitive
 from ..common import Processor
-from ..common import MeshNoc
-
-from simpy.resources.resource import Resource
+from ..common import Scheduler
 
 
 class Tomahawk2Platform(Platform):
@@ -63,7 +62,6 @@ class Tomahawk2Platform(Platform):
 
     def __init__(self, env):
         Platform.__init__(self)
-        #super(Platform, self).__init__()
         self.env = env
         m=MeshNoc(self.env,"yx",2,2)
 
@@ -73,6 +71,12 @@ class Tomahawk2Platform(Platform):
             memory = Memory("sp" + str(i), 32768)
             self.memories.append(memory)
             m.create_ni([memory, processor], int(i/4), int(i/4))
+
+            # Scheduling on the Tomahawk2 is currently not possible.
+            scheduler = Scheduler("SchedulerForProcessor(PE" + str(i) + ")",
+                                  [processor],
+                                  {'None': 0})
+            self.schedulers.append(scheduler)
 
         for i in range(0, 8):
             for j in range(0, 8):
