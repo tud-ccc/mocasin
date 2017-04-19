@@ -68,6 +68,8 @@ class GeneralPlatform(Platform):
             m=MeshNoc(self.env,"xy", x, y)
         elif architecture=='torus':
             m=Torus(self.env,"xy",x , y)
+        else:
+            raise ValueError('specified architecture does not exist')
         z=0
         for i in range(x):
             for j in range(y):

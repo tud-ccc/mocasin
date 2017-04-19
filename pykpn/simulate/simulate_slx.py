@@ -66,17 +66,22 @@ def main():
     # Declare the list of applications
     applications=[]
     # Create the platform
-    temp1=args.platform.find('_')
-    temp2=args.platform[temp1+1:].find('_')
-    architecture=args.platform[temp1+1:temp1+temp2+1]
-    x=int(args.platform[-1])
-    y=int(args.platform[-3])
-    platform=0
-    if args.platform[0:temp1]=='generic':
+    if args.platform is None:
+        raise ValueError('Define the platform')
+
+    elif args.platform[0:args.platform.find('_')]=='generic':
+        temp1=args.platform.find('_')
+        temp2=args.platform[temp1+1:].find('_')
+        architecture=args.platform[temp1+1:temp1+temp2+1]
+        x=int(args.platform[-1])
+        y=int(args.platform[-3])
         platform = GeneralPlatform(env, architecture, x, y)
 
-    elif args.platform[0:temp1]=='tomahawk2':
+    elif args.platform=='tomahawk2':
         platform = Tomahawk2Platform(env)
+
+    else:
+        raise ValueError('Platform does not exist')
 
     for i in range(len(args.mapping)):
 
