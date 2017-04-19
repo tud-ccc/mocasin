@@ -11,6 +11,7 @@ import logging
 import simpy
 
 from pykpn.platforms import Tomahawk2Platform
+from pykpn.platforms import GeneralPlatform
 from pykpn.simulate import System
 from pykpn.simulate import Application
 from pykpn.slx import SlxKpnGraph
@@ -46,6 +47,8 @@ def main():
                         help="Graphviz output for mapping visualization")
     parser.add_argument('--vcd', type=str,
                         help="dump simulation state to a vcd file")
+    parser.add_argument('--platform', type=str,
+                        help="Platform name and dimensions")
 
     args = parser.parse_args()
 
@@ -62,9 +65,18 @@ def main():
 
     # Declare the list of applications
     applications=[]
-
     # Create the platform
-    platform = Tomahawk2Platform(env)
+    temp1=args.platform.find('_')
+    temp2=args.platform[temp1+1:].find('_')
+    architecture=args.platform[temp1+1:temp1+temp2+1]
+    x=int(args.platform[-1])
+    y=int(args.platform[-3])
+    platform=0
+    if args.platform[0:temp1]=='generic':
+        platform = GeneralPlatform(env, architecture, x, y)
+
+    elif args.platform[0:temp1]=='tomahawk2':
+        platform = Tomahawk2Platform(env)
 
     for i in range(len(args.mapping)):
 
@@ -81,7 +93,6 @@ def main():
 
         if args.mappingout:
             mapping.outputDot(graph, args.mappingout + '.' + app_name + '.dot')
-
     # Create the system
     system = System(env, platform, applications, args.vcd)
     # Run the simulation

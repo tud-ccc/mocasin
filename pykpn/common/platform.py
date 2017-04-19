@@ -51,7 +51,7 @@ class MeshNoc(Noc):
         self.env=env
         self.routing_algo = routing_algo
 
-        routers=[[0 for w in range(width)] for l in range(length)]
+        routers=[[0 for l in range(length)] for w in range(width)]
 
         for l in range(length):
             for w in range(width):
