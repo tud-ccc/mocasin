@@ -1,2 +1,2 @@
 from .tomahawk2 import *
-from .platform_gen import *
+from .generic_noc import *

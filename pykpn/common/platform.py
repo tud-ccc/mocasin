@@ -51,7 +51,7 @@ class Torus(Noc):
         self.width=width
         self.length=length
 
-        routers=[[0 for w in range(width)] for l in range(length)]
+        routers=[[0 for l in range(length)] for w in range(width)]
 
         for l in range(length):
             for w in range(width):
