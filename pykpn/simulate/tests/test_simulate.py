@@ -23,7 +23,9 @@ class TestSimulate(TestCase):
         env = simpy.Environment()
         platform = Tomahawk2Platform(env)
         graph = SlxKpnGraph('graph', 'apps/pipeline/pipeline.cpn.xml')
-        mapping = SlxMapping('apps/pipeline/default.mapping.consumer_bc')
+        mapping = SlxMapping(graph,
+                             platform,
+                             'apps/pipeline/default.mapping.consumer_bc')
         app = Application('app', graph, mapping, 'apps/pipeline/traces', SlxTraceReader)
         system = System(env, platform, [app], None)
         system.simulate()

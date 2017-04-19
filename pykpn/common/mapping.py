@@ -8,11 +8,13 @@ from enum import Enum
 from itertools import product
 import pydot
 
+# TODO: remove
 class SchedulingPolicy(Enum):
     FIFO = 0
-    RoundRobin=1
+    RoundRobin = 1
 
 
+# TODO: remove
 class ChannelInfo:
     name = None
     capacity = None
@@ -22,6 +24,7 @@ class ChannelInfo:
     primitive = None
 
 
+# TODO: remove
 class SchedulerInfo:
     name = None
     policy = None
@@ -29,15 +32,50 @@ class SchedulerInfo:
     processorNames = None
 
 
+class ChannelMappingInfo:
+    '''
+    Simple container that associates a KPN channel with a capacity (number of
+    tokens) and a communication primitve (defined by the platform)
+    '''
+    def __init__(self, kpnChannel, capacity, primitive):
+        self.kpnChannel = kpnChannel
+        self.capacity = capacity
+        self.primitive = primitive
+
+
+class ProcessMappingInfo:
+    '''
+    Simple container that associates a KPN process with a scheduler (defined by
+    the platform) and the scheduling policy that the scheduler is supposed to
+    use.
+    '''
+    def __init__(self, kpnProcess, scheduler, policy):
+        self.kpnProcess = kpnProcess
+        self.scheduler = scheduler
+        self.policy = policy
+
+
 class Mapping:
-    def __init__(self):
+    '''
+    Represents the mapping of a KPN graph to a platform. Contains a
+    ProcessMappingInfo and ChannelMappingInfo object for each KPN process and
+    channel in the graph.
+
+    This is just a base class that does not provide any functionality for
+    conveniently defining mappings.
+    '''
+    def __init__(self, kpn, platform):
+        # TODO: remove
         self.schedulers = []
         self.channels = []
-        self.arch = None
-        self.kpn = None
+
+        self.kpn = kpn
+        self.platform = platform
+        self.processMappings = []
+        self.channelMappings = []
 
 
-
+    # TODO: update to use new mapping structure
     def getProcess2PEDict(self):
         process2pe = dict()
         for sched in self.schedulers:
@@ -46,13 +84,15 @@ class Mapping:
                 process2pe[process] = sched.processorNames[0]
         return process2pe
 
+
+    # TODO: update to use new mapping structure
     def getChann2CPDict(self):
         chann2cp = dict()
         for chann in self.channels:
             chann2cp[chann.name] = (chann.viaMemory,chann.primitive)
 
 
-
+    # TODO: update to use new mapping structure
     def toPyDot(self,kpn_graph,proc_labels=True,pe_labels=True,link_labels=False):
         process2pe = self.getProcess2PEDict()
         pe2process = { pe : [] for pe in process2pe.values()}

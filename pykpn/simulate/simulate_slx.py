@@ -89,7 +89,7 @@ def main():
         graph = SlxKpnGraph('graph'+str(i), args.graph[i])
 
         # Create the mapping
-        mapping = SlxMapping(args.mapping[i])
+        mapping = SlxMapping(graph, platform, args.mapping[i])
 
         # Create the application
         app_name = 'app'+str(i)
