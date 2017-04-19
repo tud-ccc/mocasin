@@ -64,7 +64,7 @@ class Channel(object):
         self.filled = self.filled - num
         log.debug(''.join([
             '{0:16}'.format(self.env.now), ': consuming ', str(num),
-            ' tokens on channel ',self.application.name+'.'+ self.name,
+            ' tokens on channel ', self.name,
             ' succeeded. New filling level: ', str(self.filled), '/',
             str(self.capacity)]))
         self.vcd_writer.change(self.filled_var, self.env.now, self.filled)
