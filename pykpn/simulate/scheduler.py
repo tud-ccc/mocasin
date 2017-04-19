@@ -40,7 +40,27 @@ class Scheduler(object):
         log.info('{0:16}'.format(self.env.now) + ': scheduler ' +
                  self.name + ' starts execution')
 
-        if self.policy == "RoundRobin":
+        for p in self.processes:
+            p.assignProcessor(self.processor)
+
+        if self.policy == "None":
+            # if scheduling is disabled, we run the processes after each other
+            for process in self.processes:
+                while True:
+                    assert not process.state == ProcessState.Running
+                    self.vcd_writer.change(self.process_var, self.env.now,
+                                           int(process.vcd_id[0:128], 2))
+                    yield self.env.process(process.run())
+
+                    if process.state == ProcessState.Finished:
+                        break
+                    elif process.state == ProcessState.Blocked:
+                        self.vcd_writer.change(self.process_var, self.env.now,
+                                               None)
+                        yield process.event_unblock
+            self.vcd_writer.change(self.process_var, self.env.now, None)
+
+        elif self.policy == "RoundRobin":
             while True:
                 first_iteration=True
                 allProcessesFinished = True
