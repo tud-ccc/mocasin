@@ -54,15 +54,18 @@ class System:
                 if scheduler is not None:
                     log.debug('      The scheduler was already created -> ' +
                               'append process')
+
+                    if scheduler.policy != pm.policy:
+                        log.warn('The scheduler ' + pm.scheduler.name +
+                                 ' was already created but uses the ' +
+                                 scheduler.policy + ' instead of the ' +
+                                 'requested ' + pm.policy + ' policy')
+
                     scheduler.processes.append(process)
                 else:
                     log.debug('    Create scheduler: ' + pm.scheduler.name)
-                    scheduler = Scheduler(self.env,
-                                          pm.scheduler.name,
-                                          pm.scheduler.processors,
-                                          [process],
-                                          pm.policy,
-                                          self.vcd_writer)
+                    scheduler = Scheduler(self, [process], pm.policy,
+                                          pm.scheduler)
                     self.schedulers.append(scheduler)
 
         log.info('Done initializing the system.')

@@ -59,10 +59,6 @@ class Process(object):
         self.event_unblock.succeed()
         self.event_unblock = self.env.event()
 
-    def assignProcessor(self, processor):
-        assert self.processor is None
-        self.processor = processor
-
     def run(self):
         """
         A SimPy process that replays the process trace
