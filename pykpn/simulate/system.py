@@ -16,103 +16,70 @@ log = logging.getLogger(__name__)
 
 
 class System:
-
-    schedulers =[]
+    '''
+    This is the central class for managing a simulation. It contains the
+    entire platform and all applications running on it.
+    '''
 
     def __init__(self, env, platform, applications, dump):
         self.env = env
         self.platform = platform
         self.applications = applications
+        self.schedulers = []
+        self.channels = []
+
         if dump:
             self.vcd_writer=VCDWriter(open(dump,'w'), timescale='1 ps', date='today')
         else:
             self.vcd_writer=VCDWriter(open(os.devnull,'w'), timescale='1 ps', date='today')
             self.vcd_writer.dump_off(self.env.now)
 
-
-        log.info('Initialize the system.')
-        self.channels = []
+        log.info('Start initializing the system.')
         for app in self.applications:
-            log.debug('Found application  '+ app.name)
-            for c in app.mapping.channels:
-                log.debug(''.join([
-                    'Found channel ', c.name, ' from ', c.processorFrom, ' to ',
-                    c.processorTo, ' via ', c.viaMemory]))
-                log.debug(''.join([
-                    'The channel is bound to ', str(c.capacity),
-                    ' tokens and uses the ', c.primitive,
-                    ' communication primitive']))
+            log.debug('  Load application: ' + app.name)
+            for cm in app.mapping.channelMappings:
+                log.debug('    Create channel: ' + cm.kpnChannel.name)
+                self.channels.append(Channel(self.env,
+                                             cm.kpnChannel.name,
+                                             cm.capacity,
+                                             cm.kpnChannel.token_size,
+                                             cm.primitive,
+                                             app,
+                                             self.vcd_writer))
 
-                kpn_channel = None
-                for app_chan in app.graph.channels:
-                    if app_chan.name == c.name:
-                        kpn_channel = app_chan
-                if kpn_channel is None:
-                    raise RuntimeError('The mapping references the channel ' +
-                                       c.name + ' that is not defined in the ' +
-                                       'graph')
+            for pm in app.mapping.processMappings:
+                log.debug('    Create process: ' + pm.kpnProcess.name)
+                process = Process(self.env,
+                                  pm.kpnProcess.name,
+                                  self.channels,
+                                  app,
+                                  self.vcd_writer)
 
-                primitive = None
-                for p in platform.primitives:
-                    if p.typename == c.primitive and \
-                       p.from_.name == c.processorFrom and \
-                       p.via.name == c.viaMemory and \
-                       p.to.name == c.processorTo:
-                        primitive = p
-                if primitive is None:
-                    raise RuntimeError('Requested a communication primitive that' +
-                                       ' the platform does not provide!')
+                log.debug('      it uses the scheduler ' + pm.scheduler.name)
 
-                self.channels.append(Channel(self.env, c.name, c.capacity,
-                                             kpn_channel.token_size, primitive, app, self.vcd_writer))
+                scheduler = self.findScheduler(pm.scheduler.name)
+                if scheduler is not None:
+                    log.debug('      The scheduler was already created -> ' +
+                              'append process')
+                    scheduler.processes.append(process)
+                else:
+                    log.debug('    Create scheduler: ' + pm.scheduler.name)
+                    scheduler = Scheduler(self.env,
+                                          pm.scheduler.name,
+                                          pm.scheduler.processors,
+                                          [process],
+                                          pm.policy,
+                                          self.vcd_writer)
+                    self.schedulers.append(scheduler)
 
-            for s in app.mapping.schedulers:
-                log.debug(''.join([
-                    'Found the ', str(s.policy), ' scheduler ', s.name,
-                    ' that schedules ', str(s.processNames), ' on ',
-                    str(s.processorNames)]))
-
-                processes = []
-                for pn in s.processNames:
-                    processes.append(Process(self.env, pn, self.channels, app, self.vcd_writer))
-
-                processors = []
-                for pn in s.processorNames:
-                    for processor in self.platform.processors:
-                        if pn == processor.name:
-                            processors.append(processor)
-
-                flag = [] # flag stores the information if all the processors are same as processsors of the scheduler
-                f = 0
-                I=[]
-                for i in System.schedulers:
-                    if processors == i.processors:
-                        f=1
-                        I.append(i)
-                        break
-
-                flag.append(f)
-
-                if sum(flag) == 0: # if none of the processors match a new scheduler is created
-                    System.schedulers.append(Scheduler(self.env, s.name, processors, processes, s.policy, self.vcd_writer))
-                    log.debug('Creating a new scheduler  '+ s.name)
-
-                elif sum(flag) != len(flag): # if some of the processors match but not all error is raised
-                    raise RuntimeError('Scheduler cannot be alloted to this process')
-
-                elif sum(flag)==len(flag):
-                    log.debug('Using the old scheduler  '+ s.name)
-                    for i in I:
-                        i.processes.append(processes[0])
-
-        log.info('Done reading the applications')
+        log.info('Done initializing the system.')
 
     def simulate(self):
         print('=== Start Simulation ===')
         start = timeit.default_timer()
 
         # start the schedulers
-        for scheduler in System.schedulers:
+        for scheduler in self.schedulers:
             self.env.process(scheduler.run())
 
         self.env.run()
@@ -124,3 +91,9 @@ class System:
         print('Total execution time: ' + str(exec_time) + ' ms')
         print('Total simulation time: ' + str(stop-start) + ' s')
         self.vcd_writer.close()
+
+    def findScheduler(self, name):
+        for s in self.schedulers:
+            if s.name == name:
+                return s
+        return None
