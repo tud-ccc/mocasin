@@ -9,7 +9,7 @@ from ..common import Platform
 from ..common import Primitive
 from ..common import Processor
 from ..common import MeshNoc
-#from ..common import Torus
+from ..common import Torus
 
 from simpy.resources.resource import Resource
 
@@ -66,6 +66,8 @@ class GeneralPlatform(Platform):
         self.env = env
         if architecture=='mesh':
             m=MeshNoc(self.env,"yx", x, y)
+        elif architecture='torus':
+            m=Torus(self.env,)
         z=0
         for i in range(x):
             for j in range(y):
