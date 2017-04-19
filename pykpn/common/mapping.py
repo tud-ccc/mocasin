@@ -8,29 +8,6 @@ from enum import Enum
 from itertools import product
 import pydot
 
-# TODO: remove
-class SchedulingPolicy(Enum):
-    FIFO = 0
-    RoundRobin = 1
-
-
-# TODO: remove
-class ChannelInfo:
-    name = None
-    capacity = None
-    fromProcessor = None
-    toProcessor = None
-    viaMemory = None
-    primitive = None
-
-
-# TODO: remove
-class SchedulerInfo:
-    name = None
-    policy = None
-    processNames = None
-    processorNames = None
-
 
 class ChannelMappingInfo:
     '''
@@ -65,10 +42,6 @@ class Mapping:
     conveniently defining mappings.
     '''
     def __init__(self, kpn, platform):
-        # TODO: remove
-        self.schedulers = []
-        self.channels = []
-
         self.kpn = kpn
         self.platform = platform
         self.processMappings = []
