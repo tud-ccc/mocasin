@@ -34,7 +34,7 @@ class TestSimulate(TestCase):
             processors = pm.scheduler.processors
             type = processors[0].type
             path = 'apps/pipeline/traces/' + name + '.' + type + '.cpntrace'
-            readers[name] = SlxTraceReader(path)
+            readers[name] = SlxTraceReader(path, 'app')
 
         app = Application('app', graph, mapping, readers)
         system = System(env, platform, [app], None)

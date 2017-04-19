@@ -111,7 +111,7 @@ def main():
             path = os.path.join(args.tracedir[i],
                                 name + '.' + type + '.cpntrace')
             assert os.path.isfile(path)
-            readers[name] = SlxTraceReader(path)
+            readers[name] = SlxTraceReader(path, app_name)
 
         app = Application(app_name, graph, mapping, readers)
         applications.append(app)

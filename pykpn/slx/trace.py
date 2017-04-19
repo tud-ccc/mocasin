@@ -13,10 +13,11 @@ from ..common import TerminateEntry
 
 class SlxTraceReader(TraceReader):
 
-    def __init__(self, traceFile):
+    def __init__(self, traceFile, appName):
         self.trace = open(traceFile, 'r')
         assert self.trace is not None
 
+        self.appName = appName
         self.buffer = None
 
     def getNextEntry(self):
@@ -30,10 +31,12 @@ class SlxTraceReader(TraceReader):
         if traceline[0] == 'm':
             return ProcessEntry(int(traceline[2]))
         elif traceline[0] == 'r':
-            self.buffer = ReadEntry(traceline[1], int(traceline[3]))
+            self.buffer = ReadEntry(self.appName + '.' + traceline[1],
+                                    int(traceline[3]))
             return ProcessEntry(int(traceline[4]))
         elif traceline[0] == 'w':
-            self.buffer = WriteEntry(traceline[1], int(traceline[2]))
+            self.buffer = WriteEntry(self.appName + '.' + traceline[1],
+                                     int(traceline[2]))
             return ProcessEntry(int(traceline[3]))
         elif traceline[0] == 'e':
             return TerminateEntry()
