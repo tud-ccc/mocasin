@@ -34,6 +34,7 @@ class Process(object):
         self.name = name
         self.channels = system.channels
         self.traceReader = traceReader
+        self.processor = None
 
         self.state = ProcessState.Ready
 
@@ -49,6 +50,9 @@ class Process(object):
 
         # ASCII encoded name for display in VCD traces
         self.vcd_id = ''.join(['{0:08b}'.format(ord(c)) for c in self.name])
+
+    def assignProcessor(self, processor):
+        self.processor = processor
 
     def unblock(self, event):
         assert self.state == ProcessState.Blocked
