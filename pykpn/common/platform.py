@@ -316,9 +316,30 @@ class Primitive:
         self.produce = []
 
 
+class Scheduler:
+    '''
+    Represents a scheduler provided by the platform. It schedules processes
+    on one or more processors according to a policy. The class defines a
+    dictionary of policies and associated scheduling delays for each policy.
+    '''
+
+    implementedPolicies = ['None', 'FIFO', 'RoundRobin']
+
+    def __init__(self, name, processors, policies):
+        assert len(processors) > 0, \
+            "A scheduler must be associated with at least one processor"
+        assert len(policies) > 0, \
+            "A scheduler must support at least one policy"
+
+        self.name = name
+        self.processors = processors
+        self.policies = policies
+
+
 class Platform(object):
 
     def __init__(self):
         self.processors = []
         self.memories = []
         self.primitives = []
+        self.schedulers = []
