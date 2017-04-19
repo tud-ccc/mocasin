@@ -11,18 +11,24 @@ log = logging.getLogger(__name__)
 
 class Channel(object):
 
-    def __init__(self, env, name, capacity, token_size, primitive, application, vcd_writer):
-        self.env = env
+    def __init__(self, name, system, mappingInfo):
+        self.env = system.env
         self.name = name
-        self.capacity = capacity
-        self.primitive = primitive
-        self.token_size = token_size
-        self.application=application
+        self.capacity = mappingInfo.capacity
+        self.primitive = mappingInfo.primitive
+        self.token_size = mappingInfo.kpnChannel.token_size
         self.filled = 0
-        self.vcd_writer=vcd_writer
-        self.channel=self.vcd_writer.register_var('system.'+ application.name+'.' + 'channels.'+name, 'filling_level', 'integer', size=capacity, init=0)
-        self.event_produce = env.event()
-        self.event_consume = env.event()
+        self.vcd_writer = system.vcd_writer
+
+        self.filled_var = self.vcd_writer.register_var(
+                'system.channels.' + name,
+                'filling_level',
+                'integer',
+                size=self.capacity,
+                init=0)
+
+        self.event_produce = self.env.event()
+        self.event_consume = self.env.event()
 
     def canProduceTokens(self, num):
         if self.filled + num <= self.capacity:
@@ -37,11 +43,11 @@ class Channel(object):
         self.filled = self.filled + num
         log.debug(''.join([
             '{0:16}'.format(self.env.now), ': producing ', str(num),
-            ' tokens on channel ', self.application.name+'.'+self.name,
+            ' tokens on channel ', self.name,
             ' succeeded. New filling level: ', str(self.filled), '/',
             str(self.capacity)]))
 
-        self.vcd_writer.change(self.channel, self.env.now, self.filled)
+        self.vcd_writer.change(self.filled_var, self.env.now, self.filled)
         if len(self.event_produce.callbacks) > 0:
             self.event_produce.succeed()
             self.event_produce = self.env.event()
@@ -61,7 +67,7 @@ class Channel(object):
             ' tokens on channel ',self.application.name+'.'+ self.name,
             ' succeeded. New filling level: ', str(self.filled), '/',
             str(self.capacity)]))
-        self.vcd_writer.change(self.channel, self.env.now, self.filled)
+        self.vcd_writer.change(self.filled_var, self.env.now, self.filled)
 
         # notify waiting processes and recreate the event
         if len(self.event_consume.callbacks) > 0:

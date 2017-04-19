@@ -26,7 +26,7 @@ class System:
         self.platform = platform
         self.applications = applications
         self.schedulers = []
-        self.channels = []
+        self.channels = {}
 
         if dump:
             self.vcd_writer=VCDWriter(open(dump,'w'), timescale='1 ps', date='today')
@@ -38,14 +38,9 @@ class System:
         for app in self.applications:
             log.debug('  Load application: ' + app.name)
             for cm in app.mapping.channelMappings:
-                log.debug('    Create channel: ' + cm.kpnChannel.name)
-                self.channels.append(Channel(self.env,
-                                             cm.kpnChannel.name,
-                                             cm.capacity,
-                                             cm.kpnChannel.token_size,
-                                             cm.primitive,
-                                             app,
-                                             self.vcd_writer))
+                name = app.name + '.' + cm.kpnChannel.name
+                log.debug('    Create channel: ' + name)
+                self.channels[name] = Channel(name, self, cm)
 
             for pm in app.mapping.processMappings:
                 log.debug('    Create process: ' + pm.kpnProcess.name)
