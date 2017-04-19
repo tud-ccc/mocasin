@@ -337,9 +337,41 @@ class Scheduler:
 
 
 class Platform(object):
+    '''
+    Represents a coplete hardware architecture. This is a container for
+    processor, memory, communication primitive, and scheduler objects.
+
+    This is intended as a base class. Derived classes may define a specifi
+    platform by creating the corresponding objects.
+    '''
 
     def __init__(self):
         self.processors = []
         self.memories = []
         self.primitives = []
         self.schedulers = []
+
+    def findScheduler(self, name):
+        for s in self.schedulers:
+            if s.name == name:
+                return s
+        return None
+
+    def findProcessor(self, name):
+        for p in self.processors:
+            if p.name == name:
+                return p
+        return None
+
+    def findMemory(self, name):
+        for m in self.memories:
+            if m.name == name:
+                return m
+        return None
+
+    def findPrimitive(self, typename, processorFrom, processorTo, viaMemory):
+        for p in self.primitives:
+            if p.typename == typename and p.from_ == processorFrom and \
+                    p.to == processorTo and p.via == viaMemory:
+                return p
+        return None
