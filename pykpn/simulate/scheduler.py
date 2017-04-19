@@ -55,34 +55,41 @@ class Scheduler(object):
 
 
         if self.policy==SchedulingPolicy.RoundRobin:
-            prev_process = None
             while True:
+                first_process=True
                 allProcessesFinished = True
                 allProcessesBlocked = True
                 for process in self.processes:
+                    delay=0
                     assert not process.state == ProcessState.Running
                     if process.state == ProcessState.Blocked:
                         allProcessesFinished = False
                     elif process.state == ProcessState.Finished:
                         continue
                     elif process.state == ProcessState.Ready:
+                        prev_process=process
                         allProcessesBlocked = False
                         allProcessesFinished = False
-                        if prev_process!=process:
-                            yield self.env.timeout(self.processors[0].scheduling_penalty+self.processors[0].switching_in+self.processors[0].switching_out)
-                        else:
-                            yield self.env.timeout(self.processors[0].switching_in)
                         self.vcd_writer.change(self.scheduler, self.env.now, int(process.vcd_id[0:128],2))
                         yield self.env.process(process.run())
+                        if first_process:
+                            delay=self.processors[0].scheduling_penalty+self.processors[0].switching_in
+                            first_process=False
+                        else:
+                            delay=self.processors[0].scheduling_penalty+self.processors[0].switching_in+self.processors[0].switching_out
+                        yield self.env.timeout(delay)
 
                     else:
                         assert False, 'unknown process state'
 
+
                 if allProcessesFinished:
+                    self.vcd_writer.change(self.scheduler, self.env.now, None)
                     break
 
 
                 if allProcessesBlocked:
+                    self.vcd_writer.change(self.scheduler, self.env.now, None)
                     # collect unblock events
                     events = []
                     for p in self.processes:
@@ -96,6 +103,7 @@ class Scheduler(object):
                 allProcessesBlocked = True
                 min=sys.maxsize
                 p=None
+                delay=0
                 for process in self.processes:
                     if process.state == ProcessState.Blocked:
                         allProcessesFinished = False
@@ -112,17 +120,17 @@ class Scheduler(object):
                         assert False, 'unknown process state'
 
                 if p is not None:
-                    if p!=prev_process:
-                        self.vcd_writer.change(self.scheduler, self.env.now, None)
-                        yield self.env.timeout(self.processors[0].scheduling_penalty+self.processors[0].switching_in+self.processors[0].switching_out)
+                    if prev_process==None:
+                        delay=self.processors[0].scheduling_penalty+self.processors[0].switching_in
+                    elif p!=prev_process:
+                        delay=self.processors[0].scheduling_penalty+self.processors[0].switching_in+self.processors[0].switching_out
                     else:
-                        self.vcd_writer.change(self.scheduler, self.env.now, None)
-                        yield self.env.timeout(self.processors[0].switching_in)
+                        delay= self.processors[0].scheduling_penalty
+                    yield self.env.timeout(delay)
 
-                    self.vcd_writer.change(self.scheduler, self.env.now, int(p.vcd_id,2))
+                    self.vcd_writer.change(self.scheduler, self.env.now, int(p.vcd_id[0:128],2))
                     yield self.env.process(p.run())
-
-                prev_process = p
+                    prev_process = p
 
                 if allProcessesFinished:
                     self.vcd_writer.change(self.scheduler, self.env.now, None)
