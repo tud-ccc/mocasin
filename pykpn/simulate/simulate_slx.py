@@ -9,6 +9,7 @@
 import argparse
 import logging
 import simpy
+import os
 
 from pykpn.platforms import Tomahawk2Platform
 from pykpn.platforms import GenericNocPlatform
@@ -93,11 +94,31 @@ def main():
 
         # Create the application
         app_name = 'app'+str(i)
-        app = Application(app_name, graph, mapping, args.tracedir[i], SlxTraceReader)
+
+        readers = {}
+        for pm in mapping.processMappings:
+            name = app_name + '.' + pm.kpnProcess.name
+
+            processors = pm.scheduler.processors
+            type = processors[0].type
+
+            for p in processors:
+                if p.type != type:
+                    log.warn(pm.kpnProcess.scheduler + ' schedules on ' +
+                             'processors of different types. Use ' + type +
+                             'for reading the process trace of ' + name)
+
+            path = os.path.join(args.tracedir[i],
+                                pm.kpnProcess.name + '.' + type + '.cpntrace')
+            assert os.path.isfile(path)
+            readers[name] = SlxTraceReader(path)
+
+        app = Application(app_name, graph, mapping, readers)
         applications.append(app)
 
         if args.mappingout:
             mapping.outputDot(graph, args.mappingout + '.' + app_name + '.dot')
+
     # Create the system
     system = System(env, platform, applications, args.vcd)
     # Run the simulation

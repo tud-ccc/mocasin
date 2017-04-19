@@ -4,8 +4,6 @@
 # Authors: Christian Menard
 
 
-import os
-
 from ..common import TraceReader
 from ..common import ProcessEntry
 from ..common import ReadEntry
@@ -15,10 +13,8 @@ from ..common import TerminateEntry
 
 class SlxTraceReader(TraceReader):
 
-    def __init__(self, traceDir, process, processor):
-        file = os.path.join(traceDir, process + '.' + processor.type +
-                            '.cpntrace')
-        self.trace = open(file, 'r')
+    def __init__(self, traceFile):
+        self.trace = open(traceFile, 'r')
         assert self.trace is not None
 
         self.buffer = None

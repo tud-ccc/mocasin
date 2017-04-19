@@ -1,7 +1,6 @@
 class Application:
-	def __init__(self, name, graph, mapping, tracedir, TraceReader):
-            self.name=name
-            self.graph=graph
-            self.mapping=mapping
-            self.tracedir=tracedir
-            self.TraceReader=TraceReader
+    def __init__(self, name, graph, mapping, traceReaders):
+        self.name = name
+        self.graph = graph
+        self.mapping = mapping
+        self.traceReaders = traceReaders
