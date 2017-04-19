@@ -9,12 +9,12 @@ from ..common import Platform
 from ..common import Primitive
 from ..common import Processor
 from ..common import MeshNoc
-from ..common import Torus
+from ..common import TorusNoc
 
 from simpy.resources.resource import Resource
 
 
-class GeneralPlatform(Platform):
+class GenericNocPlatform(Platform):
 
 
     def createConsumerPrimitive(self, m, from_, to, via):
@@ -67,7 +67,7 @@ class GeneralPlatform(Platform):
         if architecture=='mesh':
             m=MeshNoc(self.env,"xy", x, y)
         elif architecture=='torus':
-            m=Torus(self.env,"xy",x , y)
+            m=TorusNoc(self.env,"xy",x , y)
         else:
             raise ValueError('specified architecture does not exist')
         z=0

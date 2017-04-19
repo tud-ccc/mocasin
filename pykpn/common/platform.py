@@ -43,7 +43,7 @@ class Noc:
     def get_route(self, a, b):
         return None
 
-class Torus(Noc):
+class TorusNoc(Noc):
     def __init__(self, env, routing_algo, width, length):
         self.Routers=[]
         self.env=env

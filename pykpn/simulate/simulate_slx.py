@@ -11,7 +11,7 @@ import logging
 import simpy
 
 from pykpn.platforms import Tomahawk2Platform
-from pykpn.platforms import GeneralPlatform
+from pykpn.platforms import GenericNocPlatform
 from pykpn.simulate import System
 from pykpn.simulate import Application
 from pykpn.slx import SlxKpnGraph
@@ -75,7 +75,7 @@ def main():
         architecture=args.platform[temp1+1:temp1+temp2+1]
         x=int(args.platform[-1])
         y=int(args.platform[-3])
-        platform = GeneralPlatform(env, architecture, x, y)
+        platform = GenericNocPlatform(env, architecture, x, y)
 
     elif args.platform=='tomahawk2':
         platform = Tomahawk2Platform(env)
