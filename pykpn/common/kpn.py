@@ -38,3 +38,15 @@ class KpnGraph:
 
         channel.to_process = process
         process.incoming_channels.append(channel)
+
+    def findProcess(self, name):
+        for p in self.processes:
+            if p.name == name:
+                return p
+        return None
+
+    def findChannel(self, name):
+        for c in self.channels:
+            if c.name == name:
+                return c
+        return None
