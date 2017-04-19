@@ -73,7 +73,7 @@ class GenericNocPlatform(Platform):
         for i in range(x):
             for j in range(y):
                 for k in range(EP_per_router):
-                    processor = Processor("PE" + str(z), 'RISC', 200000000, 100, 1000, 1000)
+                    processor = Processor("PE" + str(z), 'RISC', 200000000, 1000, 1000)
                     self.processors.append(processor)
                     memory = Memory("sp" + str(z), 32768)
                     self.memories.append(memory)

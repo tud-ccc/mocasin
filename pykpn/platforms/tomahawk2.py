@@ -66,7 +66,7 @@ class Tomahawk2Platform(Platform):
         m=MeshNoc(self.env,"yx",2,2)
 
         for i in range(0, 8):
-            processor = Processor("PE" + str(i), 'RISC', 200000000, 100, 1000, 1000)
+            processor = Processor("PE" + str(i), 'RISC', 200000000, 1000, 1000)
             self.processors.append(processor)
             memory = Memory("sp" + str(i), 32768)
             self.memories.append(memory)
