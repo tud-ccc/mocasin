@@ -26,6 +26,16 @@ class TestSimulate(TestCase):
         mapping = SlxMapping(graph,
                              platform,
                              'apps/pipeline/default.mapping.consumer_bc')
-        app = Application('app', graph, mapping, 'apps/pipeline/traces', SlxTraceReader)
+
+        readers = {}
+        for pm in mapping.processMappings:
+            name = pm.kpnProcess.name
+
+            processors = pm.scheduler.processors
+            type = processors[0].type
+            path = 'apps/pipeline/traces/' + name + '.' + type + '.cpntrace'
+            readers[name] = SlxTraceReader(path)
+
+        app = Application('app', graph, mapping, readers)
         system = System(env, platform, [app], None)
         system.simulate()
