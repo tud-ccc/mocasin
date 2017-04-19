@@ -3,38 +3,34 @@
 #
 # Authors: Christian Menard
 
-import simpy
 from simpy.resources.resource import Resource
 
-from enum import Enum
 import parser
 
-import itertools
-
 import numpy as np
+
 
 class Memory:
 
     def __init__(self, name, size):
         self.name = name
         self.size = size
-        #self.endpoint = None
 
 
 class Processor:
 
-    def __init__(self, name, type, frequency, scheduling_penalty=0, switching_in=0, switching_out=0):
+    def __init__(self, name, type, frequency, contextSwitchInDelay=0,
+                 contextSwitchOutDelay=0):
         self.name = name
         self.type = type
         self.frequency = frequency
-        # self.endpoint = None
-        self.scheduling_penalty = self.cyclesToTicks(scheduling_penalty)
-        self.switching_in=self.cyclesToTicks(switching_in)
-        self.switching_out=self.cyclesToTicks(switching_out)
+        self.contextSwitchInDelay = contextSwitchInDelay
+        self.contextSwitchOutDelay = contextSwitchOutDelay
 
     def cyclesToTicks(self, cycles):
         tmp = float(cycles) * 1000000000000 / float(self.frequency)
         return int(tmp)
+
 
 # This is not realy needed in the moment, but maybe we want to use
 # other NoC topologies than mesh later on.

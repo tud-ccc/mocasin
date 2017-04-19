@@ -8,10 +8,7 @@ import logging
 import simpy
 import sys
 
-from enum import Enum
-
 from .process import ProcessState
-from ..common import SchedulingPolicy
 
 log = logging.getLogger(__name__)
 
@@ -31,6 +28,9 @@ class Scheduler(object):
         self.processor = info.processors[0]
         self.processes = processes
         self.policy = policy
+
+        self.schedulingDelay = info.policies[policy]
+
         self.vcd_writer = system.vcd_writer
         self.process_var = self.vcd_writer.register_var(
                 'system.' + 'schedulers.' + self.name, 'process', 'integer',
@@ -40,13 +40,12 @@ class Scheduler(object):
         log.info('{0:16}'.format(self.env.now) + ': scheduler ' +
                  self.name + ' starts execution')
 
-        if self.policy==SchedulingPolicy.RoundRobin:
+        if self.policy == "RoundRobin":
             while True:
-                first_process=True
+                first_iteration=True
                 allProcessesFinished = True
                 allProcessesBlocked = True
                 for process in self.processes:
-                    delay=0
                     assert not process.state == ProcessState.Running
                     if process.state == ProcessState.Blocked:
                         allProcessesFinished = False
@@ -59,13 +58,20 @@ class Scheduler(object):
                         self.vcd_writer.change(self.process_var, self.env.now,
                                                int(process.vcd_id[0:128],2))
                         yield self.env.process(process.run())
-                        if first_process:
-                            delay=self.processor.scheduling_penalty+self.processor.switching_in
-                            first_process=False
-                        else:
-                            delay=self.processor.scheduling_penalty+self.processor.switching_in+self.processor.switching_out
-                        yield self.env.timeout(delay)
 
+                        # pay for the scheduling delay
+                        delay = 0
+                        if first_iteration:
+                            # Nothing to switch out on first iteration
+                            delay = self.schedulingDelay + \
+                                    self.processor.contextSwitchInDelay
+                            first_iteration = False
+                        else:
+                            delay = self.schedulingDelay + \
+                                    self.processor.contextSwitchInDelay + \
+                                    self.processor.contextSwitchOutDelay
+                        yield self.env.timeout(
+                                self.processor.cyclesToTicks(delay))
                     else:
                         assert False, 'unknown process state'
 
@@ -83,14 +89,13 @@ class Scheduler(object):
                         events.append(p.event_unblock)
                     yield simpy.events.AnyOf(self.env, events)
 
-        elif self.policy == SchedulingPolicy.FIFO:
+        elif self.policy == 'FIFO':
             prev_process = None
             while True:
                 allProcessesFinished = True
                 allProcessesBlocked = True
                 min=sys.maxsize
                 p=None
-                delay=0
                 for process in self.processes:
                     if process.state == ProcessState.Blocked:
                         allProcessesFinished = False
@@ -107,13 +112,14 @@ class Scheduler(object):
                         assert False, 'unknown process state'
 
                 if p is not None:
-                    if prev_process==None:
-                        delay=self.processor.scheduling_penalty+self.processor.switching_in
-                    elif p!=prev_process:
-                        delay=self.processor.scheduling_penalty+self.processor.switching_in+self.processor.switching_out
-                    else:
-                        delay= self.processor.scheduling_penalty
-                    yield self.env.timeout(delay)
+                    delay = self.schedulingDelay
+                    if prev_process is None:
+                        # we need to load the first process
+                        delay = delay + self.processor.contextSwitchInDelay
+                    elif p != prev_process:
+                        delay = delay + self.processor.contextSwitchInDelay + \
+                                self.processor.contextSwitchOutDelay
+                    yield self.env.timeout(self.processor.cyclesToTicks(delay))
 
                     self.vcd_writer.change(self.process_var, self.env.now,
                                            int(p.vcd_id[0:128], 2))
@@ -133,6 +139,9 @@ class Scheduler(object):
                     for pro in self.processes:
                         events.append(pro.event_unblock)
                     yield simpy.events.AnyOf(self.env, events)
+        else:
+            raise RuntimeError('The scheduling policy ' + self.policy +
+                               ' is not supported')
 
         log.info('{0:16}'.format(self.env.now) + ': scheduler ' + self.name +
                  ' finished execution')
