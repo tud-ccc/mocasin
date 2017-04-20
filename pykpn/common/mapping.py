@@ -4,7 +4,6 @@
 # Authors: Christian Menard, Andres Goens
 
 
-from enum import Enum
 from itertools import product
 import pydot
 
@@ -42,75 +41,99 @@ class Mapping:
     conveniently defining mappings.
     '''
     def __init__(self, kpn, platform):
+        '''
+        Create an empty mapping.
+
+        Derived classes should extend this function to actually define
+        process and channel mappings.
+        '''
         self.kpn = kpn
         self.platform = platform
         self.processMappings = []
         self.channelMappings = []
 
+    def getSchedulerToProcessesDict(self):
+        '''
+        Returns a dictionary that associates scheduler names with a list of
+        KPN processes.
+        '''
+        sched2proc = dict()
 
-    # TODO: update to use new mapping structure
-    def getProcess2PEDict(self):
-        process2pe = dict()
-        for sched in self.schedulers:
-            assert len(sched.processorNames) == 1 , ("Schedule (" + str(sched) + ") does not have exactly one PE.")
-            for process in sched.processNames:
-                process2pe[process] = sched.processorNames[0]
-        return process2pe
+        # initialize with empty list
+        for s in self.platform.schedulers:
+            sched2proc[s.name] = []
 
+        for pm in self.processMappings:
+            sched2proc[pm.scheduler.name].append(pm.kpnProcess)
 
-    # TODO: update to use new mapping structure
-    def getChann2CPDict(self):
-        chann2cp = dict()
-        for chann in self.channels:
-            chann2cp[chann.name] = (chann.viaMemory,chann.primitive)
+        return sched2proc
 
+    def toPyDot(self, proc_labels=True, pe_labels=True, link_labels=False):
+        '''
+        Create a dot graph visualizing how the application is mapped to the
+        platform
 
-    # TODO: update to use new mapping structure
-    def toPyDot(self,kpn_graph,proc_labels=True,pe_labels=True,link_labels=False):
-        process2pe = self.getProcess2PEDict()
-        pe2process = { pe : [] for pe in process2pe.values()}
-        for proc in process2pe:
-            pe2process[process2pe[proc]].append(proc)
-
+        :param proc_labels: print KPN process names
+        :param pe_labels: print processor names
+        :param link_labels: print KPN channel names
+        :returns: pydot object
+        '''
+        sched2proc = self.getSchedulerToProcessesDict()
         cpn_graph = pydot.Dot(graph_type='digraph')
 
-        for pe in pe2process:
-            if pe_labels == True:
-                cluster = pydot.Cluster(str(pe),label=str(pe))
-            else:
-                cluster = pydot.Cluster(str(pe))
-            for proc in pe2process[pe]:
-                if proc_labels == True:
-                    cluster.add_node(pydot.Node(str(proc),label=str(proc)))
+        for s in self.platform.schedulers:
+            if len(s.processors) == 1:
+                p_name = s.processors[0].name
+                if pe_labels is True:
+                    cluster = pydot.Cluster(p_name, label=p_name)
                 else:
-                    cluster.add_node(pydot.Node(str(proc),label=" "))
-            cpn_graph.add_subgraph(cluster)
+                    cluster = pydot.Cluster(p_name)
 
+                for p in sched2proc[s.name]:
+                    if proc_labels is True:
+                        cluster.add_node(pydot.Node(p.name, label=p.name))
+                    else:
+                        cluster.add_node(pydot.Node(p.name, label=" "))
+                cpn_graph.add_subgraph(cluster)
+            else:
+                raise RuntimeError('The scheduler ' + s.name + ' manages ' +
+                                   'multiple processors. Visualization for ' +
+                                   'that is not yet implemented!')
 
         # Create and add empty fifo channels for all the pn channels
         links_from = {}
         links_to = {}
-
-        # Note that this does not check if the app corresponds to the mapping!
-        # If the mapping at some point supports references and not only strings we should get rid of this necessity
-        for pnchannel in kpn_graph.channels:
+        for pnchannel in self.kpn.channels:
             links_from[pnchannel.name] = []
             links_to[pnchannel.name] = []
 
-        for proc in kpn_graph.processes:
-            for out_edge in  proc.outgoing_channels:
+        for proc in self.kpn.processes:
+            for out_edge in proc.outgoing_channels:
                 links_from[out_edge.name].append(proc.name)
-            for in_edge in  proc.incoming_channels:
+            for in_edge in proc.incoming_channels:
                 links_to[in_edge.name].append(proc.name)
 
         for link in links_from:
-            edges = product(*[links_from[link],links_to[link]])
-            for (v,w) in edges:
-                if link_labels == True:
-                    cpn_graph.add_edge(pydot.Edge(str(v),str(w),label=link))
+            edges = product(*[links_from[link], links_to[link]])
+            for (v, w) in edges:
+                if link_labels is True:
+                    cpn_graph.add_edge(pydot.Edge(v, w, label=link))
                 else:
-                    cpn_graph.add_edge(pydot.Edge(str(v),str(w)))
+                    cpn_graph.add_edge(pydot.Edge(v, w))
+
         return cpn_graph
 
-    def outputDot(self,kpn_graph,filename,proc_labels=True,pe_labels=True,link_labels=False):
-        self.toPyDot(kpn_graph,proc_labels=proc_labels,pe_labels=pe_labels,link_labels=link_labels).write_raw(filename)
+    def outputDot(self, filename, proc_labels=True, pe_labels=True,
+                  link_labels=False):
+        '''
+        Create a dot graph visualizing how the application is mapped to the
+        platform and write it to file.
+
+        :param filename: name of the output file
+        :param proc_labels: print KPN process names
+        :param pe_labels: print processor names
+        :param link_labels: print KPN channel names
+        '''
+        self.toPyDot(proc_labels=proc_labels,
+                     pe_labels=pe_labels,
+                     link_labels=link_labels).write_raw(filename)
