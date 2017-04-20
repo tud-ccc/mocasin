@@ -11,6 +11,7 @@ from .channel import Channel
 from .process import Process
 from .scheduler import Scheduler
 
+from simpy.resources.resource import Resource
 
 log = logging.getLogger(__name__)
 
@@ -67,6 +68,20 @@ class System:
                     scheduler = Scheduler(self, [process], pm.policy,
                                           pm.scheduler)
                     self.schedulers.append(scheduler)
+
+        # We iterate over all channels and their cost models to get all
+        # platform resources that are required for simulation. For each
+        # platform resource we create a simpy resource object and extend the
+        # platform reource by an attribute 'res' that points to the simpy
+        # resource.
+        #
+        # This is not the best solution (TM) but does the job of decoupling
+        # the platform description and simulation.
+        for key, c in self.channels.items():
+            for model in c.primitive.consume + c.primitive.produce:
+                for r in model.resources:
+                    if not hasattr(r, 'res'):
+                        r.res = Resource(env, capacity=r.capacity)
 
         log.info('Done initializing the system.')
 

@@ -15,7 +15,6 @@ from ..common import Scheduler
 
 class Tomahawk2Platform(Platform):
 
-
     def createConsumerPrimitive(self, m, from_, to, via):
         p = Primitive()
         p.typename = "consumer_cp"
@@ -60,10 +59,9 @@ class Tomahawk2Platform(Platform):
         p.consume.append(consumeTransport)
         return p
 
-    def __init__(self, env):
+    def __init__(self):
         Platform.__init__(self)
-        self.env = env
-        m=MeshNoc(self.env,"yx",2,2)
+        m = MeshNoc("yx", 2, 2)
 
         for i in range(0, 8):
             processor = Processor("PE" + str(i), 'RISC', 200000000, 1000, 1000)

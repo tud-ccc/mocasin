@@ -15,7 +15,6 @@ from ..common import Scheduler
 
 class GenericNocPlatform(Platform):
 
-
     def createConsumerPrimitive(self, m, from_, to, via):
         p = Primitive()
         p.typename = "consumer_cp"
@@ -60,13 +59,12 @@ class GenericNocPlatform(Platform):
         p.consume.append(consumeTransport)
         return p
 
-    def __init__(self, env, architecture, x, y, EP_per_router=2):
+    def __init__(self, architecture, x, y, EP_per_router=2):
         Platform.__init__(self)
-        self.env = env
         if architecture=='mesh':
-            m=MeshNoc(self.env,"xy", x, y)
+            m = MeshNoc("xy", x, y)
         elif architecture=='torus':
-            m=TorusNoc(self.env,"xy",x , y)
+            m = TorusNoc("xy", x, y)
         else:
             raise ValueError('specified architecture does not exist')
         z=0

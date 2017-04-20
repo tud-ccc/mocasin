@@ -3,8 +3,6 @@
 #
 # Authors: Christian Menard
 
-from simpy.resources.resource import Resource
-
 import parser
 
 import numpy as np
@@ -40,9 +38,8 @@ class Noc:
         return None
 
 class TorusNoc(Noc):
-    def __init__(self, env, routing_algo, width, length):
+    def __init__(self, routing_algo, width, length):
         self.Routers=[]
-        self.env=env
         self.routing_algo=routing_algo
         self.width=width
         self.length=length
@@ -52,15 +49,15 @@ class TorusNoc(Noc):
         for l in range(length):
             for w in range(width):
                 r=Router(w,l)
-                r.outgoing_links.append(Link(self.env, 8, str(w)+str(l)+'_'+str((w+1)%width)+str(l)))
-                r.outgoing_links.append(Link(self.env, 8, str(w)+str(l)+'_'+str((w-1)%width)+str(l)))
-                r.outgoing_links.append(Link(self.env, 8, str(w)+str(l)+'_'+str(w)+str((l+1)%length)))
-                r.outgoing_links.append(Link(self.env, 8, str(w)+str(l)+'_'+str(w)+str((l-1)%length)))
+                r.outgoing_links.append(Link(8, str(w)+str(l)+'_'+str((w+1)%width)+str(l)))
+                r.outgoing_links.append(Link(8, str(w)+str(l)+'_'+str((w-1)%width)+str(l)))
+                r.outgoing_links.append(Link(8, str(w)+str(l)+'_'+str(w)+str((l+1)%length)))
+                r.outgoing_links.append(Link(8, str(w)+str(l)+'_'+str(w)+str((l-1)%length)))
                 routers[w][l]=r
         self.Routers=routers
     def create_ni(self, eps, x, y):
-        ni_inst=NI(Link(self.env, 8, eps[0].name+'_'+eps[1].name+' to '+str(x)+str(y)), eps)
-        self.Routers[x][y].outgoing_links.append(Link(self.env, 8, str(x)+str(y)+' to '+eps[0].name+'_'+eps[1].name))
+        ni_inst=NI(Link(8, eps[0].name+'_'+eps[1].name+' to '+str(x)+str(y)), eps)
+        self.Routers[x][y].outgoing_links.append(Link(8, str(x)+str(y)+' to '+eps[0].name+'_'+eps[1].name))
         self.Routers[x][y].ni.append(ni_inst)
 
     def get_route(self, a, b):
@@ -146,9 +143,8 @@ class TorusNoc(Noc):
 
 class MeshNoc(Noc):
 
-    def __init__(self, env, routing_algo, width, length):
+    def __init__(self, routing_algo, width, length):
         self.Routers=[]
-        self.env=env
         self.routing_algo = routing_algo
 
         routers=[[0 for l in range(length)] for w in range(width)]
@@ -160,23 +156,23 @@ class MeshNoc(Noc):
                 r.outgoing_links=[None]*4
 
                 if w+1<width:
-                    r.outgoing_links[0]=Link(self.env, 8, str(w)+str(l)+'_'+str(w+1)+str(l))
+                    r.outgoing_links[0]=Link(8, str(w)+str(l)+'_'+str(w+1)+str(l))
 
                 if w-1>=0:
-                    r.outgoing_links[1]=Link(self.env, 8, str(w)+str(l)+'_'+str(w-1)+str(l))
+                    r.outgoing_links[1]=Link(8, str(w)+str(l)+'_'+str(w-1)+str(l))
 
                 if l+1<length:
-                    r.outgoing_links[2]=Link(self.env, 8, str(w)+str(l)+'_'+str(w)+str(l+1))
+                    r.outgoing_links[2]=Link(8, str(w)+str(l)+'_'+str(w)+str(l+1))
 
                 if l-1>=0:
-                    r.outgoing_links[3]=Link(self.env, 8, str(w)+str(l)+'_'+str(w)+str(l-1))
+                    r.outgoing_links[3]=Link(8, str(w)+str(l)+'_'+str(w)+str(l-1))
 
                 routers[w][l]=r
         self.Routers=routers
 
     def create_ni(self, eps, x, y):
-        ni_inst=NI(Link(self.env, 8, eps[0].name+'_'+eps[1].name+' to '+str(x)+str(y)), eps)
-        self.Routers[x][y].outgoing_links.append(Link(self.env, 8, str(x)+str(y)+' to '+eps[0].name+'_'+eps[1].name))
+        ni_inst=NI(Link(8, eps[0].name+'_'+eps[1].name+' to '+str(x)+str(y)), eps)
+        self.Routers[x][y].outgoing_links.append(Link(8, str(x)+str(y)+' to '+eps[0].name+'_'+eps[1].name))
         self.Routers[x][y].ni.append(ni_inst)
 
     def get_route(self, a, b):
@@ -264,12 +260,31 @@ def find(noc, a, b):
 
     return a_loc,a_ni,b_loc,b_ni,b_link
 
-class Link(Resource):
 
-    def __init__(self, env, bandwidth, name):
-        super().__init__(env, 1)
-        self.name=name
-        self.bandwidth=bandwidth
+class Resource:
+    '''
+    Represents a shared hardware resource.
+
+    This class is required for modeling the usage of shared resources in the
+    cost model.
+    '''
+
+    def __init__(self, name, capacity):
+        self.name = name
+        self.capacity = capacity
+
+
+class Link(Resource):
+    '''
+    Represents a communication link between hardware components.
+
+    Each link defines a bandwidth and extends the Resource class. Since
+    capacity is set to 1, links may only be used exclusively.
+    '''
+
+    def __init__(self, bandwidth, name):
+        Resource.__init__(self, name, 1)
+        self.bandwidth = bandwidth
 
 
 class NI:

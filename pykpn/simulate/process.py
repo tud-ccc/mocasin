@@ -112,14 +112,14 @@ class Process(object):
                         # request all resources
                         requests = []
                         for r in c.resources:
-                            req = r.request()
+                            req = r.res.request()
                             requests.append(req)
                             yield req
                         yield self.env.timeout(ticks)
 
                         # release all resources
                         for (res, req) in zip(c.resources, requests):
-                            res.release(req)
+                            res.res.release(req)
 
                     channel.consumeTokens(entry.tokens)
                 else:
@@ -149,7 +149,7 @@ class Process(object):
                         # request all resources
                         requests = []
                         for r in p.resources:
-                            req = r.request()
+                            req = r.res.request()
                             requests.append(req)
                             yield req
 
@@ -157,7 +157,7 @@ class Process(object):
 
                         # release all resources
                         for (res, req) in zip(p.resources, requests):
-                            res.release(req)
+                            res.res.release(req)
 
 
                     channel.produceTokens(entry.tokens)
