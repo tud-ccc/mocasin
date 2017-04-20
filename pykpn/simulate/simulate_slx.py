@@ -10,6 +10,7 @@ import argparse
 import logging
 import simpy
 import os
+import configparser
 
 from pykpn.platforms import Tomahawk2Platform
 from pykpn.platforms import GenericNocPlatform
@@ -35,22 +36,6 @@ def main():
 
     reqNamed = parser.add_argument_group('required named arguments')
 
-    reqNamed.add_argument('-g', '--graph', nargs='+',
-                          help='List of SLX PN graph descriptor files',
-                          required=True)
-    reqNamed.add_argument('-m', '--mapping', nargs='+',
-                          help='List of SLX mapping descriptor files',
-                          required=True)
-    reqNamed.add_argument('-t', '--tracedir', nargs='+',
-                          help='List of directories conataing SLX trace files',
-                          required=True)
-    parser.add_argument("--mappingout", metavar="PREFIX", type=str,
-                        help="Graphviz output for mapping visualization")
-    parser.add_argument('--vcd', type=str,
-                        help="dump simulation state to a vcd file")
-    parser.add_argument('--platform', type=str,
-                        help="Platform name and dimensions")
-
     args = parser.parse_args()
 
     if args.verbosity is not None:
@@ -63,37 +48,41 @@ def main():
 
     # Create a simpy environment
     env = simpy.Environment()
+    config=configparser.ConfigParser()
+    config.read('config.ini')
 
     # Declare the list of applications
     applications=[]
     # Create the platform
-    if args.platform is None:
+    if config['simulation']['platform'] is None:
         raise ValueError('Define the platform')
 
-    elif args.platform[0:args.platform.find('_')]=='generic':
-        temp1=args.platform.find('_')
-        temp2=args.platform[temp1+1:].find('_')
-        architecture=args.platform[temp1+1:temp1+temp2+1]
-        x=int(args.platform[-1])
-        y=int(args.platform[-3])
+    elif config['simulation']['platform'][0:config['simulation']['platform'].find('_')]=='generic':
+        temp1=config['simulation']['platform'].find('_')
+        temp2=config['simulation']['platform'][temp1+1:].find('_')
+        architecture=config['simulation']['platform'][temp1+1:temp1+temp2+1]
+        x=int(config['simulation']['platform'][-1])
+        y=int(config['simulation']['platform'][-3])
         platform = GenericNocPlatform(env, architecture, x, y)
 
-    elif args.platform=='tomahawk2':
+    elif config['simulation']['platform']=='tomahawk2':
         platform = Tomahawk2Platform(env)
 
     else:
         raise ValueError('Platform does not exist')
 
-    for i in range(len(args.mapping)):
-
+    apps=config['simulation']['applications'].split(",")
+    for i in range(len(apps)):
+        if apps[i] not in config:
+            raise ValueError("application name does not match to the section key")
         # Create a graph
-        graph = SlxKpnGraph('graph'+str(i), args.graph[i])
+        graph = SlxKpnGraph('graph'+str(i), config[apps[i]]['graph'])
 
         # Create the mapping
-        mapping = SlxMapping(graph, platform, args.mapping[i])
+        mapping = SlxMapping(graph, platform, config[apps[i]]['mapping'])
 
         # Create the application
-        app_name = 'app'+str(i)
+        app_name = apps[i]
 
         readers = {}
         for pm in mapping.processMappings:
@@ -108,7 +97,7 @@ def main():
                              'processors of different types. Use ' + type +
                              'for reading the process trace of ' + name)
 
-            path = os.path.join(args.tracedir[i],
+            path = os.path.join(config[apps[i]]['trace'],
                                 name + '.' + type + '.cpntrace')
             assert os.path.isfile(path)
             readers[name] = SlxTraceReader(path, app_name)
@@ -116,11 +105,13 @@ def main():
         app = Application(app_name, graph, mapping, readers)
         applications.append(app)
 
-        if args.mappingout:
-            mapping.outputDot(args.mappingout + '.' + app_name + '.dot')
+        if 'mappingout' not in config[apps[i]]:
+            config[apps[i]]['mappingout']=''
+        if config[apps[i]]['mappingout']:
+            mapping.outputDot(config[apps[i]]['mappingout'] + '.' + app_name + '.dot')
 
     # Create the system
-    system = System(env, platform, applications, args.vcd)
+    system = System(env, platform, applications, config['simulation']['vcd'])
     # Run the simulation
     system.simulate()
 

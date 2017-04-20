@@ -35,7 +35,7 @@ class Process(object):
         self.channels = system.channels
         self.traceReader = traceReader
         self.processor = None
-
+        self.time = 0
         self.state = ProcessState.Ready
 
         self.event_unblock = self.env.event()
@@ -59,7 +59,7 @@ class Process(object):
         log.debug('{0:16}'.format(self.env.now) + ': process ' + self.name +
                   ' unblocked')
         self.state = ProcessState.Ready
-
+        self.time = self.env.now
         self.event_unblock.succeed()
         self.event_unblock = self.env.event()
 
