@@ -16,6 +16,7 @@ from pykpn.platforms import Tomahawk2Platform
 from pykpn.platforms import GenericNocPlatform
 from pykpn.simulate import System
 from pykpn.simulate import Application
+from pykpn.simulate import SlxConfig
 from pykpn.slx import SlxKpnGraph
 from pykpn.slx import SlxMapping
 from pykpn.slx import SlxTraceReader
@@ -48,42 +49,20 @@ def main():
 
     # Create a simpy environment
     env = simpy.Environment()
-    config=configparser.ConfigParser()
-    config.read('config.ini')
-
     # Declare the list of applications
     applications=[]
     # Create the platform
-    if config['simulation']['platform'] is None:
-        raise ValueError('Define the platform')
-
-    elif config['simulation']['platform'][0:config['simulation']['platform'].find('_')]=='generic':
-        temp1=config['simulation']['platform'].find('_')
-        temp2=config['simulation']['platform'][temp1+1:].find('_')
-        architecture=config['simulation']['platform'][temp1+1:temp1+temp2+1]
-        x=int(config['simulation']['platform'][-1])
-        y=int(config['simulation']['platform'][-3])
-        platform = GenericNocPlatform(env, architecture, x, y)
-
-    elif config['simulation']['platform']=='tomahawk2':
-        platform = Tomahawk2Platform(env)
-
-    else:
-        raise ValueError('Platform does not exist')
-
-    apps=config['simulation']['applications'].split(",")
-    for i in range(len(apps)):
-        if apps[i] not in config:
+    config=SlxConfig(env, 'config.ini')
+    for i in config.applications:
+        if i not in config.conf:
             raise ValueError("application name does not match to the section key")
         # Create a graph
-        graph = SlxKpnGraph('graph'+str(i), config[apps[i]]['graph'])
+        graph = SlxKpnGraph(i+'_graph', config.get_graph(i))
 
         # Create the mapping
-        mapping = SlxMapping(graph, platform, config[apps[i]]['mapping'])
+        mapping = SlxMapping(graph, config.get_platform(), config.get_mapping(i))
 
         # Create the application
-        app_name = apps[i]
-
         readers = {}
         for pm in mapping.processMappings:
             name = pm.kpnProcess.name
@@ -97,21 +76,21 @@ def main():
                              'processors of different types. Use ' + type +
                              'for reading the process trace of ' + name)
 
-            path = os.path.join(config[apps[i]]['trace'],
+            path = os.path.join(config.get_trace(i),
                                 name + '.' + type + '.cpntrace')
             assert os.path.isfile(path)
-            readers[name] = SlxTraceReader(path, app_name)
+            readers[name] = SlxTraceReader(path, i)
 
-        app = Application(app_name, graph, mapping, readers)
+        app = Application(i, graph, mapping, readers)
         applications.append(app)
 
-        if 'mappingout' not in config[apps[i]]:
-            config[apps[i]]['mappingout']=''
-        if config[apps[i]]['mappingout']:
-            mapping.outputDot(config[apps[i]]['mappingout'] + '.' + app_name + '.dot')
+        if config.get_mappingout(i):
+            mapping.outputDot(config.get_mappingout(i))
+        else:
+            config.conf[i]['mappingout']=''
 
     # Create the system
-    system = System(env, platform, applications, config['simulation']['vcd'])
+    system = System(env, config, applications)
     # Run the simulation
     system.simulate()
 

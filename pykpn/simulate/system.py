@@ -21,12 +21,13 @@ class System:
     entire platform and all applications running on it.
     '''
 
-    def __init__(self, env, platform, applications, dump):
+    def __init__(self, env, config, applications):
         self.env = env
-        self.platform = platform
+        self.platform = config.get_platform()
         self.applications = applications
         self.schedulers = []
         self.channels = {}
+        dump=config.get_vcd()
 
         if dump:
             self.vcd_writer=VCDWriter(open(dump,'w'), timescale='1 ps', date='today')
