@@ -80,8 +80,7 @@ def main():
                                 name + '.' + type + '.cpntrace')
             assert os.path.isfile(path)
             readers[name] = SlxTraceReader(path, i)
-
-        app = Application(i, graph, mapping, readers)
+        app = Application(i, graph, mapping, readers, config.get_ini_time(i))
         applications.append(app)
 
         if config.get_mappingout(i):

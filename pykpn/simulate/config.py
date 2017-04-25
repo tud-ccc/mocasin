@@ -1,5 +1,7 @@
 import configparser
+import re
 
+from pint import UnitRegistry
 from pykpn.platforms import createPlatformByName
 
 class SlxConfig:
@@ -10,7 +12,7 @@ class SlxConfig:
         self.applications=self.get_apps()
 
     def get_platform(self):
-        return (createPlatformByName(self.env, self.conf['simulation']['platform']))
+        return createPlatformByName(self.env, self.conf['simulation']['platform'])
 
     def get_apps(self):
         return self.conf['simulation']['applications'].split(",")
@@ -32,3 +34,7 @@ class SlxConfig:
             return False
         else:
             return self.conf[app]['mappingout']
+
+    def get_ini_time(self, app):
+        ureg = UnitRegistry()
+        return ureg(self.conf[app]['ini_time']).to(ureg.ps).magnitude
