@@ -35,13 +35,18 @@ class Scheduler(object):
         self.process_var = self.vcd_writer.register_var(
                 'system.' + 'schedulers.' + self.name, 'process', 'integer',
                 size=128, init=None)
+        self.event_scheduler=self.env.event()
+
+    def assignProcess(self, process):
+        self.processes.append(process)
+        process.assignProcessor(self.processor)
+        log.info("        "+str(self.env.now)+": "+process.name+" added to "+self.name)
+        self.event_scheduler.succeed()
+        self.event_scheduler = self.env.event()
 
     def run(self):
         log.info('{0:16}'.format(self.env.now) + ': scheduler ' +
                  self.name + ' starts execution')
-
-        for p in self.processes:
-            p.assignProcessor(self.processor)
 
         if self.policy == "None":
             # if scheduling is disabled, we run the processes after each other
