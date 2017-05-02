@@ -15,5 +15,6 @@ setup(
           'pydot',
           'simpy',
           'pyvcd',
+          'pint',
       ],
 )
