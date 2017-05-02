@@ -114,3 +114,19 @@ class System:
                     if l.name[0:4]==self.ini_times[0][0].name: #check if process name has the application name as in the ini)times list
                             s.assignProcess(l)
             self.ini_times.pop(0)
+
+    def Migrate_ProcessToScheduler(self, process,scheduler):
+        for s in self.pair:
+            if s.name==scheduler:
+                scheduler=s
+
+        for s in self.pair:
+            for l in self.pair[s]:
+                if l.name==process:
+                    self.pair[scheduler].append(l)
+                    scheduler.assignProcess(l)
+                    self.pair[s].remove(l)
+                    if l in s.processes:
+                        s.processes.remove(l)
+                    else:
+                        raise ValueError("The process hasn't initiated yet")
