@@ -8,7 +8,6 @@
 
 import argparse
 import logging
-import simpy
 import os
 import configparser
 
@@ -49,8 +48,6 @@ def main():
     else:
         logging.basicConfig(level=logging.WARNING)
 
-    # Create a simpy environment
-    env = simpy.Environment()
     # Declare the list of applications
     applications=[]
     # Create the platform
@@ -91,7 +88,7 @@ def main():
             config.conf[i]['mappingout']=''
 
     # Create the system
-    system = System(env, config, applications)
+    system = System(config.get_vcd(), config.get_platform(), applications)
     # Run the simulation
     system.simulate()
 

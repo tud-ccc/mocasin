@@ -6,6 +6,7 @@
 import logging
 import timeit
 import os
+import simpy
 
 from operator import itemgetter
 from vcd import VCDWriter
@@ -24,18 +25,17 @@ class System:
     entire platform and all applications running on it.
     '''
 
-    def __init__(self, env, config, applications):
-        self.env = env
-        self.platform = config.get_platform()
+    def __init__(self, vcd, platform, applications):
+        self.env = simpy.Environment()
+        self.platform = platform
         self.applications = applications
         self.schedulers = []
         self.channels = {}
-        dump=config.get_vcd()
         self.start_times=[]
         self.pair={}
 
-        if dump:
-            self.vcd_writer=VCDWriter(open(dump,'w'), timescale='1 ps', date='today')
+        if vcd:
+            self.vcd_writer=VCDWriter(open(vcd,'w'), timescale='1 ps', date='today')
         else:
             self.vcd_writer=VCDWriter(open(os.devnull,'w'), timescale='1 ps', date='today')
             self.vcd_writer.dump_off(self.env.now)
@@ -87,7 +87,7 @@ class System:
             for model in c.primitive.consume + c.primitive.produce:
                 for r in model.resources:
                     if not hasattr(r, 'res'):
-                        r.res = Resource(env, capacity=r.capacity)
+                        r.res = Resource(self.env, capacity=r.capacity)
 
         log.info('Done initializing the system.')
 
