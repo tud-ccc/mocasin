@@ -24,7 +24,6 @@ from pykpn.slx import SlxTraceReader
 
 log = logging.getLogger(__name__)
 
-
 def main():
     parser = argparse.ArgumentParser()
 
@@ -34,6 +33,9 @@ def main():
         action="count",
         help="increase output verbosity (e.g., -vv is more than -v)",
         dest='verbosity')
+
+    parser.add_argument('-c', dest="configFile", required=True,
+                    help="input configuration file", type=str)
 
     reqNamed = parser.add_argument_group('required named arguments')
 
@@ -52,7 +54,7 @@ def main():
     # Declare the list of applications
     applications=[]
     # Create the platform
-    config=SlxConfig('config.ini')
+    config=SlxConfig(args.configFile)
     for i in config.applications:
         if i not in config.conf:
             raise ValueError("application name does not match to the section key")

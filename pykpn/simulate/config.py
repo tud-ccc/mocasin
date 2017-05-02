@@ -36,4 +36,4 @@ class SlxConfig:
 
     def get_ini_time(self, app):
         ureg = UnitRegistry()
-        return ureg(self.conf[app]['ini_time']).to(ureg.ps).magnitude
+        return ureg(self.conf[app]['start_time']).to(ureg.ps).magnitude

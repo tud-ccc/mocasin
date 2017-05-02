@@ -31,7 +31,7 @@ class System:
         self.schedulers = []
         self.channels = {}
         dump=config.get_vcd()
-        self.ini_times=[]
+        self.start_times=[]
         self.pair={}
 
         if dump:
@@ -42,7 +42,7 @@ class System:
 
         log.info('Start initializing the system.')
         for app in self.applications:
-            self.ini_times.append([app,int(app.ini_time)])
+            self.start_times.append([app,int(app.start_time)])
             log.debug('  Load application: ' + app.name)
             for cm in app.mapping.channelMappings:
                 name = app.name + '.' + cm.kpnChannel.name
@@ -118,17 +118,17 @@ class System:
         return None
 
     def run(self):
-        self.ini_times=sorted(self.ini_times, key=itemgetter(1)) # applications sorted according to their initialization times in a list [application, initialization time]
-        time_delay=[self.ini_times[0][1]]+[self.ini_times[i][1]-self.ini_times[i-1][1] for i in range(1, len(self.ini_times))] #the differences in the initialization times of succesive applications 
+        self.start_times=sorted(self.start_times, key=itemgetter(1)) # applications sorted according to their initialization times in a list [application, initialization time]
+        time_delay=[self.start_times[0][1]]+[self.start_times[i][1]-self.start_times[i-1][1] for i in range(1, len(self.start_times))] #the differences in the initialization times of succesive applications 
 
         for i in time_delay: 
             yield(self.env.timeout(i)) #delay till the initialization time is reached
-            log.info('{0:19}'.format(self.env.now)+": Start application "+self.ini_times[0][0].name)
+            log.info('{0:19}'.format(self.env.now)+": Start application "+self.start_times[0][0].name)
             for s in self.pair: #self.pair contains scheduler and processes key value pair **scheduler={process1, process2,...}
                 for l in self.pair[s]: #l is the process
-                    if l.name[0:4]==self.ini_times[0][0].name: #check if process name has the application name as in the ini)times list
+                    if l.name[0:4]==self.start_times[0][0].name: #check if process name has the application name as in the ini)times list
                             s.assignProcess(l)
-            self.ini_times.pop(0)
+            self.start_times.pop(0)
 
     def Migrate_ProcessToScheduler(self, process,scheduler):
         for s in self.pair:
