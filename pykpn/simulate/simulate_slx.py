@@ -34,7 +34,7 @@ def main():
         help="increase output verbosity (e.g., -vv is more than -v)",
         dest='verbosity')
 
-    parser.add_argument('-c', dest="configFile", required=True,
+    parser.add_argument('configFile', nargs=1,
                     help="input configuration file", type=str)
 
     reqNamed = parser.add_argument_group('required named arguments')
