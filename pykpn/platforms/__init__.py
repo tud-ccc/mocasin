@@ -5,7 +5,7 @@ from pykpn.platforms import Tomahawk2Platform
 from pykpn.platforms import GenericNocPlatform
 
 
-def createPlatformByName(env, name):
+def createPlatformByName(name):
     if name is None:
         raise ValueError('Define the platform')
 
@@ -15,10 +15,10 @@ def createPlatformByName(env, name):
         arch=name[temp1+1:temp1+temp2+1]
         x=int(name[-1])
         y=int(name[-3])
-        return GenericNocPlatform(env, arch, x, y)
+        return GenericNocPlatform(arch, x, y)
 
     elif name=='tomahawk2':
-        return (Tomahawk2Platform(env))
+        return (Tomahawk2Platform())
     else:
         raise ValueError('Platform does not exist')
 

@@ -5,14 +5,13 @@ from pint import UnitRegistry
 from pykpn.platforms import createPlatformByName
 
 class SlxConfig:
-    def __init__(self, env, config):
-        self.env=env
+    def __init__(self, config):
         self.conf=configparser.ConfigParser()
         self.conf.read(config)
         self.applications=self.get_apps()
 
     def get_platform(self):
-        return createPlatformByName(self.env, self.conf['simulation']['platform'])
+        return createPlatformByName(self.conf['simulation']['platform'])
 
     def get_apps(self):
         return self.conf['simulation']['applications'].split(",")

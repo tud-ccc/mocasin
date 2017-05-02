@@ -52,7 +52,7 @@ def main():
     # Declare the list of applications
     applications=[]
     # Create the platform
-    config=SlxConfig(env, 'config.ini')
+    config=SlxConfig('config.ini')
     for i in config.applications:
         if i not in config.conf:
             raise ValueError("application name does not match to the section key")
