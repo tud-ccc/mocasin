@@ -76,7 +76,6 @@ class GenericNocPlatform(Platform):
                     memory = Memory("sp" + str(z), 32768)
                     self.memories.append(memory)
                     m.create_ni([memory, processor], i, j)
-                    z+=1
                     # define a scheduler per PE, the scheduling delay is
                     # arbitrarily chosen
                     scheduler = Scheduler("SchedulerForProcessor(PE" + str(z) +
@@ -84,6 +83,7 @@ class GenericNocPlatform(Platform):
                                           [processor],
                                           {'FIFO': 100, 'RoundRobin': 200})
                     self.schedulers.append(scheduler)
+                    z+=1
 
         for i in range(0, x*y*EP_per_router):
             for j in range(0, x*y*EP_per_router):
