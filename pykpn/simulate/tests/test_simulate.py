@@ -5,8 +5,6 @@
 #
 # Authors: Christian Menard
 
-import simpy
-
 from unittest import TestCase
 
 from pykpn.platforms import Tomahawk2Platform
@@ -20,7 +18,6 @@ from pykpn.slx import SlxTraceReader
 class TestSimulate(TestCase):
     def test_slx(self):
 
-        env = simpy.Environment()
         platform = Tomahawk2Platform()
         graph = SlxKpnGraph('graph', 'apps/pipeline/pipeline.cpn.xml')
         mapping = SlxMapping(graph,
@@ -36,6 +33,6 @@ class TestSimulate(TestCase):
             path = 'apps/pipeline/traces/' + name + '.' + type + '.cpntrace'
             readers[name] = SlxTraceReader(path, 'app')
 
-        app = Application('app', graph, mapping, readers)
-        system = System(env, platform, [app], None)
+        app = Application('app', graph, mapping, readers, 0)
+        system = System(None, platform, [app])
         system.simulate()
