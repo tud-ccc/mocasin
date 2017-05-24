@@ -29,6 +29,9 @@ class Scheduler(object):
         self.processes = processes
         self.policy = policy
 
+        self.prev_process=None
+        self.first_iteration=False
+
         self.schedulingDelay = info.policies[policy]
 
         self.vcd_writer = system.vcd_writer
@@ -51,115 +54,23 @@ class Scheduler(object):
         while(True):
             log.info('{0:16}'.format(self.env.now) + ': scheduler ' +
                  self.name +' woke up')
-            if self.policy == "None":
-                # if scheduling is disabled, we run the processes after each other
-                for process in self.processes:
-                    while True:
-                        assert not process.state == ProcessState.Running
-                        self.vcd_writer.change(self.process_var, self.env.now,
-                                               int(process.vcd_id[0:128], 2))
-                        yield self.env.process(process.run())
 
-                        if process.state == ProcessState.Finished:
-                            break
-                        elif process.state == ProcessState.Blocked:
-                            self.vcd_writer.change(self.process_var, self.env.now,
-                                                   None)
-                            yield process.event_unblock
-                self.vcd_writer.change(self.process_var, self.env.now, None)
-
-            elif self.policy == "RoundRobin":
+            if self.policy == 'FIFO' or self.policy == "RoundRobin" or self.policy=="None":
                 while True:
-                    first_iteration=True
-                    allProcessesFinished = True
-                    allProcessesBlocked = True
-                    for process in self.processes:
-                        assert not process.state == ProcessState.Running
-                        if process.state == ProcessState.Blocked:
-                            allProcessesFinished = False
-                        elif process.state == ProcessState.Finished:
-                            continue
-                        elif process.state == ProcessState.Ready:
-                            prev_process=process
-                            allProcessesBlocked = False
-                            allProcessesFinished = False
-                            self.vcd_writer.change(self.process_var, self.env.now,
-                                                   int(process.vcd_id[0:128],2))
-                            yield self.env.process(process.run())
-
-                            # pay for the scheduling delay
-                            delay = 0
-                            if first_iteration:
-                                # Nothing to switch out on first iteration
-                                delay = self.schedulingDelay + \
-                                        self.processor.contextSwitchInDelay
-                                first_iteration = False
-                            else:
-                                delay = self.schedulingDelay + \
-                                        self.processor.contextSwitchInDelay + \
-                                        self.processor.contextSwitchOutDelay
-                            yield self.env.timeout(
-                                    self.processor.cyclesToTicks(delay))
-                        else:
-                            assert False, 'unknown process state'
-
-                    if allProcessesFinished:
-                        self.vcd_writer.change(self.process_var, self.env.now,
-                                               None)
-                        break
-
-                    if allProcessesBlocked:
-                        self.vcd_writer.change(self.process_var, self.env.now,
-                                               None)
-                        # collect unblock events
-                        events = []
-                        for p in self.processes:
-                            events.append(p.event_unblock)
-                        yield simpy.events.AnyOf(self.env, events)
-
-            elif self.policy == 'FIFO':
-                prev_process = None
-                while True:
-                    allProcessesFinished = True
-                    allProcessesBlocked = True
-                    min=sys.maxsize
-                    p=None
-                    for process in self.processes:
-                        if process.state == ProcessState.Blocked:
-                            allProcessesFinished = False
-                        elif process.state == ProcessState.Finished:
-                            continue
-                        elif process.state == ProcessState.Ready:
-                            allProcessesBlocked = False
-                            allProcessesFinished = False
-
-                            if int(process.time) < min:
-                                min=int(process.time)
-                                p=process
-                        else:
-                            assert False, 'unknown process state'
-
+                    p,allProcessesFinished=self.scheduling()
                     if p is not None:
-                        delay = self.schedulingDelay
-                        if prev_process is None:
-                            # we need to load the first process
-                            delay = delay + self.processor.contextSwitchInDelay
-                        elif p != prev_process:
-                            delay = delay + self.processor.contextSwitchInDelay + \
-                                    self.processor.contextSwitchOutDelay
+                        delay=self.scheduling_delay(p)
                         yield self.env.timeout(self.processor.cyclesToTicks(delay))
 
                         self.vcd_writer.change(self.process_var, self.env.now,
                                                int(p.vcd_id[0:128], 2))
                         yield self.env.process(p.run())
-                        prev_process = p
+                    else:
+                        if allProcessesFinished:
+                            self.vcd_writer.change(self.process_var, self.env.now,
+                                                   None)
+                            break
 
-                    if allProcessesFinished:
-                        self.vcd_writer.change(self.process_var, self.env.now,
-                                               None)
-                        break
-
-                    if allProcessesBlocked:
                         # collect unblock events
                         self.vcd_writer.change(self.process_var, self.env.now,
                                                None)
@@ -174,6 +85,113 @@ class Scheduler(object):
             yield self.wake_up
         log.info('{0:16}'.format(self.env.now) + ': scheduler ' + self.name +
                  ' finished execution')
+
+    def scheduling(self):
+        if self.policy=='None':
+            return self.none_sched()
+        elif self.policy=='FIFO':
+            return self.fifo_sched()
+        elif self.policy=='RoundRobin':
+            return self.roundrobin_sched()
+
+    def scheduling_delay(self, p):
+        if self.policy=='None':
+            return self.delay_none()
+        elif self.policy=='FIFO':
+            return self.delay_fifo(p)
+        elif self.policy=='RoundRobin':
+            return self.delay_roundrobin()
+
+    def none_sched(self):
+        if self.prev_process==None and self.processes:
+            #if prev_process is empty allot a process from the list
+            self.prev_process=self.processes[0]
+        elif self.prev_process==None:
+            #if prev_process is empty and there are no available processes
+            #return None processes and allProcessesFinished is True
+            return None,True
+        assert not self.prev_process.state == ProcessState.Running
+        if self.prev_process.state == ProcessState.Blocked:
+            #if the process is blocked allProcessFinished is false
+            return None,False
+        elif self.prev_process.state == ProcessState.Finished:
+            if self.processes.index(self.prev_process)+1==len(self.processes):
+            #the process is finished and there are no more processes
+                return None, True
+            else:
+            #the processs is finished so allot next process to the previous process
+                self.prev_process=self.processes[self.processes.index(self.prev_process)+1]
+                return self.prev_process,False
+        elif self.prev_process.state == ProcessState.Ready:
+            return self.prev_process, False
+
+
+    def roundrobin_sched(self):
+        allProcessesFinished = True
+        for process in self.processes:
+            assert not process.state == ProcessState.Running
+            if process.state == ProcessState.Blocked:
+            #if the current process is blocked
+                allProcessesFinished = False
+            elif process.state == ProcessState.Finished:
+            #if thr current process is finished move on to the next one
+                continue
+            elif process.state == ProcessState.Ready:
+                allProcessesFinished = False
+                return process, allProcessesFinished
+            else:
+                assert False, 'unknown process state'
+        return None, allProcessesFinished
+
+    def fifo_sched(self):
+        allProcessesFinished = True
+        min=sys.maxsize
+        p=None
+        for process in self.processes:
+            if process.state == ProcessState.Blocked:
+                allProcessesFinished = False
+            elif process.state == ProcessState.Finished:
+                continue
+            elif process.state == ProcessState.Ready:
+                allProcessesFinished = False
+
+                if int(process.time) < min:
+                    #the process that has been waiting the longest
+                    #should be run first
+                    min=int(process.time)
+                    p=process
+                    return p,allProcessesFinished
+            else:
+                assert False, 'unknown process state'
+        return None, allProcessesFinished
+
+    def delay_none(self):
+        return 0
+
+    def delay_fifo(self, p):
+        delay = self.schedulingDelay
+        if self.prev_process is None:
+        # we need to load the first process
+            delay = delay + self.processor.contextSwitchInDelay
+        elif p != self.prev_process:
+            delay = delay + self.processor.contextSwitchInDelay + \
+                    self.processor.contextSwitchOutDelay
+        self.prev_process = p
+        return delay
+
+
+    def delay_roundrobin(self):
+        delay = self.schedulingDelay
+        if self.first_iteration:
+            # Nothing to switch out on first iteration
+            delay = delay +\
+                    self.processor.contextSwitchInDelay
+            self.first_iteration = False
+        else:
+            delay = delay + \
+                    self.processor.contextSwitchInDelay + \
+                    self.processor.contextSwitchOutDelay
+        return delay
 
     def setTraceDir(self, dir):
         for process in self.processes:
