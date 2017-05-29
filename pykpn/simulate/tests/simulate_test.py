@@ -23,7 +23,7 @@ from ...common import TerminateEntry
 from ...common import Primitive
 from ...common import Processor
 from ...simulate import Channel
-
+from ..process import ProcessState
 from unittest import TestCase
 
 from pykpn.platforms import GenericNocPlatform
@@ -38,19 +38,6 @@ log = logging.getLogger(__name__)
 
 
 
-class TestSimulate(TestCase):
-    def test_system(self):
-        system=create_system()
-        system.simulate()
-        k=0
-        I=0
-        for i in system.pair:
-            k+=1
-            if k==1:I=i
-            if k==2:system.Migrate_ProcessToScheduler(system.pair[I][0],i)
-            system.findScheduler(i)
-        system.run()
-
 class TestChannel(TestCase):
     def __init__(self, *args, **kwargs):
         super(TestChannel, self).__init__(*args, **kwargs)
@@ -58,6 +45,7 @@ class TestChannel(TestCase):
         self.c=Channel('app.c1', self.system, self.mappingInfo)
 
     def test_initialized(self):
+        #Channel capacity is 4, so a channel can produce maximum of 4 packets
         self.assertTrue(self.c.canProduceTokens(4))
         self.assertTrue(self.c.canConsumeTokens(0))
 
@@ -75,6 +63,8 @@ class TestChannel(TestCase):
         self.c.consumeTokens(4)
 
     def test_overflowTokens(self):
+        #since the channel can only produce maximum of 4 tokens
+        #excepttion is thrown
         try:
             assert self.c.produceTokens(100)
         except:
@@ -86,6 +76,7 @@ class TestChannel(TestCase):
             assert self.c.consumeTokens(100)
         except:
             True
+
 
 class TestProcess(TestCase):
     def __init__(self, *args, **kwargs):
@@ -113,16 +104,120 @@ class TestScheduler(TestCase):
         self.info.name='SchedulerForProcessor(PE1)'
         self.info.processors=[Processor('PE1', 'RISC', 200000000)]
         self.info.policies={'FIFO':100}
-        self.processes=[]
+        self.system.channels={'app.c1': Channel('app.c1', self.system, self.mappingInfo)\
+                , 'app.c2': Channel('app.c2', self.system, self.mappingInfo)}
+        self.traceReader1=DummyTraceReader('w1')
+        self.traceReader2=DummyTraceReader('w2')
+        self.p=Process('w1', self.system, None, self.traceReader1)
+        self.P=Process('w2', self.system, None, self.traceReader2)
         self.s=Scheduler(self.system, [], self.policy, self.info)
 
-    def test_RunScheduler(self):
-        self.s.run()
+    def test_SchedulingDelay(self):
+        assert self.s.scheduling_delay(self.P)==100
+
+    def test_RoundRobin(self):
+        assert self.s.roundrobin_sched()==(None,True)
+        assert self.s.delay_roundrobin()==100
+        self.s.assignProcess(self.P)
+        self.s.assignProcess(self.p)
+        assert self.s.roundrobin_sched()==(self.P,False)
+        self.P.state=ProcessState.Blocked
+        assert self.s.roundrobin_sched()==(self.p,False)
+        self.P.state=ProcessState.Finished
+        assert self.s.roundrobin_sched()==(self.p,False)
+        self.p.state=ProcessState.Finished
+        assert self.s.roundrobin_sched()==(None,True)
+        self.P.state=ProcessState.Ready
+        assert self.s.fifo_sched()==(self.P,False)
+
+    def test_FIFO(self):
+        assert self.s.fifo_sched()==(None,True)
+        assert self.s.delay_fifo(self.P)==100
+        assert self.s.delay_fifo(self.p)==100
+        self.s.assignProcess(self.p)
+        self.s.assignProcess(self.P)
+        assert self.s.fifo_sched()==(self.p,False)
+        self.P.state=ProcessState.Blocked
+        assert self.s.fifo_sched()==(self.p,False)
+        self.P.state=ProcessState.Finished
+        assert self.s.fifo_sched()==(self.p,False)
+        self.p.state=ProcessState.Finished
+        assert self.s.fifo_sched()==(None,True)
+        self.P.state=ProcessState.Ready
+        assert self.s.fifo_sched()==(self.P,False)
+
+    def test_NoneScheduler(self):
+        #there are no processes assigned so no process is returned
+        #and allProcessesFinished is True
+        assert self.s.none_sched()==(None,True)
+        assert self.s.delay_none()==0
+        self.s.assignProcess(self.p)
+        self.s.assignProcess(self.P)
+        # the process that was assigned first is returned and since there is
+        #still one process that needs to be scheduled allProcessesFinished is
+        #False
+        assert self.s.none_sched()==(self.p,False)
+        #the second process is blocked, thus sheduler returns the process p 
+        #and all process finished is False
+        self.P.state=ProcessState.Blocked
+        assert self.s.none_sched()==(self.p,False)
+        #process P is finshed but p still can be scheduled
+        self.P.state=ProcessState.Finished
+        assert self.s.none_sched()==(self.p,False)
+        #process p is finished so P is scheduled
+        self.p.state=ProcessState.Finished
+        assert self.s.none_sched()==(self.P, False)
+        self.P.state=ProcessState.Ready
+        assert self.s.none_sched()==(self.P,False)
+
+class TestSystem(TestCase):
+    def __init__(self, *args, **kwargs):
+        super(TestSystem, self).__init__(*args, **kwargs)
+        env = simpy.Environment()
+        platform=Tomahawk2Platform()
+        graph = DummyKpnGraph()
+        mapping = DummyMapping(graph,
+                            platform)
+        readers = {}
+        for pm in mapping.processMappings:
+            name = pm.kpnProcess.name
+            processors = pm.scheduler.processors
+            readers[name] = DummyTraceReader(name)
+        app = Application('app', graph, mapping, readers,0)
+        self.system = System('dump.vcd', platform, [app])
+        #add processes to the schedulers
+        self.system.schedulers[0].assignProcess(self.system.pair[self.system.schedulers[0]][0])
+        self.system.schedulers[1].assignProcess(self.system.pair[self.system.schedulers[1]][0])
+        self.system.schedulers[2].assignProcess(self.system.pair[self.system.schedulers[2]][0])
+
+
+    def test_simulate(self):
+        self.system.simulate()
+
+    def test_findScheduler(self):
+        assert self.system.findScheduler('SchedulerForProcessor(PE3)').name=='SchedulerForProcessor(PE3)'
+
+    def test_run(self):
+        self.system.run()
+
+    def test_Migrate(self):
+        #Move process app.w3 from Scheduler3 to Scheduler2
+        #Now there should be 2 processes allotted to scheduler 2
+        #and none to scheduler3
+        self.system.Migrate_ProcessToScheduler('app.w3','SchedulerForProcessor(PE2)')
+        assert self.system.schedulers[0].processes[0].name == 'app.w2'
+        assert self.system.schedulers[0].processes[1].name == 'app.w3'
+        assert len(self.system.pair[self.system.schedulers[1]]) == 0
+        self.system.Migrate_ProcessToScheduler('app.w2','SchedulerForProcessor(PE4)')
+        #Move process app.w2 to scheduler 4
+        assert self.system.schedulers[2].processes[0].name == 'app.w4'
+        assert self.system.schedulers[2].processes[1].name == 'app.w2'
 
 class Empty:
-        pass
+    pass
 
 def common_sys():
+    #create a dummy system object
     system=Empty()
     system.env=simpy.Environment()
     system.vcd_writer=VCDWriter(open(os.devnull,'w'), timescale='1 ps', date='today')
@@ -135,23 +230,6 @@ def common_sys():
     mappingInfo.kpnChannel=kpnchannel
     mappingInfo.primitive=Primitive()
     return system,mappingInfo
-
-
-def create_system():
-    env = simpy.Environment()
-    platform = Tomahawk2Platform()
-    graph = DummyKpnGraph()
-    mapping = DummyMapping(graph,
-                          platform)
-
-    readers = {}
-    for pm in mapping.processMappings:
-        name = pm.kpnProcess.name
-        processors = pm.scheduler.processors
-        readers[name] = DummyTraceReader(name)
-    app = Application('app', graph, mapping, readers,0)
-    system = System('dump.vcd', platform, [app])
-    return system
 
 class DummyKpnGraph(KpnGraph):
     def __init__(self):
@@ -167,7 +245,6 @@ class DummyKpnGraph(KpnGraph):
 
 
 class DummyMapping(Mapping):
-
     def __init__(self, kpn, platform):
         Mapping.__init__(self, kpn, platform)
 
@@ -190,11 +267,11 @@ class DummyMapping(Mapping):
                                                            primitive))
 
 class DummyTraceReader(TraceReader):
-
     def __init__(self, ProcessName):
         self.ProcessName =ProcessName
         self.buffer = None
-        self.traces=[ProcessEntry(12), ProcessEntry(1000), ProcessEntry(12), ProcessEntry(1000), ProcessEntry(12), TerminateEntry()]
+        self.traces=[ProcessEntry(12), ProcessEntry(1000), ProcessEntry(12),\
+                ProcessEntry(1000), ProcessEntry(12), TerminateEntry()]
         self.i=-1
 
     def getNextEntry(self):
@@ -204,4 +281,3 @@ class DummyTraceReader(TraceReader):
             return tmp
         self.i+=1
         return self.traces[self.i]
-
