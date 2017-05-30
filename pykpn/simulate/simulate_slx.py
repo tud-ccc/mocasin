@@ -12,7 +12,7 @@ import os
 
 from pykpn.simulate import System
 from pykpn.simulate import Application
-from pykpn.simulate import SlxConfig
+from pykpn.slx import SlxConfig
 from pykpn.slx import SlxKpnGraph
 from pykpn.slx import SlxMapping
 from pykpn.slx import SlxTraceReader
