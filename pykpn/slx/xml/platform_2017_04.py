@@ -2,20 +2,19 @@
 # -*- coding: utf-8 -*-
 
 #
-# Generated Thu Apr  6 16:15:07 2017 by generateDS.py version 2.17a.
+# Generated Tue May 30 17:17:04 2017 by generateDS.py version 2.26a.
 #
 # Command line options:
-#   ('-o', 'slxplat.py')
-#   ('-s', 'slx_plat_subs.py')
+#   ('-o', 'platform.py')
 #
 # Command line arguments:
-#   /opt/maps/common/xsd_schemas/slx_platform_descriptor/SlxPlatformDescriptor.xsd
+#   SlxPlatformDescriptor.xsd
 #
 # Command line:
-#   generateDS.py -o "slxplat.py" -s "slx_plat_subs.py" /opt/maps/common/xsd_schemas/slx_platform_descriptor/SlxPlatformDescriptor.xsd
+#   /net/home/cmenard/.local/bin/generateDS -o "platform.py" SlxPlatformDescriptor.xsd
 #
 # Current working directory (os.getcwd()):
-#   generateds
+#   slx_platform_descriptor
 #
 
 import sys
@@ -23,17 +22,28 @@ import re as re_
 import base64
 import datetime as datetime_
 import warnings as warnings_
-from lxml import etree as etree_
+try:
+    from lxml import etree as etree_
+except ImportError:
+    from xml.etree import ElementTree as etree_
 
 
 Validate_simpletypes_ = True
+if sys.version_info.major == 2:
+    BaseStrType_ = basestring
+else:
+    BaseStrType_ = str
 
 
 def parsexml_(infile, parser=None, **kwargs):
     if parser is None:
         # Use the lxml ElementTree compatible parser so that, e.g.,
         #   we ignore comments.
-        parser = etree_.ETCompatXMLParser()
+        try:
+            parser = etree_.ETCompatXMLParser()
+        except AttributeError:
+            # fallback to xml.etree
+            parser = etree_.XMLParser()
     doc = etree_.parse(infile, parser=parser, **kwargs)
     return doc
 
@@ -220,7 +230,8 @@ except ImportError as exp:
                                 _svalue += '+'
                             hours = total_seconds // 3600
                             minutes = (total_seconds - (hours * 3600)) // 60
-                            _svalue += '{0:02d}:{1:02d}'.format(hours, minutes)
+                            _svalue += '{0:02d}:{1:02d}'.format(
+                                hours, minutes)
             except AttributeError:
                 pass
             return _svalue
@@ -345,6 +356,29 @@ except ImportError as exp:
         @classmethod
         def gds_reverse_node_mapping(cls, mapping):
             return dict(((v, k) for k, v in mapping.iteritems()))
+        @staticmethod
+        def gds_encode(instring):
+            if sys.version_info.major == 2:
+                return instring.encode(ExternalEncoding)
+            else:
+                return instring
+        @staticmethod
+        def convert_unicode(instring):
+            if isinstance(instring, str):
+                result = quote_xml(instring)
+            elif sys.version_info.major == 2 and isinstance(instring, unicode):
+                result = quote_xml(instring).encode('utf8')
+            else:
+                result = GeneratedsSuper.gds_encode(str(instring))
+            return result
+
+    def getSubclassFromModule_(module, class_):
+        '''Get the subclass of a class from a specific module.'''
+        name = class_.__name__ + 'Sub'
+        if hasattr(module, name):
+            return getattr(module, name)
+        else:
+            return None
 
 
 #
@@ -366,11 +400,15 @@ except ImportError as exp:
 # Globals
 #
 
-ExternalEncoding = 'ascii'
+ExternalEncoding = 'utf-8'
 Tag_pattern_ = re_.compile(r'({.*})?(.*)')
 String_cleanup_pat_ = re_.compile(r"[\n\r\s]+")
 Namespace_extract_pat_ = re_.compile(r'{(.*)}(.*)')
 CDATA_pattern_ = re_.compile(r"<!\[CDATA\[.*?\]\]>", re_.DOTALL)
+
+# Change this to redirect the generated superclass module to use a
+# specific subclass module.
+CurrentSubclassModule_ = None
 
 #
 # Support/utility functions.
@@ -387,8 +425,7 @@ def quote_xml(inStr):
     "Escape markup chars, but do not modify CDATA sections."
     if not inStr:
         return ''
-    s1 = (isinstance(inStr, basestring) and inStr or
-          '%s' % inStr)
+    s1 = (isinstance(inStr, BaseStrType_) and inStr or '%s' % inStr)
     s2 = ''
     pos = 0
     matchobjects = CDATA_pattern_.finditer(s1)
@@ -410,8 +447,7 @@ def quote_xml_aux(inStr):
 
 
 def quote_attrib(inStr):
-    s1 = (isinstance(inStr, basestring) and inStr or
-          '%s' % inStr)
+    s1 = (isinstance(inStr, BaseStrType_) and inStr or '%s' % inStr)
     s1 = s1.replace('&', '&amp;')
     s1 = s1.replace('<', '&lt;')
     s1 = s1.replace('>', '&gt;')
@@ -512,7 +548,8 @@ class MixedContainer:
         elif self.category == MixedContainer.CategorySimple:
             self.exportSimple(outfile, level, name)
         else:    # category == MixedContainer.CategoryComplex
-            self.value.export(outfile, level, namespace, name, pretty_print)
+            self.value.export(
+                outfile, level, namespace, name, pretty_print=pretty_print)
     def exportSimple(self, outfile, level, name):
         if self.content_type == MixedContainer.TypeString:
             outfile.write('<%s>%s</%s>' % (
@@ -586,10 +623,11 @@ class MixedContainer:
 
 
 class MemberSpec_(object):
-    def __init__(self, name='', data_type='', container=0):
+    def __init__(self, name='', data_type='', container=0, optional=0):
         self.name = name
         self.data_type = data_type
         self.container = container
+        self.optional = optional
     def set_name(self, name): self.name = name
     def get_name(self): return self.name
     def set_data_type(self, data_type): self.data_type = data_type
@@ -604,6 +642,8 @@ class MemberSpec_(object):
             return self.data_type
     def set_container(self, container): self.container = container
     def get_container(self): return self.container
+    def set_optional(self, optional): self.optional = optional
+    def get_optional(self): return self.optional
 
 
 def _cast(typ, value):
@@ -619,11 +659,11 @@ def _cast(typ, value):
 class VoltageDomainType(GeneratedsSuper):
     subclass = None
     superclass = None
-    def __init__(self, switchTimeValue='0', switchTimeUnit='us', id=None, Voltage=None, VoltageInput=None):
+    def __init__(self, id=None, switchTimeValue='0', switchTimeUnit='us', Voltage=None, VoltageInput=None):
         self.original_tagname_ = None
+        self.id = _cast(None, id)
         self.switchTimeValue = _cast(None, switchTimeValue)
         self.switchTimeUnit = _cast(None, switchTimeUnit)
-        self.id = _cast(None, id)
         if Voltage is None:
             self.Voltage = []
         else:
@@ -633,6 +673,11 @@ class VoltageDomainType(GeneratedsSuper):
         else:
             self.VoltageInput = VoltageInput
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, VoltageDomainType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if VoltageDomainType.subclass:
             return VoltageDomainType.subclass(*args_, **kwargs_)
         else:
@@ -648,12 +693,19 @@ class VoltageDomainType(GeneratedsSuper):
     def add_VoltageInput(self, value): self.VoltageInput.append(value)
     def insert_VoltageInput_at(self, index, value): self.VoltageInput.insert(index, value)
     def replace_VoltageInput_at(self, index, value): self.VoltageInput[index] = value
+    def get_id(self): return self.id
+    def set_id(self, id): self.id = id
     def get_switchTimeValue(self): return self.switchTimeValue
     def set_switchTimeValue(self, switchTimeValue): self.switchTimeValue = switchTimeValue
     def get_switchTimeUnit(self): return self.switchTimeUnit
     def set_switchTimeUnit(self, switchTimeUnit): self.switchTimeUnit = switchTimeUnit
-    def get_id(self): return self.id
-    def set_id(self, id): self.id = id
+    def validate_IdType(self, value):
+        # Validate type IdType, a restriction on xs:ID.
+        if value is not None and Validate_simpletypes_:
+            if not self.gds_validate_simple_patterns(
+                    self.validate_IdType_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_IdType_patterns_, ))
+    validate_IdType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def validate_TimeValueType(self, value):
         # Validate type TimeValueType, a restriction on NonNegativeFloatType.
         if value is not None and Validate_simpletypes_:
@@ -671,13 +723,6 @@ class VoltageDomainType(GeneratedsSuper):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on TimeUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_IdType(self, value):
-        # Validate type IdType, a restriction on xs:ID.
-        if value is not None and Validate_simpletypes_:
-            if not self.gds_validate_simple_patterns(
-                    self.validate_IdType_patterns_, value):
-                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_IdType_patterns_, ))
-    validate_IdType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def hasContent_(self):
         if (
             self.Voltage or
@@ -705,15 +750,15 @@ class VoltageDomainType(GeneratedsSuper):
         else:
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='VoltageDomainType'):
-        if self.switchTimeValue != 0 and 'switchTimeValue' not in already_processed:
-            already_processed.add('switchTimeValue')
-            outfile.write(' switchTimeValue=%s' % (quote_attrib(self.switchTimeValue), ))
-        if self.switchTimeUnit != us and 'switchTimeUnit' not in already_processed:
-            already_processed.add('switchTimeUnit')
-            outfile.write(' switchTimeUnit=%s' % (quote_attrib(self.switchTimeUnit), ))
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
+        if self.switchTimeValue != "0" and 'switchTimeValue' not in already_processed:
+            already_processed.add('switchTimeValue')
+            outfile.write(' switchTimeValue=%s' % (quote_attrib(self.switchTimeValue), ))
+        if self.switchTimeUnit != "us" and 'switchTimeUnit' not in already_processed:
+            already_processed.add('switchTimeUnit')
+            outfile.write(' switchTimeUnit=%s' % (quote_attrib(self.switchTimeUnit), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='VoltageDomainType', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
@@ -731,6 +776,11 @@ class VoltageDomainType(GeneratedsSuper):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
+        value = find_attr_value_('id', node)
+        if value is not None and 'id' not in already_processed:
+            already_processed.add('id')
+            self.id = value
+            self.validate_IdType(self.id)    # validate type IdType
         value = find_attr_value_('switchTimeValue', node)
         if value is not None and 'switchTimeValue' not in already_processed:
             already_processed.add('switchTimeValue')
@@ -741,11 +791,6 @@ class VoltageDomainType(GeneratedsSuper):
             already_processed.add('switchTimeUnit')
             self.switchTimeUnit = value
             self.validate_TimeUnitType(self.switchTimeUnit)    # validate type TimeUnitType
-        value = find_attr_value_('id', node)
-        if value is not None and 'id' not in already_processed:
-            already_processed.add('id')
-            self.id = value
-            self.validate_IdType(self.id)    # validate type IdType
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         if nodeName_ == 'Voltage':
             obj_ = VoltageType.factory()
@@ -763,11 +808,11 @@ class VoltageDomainType(GeneratedsSuper):
 class FrequencyDomainType(GeneratedsSuper):
     subclass = None
     superclass = None
-    def __init__(self, switchTimeValue='0', switchTimeUnit='us', id=None, Frequency=None, FrequencyInput=None):
+    def __init__(self, id=None, switchTimeValue='0', switchTimeUnit='us', Frequency=None, FrequencyInput=None):
         self.original_tagname_ = None
+        self.id = _cast(None, id)
         self.switchTimeValue = _cast(None, switchTimeValue)
         self.switchTimeUnit = _cast(None, switchTimeUnit)
-        self.id = _cast(None, id)
         if Frequency is None:
             self.Frequency = []
         else:
@@ -777,6 +822,11 @@ class FrequencyDomainType(GeneratedsSuper):
         else:
             self.FrequencyInput = FrequencyInput
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, FrequencyDomainType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if FrequencyDomainType.subclass:
             return FrequencyDomainType.subclass(*args_, **kwargs_)
         else:
@@ -792,12 +842,19 @@ class FrequencyDomainType(GeneratedsSuper):
     def add_FrequencyInput(self, value): self.FrequencyInput.append(value)
     def insert_FrequencyInput_at(self, index, value): self.FrequencyInput.insert(index, value)
     def replace_FrequencyInput_at(self, index, value): self.FrequencyInput[index] = value
+    def get_id(self): return self.id
+    def set_id(self, id): self.id = id
     def get_switchTimeValue(self): return self.switchTimeValue
     def set_switchTimeValue(self, switchTimeValue): self.switchTimeValue = switchTimeValue
     def get_switchTimeUnit(self): return self.switchTimeUnit
     def set_switchTimeUnit(self, switchTimeUnit): self.switchTimeUnit = switchTimeUnit
-    def get_id(self): return self.id
-    def set_id(self, id): self.id = id
+    def validate_IdType(self, value):
+        # Validate type IdType, a restriction on xs:ID.
+        if value is not None and Validate_simpletypes_:
+            if not self.gds_validate_simple_patterns(
+                    self.validate_IdType_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_IdType_patterns_, ))
+    validate_IdType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def validate_TimeValueType(self, value):
         # Validate type TimeValueType, a restriction on NonNegativeFloatType.
         if value is not None and Validate_simpletypes_:
@@ -815,13 +872,6 @@ class FrequencyDomainType(GeneratedsSuper):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on TimeUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_IdType(self, value):
-        # Validate type IdType, a restriction on xs:ID.
-        if value is not None and Validate_simpletypes_:
-            if not self.gds_validate_simple_patterns(
-                    self.validate_IdType_patterns_, value):
-                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_IdType_patterns_, ))
-    validate_IdType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def hasContent_(self):
         if (
             self.Frequency or
@@ -849,15 +899,15 @@ class FrequencyDomainType(GeneratedsSuper):
         else:
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='FrequencyDomainType'):
-        if self.switchTimeValue != 0 and 'switchTimeValue' not in already_processed:
-            already_processed.add('switchTimeValue')
-            outfile.write(' switchTimeValue=%s' % (quote_attrib(self.switchTimeValue), ))
-        if self.switchTimeUnit != us and 'switchTimeUnit' not in already_processed:
-            already_processed.add('switchTimeUnit')
-            outfile.write(' switchTimeUnit=%s' % (quote_attrib(self.switchTimeUnit), ))
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
+        if self.switchTimeValue != "0" and 'switchTimeValue' not in already_processed:
+            already_processed.add('switchTimeValue')
+            outfile.write(' switchTimeValue=%s' % (quote_attrib(self.switchTimeValue), ))
+        if self.switchTimeUnit != "us" and 'switchTimeUnit' not in already_processed:
+            already_processed.add('switchTimeUnit')
+            outfile.write(' switchTimeUnit=%s' % (quote_attrib(self.switchTimeUnit), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='FrequencyDomainType', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
@@ -875,6 +925,11 @@ class FrequencyDomainType(GeneratedsSuper):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
+        value = find_attr_value_('id', node)
+        if value is not None and 'id' not in already_processed:
+            already_processed.add('id')
+            self.id = value
+            self.validate_IdType(self.id)    # validate type IdType
         value = find_attr_value_('switchTimeValue', node)
         if value is not None and 'switchTimeValue' not in already_processed:
             already_processed.add('switchTimeValue')
@@ -885,11 +940,6 @@ class FrequencyDomainType(GeneratedsSuper):
             already_processed.add('switchTimeUnit')
             self.switchTimeUnit = value
             self.validate_TimeUnitType(self.switchTimeUnit)    # validate type TimeUnitType
-        value = find_attr_value_('id', node)
-        if value is not None and 'id' not in already_processed:
-            already_processed.add('id')
-            self.id = value
-            self.validate_IdType(self.id)    # validate type IdType
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         if nodeName_ == 'Frequency':
             obj_ = FrequencyType.factory()
@@ -907,38 +957,31 @@ class FrequencyDomainType(GeneratedsSuper):
 class VoltageDomainConditionType(GeneratedsSuper):
     subclass = None
     superclass = None
-    def __init__(self, unit=None, voltageDomain=None, value=None, condition=None):
+    def __init__(self, voltageDomain=None, condition=None, value=None, unit=None):
         self.original_tagname_ = None
-        self.unit = _cast(None, unit)
         self.voltageDomain = _cast(None, voltageDomain)
-        self.value = _cast(None, value)
         self.condition = _cast(None, condition)
+        self.value = _cast(None, value)
+        self.unit = _cast(None, unit)
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, VoltageDomainConditionType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if VoltageDomainConditionType.subclass:
             return VoltageDomainConditionType.subclass(*args_, **kwargs_)
         else:
             return VoltageDomainConditionType(*args_, **kwargs_)
     factory = staticmethod(factory)
-    def get_unit(self): return self.unit
-    def set_unit(self, unit): self.unit = unit
     def get_voltageDomain(self): return self.voltageDomain
     def set_voltageDomain(self, voltageDomain): self.voltageDomain = voltageDomain
-    def get_value(self): return self.value
-    def set_value(self, value): self.value = value
     def get_condition(self): return self.condition
     def set_condition(self, condition): self.condition = condition
-    def validate_VoltageUnitType(self, value):
-        # Validate type VoltageUnitType, a restriction on xs:string.
-        if value is not None and Validate_simpletypes_:
-            value = str(value)
-            enumerations = ['mV', 'V']
-            enumeration_respectee = False
-            for enum in enumerations:
-                if value == enum:
-                    enumeration_respectee = True
-                    break
-            if not enumeration_respectee:
-                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on VoltageUnitType' % {"value" : value.encode("utf-8")} )
+    def get_value(self): return self.value
+    def set_value(self, value): self.value = value
+    def get_unit(self): return self.unit
+    def set_unit(self, unit): self.unit = unit
     def validate_RefType(self, value):
         # Validate type RefType, a restriction on xs:IDREF.
         if value is not None and Validate_simpletypes_:
@@ -946,11 +989,6 @@ class VoltageDomainConditionType(GeneratedsSuper):
                     self.validate_RefType_patterns_, value):
                 warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_RefType_patterns_, ))
     validate_RefType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
-    def validate_VoltageValueType(self, value):
-        # Validate type VoltageValueType, a restriction on NonNegativeFloatType.
-        if value is not None and Validate_simpletypes_:
-            if value < 0:
-                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on VoltageValueType' % {"value" : value} )
     def validate_MinMaxEqualType(self, value):
         # Validate type MinMaxEqualType, a restriction on xs:string.
         if value is not None and Validate_simpletypes_:
@@ -963,6 +1001,23 @@ class VoltageDomainConditionType(GeneratedsSuper):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on MinMaxEqualType' % {"value" : value.encode("utf-8")} )
+    def validate_VoltageValueType(self, value):
+        # Validate type VoltageValueType, a restriction on NonNegativeFloatType.
+        if value is not None and Validate_simpletypes_:
+            if value < 0:
+                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on VoltageValueType' % {"value" : value} )
+    def validate_VoltageUnitType(self, value):
+        # Validate type VoltageUnitType, a restriction on xs:string.
+        if value is not None and Validate_simpletypes_:
+            value = str(value)
+            enumerations = ['mV', 'V']
+            enumeration_respectee = False
+            for enum in enumerations:
+                if value == enum:
+                    enumeration_respectee = True
+                    break
+            if not enumeration_respectee:
+                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on VoltageUnitType' % {"value" : value.encode("utf-8")} )
     def hasContent_(self):
         if (
 
@@ -988,18 +1043,18 @@ class VoltageDomainConditionType(GeneratedsSuper):
         else:
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='VoltageDomainConditionType'):
-        if self.unit is not None and 'unit' not in already_processed:
-            already_processed.add('unit')
-            outfile.write(' unit=%s' % (quote_attrib(self.unit), ))
         if self.voltageDomain is not None and 'voltageDomain' not in already_processed:
             already_processed.add('voltageDomain')
             outfile.write(' voltageDomain=%s' % (quote_attrib(self.voltageDomain), ))
-        if self.value is not None and 'value' not in already_processed:
-            already_processed.add('value')
-            outfile.write(' value=%s' % (quote_attrib(self.value), ))
         if self.condition is not None and 'condition' not in already_processed:
             already_processed.add('condition')
             outfile.write(' condition=%s' % (quote_attrib(self.condition), ))
+        if self.value is not None and 'value' not in already_processed:
+            already_processed.add('value')
+            outfile.write(' value=%s' % (quote_attrib(self.value), ))
+        if self.unit is not None and 'unit' not in already_processed:
+            already_processed.add('unit')
+            outfile.write(' unit=%s' % (quote_attrib(self.unit), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='VoltageDomainConditionType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
@@ -1010,26 +1065,26 @@ class VoltageDomainConditionType(GeneratedsSuper):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
-        value = find_attr_value_('unit', node)
-        if value is not None and 'unit' not in already_processed:
-            already_processed.add('unit')
-            self.unit = value
-            self.validate_VoltageUnitType(self.unit)    # validate type VoltageUnitType
         value = find_attr_value_('voltageDomain', node)
         if value is not None and 'voltageDomain' not in already_processed:
             already_processed.add('voltageDomain')
             self.voltageDomain = value
             self.validate_RefType(self.voltageDomain)    # validate type RefType
-        value = find_attr_value_('value', node)
-        if value is not None and 'value' not in already_processed:
-            already_processed.add('value')
-            self.value = value
-            self.validate_VoltageValueType(self.value)    # validate type VoltageValueType
         value = find_attr_value_('condition', node)
         if value is not None and 'condition' not in already_processed:
             already_processed.add('condition')
             self.condition = value
             self.validate_MinMaxEqualType(self.condition)    # validate type MinMaxEqualType
+        value = find_attr_value_('value', node)
+        if value is not None and 'value' not in already_processed:
+            already_processed.add('value')
+            self.value = value
+            self.validate_VoltageValueType(self.value)    # validate type VoltageValueType
+        value = find_attr_value_('unit', node)
+        if value is not None and 'unit' not in already_processed:
+            already_processed.add('unit')
+            self.unit = value
+            self.validate_VoltageUnitType(self.unit)    # validate type VoltageUnitType
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         pass
 # end class VoltageDomainConditionType
@@ -1038,13 +1093,18 @@ class VoltageDomainConditionType(GeneratedsSuper):
 class FrequencyDomainConditionType(GeneratedsSuper):
     subclass = None
     superclass = None
-    def __init__(self, frequencyDomain=None, unit=None, value=None, condition=None):
+    def __init__(self, frequencyDomain=None, condition=None, value=None, unit=None):
         self.original_tagname_ = None
         self.frequencyDomain = _cast(None, frequencyDomain)
-        self.unit = _cast(None, unit)
-        self.value = _cast(None, value)
         self.condition = _cast(None, condition)
+        self.value = _cast(None, value)
+        self.unit = _cast(None, unit)
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, FrequencyDomainConditionType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if FrequencyDomainConditionType.subclass:
             return FrequencyDomainConditionType.subclass(*args_, **kwargs_)
         else:
@@ -1052,12 +1112,12 @@ class FrequencyDomainConditionType(GeneratedsSuper):
     factory = staticmethod(factory)
     def get_frequencyDomain(self): return self.frequencyDomain
     def set_frequencyDomain(self, frequencyDomain): self.frequencyDomain = frequencyDomain
-    def get_unit(self): return self.unit
-    def set_unit(self, unit): self.unit = unit
-    def get_value(self): return self.value
-    def set_value(self, value): self.value = value
     def get_condition(self): return self.condition
     def set_condition(self, condition): self.condition = condition
+    def get_value(self): return self.value
+    def set_value(self, value): self.value = value
+    def get_unit(self): return self.unit
+    def set_unit(self, unit): self.unit = unit
     def validate_RefType(self, value):
         # Validate type RefType, a restriction on xs:IDREF.
         if value is not None and Validate_simpletypes_:
@@ -1065,23 +1125,6 @@ class FrequencyDomainConditionType(GeneratedsSuper):
                     self.validate_RefType_patterns_, value):
                 warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_RefType_patterns_, ))
     validate_RefType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
-    def validate_FrequencyUnitType(self, value):
-        # Validate type FrequencyUnitType, a restriction on xs:string.
-        if value is not None and Validate_simpletypes_:
-            value = str(value)
-            enumerations = ['Hz', 'kHz', 'MHz', 'GHz']
-            enumeration_respectee = False
-            for enum in enumerations:
-                if value == enum:
-                    enumeration_respectee = True
-                    break
-            if not enumeration_respectee:
-                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on FrequencyUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_FrequencyValueType(self, value):
-        # Validate type FrequencyValueType, a restriction on NonNegativeFloatType.
-        if value is not None and Validate_simpletypes_:
-            if value < 0:
-                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on FrequencyValueType' % {"value" : value} )
     def validate_MinMaxEqualType(self, value):
         # Validate type MinMaxEqualType, a restriction on xs:string.
         if value is not None and Validate_simpletypes_:
@@ -1094,6 +1137,23 @@ class FrequencyDomainConditionType(GeneratedsSuper):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on MinMaxEqualType' % {"value" : value.encode("utf-8")} )
+    def validate_FrequencyValueType(self, value):
+        # Validate type FrequencyValueType, a restriction on NonNegativeFloatType.
+        if value is not None and Validate_simpletypes_:
+            if value < 0:
+                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on FrequencyValueType' % {"value" : value} )
+    def validate_FrequencyUnitType(self, value):
+        # Validate type FrequencyUnitType, a restriction on xs:string.
+        if value is not None and Validate_simpletypes_:
+            value = str(value)
+            enumerations = ['Hz', 'kHz', 'MHz', 'GHz']
+            enumeration_respectee = False
+            for enum in enumerations:
+                if value == enum:
+                    enumeration_respectee = True
+                    break
+            if not enumeration_respectee:
+                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on FrequencyUnitType' % {"value" : value.encode("utf-8")} )
     def hasContent_(self):
         if (
 
@@ -1122,15 +1182,15 @@ class FrequencyDomainConditionType(GeneratedsSuper):
         if self.frequencyDomain is not None and 'frequencyDomain' not in already_processed:
             already_processed.add('frequencyDomain')
             outfile.write(' frequencyDomain=%s' % (quote_attrib(self.frequencyDomain), ))
-        if self.unit is not None and 'unit' not in already_processed:
-            already_processed.add('unit')
-            outfile.write(' unit=%s' % (quote_attrib(self.unit), ))
-        if self.value is not None and 'value' not in already_processed:
-            already_processed.add('value')
-            outfile.write(' value=%s' % (quote_attrib(self.value), ))
         if self.condition is not None and 'condition' not in already_processed:
             already_processed.add('condition')
             outfile.write(' condition=%s' % (quote_attrib(self.condition), ))
+        if self.value is not None and 'value' not in already_processed:
+            already_processed.add('value')
+            outfile.write(' value=%s' % (quote_attrib(self.value), ))
+        if self.unit is not None and 'unit' not in already_processed:
+            already_processed.add('unit')
+            outfile.write(' unit=%s' % (quote_attrib(self.unit), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='FrequencyDomainConditionType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
@@ -1146,21 +1206,21 @@ class FrequencyDomainConditionType(GeneratedsSuper):
             already_processed.add('frequencyDomain')
             self.frequencyDomain = value
             self.validate_RefType(self.frequencyDomain)    # validate type RefType
-        value = find_attr_value_('unit', node)
-        if value is not None and 'unit' not in already_processed:
-            already_processed.add('unit')
-            self.unit = value
-            self.validate_FrequencyUnitType(self.unit)    # validate type FrequencyUnitType
-        value = find_attr_value_('value', node)
-        if value is not None and 'value' not in already_processed:
-            already_processed.add('value')
-            self.value = value
-            self.validate_FrequencyValueType(self.value)    # validate type FrequencyValueType
         value = find_attr_value_('condition', node)
         if value is not None and 'condition' not in already_processed:
             already_processed.add('condition')
             self.condition = value
             self.validate_MinMaxEqualType(self.condition)    # validate type MinMaxEqualType
+        value = find_attr_value_('value', node)
+        if value is not None and 'value' not in already_processed:
+            already_processed.add('value')
+            self.value = value
+            self.validate_FrequencyValueType(self.value)    # validate type FrequencyValueType
+        value = find_attr_value_('unit', node)
+        if value is not None and 'unit' not in already_processed:
+            already_processed.add('unit')
+            self.unit = value
+            self.validate_FrequencyUnitType(self.unit)    # validate type FrequencyUnitType
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         pass
 # end class FrequencyDomainConditionType
@@ -1181,6 +1241,11 @@ class VoltageFrequencyDomainConditionListType(GeneratedsSuper):
             self.FrequencyDomainCondition = FrequencyDomainCondition
         self.extensiontype_ = extensiontype_
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, VoltageFrequencyDomainConditionListType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if VoltageFrequencyDomainConditionListType.subclass:
             return VoltageFrequencyDomainConditionListType.subclass(*args_, **kwargs_)
         else:
@@ -1268,40 +1333,28 @@ class VoltageFrequencyDomainConditionListType(GeneratedsSuper):
 class VoltageConditionType(GeneratedsSuper):
     subclass = None
     superclass = None
-    def __init__(self, unit=None, value=None, condition=None):
+    def __init__(self, condition=None, value=None, unit=None):
         self.original_tagname_ = None
-        self.unit = _cast(None, unit)
-        self.value = _cast(None, value)
         self.condition = _cast(None, condition)
+        self.value = _cast(None, value)
+        self.unit = _cast(None, unit)
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, VoltageConditionType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if VoltageConditionType.subclass:
             return VoltageConditionType.subclass(*args_, **kwargs_)
         else:
             return VoltageConditionType(*args_, **kwargs_)
     factory = staticmethod(factory)
-    def get_unit(self): return self.unit
-    def set_unit(self, unit): self.unit = unit
-    def get_value(self): return self.value
-    def set_value(self, value): self.value = value
     def get_condition(self): return self.condition
     def set_condition(self, condition): self.condition = condition
-    def validate_VoltageUnitType(self, value):
-        # Validate type VoltageUnitType, a restriction on xs:string.
-        if value is not None and Validate_simpletypes_:
-            value = str(value)
-            enumerations = ['mV', 'V']
-            enumeration_respectee = False
-            for enum in enumerations:
-                if value == enum:
-                    enumeration_respectee = True
-                    break
-            if not enumeration_respectee:
-                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on VoltageUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_VoltageValueType(self, value):
-        # Validate type VoltageValueType, a restriction on NonNegativeFloatType.
-        if value is not None and Validate_simpletypes_:
-            if value < 0:
-                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on VoltageValueType' % {"value" : value} )
+    def get_value(self): return self.value
+    def set_value(self, value): self.value = value
+    def get_unit(self): return self.unit
+    def set_unit(self, unit): self.unit = unit
     def validate_MinMaxEqualType(self, value):
         # Validate type MinMaxEqualType, a restriction on xs:string.
         if value is not None and Validate_simpletypes_:
@@ -1314,6 +1367,23 @@ class VoltageConditionType(GeneratedsSuper):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on MinMaxEqualType' % {"value" : value.encode("utf-8")} )
+    def validate_VoltageValueType(self, value):
+        # Validate type VoltageValueType, a restriction on NonNegativeFloatType.
+        if value is not None and Validate_simpletypes_:
+            if value < 0:
+                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on VoltageValueType' % {"value" : value} )
+    def validate_VoltageUnitType(self, value):
+        # Validate type VoltageUnitType, a restriction on xs:string.
+        if value is not None and Validate_simpletypes_:
+            value = str(value)
+            enumerations = ['mV', 'V']
+            enumeration_respectee = False
+            for enum in enumerations:
+                if value == enum:
+                    enumeration_respectee = True
+                    break
+            if not enumeration_respectee:
+                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on VoltageUnitType' % {"value" : value.encode("utf-8")} )
     def hasContent_(self):
         if (
 
@@ -1339,15 +1409,15 @@ class VoltageConditionType(GeneratedsSuper):
         else:
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='VoltageConditionType'):
-        if self.unit is not None and 'unit' not in already_processed:
-            already_processed.add('unit')
-            outfile.write(' unit=%s' % (quote_attrib(self.unit), ))
-        if self.value is not None and 'value' not in already_processed:
-            already_processed.add('value')
-            outfile.write(' value=%s' % (quote_attrib(self.value), ))
         if self.condition is not None and 'condition' not in already_processed:
             already_processed.add('condition')
             outfile.write(' condition=%s' % (quote_attrib(self.condition), ))
+        if self.value is not None and 'value' not in already_processed:
+            already_processed.add('value')
+            outfile.write(' value=%s' % (quote_attrib(self.value), ))
+        if self.unit is not None and 'unit' not in already_processed:
+            already_processed.add('unit')
+            outfile.write(' unit=%s' % (quote_attrib(self.unit), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='VoltageConditionType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
@@ -1358,21 +1428,21 @@ class VoltageConditionType(GeneratedsSuper):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
-        value = find_attr_value_('unit', node)
-        if value is not None and 'unit' not in already_processed:
-            already_processed.add('unit')
-            self.unit = value
-            self.validate_VoltageUnitType(self.unit)    # validate type VoltageUnitType
-        value = find_attr_value_('value', node)
-        if value is not None and 'value' not in already_processed:
-            already_processed.add('value')
-            self.value = value
-            self.validate_VoltageValueType(self.value)    # validate type VoltageValueType
         value = find_attr_value_('condition', node)
         if value is not None and 'condition' not in already_processed:
             already_processed.add('condition')
             self.condition = value
             self.validate_MinMaxEqualType(self.condition)    # validate type MinMaxEqualType
+        value = find_attr_value_('value', node)
+        if value is not None and 'value' not in already_processed:
+            already_processed.add('value')
+            self.value = value
+            self.validate_VoltageValueType(self.value)    # validate type VoltageValueType
+        value = find_attr_value_('unit', node)
+        if value is not None and 'unit' not in already_processed:
+            already_processed.add('unit')
+            self.unit = value
+            self.validate_VoltageUnitType(self.unit)    # validate type VoltageUnitType
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         pass
 # end class VoltageConditionType
@@ -1381,40 +1451,28 @@ class VoltageConditionType(GeneratedsSuper):
 class FrequencyConditionType(GeneratedsSuper):
     subclass = None
     superclass = None
-    def __init__(self, unit=None, value=None, condition=None):
+    def __init__(self, condition=None, value=None, unit=None):
         self.original_tagname_ = None
-        self.unit = _cast(None, unit)
-        self.value = _cast(None, value)
         self.condition = _cast(None, condition)
+        self.value = _cast(None, value)
+        self.unit = _cast(None, unit)
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, FrequencyConditionType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if FrequencyConditionType.subclass:
             return FrequencyConditionType.subclass(*args_, **kwargs_)
         else:
             return FrequencyConditionType(*args_, **kwargs_)
     factory = staticmethod(factory)
-    def get_unit(self): return self.unit
-    def set_unit(self, unit): self.unit = unit
-    def get_value(self): return self.value
-    def set_value(self, value): self.value = value
     def get_condition(self): return self.condition
     def set_condition(self, condition): self.condition = condition
-    def validate_FrequencyUnitType(self, value):
-        # Validate type FrequencyUnitType, a restriction on xs:string.
-        if value is not None and Validate_simpletypes_:
-            value = str(value)
-            enumerations = ['Hz', 'kHz', 'MHz', 'GHz']
-            enumeration_respectee = False
-            for enum in enumerations:
-                if value == enum:
-                    enumeration_respectee = True
-                    break
-            if not enumeration_respectee:
-                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on FrequencyUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_FrequencyValueType(self, value):
-        # Validate type FrequencyValueType, a restriction on NonNegativeFloatType.
-        if value is not None and Validate_simpletypes_:
-            if value < 0:
-                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on FrequencyValueType' % {"value" : value} )
+    def get_value(self): return self.value
+    def set_value(self, value): self.value = value
+    def get_unit(self): return self.unit
+    def set_unit(self, unit): self.unit = unit
     def validate_MinMaxEqualType(self, value):
         # Validate type MinMaxEqualType, a restriction on xs:string.
         if value is not None and Validate_simpletypes_:
@@ -1427,6 +1485,23 @@ class FrequencyConditionType(GeneratedsSuper):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on MinMaxEqualType' % {"value" : value.encode("utf-8")} )
+    def validate_FrequencyValueType(self, value):
+        # Validate type FrequencyValueType, a restriction on NonNegativeFloatType.
+        if value is not None and Validate_simpletypes_:
+            if value < 0:
+                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on FrequencyValueType' % {"value" : value} )
+    def validate_FrequencyUnitType(self, value):
+        # Validate type FrequencyUnitType, a restriction on xs:string.
+        if value is not None and Validate_simpletypes_:
+            value = str(value)
+            enumerations = ['Hz', 'kHz', 'MHz', 'GHz']
+            enumeration_respectee = False
+            for enum in enumerations:
+                if value == enum:
+                    enumeration_respectee = True
+                    break
+            if not enumeration_respectee:
+                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on FrequencyUnitType' % {"value" : value.encode("utf-8")} )
     def hasContent_(self):
         if (
 
@@ -1452,15 +1527,15 @@ class FrequencyConditionType(GeneratedsSuper):
         else:
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='FrequencyConditionType'):
-        if self.unit is not None and 'unit' not in already_processed:
-            already_processed.add('unit')
-            outfile.write(' unit=%s' % (quote_attrib(self.unit), ))
-        if self.value is not None and 'value' not in already_processed:
-            already_processed.add('value')
-            outfile.write(' value=%s' % (quote_attrib(self.value), ))
         if self.condition is not None and 'condition' not in already_processed:
             already_processed.add('condition')
             outfile.write(' condition=%s' % (quote_attrib(self.condition), ))
+        if self.value is not None and 'value' not in already_processed:
+            already_processed.add('value')
+            outfile.write(' value=%s' % (quote_attrib(self.value), ))
+        if self.unit is not None and 'unit' not in already_processed:
+            already_processed.add('unit')
+            outfile.write(' unit=%s' % (quote_attrib(self.unit), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='FrequencyConditionType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
@@ -1471,21 +1546,21 @@ class FrequencyConditionType(GeneratedsSuper):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
-        value = find_attr_value_('unit', node)
-        if value is not None and 'unit' not in already_processed:
-            already_processed.add('unit')
-            self.unit = value
-            self.validate_FrequencyUnitType(self.unit)    # validate type FrequencyUnitType
-        value = find_attr_value_('value', node)
-        if value is not None and 'value' not in already_processed:
-            already_processed.add('value')
-            self.value = value
-            self.validate_FrequencyValueType(self.value)    # validate type FrequencyValueType
         value = find_attr_value_('condition', node)
         if value is not None and 'condition' not in already_processed:
             already_processed.add('condition')
             self.condition = value
             self.validate_MinMaxEqualType(self.condition)    # validate type MinMaxEqualType
+        value = find_attr_value_('value', node)
+        if value is not None and 'value' not in already_processed:
+            already_processed.add('value')
+            self.value = value
+            self.validate_FrequencyValueType(self.value)    # validate type FrequencyValueType
+        value = find_attr_value_('unit', node)
+        if value is not None and 'unit' not in already_processed:
+            already_processed.add('unit')
+            self.unit = value
+            self.validate_FrequencyUnitType(self.unit)    # validate type FrequencyUnitType
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         pass
 # end class FrequencyConditionType
@@ -1494,43 +1569,31 @@ class FrequencyConditionType(GeneratedsSuper):
 class FrequencyVoltageConditionType(GeneratedsSuper):
     subclass = None
     superclass = None
-    def __init__(self, voltageValue=None, voltageUnit=None, frequencyValue=None, frequencyUnit=None):
+    def __init__(self, frequencyValue=None, frequencyUnit=None, voltageValue=None, voltageUnit=None):
         self.original_tagname_ = None
-        self.voltageValue = _cast(None, voltageValue)
-        self.voltageUnit = _cast(None, voltageUnit)
         self.frequencyValue = _cast(None, frequencyValue)
         self.frequencyUnit = _cast(None, frequencyUnit)
+        self.voltageValue = _cast(None, voltageValue)
+        self.voltageUnit = _cast(None, voltageUnit)
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, FrequencyVoltageConditionType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if FrequencyVoltageConditionType.subclass:
             return FrequencyVoltageConditionType.subclass(*args_, **kwargs_)
         else:
             return FrequencyVoltageConditionType(*args_, **kwargs_)
     factory = staticmethod(factory)
-    def get_voltageValue(self): return self.voltageValue
-    def set_voltageValue(self, voltageValue): self.voltageValue = voltageValue
-    def get_voltageUnit(self): return self.voltageUnit
-    def set_voltageUnit(self, voltageUnit): self.voltageUnit = voltageUnit
     def get_frequencyValue(self): return self.frequencyValue
     def set_frequencyValue(self, frequencyValue): self.frequencyValue = frequencyValue
     def get_frequencyUnit(self): return self.frequencyUnit
     def set_frequencyUnit(self, frequencyUnit): self.frequencyUnit = frequencyUnit
-    def validate_VoltageValueType(self, value):
-        # Validate type VoltageValueType, a restriction on NonNegativeFloatType.
-        if value is not None and Validate_simpletypes_:
-            if value < 0:
-                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on VoltageValueType' % {"value" : value} )
-    def validate_VoltageUnitType(self, value):
-        # Validate type VoltageUnitType, a restriction on xs:string.
-        if value is not None and Validate_simpletypes_:
-            value = str(value)
-            enumerations = ['mV', 'V']
-            enumeration_respectee = False
-            for enum in enumerations:
-                if value == enum:
-                    enumeration_respectee = True
-                    break
-            if not enumeration_respectee:
-                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on VoltageUnitType' % {"value" : value.encode("utf-8")} )
+    def get_voltageValue(self): return self.voltageValue
+    def set_voltageValue(self, voltageValue): self.voltageValue = voltageValue
+    def get_voltageUnit(self): return self.voltageUnit
+    def set_voltageUnit(self, voltageUnit): self.voltageUnit = voltageUnit
     def validate_FrequencyValueType(self, value):
         # Validate type FrequencyValueType, a restriction on NonNegativeFloatType.
         if value is not None and Validate_simpletypes_:
@@ -1548,6 +1611,23 @@ class FrequencyVoltageConditionType(GeneratedsSuper):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on FrequencyUnitType' % {"value" : value.encode("utf-8")} )
+    def validate_VoltageValueType(self, value):
+        # Validate type VoltageValueType, a restriction on NonNegativeFloatType.
+        if value is not None and Validate_simpletypes_:
+            if value < 0:
+                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on VoltageValueType' % {"value" : value} )
+    def validate_VoltageUnitType(self, value):
+        # Validate type VoltageUnitType, a restriction on xs:string.
+        if value is not None and Validate_simpletypes_:
+            value = str(value)
+            enumerations = ['mV', 'V']
+            enumeration_respectee = False
+            for enum in enumerations:
+                if value == enum:
+                    enumeration_respectee = True
+                    break
+            if not enumeration_respectee:
+                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on VoltageUnitType' % {"value" : value.encode("utf-8")} )
     def hasContent_(self):
         if (
 
@@ -1573,18 +1653,18 @@ class FrequencyVoltageConditionType(GeneratedsSuper):
         else:
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='FrequencyVoltageConditionType'):
-        if self.voltageValue is not None and 'voltageValue' not in already_processed:
-            already_processed.add('voltageValue')
-            outfile.write(' voltageValue=%s' % (quote_attrib(self.voltageValue), ))
-        if self.voltageUnit is not None and 'voltageUnit' not in already_processed:
-            already_processed.add('voltageUnit')
-            outfile.write(' voltageUnit=%s' % (quote_attrib(self.voltageUnit), ))
         if self.frequencyValue is not None and 'frequencyValue' not in already_processed:
             already_processed.add('frequencyValue')
             outfile.write(' frequencyValue=%s' % (quote_attrib(self.frequencyValue), ))
         if self.frequencyUnit is not None and 'frequencyUnit' not in already_processed:
             already_processed.add('frequencyUnit')
             outfile.write(' frequencyUnit=%s' % (quote_attrib(self.frequencyUnit), ))
+        if self.voltageValue is not None and 'voltageValue' not in already_processed:
+            already_processed.add('voltageValue')
+            outfile.write(' voltageValue=%s' % (quote_attrib(self.voltageValue), ))
+        if self.voltageUnit is not None and 'voltageUnit' not in already_processed:
+            already_processed.add('voltageUnit')
+            outfile.write(' voltageUnit=%s' % (quote_attrib(self.voltageUnit), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='FrequencyVoltageConditionType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
@@ -1595,16 +1675,6 @@ class FrequencyVoltageConditionType(GeneratedsSuper):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
-        value = find_attr_value_('voltageValue', node)
-        if value is not None and 'voltageValue' not in already_processed:
-            already_processed.add('voltageValue')
-            self.voltageValue = value
-            self.validate_VoltageValueType(self.voltageValue)    # validate type VoltageValueType
-        value = find_attr_value_('voltageUnit', node)
-        if value is not None and 'voltageUnit' not in already_processed:
-            already_processed.add('voltageUnit')
-            self.voltageUnit = value
-            self.validate_VoltageUnitType(self.voltageUnit)    # validate type VoltageUnitType
         value = find_attr_value_('frequencyValue', node)
         if value is not None and 'frequencyValue' not in already_processed:
             already_processed.add('frequencyValue')
@@ -1615,6 +1685,16 @@ class FrequencyVoltageConditionType(GeneratedsSuper):
             already_processed.add('frequencyUnit')
             self.frequencyUnit = value
             self.validate_FrequencyUnitType(self.frequencyUnit)    # validate type FrequencyUnitType
+        value = find_attr_value_('voltageValue', node)
+        if value is not None and 'voltageValue' not in already_processed:
+            already_processed.add('voltageValue')
+            self.voltageValue = value
+            self.validate_VoltageValueType(self.voltageValue)    # validate type VoltageValueType
+        value = find_attr_value_('voltageUnit', node)
+        if value is not None and 'voltageUnit' not in already_processed:
+            already_processed.add('voltageUnit')
+            self.voltageUnit = value
+            self.validate_VoltageUnitType(self.voltageUnit)    # validate type VoltageUnitType
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         pass
 # end class FrequencyVoltageConditionType
@@ -1639,6 +1719,11 @@ class VoltageFrequencyConditionListType(GeneratedsSuper):
             self.FrequencyVoltageCondition = FrequencyVoltageCondition
         self.extensiontype_ = extensiontype_
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, VoltageFrequencyConditionListType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if VoltageFrequencyConditionListType.subclass:
             return VoltageFrequencyConditionListType.subclass(*args_, **kwargs_)
         else:
@@ -1739,23 +1824,35 @@ class VoltageFrequencyConditionListType(GeneratedsSuper):
 class SchedulingPolicyType(GeneratedsSuper):
     subclass = None
     superclass = None
-    def __init__(self, timeSliceValue=None, timeSliceUnit='s', schedulingAlgorithm=None):
+    def __init__(self, schedulingAlgorithm=None, timeSliceValue=None, timeSliceUnit='s'):
         self.original_tagname_ = None
+        self.schedulingAlgorithm = _cast(None, schedulingAlgorithm)
         self.timeSliceValue = _cast(None, timeSliceValue)
         self.timeSliceUnit = _cast(None, timeSliceUnit)
-        self.schedulingAlgorithm = _cast(None, schedulingAlgorithm)
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, SchedulingPolicyType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if SchedulingPolicyType.subclass:
             return SchedulingPolicyType.subclass(*args_, **kwargs_)
         else:
             return SchedulingPolicyType(*args_, **kwargs_)
     factory = staticmethod(factory)
+    def get_schedulingAlgorithm(self): return self.schedulingAlgorithm
+    def set_schedulingAlgorithm(self, schedulingAlgorithm): self.schedulingAlgorithm = schedulingAlgorithm
     def get_timeSliceValue(self): return self.timeSliceValue
     def set_timeSliceValue(self, timeSliceValue): self.timeSliceValue = timeSliceValue
     def get_timeSliceUnit(self): return self.timeSliceUnit
     def set_timeSliceUnit(self, timeSliceUnit): self.timeSliceUnit = timeSliceUnit
-    def get_schedulingAlgorithm(self): return self.schedulingAlgorithm
-    def set_schedulingAlgorithm(self, schedulingAlgorithm): self.schedulingAlgorithm = schedulingAlgorithm
+    def validate_SchedulingAlgorithmType(self, value):
+        # Validate type SchedulingAlgorithmType, a restriction on xs:string.
+        if value is not None and Validate_simpletypes_:
+            if not self.gds_validate_simple_patterns(
+                    self.validate_SchedulingAlgorithmType_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_SchedulingAlgorithmType_patterns_, ))
+    validate_SchedulingAlgorithmType_patterns_ = [['^FIFO$', '^Priority$', '^RoundRobin$', '^[a-zA-Z0-9_]+[.][a-zA-Z0-9_]+$']]
     def validate_TimeValueType(self, value):
         # Validate type TimeValueType, a restriction on NonNegativeFloatType.
         if value is not None and Validate_simpletypes_:
@@ -1773,13 +1870,6 @@ class SchedulingPolicyType(GeneratedsSuper):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on TimeUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_SchedulingAlgorithmType(self, value):
-        # Validate type SchedulingAlgorithmType, a restriction on xs:string.
-        if value is not None and Validate_simpletypes_:
-            if not self.gds_validate_simple_patterns(
-                    self.validate_SchedulingAlgorithmType_patterns_, value):
-                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_SchedulingAlgorithmType_patterns_, ))
-    validate_SchedulingAlgorithmType_patterns_ = [['^FIFO$', '^Priority$', '^RoundRobin$', '^[a-zA-Z0-9_]+[.][a-zA-Z0-9_]+$']]
     def hasContent_(self):
         if (
 
@@ -1805,15 +1895,15 @@ class SchedulingPolicyType(GeneratedsSuper):
         else:
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='SchedulingPolicyType'):
-        if self.timeSliceValue is not None and 'timeSliceValue' not in already_processed:
-            already_processed.add('timeSliceValue')
-            outfile.write(' timeSliceValue=%s' % (quote_attrib(self.timeSliceValue), ))
-        if self.timeSliceUnit != s and 'timeSliceUnit' not in already_processed:
-            already_processed.add('timeSliceUnit')
-            outfile.write(' timeSliceUnit=%s' % (quote_attrib(self.timeSliceUnit), ))
         if self.schedulingAlgorithm is not None and 'schedulingAlgorithm' not in already_processed:
             already_processed.add('schedulingAlgorithm')
             outfile.write(' schedulingAlgorithm=%s' % (quote_attrib(self.schedulingAlgorithm), ))
+        if self.timeSliceValue is not None and 'timeSliceValue' not in already_processed:
+            already_processed.add('timeSliceValue')
+            outfile.write(' timeSliceValue=%s' % (quote_attrib(self.timeSliceValue), ))
+        if self.timeSliceUnit != "s" and 'timeSliceUnit' not in already_processed:
+            already_processed.add('timeSliceUnit')
+            outfile.write(' timeSliceUnit=%s' % (quote_attrib(self.timeSliceUnit), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='SchedulingPolicyType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
@@ -1824,6 +1914,11 @@ class SchedulingPolicyType(GeneratedsSuper):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
+        value = find_attr_value_('schedulingAlgorithm', node)
+        if value is not None and 'schedulingAlgorithm' not in already_processed:
+            already_processed.add('schedulingAlgorithm')
+            self.schedulingAlgorithm = value
+            self.validate_SchedulingAlgorithmType(self.schedulingAlgorithm)    # validate type SchedulingAlgorithmType
         value = find_attr_value_('timeSliceValue', node)
         if value is not None and 'timeSliceValue' not in already_processed:
             already_processed.add('timeSliceValue')
@@ -1834,11 +1929,6 @@ class SchedulingPolicyType(GeneratedsSuper):
             already_processed.add('timeSliceUnit')
             self.timeSliceUnit = value
             self.validate_TimeUnitType(self.timeSliceUnit)    # validate type TimeUnitType
-        value = find_attr_value_('schedulingAlgorithm', node)
-        if value is not None and 'schedulingAlgorithm' not in already_processed:
-            already_processed.add('schedulingAlgorithm')
-            self.schedulingAlgorithm = value
-            self.validate_SchedulingAlgorithmType(self.schedulingAlgorithm)    # validate type SchedulingAlgorithmType
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         pass
 # end class SchedulingPolicyType
@@ -1855,6 +1945,11 @@ class SchedulingPolicyListType(GeneratedsSuper):
         else:
             self.SchedulingPolicy = SchedulingPolicy
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, SchedulingPolicyListType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if SchedulingPolicyListType.subclass:
             return SchedulingPolicyListType.subclass(*args_, **kwargs_)
         else:
@@ -1935,34 +2030,28 @@ class SchedulingPolicyListType(GeneratedsSuper):
 class SchedulerType(GeneratedsSuper):
     subclass = None
     superclass = None
-    def __init__(self, maxTasks=None, schedulingPolicyList=None, id=None):
+    def __init__(self, id=None, schedulingPolicyList=None, maxTasks=None):
         self.original_tagname_ = None
-        self.maxTasks = _cast(None, maxTasks)
-        self.schedulingPolicyList = _cast(None, schedulingPolicyList)
         self.id = _cast(None, id)
+        self.schedulingPolicyList = _cast(None, schedulingPolicyList)
+        self.maxTasks = _cast(None, maxTasks)
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, SchedulerType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if SchedulerType.subclass:
             return SchedulerType.subclass(*args_, **kwargs_)
         else:
             return SchedulerType(*args_, **kwargs_)
     factory = staticmethod(factory)
-    def get_maxTasks(self): return self.maxTasks
-    def set_maxTasks(self, maxTasks): self.maxTasks = maxTasks
-    def get_schedulingPolicyList(self): return self.schedulingPolicyList
-    def set_schedulingPolicyList(self, schedulingPolicyList): self.schedulingPolicyList = schedulingPolicyList
     def get_id(self): return self.id
     def set_id(self, id): self.id = id
-    def validate_PositiveIntType(self, value):
-        # Validate type PositiveIntType, a restriction on xs:positiveInteger.
-        if value is not None and Validate_simpletypes_:
-            pass
-    def validate_RefType(self, value):
-        # Validate type RefType, a restriction on xs:IDREF.
-        if value is not None and Validate_simpletypes_:
-            if not self.gds_validate_simple_patterns(
-                    self.validate_RefType_patterns_, value):
-                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_RefType_patterns_, ))
-    validate_RefType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
+    def get_schedulingPolicyList(self): return self.schedulingPolicyList
+    def set_schedulingPolicyList(self, schedulingPolicyList): self.schedulingPolicyList = schedulingPolicyList
+    def get_maxTasks(self): return self.maxTasks
+    def set_maxTasks(self, maxTasks): self.maxTasks = maxTasks
     def validate_IdType(self, value):
         # Validate type IdType, a restriction on xs:ID.
         if value is not None and Validate_simpletypes_:
@@ -1970,6 +2059,17 @@ class SchedulerType(GeneratedsSuper):
                     self.validate_IdType_patterns_, value):
                 warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_IdType_patterns_, ))
     validate_IdType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
+    def validate_RefType(self, value):
+        # Validate type RefType, a restriction on xs:IDREF.
+        if value is not None and Validate_simpletypes_:
+            if not self.gds_validate_simple_patterns(
+                    self.validate_RefType_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_RefType_patterns_, ))
+    validate_RefType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
+    def validate_PositiveIntType(self, value):
+        # Validate type PositiveIntType, a restriction on xs:positiveInteger.
+        if value is not None and Validate_simpletypes_:
+            pass
     def hasContent_(self):
         if (
 
@@ -1995,15 +2095,15 @@ class SchedulerType(GeneratedsSuper):
         else:
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='SchedulerType'):
-        if self.maxTasks is not None and 'maxTasks' not in already_processed:
-            already_processed.add('maxTasks')
-            outfile.write(' maxTasks=%s' % (quote_attrib(self.maxTasks), ))
-        if self.schedulingPolicyList is not None and 'schedulingPolicyList' not in already_processed:
-            already_processed.add('schedulingPolicyList')
-            outfile.write(' schedulingPolicyList=%s' % (quote_attrib(self.schedulingPolicyList), ))
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
+        if self.schedulingPolicyList is not None and 'schedulingPolicyList' not in already_processed:
+            already_processed.add('schedulingPolicyList')
+            outfile.write(' schedulingPolicyList=%s' % (quote_attrib(self.schedulingPolicyList), ))
+        if self.maxTasks is not None and 'maxTasks' not in already_processed:
+            already_processed.add('maxTasks')
+            outfile.write(' maxTasks=%s' % (quote_attrib(self.maxTasks), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='SchedulerType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
@@ -2014,6 +2114,16 @@ class SchedulerType(GeneratedsSuper):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
+        value = find_attr_value_('id', node)
+        if value is not None and 'id' not in already_processed:
+            already_processed.add('id')
+            self.id = value
+            self.validate_IdType(self.id)    # validate type IdType
+        value = find_attr_value_('schedulingPolicyList', node)
+        if value is not None and 'schedulingPolicyList' not in already_processed:
+            already_processed.add('schedulingPolicyList')
+            self.schedulingPolicyList = value
+            self.validate_RefType(self.schedulingPolicyList)    # validate type RefType
         value = find_attr_value_('maxTasks', node)
         if value is not None and 'maxTasks' not in already_processed:
             already_processed.add('maxTasks')
@@ -2024,16 +2134,6 @@ class SchedulerType(GeneratedsSuper):
             if self.maxTasks <= 0:
                 raise_parse_error(node, 'Invalid PositiveInteger')
             self.validate_PositiveIntType(self.maxTasks)    # validate type PositiveIntType
-        value = find_attr_value_('schedulingPolicyList', node)
-        if value is not None and 'schedulingPolicyList' not in already_processed:
-            already_processed.add('schedulingPolicyList')
-            self.schedulingPolicyList = value
-            self.validate_RefType(self.schedulingPolicyList)    # validate type RefType
-        value = find_attr_value_('id', node)
-        if value is not None and 'id' not in already_processed:
-            already_processed.add('id')
-            self.id = value
-            self.validate_IdType(self.id)    # validate type IdType
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         pass
 # end class SchedulerType
@@ -2042,24 +2142,36 @@ class SchedulerType(GeneratedsSuper):
 class ProcessorPowerStateType(VoltageFrequencyConditionListType):
     subclass = None
     superclass = VoltageFrequencyConditionListType
-    def __init__(self, VoltageCondition=None, FrequencyCondition=None, FrequencyVoltageCondition=None, powerValue=None, powerUnit='pW', name=None):
+    def __init__(self, VoltageCondition=None, FrequencyCondition=None, FrequencyVoltageCondition=None, name=None, powerValue=None, powerUnit='pW'):
         self.original_tagname_ = None
         super(ProcessorPowerStateType, self).__init__(VoltageCondition, FrequencyCondition, FrequencyVoltageCondition, )
+        self.name = _cast(None, name)
         self.powerValue = _cast(None, powerValue)
         self.powerUnit = _cast(None, powerUnit)
-        self.name = _cast(None, name)
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, ProcessorPowerStateType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if ProcessorPowerStateType.subclass:
             return ProcessorPowerStateType.subclass(*args_, **kwargs_)
         else:
             return ProcessorPowerStateType(*args_, **kwargs_)
     factory = staticmethod(factory)
+    def get_name(self): return self.name
+    def set_name(self, name): self.name = name
     def get_powerValue(self): return self.powerValue
     def set_powerValue(self, powerValue): self.powerValue = powerValue
     def get_powerUnit(self): return self.powerUnit
     def set_powerUnit(self, powerUnit): self.powerUnit = powerUnit
-    def get_name(self): return self.name
-    def set_name(self, name): self.name = name
+    def validate_NameType(self, value):
+        # Validate type NameType, a restriction on xs:string.
+        if value is not None and Validate_simpletypes_:
+            if not self.gds_validate_simple_patterns(
+                    self.validate_NameType_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_NameType_patterns_, ))
+    validate_NameType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def validate_PowerValueType(self, value):
         # Validate type PowerValueType, a restriction on NonNegativeFloatType.
         if value is not None and Validate_simpletypes_:
@@ -2077,13 +2189,6 @@ class ProcessorPowerStateType(VoltageFrequencyConditionListType):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on PowerUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_NameType(self, value):
-        # Validate type NameType, a restriction on xs:string.
-        if value is not None and Validate_simpletypes_:
-            if not self.gds_validate_simple_patterns(
-                    self.validate_NameType_patterns_, value):
-                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_NameType_patterns_, ))
-    validate_NameType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def hasContent_(self):
         if (
             super(ProcessorPowerStateType, self).hasContent_()
@@ -2111,15 +2216,15 @@ class ProcessorPowerStateType(VoltageFrequencyConditionListType):
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='ProcessorPowerStateType'):
         super(ProcessorPowerStateType, self).exportAttributes(outfile, level, already_processed, namespace_, name_='ProcessorPowerStateType')
-        if self.powerValue is not None and 'powerValue' not in already_processed:
-            already_processed.add('powerValue')
-            outfile.write(' powerValue=%s' % (quote_attrib(self.powerValue), ))
-        if self.powerUnit != pW and 'powerUnit' not in already_processed:
-            already_processed.add('powerUnit')
-            outfile.write(' powerUnit=%s' % (quote_attrib(self.powerUnit), ))
         if self.name is not None and 'name' not in already_processed:
             already_processed.add('name')
             outfile.write(' name=%s' % (quote_attrib(self.name), ))
+        if self.powerValue is not None and 'powerValue' not in already_processed:
+            already_processed.add('powerValue')
+            outfile.write(' powerValue=%s' % (quote_attrib(self.powerValue), ))
+        if self.powerUnit != "pW" and 'powerUnit' not in already_processed:
+            already_processed.add('powerUnit')
+            outfile.write(' powerUnit=%s' % (quote_attrib(self.powerUnit), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='ProcessorPowerStateType', fromsubclass_=False, pretty_print=True):
         super(ProcessorPowerStateType, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
     def build(self, node):
@@ -2130,6 +2235,11 @@ class ProcessorPowerStateType(VoltageFrequencyConditionListType):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
+        value = find_attr_value_('name', node)
+        if value is not None and 'name' not in already_processed:
+            already_processed.add('name')
+            self.name = value
+            self.validate_NameType(self.name)    # validate type NameType
         value = find_attr_value_('powerValue', node)
         if value is not None and 'powerValue' not in already_processed:
             already_processed.add('powerValue')
@@ -2140,11 +2250,6 @@ class ProcessorPowerStateType(VoltageFrequencyConditionListType):
             already_processed.add('powerUnit')
             self.powerUnit = value
             self.validate_PowerUnitType(self.powerUnit)    # validate type PowerUnitType
-        value = find_attr_value_('name', node)
-        if value is not None and 'name' not in already_processed:
-            already_processed.add('name')
-            self.name = value
-            self.validate_NameType(self.name)    # validate type NameType
         super(ProcessorPowerStateType, self).buildAttributes(node, attrs, already_processed)
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         super(ProcessorPowerStateType, self).buildChildren(child_, node, nodeName_, True)
@@ -2155,40 +2260,45 @@ class ProcessorPowerStateType(VoltageFrequencyConditionListType):
 class ProcessorPowerModelType(GeneratedsSuper):
     subclass = None
     superclass = None
-    def __init__(self, switchedCapacitanceFloatDivValue='0', leakageCurrentUnit='pA', switchedCapacitanceFloatMulUnit='pF', switchedCapacitanceUnit='pF', switchedCapacitanceFloatDivUnit='pF', switchedCapacitanceLoadValue='0', switchedCapacitanceStoreValue='0', switchedCapacitanceIntDivValue='0', switchedCapacitanceIntMulValue='0', switchedCapacitanceFloatCompUnit='pF', switchedCapacitanceValue='0', switchedCapacitanceFloatMulValue='0', id=None, switchedCapacitanceIntAluUnit='pF', leakageCurrentValue='0', switchedCapacitanceControlValue='0', switchedCapacitanceFloatArithValue='0', switchedCapacitanceIntAluValue='0', switchedCapacitanceStoreUnit='pF', switchedCapacitanceFloatCompValue='0', switchedCapacitanceIntDivUnit='pF', switchedCapacitanceIntMulUnit='pF', switchedCapacitanceOtherUnit='pF', switchedCapacitanceOtherValue='0', switchedCapacitanceFloatArithUnit='pF', switchedCapacitanceControlUnit='pF', switchedCapacitanceLoadUnit='pF', ProcessorPowerState=None):
+    def __init__(self, id=None, leakageCurrentValue='0', leakageCurrentUnit='pA', switchedCapacitanceValue='0', switchedCapacitanceUnit='pF', switchedCapacitanceIntAluValue='0', switchedCapacitanceIntAluUnit='pF', switchedCapacitanceIntMulValue='0', switchedCapacitanceIntMulUnit='pF', switchedCapacitanceIntDivValue='0', switchedCapacitanceIntDivUnit='pF', switchedCapacitanceFloatArithValue='0', switchedCapacitanceFloatArithUnit='pF', switchedCapacitanceFloatCompValue='0', switchedCapacitanceFloatCompUnit='pF', switchedCapacitanceFloatMulValue='0', switchedCapacitanceFloatMulUnit='pF', switchedCapacitanceFloatDivValue='0', switchedCapacitanceFloatDivUnit='pF', switchedCapacitanceLoadValue='0', switchedCapacitanceLoadUnit='pF', switchedCapacitanceStoreValue='0', switchedCapacitanceStoreUnit='pF', switchedCapacitanceControlValue='0', switchedCapacitanceControlUnit='pF', switchedCapacitanceOtherValue='0', switchedCapacitanceOtherUnit='pF', ProcessorPowerState=None):
         self.original_tagname_ = None
-        self.switchedCapacitanceFloatDivValue = _cast(None, switchedCapacitanceFloatDivValue)
+        self.id = _cast(None, id)
+        self.leakageCurrentValue = _cast(None, leakageCurrentValue)
         self.leakageCurrentUnit = _cast(None, leakageCurrentUnit)
-        self.switchedCapacitanceFloatMulUnit = _cast(None, switchedCapacitanceFloatMulUnit)
+        self.switchedCapacitanceValue = _cast(None, switchedCapacitanceValue)
         self.switchedCapacitanceUnit = _cast(None, switchedCapacitanceUnit)
+        self.switchedCapacitanceIntAluValue = _cast(None, switchedCapacitanceIntAluValue)
+        self.switchedCapacitanceIntAluUnit = _cast(None, switchedCapacitanceIntAluUnit)
+        self.switchedCapacitanceIntMulValue = _cast(None, switchedCapacitanceIntMulValue)
+        self.switchedCapacitanceIntMulUnit = _cast(None, switchedCapacitanceIntMulUnit)
+        self.switchedCapacitanceIntDivValue = _cast(None, switchedCapacitanceIntDivValue)
+        self.switchedCapacitanceIntDivUnit = _cast(None, switchedCapacitanceIntDivUnit)
+        self.switchedCapacitanceFloatArithValue = _cast(None, switchedCapacitanceFloatArithValue)
+        self.switchedCapacitanceFloatArithUnit = _cast(None, switchedCapacitanceFloatArithUnit)
+        self.switchedCapacitanceFloatCompValue = _cast(None, switchedCapacitanceFloatCompValue)
+        self.switchedCapacitanceFloatCompUnit = _cast(None, switchedCapacitanceFloatCompUnit)
+        self.switchedCapacitanceFloatMulValue = _cast(None, switchedCapacitanceFloatMulValue)
+        self.switchedCapacitanceFloatMulUnit = _cast(None, switchedCapacitanceFloatMulUnit)
+        self.switchedCapacitanceFloatDivValue = _cast(None, switchedCapacitanceFloatDivValue)
         self.switchedCapacitanceFloatDivUnit = _cast(None, switchedCapacitanceFloatDivUnit)
         self.switchedCapacitanceLoadValue = _cast(None, switchedCapacitanceLoadValue)
-        self.switchedCapacitanceStoreValue = _cast(None, switchedCapacitanceStoreValue)
-        self.switchedCapacitanceIntDivValue = _cast(None, switchedCapacitanceIntDivValue)
-        self.switchedCapacitanceIntMulValue = _cast(None, switchedCapacitanceIntMulValue)
-        self.switchedCapacitanceFloatCompUnit = _cast(None, switchedCapacitanceFloatCompUnit)
-        self.switchedCapacitanceValue = _cast(None, switchedCapacitanceValue)
-        self.switchedCapacitanceFloatMulValue = _cast(None, switchedCapacitanceFloatMulValue)
-        self.id = _cast(None, id)
-        self.switchedCapacitanceIntAluUnit = _cast(None, switchedCapacitanceIntAluUnit)
-        self.leakageCurrentValue = _cast(None, leakageCurrentValue)
-        self.switchedCapacitanceControlValue = _cast(None, switchedCapacitanceControlValue)
-        self.switchedCapacitanceFloatArithValue = _cast(None, switchedCapacitanceFloatArithValue)
-        self.switchedCapacitanceIntAluValue = _cast(None, switchedCapacitanceIntAluValue)
-        self.switchedCapacitanceStoreUnit = _cast(None, switchedCapacitanceStoreUnit)
-        self.switchedCapacitanceFloatCompValue = _cast(None, switchedCapacitanceFloatCompValue)
-        self.switchedCapacitanceIntDivUnit = _cast(None, switchedCapacitanceIntDivUnit)
-        self.switchedCapacitanceIntMulUnit = _cast(None, switchedCapacitanceIntMulUnit)
-        self.switchedCapacitanceOtherUnit = _cast(None, switchedCapacitanceOtherUnit)
-        self.switchedCapacitanceOtherValue = _cast(None, switchedCapacitanceOtherValue)
-        self.switchedCapacitanceFloatArithUnit = _cast(None, switchedCapacitanceFloatArithUnit)
-        self.switchedCapacitanceControlUnit = _cast(None, switchedCapacitanceControlUnit)
         self.switchedCapacitanceLoadUnit = _cast(None, switchedCapacitanceLoadUnit)
+        self.switchedCapacitanceStoreValue = _cast(None, switchedCapacitanceStoreValue)
+        self.switchedCapacitanceStoreUnit = _cast(None, switchedCapacitanceStoreUnit)
+        self.switchedCapacitanceControlValue = _cast(None, switchedCapacitanceControlValue)
+        self.switchedCapacitanceControlUnit = _cast(None, switchedCapacitanceControlUnit)
+        self.switchedCapacitanceOtherValue = _cast(None, switchedCapacitanceOtherValue)
+        self.switchedCapacitanceOtherUnit = _cast(None, switchedCapacitanceOtherUnit)
         if ProcessorPowerState is None:
             self.ProcessorPowerState = []
         else:
             self.ProcessorPowerState = ProcessorPowerState
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, ProcessorPowerModelType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if ProcessorPowerModelType.subclass:
             return ProcessorPowerModelType.subclass(*args_, **kwargs_)
         else:
@@ -2199,89 +2309,60 @@ class ProcessorPowerModelType(GeneratedsSuper):
     def add_ProcessorPowerState(self, value): self.ProcessorPowerState.append(value)
     def insert_ProcessorPowerState_at(self, index, value): self.ProcessorPowerState.insert(index, value)
     def replace_ProcessorPowerState_at(self, index, value): self.ProcessorPowerState[index] = value
-    def get_switchedCapacitanceFloatDivValue(self): return self.switchedCapacitanceFloatDivValue
-    def set_switchedCapacitanceFloatDivValue(self, switchedCapacitanceFloatDivValue): self.switchedCapacitanceFloatDivValue = switchedCapacitanceFloatDivValue
+    def get_id(self): return self.id
+    def set_id(self, id): self.id = id
+    def get_leakageCurrentValue(self): return self.leakageCurrentValue
+    def set_leakageCurrentValue(self, leakageCurrentValue): self.leakageCurrentValue = leakageCurrentValue
     def get_leakageCurrentUnit(self): return self.leakageCurrentUnit
     def set_leakageCurrentUnit(self, leakageCurrentUnit): self.leakageCurrentUnit = leakageCurrentUnit
-    def get_switchedCapacitanceFloatMulUnit(self): return self.switchedCapacitanceFloatMulUnit
-    def set_switchedCapacitanceFloatMulUnit(self, switchedCapacitanceFloatMulUnit): self.switchedCapacitanceFloatMulUnit = switchedCapacitanceFloatMulUnit
+    def get_switchedCapacitanceValue(self): return self.switchedCapacitanceValue
+    def set_switchedCapacitanceValue(self, switchedCapacitanceValue): self.switchedCapacitanceValue = switchedCapacitanceValue
     def get_switchedCapacitanceUnit(self): return self.switchedCapacitanceUnit
     def set_switchedCapacitanceUnit(self, switchedCapacitanceUnit): self.switchedCapacitanceUnit = switchedCapacitanceUnit
+    def get_switchedCapacitanceIntAluValue(self): return self.switchedCapacitanceIntAluValue
+    def set_switchedCapacitanceIntAluValue(self, switchedCapacitanceIntAluValue): self.switchedCapacitanceIntAluValue = switchedCapacitanceIntAluValue
+    def get_switchedCapacitanceIntAluUnit(self): return self.switchedCapacitanceIntAluUnit
+    def set_switchedCapacitanceIntAluUnit(self, switchedCapacitanceIntAluUnit): self.switchedCapacitanceIntAluUnit = switchedCapacitanceIntAluUnit
+    def get_switchedCapacitanceIntMulValue(self): return self.switchedCapacitanceIntMulValue
+    def set_switchedCapacitanceIntMulValue(self, switchedCapacitanceIntMulValue): self.switchedCapacitanceIntMulValue = switchedCapacitanceIntMulValue
+    def get_switchedCapacitanceIntMulUnit(self): return self.switchedCapacitanceIntMulUnit
+    def set_switchedCapacitanceIntMulUnit(self, switchedCapacitanceIntMulUnit): self.switchedCapacitanceIntMulUnit = switchedCapacitanceIntMulUnit
+    def get_switchedCapacitanceIntDivValue(self): return self.switchedCapacitanceIntDivValue
+    def set_switchedCapacitanceIntDivValue(self, switchedCapacitanceIntDivValue): self.switchedCapacitanceIntDivValue = switchedCapacitanceIntDivValue
+    def get_switchedCapacitanceIntDivUnit(self): return self.switchedCapacitanceIntDivUnit
+    def set_switchedCapacitanceIntDivUnit(self, switchedCapacitanceIntDivUnit): self.switchedCapacitanceIntDivUnit = switchedCapacitanceIntDivUnit
+    def get_switchedCapacitanceFloatArithValue(self): return self.switchedCapacitanceFloatArithValue
+    def set_switchedCapacitanceFloatArithValue(self, switchedCapacitanceFloatArithValue): self.switchedCapacitanceFloatArithValue = switchedCapacitanceFloatArithValue
+    def get_switchedCapacitanceFloatArithUnit(self): return self.switchedCapacitanceFloatArithUnit
+    def set_switchedCapacitanceFloatArithUnit(self, switchedCapacitanceFloatArithUnit): self.switchedCapacitanceFloatArithUnit = switchedCapacitanceFloatArithUnit
+    def get_switchedCapacitanceFloatCompValue(self): return self.switchedCapacitanceFloatCompValue
+    def set_switchedCapacitanceFloatCompValue(self, switchedCapacitanceFloatCompValue): self.switchedCapacitanceFloatCompValue = switchedCapacitanceFloatCompValue
+    def get_switchedCapacitanceFloatCompUnit(self): return self.switchedCapacitanceFloatCompUnit
+    def set_switchedCapacitanceFloatCompUnit(self, switchedCapacitanceFloatCompUnit): self.switchedCapacitanceFloatCompUnit = switchedCapacitanceFloatCompUnit
+    def get_switchedCapacitanceFloatMulValue(self): return self.switchedCapacitanceFloatMulValue
+    def set_switchedCapacitanceFloatMulValue(self, switchedCapacitanceFloatMulValue): self.switchedCapacitanceFloatMulValue = switchedCapacitanceFloatMulValue
+    def get_switchedCapacitanceFloatMulUnit(self): return self.switchedCapacitanceFloatMulUnit
+    def set_switchedCapacitanceFloatMulUnit(self, switchedCapacitanceFloatMulUnit): self.switchedCapacitanceFloatMulUnit = switchedCapacitanceFloatMulUnit
+    def get_switchedCapacitanceFloatDivValue(self): return self.switchedCapacitanceFloatDivValue
+    def set_switchedCapacitanceFloatDivValue(self, switchedCapacitanceFloatDivValue): self.switchedCapacitanceFloatDivValue = switchedCapacitanceFloatDivValue
     def get_switchedCapacitanceFloatDivUnit(self): return self.switchedCapacitanceFloatDivUnit
     def set_switchedCapacitanceFloatDivUnit(self, switchedCapacitanceFloatDivUnit): self.switchedCapacitanceFloatDivUnit = switchedCapacitanceFloatDivUnit
     def get_switchedCapacitanceLoadValue(self): return self.switchedCapacitanceLoadValue
     def set_switchedCapacitanceLoadValue(self, switchedCapacitanceLoadValue): self.switchedCapacitanceLoadValue = switchedCapacitanceLoadValue
-    def get_switchedCapacitanceStoreValue(self): return self.switchedCapacitanceStoreValue
-    def set_switchedCapacitanceStoreValue(self, switchedCapacitanceStoreValue): self.switchedCapacitanceStoreValue = switchedCapacitanceStoreValue
-    def get_switchedCapacitanceIntDivValue(self): return self.switchedCapacitanceIntDivValue
-    def set_switchedCapacitanceIntDivValue(self, switchedCapacitanceIntDivValue): self.switchedCapacitanceIntDivValue = switchedCapacitanceIntDivValue
-    def get_switchedCapacitanceIntMulValue(self): return self.switchedCapacitanceIntMulValue
-    def set_switchedCapacitanceIntMulValue(self, switchedCapacitanceIntMulValue): self.switchedCapacitanceIntMulValue = switchedCapacitanceIntMulValue
-    def get_switchedCapacitanceFloatCompUnit(self): return self.switchedCapacitanceFloatCompUnit
-    def set_switchedCapacitanceFloatCompUnit(self, switchedCapacitanceFloatCompUnit): self.switchedCapacitanceFloatCompUnit = switchedCapacitanceFloatCompUnit
-    def get_switchedCapacitanceValue(self): return self.switchedCapacitanceValue
-    def set_switchedCapacitanceValue(self, switchedCapacitanceValue): self.switchedCapacitanceValue = switchedCapacitanceValue
-    def get_switchedCapacitanceFloatMulValue(self): return self.switchedCapacitanceFloatMulValue
-    def set_switchedCapacitanceFloatMulValue(self, switchedCapacitanceFloatMulValue): self.switchedCapacitanceFloatMulValue = switchedCapacitanceFloatMulValue
-    def get_id(self): return self.id
-    def set_id(self, id): self.id = id
-    def get_switchedCapacitanceIntAluUnit(self): return self.switchedCapacitanceIntAluUnit
-    def set_switchedCapacitanceIntAluUnit(self, switchedCapacitanceIntAluUnit): self.switchedCapacitanceIntAluUnit = switchedCapacitanceIntAluUnit
-    def get_leakageCurrentValue(self): return self.leakageCurrentValue
-    def set_leakageCurrentValue(self, leakageCurrentValue): self.leakageCurrentValue = leakageCurrentValue
-    def get_switchedCapacitanceControlValue(self): return self.switchedCapacitanceControlValue
-    def set_switchedCapacitanceControlValue(self, switchedCapacitanceControlValue): self.switchedCapacitanceControlValue = switchedCapacitanceControlValue
-    def get_switchedCapacitanceFloatArithValue(self): return self.switchedCapacitanceFloatArithValue
-    def set_switchedCapacitanceFloatArithValue(self, switchedCapacitanceFloatArithValue): self.switchedCapacitanceFloatArithValue = switchedCapacitanceFloatArithValue
-    def get_switchedCapacitanceIntAluValue(self): return self.switchedCapacitanceIntAluValue
-    def set_switchedCapacitanceIntAluValue(self, switchedCapacitanceIntAluValue): self.switchedCapacitanceIntAluValue = switchedCapacitanceIntAluValue
-    def get_switchedCapacitanceStoreUnit(self): return self.switchedCapacitanceStoreUnit
-    def set_switchedCapacitanceStoreUnit(self, switchedCapacitanceStoreUnit): self.switchedCapacitanceStoreUnit = switchedCapacitanceStoreUnit
-    def get_switchedCapacitanceFloatCompValue(self): return self.switchedCapacitanceFloatCompValue
-    def set_switchedCapacitanceFloatCompValue(self, switchedCapacitanceFloatCompValue): self.switchedCapacitanceFloatCompValue = switchedCapacitanceFloatCompValue
-    def get_switchedCapacitanceIntDivUnit(self): return self.switchedCapacitanceIntDivUnit
-    def set_switchedCapacitanceIntDivUnit(self, switchedCapacitanceIntDivUnit): self.switchedCapacitanceIntDivUnit = switchedCapacitanceIntDivUnit
-    def get_switchedCapacitanceIntMulUnit(self): return self.switchedCapacitanceIntMulUnit
-    def set_switchedCapacitanceIntMulUnit(self, switchedCapacitanceIntMulUnit): self.switchedCapacitanceIntMulUnit = switchedCapacitanceIntMulUnit
-    def get_switchedCapacitanceOtherUnit(self): return self.switchedCapacitanceOtherUnit
-    def set_switchedCapacitanceOtherUnit(self, switchedCapacitanceOtherUnit): self.switchedCapacitanceOtherUnit = switchedCapacitanceOtherUnit
-    def get_switchedCapacitanceOtherValue(self): return self.switchedCapacitanceOtherValue
-    def set_switchedCapacitanceOtherValue(self, switchedCapacitanceOtherValue): self.switchedCapacitanceOtherValue = switchedCapacitanceOtherValue
-    def get_switchedCapacitanceFloatArithUnit(self): return self.switchedCapacitanceFloatArithUnit
-    def set_switchedCapacitanceFloatArithUnit(self, switchedCapacitanceFloatArithUnit): self.switchedCapacitanceFloatArithUnit = switchedCapacitanceFloatArithUnit
-    def get_switchedCapacitanceControlUnit(self): return self.switchedCapacitanceControlUnit
-    def set_switchedCapacitanceControlUnit(self, switchedCapacitanceControlUnit): self.switchedCapacitanceControlUnit = switchedCapacitanceControlUnit
     def get_switchedCapacitanceLoadUnit(self): return self.switchedCapacitanceLoadUnit
     def set_switchedCapacitanceLoadUnit(self, switchedCapacitanceLoadUnit): self.switchedCapacitanceLoadUnit = switchedCapacitanceLoadUnit
-    def validate_CapacitanceValueType(self, value):
-        # Validate type CapacitanceValueType, a restriction on NonNegativeFloatType.
-        if value is not None and Validate_simpletypes_:
-            if value < 0:
-                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on CapacitanceValueType' % {"value" : value} )
-    def validate_CurrentUnitType(self, value):
-        # Validate type CurrentUnitType, a restriction on xs:string.
-        if value is not None and Validate_simpletypes_:
-            value = str(value)
-            enumerations = ['pA', 'nA', 'uA', 'mA', 'A']
-            enumeration_respectee = False
-            for enum in enumerations:
-                if value == enum:
-                    enumeration_respectee = True
-                    break
-            if not enumeration_respectee:
-                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on CurrentUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_CapacitanceUnitType(self, value):
-        # Validate type CapacitanceUnitType, a restriction on xs:string.
-        if value is not None and Validate_simpletypes_:
-            value = str(value)
-            enumerations = ['fF', 'pF', 'nF', 'uF', 'mF', 'F']
-            enumeration_respectee = False
-            for enum in enumerations:
-                if value == enum:
-                    enumeration_respectee = True
-                    break
-            if not enumeration_respectee:
-                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on CapacitanceUnitType' % {"value" : value.encode("utf-8")} )
+    def get_switchedCapacitanceStoreValue(self): return self.switchedCapacitanceStoreValue
+    def set_switchedCapacitanceStoreValue(self, switchedCapacitanceStoreValue): self.switchedCapacitanceStoreValue = switchedCapacitanceStoreValue
+    def get_switchedCapacitanceStoreUnit(self): return self.switchedCapacitanceStoreUnit
+    def set_switchedCapacitanceStoreUnit(self, switchedCapacitanceStoreUnit): self.switchedCapacitanceStoreUnit = switchedCapacitanceStoreUnit
+    def get_switchedCapacitanceControlValue(self): return self.switchedCapacitanceControlValue
+    def set_switchedCapacitanceControlValue(self, switchedCapacitanceControlValue): self.switchedCapacitanceControlValue = switchedCapacitanceControlValue
+    def get_switchedCapacitanceControlUnit(self): return self.switchedCapacitanceControlUnit
+    def set_switchedCapacitanceControlUnit(self, switchedCapacitanceControlUnit): self.switchedCapacitanceControlUnit = switchedCapacitanceControlUnit
+    def get_switchedCapacitanceOtherValue(self): return self.switchedCapacitanceOtherValue
+    def set_switchedCapacitanceOtherValue(self, switchedCapacitanceOtherValue): self.switchedCapacitanceOtherValue = switchedCapacitanceOtherValue
+    def get_switchedCapacitanceOtherUnit(self): return self.switchedCapacitanceOtherUnit
+    def set_switchedCapacitanceOtherUnit(self, switchedCapacitanceOtherUnit): self.switchedCapacitanceOtherUnit = switchedCapacitanceOtherUnit
     def validate_IdType(self, value):
         # Validate type IdType, a restriction on xs:ID.
         if value is not None and Validate_simpletypes_:
@@ -2294,6 +2375,35 @@ class ProcessorPowerModelType(GeneratedsSuper):
         if value is not None and Validate_simpletypes_:
             if value < 0:
                 warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on CurrentValueType' % {"value" : value} )
+    def validate_CurrentUnitType(self, value):
+        # Validate type CurrentUnitType, a restriction on xs:string.
+        if value is not None and Validate_simpletypes_:
+            value = str(value)
+            enumerations = ['pA', 'nA', 'uA', 'mA', 'A']
+            enumeration_respectee = False
+            for enum in enumerations:
+                if value == enum:
+                    enumeration_respectee = True
+                    break
+            if not enumeration_respectee:
+                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on CurrentUnitType' % {"value" : value.encode("utf-8")} )
+    def validate_CapacitanceValueType(self, value):
+        # Validate type CapacitanceValueType, a restriction on NonNegativeFloatType.
+        if value is not None and Validate_simpletypes_:
+            if value < 0:
+                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on CapacitanceValueType' % {"value" : value} )
+    def validate_CapacitanceUnitType(self, value):
+        # Validate type CapacitanceUnitType, a restriction on xs:string.
+        if value is not None and Validate_simpletypes_:
+            value = str(value)
+            enumerations = ['fF', 'pF', 'nF', 'uF', 'mF', 'F']
+            enumeration_respectee = False
+            for enum in enumerations:
+                if value == enum:
+                    enumeration_respectee = True
+                    break
+            if not enumeration_respectee:
+                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on CapacitanceUnitType' % {"value" : value.encode("utf-8")} )
     def hasContent_(self):
         if (
             self.ProcessorPowerState
@@ -2320,87 +2430,87 @@ class ProcessorPowerModelType(GeneratedsSuper):
         else:
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='ProcessorPowerModelType'):
-        if self.switchedCapacitanceFloatDivValue != 0 and 'switchedCapacitanceFloatDivValue' not in already_processed:
-            already_processed.add('switchedCapacitanceFloatDivValue')
-            outfile.write(' switchedCapacitanceFloatDivValue=%s' % (quote_attrib(self.switchedCapacitanceFloatDivValue), ))
-        if self.leakageCurrentUnit != pA and 'leakageCurrentUnit' not in already_processed:
-            already_processed.add('leakageCurrentUnit')
-            outfile.write(' leakageCurrentUnit=%s' % (quote_attrib(self.leakageCurrentUnit), ))
-        if self.switchedCapacitanceFloatMulUnit != pF and 'switchedCapacitanceFloatMulUnit' not in already_processed:
-            already_processed.add('switchedCapacitanceFloatMulUnit')
-            outfile.write(' switchedCapacitanceFloatMulUnit=%s' % (quote_attrib(self.switchedCapacitanceFloatMulUnit), ))
-        if self.switchedCapacitanceUnit != pF and 'switchedCapacitanceUnit' not in already_processed:
-            already_processed.add('switchedCapacitanceUnit')
-            outfile.write(' switchedCapacitanceUnit=%s' % (quote_attrib(self.switchedCapacitanceUnit), ))
-        if self.switchedCapacitanceFloatDivUnit != pF and 'switchedCapacitanceFloatDivUnit' not in already_processed:
-            already_processed.add('switchedCapacitanceFloatDivUnit')
-            outfile.write(' switchedCapacitanceFloatDivUnit=%s' % (quote_attrib(self.switchedCapacitanceFloatDivUnit), ))
-        if self.switchedCapacitanceLoadValue != 0 and 'switchedCapacitanceLoadValue' not in already_processed:
-            already_processed.add('switchedCapacitanceLoadValue')
-            outfile.write(' switchedCapacitanceLoadValue=%s' % (quote_attrib(self.switchedCapacitanceLoadValue), ))
-        if self.switchedCapacitanceStoreValue != 0 and 'switchedCapacitanceStoreValue' not in already_processed:
-            already_processed.add('switchedCapacitanceStoreValue')
-            outfile.write(' switchedCapacitanceStoreValue=%s' % (quote_attrib(self.switchedCapacitanceStoreValue), ))
-        if self.switchedCapacitanceIntDivValue != 0 and 'switchedCapacitanceIntDivValue' not in already_processed:
-            already_processed.add('switchedCapacitanceIntDivValue')
-            outfile.write(' switchedCapacitanceIntDivValue=%s' % (quote_attrib(self.switchedCapacitanceIntDivValue), ))
-        if self.switchedCapacitanceIntMulValue != 0 and 'switchedCapacitanceIntMulValue' not in already_processed:
-            already_processed.add('switchedCapacitanceIntMulValue')
-            outfile.write(' switchedCapacitanceIntMulValue=%s' % (quote_attrib(self.switchedCapacitanceIntMulValue), ))
-        if self.switchedCapacitanceFloatCompUnit != pF and 'switchedCapacitanceFloatCompUnit' not in already_processed:
-            already_processed.add('switchedCapacitanceFloatCompUnit')
-            outfile.write(' switchedCapacitanceFloatCompUnit=%s' % (quote_attrib(self.switchedCapacitanceFloatCompUnit), ))
-        if self.switchedCapacitanceValue != 0 and 'switchedCapacitanceValue' not in already_processed:
-            already_processed.add('switchedCapacitanceValue')
-            outfile.write(' switchedCapacitanceValue=%s' % (quote_attrib(self.switchedCapacitanceValue), ))
-        if self.switchedCapacitanceFloatMulValue != 0 and 'switchedCapacitanceFloatMulValue' not in already_processed:
-            already_processed.add('switchedCapacitanceFloatMulValue')
-            outfile.write(' switchedCapacitanceFloatMulValue=%s' % (quote_attrib(self.switchedCapacitanceFloatMulValue), ))
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
-        if self.switchedCapacitanceIntAluUnit != pF and 'switchedCapacitanceIntAluUnit' not in already_processed:
-            already_processed.add('switchedCapacitanceIntAluUnit')
-            outfile.write(' switchedCapacitanceIntAluUnit=%s' % (quote_attrib(self.switchedCapacitanceIntAluUnit), ))
-        if self.leakageCurrentValue != 0 and 'leakageCurrentValue' not in already_processed:
+        if self.leakageCurrentValue != "0" and 'leakageCurrentValue' not in already_processed:
             already_processed.add('leakageCurrentValue')
             outfile.write(' leakageCurrentValue=%s' % (quote_attrib(self.leakageCurrentValue), ))
-        if self.switchedCapacitanceControlValue != 0 and 'switchedCapacitanceControlValue' not in already_processed:
-            already_processed.add('switchedCapacitanceControlValue')
-            outfile.write(' switchedCapacitanceControlValue=%s' % (quote_attrib(self.switchedCapacitanceControlValue), ))
-        if self.switchedCapacitanceFloatArithValue != 0 and 'switchedCapacitanceFloatArithValue' not in already_processed:
-            already_processed.add('switchedCapacitanceFloatArithValue')
-            outfile.write(' switchedCapacitanceFloatArithValue=%s' % (quote_attrib(self.switchedCapacitanceFloatArithValue), ))
-        if self.switchedCapacitanceIntAluValue != 0 and 'switchedCapacitanceIntAluValue' not in already_processed:
+        if self.leakageCurrentUnit != "pA" and 'leakageCurrentUnit' not in already_processed:
+            already_processed.add('leakageCurrentUnit')
+            outfile.write(' leakageCurrentUnit=%s' % (quote_attrib(self.leakageCurrentUnit), ))
+        if self.switchedCapacitanceValue != "0" and 'switchedCapacitanceValue' not in already_processed:
+            already_processed.add('switchedCapacitanceValue')
+            outfile.write(' switchedCapacitanceValue=%s' % (quote_attrib(self.switchedCapacitanceValue), ))
+        if self.switchedCapacitanceUnit != "pF" and 'switchedCapacitanceUnit' not in already_processed:
+            already_processed.add('switchedCapacitanceUnit')
+            outfile.write(' switchedCapacitanceUnit=%s' % (quote_attrib(self.switchedCapacitanceUnit), ))
+        if self.switchedCapacitanceIntAluValue != "0" and 'switchedCapacitanceIntAluValue' not in already_processed:
             already_processed.add('switchedCapacitanceIntAluValue')
             outfile.write(' switchedCapacitanceIntAluValue=%s' % (quote_attrib(self.switchedCapacitanceIntAluValue), ))
-        if self.switchedCapacitanceStoreUnit != pF and 'switchedCapacitanceStoreUnit' not in already_processed:
-            already_processed.add('switchedCapacitanceStoreUnit')
-            outfile.write(' switchedCapacitanceStoreUnit=%s' % (quote_attrib(self.switchedCapacitanceStoreUnit), ))
-        if self.switchedCapacitanceFloatCompValue != 0 and 'switchedCapacitanceFloatCompValue' not in already_processed:
-            already_processed.add('switchedCapacitanceFloatCompValue')
-            outfile.write(' switchedCapacitanceFloatCompValue=%s' % (quote_attrib(self.switchedCapacitanceFloatCompValue), ))
-        if self.switchedCapacitanceIntDivUnit != pF and 'switchedCapacitanceIntDivUnit' not in already_processed:
-            already_processed.add('switchedCapacitanceIntDivUnit')
-            outfile.write(' switchedCapacitanceIntDivUnit=%s' % (quote_attrib(self.switchedCapacitanceIntDivUnit), ))
-        if self.switchedCapacitanceIntMulUnit != pF and 'switchedCapacitanceIntMulUnit' not in already_processed:
+        if self.switchedCapacitanceIntAluUnit != "pF" and 'switchedCapacitanceIntAluUnit' not in already_processed:
+            already_processed.add('switchedCapacitanceIntAluUnit')
+            outfile.write(' switchedCapacitanceIntAluUnit=%s' % (quote_attrib(self.switchedCapacitanceIntAluUnit), ))
+        if self.switchedCapacitanceIntMulValue != "0" and 'switchedCapacitanceIntMulValue' not in already_processed:
+            already_processed.add('switchedCapacitanceIntMulValue')
+            outfile.write(' switchedCapacitanceIntMulValue=%s' % (quote_attrib(self.switchedCapacitanceIntMulValue), ))
+        if self.switchedCapacitanceIntMulUnit != "pF" and 'switchedCapacitanceIntMulUnit' not in already_processed:
             already_processed.add('switchedCapacitanceIntMulUnit')
             outfile.write(' switchedCapacitanceIntMulUnit=%s' % (quote_attrib(self.switchedCapacitanceIntMulUnit), ))
-        if self.switchedCapacitanceOtherUnit != pF and 'switchedCapacitanceOtherUnit' not in already_processed:
-            already_processed.add('switchedCapacitanceOtherUnit')
-            outfile.write(' switchedCapacitanceOtherUnit=%s' % (quote_attrib(self.switchedCapacitanceOtherUnit), ))
-        if self.switchedCapacitanceOtherValue != 0 and 'switchedCapacitanceOtherValue' not in already_processed:
-            already_processed.add('switchedCapacitanceOtherValue')
-            outfile.write(' switchedCapacitanceOtherValue=%s' % (quote_attrib(self.switchedCapacitanceOtherValue), ))
-        if self.switchedCapacitanceFloatArithUnit != pF and 'switchedCapacitanceFloatArithUnit' not in already_processed:
+        if self.switchedCapacitanceIntDivValue != "0" and 'switchedCapacitanceIntDivValue' not in already_processed:
+            already_processed.add('switchedCapacitanceIntDivValue')
+            outfile.write(' switchedCapacitanceIntDivValue=%s' % (quote_attrib(self.switchedCapacitanceIntDivValue), ))
+        if self.switchedCapacitanceIntDivUnit != "pF" and 'switchedCapacitanceIntDivUnit' not in already_processed:
+            already_processed.add('switchedCapacitanceIntDivUnit')
+            outfile.write(' switchedCapacitanceIntDivUnit=%s' % (quote_attrib(self.switchedCapacitanceIntDivUnit), ))
+        if self.switchedCapacitanceFloatArithValue != "0" and 'switchedCapacitanceFloatArithValue' not in already_processed:
+            already_processed.add('switchedCapacitanceFloatArithValue')
+            outfile.write(' switchedCapacitanceFloatArithValue=%s' % (quote_attrib(self.switchedCapacitanceFloatArithValue), ))
+        if self.switchedCapacitanceFloatArithUnit != "pF" and 'switchedCapacitanceFloatArithUnit' not in already_processed:
             already_processed.add('switchedCapacitanceFloatArithUnit')
             outfile.write(' switchedCapacitanceFloatArithUnit=%s' % (quote_attrib(self.switchedCapacitanceFloatArithUnit), ))
-        if self.switchedCapacitanceControlUnit != pF and 'switchedCapacitanceControlUnit' not in already_processed:
-            already_processed.add('switchedCapacitanceControlUnit')
-            outfile.write(' switchedCapacitanceControlUnit=%s' % (quote_attrib(self.switchedCapacitanceControlUnit), ))
-        if self.switchedCapacitanceLoadUnit != pF and 'switchedCapacitanceLoadUnit' not in already_processed:
+        if self.switchedCapacitanceFloatCompValue != "0" and 'switchedCapacitanceFloatCompValue' not in already_processed:
+            already_processed.add('switchedCapacitanceFloatCompValue')
+            outfile.write(' switchedCapacitanceFloatCompValue=%s' % (quote_attrib(self.switchedCapacitanceFloatCompValue), ))
+        if self.switchedCapacitanceFloatCompUnit != "pF" and 'switchedCapacitanceFloatCompUnit' not in already_processed:
+            already_processed.add('switchedCapacitanceFloatCompUnit')
+            outfile.write(' switchedCapacitanceFloatCompUnit=%s' % (quote_attrib(self.switchedCapacitanceFloatCompUnit), ))
+        if self.switchedCapacitanceFloatMulValue != "0" and 'switchedCapacitanceFloatMulValue' not in already_processed:
+            already_processed.add('switchedCapacitanceFloatMulValue')
+            outfile.write(' switchedCapacitanceFloatMulValue=%s' % (quote_attrib(self.switchedCapacitanceFloatMulValue), ))
+        if self.switchedCapacitanceFloatMulUnit != "pF" and 'switchedCapacitanceFloatMulUnit' not in already_processed:
+            already_processed.add('switchedCapacitanceFloatMulUnit')
+            outfile.write(' switchedCapacitanceFloatMulUnit=%s' % (quote_attrib(self.switchedCapacitanceFloatMulUnit), ))
+        if self.switchedCapacitanceFloatDivValue != "0" and 'switchedCapacitanceFloatDivValue' not in already_processed:
+            already_processed.add('switchedCapacitanceFloatDivValue')
+            outfile.write(' switchedCapacitanceFloatDivValue=%s' % (quote_attrib(self.switchedCapacitanceFloatDivValue), ))
+        if self.switchedCapacitanceFloatDivUnit != "pF" and 'switchedCapacitanceFloatDivUnit' not in already_processed:
+            already_processed.add('switchedCapacitanceFloatDivUnit')
+            outfile.write(' switchedCapacitanceFloatDivUnit=%s' % (quote_attrib(self.switchedCapacitanceFloatDivUnit), ))
+        if self.switchedCapacitanceLoadValue != "0" and 'switchedCapacitanceLoadValue' not in already_processed:
+            already_processed.add('switchedCapacitanceLoadValue')
+            outfile.write(' switchedCapacitanceLoadValue=%s' % (quote_attrib(self.switchedCapacitanceLoadValue), ))
+        if self.switchedCapacitanceLoadUnit != "pF" and 'switchedCapacitanceLoadUnit' not in already_processed:
             already_processed.add('switchedCapacitanceLoadUnit')
             outfile.write(' switchedCapacitanceLoadUnit=%s' % (quote_attrib(self.switchedCapacitanceLoadUnit), ))
+        if self.switchedCapacitanceStoreValue != "0" and 'switchedCapacitanceStoreValue' not in already_processed:
+            already_processed.add('switchedCapacitanceStoreValue')
+            outfile.write(' switchedCapacitanceStoreValue=%s' % (quote_attrib(self.switchedCapacitanceStoreValue), ))
+        if self.switchedCapacitanceStoreUnit != "pF" and 'switchedCapacitanceStoreUnit' not in already_processed:
+            already_processed.add('switchedCapacitanceStoreUnit')
+            outfile.write(' switchedCapacitanceStoreUnit=%s' % (quote_attrib(self.switchedCapacitanceStoreUnit), ))
+        if self.switchedCapacitanceControlValue != "0" and 'switchedCapacitanceControlValue' not in already_processed:
+            already_processed.add('switchedCapacitanceControlValue')
+            outfile.write(' switchedCapacitanceControlValue=%s' % (quote_attrib(self.switchedCapacitanceControlValue), ))
+        if self.switchedCapacitanceControlUnit != "pF" and 'switchedCapacitanceControlUnit' not in already_processed:
+            already_processed.add('switchedCapacitanceControlUnit')
+            outfile.write(' switchedCapacitanceControlUnit=%s' % (quote_attrib(self.switchedCapacitanceControlUnit), ))
+        if self.switchedCapacitanceOtherValue != "0" and 'switchedCapacitanceOtherValue' not in already_processed:
+            already_processed.add('switchedCapacitanceOtherValue')
+            outfile.write(' switchedCapacitanceOtherValue=%s' % (quote_attrib(self.switchedCapacitanceOtherValue), ))
+        if self.switchedCapacitanceOtherUnit != "pF" and 'switchedCapacitanceOtherUnit' not in already_processed:
+            already_processed.add('switchedCapacitanceOtherUnit')
+            outfile.write(' switchedCapacitanceOtherUnit=%s' % (quote_attrib(self.switchedCapacitanceOtherUnit), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='ProcessorPowerModelType', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
@@ -2416,26 +2526,96 @@ class ProcessorPowerModelType(GeneratedsSuper):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
-        value = find_attr_value_('switchedCapacitanceFloatDivValue', node)
-        if value is not None and 'switchedCapacitanceFloatDivValue' not in already_processed:
-            already_processed.add('switchedCapacitanceFloatDivValue')
-            self.switchedCapacitanceFloatDivValue = value
-            self.validate_CapacitanceValueType(self.switchedCapacitanceFloatDivValue)    # validate type CapacitanceValueType
+        value = find_attr_value_('id', node)
+        if value is not None and 'id' not in already_processed:
+            already_processed.add('id')
+            self.id = value
+            self.validate_IdType(self.id)    # validate type IdType
+        value = find_attr_value_('leakageCurrentValue', node)
+        if value is not None and 'leakageCurrentValue' not in already_processed:
+            already_processed.add('leakageCurrentValue')
+            self.leakageCurrentValue = value
+            self.validate_CurrentValueType(self.leakageCurrentValue)    # validate type CurrentValueType
         value = find_attr_value_('leakageCurrentUnit', node)
         if value is not None and 'leakageCurrentUnit' not in already_processed:
             already_processed.add('leakageCurrentUnit')
             self.leakageCurrentUnit = value
             self.validate_CurrentUnitType(self.leakageCurrentUnit)    # validate type CurrentUnitType
-        value = find_attr_value_('switchedCapacitanceFloatMulUnit', node)
-        if value is not None and 'switchedCapacitanceFloatMulUnit' not in already_processed:
-            already_processed.add('switchedCapacitanceFloatMulUnit')
-            self.switchedCapacitanceFloatMulUnit = value
-            self.validate_CapacitanceUnitType(self.switchedCapacitanceFloatMulUnit)    # validate type CapacitanceUnitType
+        value = find_attr_value_('switchedCapacitanceValue', node)
+        if value is not None and 'switchedCapacitanceValue' not in already_processed:
+            already_processed.add('switchedCapacitanceValue')
+            self.switchedCapacitanceValue = value
+            self.validate_CapacitanceValueType(self.switchedCapacitanceValue)    # validate type CapacitanceValueType
         value = find_attr_value_('switchedCapacitanceUnit', node)
         if value is not None and 'switchedCapacitanceUnit' not in already_processed:
             already_processed.add('switchedCapacitanceUnit')
             self.switchedCapacitanceUnit = value
             self.validate_CapacitanceUnitType(self.switchedCapacitanceUnit)    # validate type CapacitanceUnitType
+        value = find_attr_value_('switchedCapacitanceIntAluValue', node)
+        if value is not None and 'switchedCapacitanceIntAluValue' not in already_processed:
+            already_processed.add('switchedCapacitanceIntAluValue')
+            self.switchedCapacitanceIntAluValue = value
+            self.validate_CapacitanceValueType(self.switchedCapacitanceIntAluValue)    # validate type CapacitanceValueType
+        value = find_attr_value_('switchedCapacitanceIntAluUnit', node)
+        if value is not None and 'switchedCapacitanceIntAluUnit' not in already_processed:
+            already_processed.add('switchedCapacitanceIntAluUnit')
+            self.switchedCapacitanceIntAluUnit = value
+            self.validate_CapacitanceUnitType(self.switchedCapacitanceIntAluUnit)    # validate type CapacitanceUnitType
+        value = find_attr_value_('switchedCapacitanceIntMulValue', node)
+        if value is not None and 'switchedCapacitanceIntMulValue' not in already_processed:
+            already_processed.add('switchedCapacitanceIntMulValue')
+            self.switchedCapacitanceIntMulValue = value
+            self.validate_CapacitanceValueType(self.switchedCapacitanceIntMulValue)    # validate type CapacitanceValueType
+        value = find_attr_value_('switchedCapacitanceIntMulUnit', node)
+        if value is not None and 'switchedCapacitanceIntMulUnit' not in already_processed:
+            already_processed.add('switchedCapacitanceIntMulUnit')
+            self.switchedCapacitanceIntMulUnit = value
+            self.validate_CapacitanceUnitType(self.switchedCapacitanceIntMulUnit)    # validate type CapacitanceUnitType
+        value = find_attr_value_('switchedCapacitanceIntDivValue', node)
+        if value is not None and 'switchedCapacitanceIntDivValue' not in already_processed:
+            already_processed.add('switchedCapacitanceIntDivValue')
+            self.switchedCapacitanceIntDivValue = value
+            self.validate_CapacitanceValueType(self.switchedCapacitanceIntDivValue)    # validate type CapacitanceValueType
+        value = find_attr_value_('switchedCapacitanceIntDivUnit', node)
+        if value is not None and 'switchedCapacitanceIntDivUnit' not in already_processed:
+            already_processed.add('switchedCapacitanceIntDivUnit')
+            self.switchedCapacitanceIntDivUnit = value
+            self.validate_CapacitanceUnitType(self.switchedCapacitanceIntDivUnit)    # validate type CapacitanceUnitType
+        value = find_attr_value_('switchedCapacitanceFloatArithValue', node)
+        if value is not None and 'switchedCapacitanceFloatArithValue' not in already_processed:
+            already_processed.add('switchedCapacitanceFloatArithValue')
+            self.switchedCapacitanceFloatArithValue = value
+            self.validate_CapacitanceValueType(self.switchedCapacitanceFloatArithValue)    # validate type CapacitanceValueType
+        value = find_attr_value_('switchedCapacitanceFloatArithUnit', node)
+        if value is not None and 'switchedCapacitanceFloatArithUnit' not in already_processed:
+            already_processed.add('switchedCapacitanceFloatArithUnit')
+            self.switchedCapacitanceFloatArithUnit = value
+            self.validate_CapacitanceUnitType(self.switchedCapacitanceFloatArithUnit)    # validate type CapacitanceUnitType
+        value = find_attr_value_('switchedCapacitanceFloatCompValue', node)
+        if value is not None and 'switchedCapacitanceFloatCompValue' not in already_processed:
+            already_processed.add('switchedCapacitanceFloatCompValue')
+            self.switchedCapacitanceFloatCompValue = value
+            self.validate_CapacitanceValueType(self.switchedCapacitanceFloatCompValue)    # validate type CapacitanceValueType
+        value = find_attr_value_('switchedCapacitanceFloatCompUnit', node)
+        if value is not None and 'switchedCapacitanceFloatCompUnit' not in already_processed:
+            already_processed.add('switchedCapacitanceFloatCompUnit')
+            self.switchedCapacitanceFloatCompUnit = value
+            self.validate_CapacitanceUnitType(self.switchedCapacitanceFloatCompUnit)    # validate type CapacitanceUnitType
+        value = find_attr_value_('switchedCapacitanceFloatMulValue', node)
+        if value is not None and 'switchedCapacitanceFloatMulValue' not in already_processed:
+            already_processed.add('switchedCapacitanceFloatMulValue')
+            self.switchedCapacitanceFloatMulValue = value
+            self.validate_CapacitanceValueType(self.switchedCapacitanceFloatMulValue)    # validate type CapacitanceValueType
+        value = find_attr_value_('switchedCapacitanceFloatMulUnit', node)
+        if value is not None and 'switchedCapacitanceFloatMulUnit' not in already_processed:
+            already_processed.add('switchedCapacitanceFloatMulUnit')
+            self.switchedCapacitanceFloatMulUnit = value
+            self.validate_CapacitanceUnitType(self.switchedCapacitanceFloatMulUnit)    # validate type CapacitanceUnitType
+        value = find_attr_value_('switchedCapacitanceFloatDivValue', node)
+        if value is not None and 'switchedCapacitanceFloatDivValue' not in already_processed:
+            already_processed.add('switchedCapacitanceFloatDivValue')
+            self.switchedCapacitanceFloatDivValue = value
+            self.validate_CapacitanceValueType(self.switchedCapacitanceFloatDivValue)    # validate type CapacitanceValueType
         value = find_attr_value_('switchedCapacitanceFloatDivUnit', node)
         if value is not None and 'switchedCapacitanceFloatDivUnit' not in already_processed:
             already_processed.add('switchedCapacitanceFloatDivUnit')
@@ -2446,111 +2626,41 @@ class ProcessorPowerModelType(GeneratedsSuper):
             already_processed.add('switchedCapacitanceLoadValue')
             self.switchedCapacitanceLoadValue = value
             self.validate_CapacitanceValueType(self.switchedCapacitanceLoadValue)    # validate type CapacitanceValueType
-        value = find_attr_value_('switchedCapacitanceStoreValue', node)
-        if value is not None and 'switchedCapacitanceStoreValue' not in already_processed:
-            already_processed.add('switchedCapacitanceStoreValue')
-            self.switchedCapacitanceStoreValue = value
-            self.validate_CapacitanceValueType(self.switchedCapacitanceStoreValue)    # validate type CapacitanceValueType
-        value = find_attr_value_('switchedCapacitanceIntDivValue', node)
-        if value is not None and 'switchedCapacitanceIntDivValue' not in already_processed:
-            already_processed.add('switchedCapacitanceIntDivValue')
-            self.switchedCapacitanceIntDivValue = value
-            self.validate_CapacitanceValueType(self.switchedCapacitanceIntDivValue)    # validate type CapacitanceValueType
-        value = find_attr_value_('switchedCapacitanceIntMulValue', node)
-        if value is not None and 'switchedCapacitanceIntMulValue' not in already_processed:
-            already_processed.add('switchedCapacitanceIntMulValue')
-            self.switchedCapacitanceIntMulValue = value
-            self.validate_CapacitanceValueType(self.switchedCapacitanceIntMulValue)    # validate type CapacitanceValueType
-        value = find_attr_value_('switchedCapacitanceFloatCompUnit', node)
-        if value is not None and 'switchedCapacitanceFloatCompUnit' not in already_processed:
-            already_processed.add('switchedCapacitanceFloatCompUnit')
-            self.switchedCapacitanceFloatCompUnit = value
-            self.validate_CapacitanceUnitType(self.switchedCapacitanceFloatCompUnit)    # validate type CapacitanceUnitType
-        value = find_attr_value_('switchedCapacitanceValue', node)
-        if value is not None and 'switchedCapacitanceValue' not in already_processed:
-            already_processed.add('switchedCapacitanceValue')
-            self.switchedCapacitanceValue = value
-            self.validate_CapacitanceValueType(self.switchedCapacitanceValue)    # validate type CapacitanceValueType
-        value = find_attr_value_('switchedCapacitanceFloatMulValue', node)
-        if value is not None and 'switchedCapacitanceFloatMulValue' not in already_processed:
-            already_processed.add('switchedCapacitanceFloatMulValue')
-            self.switchedCapacitanceFloatMulValue = value
-            self.validate_CapacitanceValueType(self.switchedCapacitanceFloatMulValue)    # validate type CapacitanceValueType
-        value = find_attr_value_('id', node)
-        if value is not None and 'id' not in already_processed:
-            already_processed.add('id')
-            self.id = value
-            self.validate_IdType(self.id)    # validate type IdType
-        value = find_attr_value_('switchedCapacitanceIntAluUnit', node)
-        if value is not None and 'switchedCapacitanceIntAluUnit' not in already_processed:
-            already_processed.add('switchedCapacitanceIntAluUnit')
-            self.switchedCapacitanceIntAluUnit = value
-            self.validate_CapacitanceUnitType(self.switchedCapacitanceIntAluUnit)    # validate type CapacitanceUnitType
-        value = find_attr_value_('leakageCurrentValue', node)
-        if value is not None and 'leakageCurrentValue' not in already_processed:
-            already_processed.add('leakageCurrentValue')
-            self.leakageCurrentValue = value
-            self.validate_CurrentValueType(self.leakageCurrentValue)    # validate type CurrentValueType
-        value = find_attr_value_('switchedCapacitanceControlValue', node)
-        if value is not None and 'switchedCapacitanceControlValue' not in already_processed:
-            already_processed.add('switchedCapacitanceControlValue')
-            self.switchedCapacitanceControlValue = value
-            self.validate_CapacitanceValueType(self.switchedCapacitanceControlValue)    # validate type CapacitanceValueType
-        value = find_attr_value_('switchedCapacitanceFloatArithValue', node)
-        if value is not None and 'switchedCapacitanceFloatArithValue' not in already_processed:
-            already_processed.add('switchedCapacitanceFloatArithValue')
-            self.switchedCapacitanceFloatArithValue = value
-            self.validate_CapacitanceValueType(self.switchedCapacitanceFloatArithValue)    # validate type CapacitanceValueType
-        value = find_attr_value_('switchedCapacitanceIntAluValue', node)
-        if value is not None and 'switchedCapacitanceIntAluValue' not in already_processed:
-            already_processed.add('switchedCapacitanceIntAluValue')
-            self.switchedCapacitanceIntAluValue = value
-            self.validate_CapacitanceValueType(self.switchedCapacitanceIntAluValue)    # validate type CapacitanceValueType
-        value = find_attr_value_('switchedCapacitanceStoreUnit', node)
-        if value is not None and 'switchedCapacitanceStoreUnit' not in already_processed:
-            already_processed.add('switchedCapacitanceStoreUnit')
-            self.switchedCapacitanceStoreUnit = value
-            self.validate_CapacitanceUnitType(self.switchedCapacitanceStoreUnit)    # validate type CapacitanceUnitType
-        value = find_attr_value_('switchedCapacitanceFloatCompValue', node)
-        if value is not None and 'switchedCapacitanceFloatCompValue' not in already_processed:
-            already_processed.add('switchedCapacitanceFloatCompValue')
-            self.switchedCapacitanceFloatCompValue = value
-            self.validate_CapacitanceValueType(self.switchedCapacitanceFloatCompValue)    # validate type CapacitanceValueType
-        value = find_attr_value_('switchedCapacitanceIntDivUnit', node)
-        if value is not None and 'switchedCapacitanceIntDivUnit' not in already_processed:
-            already_processed.add('switchedCapacitanceIntDivUnit')
-            self.switchedCapacitanceIntDivUnit = value
-            self.validate_CapacitanceUnitType(self.switchedCapacitanceIntDivUnit)    # validate type CapacitanceUnitType
-        value = find_attr_value_('switchedCapacitanceIntMulUnit', node)
-        if value is not None and 'switchedCapacitanceIntMulUnit' not in already_processed:
-            already_processed.add('switchedCapacitanceIntMulUnit')
-            self.switchedCapacitanceIntMulUnit = value
-            self.validate_CapacitanceUnitType(self.switchedCapacitanceIntMulUnit)    # validate type CapacitanceUnitType
-        value = find_attr_value_('switchedCapacitanceOtherUnit', node)
-        if value is not None and 'switchedCapacitanceOtherUnit' not in already_processed:
-            already_processed.add('switchedCapacitanceOtherUnit')
-            self.switchedCapacitanceOtherUnit = value
-            self.validate_CapacitanceUnitType(self.switchedCapacitanceOtherUnit)    # validate type CapacitanceUnitType
-        value = find_attr_value_('switchedCapacitanceOtherValue', node)
-        if value is not None and 'switchedCapacitanceOtherValue' not in already_processed:
-            already_processed.add('switchedCapacitanceOtherValue')
-            self.switchedCapacitanceOtherValue = value
-            self.validate_CapacitanceValueType(self.switchedCapacitanceOtherValue)    # validate type CapacitanceValueType
-        value = find_attr_value_('switchedCapacitanceFloatArithUnit', node)
-        if value is not None and 'switchedCapacitanceFloatArithUnit' not in already_processed:
-            already_processed.add('switchedCapacitanceFloatArithUnit')
-            self.switchedCapacitanceFloatArithUnit = value
-            self.validate_CapacitanceUnitType(self.switchedCapacitanceFloatArithUnit)    # validate type CapacitanceUnitType
-        value = find_attr_value_('switchedCapacitanceControlUnit', node)
-        if value is not None and 'switchedCapacitanceControlUnit' not in already_processed:
-            already_processed.add('switchedCapacitanceControlUnit')
-            self.switchedCapacitanceControlUnit = value
-            self.validate_CapacitanceUnitType(self.switchedCapacitanceControlUnit)    # validate type CapacitanceUnitType
         value = find_attr_value_('switchedCapacitanceLoadUnit', node)
         if value is not None and 'switchedCapacitanceLoadUnit' not in already_processed:
             already_processed.add('switchedCapacitanceLoadUnit')
             self.switchedCapacitanceLoadUnit = value
             self.validate_CapacitanceUnitType(self.switchedCapacitanceLoadUnit)    # validate type CapacitanceUnitType
+        value = find_attr_value_('switchedCapacitanceStoreValue', node)
+        if value is not None and 'switchedCapacitanceStoreValue' not in already_processed:
+            already_processed.add('switchedCapacitanceStoreValue')
+            self.switchedCapacitanceStoreValue = value
+            self.validate_CapacitanceValueType(self.switchedCapacitanceStoreValue)    # validate type CapacitanceValueType
+        value = find_attr_value_('switchedCapacitanceStoreUnit', node)
+        if value is not None and 'switchedCapacitanceStoreUnit' not in already_processed:
+            already_processed.add('switchedCapacitanceStoreUnit')
+            self.switchedCapacitanceStoreUnit = value
+            self.validate_CapacitanceUnitType(self.switchedCapacitanceStoreUnit)    # validate type CapacitanceUnitType
+        value = find_attr_value_('switchedCapacitanceControlValue', node)
+        if value is not None and 'switchedCapacitanceControlValue' not in already_processed:
+            already_processed.add('switchedCapacitanceControlValue')
+            self.switchedCapacitanceControlValue = value
+            self.validate_CapacitanceValueType(self.switchedCapacitanceControlValue)    # validate type CapacitanceValueType
+        value = find_attr_value_('switchedCapacitanceControlUnit', node)
+        if value is not None and 'switchedCapacitanceControlUnit' not in already_processed:
+            already_processed.add('switchedCapacitanceControlUnit')
+            self.switchedCapacitanceControlUnit = value
+            self.validate_CapacitanceUnitType(self.switchedCapacitanceControlUnit)    # validate type CapacitanceUnitType
+        value = find_attr_value_('switchedCapacitanceOtherValue', node)
+        if value is not None and 'switchedCapacitanceOtherValue' not in already_processed:
+            already_processed.add('switchedCapacitanceOtherValue')
+            self.switchedCapacitanceOtherValue = value
+            self.validate_CapacitanceValueType(self.switchedCapacitanceOtherValue)    # validate type CapacitanceValueType
+        value = find_attr_value_('switchedCapacitanceOtherUnit', node)
+        if value is not None and 'switchedCapacitanceOtherUnit' not in already_processed:
+            already_processed.add('switchedCapacitanceOtherUnit')
+            self.switchedCapacitanceOtherUnit = value
+            self.validate_CapacitanceUnitType(self.switchedCapacitanceOtherUnit)    # validate type CapacitanceUnitType
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         if nodeName_ == 'ProcessorPowerState':
             obj_ = ProcessorPowerStateType.factory()
@@ -2563,24 +2673,29 @@ class ProcessorPowerModelType(GeneratedsSuper):
 class ProcessorType(GeneratedsSuper):
     subclass = None
     superclass = None
-    def __init__(self, core=None, contextStoreUnit='cycles', contextStoreValue='0', isAccelerator='false', frequencyDomain=None, processorPowerModel=None, contextLoadValue='0', voltageDomain=None, clockGating=None, scheduler=None, isHardware='false', contextLoadUnit='cycles', id=None, DataCacheRef=None, InstructionCacheRef=None):
+    def __init__(self, id=None, core=None, isHardware='false', isAccelerator='false', frequencyDomain=None, clockGating=None, voltageDomain=None, processorPowerModel=None, scheduler=None, contextLoadValue='0', contextLoadUnit='cycles', contextStoreValue='0', contextStoreUnit='cycles', DataCacheRef=None, InstructionCacheRef=None):
         self.original_tagname_ = None
+        self.id = _cast(None, id)
         self.core = _cast(None, core)
-        self.contextStoreUnit = _cast(None, contextStoreUnit)
-        self.contextStoreValue = _cast(None, contextStoreValue)
+        self.isHardware = _cast(None, isHardware)
         self.isAccelerator = _cast(None, isAccelerator)
         self.frequencyDomain = _cast(None, frequencyDomain)
-        self.processorPowerModel = _cast(None, processorPowerModel)
-        self.contextLoadValue = _cast(None, contextLoadValue)
-        self.voltageDomain = _cast(None, voltageDomain)
         self.clockGating = _cast(None, clockGating)
+        self.voltageDomain = _cast(None, voltageDomain)
+        self.processorPowerModel = _cast(None, processorPowerModel)
         self.scheduler = _cast(None, scheduler)
-        self.isHardware = _cast(None, isHardware)
+        self.contextLoadValue = _cast(None, contextLoadValue)
         self.contextLoadUnit = _cast(None, contextLoadUnit)
-        self.id = _cast(None, id)
+        self.contextStoreValue = _cast(None, contextStoreValue)
+        self.contextStoreUnit = _cast(None, contextStoreUnit)
         self.DataCacheRef = DataCacheRef
         self.InstructionCacheRef = InstructionCacheRef
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, ProcessorType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if ProcessorType.subclass:
             return ProcessorType.subclass(*args_, **kwargs_)
         else:
@@ -2590,32 +2705,39 @@ class ProcessorType(GeneratedsSuper):
     def set_DataCacheRef(self, DataCacheRef): self.DataCacheRef = DataCacheRef
     def get_InstructionCacheRef(self): return self.InstructionCacheRef
     def set_InstructionCacheRef(self, InstructionCacheRef): self.InstructionCacheRef = InstructionCacheRef
+    def get_id(self): return self.id
+    def set_id(self, id): self.id = id
     def get_core(self): return self.core
     def set_core(self, core): self.core = core
-    def get_contextStoreUnit(self): return self.contextStoreUnit
-    def set_contextStoreUnit(self, contextStoreUnit): self.contextStoreUnit = contextStoreUnit
-    def get_contextStoreValue(self): return self.contextStoreValue
-    def set_contextStoreValue(self, contextStoreValue): self.contextStoreValue = contextStoreValue
+    def get_isHardware(self): return self.isHardware
+    def set_isHardware(self, isHardware): self.isHardware = isHardware
     def get_isAccelerator(self): return self.isAccelerator
     def set_isAccelerator(self, isAccelerator): self.isAccelerator = isAccelerator
     def get_frequencyDomain(self): return self.frequencyDomain
     def set_frequencyDomain(self, frequencyDomain): self.frequencyDomain = frequencyDomain
-    def get_processorPowerModel(self): return self.processorPowerModel
-    def set_processorPowerModel(self, processorPowerModel): self.processorPowerModel = processorPowerModel
-    def get_contextLoadValue(self): return self.contextLoadValue
-    def set_contextLoadValue(self, contextLoadValue): self.contextLoadValue = contextLoadValue
-    def get_voltageDomain(self): return self.voltageDomain
-    def set_voltageDomain(self, voltageDomain): self.voltageDomain = voltageDomain
     def get_clockGating(self): return self.clockGating
     def set_clockGating(self, clockGating): self.clockGating = clockGating
+    def get_voltageDomain(self): return self.voltageDomain
+    def set_voltageDomain(self, voltageDomain): self.voltageDomain = voltageDomain
+    def get_processorPowerModel(self): return self.processorPowerModel
+    def set_processorPowerModel(self, processorPowerModel): self.processorPowerModel = processorPowerModel
     def get_scheduler(self): return self.scheduler
     def set_scheduler(self, scheduler): self.scheduler = scheduler
-    def get_isHardware(self): return self.isHardware
-    def set_isHardware(self, isHardware): self.isHardware = isHardware
+    def get_contextLoadValue(self): return self.contextLoadValue
+    def set_contextLoadValue(self, contextLoadValue): self.contextLoadValue = contextLoadValue
     def get_contextLoadUnit(self): return self.contextLoadUnit
     def set_contextLoadUnit(self, contextLoadUnit): self.contextLoadUnit = contextLoadUnit
-    def get_id(self): return self.id
-    def set_id(self, id): self.id = id
+    def get_contextStoreValue(self): return self.contextStoreValue
+    def set_contextStoreValue(self, contextStoreValue): self.contextStoreValue = contextStoreValue
+    def get_contextStoreUnit(self): return self.contextStoreUnit
+    def set_contextStoreUnit(self, contextStoreUnit): self.contextStoreUnit = contextStoreUnit
+    def validate_IdType(self, value):
+        # Validate type IdType, a restriction on xs:ID.
+        if value is not None and Validate_simpletypes_:
+            if not self.gds_validate_simple_patterns(
+                    self.validate_IdType_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_IdType_patterns_, ))
+    validate_IdType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def validate_NameType(self, value):
         # Validate type NameType, a restriction on xs:string.
         if value is not None and Validate_simpletypes_:
@@ -2623,6 +2745,22 @@ class ProcessorType(GeneratedsSuper):
                     self.validate_NameType_patterns_, value):
                 warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_NameType_patterns_, ))
     validate_NameType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
+    def validate_BooleanType(self, value):
+        # Validate type BooleanType, a restriction on xs:boolean.
+        if value is not None and Validate_simpletypes_:
+            pass
+    def validate_RefType(self, value):
+        # Validate type RefType, a restriction on xs:IDREF.
+        if value is not None and Validate_simpletypes_:
+            if not self.gds_validate_simple_patterns(
+                    self.validate_RefType_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_RefType_patterns_, ))
+    validate_RefType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
+    def validate_CyclesValueType(self, value):
+        # Validate type CyclesValueType, a restriction on NonNegativeFloatType.
+        if value is not None and Validate_simpletypes_:
+            if value < 0:
+                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on CyclesValueType' % {"value" : value} )
     def validate_CyclesUnitType(self, value):
         # Validate type CyclesUnitType, a restriction on xs:string.
         if value is not None and Validate_simpletypes_:
@@ -2635,29 +2773,6 @@ class ProcessorType(GeneratedsSuper):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on CyclesUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_CyclesValueType(self, value):
-        # Validate type CyclesValueType, a restriction on NonNegativeFloatType.
-        if value is not None and Validate_simpletypes_:
-            if value < 0:
-                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on CyclesValueType' % {"value" : value} )
-    def validate_BooleanType(self, value):
-        # Validate type BooleanType, a restriction on xs:boolean.
-        if value is not None and Validate_simpletypes_:
-            pass
-    def validate_RefType(self, value):
-        # Validate type RefType, a restriction on xs:IDREF.
-        if value is not None and Validate_simpletypes_:
-            if not self.gds_validate_simple_patterns(
-                    self.validate_RefType_patterns_, value):
-                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_RefType_patterns_, ))
-    validate_RefType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
-    def validate_IdType(self, value):
-        # Validate type IdType, a restriction on xs:ID.
-        if value is not None and Validate_simpletypes_:
-            if not self.gds_validate_simple_patterns(
-                    self.validate_IdType_patterns_, value):
-                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_IdType_patterns_, ))
-    validate_IdType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def hasContent_(self):
         if (
             self.DataCacheRef is not None or
@@ -2685,45 +2800,45 @@ class ProcessorType(GeneratedsSuper):
         else:
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='ProcessorType'):
+        if self.id is not None and 'id' not in already_processed:
+            already_processed.add('id')
+            outfile.write(' id=%s' % (quote_attrib(self.id), ))
         if self.core is not None and 'core' not in already_processed:
             already_processed.add('core')
             outfile.write(' core=%s' % (quote_attrib(self.core), ))
-        if self.contextStoreUnit != cycles and 'contextStoreUnit' not in already_processed:
-            already_processed.add('contextStoreUnit')
-            outfile.write(' contextStoreUnit=%s' % (quote_attrib(self.contextStoreUnit), ))
-        if self.contextStoreValue != 0 and 'contextStoreValue' not in already_processed:
-            already_processed.add('contextStoreValue')
-            outfile.write(' contextStoreValue=%s' % (quote_attrib(self.contextStoreValue), ))
-        if self.isAccelerator != false and 'isAccelerator' not in already_processed:
+        if self.isHardware and 'isHardware' not in already_processed:
+            already_processed.add('isHardware')
+            outfile.write(' isHardware=%s' % (quote_attrib(self.isHardware), ))
+        if self.isAccelerator and 'isAccelerator' not in already_processed:
             already_processed.add('isAccelerator')
             outfile.write(' isAccelerator=%s' % (quote_attrib(self.isAccelerator), ))
         if self.frequencyDomain is not None and 'frequencyDomain' not in already_processed:
             already_processed.add('frequencyDomain')
             outfile.write(' frequencyDomain=%s' % (quote_attrib(self.frequencyDomain), ))
-        if self.processorPowerModel is not None and 'processorPowerModel' not in already_processed:
-            already_processed.add('processorPowerModel')
-            outfile.write(' processorPowerModel=%s' % (quote_attrib(self.processorPowerModel), ))
-        if self.contextLoadValue != 0 and 'contextLoadValue' not in already_processed:
-            already_processed.add('contextLoadValue')
-            outfile.write(' contextLoadValue=%s' % (quote_attrib(self.contextLoadValue), ))
-        if self.voltageDomain is not None and 'voltageDomain' not in already_processed:
-            already_processed.add('voltageDomain')
-            outfile.write(' voltageDomain=%s' % (quote_attrib(self.voltageDomain), ))
         if self.clockGating is not None and 'clockGating' not in already_processed:
             already_processed.add('clockGating')
             outfile.write(' clockGating=%s' % (quote_attrib(self.clockGating), ))
+        if self.voltageDomain is not None and 'voltageDomain' not in already_processed:
+            already_processed.add('voltageDomain')
+            outfile.write(' voltageDomain=%s' % (quote_attrib(self.voltageDomain), ))
+        if self.processorPowerModel is not None and 'processorPowerModel' not in already_processed:
+            already_processed.add('processorPowerModel')
+            outfile.write(' processorPowerModel=%s' % (quote_attrib(self.processorPowerModel), ))
         if self.scheduler is not None and 'scheduler' not in already_processed:
             already_processed.add('scheduler')
             outfile.write(' scheduler=%s' % (quote_attrib(self.scheduler), ))
-        if self.isHardware != false and 'isHardware' not in already_processed:
-            already_processed.add('isHardware')
-            outfile.write(' isHardware=%s' % (quote_attrib(self.isHardware), ))
-        if self.contextLoadUnit != cycles and 'contextLoadUnit' not in already_processed:
+        if self.contextLoadValue != "0" and 'contextLoadValue' not in already_processed:
+            already_processed.add('contextLoadValue')
+            outfile.write(' contextLoadValue=%s' % (quote_attrib(self.contextLoadValue), ))
+        if self.contextLoadUnit != "cycles" and 'contextLoadUnit' not in already_processed:
             already_processed.add('contextLoadUnit')
             outfile.write(' contextLoadUnit=%s' % (quote_attrib(self.contextLoadUnit), ))
-        if self.id is not None and 'id' not in already_processed:
-            already_processed.add('id')
-            outfile.write(' id=%s' % (quote_attrib(self.id), ))
+        if self.contextStoreValue != "0" and 'contextStoreValue' not in already_processed:
+            already_processed.add('contextStoreValue')
+            outfile.write(' contextStoreValue=%s' % (quote_attrib(self.contextStoreValue), ))
+        if self.contextStoreUnit != "cycles" and 'contextStoreUnit' not in already_processed:
+            already_processed.add('contextStoreUnit')
+            outfile.write(' contextStoreUnit=%s' % (quote_attrib(self.contextStoreUnit), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='ProcessorType', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
@@ -2741,21 +2856,26 @@ class ProcessorType(GeneratedsSuper):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
+        value = find_attr_value_('id', node)
+        if value is not None and 'id' not in already_processed:
+            already_processed.add('id')
+            self.id = value
+            self.validate_IdType(self.id)    # validate type IdType
         value = find_attr_value_('core', node)
         if value is not None and 'core' not in already_processed:
             already_processed.add('core')
             self.core = value
             self.validate_NameType(self.core)    # validate type NameType
-        value = find_attr_value_('contextStoreUnit', node)
-        if value is not None and 'contextStoreUnit' not in already_processed:
-            already_processed.add('contextStoreUnit')
-            self.contextStoreUnit = value
-            self.validate_CyclesUnitType(self.contextStoreUnit)    # validate type CyclesUnitType
-        value = find_attr_value_('contextStoreValue', node)
-        if value is not None and 'contextStoreValue' not in already_processed:
-            already_processed.add('contextStoreValue')
-            self.contextStoreValue = value
-            self.validate_CyclesValueType(self.contextStoreValue)    # validate type CyclesValueType
+        value = find_attr_value_('isHardware', node)
+        if value is not None and 'isHardware' not in already_processed:
+            already_processed.add('isHardware')
+            if value in ('true', '1'):
+                self.isHardware = True
+            elif value in ('false', '0'):
+                self.isHardware = False
+            else:
+                raise_parse_error(node, 'Bad boolean attribute')
+            self.validate_BooleanType(self.isHardware)    # validate type BooleanType
         value = find_attr_value_('isAccelerator', node)
         if value is not None and 'isAccelerator' not in already_processed:
             already_processed.add('isAccelerator')
@@ -2771,21 +2891,6 @@ class ProcessorType(GeneratedsSuper):
             already_processed.add('frequencyDomain')
             self.frequencyDomain = value
             self.validate_RefType(self.frequencyDomain)    # validate type RefType
-        value = find_attr_value_('processorPowerModel', node)
-        if value is not None and 'processorPowerModel' not in already_processed:
-            already_processed.add('processorPowerModel')
-            self.processorPowerModel = value
-            self.validate_RefType(self.processorPowerModel)    # validate type RefType
-        value = find_attr_value_('contextLoadValue', node)
-        if value is not None and 'contextLoadValue' not in already_processed:
-            already_processed.add('contextLoadValue')
-            self.contextLoadValue = value
-            self.validate_CyclesValueType(self.contextLoadValue)    # validate type CyclesValueType
-        value = find_attr_value_('voltageDomain', node)
-        if value is not None and 'voltageDomain' not in already_processed:
-            already_processed.add('voltageDomain')
-            self.voltageDomain = value
-            self.validate_RefType(self.voltageDomain)    # validate type RefType
         value = find_attr_value_('clockGating', node)
         if value is not None and 'clockGating' not in already_processed:
             already_processed.add('clockGating')
@@ -2796,31 +2901,41 @@ class ProcessorType(GeneratedsSuper):
             else:
                 raise_parse_error(node, 'Bad boolean attribute')
             self.validate_BooleanType(self.clockGating)    # validate type BooleanType
+        value = find_attr_value_('voltageDomain', node)
+        if value is not None and 'voltageDomain' not in already_processed:
+            already_processed.add('voltageDomain')
+            self.voltageDomain = value
+            self.validate_RefType(self.voltageDomain)    # validate type RefType
+        value = find_attr_value_('processorPowerModel', node)
+        if value is not None and 'processorPowerModel' not in already_processed:
+            already_processed.add('processorPowerModel')
+            self.processorPowerModel = value
+            self.validate_RefType(self.processorPowerModel)    # validate type RefType
         value = find_attr_value_('scheduler', node)
         if value is not None and 'scheduler' not in already_processed:
             already_processed.add('scheduler')
             self.scheduler = value
             self.validate_RefType(self.scheduler)    # validate type RefType
-        value = find_attr_value_('isHardware', node)
-        if value is not None and 'isHardware' not in already_processed:
-            already_processed.add('isHardware')
-            if value in ('true', '1'):
-                self.isHardware = True
-            elif value in ('false', '0'):
-                self.isHardware = False
-            else:
-                raise_parse_error(node, 'Bad boolean attribute')
-            self.validate_BooleanType(self.isHardware)    # validate type BooleanType
+        value = find_attr_value_('contextLoadValue', node)
+        if value is not None and 'contextLoadValue' not in already_processed:
+            already_processed.add('contextLoadValue')
+            self.contextLoadValue = value
+            self.validate_CyclesValueType(self.contextLoadValue)    # validate type CyclesValueType
         value = find_attr_value_('contextLoadUnit', node)
         if value is not None and 'contextLoadUnit' not in already_processed:
             already_processed.add('contextLoadUnit')
             self.contextLoadUnit = value
             self.validate_CyclesUnitType(self.contextLoadUnit)    # validate type CyclesUnitType
-        value = find_attr_value_('id', node)
-        if value is not None and 'id' not in already_processed:
-            already_processed.add('id')
-            self.id = value
-            self.validate_IdType(self.id)    # validate type IdType
+        value = find_attr_value_('contextStoreValue', node)
+        if value is not None and 'contextStoreValue' not in already_processed:
+            already_processed.add('contextStoreValue')
+            self.contextStoreValue = value
+            self.validate_CyclesValueType(self.contextStoreValue)    # validate type CyclesValueType
+        value = find_attr_value_('contextStoreUnit', node)
+        if value is not None and 'contextStoreUnit' not in already_processed:
+            already_processed.add('contextStoreUnit')
+            self.contextStoreUnit = value
+            self.validate_CyclesUnitType(self.contextStoreUnit)    # validate type CyclesUnitType
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         if nodeName_ == 'DataCacheRef':
             class_obj_ = self.get_class_obj_(child_, CacheRefType)
@@ -2844,6 +2959,11 @@ class ProcessorRefType(GeneratedsSuper):
         self.original_tagname_ = None
         self.processor = _cast(None, processor)
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, ProcessorRefType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if ProcessorRefType.subclass:
             return ProcessorRefType.subclass(*args_, **kwargs_)
         else:
@@ -2909,24 +3029,36 @@ class ProcessorRefType(GeneratedsSuper):
 class MemoryPowerStateType(VoltageFrequencyConditionListType):
     subclass = None
     superclass = VoltageFrequencyConditionListType
-    def __init__(self, VoltageCondition=None, FrequencyCondition=None, FrequencyVoltageCondition=None, powerValue=None, powerUnit='pW', name=None):
+    def __init__(self, VoltageCondition=None, FrequencyCondition=None, FrequencyVoltageCondition=None, name=None, powerValue=None, powerUnit='pW'):
         self.original_tagname_ = None
         super(MemoryPowerStateType, self).__init__(VoltageCondition, FrequencyCondition, FrequencyVoltageCondition, )
+        self.name = _cast(None, name)
         self.powerValue = _cast(None, powerValue)
         self.powerUnit = _cast(None, powerUnit)
-        self.name = _cast(None, name)
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, MemoryPowerStateType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if MemoryPowerStateType.subclass:
             return MemoryPowerStateType.subclass(*args_, **kwargs_)
         else:
             return MemoryPowerStateType(*args_, **kwargs_)
     factory = staticmethod(factory)
+    def get_name(self): return self.name
+    def set_name(self, name): self.name = name
     def get_powerValue(self): return self.powerValue
     def set_powerValue(self, powerValue): self.powerValue = powerValue
     def get_powerUnit(self): return self.powerUnit
     def set_powerUnit(self, powerUnit): self.powerUnit = powerUnit
-    def get_name(self): return self.name
-    def set_name(self, name): self.name = name
+    def validate_NameType(self, value):
+        # Validate type NameType, a restriction on xs:string.
+        if value is not None and Validate_simpletypes_:
+            if not self.gds_validate_simple_patterns(
+                    self.validate_NameType_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_NameType_patterns_, ))
+    validate_NameType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def validate_PowerValueType(self, value):
         # Validate type PowerValueType, a restriction on NonNegativeFloatType.
         if value is not None and Validate_simpletypes_:
@@ -2944,13 +3076,6 @@ class MemoryPowerStateType(VoltageFrequencyConditionListType):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on PowerUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_NameType(self, value):
-        # Validate type NameType, a restriction on xs:string.
-        if value is not None and Validate_simpletypes_:
-            if not self.gds_validate_simple_patterns(
-                    self.validate_NameType_patterns_, value):
-                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_NameType_patterns_, ))
-    validate_NameType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def hasContent_(self):
         if (
             super(MemoryPowerStateType, self).hasContent_()
@@ -2978,15 +3103,15 @@ class MemoryPowerStateType(VoltageFrequencyConditionListType):
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='MemoryPowerStateType'):
         super(MemoryPowerStateType, self).exportAttributes(outfile, level, already_processed, namespace_, name_='MemoryPowerStateType')
-        if self.powerValue is not None and 'powerValue' not in already_processed:
-            already_processed.add('powerValue')
-            outfile.write(' powerValue=%s' % (quote_attrib(self.powerValue), ))
-        if self.powerUnit != pW and 'powerUnit' not in already_processed:
-            already_processed.add('powerUnit')
-            outfile.write(' powerUnit=%s' % (quote_attrib(self.powerUnit), ))
         if self.name is not None and 'name' not in already_processed:
             already_processed.add('name')
             outfile.write(' name=%s' % (quote_attrib(self.name), ))
+        if self.powerValue is not None and 'powerValue' not in already_processed:
+            already_processed.add('powerValue')
+            outfile.write(' powerValue=%s' % (quote_attrib(self.powerValue), ))
+        if self.powerUnit != "pW" and 'powerUnit' not in already_processed:
+            already_processed.add('powerUnit')
+            outfile.write(' powerUnit=%s' % (quote_attrib(self.powerUnit), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='MemoryPowerStateType', fromsubclass_=False, pretty_print=True):
         super(MemoryPowerStateType, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
     def build(self, node):
@@ -2997,6 +3122,11 @@ class MemoryPowerStateType(VoltageFrequencyConditionListType):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
+        value = find_attr_value_('name', node)
+        if value is not None and 'name' not in already_processed:
+            already_processed.add('name')
+            self.name = value
+            self.validate_NameType(self.name)    # validate type NameType
         value = find_attr_value_('powerValue', node)
         if value is not None and 'powerValue' not in already_processed:
             already_processed.add('powerValue')
@@ -3007,11 +3137,6 @@ class MemoryPowerStateType(VoltageFrequencyConditionListType):
             already_processed.add('powerUnit')
             self.powerUnit = value
             self.validate_PowerUnitType(self.powerUnit)    # validate type PowerUnitType
-        value = find_attr_value_('name', node)
-        if value is not None and 'name' not in already_processed:
-            already_processed.add('name')
-            self.name = value
-            self.validate_NameType(self.name)    # validate type NameType
         super(MemoryPowerStateType, self).buildAttributes(node, attrs, already_processed)
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         super(MemoryPowerStateType, self).buildChildren(child_, node, nodeName_, True)
@@ -3022,26 +3147,31 @@ class MemoryPowerStateType(VoltageFrequencyConditionListType):
 class MemoryPowerModelType(GeneratedsSuper):
     subclass = None
     superclass = None
-    def __init__(self, cellSwitchedCapacitanceValue='0', leakageCurrentUnit='pA', switchedCapacitanceValue='0', leakageCurrentValue='0', switchedCapacitanceUnit='pF', readCapacitanceValue='0', cellSwitchedCapacitanceUnit='pF', writeCapacitanceUnit='pF', cellLeakageCurrentValue='0', writeCapacitanceValue='0', readCapacitanceUnit='pF', id=None, cellLeakageCurrentUnit='pA', MemoryPowerState=None):
+    def __init__(self, id=None, leakageCurrentValue='0', leakageCurrentUnit='pA', cellLeakageCurrentValue='0', cellLeakageCurrentUnit='pA', switchedCapacitanceValue='0', switchedCapacitanceUnit='pF', cellSwitchedCapacitanceValue='0', cellSwitchedCapacitanceUnit='pF', readCapacitanceValue='0', readCapacitanceUnit='pF', writeCapacitanceValue='0', writeCapacitanceUnit='pF', MemoryPowerState=None):
         self.original_tagname_ = None
-        self.cellSwitchedCapacitanceValue = _cast(None, cellSwitchedCapacitanceValue)
-        self.leakageCurrentUnit = _cast(None, leakageCurrentUnit)
-        self.switchedCapacitanceValue = _cast(None, switchedCapacitanceValue)
-        self.leakageCurrentValue = _cast(None, leakageCurrentValue)
-        self.switchedCapacitanceUnit = _cast(None, switchedCapacitanceUnit)
-        self.readCapacitanceValue = _cast(None, readCapacitanceValue)
-        self.cellSwitchedCapacitanceUnit = _cast(None, cellSwitchedCapacitanceUnit)
-        self.writeCapacitanceUnit = _cast(None, writeCapacitanceUnit)
-        self.cellLeakageCurrentValue = _cast(None, cellLeakageCurrentValue)
-        self.writeCapacitanceValue = _cast(None, writeCapacitanceValue)
-        self.readCapacitanceUnit = _cast(None, readCapacitanceUnit)
         self.id = _cast(None, id)
+        self.leakageCurrentValue = _cast(None, leakageCurrentValue)
+        self.leakageCurrentUnit = _cast(None, leakageCurrentUnit)
+        self.cellLeakageCurrentValue = _cast(None, cellLeakageCurrentValue)
         self.cellLeakageCurrentUnit = _cast(None, cellLeakageCurrentUnit)
+        self.switchedCapacitanceValue = _cast(None, switchedCapacitanceValue)
+        self.switchedCapacitanceUnit = _cast(None, switchedCapacitanceUnit)
+        self.cellSwitchedCapacitanceValue = _cast(None, cellSwitchedCapacitanceValue)
+        self.cellSwitchedCapacitanceUnit = _cast(None, cellSwitchedCapacitanceUnit)
+        self.readCapacitanceValue = _cast(None, readCapacitanceValue)
+        self.readCapacitanceUnit = _cast(None, readCapacitanceUnit)
+        self.writeCapacitanceValue = _cast(None, writeCapacitanceValue)
+        self.writeCapacitanceUnit = _cast(None, writeCapacitanceUnit)
         if MemoryPowerState is None:
             self.MemoryPowerState = []
         else:
             self.MemoryPowerState = MemoryPowerState
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, MemoryPowerModelType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if MemoryPowerModelType.subclass:
             return MemoryPowerModelType.subclass(*args_, **kwargs_)
         else:
@@ -3052,37 +3182,44 @@ class MemoryPowerModelType(GeneratedsSuper):
     def add_MemoryPowerState(self, value): self.MemoryPowerState.append(value)
     def insert_MemoryPowerState_at(self, index, value): self.MemoryPowerState.insert(index, value)
     def replace_MemoryPowerState_at(self, index, value): self.MemoryPowerState[index] = value
-    def get_cellSwitchedCapacitanceValue(self): return self.cellSwitchedCapacitanceValue
-    def set_cellSwitchedCapacitanceValue(self, cellSwitchedCapacitanceValue): self.cellSwitchedCapacitanceValue = cellSwitchedCapacitanceValue
-    def get_leakageCurrentUnit(self): return self.leakageCurrentUnit
-    def set_leakageCurrentUnit(self, leakageCurrentUnit): self.leakageCurrentUnit = leakageCurrentUnit
-    def get_switchedCapacitanceValue(self): return self.switchedCapacitanceValue
-    def set_switchedCapacitanceValue(self, switchedCapacitanceValue): self.switchedCapacitanceValue = switchedCapacitanceValue
-    def get_leakageCurrentValue(self): return self.leakageCurrentValue
-    def set_leakageCurrentValue(self, leakageCurrentValue): self.leakageCurrentValue = leakageCurrentValue
-    def get_switchedCapacitanceUnit(self): return self.switchedCapacitanceUnit
-    def set_switchedCapacitanceUnit(self, switchedCapacitanceUnit): self.switchedCapacitanceUnit = switchedCapacitanceUnit
-    def get_readCapacitanceValue(self): return self.readCapacitanceValue
-    def set_readCapacitanceValue(self, readCapacitanceValue): self.readCapacitanceValue = readCapacitanceValue
-    def get_cellSwitchedCapacitanceUnit(self): return self.cellSwitchedCapacitanceUnit
-    def set_cellSwitchedCapacitanceUnit(self, cellSwitchedCapacitanceUnit): self.cellSwitchedCapacitanceUnit = cellSwitchedCapacitanceUnit
-    def get_writeCapacitanceUnit(self): return self.writeCapacitanceUnit
-    def set_writeCapacitanceUnit(self, writeCapacitanceUnit): self.writeCapacitanceUnit = writeCapacitanceUnit
-    def get_cellLeakageCurrentValue(self): return self.cellLeakageCurrentValue
-    def set_cellLeakageCurrentValue(self, cellLeakageCurrentValue): self.cellLeakageCurrentValue = cellLeakageCurrentValue
-    def get_writeCapacitanceValue(self): return self.writeCapacitanceValue
-    def set_writeCapacitanceValue(self, writeCapacitanceValue): self.writeCapacitanceValue = writeCapacitanceValue
-    def get_readCapacitanceUnit(self): return self.readCapacitanceUnit
-    def set_readCapacitanceUnit(self, readCapacitanceUnit): self.readCapacitanceUnit = readCapacitanceUnit
     def get_id(self): return self.id
     def set_id(self, id): self.id = id
+    def get_leakageCurrentValue(self): return self.leakageCurrentValue
+    def set_leakageCurrentValue(self, leakageCurrentValue): self.leakageCurrentValue = leakageCurrentValue
+    def get_leakageCurrentUnit(self): return self.leakageCurrentUnit
+    def set_leakageCurrentUnit(self, leakageCurrentUnit): self.leakageCurrentUnit = leakageCurrentUnit
+    def get_cellLeakageCurrentValue(self): return self.cellLeakageCurrentValue
+    def set_cellLeakageCurrentValue(self, cellLeakageCurrentValue): self.cellLeakageCurrentValue = cellLeakageCurrentValue
     def get_cellLeakageCurrentUnit(self): return self.cellLeakageCurrentUnit
     def set_cellLeakageCurrentUnit(self, cellLeakageCurrentUnit): self.cellLeakageCurrentUnit = cellLeakageCurrentUnit
-    def validate_CapacitanceValueType(self, value):
-        # Validate type CapacitanceValueType, a restriction on NonNegativeFloatType.
+    def get_switchedCapacitanceValue(self): return self.switchedCapacitanceValue
+    def set_switchedCapacitanceValue(self, switchedCapacitanceValue): self.switchedCapacitanceValue = switchedCapacitanceValue
+    def get_switchedCapacitanceUnit(self): return self.switchedCapacitanceUnit
+    def set_switchedCapacitanceUnit(self, switchedCapacitanceUnit): self.switchedCapacitanceUnit = switchedCapacitanceUnit
+    def get_cellSwitchedCapacitanceValue(self): return self.cellSwitchedCapacitanceValue
+    def set_cellSwitchedCapacitanceValue(self, cellSwitchedCapacitanceValue): self.cellSwitchedCapacitanceValue = cellSwitchedCapacitanceValue
+    def get_cellSwitchedCapacitanceUnit(self): return self.cellSwitchedCapacitanceUnit
+    def set_cellSwitchedCapacitanceUnit(self, cellSwitchedCapacitanceUnit): self.cellSwitchedCapacitanceUnit = cellSwitchedCapacitanceUnit
+    def get_readCapacitanceValue(self): return self.readCapacitanceValue
+    def set_readCapacitanceValue(self, readCapacitanceValue): self.readCapacitanceValue = readCapacitanceValue
+    def get_readCapacitanceUnit(self): return self.readCapacitanceUnit
+    def set_readCapacitanceUnit(self, readCapacitanceUnit): self.readCapacitanceUnit = readCapacitanceUnit
+    def get_writeCapacitanceValue(self): return self.writeCapacitanceValue
+    def set_writeCapacitanceValue(self, writeCapacitanceValue): self.writeCapacitanceValue = writeCapacitanceValue
+    def get_writeCapacitanceUnit(self): return self.writeCapacitanceUnit
+    def set_writeCapacitanceUnit(self, writeCapacitanceUnit): self.writeCapacitanceUnit = writeCapacitanceUnit
+    def validate_IdType(self, value):
+        # Validate type IdType, a restriction on xs:ID.
+        if value is not None and Validate_simpletypes_:
+            if not self.gds_validate_simple_patterns(
+                    self.validate_IdType_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_IdType_patterns_, ))
+    validate_IdType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
+    def validate_CurrentValueType(self, value):
+        # Validate type CurrentValueType, a restriction on NonNegativeFloatType.
         if value is not None and Validate_simpletypes_:
             if value < 0:
-                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on CapacitanceValueType' % {"value" : value} )
+                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on CurrentValueType' % {"value" : value} )
     def validate_CurrentUnitType(self, value):
         # Validate type CurrentUnitType, a restriction on xs:string.
         if value is not None and Validate_simpletypes_:
@@ -3095,11 +3232,11 @@ class MemoryPowerModelType(GeneratedsSuper):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on CurrentUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_CurrentValueType(self, value):
-        # Validate type CurrentValueType, a restriction on NonNegativeFloatType.
+    def validate_CapacitanceValueType(self, value):
+        # Validate type CapacitanceValueType, a restriction on NonNegativeFloatType.
         if value is not None and Validate_simpletypes_:
             if value < 0:
-                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on CurrentValueType' % {"value" : value} )
+                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on CapacitanceValueType' % {"value" : value} )
     def validate_CapacitanceUnitType(self, value):
         # Validate type CapacitanceUnitType, a restriction on xs:string.
         if value is not None and Validate_simpletypes_:
@@ -3112,13 +3249,6 @@ class MemoryPowerModelType(GeneratedsSuper):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on CapacitanceUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_IdType(self, value):
-        # Validate type IdType, a restriction on xs:ID.
-        if value is not None and Validate_simpletypes_:
-            if not self.gds_validate_simple_patterns(
-                    self.validate_IdType_patterns_, value):
-                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_IdType_patterns_, ))
-    validate_IdType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def hasContent_(self):
         if (
             self.MemoryPowerState
@@ -3145,45 +3275,45 @@ class MemoryPowerModelType(GeneratedsSuper):
         else:
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='MemoryPowerModelType'):
-        if self.cellSwitchedCapacitanceValue != 0 and 'cellSwitchedCapacitanceValue' not in already_processed:
-            already_processed.add('cellSwitchedCapacitanceValue')
-            outfile.write(' cellSwitchedCapacitanceValue=%s' % (quote_attrib(self.cellSwitchedCapacitanceValue), ))
-        if self.leakageCurrentUnit != pA and 'leakageCurrentUnit' not in already_processed:
-            already_processed.add('leakageCurrentUnit')
-            outfile.write(' leakageCurrentUnit=%s' % (quote_attrib(self.leakageCurrentUnit), ))
-        if self.switchedCapacitanceValue != 0 and 'switchedCapacitanceValue' not in already_processed:
-            already_processed.add('switchedCapacitanceValue')
-            outfile.write(' switchedCapacitanceValue=%s' % (quote_attrib(self.switchedCapacitanceValue), ))
-        if self.leakageCurrentValue != 0 and 'leakageCurrentValue' not in already_processed:
-            already_processed.add('leakageCurrentValue')
-            outfile.write(' leakageCurrentValue=%s' % (quote_attrib(self.leakageCurrentValue), ))
-        if self.switchedCapacitanceUnit != pF and 'switchedCapacitanceUnit' not in already_processed:
-            already_processed.add('switchedCapacitanceUnit')
-            outfile.write(' switchedCapacitanceUnit=%s' % (quote_attrib(self.switchedCapacitanceUnit), ))
-        if self.readCapacitanceValue != 0 and 'readCapacitanceValue' not in already_processed:
-            already_processed.add('readCapacitanceValue')
-            outfile.write(' readCapacitanceValue=%s' % (quote_attrib(self.readCapacitanceValue), ))
-        if self.cellSwitchedCapacitanceUnit != pF and 'cellSwitchedCapacitanceUnit' not in already_processed:
-            already_processed.add('cellSwitchedCapacitanceUnit')
-            outfile.write(' cellSwitchedCapacitanceUnit=%s' % (quote_attrib(self.cellSwitchedCapacitanceUnit), ))
-        if self.writeCapacitanceUnit != pF and 'writeCapacitanceUnit' not in already_processed:
-            already_processed.add('writeCapacitanceUnit')
-            outfile.write(' writeCapacitanceUnit=%s' % (quote_attrib(self.writeCapacitanceUnit), ))
-        if self.cellLeakageCurrentValue != 0 and 'cellLeakageCurrentValue' not in already_processed:
-            already_processed.add('cellLeakageCurrentValue')
-            outfile.write(' cellLeakageCurrentValue=%s' % (quote_attrib(self.cellLeakageCurrentValue), ))
-        if self.writeCapacitanceValue != 0 and 'writeCapacitanceValue' not in already_processed:
-            already_processed.add('writeCapacitanceValue')
-            outfile.write(' writeCapacitanceValue=%s' % (quote_attrib(self.writeCapacitanceValue), ))
-        if self.readCapacitanceUnit != pF and 'readCapacitanceUnit' not in already_processed:
-            already_processed.add('readCapacitanceUnit')
-            outfile.write(' readCapacitanceUnit=%s' % (quote_attrib(self.readCapacitanceUnit), ))
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
-        if self.cellLeakageCurrentUnit != pA and 'cellLeakageCurrentUnit' not in already_processed:
+        if self.leakageCurrentValue != "0" and 'leakageCurrentValue' not in already_processed:
+            already_processed.add('leakageCurrentValue')
+            outfile.write(' leakageCurrentValue=%s' % (quote_attrib(self.leakageCurrentValue), ))
+        if self.leakageCurrentUnit != "pA" and 'leakageCurrentUnit' not in already_processed:
+            already_processed.add('leakageCurrentUnit')
+            outfile.write(' leakageCurrentUnit=%s' % (quote_attrib(self.leakageCurrentUnit), ))
+        if self.cellLeakageCurrentValue != "0" and 'cellLeakageCurrentValue' not in already_processed:
+            already_processed.add('cellLeakageCurrentValue')
+            outfile.write(' cellLeakageCurrentValue=%s' % (quote_attrib(self.cellLeakageCurrentValue), ))
+        if self.cellLeakageCurrentUnit != "pA" and 'cellLeakageCurrentUnit' not in already_processed:
             already_processed.add('cellLeakageCurrentUnit')
             outfile.write(' cellLeakageCurrentUnit=%s' % (quote_attrib(self.cellLeakageCurrentUnit), ))
+        if self.switchedCapacitanceValue != "0" and 'switchedCapacitanceValue' not in already_processed:
+            already_processed.add('switchedCapacitanceValue')
+            outfile.write(' switchedCapacitanceValue=%s' % (quote_attrib(self.switchedCapacitanceValue), ))
+        if self.switchedCapacitanceUnit != "pF" and 'switchedCapacitanceUnit' not in already_processed:
+            already_processed.add('switchedCapacitanceUnit')
+            outfile.write(' switchedCapacitanceUnit=%s' % (quote_attrib(self.switchedCapacitanceUnit), ))
+        if self.cellSwitchedCapacitanceValue != "0" and 'cellSwitchedCapacitanceValue' not in already_processed:
+            already_processed.add('cellSwitchedCapacitanceValue')
+            outfile.write(' cellSwitchedCapacitanceValue=%s' % (quote_attrib(self.cellSwitchedCapacitanceValue), ))
+        if self.cellSwitchedCapacitanceUnit != "pF" and 'cellSwitchedCapacitanceUnit' not in already_processed:
+            already_processed.add('cellSwitchedCapacitanceUnit')
+            outfile.write(' cellSwitchedCapacitanceUnit=%s' % (quote_attrib(self.cellSwitchedCapacitanceUnit), ))
+        if self.readCapacitanceValue != "0" and 'readCapacitanceValue' not in already_processed:
+            already_processed.add('readCapacitanceValue')
+            outfile.write(' readCapacitanceValue=%s' % (quote_attrib(self.readCapacitanceValue), ))
+        if self.readCapacitanceUnit != "pF" and 'readCapacitanceUnit' not in already_processed:
+            already_processed.add('readCapacitanceUnit')
+            outfile.write(' readCapacitanceUnit=%s' % (quote_attrib(self.readCapacitanceUnit), ))
+        if self.writeCapacitanceValue != "0" and 'writeCapacitanceValue' not in already_processed:
+            already_processed.add('writeCapacitanceValue')
+            outfile.write(' writeCapacitanceValue=%s' % (quote_attrib(self.writeCapacitanceValue), ))
+        if self.writeCapacitanceUnit != "pF" and 'writeCapacitanceUnit' not in already_processed:
+            already_processed.add('writeCapacitanceUnit')
+            outfile.write(' writeCapacitanceUnit=%s' % (quote_attrib(self.writeCapacitanceUnit), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='MemoryPowerModelType', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
@@ -3199,71 +3329,71 @@ class MemoryPowerModelType(GeneratedsSuper):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
-        value = find_attr_value_('cellSwitchedCapacitanceValue', node)
-        if value is not None and 'cellSwitchedCapacitanceValue' not in already_processed:
-            already_processed.add('cellSwitchedCapacitanceValue')
-            self.cellSwitchedCapacitanceValue = value
-            self.validate_CapacitanceValueType(self.cellSwitchedCapacitanceValue)    # validate type CapacitanceValueType
-        value = find_attr_value_('leakageCurrentUnit', node)
-        if value is not None and 'leakageCurrentUnit' not in already_processed:
-            already_processed.add('leakageCurrentUnit')
-            self.leakageCurrentUnit = value
-            self.validate_CurrentUnitType(self.leakageCurrentUnit)    # validate type CurrentUnitType
-        value = find_attr_value_('switchedCapacitanceValue', node)
-        if value is not None and 'switchedCapacitanceValue' not in already_processed:
-            already_processed.add('switchedCapacitanceValue')
-            self.switchedCapacitanceValue = value
-            self.validate_CapacitanceValueType(self.switchedCapacitanceValue)    # validate type CapacitanceValueType
-        value = find_attr_value_('leakageCurrentValue', node)
-        if value is not None and 'leakageCurrentValue' not in already_processed:
-            already_processed.add('leakageCurrentValue')
-            self.leakageCurrentValue = value
-            self.validate_CurrentValueType(self.leakageCurrentValue)    # validate type CurrentValueType
-        value = find_attr_value_('switchedCapacitanceUnit', node)
-        if value is not None and 'switchedCapacitanceUnit' not in already_processed:
-            already_processed.add('switchedCapacitanceUnit')
-            self.switchedCapacitanceUnit = value
-            self.validate_CapacitanceUnitType(self.switchedCapacitanceUnit)    # validate type CapacitanceUnitType
-        value = find_attr_value_('readCapacitanceValue', node)
-        if value is not None and 'readCapacitanceValue' not in already_processed:
-            already_processed.add('readCapacitanceValue')
-            self.readCapacitanceValue = value
-            self.validate_CapacitanceValueType(self.readCapacitanceValue)    # validate type CapacitanceValueType
-        value = find_attr_value_('cellSwitchedCapacitanceUnit', node)
-        if value is not None and 'cellSwitchedCapacitanceUnit' not in already_processed:
-            already_processed.add('cellSwitchedCapacitanceUnit')
-            self.cellSwitchedCapacitanceUnit = value
-            self.validate_CapacitanceUnitType(self.cellSwitchedCapacitanceUnit)    # validate type CapacitanceUnitType
-        value = find_attr_value_('writeCapacitanceUnit', node)
-        if value is not None and 'writeCapacitanceUnit' not in already_processed:
-            already_processed.add('writeCapacitanceUnit')
-            self.writeCapacitanceUnit = value
-            self.validate_CapacitanceUnitType(self.writeCapacitanceUnit)    # validate type CapacitanceUnitType
-        value = find_attr_value_('cellLeakageCurrentValue', node)
-        if value is not None and 'cellLeakageCurrentValue' not in already_processed:
-            already_processed.add('cellLeakageCurrentValue')
-            self.cellLeakageCurrentValue = value
-            self.validate_CurrentValueType(self.cellLeakageCurrentValue)    # validate type CurrentValueType
-        value = find_attr_value_('writeCapacitanceValue', node)
-        if value is not None and 'writeCapacitanceValue' not in already_processed:
-            already_processed.add('writeCapacitanceValue')
-            self.writeCapacitanceValue = value
-            self.validate_CapacitanceValueType(self.writeCapacitanceValue)    # validate type CapacitanceValueType
-        value = find_attr_value_('readCapacitanceUnit', node)
-        if value is not None and 'readCapacitanceUnit' not in already_processed:
-            already_processed.add('readCapacitanceUnit')
-            self.readCapacitanceUnit = value
-            self.validate_CapacitanceUnitType(self.readCapacitanceUnit)    # validate type CapacitanceUnitType
         value = find_attr_value_('id', node)
         if value is not None and 'id' not in already_processed:
             already_processed.add('id')
             self.id = value
             self.validate_IdType(self.id)    # validate type IdType
+        value = find_attr_value_('leakageCurrentValue', node)
+        if value is not None and 'leakageCurrentValue' not in already_processed:
+            already_processed.add('leakageCurrentValue')
+            self.leakageCurrentValue = value
+            self.validate_CurrentValueType(self.leakageCurrentValue)    # validate type CurrentValueType
+        value = find_attr_value_('leakageCurrentUnit', node)
+        if value is not None and 'leakageCurrentUnit' not in already_processed:
+            already_processed.add('leakageCurrentUnit')
+            self.leakageCurrentUnit = value
+            self.validate_CurrentUnitType(self.leakageCurrentUnit)    # validate type CurrentUnitType
+        value = find_attr_value_('cellLeakageCurrentValue', node)
+        if value is not None and 'cellLeakageCurrentValue' not in already_processed:
+            already_processed.add('cellLeakageCurrentValue')
+            self.cellLeakageCurrentValue = value
+            self.validate_CurrentValueType(self.cellLeakageCurrentValue)    # validate type CurrentValueType
         value = find_attr_value_('cellLeakageCurrentUnit', node)
         if value is not None and 'cellLeakageCurrentUnit' not in already_processed:
             already_processed.add('cellLeakageCurrentUnit')
             self.cellLeakageCurrentUnit = value
             self.validate_CurrentUnitType(self.cellLeakageCurrentUnit)    # validate type CurrentUnitType
+        value = find_attr_value_('switchedCapacitanceValue', node)
+        if value is not None and 'switchedCapacitanceValue' not in already_processed:
+            already_processed.add('switchedCapacitanceValue')
+            self.switchedCapacitanceValue = value
+            self.validate_CapacitanceValueType(self.switchedCapacitanceValue)    # validate type CapacitanceValueType
+        value = find_attr_value_('switchedCapacitanceUnit', node)
+        if value is not None and 'switchedCapacitanceUnit' not in already_processed:
+            already_processed.add('switchedCapacitanceUnit')
+            self.switchedCapacitanceUnit = value
+            self.validate_CapacitanceUnitType(self.switchedCapacitanceUnit)    # validate type CapacitanceUnitType
+        value = find_attr_value_('cellSwitchedCapacitanceValue', node)
+        if value is not None and 'cellSwitchedCapacitanceValue' not in already_processed:
+            already_processed.add('cellSwitchedCapacitanceValue')
+            self.cellSwitchedCapacitanceValue = value
+            self.validate_CapacitanceValueType(self.cellSwitchedCapacitanceValue)    # validate type CapacitanceValueType
+        value = find_attr_value_('cellSwitchedCapacitanceUnit', node)
+        if value is not None and 'cellSwitchedCapacitanceUnit' not in already_processed:
+            already_processed.add('cellSwitchedCapacitanceUnit')
+            self.cellSwitchedCapacitanceUnit = value
+            self.validate_CapacitanceUnitType(self.cellSwitchedCapacitanceUnit)    # validate type CapacitanceUnitType
+        value = find_attr_value_('readCapacitanceValue', node)
+        if value is not None and 'readCapacitanceValue' not in already_processed:
+            already_processed.add('readCapacitanceValue')
+            self.readCapacitanceValue = value
+            self.validate_CapacitanceValueType(self.readCapacitanceValue)    # validate type CapacitanceValueType
+        value = find_attr_value_('readCapacitanceUnit', node)
+        if value is not None and 'readCapacitanceUnit' not in already_processed:
+            already_processed.add('readCapacitanceUnit')
+            self.readCapacitanceUnit = value
+            self.validate_CapacitanceUnitType(self.readCapacitanceUnit)    # validate type CapacitanceUnitType
+        value = find_attr_value_('writeCapacitanceValue', node)
+        if value is not None and 'writeCapacitanceValue' not in already_processed:
+            already_processed.add('writeCapacitanceValue')
+            self.writeCapacitanceValue = value
+            self.validate_CapacitanceValueType(self.writeCapacitanceValue)    # validate type CapacitanceValueType
+        value = find_attr_value_('writeCapacitanceUnit', node)
+        if value is not None and 'writeCapacitanceUnit' not in already_processed:
+            already_processed.add('writeCapacitanceUnit')
+            self.writeCapacitanceUnit = value
+            self.validate_CapacitanceUnitType(self.writeCapacitanceUnit)    # validate type CapacitanceUnitType
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         if nodeName_ == 'MemoryPowerState':
             obj_ = MemoryPowerStateType.factory()
@@ -3276,90 +3406,73 @@ class MemoryPowerModelType(GeneratedsSuper):
 class MemoryType(GeneratedsSuper):
     subclass = None
     superclass = None
-    def __init__(self, writeThroughputValue=None, sizeValue=None, writeThroughputUnit='bit/cycle', readThroughputValue=None, frequencyDomain=None, writeLatencyValue='0', sizeUnit=None, voltageDomain=None, readLatencyValue='0', readLatencyUnit='cycles', readThroughputUnit='bit/cycle', memoryPowerModel=None, id=None, writeLatencyUnit='cycles'):
+    def __init__(self, id=None, sizeValue=None, sizeUnit=None, readThroughputValue=None, readThroughputUnit='bit/cycle', readLatencyValue='0', readLatencyUnit='cycles', writeThroughputValue=None, writeThroughputUnit='bit/cycle', writeLatencyValue='0', writeLatencyUnit='cycles', frequencyDomain=None, voltageDomain=None, memoryPowerModel=None):
         self.original_tagname_ = None
-        self.writeThroughputValue = _cast(None, writeThroughputValue)
+        self.id = _cast(None, id)
         self.sizeValue = _cast(None, sizeValue)
-        self.writeThroughputUnit = _cast(None, writeThroughputUnit)
-        self.readThroughputValue = _cast(None, readThroughputValue)
-        self.frequencyDomain = _cast(None, frequencyDomain)
-        self.writeLatencyValue = _cast(None, writeLatencyValue)
         self.sizeUnit = _cast(None, sizeUnit)
-        self.voltageDomain = _cast(None, voltageDomain)
+        self.readThroughputValue = _cast(None, readThroughputValue)
+        self.readThroughputUnit = _cast(None, readThroughputUnit)
         self.readLatencyValue = _cast(None, readLatencyValue)
         self.readLatencyUnit = _cast(None, readLatencyUnit)
-        self.readThroughputUnit = _cast(None, readThroughputUnit)
-        self.memoryPowerModel = _cast(None, memoryPowerModel)
-        self.id = _cast(None, id)
+        self.writeThroughputValue = _cast(None, writeThroughputValue)
+        self.writeThroughputUnit = _cast(None, writeThroughputUnit)
+        self.writeLatencyValue = _cast(None, writeLatencyValue)
         self.writeLatencyUnit = _cast(None, writeLatencyUnit)
+        self.frequencyDomain = _cast(None, frequencyDomain)
+        self.voltageDomain = _cast(None, voltageDomain)
+        self.memoryPowerModel = _cast(None, memoryPowerModel)
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, MemoryType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if MemoryType.subclass:
             return MemoryType.subclass(*args_, **kwargs_)
         else:
             return MemoryType(*args_, **kwargs_)
     factory = staticmethod(factory)
-    def get_writeThroughputValue(self): return self.writeThroughputValue
-    def set_writeThroughputValue(self, writeThroughputValue): self.writeThroughputValue = writeThroughputValue
+    def get_id(self): return self.id
+    def set_id(self, id): self.id = id
     def get_sizeValue(self): return self.sizeValue
     def set_sizeValue(self, sizeValue): self.sizeValue = sizeValue
-    def get_writeThroughputUnit(self): return self.writeThroughputUnit
-    def set_writeThroughputUnit(self, writeThroughputUnit): self.writeThroughputUnit = writeThroughputUnit
-    def get_readThroughputValue(self): return self.readThroughputValue
-    def set_readThroughputValue(self, readThroughputValue): self.readThroughputValue = readThroughputValue
-    def get_frequencyDomain(self): return self.frequencyDomain
-    def set_frequencyDomain(self, frequencyDomain): self.frequencyDomain = frequencyDomain
-    def get_writeLatencyValue(self): return self.writeLatencyValue
-    def set_writeLatencyValue(self, writeLatencyValue): self.writeLatencyValue = writeLatencyValue
     def get_sizeUnit(self): return self.sizeUnit
     def set_sizeUnit(self, sizeUnit): self.sizeUnit = sizeUnit
-    def get_voltageDomain(self): return self.voltageDomain
-    def set_voltageDomain(self, voltageDomain): self.voltageDomain = voltageDomain
+    def get_readThroughputValue(self): return self.readThroughputValue
+    def set_readThroughputValue(self, readThroughputValue): self.readThroughputValue = readThroughputValue
+    def get_readThroughputUnit(self): return self.readThroughputUnit
+    def set_readThroughputUnit(self, readThroughputUnit): self.readThroughputUnit = readThroughputUnit
     def get_readLatencyValue(self): return self.readLatencyValue
     def set_readLatencyValue(self, readLatencyValue): self.readLatencyValue = readLatencyValue
     def get_readLatencyUnit(self): return self.readLatencyUnit
     def set_readLatencyUnit(self, readLatencyUnit): self.readLatencyUnit = readLatencyUnit
-    def get_readThroughputUnit(self): return self.readThroughputUnit
-    def set_readThroughputUnit(self, readThroughputUnit): self.readThroughputUnit = readThroughputUnit
-    def get_memoryPowerModel(self): return self.memoryPowerModel
-    def set_memoryPowerModel(self, memoryPowerModel): self.memoryPowerModel = memoryPowerModel
-    def get_id(self): return self.id
-    def set_id(self, id): self.id = id
+    def get_writeThroughputValue(self): return self.writeThroughputValue
+    def set_writeThroughputValue(self, writeThroughputValue): self.writeThroughputValue = writeThroughputValue
+    def get_writeThroughputUnit(self): return self.writeThroughputUnit
+    def set_writeThroughputUnit(self, writeThroughputUnit): self.writeThroughputUnit = writeThroughputUnit
+    def get_writeLatencyValue(self): return self.writeLatencyValue
+    def set_writeLatencyValue(self, writeLatencyValue): self.writeLatencyValue = writeLatencyValue
     def get_writeLatencyUnit(self): return self.writeLatencyUnit
     def set_writeLatencyUnit(self, writeLatencyUnit): self.writeLatencyUnit = writeLatencyUnit
-    def validate_ThroughputValueType(self, value):
-        # Validate type ThroughputValueType, a restriction on NonNegativeFloatType.
+    def get_frequencyDomain(self): return self.frequencyDomain
+    def set_frequencyDomain(self, frequencyDomain): self.frequencyDomain = frequencyDomain
+    def get_voltageDomain(self): return self.voltageDomain
+    def set_voltageDomain(self, voltageDomain): self.voltageDomain = voltageDomain
+    def get_memoryPowerModel(self): return self.memoryPowerModel
+    def set_memoryPowerModel(self, memoryPowerModel): self.memoryPowerModel = memoryPowerModel
+    def validate_IdType(self, value):
+        # Validate type IdType, a restriction on xs:ID.
         if value is not None and Validate_simpletypes_:
-            if value < 0:
-                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on ThroughputValueType' % {"value" : value} )
+            if not self.gds_validate_simple_patterns(
+                    self.validate_IdType_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_IdType_patterns_, ))
+    validate_IdType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def validate_SizeValueType(self, value):
         # Validate type SizeValueType, a restriction on NonNegativeFloatType.
         if value is not None and Validate_simpletypes_:
             if value < 0:
                 warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on SizeValueType' % {"value" : value} )
-    def validate_ThroughputUnitType(self, value):
-        # Validate type ThroughputUnitType, a restriction on xs:string.
-        if value is not None and Validate_simpletypes_:
-            value = str(value)
-            enumerations = ['bit/cycle', 'B/cycle', 'kB/cycle', 'KiB/cycle']
-            enumeration_respectee = False
-            for enum in enumerations:
-                if value == enum:
-                    enumeration_respectee = True
-                    break
-            if not enumeration_respectee:
-                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on ThroughputUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_RefType(self, value):
-        # Validate type RefType, a restriction on xs:IDREF.
-        if value is not None and Validate_simpletypes_:
-            if not self.gds_validate_simple_patterns(
-                    self.validate_RefType_patterns_, value):
-                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_RefType_patterns_, ))
-    validate_RefType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
-    def validate_CyclesValueType(self, value):
-        # Validate type CyclesValueType, a restriction on NonNegativeFloatType.
-        if value is not None and Validate_simpletypes_:
-            if value < 0:
-                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on CyclesValueType' % {"value" : value} )
     def validate_SizeUnitType(self, value):
         # Validate type SizeUnitType, a restriction on xs:string.
         if value is not None and Validate_simpletypes_:
@@ -3372,6 +3485,28 @@ class MemoryType(GeneratedsSuper):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on SizeUnitType' % {"value" : value.encode("utf-8")} )
+    def validate_ThroughputValueType(self, value):
+        # Validate type ThroughputValueType, a restriction on NonNegativeFloatType.
+        if value is not None and Validate_simpletypes_:
+            if value < 0:
+                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on ThroughputValueType' % {"value" : value} )
+    def validate_ThroughputUnitType(self, value):
+        # Validate type ThroughputUnitType, a restriction on xs:string.
+        if value is not None and Validate_simpletypes_:
+            value = str(value)
+            enumerations = ['bit/cycle', 'B/cycle', 'kB/cycle', 'KiB/cycle']
+            enumeration_respectee = False
+            for enum in enumerations:
+                if value == enum:
+                    enumeration_respectee = True
+                    break
+            if not enumeration_respectee:
+                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on ThroughputUnitType' % {"value" : value.encode("utf-8")} )
+    def validate_CyclesValueType(self, value):
+        # Validate type CyclesValueType, a restriction on NonNegativeFloatType.
+        if value is not None and Validate_simpletypes_:
+            if value < 0:
+                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on CyclesValueType' % {"value" : value} )
     def validate_CyclesUnitType(self, value):
         # Validate type CyclesUnitType, a restriction on xs:string.
         if value is not None and Validate_simpletypes_:
@@ -3384,13 +3519,13 @@ class MemoryType(GeneratedsSuper):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on CyclesUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_IdType(self, value):
-        # Validate type IdType, a restriction on xs:ID.
+    def validate_RefType(self, value):
+        # Validate type RefType, a restriction on xs:IDREF.
         if value is not None and Validate_simpletypes_:
             if not self.gds_validate_simple_patterns(
-                    self.validate_IdType_patterns_, value):
-                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_IdType_patterns_, ))
-    validate_IdType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
+                    self.validate_RefType_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_RefType_patterns_, ))
+    validate_RefType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def hasContent_(self):
         if (
 
@@ -3416,48 +3551,48 @@ class MemoryType(GeneratedsSuper):
         else:
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='MemoryType'):
-        if self.writeThroughputValue is not None and 'writeThroughputValue' not in already_processed:
-            already_processed.add('writeThroughputValue')
-            outfile.write(' writeThroughputValue=%s' % (quote_attrib(self.writeThroughputValue), ))
-        if self.sizeValue is not None and 'sizeValue' not in already_processed:
-            already_processed.add('sizeValue')
-            outfile.write(' sizeValue=%s' % (quote_attrib(self.sizeValue), ))
-        if self.writeThroughputUnit != bit/cycle and 'writeThroughputUnit' not in already_processed:
-            already_processed.add('writeThroughputUnit')
-            outfile.write(' writeThroughputUnit=%s' % (quote_attrib(self.writeThroughputUnit), ))
-        if self.readThroughputValue is not None and 'readThroughputValue' not in already_processed:
-            already_processed.add('readThroughputValue')
-            outfile.write(' readThroughputValue=%s' % (quote_attrib(self.readThroughputValue), ))
-        if self.frequencyDomain is not None and 'frequencyDomain' not in already_processed:
-            already_processed.add('frequencyDomain')
-            outfile.write(' frequencyDomain=%s' % (quote_attrib(self.frequencyDomain), ))
-        if self.writeLatencyValue != 0 and 'writeLatencyValue' not in already_processed:
-            already_processed.add('writeLatencyValue')
-            outfile.write(' writeLatencyValue=%s' % (quote_attrib(self.writeLatencyValue), ))
-        if self.sizeUnit is not None and 'sizeUnit' not in already_processed:
-            already_processed.add('sizeUnit')
-            outfile.write(' sizeUnit=%s' % (quote_attrib(self.sizeUnit), ))
-        if self.voltageDomain is not None and 'voltageDomain' not in already_processed:
-            already_processed.add('voltageDomain')
-            outfile.write(' voltageDomain=%s' % (quote_attrib(self.voltageDomain), ))
-        if self.readLatencyValue != 0 and 'readLatencyValue' not in already_processed:
-            already_processed.add('readLatencyValue')
-            outfile.write(' readLatencyValue=%s' % (quote_attrib(self.readLatencyValue), ))
-        if self.readLatencyUnit != cycles and 'readLatencyUnit' not in already_processed:
-            already_processed.add('readLatencyUnit')
-            outfile.write(' readLatencyUnit=%s' % (quote_attrib(self.readLatencyUnit), ))
-        if self.readThroughputUnit != bit/cycle and 'readThroughputUnit' not in already_processed:
-            already_processed.add('readThroughputUnit')
-            outfile.write(' readThroughputUnit=%s' % (quote_attrib(self.readThroughputUnit), ))
-        if self.memoryPowerModel is not None and 'memoryPowerModel' not in already_processed:
-            already_processed.add('memoryPowerModel')
-            outfile.write(' memoryPowerModel=%s' % (quote_attrib(self.memoryPowerModel), ))
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
-        if self.writeLatencyUnit != cycles and 'writeLatencyUnit' not in already_processed:
+        if self.sizeValue is not None and 'sizeValue' not in already_processed:
+            already_processed.add('sizeValue')
+            outfile.write(' sizeValue=%s' % (quote_attrib(self.sizeValue), ))
+        if self.sizeUnit is not None and 'sizeUnit' not in already_processed:
+            already_processed.add('sizeUnit')
+            outfile.write(' sizeUnit=%s' % (quote_attrib(self.sizeUnit), ))
+        if self.readThroughputValue is not None and 'readThroughputValue' not in already_processed:
+            already_processed.add('readThroughputValue')
+            outfile.write(' readThroughputValue=%s' % (quote_attrib(self.readThroughputValue), ))
+        if self.readThroughputUnit != "bit/cycle" and 'readThroughputUnit' not in already_processed:
+            already_processed.add('readThroughputUnit')
+            outfile.write(' readThroughputUnit=%s' % (quote_attrib(self.readThroughputUnit), ))
+        if self.readLatencyValue != "0" and 'readLatencyValue' not in already_processed:
+            already_processed.add('readLatencyValue')
+            outfile.write(' readLatencyValue=%s' % (quote_attrib(self.readLatencyValue), ))
+        if self.readLatencyUnit != "cycles" and 'readLatencyUnit' not in already_processed:
+            already_processed.add('readLatencyUnit')
+            outfile.write(' readLatencyUnit=%s' % (quote_attrib(self.readLatencyUnit), ))
+        if self.writeThroughputValue is not None and 'writeThroughputValue' not in already_processed:
+            already_processed.add('writeThroughputValue')
+            outfile.write(' writeThroughputValue=%s' % (quote_attrib(self.writeThroughputValue), ))
+        if self.writeThroughputUnit != "bit/cycle" and 'writeThroughputUnit' not in already_processed:
+            already_processed.add('writeThroughputUnit')
+            outfile.write(' writeThroughputUnit=%s' % (quote_attrib(self.writeThroughputUnit), ))
+        if self.writeLatencyValue != "0" and 'writeLatencyValue' not in already_processed:
+            already_processed.add('writeLatencyValue')
+            outfile.write(' writeLatencyValue=%s' % (quote_attrib(self.writeLatencyValue), ))
+        if self.writeLatencyUnit != "cycles" and 'writeLatencyUnit' not in already_processed:
             already_processed.add('writeLatencyUnit')
             outfile.write(' writeLatencyUnit=%s' % (quote_attrib(self.writeLatencyUnit), ))
+        if self.frequencyDomain is not None and 'frequencyDomain' not in already_processed:
+            already_processed.add('frequencyDomain')
+            outfile.write(' frequencyDomain=%s' % (quote_attrib(self.frequencyDomain), ))
+        if self.voltageDomain is not None and 'voltageDomain' not in already_processed:
+            already_processed.add('voltageDomain')
+            outfile.write(' voltageDomain=%s' % (quote_attrib(self.voltageDomain), ))
+        if self.memoryPowerModel is not None and 'memoryPowerModel' not in already_processed:
+            already_processed.add('memoryPowerModel')
+            outfile.write(' memoryPowerModel=%s' % (quote_attrib(self.memoryPowerModel), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='MemoryType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
@@ -3468,46 +3603,31 @@ class MemoryType(GeneratedsSuper):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
-        value = find_attr_value_('writeThroughputValue', node)
-        if value is not None and 'writeThroughputValue' not in already_processed:
-            already_processed.add('writeThroughputValue')
-            self.writeThroughputValue = value
-            self.validate_ThroughputValueType(self.writeThroughputValue)    # validate type ThroughputValueType
+        value = find_attr_value_('id', node)
+        if value is not None and 'id' not in already_processed:
+            already_processed.add('id')
+            self.id = value
+            self.validate_IdType(self.id)    # validate type IdType
         value = find_attr_value_('sizeValue', node)
         if value is not None and 'sizeValue' not in already_processed:
             already_processed.add('sizeValue')
             self.sizeValue = value
             self.validate_SizeValueType(self.sizeValue)    # validate type SizeValueType
-        value = find_attr_value_('writeThroughputUnit', node)
-        if value is not None and 'writeThroughputUnit' not in already_processed:
-            already_processed.add('writeThroughputUnit')
-            self.writeThroughputUnit = value
-            self.validate_ThroughputUnitType(self.writeThroughputUnit)    # validate type ThroughputUnitType
-        value = find_attr_value_('readThroughputValue', node)
-        if value is not None and 'readThroughputValue' not in already_processed:
-            already_processed.add('readThroughputValue')
-            self.readThroughputValue = value
-            self.validate_ThroughputValueType(self.readThroughputValue)    # validate type ThroughputValueType
-        value = find_attr_value_('frequencyDomain', node)
-        if value is not None and 'frequencyDomain' not in already_processed:
-            already_processed.add('frequencyDomain')
-            self.frequencyDomain = value
-            self.validate_RefType(self.frequencyDomain)    # validate type RefType
-        value = find_attr_value_('writeLatencyValue', node)
-        if value is not None and 'writeLatencyValue' not in already_processed:
-            already_processed.add('writeLatencyValue')
-            self.writeLatencyValue = value
-            self.validate_CyclesValueType(self.writeLatencyValue)    # validate type CyclesValueType
         value = find_attr_value_('sizeUnit', node)
         if value is not None and 'sizeUnit' not in already_processed:
             already_processed.add('sizeUnit')
             self.sizeUnit = value
             self.validate_SizeUnitType(self.sizeUnit)    # validate type SizeUnitType
-        value = find_attr_value_('voltageDomain', node)
-        if value is not None and 'voltageDomain' not in already_processed:
-            already_processed.add('voltageDomain')
-            self.voltageDomain = value
-            self.validate_RefType(self.voltageDomain)    # validate type RefType
+        value = find_attr_value_('readThroughputValue', node)
+        if value is not None and 'readThroughputValue' not in already_processed:
+            already_processed.add('readThroughputValue')
+            self.readThroughputValue = value
+            self.validate_ThroughputValueType(self.readThroughputValue)    # validate type ThroughputValueType
+        value = find_attr_value_('readThroughputUnit', node)
+        if value is not None and 'readThroughputUnit' not in already_processed:
+            already_processed.add('readThroughputUnit')
+            self.readThroughputUnit = value
+            self.validate_ThroughputUnitType(self.readThroughputUnit)    # validate type ThroughputUnitType
         value = find_attr_value_('readLatencyValue', node)
         if value is not None and 'readLatencyValue' not in already_processed:
             already_processed.add('readLatencyValue')
@@ -3518,26 +3638,41 @@ class MemoryType(GeneratedsSuper):
             already_processed.add('readLatencyUnit')
             self.readLatencyUnit = value
             self.validate_CyclesUnitType(self.readLatencyUnit)    # validate type CyclesUnitType
-        value = find_attr_value_('readThroughputUnit', node)
-        if value is not None and 'readThroughputUnit' not in already_processed:
-            already_processed.add('readThroughputUnit')
-            self.readThroughputUnit = value
-            self.validate_ThroughputUnitType(self.readThroughputUnit)    # validate type ThroughputUnitType
-        value = find_attr_value_('memoryPowerModel', node)
-        if value is not None and 'memoryPowerModel' not in already_processed:
-            already_processed.add('memoryPowerModel')
-            self.memoryPowerModel = value
-            self.validate_RefType(self.memoryPowerModel)    # validate type RefType
-        value = find_attr_value_('id', node)
-        if value is not None and 'id' not in already_processed:
-            already_processed.add('id')
-            self.id = value
-            self.validate_IdType(self.id)    # validate type IdType
+        value = find_attr_value_('writeThroughputValue', node)
+        if value is not None and 'writeThroughputValue' not in already_processed:
+            already_processed.add('writeThroughputValue')
+            self.writeThroughputValue = value
+            self.validate_ThroughputValueType(self.writeThroughputValue)    # validate type ThroughputValueType
+        value = find_attr_value_('writeThroughputUnit', node)
+        if value is not None and 'writeThroughputUnit' not in already_processed:
+            already_processed.add('writeThroughputUnit')
+            self.writeThroughputUnit = value
+            self.validate_ThroughputUnitType(self.writeThroughputUnit)    # validate type ThroughputUnitType
+        value = find_attr_value_('writeLatencyValue', node)
+        if value is not None and 'writeLatencyValue' not in already_processed:
+            already_processed.add('writeLatencyValue')
+            self.writeLatencyValue = value
+            self.validate_CyclesValueType(self.writeLatencyValue)    # validate type CyclesValueType
         value = find_attr_value_('writeLatencyUnit', node)
         if value is not None and 'writeLatencyUnit' not in already_processed:
             already_processed.add('writeLatencyUnit')
             self.writeLatencyUnit = value
             self.validate_CyclesUnitType(self.writeLatencyUnit)    # validate type CyclesUnitType
+        value = find_attr_value_('frequencyDomain', node)
+        if value is not None and 'frequencyDomain' not in already_processed:
+            already_processed.add('frequencyDomain')
+            self.frequencyDomain = value
+            self.validate_RefType(self.frequencyDomain)    # validate type RefType
+        value = find_attr_value_('voltageDomain', node)
+        if value is not None and 'voltageDomain' not in already_processed:
+            already_processed.add('voltageDomain')
+            self.voltageDomain = value
+            self.validate_RefType(self.voltageDomain)    # validate type RefType
+        value = find_attr_value_('memoryPowerModel', node)
+        if value is not None and 'memoryPowerModel' not in already_processed:
+            already_processed.add('memoryPowerModel')
+            self.memoryPowerModel = value
+            self.validate_RefType(self.memoryPowerModel)    # validate type RefType
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         pass
 # end class MemoryType
@@ -3551,6 +3686,11 @@ class MemoryRefType(GeneratedsSuper):
         self.memory = _cast(None, memory)
         self.extensiontype_ = extensiontype_
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, MemoryRefType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if MemoryRefType.subclass:
             return MemoryRefType.subclass(*args_, **kwargs_)
         else:
@@ -3631,6 +3771,11 @@ class MemoryAccessType(MemoryRefType):
         super(MemoryAccessType, self).__init__(memory, )
         self.access = _cast(None, access)
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, MemoryAccessType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if MemoryAccessType.subclass:
             return MemoryAccessType.subclass(*args_, **kwargs_)
         else:
@@ -3705,24 +3850,36 @@ class MemoryAccessType(MemoryRefType):
 class CachePowerStateType(VoltageFrequencyConditionListType):
     subclass = None
     superclass = VoltageFrequencyConditionListType
-    def __init__(self, VoltageCondition=None, FrequencyCondition=None, FrequencyVoltageCondition=None, powerValue=None, powerUnit='pW', name=None):
+    def __init__(self, VoltageCondition=None, FrequencyCondition=None, FrequencyVoltageCondition=None, name=None, powerValue=None, powerUnit='pW'):
         self.original_tagname_ = None
         super(CachePowerStateType, self).__init__(VoltageCondition, FrequencyCondition, FrequencyVoltageCondition, )
+        self.name = _cast(None, name)
         self.powerValue = _cast(None, powerValue)
         self.powerUnit = _cast(None, powerUnit)
-        self.name = _cast(None, name)
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, CachePowerStateType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if CachePowerStateType.subclass:
             return CachePowerStateType.subclass(*args_, **kwargs_)
         else:
             return CachePowerStateType(*args_, **kwargs_)
     factory = staticmethod(factory)
+    def get_name(self): return self.name
+    def set_name(self, name): self.name = name
     def get_powerValue(self): return self.powerValue
     def set_powerValue(self, powerValue): self.powerValue = powerValue
     def get_powerUnit(self): return self.powerUnit
     def set_powerUnit(self, powerUnit): self.powerUnit = powerUnit
-    def get_name(self): return self.name
-    def set_name(self, name): self.name = name
+    def validate_NameType(self, value):
+        # Validate type NameType, a restriction on xs:string.
+        if value is not None and Validate_simpletypes_:
+            if not self.gds_validate_simple_patterns(
+                    self.validate_NameType_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_NameType_patterns_, ))
+    validate_NameType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def validate_PowerValueType(self, value):
         # Validate type PowerValueType, a restriction on NonNegativeFloatType.
         if value is not None and Validate_simpletypes_:
@@ -3740,13 +3897,6 @@ class CachePowerStateType(VoltageFrequencyConditionListType):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on PowerUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_NameType(self, value):
-        # Validate type NameType, a restriction on xs:string.
-        if value is not None and Validate_simpletypes_:
-            if not self.gds_validate_simple_patterns(
-                    self.validate_NameType_patterns_, value):
-                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_NameType_patterns_, ))
-    validate_NameType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def hasContent_(self):
         if (
             super(CachePowerStateType, self).hasContent_()
@@ -3774,15 +3924,15 @@ class CachePowerStateType(VoltageFrequencyConditionListType):
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='CachePowerStateType'):
         super(CachePowerStateType, self).exportAttributes(outfile, level, already_processed, namespace_, name_='CachePowerStateType')
-        if self.powerValue is not None and 'powerValue' not in already_processed:
-            already_processed.add('powerValue')
-            outfile.write(' powerValue=%s' % (quote_attrib(self.powerValue), ))
-        if self.powerUnit != pW and 'powerUnit' not in already_processed:
-            already_processed.add('powerUnit')
-            outfile.write(' powerUnit=%s' % (quote_attrib(self.powerUnit), ))
         if self.name is not None and 'name' not in already_processed:
             already_processed.add('name')
             outfile.write(' name=%s' % (quote_attrib(self.name), ))
+        if self.powerValue is not None and 'powerValue' not in already_processed:
+            already_processed.add('powerValue')
+            outfile.write(' powerValue=%s' % (quote_attrib(self.powerValue), ))
+        if self.powerUnit != "pW" and 'powerUnit' not in already_processed:
+            already_processed.add('powerUnit')
+            outfile.write(' powerUnit=%s' % (quote_attrib(self.powerUnit), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='CachePowerStateType', fromsubclass_=False, pretty_print=True):
         super(CachePowerStateType, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
     def build(self, node):
@@ -3793,6 +3943,11 @@ class CachePowerStateType(VoltageFrequencyConditionListType):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
+        value = find_attr_value_('name', node)
+        if value is not None and 'name' not in already_processed:
+            already_processed.add('name')
+            self.name = value
+            self.validate_NameType(self.name)    # validate type NameType
         value = find_attr_value_('powerValue', node)
         if value is not None and 'powerValue' not in already_processed:
             already_processed.add('powerValue')
@@ -3803,11 +3958,6 @@ class CachePowerStateType(VoltageFrequencyConditionListType):
             already_processed.add('powerUnit')
             self.powerUnit = value
             self.validate_PowerUnitType(self.powerUnit)    # validate type PowerUnitType
-        value = find_attr_value_('name', node)
-        if value is not None and 'name' not in already_processed:
-            already_processed.add('name')
-            self.name = value
-            self.validate_NameType(self.name)    # validate type NameType
         super(CachePowerStateType, self).buildAttributes(node, attrs, already_processed)
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         super(CachePowerStateType, self).buildChildren(child_, node, nodeName_, True)
@@ -3818,30 +3968,35 @@ class CachePowerStateType(VoltageFrequencyConditionListType):
 class CachePowerModelType(GeneratedsSuper):
     subclass = None
     superclass = None
-    def __init__(self, cellSwitchedCapacitanceValue='0', readMissCapacitanceValue='0', writeMissCapacitanceValue='0', leakageCurrentUnit='pA', switchedCapacitanceValue='0', leakageCurrentValue='0', switchedCapacitanceUnit='pF', readMissCapacitanceUnit='pF', readHitCapacitanceValue='0', writeHitCapacitanceValue='0', writeMissCapacitanceUnit='pF', cellSwitchedCapacitanceUnit='pF', cellLeakageCurrentValue='0', writeHitCapacitanceUnit='pF', readHitCapacitanceUnit='pF', id=None, cellLeakageCurrentUnit='pA', CachePowerState=None):
+    def __init__(self, id=None, leakageCurrentValue='0', leakageCurrentUnit='pA', cellLeakageCurrentValue='0', cellLeakageCurrentUnit='pA', switchedCapacitanceValue='0', switchedCapacitanceUnit='pF', cellSwitchedCapacitanceValue='0', cellSwitchedCapacitanceUnit='pF', readHitCapacitanceValue='0', readHitCapacitanceUnit='pF', writeHitCapacitanceValue='0', writeHitCapacitanceUnit='pF', readMissCapacitanceValue='0', readMissCapacitanceUnit='pF', writeMissCapacitanceValue='0', writeMissCapacitanceUnit='pF', CachePowerState=None):
         self.original_tagname_ = None
-        self.cellSwitchedCapacitanceValue = _cast(None, cellSwitchedCapacitanceValue)
-        self.readMissCapacitanceValue = _cast(None, readMissCapacitanceValue)
-        self.writeMissCapacitanceValue = _cast(None, writeMissCapacitanceValue)
-        self.leakageCurrentUnit = _cast(None, leakageCurrentUnit)
-        self.switchedCapacitanceValue = _cast(None, switchedCapacitanceValue)
-        self.leakageCurrentValue = _cast(None, leakageCurrentValue)
-        self.switchedCapacitanceUnit = _cast(None, switchedCapacitanceUnit)
-        self.readMissCapacitanceUnit = _cast(None, readMissCapacitanceUnit)
-        self.readHitCapacitanceValue = _cast(None, readHitCapacitanceValue)
-        self.writeHitCapacitanceValue = _cast(None, writeHitCapacitanceValue)
-        self.writeMissCapacitanceUnit = _cast(None, writeMissCapacitanceUnit)
-        self.cellSwitchedCapacitanceUnit = _cast(None, cellSwitchedCapacitanceUnit)
-        self.cellLeakageCurrentValue = _cast(None, cellLeakageCurrentValue)
-        self.writeHitCapacitanceUnit = _cast(None, writeHitCapacitanceUnit)
-        self.readHitCapacitanceUnit = _cast(None, readHitCapacitanceUnit)
         self.id = _cast(None, id)
+        self.leakageCurrentValue = _cast(None, leakageCurrentValue)
+        self.leakageCurrentUnit = _cast(None, leakageCurrentUnit)
+        self.cellLeakageCurrentValue = _cast(None, cellLeakageCurrentValue)
         self.cellLeakageCurrentUnit = _cast(None, cellLeakageCurrentUnit)
+        self.switchedCapacitanceValue = _cast(None, switchedCapacitanceValue)
+        self.switchedCapacitanceUnit = _cast(None, switchedCapacitanceUnit)
+        self.cellSwitchedCapacitanceValue = _cast(None, cellSwitchedCapacitanceValue)
+        self.cellSwitchedCapacitanceUnit = _cast(None, cellSwitchedCapacitanceUnit)
+        self.readHitCapacitanceValue = _cast(None, readHitCapacitanceValue)
+        self.readHitCapacitanceUnit = _cast(None, readHitCapacitanceUnit)
+        self.writeHitCapacitanceValue = _cast(None, writeHitCapacitanceValue)
+        self.writeHitCapacitanceUnit = _cast(None, writeHitCapacitanceUnit)
+        self.readMissCapacitanceValue = _cast(None, readMissCapacitanceValue)
+        self.readMissCapacitanceUnit = _cast(None, readMissCapacitanceUnit)
+        self.writeMissCapacitanceValue = _cast(None, writeMissCapacitanceValue)
+        self.writeMissCapacitanceUnit = _cast(None, writeMissCapacitanceUnit)
         if CachePowerState is None:
             self.CachePowerState = []
         else:
             self.CachePowerState = CachePowerState
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, CachePowerModelType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if CachePowerModelType.subclass:
             return CachePowerModelType.subclass(*args_, **kwargs_)
         else:
@@ -3852,45 +4007,52 @@ class CachePowerModelType(GeneratedsSuper):
     def add_CachePowerState(self, value): self.CachePowerState.append(value)
     def insert_CachePowerState_at(self, index, value): self.CachePowerState.insert(index, value)
     def replace_CachePowerState_at(self, index, value): self.CachePowerState[index] = value
-    def get_cellSwitchedCapacitanceValue(self): return self.cellSwitchedCapacitanceValue
-    def set_cellSwitchedCapacitanceValue(self, cellSwitchedCapacitanceValue): self.cellSwitchedCapacitanceValue = cellSwitchedCapacitanceValue
-    def get_readMissCapacitanceValue(self): return self.readMissCapacitanceValue
-    def set_readMissCapacitanceValue(self, readMissCapacitanceValue): self.readMissCapacitanceValue = readMissCapacitanceValue
-    def get_writeMissCapacitanceValue(self): return self.writeMissCapacitanceValue
-    def set_writeMissCapacitanceValue(self, writeMissCapacitanceValue): self.writeMissCapacitanceValue = writeMissCapacitanceValue
-    def get_leakageCurrentUnit(self): return self.leakageCurrentUnit
-    def set_leakageCurrentUnit(self, leakageCurrentUnit): self.leakageCurrentUnit = leakageCurrentUnit
-    def get_switchedCapacitanceValue(self): return self.switchedCapacitanceValue
-    def set_switchedCapacitanceValue(self, switchedCapacitanceValue): self.switchedCapacitanceValue = switchedCapacitanceValue
-    def get_leakageCurrentValue(self): return self.leakageCurrentValue
-    def set_leakageCurrentValue(self, leakageCurrentValue): self.leakageCurrentValue = leakageCurrentValue
-    def get_switchedCapacitanceUnit(self): return self.switchedCapacitanceUnit
-    def set_switchedCapacitanceUnit(self, switchedCapacitanceUnit): self.switchedCapacitanceUnit = switchedCapacitanceUnit
-    def get_readMissCapacitanceUnit(self): return self.readMissCapacitanceUnit
-    def set_readMissCapacitanceUnit(self, readMissCapacitanceUnit): self.readMissCapacitanceUnit = readMissCapacitanceUnit
-    def get_readHitCapacitanceValue(self): return self.readHitCapacitanceValue
-    def set_readHitCapacitanceValue(self, readHitCapacitanceValue): self.readHitCapacitanceValue = readHitCapacitanceValue
-    def get_writeHitCapacitanceValue(self): return self.writeHitCapacitanceValue
-    def set_writeHitCapacitanceValue(self, writeHitCapacitanceValue): self.writeHitCapacitanceValue = writeHitCapacitanceValue
-    def get_writeMissCapacitanceUnit(self): return self.writeMissCapacitanceUnit
-    def set_writeMissCapacitanceUnit(self, writeMissCapacitanceUnit): self.writeMissCapacitanceUnit = writeMissCapacitanceUnit
-    def get_cellSwitchedCapacitanceUnit(self): return self.cellSwitchedCapacitanceUnit
-    def set_cellSwitchedCapacitanceUnit(self, cellSwitchedCapacitanceUnit): self.cellSwitchedCapacitanceUnit = cellSwitchedCapacitanceUnit
-    def get_cellLeakageCurrentValue(self): return self.cellLeakageCurrentValue
-    def set_cellLeakageCurrentValue(self, cellLeakageCurrentValue): self.cellLeakageCurrentValue = cellLeakageCurrentValue
-    def get_writeHitCapacitanceUnit(self): return self.writeHitCapacitanceUnit
-    def set_writeHitCapacitanceUnit(self, writeHitCapacitanceUnit): self.writeHitCapacitanceUnit = writeHitCapacitanceUnit
-    def get_readHitCapacitanceUnit(self): return self.readHitCapacitanceUnit
-    def set_readHitCapacitanceUnit(self, readHitCapacitanceUnit): self.readHitCapacitanceUnit = readHitCapacitanceUnit
     def get_id(self): return self.id
     def set_id(self, id): self.id = id
+    def get_leakageCurrentValue(self): return self.leakageCurrentValue
+    def set_leakageCurrentValue(self, leakageCurrentValue): self.leakageCurrentValue = leakageCurrentValue
+    def get_leakageCurrentUnit(self): return self.leakageCurrentUnit
+    def set_leakageCurrentUnit(self, leakageCurrentUnit): self.leakageCurrentUnit = leakageCurrentUnit
+    def get_cellLeakageCurrentValue(self): return self.cellLeakageCurrentValue
+    def set_cellLeakageCurrentValue(self, cellLeakageCurrentValue): self.cellLeakageCurrentValue = cellLeakageCurrentValue
     def get_cellLeakageCurrentUnit(self): return self.cellLeakageCurrentUnit
     def set_cellLeakageCurrentUnit(self, cellLeakageCurrentUnit): self.cellLeakageCurrentUnit = cellLeakageCurrentUnit
-    def validate_CapacitanceValueType(self, value):
-        # Validate type CapacitanceValueType, a restriction on NonNegativeFloatType.
+    def get_switchedCapacitanceValue(self): return self.switchedCapacitanceValue
+    def set_switchedCapacitanceValue(self, switchedCapacitanceValue): self.switchedCapacitanceValue = switchedCapacitanceValue
+    def get_switchedCapacitanceUnit(self): return self.switchedCapacitanceUnit
+    def set_switchedCapacitanceUnit(self, switchedCapacitanceUnit): self.switchedCapacitanceUnit = switchedCapacitanceUnit
+    def get_cellSwitchedCapacitanceValue(self): return self.cellSwitchedCapacitanceValue
+    def set_cellSwitchedCapacitanceValue(self, cellSwitchedCapacitanceValue): self.cellSwitchedCapacitanceValue = cellSwitchedCapacitanceValue
+    def get_cellSwitchedCapacitanceUnit(self): return self.cellSwitchedCapacitanceUnit
+    def set_cellSwitchedCapacitanceUnit(self, cellSwitchedCapacitanceUnit): self.cellSwitchedCapacitanceUnit = cellSwitchedCapacitanceUnit
+    def get_readHitCapacitanceValue(self): return self.readHitCapacitanceValue
+    def set_readHitCapacitanceValue(self, readHitCapacitanceValue): self.readHitCapacitanceValue = readHitCapacitanceValue
+    def get_readHitCapacitanceUnit(self): return self.readHitCapacitanceUnit
+    def set_readHitCapacitanceUnit(self, readHitCapacitanceUnit): self.readHitCapacitanceUnit = readHitCapacitanceUnit
+    def get_writeHitCapacitanceValue(self): return self.writeHitCapacitanceValue
+    def set_writeHitCapacitanceValue(self, writeHitCapacitanceValue): self.writeHitCapacitanceValue = writeHitCapacitanceValue
+    def get_writeHitCapacitanceUnit(self): return self.writeHitCapacitanceUnit
+    def set_writeHitCapacitanceUnit(self, writeHitCapacitanceUnit): self.writeHitCapacitanceUnit = writeHitCapacitanceUnit
+    def get_readMissCapacitanceValue(self): return self.readMissCapacitanceValue
+    def set_readMissCapacitanceValue(self, readMissCapacitanceValue): self.readMissCapacitanceValue = readMissCapacitanceValue
+    def get_readMissCapacitanceUnit(self): return self.readMissCapacitanceUnit
+    def set_readMissCapacitanceUnit(self, readMissCapacitanceUnit): self.readMissCapacitanceUnit = readMissCapacitanceUnit
+    def get_writeMissCapacitanceValue(self): return self.writeMissCapacitanceValue
+    def set_writeMissCapacitanceValue(self, writeMissCapacitanceValue): self.writeMissCapacitanceValue = writeMissCapacitanceValue
+    def get_writeMissCapacitanceUnit(self): return self.writeMissCapacitanceUnit
+    def set_writeMissCapacitanceUnit(self, writeMissCapacitanceUnit): self.writeMissCapacitanceUnit = writeMissCapacitanceUnit
+    def validate_IdType(self, value):
+        # Validate type IdType, a restriction on xs:ID.
+        if value is not None and Validate_simpletypes_:
+            if not self.gds_validate_simple_patterns(
+                    self.validate_IdType_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_IdType_patterns_, ))
+    validate_IdType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
+    def validate_CurrentValueType(self, value):
+        # Validate type CurrentValueType, a restriction on NonNegativeFloatType.
         if value is not None and Validate_simpletypes_:
             if value < 0:
-                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on CapacitanceValueType' % {"value" : value} )
+                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on CurrentValueType' % {"value" : value} )
     def validate_CurrentUnitType(self, value):
         # Validate type CurrentUnitType, a restriction on xs:string.
         if value is not None and Validate_simpletypes_:
@@ -3903,11 +4065,11 @@ class CachePowerModelType(GeneratedsSuper):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on CurrentUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_CurrentValueType(self, value):
-        # Validate type CurrentValueType, a restriction on NonNegativeFloatType.
+    def validate_CapacitanceValueType(self, value):
+        # Validate type CapacitanceValueType, a restriction on NonNegativeFloatType.
         if value is not None and Validate_simpletypes_:
             if value < 0:
-                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on CurrentValueType' % {"value" : value} )
+                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on CapacitanceValueType' % {"value" : value} )
     def validate_CapacitanceUnitType(self, value):
         # Validate type CapacitanceUnitType, a restriction on xs:string.
         if value is not None and Validate_simpletypes_:
@@ -3920,13 +4082,6 @@ class CachePowerModelType(GeneratedsSuper):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on CapacitanceUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_IdType(self, value):
-        # Validate type IdType, a restriction on xs:ID.
-        if value is not None and Validate_simpletypes_:
-            if not self.gds_validate_simple_patterns(
-                    self.validate_IdType_patterns_, value):
-                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_IdType_patterns_, ))
-    validate_IdType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def hasContent_(self):
         if (
             self.CachePowerState
@@ -3953,57 +4108,57 @@ class CachePowerModelType(GeneratedsSuper):
         else:
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='CachePowerModelType'):
-        if self.cellSwitchedCapacitanceValue != 0 and 'cellSwitchedCapacitanceValue' not in already_processed:
-            already_processed.add('cellSwitchedCapacitanceValue')
-            outfile.write(' cellSwitchedCapacitanceValue=%s' % (quote_attrib(self.cellSwitchedCapacitanceValue), ))
-        if self.readMissCapacitanceValue != 0 and 'readMissCapacitanceValue' not in already_processed:
-            already_processed.add('readMissCapacitanceValue')
-            outfile.write(' readMissCapacitanceValue=%s' % (quote_attrib(self.readMissCapacitanceValue), ))
-        if self.writeMissCapacitanceValue != 0 and 'writeMissCapacitanceValue' not in already_processed:
-            already_processed.add('writeMissCapacitanceValue')
-            outfile.write(' writeMissCapacitanceValue=%s' % (quote_attrib(self.writeMissCapacitanceValue), ))
-        if self.leakageCurrentUnit != pA and 'leakageCurrentUnit' not in already_processed:
-            already_processed.add('leakageCurrentUnit')
-            outfile.write(' leakageCurrentUnit=%s' % (quote_attrib(self.leakageCurrentUnit), ))
-        if self.switchedCapacitanceValue != 0 and 'switchedCapacitanceValue' not in already_processed:
-            already_processed.add('switchedCapacitanceValue')
-            outfile.write(' switchedCapacitanceValue=%s' % (quote_attrib(self.switchedCapacitanceValue), ))
-        if self.leakageCurrentValue != 0 and 'leakageCurrentValue' not in already_processed:
-            already_processed.add('leakageCurrentValue')
-            outfile.write(' leakageCurrentValue=%s' % (quote_attrib(self.leakageCurrentValue), ))
-        if self.switchedCapacitanceUnit != pF and 'switchedCapacitanceUnit' not in already_processed:
-            already_processed.add('switchedCapacitanceUnit')
-            outfile.write(' switchedCapacitanceUnit=%s' % (quote_attrib(self.switchedCapacitanceUnit), ))
-        if self.readMissCapacitanceUnit != pF and 'readMissCapacitanceUnit' not in already_processed:
-            already_processed.add('readMissCapacitanceUnit')
-            outfile.write(' readMissCapacitanceUnit=%s' % (quote_attrib(self.readMissCapacitanceUnit), ))
-        if self.readHitCapacitanceValue != 0 and 'readHitCapacitanceValue' not in already_processed:
-            already_processed.add('readHitCapacitanceValue')
-            outfile.write(' readHitCapacitanceValue=%s' % (quote_attrib(self.readHitCapacitanceValue), ))
-        if self.writeHitCapacitanceValue != 0 and 'writeHitCapacitanceValue' not in already_processed:
-            already_processed.add('writeHitCapacitanceValue')
-            outfile.write(' writeHitCapacitanceValue=%s' % (quote_attrib(self.writeHitCapacitanceValue), ))
-        if self.writeMissCapacitanceUnit != pF and 'writeMissCapacitanceUnit' not in already_processed:
-            already_processed.add('writeMissCapacitanceUnit')
-            outfile.write(' writeMissCapacitanceUnit=%s' % (quote_attrib(self.writeMissCapacitanceUnit), ))
-        if self.cellSwitchedCapacitanceUnit != pF and 'cellSwitchedCapacitanceUnit' not in already_processed:
-            already_processed.add('cellSwitchedCapacitanceUnit')
-            outfile.write(' cellSwitchedCapacitanceUnit=%s' % (quote_attrib(self.cellSwitchedCapacitanceUnit), ))
-        if self.cellLeakageCurrentValue != 0 and 'cellLeakageCurrentValue' not in already_processed:
-            already_processed.add('cellLeakageCurrentValue')
-            outfile.write(' cellLeakageCurrentValue=%s' % (quote_attrib(self.cellLeakageCurrentValue), ))
-        if self.writeHitCapacitanceUnit != pF and 'writeHitCapacitanceUnit' not in already_processed:
-            already_processed.add('writeHitCapacitanceUnit')
-            outfile.write(' writeHitCapacitanceUnit=%s' % (quote_attrib(self.writeHitCapacitanceUnit), ))
-        if self.readHitCapacitanceUnit != pF and 'readHitCapacitanceUnit' not in already_processed:
-            already_processed.add('readHitCapacitanceUnit')
-            outfile.write(' readHitCapacitanceUnit=%s' % (quote_attrib(self.readHitCapacitanceUnit), ))
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
-        if self.cellLeakageCurrentUnit != pA and 'cellLeakageCurrentUnit' not in already_processed:
+        if self.leakageCurrentValue != "0" and 'leakageCurrentValue' not in already_processed:
+            already_processed.add('leakageCurrentValue')
+            outfile.write(' leakageCurrentValue=%s' % (quote_attrib(self.leakageCurrentValue), ))
+        if self.leakageCurrentUnit != "pA" and 'leakageCurrentUnit' not in already_processed:
+            already_processed.add('leakageCurrentUnit')
+            outfile.write(' leakageCurrentUnit=%s' % (quote_attrib(self.leakageCurrentUnit), ))
+        if self.cellLeakageCurrentValue != "0" and 'cellLeakageCurrentValue' not in already_processed:
+            already_processed.add('cellLeakageCurrentValue')
+            outfile.write(' cellLeakageCurrentValue=%s' % (quote_attrib(self.cellLeakageCurrentValue), ))
+        if self.cellLeakageCurrentUnit != "pA" and 'cellLeakageCurrentUnit' not in already_processed:
             already_processed.add('cellLeakageCurrentUnit')
             outfile.write(' cellLeakageCurrentUnit=%s' % (quote_attrib(self.cellLeakageCurrentUnit), ))
+        if self.switchedCapacitanceValue != "0" and 'switchedCapacitanceValue' not in already_processed:
+            already_processed.add('switchedCapacitanceValue')
+            outfile.write(' switchedCapacitanceValue=%s' % (quote_attrib(self.switchedCapacitanceValue), ))
+        if self.switchedCapacitanceUnit != "pF" and 'switchedCapacitanceUnit' not in already_processed:
+            already_processed.add('switchedCapacitanceUnit')
+            outfile.write(' switchedCapacitanceUnit=%s' % (quote_attrib(self.switchedCapacitanceUnit), ))
+        if self.cellSwitchedCapacitanceValue != "0" and 'cellSwitchedCapacitanceValue' not in already_processed:
+            already_processed.add('cellSwitchedCapacitanceValue')
+            outfile.write(' cellSwitchedCapacitanceValue=%s' % (quote_attrib(self.cellSwitchedCapacitanceValue), ))
+        if self.cellSwitchedCapacitanceUnit != "pF" and 'cellSwitchedCapacitanceUnit' not in already_processed:
+            already_processed.add('cellSwitchedCapacitanceUnit')
+            outfile.write(' cellSwitchedCapacitanceUnit=%s' % (quote_attrib(self.cellSwitchedCapacitanceUnit), ))
+        if self.readHitCapacitanceValue != "0" and 'readHitCapacitanceValue' not in already_processed:
+            already_processed.add('readHitCapacitanceValue')
+            outfile.write(' readHitCapacitanceValue=%s' % (quote_attrib(self.readHitCapacitanceValue), ))
+        if self.readHitCapacitanceUnit != "pF" and 'readHitCapacitanceUnit' not in already_processed:
+            already_processed.add('readHitCapacitanceUnit')
+            outfile.write(' readHitCapacitanceUnit=%s' % (quote_attrib(self.readHitCapacitanceUnit), ))
+        if self.writeHitCapacitanceValue != "0" and 'writeHitCapacitanceValue' not in already_processed:
+            already_processed.add('writeHitCapacitanceValue')
+            outfile.write(' writeHitCapacitanceValue=%s' % (quote_attrib(self.writeHitCapacitanceValue), ))
+        if self.writeHitCapacitanceUnit != "pF" and 'writeHitCapacitanceUnit' not in already_processed:
+            already_processed.add('writeHitCapacitanceUnit')
+            outfile.write(' writeHitCapacitanceUnit=%s' % (quote_attrib(self.writeHitCapacitanceUnit), ))
+        if self.readMissCapacitanceValue != "0" and 'readMissCapacitanceValue' not in already_processed:
+            already_processed.add('readMissCapacitanceValue')
+            outfile.write(' readMissCapacitanceValue=%s' % (quote_attrib(self.readMissCapacitanceValue), ))
+        if self.readMissCapacitanceUnit != "pF" and 'readMissCapacitanceUnit' not in already_processed:
+            already_processed.add('readMissCapacitanceUnit')
+            outfile.write(' readMissCapacitanceUnit=%s' % (quote_attrib(self.readMissCapacitanceUnit), ))
+        if self.writeMissCapacitanceValue != "0" and 'writeMissCapacitanceValue' not in already_processed:
+            already_processed.add('writeMissCapacitanceValue')
+            outfile.write(' writeMissCapacitanceValue=%s' % (quote_attrib(self.writeMissCapacitanceValue), ))
+        if self.writeMissCapacitanceUnit != "pF" and 'writeMissCapacitanceUnit' not in already_processed:
+            already_processed.add('writeMissCapacitanceUnit')
+            outfile.write(' writeMissCapacitanceUnit=%s' % (quote_attrib(self.writeMissCapacitanceUnit), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='CachePowerModelType', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
@@ -4019,91 +4174,91 @@ class CachePowerModelType(GeneratedsSuper):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
-        value = find_attr_value_('cellSwitchedCapacitanceValue', node)
-        if value is not None and 'cellSwitchedCapacitanceValue' not in already_processed:
-            already_processed.add('cellSwitchedCapacitanceValue')
-            self.cellSwitchedCapacitanceValue = value
-            self.validate_CapacitanceValueType(self.cellSwitchedCapacitanceValue)    # validate type CapacitanceValueType
-        value = find_attr_value_('readMissCapacitanceValue', node)
-        if value is not None and 'readMissCapacitanceValue' not in already_processed:
-            already_processed.add('readMissCapacitanceValue')
-            self.readMissCapacitanceValue = value
-            self.validate_CapacitanceValueType(self.readMissCapacitanceValue)    # validate type CapacitanceValueType
-        value = find_attr_value_('writeMissCapacitanceValue', node)
-        if value is not None and 'writeMissCapacitanceValue' not in already_processed:
-            already_processed.add('writeMissCapacitanceValue')
-            self.writeMissCapacitanceValue = value
-            self.validate_CapacitanceValueType(self.writeMissCapacitanceValue)    # validate type CapacitanceValueType
-        value = find_attr_value_('leakageCurrentUnit', node)
-        if value is not None and 'leakageCurrentUnit' not in already_processed:
-            already_processed.add('leakageCurrentUnit')
-            self.leakageCurrentUnit = value
-            self.validate_CurrentUnitType(self.leakageCurrentUnit)    # validate type CurrentUnitType
-        value = find_attr_value_('switchedCapacitanceValue', node)
-        if value is not None and 'switchedCapacitanceValue' not in already_processed:
-            already_processed.add('switchedCapacitanceValue')
-            self.switchedCapacitanceValue = value
-            self.validate_CapacitanceValueType(self.switchedCapacitanceValue)    # validate type CapacitanceValueType
-        value = find_attr_value_('leakageCurrentValue', node)
-        if value is not None and 'leakageCurrentValue' not in already_processed:
-            already_processed.add('leakageCurrentValue')
-            self.leakageCurrentValue = value
-            self.validate_CurrentValueType(self.leakageCurrentValue)    # validate type CurrentValueType
-        value = find_attr_value_('switchedCapacitanceUnit', node)
-        if value is not None and 'switchedCapacitanceUnit' not in already_processed:
-            already_processed.add('switchedCapacitanceUnit')
-            self.switchedCapacitanceUnit = value
-            self.validate_CapacitanceUnitType(self.switchedCapacitanceUnit)    # validate type CapacitanceUnitType
-        value = find_attr_value_('readMissCapacitanceUnit', node)
-        if value is not None and 'readMissCapacitanceUnit' not in already_processed:
-            already_processed.add('readMissCapacitanceUnit')
-            self.readMissCapacitanceUnit = value
-            self.validate_CapacitanceUnitType(self.readMissCapacitanceUnit)    # validate type CapacitanceUnitType
-        value = find_attr_value_('readHitCapacitanceValue', node)
-        if value is not None and 'readHitCapacitanceValue' not in already_processed:
-            already_processed.add('readHitCapacitanceValue')
-            self.readHitCapacitanceValue = value
-            self.validate_CapacitanceValueType(self.readHitCapacitanceValue)    # validate type CapacitanceValueType
-        value = find_attr_value_('writeHitCapacitanceValue', node)
-        if value is not None and 'writeHitCapacitanceValue' not in already_processed:
-            already_processed.add('writeHitCapacitanceValue')
-            self.writeHitCapacitanceValue = value
-            self.validate_CapacitanceValueType(self.writeHitCapacitanceValue)    # validate type CapacitanceValueType
-        value = find_attr_value_('writeMissCapacitanceUnit', node)
-        if value is not None and 'writeMissCapacitanceUnit' not in already_processed:
-            already_processed.add('writeMissCapacitanceUnit')
-            self.writeMissCapacitanceUnit = value
-            self.validate_CapacitanceUnitType(self.writeMissCapacitanceUnit)    # validate type CapacitanceUnitType
-        value = find_attr_value_('cellSwitchedCapacitanceUnit', node)
-        if value is not None and 'cellSwitchedCapacitanceUnit' not in already_processed:
-            already_processed.add('cellSwitchedCapacitanceUnit')
-            self.cellSwitchedCapacitanceUnit = value
-            self.validate_CapacitanceUnitType(self.cellSwitchedCapacitanceUnit)    # validate type CapacitanceUnitType
-        value = find_attr_value_('cellLeakageCurrentValue', node)
-        if value is not None and 'cellLeakageCurrentValue' not in already_processed:
-            already_processed.add('cellLeakageCurrentValue')
-            self.cellLeakageCurrentValue = value
-            self.validate_CurrentValueType(self.cellLeakageCurrentValue)    # validate type CurrentValueType
-        value = find_attr_value_('writeHitCapacitanceUnit', node)
-        if value is not None and 'writeHitCapacitanceUnit' not in already_processed:
-            already_processed.add('writeHitCapacitanceUnit')
-            self.writeHitCapacitanceUnit = value
-            self.validate_CapacitanceUnitType(self.writeHitCapacitanceUnit)    # validate type CapacitanceUnitType
-        value = find_attr_value_('readHitCapacitanceUnit', node)
-        if value is not None and 'readHitCapacitanceUnit' not in already_processed:
-            already_processed.add('readHitCapacitanceUnit')
-            self.readHitCapacitanceUnit = value
-            self.validate_CapacitanceUnitType(self.readHitCapacitanceUnit)    # validate type CapacitanceUnitType
         value = find_attr_value_('id', node)
         if value is not None and 'id' not in already_processed:
             already_processed.add('id')
             self.id = value
             self.validate_IdType(self.id)    # validate type IdType
+        value = find_attr_value_('leakageCurrentValue', node)
+        if value is not None and 'leakageCurrentValue' not in already_processed:
+            already_processed.add('leakageCurrentValue')
+            self.leakageCurrentValue = value
+            self.validate_CurrentValueType(self.leakageCurrentValue)    # validate type CurrentValueType
+        value = find_attr_value_('leakageCurrentUnit', node)
+        if value is not None and 'leakageCurrentUnit' not in already_processed:
+            already_processed.add('leakageCurrentUnit')
+            self.leakageCurrentUnit = value
+            self.validate_CurrentUnitType(self.leakageCurrentUnit)    # validate type CurrentUnitType
+        value = find_attr_value_('cellLeakageCurrentValue', node)
+        if value is not None and 'cellLeakageCurrentValue' not in already_processed:
+            already_processed.add('cellLeakageCurrentValue')
+            self.cellLeakageCurrentValue = value
+            self.validate_CurrentValueType(self.cellLeakageCurrentValue)    # validate type CurrentValueType
         value = find_attr_value_('cellLeakageCurrentUnit', node)
         if value is not None and 'cellLeakageCurrentUnit' not in already_processed:
             already_processed.add('cellLeakageCurrentUnit')
             self.cellLeakageCurrentUnit = value
             self.validate_CurrentUnitType(self.cellLeakageCurrentUnit)    # validate type CurrentUnitType
+        value = find_attr_value_('switchedCapacitanceValue', node)
+        if value is not None and 'switchedCapacitanceValue' not in already_processed:
+            already_processed.add('switchedCapacitanceValue')
+            self.switchedCapacitanceValue = value
+            self.validate_CapacitanceValueType(self.switchedCapacitanceValue)    # validate type CapacitanceValueType
+        value = find_attr_value_('switchedCapacitanceUnit', node)
+        if value is not None and 'switchedCapacitanceUnit' not in already_processed:
+            already_processed.add('switchedCapacitanceUnit')
+            self.switchedCapacitanceUnit = value
+            self.validate_CapacitanceUnitType(self.switchedCapacitanceUnit)    # validate type CapacitanceUnitType
+        value = find_attr_value_('cellSwitchedCapacitanceValue', node)
+        if value is not None and 'cellSwitchedCapacitanceValue' not in already_processed:
+            already_processed.add('cellSwitchedCapacitanceValue')
+            self.cellSwitchedCapacitanceValue = value
+            self.validate_CapacitanceValueType(self.cellSwitchedCapacitanceValue)    # validate type CapacitanceValueType
+        value = find_attr_value_('cellSwitchedCapacitanceUnit', node)
+        if value is not None and 'cellSwitchedCapacitanceUnit' not in already_processed:
+            already_processed.add('cellSwitchedCapacitanceUnit')
+            self.cellSwitchedCapacitanceUnit = value
+            self.validate_CapacitanceUnitType(self.cellSwitchedCapacitanceUnit)    # validate type CapacitanceUnitType
+        value = find_attr_value_('readHitCapacitanceValue', node)
+        if value is not None and 'readHitCapacitanceValue' not in already_processed:
+            already_processed.add('readHitCapacitanceValue')
+            self.readHitCapacitanceValue = value
+            self.validate_CapacitanceValueType(self.readHitCapacitanceValue)    # validate type CapacitanceValueType
+        value = find_attr_value_('readHitCapacitanceUnit', node)
+        if value is not None and 'readHitCapacitanceUnit' not in already_processed:
+            already_processed.add('readHitCapacitanceUnit')
+            self.readHitCapacitanceUnit = value
+            self.validate_CapacitanceUnitType(self.readHitCapacitanceUnit)    # validate type CapacitanceUnitType
+        value = find_attr_value_('writeHitCapacitanceValue', node)
+        if value is not None and 'writeHitCapacitanceValue' not in already_processed:
+            already_processed.add('writeHitCapacitanceValue')
+            self.writeHitCapacitanceValue = value
+            self.validate_CapacitanceValueType(self.writeHitCapacitanceValue)    # validate type CapacitanceValueType
+        value = find_attr_value_('writeHitCapacitanceUnit', node)
+        if value is not None and 'writeHitCapacitanceUnit' not in already_processed:
+            already_processed.add('writeHitCapacitanceUnit')
+            self.writeHitCapacitanceUnit = value
+            self.validate_CapacitanceUnitType(self.writeHitCapacitanceUnit)    # validate type CapacitanceUnitType
+        value = find_attr_value_('readMissCapacitanceValue', node)
+        if value is not None and 'readMissCapacitanceValue' not in already_processed:
+            already_processed.add('readMissCapacitanceValue')
+            self.readMissCapacitanceValue = value
+            self.validate_CapacitanceValueType(self.readMissCapacitanceValue)    # validate type CapacitanceValueType
+        value = find_attr_value_('readMissCapacitanceUnit', node)
+        if value is not None and 'readMissCapacitanceUnit' not in already_processed:
+            already_processed.add('readMissCapacitanceUnit')
+            self.readMissCapacitanceUnit = value
+            self.validate_CapacitanceUnitType(self.readMissCapacitanceUnit)    # validate type CapacitanceUnitType
+        value = find_attr_value_('writeMissCapacitanceValue', node)
+        if value is not None and 'writeMissCapacitanceValue' not in already_processed:
+            already_processed.add('writeMissCapacitanceValue')
+            self.writeMissCapacitanceValue = value
+            self.validate_CapacitanceValueType(self.writeMissCapacitanceValue)    # validate type CapacitanceValueType
+        value = find_attr_value_('writeMissCapacitanceUnit', node)
+        if value is not None and 'writeMissCapacitanceUnit' not in already_processed:
+            already_processed.add('writeMissCapacitanceUnit')
+            self.writeMissCapacitanceUnit = value
+            self.validate_CapacitanceUnitType(self.writeMissCapacitanceUnit)    # validate type CapacitanceUnitType
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         if nodeName_ == 'CachePowerState':
             obj_ = CachePowerStateType.factory()
@@ -4116,42 +4271,47 @@ class CachePowerModelType(GeneratedsSuper):
 class CacheType(GeneratedsSuper):
     subclass = None
     superclass = None
-    def __init__(self, sizeValue=None, frequencyDomain=None, readMissThroughputUnit='bit/cycle', sizeUnit=None, writeHitThroughputUnit='bit/cycle', cachePowerModel=None, writeMissThroughputValue=None, id=None, writeHitLatencyUnit='cycles', prefetchDistance=None, writeBack=None, writeMissLatencyUnit='cycles', ways=None, readHitLatencyUnit='cycles', voltageDomain=None, lineSizeUnit=None, writeHitLatencyValue='0', writeMissLatencyValue='0', readMissLatencyValue='0', lineSizeValue=None, readHitLatencyValue='0', writeHitThroughputValue=None, coherency=None, readMissLatencyUnit='cycles', writeMissThroughputUnit='bit/cycle', readHitThroughputValue=None, readMissThroughputValue=None, prefetch=None, readHitThroughputUnit='bit/cycle', writeAllocate=None, replacement=None, ParentCacheRef=None, ParentMemoryRef=None):
+    def __init__(self, id=None, coherency=None, sizeValue=None, sizeUnit=None, lineSizeValue=None, lineSizeUnit=None, ways=None, replacement=None, prefetch=None, prefetchDistance=None, writeAllocate=None, writeBack=None, readHitThroughputValue=None, readHitThroughputUnit='bit/cycle', readHitLatencyValue='0', readHitLatencyUnit='cycles', writeHitThroughputValue=None, writeHitThroughputUnit='bit/cycle', writeHitLatencyValue='0', writeHitLatencyUnit='cycles', readMissThroughputValue=None, readMissThroughputUnit='bit/cycle', readMissLatencyValue='0', readMissLatencyUnit='cycles', writeMissThroughputValue=None, writeMissThroughputUnit='bit/cycle', writeMissLatencyValue='0', writeMissLatencyUnit='cycles', frequencyDomain=None, voltageDomain=None, cachePowerModel=None, ParentCacheRef=None, ParentMemoryRef=None):
         self.original_tagname_ = None
-        self.sizeValue = _cast(None, sizeValue)
-        self.frequencyDomain = _cast(None, frequencyDomain)
-        self.readMissThroughputUnit = _cast(None, readMissThroughputUnit)
-        self.sizeUnit = _cast(None, sizeUnit)
-        self.writeHitThroughputUnit = _cast(None, writeHitThroughputUnit)
-        self.cachePowerModel = _cast(None, cachePowerModel)
-        self.writeMissThroughputValue = _cast(None, writeMissThroughputValue)
         self.id = _cast(None, id)
-        self.writeHitLatencyUnit = _cast(None, writeHitLatencyUnit)
-        self.prefetchDistance = _cast(int, prefetchDistance)
-        self.writeBack = _cast(None, writeBack)
-        self.writeMissLatencyUnit = _cast(None, writeMissLatencyUnit)
-        self.ways = _cast(None, ways)
-        self.readHitLatencyUnit = _cast(None, readHitLatencyUnit)
-        self.voltageDomain = _cast(None, voltageDomain)
-        self.lineSizeUnit = _cast(None, lineSizeUnit)
-        self.writeHitLatencyValue = _cast(None, writeHitLatencyValue)
-        self.writeMissLatencyValue = _cast(None, writeMissLatencyValue)
-        self.readMissLatencyValue = _cast(None, readMissLatencyValue)
-        self.lineSizeValue = _cast(None, lineSizeValue)
-        self.readHitLatencyValue = _cast(None, readHitLatencyValue)
-        self.writeHitThroughputValue = _cast(None, writeHitThroughputValue)
         self.coherency = _cast(None, coherency)
-        self.readMissLatencyUnit = _cast(None, readMissLatencyUnit)
-        self.writeMissThroughputUnit = _cast(None, writeMissThroughputUnit)
-        self.readHitThroughputValue = _cast(None, readHitThroughputValue)
-        self.readMissThroughputValue = _cast(None, readMissThroughputValue)
-        self.prefetch = _cast(None, prefetch)
-        self.readHitThroughputUnit = _cast(None, readHitThroughputUnit)
-        self.writeAllocate = _cast(None, writeAllocate)
+        self.sizeValue = _cast(None, sizeValue)
+        self.sizeUnit = _cast(None, sizeUnit)
+        self.lineSizeValue = _cast(None, lineSizeValue)
+        self.lineSizeUnit = _cast(None, lineSizeUnit)
+        self.ways = _cast(None, ways)
         self.replacement = _cast(None, replacement)
+        self.prefetch = _cast(None, prefetch)
+        self.prefetchDistance = _cast(int, prefetchDistance)
+        self.writeAllocate = _cast(None, writeAllocate)
+        self.writeBack = _cast(None, writeBack)
+        self.readHitThroughputValue = _cast(None, readHitThroughputValue)
+        self.readHitThroughputUnit = _cast(None, readHitThroughputUnit)
+        self.readHitLatencyValue = _cast(None, readHitLatencyValue)
+        self.readHitLatencyUnit = _cast(None, readHitLatencyUnit)
+        self.writeHitThroughputValue = _cast(None, writeHitThroughputValue)
+        self.writeHitThroughputUnit = _cast(None, writeHitThroughputUnit)
+        self.writeHitLatencyValue = _cast(None, writeHitLatencyValue)
+        self.writeHitLatencyUnit = _cast(None, writeHitLatencyUnit)
+        self.readMissThroughputValue = _cast(None, readMissThroughputValue)
+        self.readMissThroughputUnit = _cast(None, readMissThroughputUnit)
+        self.readMissLatencyValue = _cast(None, readMissLatencyValue)
+        self.readMissLatencyUnit = _cast(None, readMissLatencyUnit)
+        self.writeMissThroughputValue = _cast(None, writeMissThroughputValue)
+        self.writeMissThroughputUnit = _cast(None, writeMissThroughputUnit)
+        self.writeMissLatencyValue = _cast(None, writeMissLatencyValue)
+        self.writeMissLatencyUnit = _cast(None, writeMissLatencyUnit)
+        self.frequencyDomain = _cast(None, frequencyDomain)
+        self.voltageDomain = _cast(None, voltageDomain)
+        self.cachePowerModel = _cast(None, cachePowerModel)
         self.ParentCacheRef = ParentCacheRef
         self.ParentMemoryRef = ParentMemoryRef
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, CacheType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if CacheType.subclass:
             return CacheType.subclass(*args_, **kwargs_)
         else:
@@ -4161,109 +4321,68 @@ class CacheType(GeneratedsSuper):
     def set_ParentCacheRef(self, ParentCacheRef): self.ParentCacheRef = ParentCacheRef
     def get_ParentMemoryRef(self): return self.ParentMemoryRef
     def set_ParentMemoryRef(self, ParentMemoryRef): self.ParentMemoryRef = ParentMemoryRef
-    def get_sizeValue(self): return self.sizeValue
-    def set_sizeValue(self, sizeValue): self.sizeValue = sizeValue
-    def get_frequencyDomain(self): return self.frequencyDomain
-    def set_frequencyDomain(self, frequencyDomain): self.frequencyDomain = frequencyDomain
-    def get_readMissThroughputUnit(self): return self.readMissThroughputUnit
-    def set_readMissThroughputUnit(self, readMissThroughputUnit): self.readMissThroughputUnit = readMissThroughputUnit
-    def get_sizeUnit(self): return self.sizeUnit
-    def set_sizeUnit(self, sizeUnit): self.sizeUnit = sizeUnit
-    def get_writeHitThroughputUnit(self): return self.writeHitThroughputUnit
-    def set_writeHitThroughputUnit(self, writeHitThroughputUnit): self.writeHitThroughputUnit = writeHitThroughputUnit
-    def get_cachePowerModel(self): return self.cachePowerModel
-    def set_cachePowerModel(self, cachePowerModel): self.cachePowerModel = cachePowerModel
-    def get_writeMissThroughputValue(self): return self.writeMissThroughputValue
-    def set_writeMissThroughputValue(self, writeMissThroughputValue): self.writeMissThroughputValue = writeMissThroughputValue
     def get_id(self): return self.id
     def set_id(self, id): self.id = id
-    def get_writeHitLatencyUnit(self): return self.writeHitLatencyUnit
-    def set_writeHitLatencyUnit(self, writeHitLatencyUnit): self.writeHitLatencyUnit = writeHitLatencyUnit
-    def get_prefetchDistance(self): return self.prefetchDistance
-    def set_prefetchDistance(self, prefetchDistance): self.prefetchDistance = prefetchDistance
-    def get_writeBack(self): return self.writeBack
-    def set_writeBack(self, writeBack): self.writeBack = writeBack
-    def get_writeMissLatencyUnit(self): return self.writeMissLatencyUnit
-    def set_writeMissLatencyUnit(self, writeMissLatencyUnit): self.writeMissLatencyUnit = writeMissLatencyUnit
-    def get_ways(self): return self.ways
-    def set_ways(self, ways): self.ways = ways
-    def get_readHitLatencyUnit(self): return self.readHitLatencyUnit
-    def set_readHitLatencyUnit(self, readHitLatencyUnit): self.readHitLatencyUnit = readHitLatencyUnit
-    def get_voltageDomain(self): return self.voltageDomain
-    def set_voltageDomain(self, voltageDomain): self.voltageDomain = voltageDomain
-    def get_lineSizeUnit(self): return self.lineSizeUnit
-    def set_lineSizeUnit(self, lineSizeUnit): self.lineSizeUnit = lineSizeUnit
-    def get_writeHitLatencyValue(self): return self.writeHitLatencyValue
-    def set_writeHitLatencyValue(self, writeHitLatencyValue): self.writeHitLatencyValue = writeHitLatencyValue
-    def get_writeMissLatencyValue(self): return self.writeMissLatencyValue
-    def set_writeMissLatencyValue(self, writeMissLatencyValue): self.writeMissLatencyValue = writeMissLatencyValue
-    def get_readMissLatencyValue(self): return self.readMissLatencyValue
-    def set_readMissLatencyValue(self, readMissLatencyValue): self.readMissLatencyValue = readMissLatencyValue
-    def get_lineSizeValue(self): return self.lineSizeValue
-    def set_lineSizeValue(self, lineSizeValue): self.lineSizeValue = lineSizeValue
-    def get_readHitLatencyValue(self): return self.readHitLatencyValue
-    def set_readHitLatencyValue(self, readHitLatencyValue): self.readHitLatencyValue = readHitLatencyValue
-    def get_writeHitThroughputValue(self): return self.writeHitThroughputValue
-    def set_writeHitThroughputValue(self, writeHitThroughputValue): self.writeHitThroughputValue = writeHitThroughputValue
     def get_coherency(self): return self.coherency
     def set_coherency(self, coherency): self.coherency = coherency
-    def get_readMissLatencyUnit(self): return self.readMissLatencyUnit
-    def set_readMissLatencyUnit(self, readMissLatencyUnit): self.readMissLatencyUnit = readMissLatencyUnit
-    def get_writeMissThroughputUnit(self): return self.writeMissThroughputUnit
-    def set_writeMissThroughputUnit(self, writeMissThroughputUnit): self.writeMissThroughputUnit = writeMissThroughputUnit
-    def get_readHitThroughputValue(self): return self.readHitThroughputValue
-    def set_readHitThroughputValue(self, readHitThroughputValue): self.readHitThroughputValue = readHitThroughputValue
-    def get_readMissThroughputValue(self): return self.readMissThroughputValue
-    def set_readMissThroughputValue(self, readMissThroughputValue): self.readMissThroughputValue = readMissThroughputValue
-    def get_prefetch(self): return self.prefetch
-    def set_prefetch(self, prefetch): self.prefetch = prefetch
-    def get_readHitThroughputUnit(self): return self.readHitThroughputUnit
-    def set_readHitThroughputUnit(self, readHitThroughputUnit): self.readHitThroughputUnit = readHitThroughputUnit
-    def get_writeAllocate(self): return self.writeAllocate
-    def set_writeAllocate(self, writeAllocate): self.writeAllocate = writeAllocate
+    def get_sizeValue(self): return self.sizeValue
+    def set_sizeValue(self, sizeValue): self.sizeValue = sizeValue
+    def get_sizeUnit(self): return self.sizeUnit
+    def set_sizeUnit(self, sizeUnit): self.sizeUnit = sizeUnit
+    def get_lineSizeValue(self): return self.lineSizeValue
+    def set_lineSizeValue(self, lineSizeValue): self.lineSizeValue = lineSizeValue
+    def get_lineSizeUnit(self): return self.lineSizeUnit
+    def set_lineSizeUnit(self, lineSizeUnit): self.lineSizeUnit = lineSizeUnit
+    def get_ways(self): return self.ways
+    def set_ways(self, ways): self.ways = ways
     def get_replacement(self): return self.replacement
     def set_replacement(self, replacement): self.replacement = replacement
-    def validate_SizeValueType(self, value):
-        # Validate type SizeValueType, a restriction on NonNegativeFloatType.
-        if value is not None and Validate_simpletypes_:
-            if value < 0:
-                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on SizeValueType' % {"value" : value} )
-    def validate_RefType(self, value):
-        # Validate type RefType, a restriction on xs:IDREF.
-        if value is not None and Validate_simpletypes_:
-            if not self.gds_validate_simple_patterns(
-                    self.validate_RefType_patterns_, value):
-                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_RefType_patterns_, ))
-    validate_RefType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
-    def validate_ThroughputUnitType(self, value):
-        # Validate type ThroughputUnitType, a restriction on xs:string.
-        if value is not None and Validate_simpletypes_:
-            value = str(value)
-            enumerations = ['bit/cycle', 'B/cycle', 'kB/cycle', 'KiB/cycle']
-            enumeration_respectee = False
-            for enum in enumerations:
-                if value == enum:
-                    enumeration_respectee = True
-                    break
-            if not enumeration_respectee:
-                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on ThroughputUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_SizeUnitType(self, value):
-        # Validate type SizeUnitType, a restriction on xs:string.
-        if value is not None and Validate_simpletypes_:
-            value = str(value)
-            enumerations = ['bit', 'B', 'kB', 'KiB', 'MB', 'MiB', 'GB', 'GiB', 'TB', 'TiB']
-            enumeration_respectee = False
-            for enum in enumerations:
-                if value == enum:
-                    enumeration_respectee = True
-                    break
-            if not enumeration_respectee:
-                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on SizeUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_ThroughputValueType(self, value):
-        # Validate type ThroughputValueType, a restriction on NonNegativeFloatType.
-        if value is not None and Validate_simpletypes_:
-            if value < 0:
-                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on ThroughputValueType' % {"value" : value} )
+    def get_prefetch(self): return self.prefetch
+    def set_prefetch(self, prefetch): self.prefetch = prefetch
+    def get_prefetchDistance(self): return self.prefetchDistance
+    def set_prefetchDistance(self, prefetchDistance): self.prefetchDistance = prefetchDistance
+    def get_writeAllocate(self): return self.writeAllocate
+    def set_writeAllocate(self, writeAllocate): self.writeAllocate = writeAllocate
+    def get_writeBack(self): return self.writeBack
+    def set_writeBack(self, writeBack): self.writeBack = writeBack
+    def get_readHitThroughputValue(self): return self.readHitThroughputValue
+    def set_readHitThroughputValue(self, readHitThroughputValue): self.readHitThroughputValue = readHitThroughputValue
+    def get_readHitThroughputUnit(self): return self.readHitThroughputUnit
+    def set_readHitThroughputUnit(self, readHitThroughputUnit): self.readHitThroughputUnit = readHitThroughputUnit
+    def get_readHitLatencyValue(self): return self.readHitLatencyValue
+    def set_readHitLatencyValue(self, readHitLatencyValue): self.readHitLatencyValue = readHitLatencyValue
+    def get_readHitLatencyUnit(self): return self.readHitLatencyUnit
+    def set_readHitLatencyUnit(self, readHitLatencyUnit): self.readHitLatencyUnit = readHitLatencyUnit
+    def get_writeHitThroughputValue(self): return self.writeHitThroughputValue
+    def set_writeHitThroughputValue(self, writeHitThroughputValue): self.writeHitThroughputValue = writeHitThroughputValue
+    def get_writeHitThroughputUnit(self): return self.writeHitThroughputUnit
+    def set_writeHitThroughputUnit(self, writeHitThroughputUnit): self.writeHitThroughputUnit = writeHitThroughputUnit
+    def get_writeHitLatencyValue(self): return self.writeHitLatencyValue
+    def set_writeHitLatencyValue(self, writeHitLatencyValue): self.writeHitLatencyValue = writeHitLatencyValue
+    def get_writeHitLatencyUnit(self): return self.writeHitLatencyUnit
+    def set_writeHitLatencyUnit(self, writeHitLatencyUnit): self.writeHitLatencyUnit = writeHitLatencyUnit
+    def get_readMissThroughputValue(self): return self.readMissThroughputValue
+    def set_readMissThroughputValue(self, readMissThroughputValue): self.readMissThroughputValue = readMissThroughputValue
+    def get_readMissThroughputUnit(self): return self.readMissThroughputUnit
+    def set_readMissThroughputUnit(self, readMissThroughputUnit): self.readMissThroughputUnit = readMissThroughputUnit
+    def get_readMissLatencyValue(self): return self.readMissLatencyValue
+    def set_readMissLatencyValue(self, readMissLatencyValue): self.readMissLatencyValue = readMissLatencyValue
+    def get_readMissLatencyUnit(self): return self.readMissLatencyUnit
+    def set_readMissLatencyUnit(self, readMissLatencyUnit): self.readMissLatencyUnit = readMissLatencyUnit
+    def get_writeMissThroughputValue(self): return self.writeMissThroughputValue
+    def set_writeMissThroughputValue(self, writeMissThroughputValue): self.writeMissThroughputValue = writeMissThroughputValue
+    def get_writeMissThroughputUnit(self): return self.writeMissThroughputUnit
+    def set_writeMissThroughputUnit(self, writeMissThroughputUnit): self.writeMissThroughputUnit = writeMissThroughputUnit
+    def get_writeMissLatencyValue(self): return self.writeMissLatencyValue
+    def set_writeMissLatencyValue(self, writeMissLatencyValue): self.writeMissLatencyValue = writeMissLatencyValue
+    def get_writeMissLatencyUnit(self): return self.writeMissLatencyUnit
+    def set_writeMissLatencyUnit(self, writeMissLatencyUnit): self.writeMissLatencyUnit = writeMissLatencyUnit
+    def get_frequencyDomain(self): return self.frequencyDomain
+    def set_frequencyDomain(self, frequencyDomain): self.frequencyDomain = frequencyDomain
+    def get_voltageDomain(self): return self.voltageDomain
+    def set_voltageDomain(self, voltageDomain): self.voltageDomain = voltageDomain
+    def get_cachePowerModel(self): return self.cachePowerModel
+    def set_cachePowerModel(self, cachePowerModel): self.cachePowerModel = cachePowerModel
     def validate_IdType(self, value):
         # Validate type IdType, a restriction on xs:ID.
         if value is not None and Validate_simpletypes_:
@@ -4271,39 +4390,6 @@ class CacheType(GeneratedsSuper):
                     self.validate_IdType_patterns_, value):
                 warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_IdType_patterns_, ))
     validate_IdType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
-    def validate_CyclesUnitType(self, value):
-        # Validate type CyclesUnitType, a restriction on xs:string.
-        if value is not None and Validate_simpletypes_:
-            value = str(value)
-            enumerations = ['cycles', 'kcycles', 'Mcycles']
-            enumeration_respectee = False
-            for enum in enumerations:
-                if value == enum:
-                    enumeration_respectee = True
-                    break
-            if not enumeration_respectee:
-                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on CyclesUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_WriteBackType(self, value):
-        # Validate type WriteBackType, a restriction on xs:string.
-        if value is not None and Validate_simpletypes_:
-            value = str(value)
-            enumerations = ['always', 'never', 'noFetch']
-            enumeration_respectee = False
-            for enum in enumerations:
-                if value == enum:
-                    enumeration_respectee = True
-                    break
-            if not enumeration_respectee:
-                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on WriteBackType' % {"value" : value.encode("utf-8")} )
-    def validate_PositiveIntType(self, value):
-        # Validate type PositiveIntType, a restriction on xs:positiveInteger.
-        if value is not None and Validate_simpletypes_:
-            pass
-    def validate_CyclesValueType(self, value):
-        # Validate type CyclesValueType, a restriction on NonNegativeFloatType.
-        if value is not None and Validate_simpletypes_:
-            if value < 0:
-                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on CyclesValueType' % {"value" : value} )
     def validate_CoherencyType(self, value):
         # Validate type CoherencyType, a restriction on xs:string.
         if value is not None and Validate_simpletypes_:
@@ -4316,6 +4402,39 @@ class CacheType(GeneratedsSuper):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on CoherencyType' % {"value" : value.encode("utf-8")} )
+    def validate_SizeValueType(self, value):
+        # Validate type SizeValueType, a restriction on NonNegativeFloatType.
+        if value is not None and Validate_simpletypes_:
+            if value < 0:
+                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on SizeValueType' % {"value" : value} )
+    def validate_SizeUnitType(self, value):
+        # Validate type SizeUnitType, a restriction on xs:string.
+        if value is not None and Validate_simpletypes_:
+            value = str(value)
+            enumerations = ['bit', 'B', 'kB', 'KiB', 'MB', 'MiB', 'GB', 'GiB', 'TB', 'TiB']
+            enumeration_respectee = False
+            for enum in enumerations:
+                if value == enum:
+                    enumeration_respectee = True
+                    break
+            if not enumeration_respectee:
+                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on SizeUnitType' % {"value" : value.encode("utf-8")} )
+    def validate_PositiveIntType(self, value):
+        # Validate type PositiveIntType, a restriction on xs:positiveInteger.
+        if value is not None and Validate_simpletypes_:
+            pass
+    def validate_ReplacementType(self, value):
+        # Validate type ReplacementType, a restriction on xs:string.
+        if value is not None and Validate_simpletypes_:
+            value = str(value)
+            enumerations = ['lru', 'fifo', 'random']
+            enumeration_respectee = False
+            for enum in enumerations:
+                if value == enum:
+                    enumeration_respectee = True
+                    break
+            if not enumeration_respectee:
+                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on ReplacementType' % {"value" : value.encode("utf-8")} )
     def validate_PrefetchType(self, value):
         # Validate type PrefetchType, a restriction on xs:string.
         if value is not None and Validate_simpletypes_:
@@ -4340,18 +4459,59 @@ class CacheType(GeneratedsSuper):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on WriteAllocateType' % {"value" : value.encode("utf-8")} )
-    def validate_ReplacementType(self, value):
-        # Validate type ReplacementType, a restriction on xs:string.
+    def validate_WriteBackType(self, value):
+        # Validate type WriteBackType, a restriction on xs:string.
         if value is not None and Validate_simpletypes_:
             value = str(value)
-            enumerations = ['lru', 'fifo', 'random']
+            enumerations = ['always', 'never', 'noFetch']
             enumeration_respectee = False
             for enum in enumerations:
                 if value == enum:
                     enumeration_respectee = True
                     break
             if not enumeration_respectee:
-                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on ReplacementType' % {"value" : value.encode("utf-8")} )
+                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on WriteBackType' % {"value" : value.encode("utf-8")} )
+    def validate_ThroughputValueType(self, value):
+        # Validate type ThroughputValueType, a restriction on NonNegativeFloatType.
+        if value is not None and Validate_simpletypes_:
+            if value < 0:
+                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on ThroughputValueType' % {"value" : value} )
+    def validate_ThroughputUnitType(self, value):
+        # Validate type ThroughputUnitType, a restriction on xs:string.
+        if value is not None and Validate_simpletypes_:
+            value = str(value)
+            enumerations = ['bit/cycle', 'B/cycle', 'kB/cycle', 'KiB/cycle']
+            enumeration_respectee = False
+            for enum in enumerations:
+                if value == enum:
+                    enumeration_respectee = True
+                    break
+            if not enumeration_respectee:
+                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on ThroughputUnitType' % {"value" : value.encode("utf-8")} )
+    def validate_CyclesValueType(self, value):
+        # Validate type CyclesValueType, a restriction on NonNegativeFloatType.
+        if value is not None and Validate_simpletypes_:
+            if value < 0:
+                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on CyclesValueType' % {"value" : value} )
+    def validate_CyclesUnitType(self, value):
+        # Validate type CyclesUnitType, a restriction on xs:string.
+        if value is not None and Validate_simpletypes_:
+            value = str(value)
+            enumerations = ['cycles', 'kcycles', 'Mcycles']
+            enumeration_respectee = False
+            for enum in enumerations:
+                if value == enum:
+                    enumeration_respectee = True
+                    break
+            if not enumeration_respectee:
+                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on CyclesUnitType' % {"value" : value.encode("utf-8")} )
+    def validate_RefType(self, value):
+        # Validate type RefType, a restriction on xs:IDREF.
+        if value is not None and Validate_simpletypes_:
+            if not self.gds_validate_simple_patterns(
+                    self.validate_RefType_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_RefType_patterns_, ))
+    validate_RefType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def hasContent_(self):
         if (
             self.ParentCacheRef is not None or
@@ -4379,99 +4539,99 @@ class CacheType(GeneratedsSuper):
         else:
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='CacheType'):
-        if self.sizeValue is not None and 'sizeValue' not in already_processed:
-            already_processed.add('sizeValue')
-            outfile.write(' sizeValue=%s' % (quote_attrib(self.sizeValue), ))
-        if self.frequencyDomain is not None and 'frequencyDomain' not in already_processed:
-            already_processed.add('frequencyDomain')
-            outfile.write(' frequencyDomain=%s' % (quote_attrib(self.frequencyDomain), ))
-        if self.readMissThroughputUnit != bit/cycle and 'readMissThroughputUnit' not in already_processed:
-            already_processed.add('readMissThroughputUnit')
-            outfile.write(' readMissThroughputUnit=%s' % (quote_attrib(self.readMissThroughputUnit), ))
-        if self.sizeUnit is not None and 'sizeUnit' not in already_processed:
-            already_processed.add('sizeUnit')
-            outfile.write(' sizeUnit=%s' % (quote_attrib(self.sizeUnit), ))
-        if self.writeHitThroughputUnit != bit/cycle and 'writeHitThroughputUnit' not in already_processed:
-            already_processed.add('writeHitThroughputUnit')
-            outfile.write(' writeHitThroughputUnit=%s' % (quote_attrib(self.writeHitThroughputUnit), ))
-        if self.cachePowerModel is not None and 'cachePowerModel' not in already_processed:
-            already_processed.add('cachePowerModel')
-            outfile.write(' cachePowerModel=%s' % (quote_attrib(self.cachePowerModel), ))
-        if self.writeMissThroughputValue is not None and 'writeMissThroughputValue' not in already_processed:
-            already_processed.add('writeMissThroughputValue')
-            outfile.write(' writeMissThroughputValue=%s' % (quote_attrib(self.writeMissThroughputValue), ))
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
-        if self.writeHitLatencyUnit != cycles and 'writeHitLatencyUnit' not in already_processed:
-            already_processed.add('writeHitLatencyUnit')
-            outfile.write(' writeHitLatencyUnit=%s' % (quote_attrib(self.writeHitLatencyUnit), ))
-        if self.prefetchDistance is not None and 'prefetchDistance' not in already_processed:
-            already_processed.add('prefetchDistance')
-            outfile.write(' prefetchDistance="%s"' % self.gds_format_integer(self.prefetchDistance, input_name='prefetchDistance'))
-        if self.writeBack is not None and 'writeBack' not in already_processed:
-            already_processed.add('writeBack')
-            outfile.write(' writeBack=%s' % (quote_attrib(self.writeBack), ))
-        if self.writeMissLatencyUnit != cycles and 'writeMissLatencyUnit' not in already_processed:
-            already_processed.add('writeMissLatencyUnit')
-            outfile.write(' writeMissLatencyUnit=%s' % (quote_attrib(self.writeMissLatencyUnit), ))
-        if self.ways is not None and 'ways' not in already_processed:
-            already_processed.add('ways')
-            outfile.write(' ways=%s' % (quote_attrib(self.ways), ))
-        if self.readHitLatencyUnit != cycles and 'readHitLatencyUnit' not in already_processed:
-            already_processed.add('readHitLatencyUnit')
-            outfile.write(' readHitLatencyUnit=%s' % (quote_attrib(self.readHitLatencyUnit), ))
-        if self.voltageDomain is not None and 'voltageDomain' not in already_processed:
-            already_processed.add('voltageDomain')
-            outfile.write(' voltageDomain=%s' % (quote_attrib(self.voltageDomain), ))
-        if self.lineSizeUnit is not None and 'lineSizeUnit' not in already_processed:
-            already_processed.add('lineSizeUnit')
-            outfile.write(' lineSizeUnit=%s' % (quote_attrib(self.lineSizeUnit), ))
-        if self.writeHitLatencyValue != 0 and 'writeHitLatencyValue' not in already_processed:
-            already_processed.add('writeHitLatencyValue')
-            outfile.write(' writeHitLatencyValue=%s' % (quote_attrib(self.writeHitLatencyValue), ))
-        if self.writeMissLatencyValue != 0 and 'writeMissLatencyValue' not in already_processed:
-            already_processed.add('writeMissLatencyValue')
-            outfile.write(' writeMissLatencyValue=%s' % (quote_attrib(self.writeMissLatencyValue), ))
-        if self.readMissLatencyValue != 0 and 'readMissLatencyValue' not in already_processed:
-            already_processed.add('readMissLatencyValue')
-            outfile.write(' readMissLatencyValue=%s' % (quote_attrib(self.readMissLatencyValue), ))
-        if self.lineSizeValue is not None and 'lineSizeValue' not in already_processed:
-            already_processed.add('lineSizeValue')
-            outfile.write(' lineSizeValue=%s' % (quote_attrib(self.lineSizeValue), ))
-        if self.readHitLatencyValue != 0 and 'readHitLatencyValue' not in already_processed:
-            already_processed.add('readHitLatencyValue')
-            outfile.write(' readHitLatencyValue=%s' % (quote_attrib(self.readHitLatencyValue), ))
-        if self.writeHitThroughputValue is not None and 'writeHitThroughputValue' not in already_processed:
-            already_processed.add('writeHitThroughputValue')
-            outfile.write(' writeHitThroughputValue=%s' % (quote_attrib(self.writeHitThroughputValue), ))
         if self.coherency is not None and 'coherency' not in already_processed:
             already_processed.add('coherency')
             outfile.write(' coherency=%s' % (quote_attrib(self.coherency), ))
-        if self.readMissLatencyUnit != cycles and 'readMissLatencyUnit' not in already_processed:
-            already_processed.add('readMissLatencyUnit')
-            outfile.write(' readMissLatencyUnit=%s' % (quote_attrib(self.readMissLatencyUnit), ))
-        if self.writeMissThroughputUnit != bit/cycle and 'writeMissThroughputUnit' not in already_processed:
-            already_processed.add('writeMissThroughputUnit')
-            outfile.write(' writeMissThroughputUnit=%s' % (quote_attrib(self.writeMissThroughputUnit), ))
-        if self.readHitThroughputValue is not None and 'readHitThroughputValue' not in already_processed:
-            already_processed.add('readHitThroughputValue')
-            outfile.write(' readHitThroughputValue=%s' % (quote_attrib(self.readHitThroughputValue), ))
-        if self.readMissThroughputValue is not None and 'readMissThroughputValue' not in already_processed:
-            already_processed.add('readMissThroughputValue')
-            outfile.write(' readMissThroughputValue=%s' % (quote_attrib(self.readMissThroughputValue), ))
-        if self.prefetch is not None and 'prefetch' not in already_processed:
-            already_processed.add('prefetch')
-            outfile.write(' prefetch=%s' % (quote_attrib(self.prefetch), ))
-        if self.readHitThroughputUnit != bit/cycle and 'readHitThroughputUnit' not in already_processed:
-            already_processed.add('readHitThroughputUnit')
-            outfile.write(' readHitThroughputUnit=%s' % (quote_attrib(self.readHitThroughputUnit), ))
-        if self.writeAllocate is not None and 'writeAllocate' not in already_processed:
-            already_processed.add('writeAllocate')
-            outfile.write(' writeAllocate=%s' % (quote_attrib(self.writeAllocate), ))
+        if self.sizeValue is not None and 'sizeValue' not in already_processed:
+            already_processed.add('sizeValue')
+            outfile.write(' sizeValue=%s' % (quote_attrib(self.sizeValue), ))
+        if self.sizeUnit is not None and 'sizeUnit' not in already_processed:
+            already_processed.add('sizeUnit')
+            outfile.write(' sizeUnit=%s' % (quote_attrib(self.sizeUnit), ))
+        if self.lineSizeValue is not None and 'lineSizeValue' not in already_processed:
+            already_processed.add('lineSizeValue')
+            outfile.write(' lineSizeValue=%s' % (quote_attrib(self.lineSizeValue), ))
+        if self.lineSizeUnit is not None and 'lineSizeUnit' not in already_processed:
+            already_processed.add('lineSizeUnit')
+            outfile.write(' lineSizeUnit=%s' % (quote_attrib(self.lineSizeUnit), ))
+        if self.ways is not None and 'ways' not in already_processed:
+            already_processed.add('ways')
+            outfile.write(' ways=%s' % (quote_attrib(self.ways), ))
         if self.replacement is not None and 'replacement' not in already_processed:
             already_processed.add('replacement')
             outfile.write(' replacement=%s' % (quote_attrib(self.replacement), ))
+        if self.prefetch is not None and 'prefetch' not in already_processed:
+            already_processed.add('prefetch')
+            outfile.write(' prefetch=%s' % (quote_attrib(self.prefetch), ))
+        if self.prefetchDistance is not None and 'prefetchDistance' not in already_processed:
+            already_processed.add('prefetchDistance')
+            outfile.write(' prefetchDistance="%s"' % self.gds_format_integer(self.prefetchDistance, input_name='prefetchDistance'))
+        if self.writeAllocate is not None and 'writeAllocate' not in already_processed:
+            already_processed.add('writeAllocate')
+            outfile.write(' writeAllocate=%s' % (quote_attrib(self.writeAllocate), ))
+        if self.writeBack is not None and 'writeBack' not in already_processed:
+            already_processed.add('writeBack')
+            outfile.write(' writeBack=%s' % (quote_attrib(self.writeBack), ))
+        if self.readHitThroughputValue is not None and 'readHitThroughputValue' not in already_processed:
+            already_processed.add('readHitThroughputValue')
+            outfile.write(' readHitThroughputValue=%s' % (quote_attrib(self.readHitThroughputValue), ))
+        if self.readHitThroughputUnit != "bit/cycle" and 'readHitThroughputUnit' not in already_processed:
+            already_processed.add('readHitThroughputUnit')
+            outfile.write(' readHitThroughputUnit=%s' % (quote_attrib(self.readHitThroughputUnit), ))
+        if self.readHitLatencyValue != "0" and 'readHitLatencyValue' not in already_processed:
+            already_processed.add('readHitLatencyValue')
+            outfile.write(' readHitLatencyValue=%s' % (quote_attrib(self.readHitLatencyValue), ))
+        if self.readHitLatencyUnit != "cycles" and 'readHitLatencyUnit' not in already_processed:
+            already_processed.add('readHitLatencyUnit')
+            outfile.write(' readHitLatencyUnit=%s' % (quote_attrib(self.readHitLatencyUnit), ))
+        if self.writeHitThroughputValue is not None and 'writeHitThroughputValue' not in already_processed:
+            already_processed.add('writeHitThroughputValue')
+            outfile.write(' writeHitThroughputValue=%s' % (quote_attrib(self.writeHitThroughputValue), ))
+        if self.writeHitThroughputUnit != "bit/cycle" and 'writeHitThroughputUnit' not in already_processed:
+            already_processed.add('writeHitThroughputUnit')
+            outfile.write(' writeHitThroughputUnit=%s' % (quote_attrib(self.writeHitThroughputUnit), ))
+        if self.writeHitLatencyValue != "0" and 'writeHitLatencyValue' not in already_processed:
+            already_processed.add('writeHitLatencyValue')
+            outfile.write(' writeHitLatencyValue=%s' % (quote_attrib(self.writeHitLatencyValue), ))
+        if self.writeHitLatencyUnit != "cycles" and 'writeHitLatencyUnit' not in already_processed:
+            already_processed.add('writeHitLatencyUnit')
+            outfile.write(' writeHitLatencyUnit=%s' % (quote_attrib(self.writeHitLatencyUnit), ))
+        if self.readMissThroughputValue is not None and 'readMissThroughputValue' not in already_processed:
+            already_processed.add('readMissThroughputValue')
+            outfile.write(' readMissThroughputValue=%s' % (quote_attrib(self.readMissThroughputValue), ))
+        if self.readMissThroughputUnit != "bit/cycle" and 'readMissThroughputUnit' not in already_processed:
+            already_processed.add('readMissThroughputUnit')
+            outfile.write(' readMissThroughputUnit=%s' % (quote_attrib(self.readMissThroughputUnit), ))
+        if self.readMissLatencyValue != "0" and 'readMissLatencyValue' not in already_processed:
+            already_processed.add('readMissLatencyValue')
+            outfile.write(' readMissLatencyValue=%s' % (quote_attrib(self.readMissLatencyValue), ))
+        if self.readMissLatencyUnit != "cycles" and 'readMissLatencyUnit' not in already_processed:
+            already_processed.add('readMissLatencyUnit')
+            outfile.write(' readMissLatencyUnit=%s' % (quote_attrib(self.readMissLatencyUnit), ))
+        if self.writeMissThroughputValue is not None and 'writeMissThroughputValue' not in already_processed:
+            already_processed.add('writeMissThroughputValue')
+            outfile.write(' writeMissThroughputValue=%s' % (quote_attrib(self.writeMissThroughputValue), ))
+        if self.writeMissThroughputUnit != "bit/cycle" and 'writeMissThroughputUnit' not in already_processed:
+            already_processed.add('writeMissThroughputUnit')
+            outfile.write(' writeMissThroughputUnit=%s' % (quote_attrib(self.writeMissThroughputUnit), ))
+        if self.writeMissLatencyValue != "0" and 'writeMissLatencyValue' not in already_processed:
+            already_processed.add('writeMissLatencyValue')
+            outfile.write(' writeMissLatencyValue=%s' % (quote_attrib(self.writeMissLatencyValue), ))
+        if self.writeMissLatencyUnit != "cycles" and 'writeMissLatencyUnit' not in already_processed:
+            already_processed.add('writeMissLatencyUnit')
+            outfile.write(' writeMissLatencyUnit=%s' % (quote_attrib(self.writeMissLatencyUnit), ))
+        if self.frequencyDomain is not None and 'frequencyDomain' not in already_processed:
+            already_processed.add('frequencyDomain')
+            outfile.write(' frequencyDomain=%s' % (quote_attrib(self.frequencyDomain), ))
+        if self.voltageDomain is not None and 'voltageDomain' not in already_processed:
+            already_processed.add('voltageDomain')
+            outfile.write(' voltageDomain=%s' % (quote_attrib(self.voltageDomain), ))
+        if self.cachePowerModel is not None and 'cachePowerModel' not in already_processed:
+            already_processed.add('cachePowerModel')
+            outfile.write(' cachePowerModel=%s' % (quote_attrib(self.cachePowerModel), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='CacheType', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
@@ -4489,70 +4649,36 @@ class CacheType(GeneratedsSuper):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
-        value = find_attr_value_('sizeValue', node)
-        if value is not None and 'sizeValue' not in already_processed:
-            already_processed.add('sizeValue')
-            self.sizeValue = value
-            self.validate_SizeValueType(self.sizeValue)    # validate type SizeValueType
-        value = find_attr_value_('frequencyDomain', node)
-        if value is not None and 'frequencyDomain' not in already_processed:
-            already_processed.add('frequencyDomain')
-            self.frequencyDomain = value
-            self.validate_RefType(self.frequencyDomain)    # validate type RefType
-        value = find_attr_value_('readMissThroughputUnit', node)
-        if value is not None and 'readMissThroughputUnit' not in already_processed:
-            already_processed.add('readMissThroughputUnit')
-            self.readMissThroughputUnit = value
-            self.validate_ThroughputUnitType(self.readMissThroughputUnit)    # validate type ThroughputUnitType
-        value = find_attr_value_('sizeUnit', node)
-        if value is not None and 'sizeUnit' not in already_processed:
-            already_processed.add('sizeUnit')
-            self.sizeUnit = value
-            self.validate_SizeUnitType(self.sizeUnit)    # validate type SizeUnitType
-        value = find_attr_value_('writeHitThroughputUnit', node)
-        if value is not None and 'writeHitThroughputUnit' not in already_processed:
-            already_processed.add('writeHitThroughputUnit')
-            self.writeHitThroughputUnit = value
-            self.validate_ThroughputUnitType(self.writeHitThroughputUnit)    # validate type ThroughputUnitType
-        value = find_attr_value_('cachePowerModel', node)
-        if value is not None and 'cachePowerModel' not in already_processed:
-            already_processed.add('cachePowerModel')
-            self.cachePowerModel = value
-            self.validate_RefType(self.cachePowerModel)    # validate type RefType
-        value = find_attr_value_('writeMissThroughputValue', node)
-        if value is not None and 'writeMissThroughputValue' not in already_processed:
-            already_processed.add('writeMissThroughputValue')
-            self.writeMissThroughputValue = value
-            self.validate_ThroughputValueType(self.writeMissThroughputValue)    # validate type ThroughputValueType
         value = find_attr_value_('id', node)
         if value is not None and 'id' not in already_processed:
             already_processed.add('id')
             self.id = value
             self.validate_IdType(self.id)    # validate type IdType
-        value = find_attr_value_('writeHitLatencyUnit', node)
-        if value is not None and 'writeHitLatencyUnit' not in already_processed:
-            already_processed.add('writeHitLatencyUnit')
-            self.writeHitLatencyUnit = value
-            self.validate_CyclesUnitType(self.writeHitLatencyUnit)    # validate type CyclesUnitType
-        value = find_attr_value_('prefetchDistance', node)
-        if value is not None and 'prefetchDistance' not in already_processed:
-            already_processed.add('prefetchDistance')
-            try:
-                self.prefetchDistance = int(value)
-            except ValueError as exp:
-                raise_parse_error(node, 'Bad integer attribute: %s' % exp)
-            if self.prefetchDistance <= 0:
-                raise_parse_error(node, 'Invalid PositiveInteger')
-        value = find_attr_value_('writeBack', node)
-        if value is not None and 'writeBack' not in already_processed:
-            already_processed.add('writeBack')
-            self.writeBack = value
-            self.validate_WriteBackType(self.writeBack)    # validate type WriteBackType
-        value = find_attr_value_('writeMissLatencyUnit', node)
-        if value is not None and 'writeMissLatencyUnit' not in already_processed:
-            already_processed.add('writeMissLatencyUnit')
-            self.writeMissLatencyUnit = value
-            self.validate_CyclesUnitType(self.writeMissLatencyUnit)    # validate type CyclesUnitType
+        value = find_attr_value_('coherency', node)
+        if value is not None and 'coherency' not in already_processed:
+            already_processed.add('coherency')
+            self.coherency = value
+            self.validate_CoherencyType(self.coherency)    # validate type CoherencyType
+        value = find_attr_value_('sizeValue', node)
+        if value is not None and 'sizeValue' not in already_processed:
+            already_processed.add('sizeValue')
+            self.sizeValue = value
+            self.validate_SizeValueType(self.sizeValue)    # validate type SizeValueType
+        value = find_attr_value_('sizeUnit', node)
+        if value is not None and 'sizeUnit' not in already_processed:
+            already_processed.add('sizeUnit')
+            self.sizeUnit = value
+            self.validate_SizeUnitType(self.sizeUnit)    # validate type SizeUnitType
+        value = find_attr_value_('lineSizeValue', node)
+        if value is not None and 'lineSizeValue' not in already_processed:
+            already_processed.add('lineSizeValue')
+            self.lineSizeValue = value
+            self.validate_SizeValueType(self.lineSizeValue)    # validate type SizeValueType
+        value = find_attr_value_('lineSizeUnit', node)
+        if value is not None and 'lineSizeUnit' not in already_processed:
+            already_processed.add('lineSizeUnit')
+            self.lineSizeUnit = value
+            self.validate_SizeUnitType(self.lineSizeUnit)    # validate type SizeUnitType
         value = find_attr_value_('ways', node)
         if value is not None and 'ways' not in already_processed:
             already_processed.add('ways')
@@ -4563,96 +4689,130 @@ class CacheType(GeneratedsSuper):
             if self.ways <= 0:
                 raise_parse_error(node, 'Invalid PositiveInteger')
             self.validate_PositiveIntType(self.ways)    # validate type PositiveIntType
-        value = find_attr_value_('readHitLatencyUnit', node)
-        if value is not None and 'readHitLatencyUnit' not in already_processed:
-            already_processed.add('readHitLatencyUnit')
-            self.readHitLatencyUnit = value
-            self.validate_CyclesUnitType(self.readHitLatencyUnit)    # validate type CyclesUnitType
-        value = find_attr_value_('voltageDomain', node)
-        if value is not None and 'voltageDomain' not in already_processed:
-            already_processed.add('voltageDomain')
-            self.voltageDomain = value
-            self.validate_RefType(self.voltageDomain)    # validate type RefType
-        value = find_attr_value_('lineSizeUnit', node)
-        if value is not None and 'lineSizeUnit' not in already_processed:
-            already_processed.add('lineSizeUnit')
-            self.lineSizeUnit = value
-            self.validate_SizeUnitType(self.lineSizeUnit)    # validate type SizeUnitType
-        value = find_attr_value_('writeHitLatencyValue', node)
-        if value is not None and 'writeHitLatencyValue' not in already_processed:
-            already_processed.add('writeHitLatencyValue')
-            self.writeHitLatencyValue = value
-            self.validate_CyclesValueType(self.writeHitLatencyValue)    # validate type CyclesValueType
-        value = find_attr_value_('writeMissLatencyValue', node)
-        if value is not None and 'writeMissLatencyValue' not in already_processed:
-            already_processed.add('writeMissLatencyValue')
-            self.writeMissLatencyValue = value
-            self.validate_CyclesValueType(self.writeMissLatencyValue)    # validate type CyclesValueType
-        value = find_attr_value_('readMissLatencyValue', node)
-        if value is not None and 'readMissLatencyValue' not in already_processed:
-            already_processed.add('readMissLatencyValue')
-            self.readMissLatencyValue = value
-            self.validate_CyclesValueType(self.readMissLatencyValue)    # validate type CyclesValueType
-        value = find_attr_value_('lineSizeValue', node)
-        if value is not None and 'lineSizeValue' not in already_processed:
-            already_processed.add('lineSizeValue')
-            self.lineSizeValue = value
-            self.validate_SizeValueType(self.lineSizeValue)    # validate type SizeValueType
-        value = find_attr_value_('readHitLatencyValue', node)
-        if value is not None and 'readHitLatencyValue' not in already_processed:
-            already_processed.add('readHitLatencyValue')
-            self.readHitLatencyValue = value
-            self.validate_CyclesValueType(self.readHitLatencyValue)    # validate type CyclesValueType
-        value = find_attr_value_('writeHitThroughputValue', node)
-        if value is not None and 'writeHitThroughputValue' not in already_processed:
-            already_processed.add('writeHitThroughputValue')
-            self.writeHitThroughputValue = value
-            self.validate_ThroughputValueType(self.writeHitThroughputValue)    # validate type ThroughputValueType
-        value = find_attr_value_('coherency', node)
-        if value is not None and 'coherency' not in already_processed:
-            already_processed.add('coherency')
-            self.coherency = value
-            self.validate_CoherencyType(self.coherency)    # validate type CoherencyType
-        value = find_attr_value_('readMissLatencyUnit', node)
-        if value is not None and 'readMissLatencyUnit' not in already_processed:
-            already_processed.add('readMissLatencyUnit')
-            self.readMissLatencyUnit = value
-            self.validate_CyclesUnitType(self.readMissLatencyUnit)    # validate type CyclesUnitType
-        value = find_attr_value_('writeMissThroughputUnit', node)
-        if value is not None and 'writeMissThroughputUnit' not in already_processed:
-            already_processed.add('writeMissThroughputUnit')
-            self.writeMissThroughputUnit = value
-            self.validate_ThroughputUnitType(self.writeMissThroughputUnit)    # validate type ThroughputUnitType
-        value = find_attr_value_('readHitThroughputValue', node)
-        if value is not None and 'readHitThroughputValue' not in already_processed:
-            already_processed.add('readHitThroughputValue')
-            self.readHitThroughputValue = value
-            self.validate_ThroughputValueType(self.readHitThroughputValue)    # validate type ThroughputValueType
-        value = find_attr_value_('readMissThroughputValue', node)
-        if value is not None and 'readMissThroughputValue' not in already_processed:
-            already_processed.add('readMissThroughputValue')
-            self.readMissThroughputValue = value
-            self.validate_ThroughputValueType(self.readMissThroughputValue)    # validate type ThroughputValueType
-        value = find_attr_value_('prefetch', node)
-        if value is not None and 'prefetch' not in already_processed:
-            already_processed.add('prefetch')
-            self.prefetch = value
-            self.validate_PrefetchType(self.prefetch)    # validate type PrefetchType
-        value = find_attr_value_('readHitThroughputUnit', node)
-        if value is not None and 'readHitThroughputUnit' not in already_processed:
-            already_processed.add('readHitThroughputUnit')
-            self.readHitThroughputUnit = value
-            self.validate_ThroughputUnitType(self.readHitThroughputUnit)    # validate type ThroughputUnitType
-        value = find_attr_value_('writeAllocate', node)
-        if value is not None and 'writeAllocate' not in already_processed:
-            already_processed.add('writeAllocate')
-            self.writeAllocate = value
-            self.validate_WriteAllocateType(self.writeAllocate)    # validate type WriteAllocateType
         value = find_attr_value_('replacement', node)
         if value is not None and 'replacement' not in already_processed:
             already_processed.add('replacement')
             self.replacement = value
             self.validate_ReplacementType(self.replacement)    # validate type ReplacementType
+        value = find_attr_value_('prefetch', node)
+        if value is not None and 'prefetch' not in already_processed:
+            already_processed.add('prefetch')
+            self.prefetch = value
+            self.validate_PrefetchType(self.prefetch)    # validate type PrefetchType
+        value = find_attr_value_('prefetchDistance', node)
+        if value is not None and 'prefetchDistance' not in already_processed:
+            already_processed.add('prefetchDistance')
+            try:
+                self.prefetchDistance = int(value)
+            except ValueError as exp:
+                raise_parse_error(node, 'Bad integer attribute: %s' % exp)
+            if self.prefetchDistance <= 0:
+                raise_parse_error(node, 'Invalid PositiveInteger')
+        value = find_attr_value_('writeAllocate', node)
+        if value is not None and 'writeAllocate' not in already_processed:
+            already_processed.add('writeAllocate')
+            self.writeAllocate = value
+            self.validate_WriteAllocateType(self.writeAllocate)    # validate type WriteAllocateType
+        value = find_attr_value_('writeBack', node)
+        if value is not None and 'writeBack' not in already_processed:
+            already_processed.add('writeBack')
+            self.writeBack = value
+            self.validate_WriteBackType(self.writeBack)    # validate type WriteBackType
+        value = find_attr_value_('readHitThroughputValue', node)
+        if value is not None and 'readHitThroughputValue' not in already_processed:
+            already_processed.add('readHitThroughputValue')
+            self.readHitThroughputValue = value
+            self.validate_ThroughputValueType(self.readHitThroughputValue)    # validate type ThroughputValueType
+        value = find_attr_value_('readHitThroughputUnit', node)
+        if value is not None and 'readHitThroughputUnit' not in already_processed:
+            already_processed.add('readHitThroughputUnit')
+            self.readHitThroughputUnit = value
+            self.validate_ThroughputUnitType(self.readHitThroughputUnit)    # validate type ThroughputUnitType
+        value = find_attr_value_('readHitLatencyValue', node)
+        if value is not None and 'readHitLatencyValue' not in already_processed:
+            already_processed.add('readHitLatencyValue')
+            self.readHitLatencyValue = value
+            self.validate_CyclesValueType(self.readHitLatencyValue)    # validate type CyclesValueType
+        value = find_attr_value_('readHitLatencyUnit', node)
+        if value is not None and 'readHitLatencyUnit' not in already_processed:
+            already_processed.add('readHitLatencyUnit')
+            self.readHitLatencyUnit = value
+            self.validate_CyclesUnitType(self.readHitLatencyUnit)    # validate type CyclesUnitType
+        value = find_attr_value_('writeHitThroughputValue', node)
+        if value is not None and 'writeHitThroughputValue' not in already_processed:
+            already_processed.add('writeHitThroughputValue')
+            self.writeHitThroughputValue = value
+            self.validate_ThroughputValueType(self.writeHitThroughputValue)    # validate type ThroughputValueType
+        value = find_attr_value_('writeHitThroughputUnit', node)
+        if value is not None and 'writeHitThroughputUnit' not in already_processed:
+            already_processed.add('writeHitThroughputUnit')
+            self.writeHitThroughputUnit = value
+            self.validate_ThroughputUnitType(self.writeHitThroughputUnit)    # validate type ThroughputUnitType
+        value = find_attr_value_('writeHitLatencyValue', node)
+        if value is not None and 'writeHitLatencyValue' not in already_processed:
+            already_processed.add('writeHitLatencyValue')
+            self.writeHitLatencyValue = value
+            self.validate_CyclesValueType(self.writeHitLatencyValue)    # validate type CyclesValueType
+        value = find_attr_value_('writeHitLatencyUnit', node)
+        if value is not None and 'writeHitLatencyUnit' not in already_processed:
+            already_processed.add('writeHitLatencyUnit')
+            self.writeHitLatencyUnit = value
+            self.validate_CyclesUnitType(self.writeHitLatencyUnit)    # validate type CyclesUnitType
+        value = find_attr_value_('readMissThroughputValue', node)
+        if value is not None and 'readMissThroughputValue' not in already_processed:
+            already_processed.add('readMissThroughputValue')
+            self.readMissThroughputValue = value
+            self.validate_ThroughputValueType(self.readMissThroughputValue)    # validate type ThroughputValueType
+        value = find_attr_value_('readMissThroughputUnit', node)
+        if value is not None and 'readMissThroughputUnit' not in already_processed:
+            already_processed.add('readMissThroughputUnit')
+            self.readMissThroughputUnit = value
+            self.validate_ThroughputUnitType(self.readMissThroughputUnit)    # validate type ThroughputUnitType
+        value = find_attr_value_('readMissLatencyValue', node)
+        if value is not None and 'readMissLatencyValue' not in already_processed:
+            already_processed.add('readMissLatencyValue')
+            self.readMissLatencyValue = value
+            self.validate_CyclesValueType(self.readMissLatencyValue)    # validate type CyclesValueType
+        value = find_attr_value_('readMissLatencyUnit', node)
+        if value is not None and 'readMissLatencyUnit' not in already_processed:
+            already_processed.add('readMissLatencyUnit')
+            self.readMissLatencyUnit = value
+            self.validate_CyclesUnitType(self.readMissLatencyUnit)    # validate type CyclesUnitType
+        value = find_attr_value_('writeMissThroughputValue', node)
+        if value is not None and 'writeMissThroughputValue' not in already_processed:
+            already_processed.add('writeMissThroughputValue')
+            self.writeMissThroughputValue = value
+            self.validate_ThroughputValueType(self.writeMissThroughputValue)    # validate type ThroughputValueType
+        value = find_attr_value_('writeMissThroughputUnit', node)
+        if value is not None and 'writeMissThroughputUnit' not in already_processed:
+            already_processed.add('writeMissThroughputUnit')
+            self.writeMissThroughputUnit = value
+            self.validate_ThroughputUnitType(self.writeMissThroughputUnit)    # validate type ThroughputUnitType
+        value = find_attr_value_('writeMissLatencyValue', node)
+        if value is not None and 'writeMissLatencyValue' not in already_processed:
+            already_processed.add('writeMissLatencyValue')
+            self.writeMissLatencyValue = value
+            self.validate_CyclesValueType(self.writeMissLatencyValue)    # validate type CyclesValueType
+        value = find_attr_value_('writeMissLatencyUnit', node)
+        if value is not None and 'writeMissLatencyUnit' not in already_processed:
+            already_processed.add('writeMissLatencyUnit')
+            self.writeMissLatencyUnit = value
+            self.validate_CyclesUnitType(self.writeMissLatencyUnit)    # validate type CyclesUnitType
+        value = find_attr_value_('frequencyDomain', node)
+        if value is not None and 'frequencyDomain' not in already_processed:
+            already_processed.add('frequencyDomain')
+            self.frequencyDomain = value
+            self.validate_RefType(self.frequencyDomain)    # validate type RefType
+        value = find_attr_value_('voltageDomain', node)
+        if value is not None and 'voltageDomain' not in already_processed:
+            already_processed.add('voltageDomain')
+            self.voltageDomain = value
+            self.validate_RefType(self.voltageDomain)    # validate type RefType
+        value = find_attr_value_('cachePowerModel', node)
+        if value is not None and 'cachePowerModel' not in already_processed:
+            already_processed.add('cachePowerModel')
+            self.cachePowerModel = value
+            self.validate_RefType(self.cachePowerModel)    # validate type RefType
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         if nodeName_ == 'ParentCacheRef':
             class_obj_ = self.get_class_obj_(child_, CacheRefType)
@@ -4677,6 +4837,11 @@ class CacheRefType(GeneratedsSuper):
         self.cache = _cast(None, cache)
         self.extensiontype_ = extensiontype_
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, CacheRefType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if CacheRefType.subclass:
             return CacheRefType.subclass(*args_, **kwargs_)
         else:
@@ -4757,6 +4922,11 @@ class CacheAccessType(CacheRefType):
         super(CacheAccessType, self).__init__(cache, )
         self.access = _cast(None, access)
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, CacheAccessType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if CacheAccessType.subclass:
             return CacheAccessType.subclass(*args_, **kwargs_)
         else:
@@ -4831,24 +5001,36 @@ class CacheAccessType(CacheRefType):
 class FifoPowerStateType(VoltageFrequencyConditionListType):
     subclass = None
     superclass = VoltageFrequencyConditionListType
-    def __init__(self, VoltageCondition=None, FrequencyCondition=None, FrequencyVoltageCondition=None, powerValue=None, powerUnit='pW', name=None):
+    def __init__(self, VoltageCondition=None, FrequencyCondition=None, FrequencyVoltageCondition=None, name=None, powerValue=None, powerUnit='pW'):
         self.original_tagname_ = None
         super(FifoPowerStateType, self).__init__(VoltageCondition, FrequencyCondition, FrequencyVoltageCondition, )
+        self.name = _cast(None, name)
         self.powerValue = _cast(None, powerValue)
         self.powerUnit = _cast(None, powerUnit)
-        self.name = _cast(None, name)
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, FifoPowerStateType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if FifoPowerStateType.subclass:
             return FifoPowerStateType.subclass(*args_, **kwargs_)
         else:
             return FifoPowerStateType(*args_, **kwargs_)
     factory = staticmethod(factory)
+    def get_name(self): return self.name
+    def set_name(self, name): self.name = name
     def get_powerValue(self): return self.powerValue
     def set_powerValue(self, powerValue): self.powerValue = powerValue
     def get_powerUnit(self): return self.powerUnit
     def set_powerUnit(self, powerUnit): self.powerUnit = powerUnit
-    def get_name(self): return self.name
-    def set_name(self, name): self.name = name
+    def validate_NameType(self, value):
+        # Validate type NameType, a restriction on xs:string.
+        if value is not None and Validate_simpletypes_:
+            if not self.gds_validate_simple_patterns(
+                    self.validate_NameType_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_NameType_patterns_, ))
+    validate_NameType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def validate_PowerValueType(self, value):
         # Validate type PowerValueType, a restriction on NonNegativeFloatType.
         if value is not None and Validate_simpletypes_:
@@ -4866,13 +5048,6 @@ class FifoPowerStateType(VoltageFrequencyConditionListType):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on PowerUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_NameType(self, value):
-        # Validate type NameType, a restriction on xs:string.
-        if value is not None and Validate_simpletypes_:
-            if not self.gds_validate_simple_patterns(
-                    self.validate_NameType_patterns_, value):
-                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_NameType_patterns_, ))
-    validate_NameType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def hasContent_(self):
         if (
             super(FifoPowerStateType, self).hasContent_()
@@ -4900,15 +5075,15 @@ class FifoPowerStateType(VoltageFrequencyConditionListType):
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='FifoPowerStateType'):
         super(FifoPowerStateType, self).exportAttributes(outfile, level, already_processed, namespace_, name_='FifoPowerStateType')
-        if self.powerValue is not None and 'powerValue' not in already_processed:
-            already_processed.add('powerValue')
-            outfile.write(' powerValue=%s' % (quote_attrib(self.powerValue), ))
-        if self.powerUnit != pW and 'powerUnit' not in already_processed:
-            already_processed.add('powerUnit')
-            outfile.write(' powerUnit=%s' % (quote_attrib(self.powerUnit), ))
         if self.name is not None and 'name' not in already_processed:
             already_processed.add('name')
             outfile.write(' name=%s' % (quote_attrib(self.name), ))
+        if self.powerValue is not None and 'powerValue' not in already_processed:
+            already_processed.add('powerValue')
+            outfile.write(' powerValue=%s' % (quote_attrib(self.powerValue), ))
+        if self.powerUnit != "pW" and 'powerUnit' not in already_processed:
+            already_processed.add('powerUnit')
+            outfile.write(' powerUnit=%s' % (quote_attrib(self.powerUnit), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='FifoPowerStateType', fromsubclass_=False, pretty_print=True):
         super(FifoPowerStateType, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
     def build(self, node):
@@ -4919,6 +5094,11 @@ class FifoPowerStateType(VoltageFrequencyConditionListType):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
+        value = find_attr_value_('name', node)
+        if value is not None and 'name' not in already_processed:
+            already_processed.add('name')
+            self.name = value
+            self.validate_NameType(self.name)    # validate type NameType
         value = find_attr_value_('powerValue', node)
         if value is not None and 'powerValue' not in already_processed:
             already_processed.add('powerValue')
@@ -4929,11 +5109,6 @@ class FifoPowerStateType(VoltageFrequencyConditionListType):
             already_processed.add('powerUnit')
             self.powerUnit = value
             self.validate_PowerUnitType(self.powerUnit)    # validate type PowerUnitType
-        value = find_attr_value_('name', node)
-        if value is not None and 'name' not in already_processed:
-            already_processed.add('name')
-            self.name = value
-            self.validate_NameType(self.name)    # validate type NameType
         super(FifoPowerStateType, self).buildAttributes(node, attrs, already_processed)
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         super(FifoPowerStateType, self).buildChildren(child_, node, nodeName_, True)
@@ -4944,26 +5119,31 @@ class FifoPowerStateType(VoltageFrequencyConditionListType):
 class FifoPowerModelType(GeneratedsSuper):
     subclass = None
     superclass = None
-    def __init__(self, cellSwitchedCapacitanceValue='0', leakageCurrentUnit='pA', switchedCapacitanceValue='0', leakageCurrentValue='0', switchedCapacitanceUnit='pF', readCapacitanceValue='0', cellSwitchedCapacitanceUnit='pF', writeCapacitanceUnit='pF', cellLeakageCurrentValue='0', writeCapacitanceValue='0', readCapacitanceUnit='pF', id=None, cellLeakageCurrentUnit='pA', FifoPowerState=None):
+    def __init__(self, id=None, leakageCurrentValue='0', leakageCurrentUnit='pA', cellLeakageCurrentValue='0', cellLeakageCurrentUnit='pA', switchedCapacitanceValue='0', switchedCapacitanceUnit='pF', cellSwitchedCapacitanceValue='0', cellSwitchedCapacitanceUnit='pF', readCapacitanceValue='0', readCapacitanceUnit='pF', writeCapacitanceValue='0', writeCapacitanceUnit='pF', FifoPowerState=None):
         self.original_tagname_ = None
-        self.cellSwitchedCapacitanceValue = _cast(None, cellSwitchedCapacitanceValue)
-        self.leakageCurrentUnit = _cast(None, leakageCurrentUnit)
-        self.switchedCapacitanceValue = _cast(None, switchedCapacitanceValue)
-        self.leakageCurrentValue = _cast(None, leakageCurrentValue)
-        self.switchedCapacitanceUnit = _cast(None, switchedCapacitanceUnit)
-        self.readCapacitanceValue = _cast(None, readCapacitanceValue)
-        self.cellSwitchedCapacitanceUnit = _cast(None, cellSwitchedCapacitanceUnit)
-        self.writeCapacitanceUnit = _cast(None, writeCapacitanceUnit)
-        self.cellLeakageCurrentValue = _cast(None, cellLeakageCurrentValue)
-        self.writeCapacitanceValue = _cast(None, writeCapacitanceValue)
-        self.readCapacitanceUnit = _cast(None, readCapacitanceUnit)
         self.id = _cast(None, id)
+        self.leakageCurrentValue = _cast(None, leakageCurrentValue)
+        self.leakageCurrentUnit = _cast(None, leakageCurrentUnit)
+        self.cellLeakageCurrentValue = _cast(None, cellLeakageCurrentValue)
         self.cellLeakageCurrentUnit = _cast(None, cellLeakageCurrentUnit)
+        self.switchedCapacitanceValue = _cast(None, switchedCapacitanceValue)
+        self.switchedCapacitanceUnit = _cast(None, switchedCapacitanceUnit)
+        self.cellSwitchedCapacitanceValue = _cast(None, cellSwitchedCapacitanceValue)
+        self.cellSwitchedCapacitanceUnit = _cast(None, cellSwitchedCapacitanceUnit)
+        self.readCapacitanceValue = _cast(None, readCapacitanceValue)
+        self.readCapacitanceUnit = _cast(None, readCapacitanceUnit)
+        self.writeCapacitanceValue = _cast(None, writeCapacitanceValue)
+        self.writeCapacitanceUnit = _cast(None, writeCapacitanceUnit)
         if FifoPowerState is None:
             self.FifoPowerState = []
         else:
             self.FifoPowerState = FifoPowerState
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, FifoPowerModelType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if FifoPowerModelType.subclass:
             return FifoPowerModelType.subclass(*args_, **kwargs_)
         else:
@@ -4974,37 +5154,44 @@ class FifoPowerModelType(GeneratedsSuper):
     def add_FifoPowerState(self, value): self.FifoPowerState.append(value)
     def insert_FifoPowerState_at(self, index, value): self.FifoPowerState.insert(index, value)
     def replace_FifoPowerState_at(self, index, value): self.FifoPowerState[index] = value
-    def get_cellSwitchedCapacitanceValue(self): return self.cellSwitchedCapacitanceValue
-    def set_cellSwitchedCapacitanceValue(self, cellSwitchedCapacitanceValue): self.cellSwitchedCapacitanceValue = cellSwitchedCapacitanceValue
-    def get_leakageCurrentUnit(self): return self.leakageCurrentUnit
-    def set_leakageCurrentUnit(self, leakageCurrentUnit): self.leakageCurrentUnit = leakageCurrentUnit
-    def get_switchedCapacitanceValue(self): return self.switchedCapacitanceValue
-    def set_switchedCapacitanceValue(self, switchedCapacitanceValue): self.switchedCapacitanceValue = switchedCapacitanceValue
-    def get_leakageCurrentValue(self): return self.leakageCurrentValue
-    def set_leakageCurrentValue(self, leakageCurrentValue): self.leakageCurrentValue = leakageCurrentValue
-    def get_switchedCapacitanceUnit(self): return self.switchedCapacitanceUnit
-    def set_switchedCapacitanceUnit(self, switchedCapacitanceUnit): self.switchedCapacitanceUnit = switchedCapacitanceUnit
-    def get_readCapacitanceValue(self): return self.readCapacitanceValue
-    def set_readCapacitanceValue(self, readCapacitanceValue): self.readCapacitanceValue = readCapacitanceValue
-    def get_cellSwitchedCapacitanceUnit(self): return self.cellSwitchedCapacitanceUnit
-    def set_cellSwitchedCapacitanceUnit(self, cellSwitchedCapacitanceUnit): self.cellSwitchedCapacitanceUnit = cellSwitchedCapacitanceUnit
-    def get_writeCapacitanceUnit(self): return self.writeCapacitanceUnit
-    def set_writeCapacitanceUnit(self, writeCapacitanceUnit): self.writeCapacitanceUnit = writeCapacitanceUnit
-    def get_cellLeakageCurrentValue(self): return self.cellLeakageCurrentValue
-    def set_cellLeakageCurrentValue(self, cellLeakageCurrentValue): self.cellLeakageCurrentValue = cellLeakageCurrentValue
-    def get_writeCapacitanceValue(self): return self.writeCapacitanceValue
-    def set_writeCapacitanceValue(self, writeCapacitanceValue): self.writeCapacitanceValue = writeCapacitanceValue
-    def get_readCapacitanceUnit(self): return self.readCapacitanceUnit
-    def set_readCapacitanceUnit(self, readCapacitanceUnit): self.readCapacitanceUnit = readCapacitanceUnit
     def get_id(self): return self.id
     def set_id(self, id): self.id = id
+    def get_leakageCurrentValue(self): return self.leakageCurrentValue
+    def set_leakageCurrentValue(self, leakageCurrentValue): self.leakageCurrentValue = leakageCurrentValue
+    def get_leakageCurrentUnit(self): return self.leakageCurrentUnit
+    def set_leakageCurrentUnit(self, leakageCurrentUnit): self.leakageCurrentUnit = leakageCurrentUnit
+    def get_cellLeakageCurrentValue(self): return self.cellLeakageCurrentValue
+    def set_cellLeakageCurrentValue(self, cellLeakageCurrentValue): self.cellLeakageCurrentValue = cellLeakageCurrentValue
     def get_cellLeakageCurrentUnit(self): return self.cellLeakageCurrentUnit
     def set_cellLeakageCurrentUnit(self, cellLeakageCurrentUnit): self.cellLeakageCurrentUnit = cellLeakageCurrentUnit
-    def validate_CapacitanceValueType(self, value):
-        # Validate type CapacitanceValueType, a restriction on NonNegativeFloatType.
+    def get_switchedCapacitanceValue(self): return self.switchedCapacitanceValue
+    def set_switchedCapacitanceValue(self, switchedCapacitanceValue): self.switchedCapacitanceValue = switchedCapacitanceValue
+    def get_switchedCapacitanceUnit(self): return self.switchedCapacitanceUnit
+    def set_switchedCapacitanceUnit(self, switchedCapacitanceUnit): self.switchedCapacitanceUnit = switchedCapacitanceUnit
+    def get_cellSwitchedCapacitanceValue(self): return self.cellSwitchedCapacitanceValue
+    def set_cellSwitchedCapacitanceValue(self, cellSwitchedCapacitanceValue): self.cellSwitchedCapacitanceValue = cellSwitchedCapacitanceValue
+    def get_cellSwitchedCapacitanceUnit(self): return self.cellSwitchedCapacitanceUnit
+    def set_cellSwitchedCapacitanceUnit(self, cellSwitchedCapacitanceUnit): self.cellSwitchedCapacitanceUnit = cellSwitchedCapacitanceUnit
+    def get_readCapacitanceValue(self): return self.readCapacitanceValue
+    def set_readCapacitanceValue(self, readCapacitanceValue): self.readCapacitanceValue = readCapacitanceValue
+    def get_readCapacitanceUnit(self): return self.readCapacitanceUnit
+    def set_readCapacitanceUnit(self, readCapacitanceUnit): self.readCapacitanceUnit = readCapacitanceUnit
+    def get_writeCapacitanceValue(self): return self.writeCapacitanceValue
+    def set_writeCapacitanceValue(self, writeCapacitanceValue): self.writeCapacitanceValue = writeCapacitanceValue
+    def get_writeCapacitanceUnit(self): return self.writeCapacitanceUnit
+    def set_writeCapacitanceUnit(self, writeCapacitanceUnit): self.writeCapacitanceUnit = writeCapacitanceUnit
+    def validate_IdType(self, value):
+        # Validate type IdType, a restriction on xs:ID.
+        if value is not None and Validate_simpletypes_:
+            if not self.gds_validate_simple_patterns(
+                    self.validate_IdType_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_IdType_patterns_, ))
+    validate_IdType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
+    def validate_CurrentValueType(self, value):
+        # Validate type CurrentValueType, a restriction on NonNegativeFloatType.
         if value is not None and Validate_simpletypes_:
             if value < 0:
-                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on CapacitanceValueType' % {"value" : value} )
+                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on CurrentValueType' % {"value" : value} )
     def validate_CurrentUnitType(self, value):
         # Validate type CurrentUnitType, a restriction on xs:string.
         if value is not None and Validate_simpletypes_:
@@ -5017,11 +5204,11 @@ class FifoPowerModelType(GeneratedsSuper):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on CurrentUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_CurrentValueType(self, value):
-        # Validate type CurrentValueType, a restriction on NonNegativeFloatType.
+    def validate_CapacitanceValueType(self, value):
+        # Validate type CapacitanceValueType, a restriction on NonNegativeFloatType.
         if value is not None and Validate_simpletypes_:
             if value < 0:
-                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on CurrentValueType' % {"value" : value} )
+                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on CapacitanceValueType' % {"value" : value} )
     def validate_CapacitanceUnitType(self, value):
         # Validate type CapacitanceUnitType, a restriction on xs:string.
         if value is not None and Validate_simpletypes_:
@@ -5034,13 +5221,6 @@ class FifoPowerModelType(GeneratedsSuper):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on CapacitanceUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_IdType(self, value):
-        # Validate type IdType, a restriction on xs:ID.
-        if value is not None and Validate_simpletypes_:
-            if not self.gds_validate_simple_patterns(
-                    self.validate_IdType_patterns_, value):
-                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_IdType_patterns_, ))
-    validate_IdType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def hasContent_(self):
         if (
             self.FifoPowerState
@@ -5067,45 +5247,45 @@ class FifoPowerModelType(GeneratedsSuper):
         else:
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='FifoPowerModelType'):
-        if self.cellSwitchedCapacitanceValue != 0 and 'cellSwitchedCapacitanceValue' not in already_processed:
-            already_processed.add('cellSwitchedCapacitanceValue')
-            outfile.write(' cellSwitchedCapacitanceValue=%s' % (quote_attrib(self.cellSwitchedCapacitanceValue), ))
-        if self.leakageCurrentUnit != pA and 'leakageCurrentUnit' not in already_processed:
-            already_processed.add('leakageCurrentUnit')
-            outfile.write(' leakageCurrentUnit=%s' % (quote_attrib(self.leakageCurrentUnit), ))
-        if self.switchedCapacitanceValue != 0 and 'switchedCapacitanceValue' not in already_processed:
-            already_processed.add('switchedCapacitanceValue')
-            outfile.write(' switchedCapacitanceValue=%s' % (quote_attrib(self.switchedCapacitanceValue), ))
-        if self.leakageCurrentValue != 0 and 'leakageCurrentValue' not in already_processed:
-            already_processed.add('leakageCurrentValue')
-            outfile.write(' leakageCurrentValue=%s' % (quote_attrib(self.leakageCurrentValue), ))
-        if self.switchedCapacitanceUnit != pF and 'switchedCapacitanceUnit' not in already_processed:
-            already_processed.add('switchedCapacitanceUnit')
-            outfile.write(' switchedCapacitanceUnit=%s' % (quote_attrib(self.switchedCapacitanceUnit), ))
-        if self.readCapacitanceValue != 0 and 'readCapacitanceValue' not in already_processed:
-            already_processed.add('readCapacitanceValue')
-            outfile.write(' readCapacitanceValue=%s' % (quote_attrib(self.readCapacitanceValue), ))
-        if self.cellSwitchedCapacitanceUnit != pF and 'cellSwitchedCapacitanceUnit' not in already_processed:
-            already_processed.add('cellSwitchedCapacitanceUnit')
-            outfile.write(' cellSwitchedCapacitanceUnit=%s' % (quote_attrib(self.cellSwitchedCapacitanceUnit), ))
-        if self.writeCapacitanceUnit != pF and 'writeCapacitanceUnit' not in already_processed:
-            already_processed.add('writeCapacitanceUnit')
-            outfile.write(' writeCapacitanceUnit=%s' % (quote_attrib(self.writeCapacitanceUnit), ))
-        if self.cellLeakageCurrentValue != 0 and 'cellLeakageCurrentValue' not in already_processed:
-            already_processed.add('cellLeakageCurrentValue')
-            outfile.write(' cellLeakageCurrentValue=%s' % (quote_attrib(self.cellLeakageCurrentValue), ))
-        if self.writeCapacitanceValue != 0 and 'writeCapacitanceValue' not in already_processed:
-            already_processed.add('writeCapacitanceValue')
-            outfile.write(' writeCapacitanceValue=%s' % (quote_attrib(self.writeCapacitanceValue), ))
-        if self.readCapacitanceUnit != pF and 'readCapacitanceUnit' not in already_processed:
-            already_processed.add('readCapacitanceUnit')
-            outfile.write(' readCapacitanceUnit=%s' % (quote_attrib(self.readCapacitanceUnit), ))
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
-        if self.cellLeakageCurrentUnit != pA and 'cellLeakageCurrentUnit' not in already_processed:
+        if self.leakageCurrentValue != "0" and 'leakageCurrentValue' not in already_processed:
+            already_processed.add('leakageCurrentValue')
+            outfile.write(' leakageCurrentValue=%s' % (quote_attrib(self.leakageCurrentValue), ))
+        if self.leakageCurrentUnit != "pA" and 'leakageCurrentUnit' not in already_processed:
+            already_processed.add('leakageCurrentUnit')
+            outfile.write(' leakageCurrentUnit=%s' % (quote_attrib(self.leakageCurrentUnit), ))
+        if self.cellLeakageCurrentValue != "0" and 'cellLeakageCurrentValue' not in already_processed:
+            already_processed.add('cellLeakageCurrentValue')
+            outfile.write(' cellLeakageCurrentValue=%s' % (quote_attrib(self.cellLeakageCurrentValue), ))
+        if self.cellLeakageCurrentUnit != "pA" and 'cellLeakageCurrentUnit' not in already_processed:
             already_processed.add('cellLeakageCurrentUnit')
             outfile.write(' cellLeakageCurrentUnit=%s' % (quote_attrib(self.cellLeakageCurrentUnit), ))
+        if self.switchedCapacitanceValue != "0" and 'switchedCapacitanceValue' not in already_processed:
+            already_processed.add('switchedCapacitanceValue')
+            outfile.write(' switchedCapacitanceValue=%s' % (quote_attrib(self.switchedCapacitanceValue), ))
+        if self.switchedCapacitanceUnit != "pF" and 'switchedCapacitanceUnit' not in already_processed:
+            already_processed.add('switchedCapacitanceUnit')
+            outfile.write(' switchedCapacitanceUnit=%s' % (quote_attrib(self.switchedCapacitanceUnit), ))
+        if self.cellSwitchedCapacitanceValue != "0" and 'cellSwitchedCapacitanceValue' not in already_processed:
+            already_processed.add('cellSwitchedCapacitanceValue')
+            outfile.write(' cellSwitchedCapacitanceValue=%s' % (quote_attrib(self.cellSwitchedCapacitanceValue), ))
+        if self.cellSwitchedCapacitanceUnit != "pF" and 'cellSwitchedCapacitanceUnit' not in already_processed:
+            already_processed.add('cellSwitchedCapacitanceUnit')
+            outfile.write(' cellSwitchedCapacitanceUnit=%s' % (quote_attrib(self.cellSwitchedCapacitanceUnit), ))
+        if self.readCapacitanceValue != "0" and 'readCapacitanceValue' not in already_processed:
+            already_processed.add('readCapacitanceValue')
+            outfile.write(' readCapacitanceValue=%s' % (quote_attrib(self.readCapacitanceValue), ))
+        if self.readCapacitanceUnit != "pF" and 'readCapacitanceUnit' not in already_processed:
+            already_processed.add('readCapacitanceUnit')
+            outfile.write(' readCapacitanceUnit=%s' % (quote_attrib(self.readCapacitanceUnit), ))
+        if self.writeCapacitanceValue != "0" and 'writeCapacitanceValue' not in already_processed:
+            already_processed.add('writeCapacitanceValue')
+            outfile.write(' writeCapacitanceValue=%s' % (quote_attrib(self.writeCapacitanceValue), ))
+        if self.writeCapacitanceUnit != "pF" and 'writeCapacitanceUnit' not in already_processed:
+            already_processed.add('writeCapacitanceUnit')
+            outfile.write(' writeCapacitanceUnit=%s' % (quote_attrib(self.writeCapacitanceUnit), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='FifoPowerModelType', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
@@ -5121,71 +5301,71 @@ class FifoPowerModelType(GeneratedsSuper):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
-        value = find_attr_value_('cellSwitchedCapacitanceValue', node)
-        if value is not None and 'cellSwitchedCapacitanceValue' not in already_processed:
-            already_processed.add('cellSwitchedCapacitanceValue')
-            self.cellSwitchedCapacitanceValue = value
-            self.validate_CapacitanceValueType(self.cellSwitchedCapacitanceValue)    # validate type CapacitanceValueType
-        value = find_attr_value_('leakageCurrentUnit', node)
-        if value is not None and 'leakageCurrentUnit' not in already_processed:
-            already_processed.add('leakageCurrentUnit')
-            self.leakageCurrentUnit = value
-            self.validate_CurrentUnitType(self.leakageCurrentUnit)    # validate type CurrentUnitType
-        value = find_attr_value_('switchedCapacitanceValue', node)
-        if value is not None and 'switchedCapacitanceValue' not in already_processed:
-            already_processed.add('switchedCapacitanceValue')
-            self.switchedCapacitanceValue = value
-            self.validate_CapacitanceValueType(self.switchedCapacitanceValue)    # validate type CapacitanceValueType
-        value = find_attr_value_('leakageCurrentValue', node)
-        if value is not None and 'leakageCurrentValue' not in already_processed:
-            already_processed.add('leakageCurrentValue')
-            self.leakageCurrentValue = value
-            self.validate_CurrentValueType(self.leakageCurrentValue)    # validate type CurrentValueType
-        value = find_attr_value_('switchedCapacitanceUnit', node)
-        if value is not None and 'switchedCapacitanceUnit' not in already_processed:
-            already_processed.add('switchedCapacitanceUnit')
-            self.switchedCapacitanceUnit = value
-            self.validate_CapacitanceUnitType(self.switchedCapacitanceUnit)    # validate type CapacitanceUnitType
-        value = find_attr_value_('readCapacitanceValue', node)
-        if value is not None and 'readCapacitanceValue' not in already_processed:
-            already_processed.add('readCapacitanceValue')
-            self.readCapacitanceValue = value
-            self.validate_CapacitanceValueType(self.readCapacitanceValue)    # validate type CapacitanceValueType
-        value = find_attr_value_('cellSwitchedCapacitanceUnit', node)
-        if value is not None and 'cellSwitchedCapacitanceUnit' not in already_processed:
-            already_processed.add('cellSwitchedCapacitanceUnit')
-            self.cellSwitchedCapacitanceUnit = value
-            self.validate_CapacitanceUnitType(self.cellSwitchedCapacitanceUnit)    # validate type CapacitanceUnitType
-        value = find_attr_value_('writeCapacitanceUnit', node)
-        if value is not None and 'writeCapacitanceUnit' not in already_processed:
-            already_processed.add('writeCapacitanceUnit')
-            self.writeCapacitanceUnit = value
-            self.validate_CapacitanceUnitType(self.writeCapacitanceUnit)    # validate type CapacitanceUnitType
-        value = find_attr_value_('cellLeakageCurrentValue', node)
-        if value is not None and 'cellLeakageCurrentValue' not in already_processed:
-            already_processed.add('cellLeakageCurrentValue')
-            self.cellLeakageCurrentValue = value
-            self.validate_CurrentValueType(self.cellLeakageCurrentValue)    # validate type CurrentValueType
-        value = find_attr_value_('writeCapacitanceValue', node)
-        if value is not None and 'writeCapacitanceValue' not in already_processed:
-            already_processed.add('writeCapacitanceValue')
-            self.writeCapacitanceValue = value
-            self.validate_CapacitanceValueType(self.writeCapacitanceValue)    # validate type CapacitanceValueType
-        value = find_attr_value_('readCapacitanceUnit', node)
-        if value is not None and 'readCapacitanceUnit' not in already_processed:
-            already_processed.add('readCapacitanceUnit')
-            self.readCapacitanceUnit = value
-            self.validate_CapacitanceUnitType(self.readCapacitanceUnit)    # validate type CapacitanceUnitType
         value = find_attr_value_('id', node)
         if value is not None and 'id' not in already_processed:
             already_processed.add('id')
             self.id = value
             self.validate_IdType(self.id)    # validate type IdType
+        value = find_attr_value_('leakageCurrentValue', node)
+        if value is not None and 'leakageCurrentValue' not in already_processed:
+            already_processed.add('leakageCurrentValue')
+            self.leakageCurrentValue = value
+            self.validate_CurrentValueType(self.leakageCurrentValue)    # validate type CurrentValueType
+        value = find_attr_value_('leakageCurrentUnit', node)
+        if value is not None and 'leakageCurrentUnit' not in already_processed:
+            already_processed.add('leakageCurrentUnit')
+            self.leakageCurrentUnit = value
+            self.validate_CurrentUnitType(self.leakageCurrentUnit)    # validate type CurrentUnitType
+        value = find_attr_value_('cellLeakageCurrentValue', node)
+        if value is not None and 'cellLeakageCurrentValue' not in already_processed:
+            already_processed.add('cellLeakageCurrentValue')
+            self.cellLeakageCurrentValue = value
+            self.validate_CurrentValueType(self.cellLeakageCurrentValue)    # validate type CurrentValueType
         value = find_attr_value_('cellLeakageCurrentUnit', node)
         if value is not None and 'cellLeakageCurrentUnit' not in already_processed:
             already_processed.add('cellLeakageCurrentUnit')
             self.cellLeakageCurrentUnit = value
             self.validate_CurrentUnitType(self.cellLeakageCurrentUnit)    # validate type CurrentUnitType
+        value = find_attr_value_('switchedCapacitanceValue', node)
+        if value is not None and 'switchedCapacitanceValue' not in already_processed:
+            already_processed.add('switchedCapacitanceValue')
+            self.switchedCapacitanceValue = value
+            self.validate_CapacitanceValueType(self.switchedCapacitanceValue)    # validate type CapacitanceValueType
+        value = find_attr_value_('switchedCapacitanceUnit', node)
+        if value is not None and 'switchedCapacitanceUnit' not in already_processed:
+            already_processed.add('switchedCapacitanceUnit')
+            self.switchedCapacitanceUnit = value
+            self.validate_CapacitanceUnitType(self.switchedCapacitanceUnit)    # validate type CapacitanceUnitType
+        value = find_attr_value_('cellSwitchedCapacitanceValue', node)
+        if value is not None and 'cellSwitchedCapacitanceValue' not in already_processed:
+            already_processed.add('cellSwitchedCapacitanceValue')
+            self.cellSwitchedCapacitanceValue = value
+            self.validate_CapacitanceValueType(self.cellSwitchedCapacitanceValue)    # validate type CapacitanceValueType
+        value = find_attr_value_('cellSwitchedCapacitanceUnit', node)
+        if value is not None and 'cellSwitchedCapacitanceUnit' not in already_processed:
+            already_processed.add('cellSwitchedCapacitanceUnit')
+            self.cellSwitchedCapacitanceUnit = value
+            self.validate_CapacitanceUnitType(self.cellSwitchedCapacitanceUnit)    # validate type CapacitanceUnitType
+        value = find_attr_value_('readCapacitanceValue', node)
+        if value is not None and 'readCapacitanceValue' not in already_processed:
+            already_processed.add('readCapacitanceValue')
+            self.readCapacitanceValue = value
+            self.validate_CapacitanceValueType(self.readCapacitanceValue)    # validate type CapacitanceValueType
+        value = find_attr_value_('readCapacitanceUnit', node)
+        if value is not None and 'readCapacitanceUnit' not in already_processed:
+            already_processed.add('readCapacitanceUnit')
+            self.readCapacitanceUnit = value
+            self.validate_CapacitanceUnitType(self.readCapacitanceUnit)    # validate type CapacitanceUnitType
+        value = find_attr_value_('writeCapacitanceValue', node)
+        if value is not None and 'writeCapacitanceValue' not in already_processed:
+            already_processed.add('writeCapacitanceValue')
+            self.writeCapacitanceValue = value
+            self.validate_CapacitanceValueType(self.writeCapacitanceValue)    # validate type CapacitanceValueType
+        value = find_attr_value_('writeCapacitanceUnit', node)
+        if value is not None and 'writeCapacitanceUnit' not in already_processed:
+            already_processed.add('writeCapacitanceUnit')
+            self.writeCapacitanceUnit = value
+            self.validate_CapacitanceUnitType(self.writeCapacitanceUnit)    # validate type CapacitanceUnitType
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         if nodeName_ == 'FifoPowerState':
             obj_ = FifoPowerStateType.factory()
@@ -5198,66 +5378,92 @@ class FifoPowerModelType(GeneratedsSuper):
 class FifoType(GeneratedsSuper):
     subclass = None
     superclass = None
-    def __init__(self, voltageDomain=None, writeThroughputValue=None, fifoPowerModel=None, writeThroughputUnit='bit/cycle', readThroughputValue=None, entrySizeValue=None, frequencyDomain=None, writeLatencyValue='0', entrySizeUnit=None, entryCount=None, readLatencyValue='0', readLatencyUnit='cycles', readThroughputUnit='bit/cycle', id=None, writeLatencyUnit='cycles'):
+    def __init__(self, id=None, entrySizeValue=None, entrySizeUnit=None, entryCount=None, readThroughputValue=None, readThroughputUnit='bit/cycle', readLatencyValue='0', readLatencyUnit='cycles', writeThroughputValue=None, writeThroughputUnit='bit/cycle', writeLatencyValue='0', writeLatencyUnit='cycles', frequencyDomain=None, voltageDomain=None, fifoPowerModel=None):
         self.original_tagname_ = None
-        self.voltageDomain = _cast(None, voltageDomain)
-        self.writeThroughputValue = _cast(None, writeThroughputValue)
-        self.fifoPowerModel = _cast(None, fifoPowerModel)
-        self.writeThroughputUnit = _cast(None, writeThroughputUnit)
-        self.readThroughputValue = _cast(None, readThroughputValue)
+        self.id = _cast(None, id)
         self.entrySizeValue = _cast(None, entrySizeValue)
-        self.frequencyDomain = _cast(None, frequencyDomain)
-        self.writeLatencyValue = _cast(None, writeLatencyValue)
         self.entrySizeUnit = _cast(None, entrySizeUnit)
         self.entryCount = _cast(None, entryCount)
+        self.readThroughputValue = _cast(None, readThroughputValue)
+        self.readThroughputUnit = _cast(None, readThroughputUnit)
         self.readLatencyValue = _cast(None, readLatencyValue)
         self.readLatencyUnit = _cast(None, readLatencyUnit)
-        self.readThroughputUnit = _cast(None, readThroughputUnit)
-        self.id = _cast(None, id)
+        self.writeThroughputValue = _cast(None, writeThroughputValue)
+        self.writeThroughputUnit = _cast(None, writeThroughputUnit)
+        self.writeLatencyValue = _cast(None, writeLatencyValue)
         self.writeLatencyUnit = _cast(None, writeLatencyUnit)
+        self.frequencyDomain = _cast(None, frequencyDomain)
+        self.voltageDomain = _cast(None, voltageDomain)
+        self.fifoPowerModel = _cast(None, fifoPowerModel)
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, FifoType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if FifoType.subclass:
             return FifoType.subclass(*args_, **kwargs_)
         else:
             return FifoType(*args_, **kwargs_)
     factory = staticmethod(factory)
-    def get_voltageDomain(self): return self.voltageDomain
-    def set_voltageDomain(self, voltageDomain): self.voltageDomain = voltageDomain
-    def get_writeThroughputValue(self): return self.writeThroughputValue
-    def set_writeThroughputValue(self, writeThroughputValue): self.writeThroughputValue = writeThroughputValue
-    def get_fifoPowerModel(self): return self.fifoPowerModel
-    def set_fifoPowerModel(self, fifoPowerModel): self.fifoPowerModel = fifoPowerModel
-    def get_writeThroughputUnit(self): return self.writeThroughputUnit
-    def set_writeThroughputUnit(self, writeThroughputUnit): self.writeThroughputUnit = writeThroughputUnit
-    def get_readThroughputValue(self): return self.readThroughputValue
-    def set_readThroughputValue(self, readThroughputValue): self.readThroughputValue = readThroughputValue
+    def get_id(self): return self.id
+    def set_id(self, id): self.id = id
     def get_entrySizeValue(self): return self.entrySizeValue
     def set_entrySizeValue(self, entrySizeValue): self.entrySizeValue = entrySizeValue
-    def get_frequencyDomain(self): return self.frequencyDomain
-    def set_frequencyDomain(self, frequencyDomain): self.frequencyDomain = frequencyDomain
-    def get_writeLatencyValue(self): return self.writeLatencyValue
-    def set_writeLatencyValue(self, writeLatencyValue): self.writeLatencyValue = writeLatencyValue
     def get_entrySizeUnit(self): return self.entrySizeUnit
     def set_entrySizeUnit(self, entrySizeUnit): self.entrySizeUnit = entrySizeUnit
     def get_entryCount(self): return self.entryCount
     def set_entryCount(self, entryCount): self.entryCount = entryCount
+    def get_readThroughputValue(self): return self.readThroughputValue
+    def set_readThroughputValue(self, readThroughputValue): self.readThroughputValue = readThroughputValue
+    def get_readThroughputUnit(self): return self.readThroughputUnit
+    def set_readThroughputUnit(self, readThroughputUnit): self.readThroughputUnit = readThroughputUnit
     def get_readLatencyValue(self): return self.readLatencyValue
     def set_readLatencyValue(self, readLatencyValue): self.readLatencyValue = readLatencyValue
     def get_readLatencyUnit(self): return self.readLatencyUnit
     def set_readLatencyUnit(self, readLatencyUnit): self.readLatencyUnit = readLatencyUnit
-    def get_readThroughputUnit(self): return self.readThroughputUnit
-    def set_readThroughputUnit(self, readThroughputUnit): self.readThroughputUnit = readThroughputUnit
-    def get_id(self): return self.id
-    def set_id(self, id): self.id = id
+    def get_writeThroughputValue(self): return self.writeThroughputValue
+    def set_writeThroughputValue(self, writeThroughputValue): self.writeThroughputValue = writeThroughputValue
+    def get_writeThroughputUnit(self): return self.writeThroughputUnit
+    def set_writeThroughputUnit(self, writeThroughputUnit): self.writeThroughputUnit = writeThroughputUnit
+    def get_writeLatencyValue(self): return self.writeLatencyValue
+    def set_writeLatencyValue(self, writeLatencyValue): self.writeLatencyValue = writeLatencyValue
     def get_writeLatencyUnit(self): return self.writeLatencyUnit
     def set_writeLatencyUnit(self, writeLatencyUnit): self.writeLatencyUnit = writeLatencyUnit
-    def validate_RefType(self, value):
-        # Validate type RefType, a restriction on xs:IDREF.
+    def get_frequencyDomain(self): return self.frequencyDomain
+    def set_frequencyDomain(self, frequencyDomain): self.frequencyDomain = frequencyDomain
+    def get_voltageDomain(self): return self.voltageDomain
+    def set_voltageDomain(self, voltageDomain): self.voltageDomain = voltageDomain
+    def get_fifoPowerModel(self): return self.fifoPowerModel
+    def set_fifoPowerModel(self, fifoPowerModel): self.fifoPowerModel = fifoPowerModel
+    def validate_IdType(self, value):
+        # Validate type IdType, a restriction on xs:ID.
         if value is not None and Validate_simpletypes_:
             if not self.gds_validate_simple_patterns(
-                    self.validate_RefType_patterns_, value):
-                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_RefType_patterns_, ))
-    validate_RefType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
+                    self.validate_IdType_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_IdType_patterns_, ))
+    validate_IdType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
+    def validate_SizeValueType(self, value):
+        # Validate type SizeValueType, a restriction on NonNegativeFloatType.
+        if value is not None and Validate_simpletypes_:
+            if value < 0:
+                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on SizeValueType' % {"value" : value} )
+    def validate_SizeUnitType(self, value):
+        # Validate type SizeUnitType, a restriction on xs:string.
+        if value is not None and Validate_simpletypes_:
+            value = str(value)
+            enumerations = ['bit', 'B', 'kB', 'KiB', 'MB', 'MiB', 'GB', 'GiB', 'TB', 'TiB']
+            enumeration_respectee = False
+            for enum in enumerations:
+                if value == enum:
+                    enumeration_respectee = True
+                    break
+            if not enumeration_respectee:
+                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on SizeUnitType' % {"value" : value.encode("utf-8")} )
+    def validate_PositiveIntType(self, value):
+        # Validate type PositiveIntType, a restriction on xs:positiveInteger.
+        if value is not None and Validate_simpletypes_:
+            pass
     def validate_ThroughputValueType(self, value):
         # Validate type ThroughputValueType, a restriction on NonNegativeFloatType.
         if value is not None and Validate_simpletypes_:
@@ -5275,32 +5481,11 @@ class FifoType(GeneratedsSuper):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on ThroughputUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_SizeValueType(self, value):
-        # Validate type SizeValueType, a restriction on NonNegativeFloatType.
-        if value is not None and Validate_simpletypes_:
-            if value < 0:
-                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on SizeValueType' % {"value" : value} )
     def validate_CyclesValueType(self, value):
         # Validate type CyclesValueType, a restriction on NonNegativeFloatType.
         if value is not None and Validate_simpletypes_:
             if value < 0:
                 warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on CyclesValueType' % {"value" : value} )
-    def validate_SizeUnitType(self, value):
-        # Validate type SizeUnitType, a restriction on xs:string.
-        if value is not None and Validate_simpletypes_:
-            value = str(value)
-            enumerations = ['bit', 'B', 'kB', 'KiB', 'MB', 'MiB', 'GB', 'GiB', 'TB', 'TiB']
-            enumeration_respectee = False
-            for enum in enumerations:
-                if value == enum:
-                    enumeration_respectee = True
-                    break
-            if not enumeration_respectee:
-                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on SizeUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_PositiveIntType(self, value):
-        # Validate type PositiveIntType, a restriction on xs:positiveInteger.
-        if value is not None and Validate_simpletypes_:
-            pass
     def validate_CyclesUnitType(self, value):
         # Validate type CyclesUnitType, a restriction on xs:string.
         if value is not None and Validate_simpletypes_:
@@ -5313,13 +5498,13 @@ class FifoType(GeneratedsSuper):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on CyclesUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_IdType(self, value):
-        # Validate type IdType, a restriction on xs:ID.
+    def validate_RefType(self, value):
+        # Validate type RefType, a restriction on xs:IDREF.
         if value is not None and Validate_simpletypes_:
             if not self.gds_validate_simple_patterns(
-                    self.validate_IdType_patterns_, value):
-                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_IdType_patterns_, ))
-    validate_IdType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
+                    self.validate_RefType_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_RefType_patterns_, ))
+    validate_RefType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def hasContent_(self):
         if (
 
@@ -5345,51 +5530,51 @@ class FifoType(GeneratedsSuper):
         else:
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='FifoType'):
-        if self.voltageDomain is not None and 'voltageDomain' not in already_processed:
-            already_processed.add('voltageDomain')
-            outfile.write(' voltageDomain=%s' % (quote_attrib(self.voltageDomain), ))
-        if self.writeThroughputValue is not None and 'writeThroughputValue' not in already_processed:
-            already_processed.add('writeThroughputValue')
-            outfile.write(' writeThroughputValue=%s' % (quote_attrib(self.writeThroughputValue), ))
-        if self.fifoPowerModel is not None and 'fifoPowerModel' not in already_processed:
-            already_processed.add('fifoPowerModel')
-            outfile.write(' fifoPowerModel=%s' % (quote_attrib(self.fifoPowerModel), ))
-        if self.writeThroughputUnit != bit/cycle and 'writeThroughputUnit' not in already_processed:
-            already_processed.add('writeThroughputUnit')
-            outfile.write(' writeThroughputUnit=%s' % (quote_attrib(self.writeThroughputUnit), ))
-        if self.readThroughputValue is not None and 'readThroughputValue' not in already_processed:
-            already_processed.add('readThroughputValue')
-            outfile.write(' readThroughputValue=%s' % (quote_attrib(self.readThroughputValue), ))
+        if self.id is not None and 'id' not in already_processed:
+            already_processed.add('id')
+            outfile.write(' id=%s' % (quote_attrib(self.id), ))
         if self.entrySizeValue is not None and 'entrySizeValue' not in already_processed:
             already_processed.add('entrySizeValue')
             outfile.write(' entrySizeValue=%s' % (quote_attrib(self.entrySizeValue), ))
-        if self.frequencyDomain is not None and 'frequencyDomain' not in already_processed:
-            already_processed.add('frequencyDomain')
-            outfile.write(' frequencyDomain=%s' % (quote_attrib(self.frequencyDomain), ))
-        if self.writeLatencyValue != 0 and 'writeLatencyValue' not in already_processed:
-            already_processed.add('writeLatencyValue')
-            outfile.write(' writeLatencyValue=%s' % (quote_attrib(self.writeLatencyValue), ))
         if self.entrySizeUnit is not None and 'entrySizeUnit' not in already_processed:
             already_processed.add('entrySizeUnit')
             outfile.write(' entrySizeUnit=%s' % (quote_attrib(self.entrySizeUnit), ))
         if self.entryCount is not None and 'entryCount' not in already_processed:
             already_processed.add('entryCount')
             outfile.write(' entryCount=%s' % (quote_attrib(self.entryCount), ))
-        if self.readLatencyValue != 0 and 'readLatencyValue' not in already_processed:
-            already_processed.add('readLatencyValue')
-            outfile.write(' readLatencyValue=%s' % (quote_attrib(self.readLatencyValue), ))
-        if self.readLatencyUnit != cycles and 'readLatencyUnit' not in already_processed:
-            already_processed.add('readLatencyUnit')
-            outfile.write(' readLatencyUnit=%s' % (quote_attrib(self.readLatencyUnit), ))
-        if self.readThroughputUnit != bit/cycle and 'readThroughputUnit' not in already_processed:
+        if self.readThroughputValue is not None and 'readThroughputValue' not in already_processed:
+            already_processed.add('readThroughputValue')
+            outfile.write(' readThroughputValue=%s' % (quote_attrib(self.readThroughputValue), ))
+        if self.readThroughputUnit != "bit/cycle" and 'readThroughputUnit' not in already_processed:
             already_processed.add('readThroughputUnit')
             outfile.write(' readThroughputUnit=%s' % (quote_attrib(self.readThroughputUnit), ))
-        if self.id is not None and 'id' not in already_processed:
-            already_processed.add('id')
-            outfile.write(' id=%s' % (quote_attrib(self.id), ))
-        if self.writeLatencyUnit != cycles and 'writeLatencyUnit' not in already_processed:
+        if self.readLatencyValue != "0" and 'readLatencyValue' not in already_processed:
+            already_processed.add('readLatencyValue')
+            outfile.write(' readLatencyValue=%s' % (quote_attrib(self.readLatencyValue), ))
+        if self.readLatencyUnit != "cycles" and 'readLatencyUnit' not in already_processed:
+            already_processed.add('readLatencyUnit')
+            outfile.write(' readLatencyUnit=%s' % (quote_attrib(self.readLatencyUnit), ))
+        if self.writeThroughputValue is not None and 'writeThroughputValue' not in already_processed:
+            already_processed.add('writeThroughputValue')
+            outfile.write(' writeThroughputValue=%s' % (quote_attrib(self.writeThroughputValue), ))
+        if self.writeThroughputUnit != "bit/cycle" and 'writeThroughputUnit' not in already_processed:
+            already_processed.add('writeThroughputUnit')
+            outfile.write(' writeThroughputUnit=%s' % (quote_attrib(self.writeThroughputUnit), ))
+        if self.writeLatencyValue != "0" and 'writeLatencyValue' not in already_processed:
+            already_processed.add('writeLatencyValue')
+            outfile.write(' writeLatencyValue=%s' % (quote_attrib(self.writeLatencyValue), ))
+        if self.writeLatencyUnit != "cycles" and 'writeLatencyUnit' not in already_processed:
             already_processed.add('writeLatencyUnit')
             outfile.write(' writeLatencyUnit=%s' % (quote_attrib(self.writeLatencyUnit), ))
+        if self.frequencyDomain is not None and 'frequencyDomain' not in already_processed:
+            already_processed.add('frequencyDomain')
+            outfile.write(' frequencyDomain=%s' % (quote_attrib(self.frequencyDomain), ))
+        if self.voltageDomain is not None and 'voltageDomain' not in already_processed:
+            already_processed.add('voltageDomain')
+            outfile.write(' voltageDomain=%s' % (quote_attrib(self.voltageDomain), ))
+        if self.fifoPowerModel is not None and 'fifoPowerModel' not in already_processed:
+            already_processed.add('fifoPowerModel')
+            outfile.write(' fifoPowerModel=%s' % (quote_attrib(self.fifoPowerModel), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='FifoType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
@@ -5400,46 +5585,16 @@ class FifoType(GeneratedsSuper):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
-        value = find_attr_value_('voltageDomain', node)
-        if value is not None and 'voltageDomain' not in already_processed:
-            already_processed.add('voltageDomain')
-            self.voltageDomain = value
-            self.validate_RefType(self.voltageDomain)    # validate type RefType
-        value = find_attr_value_('writeThroughputValue', node)
-        if value is not None and 'writeThroughputValue' not in already_processed:
-            already_processed.add('writeThroughputValue')
-            self.writeThroughputValue = value
-            self.validate_ThroughputValueType(self.writeThroughputValue)    # validate type ThroughputValueType
-        value = find_attr_value_('fifoPowerModel', node)
-        if value is not None and 'fifoPowerModel' not in already_processed:
-            already_processed.add('fifoPowerModel')
-            self.fifoPowerModel = value
-            self.validate_RefType(self.fifoPowerModel)    # validate type RefType
-        value = find_attr_value_('writeThroughputUnit', node)
-        if value is not None and 'writeThroughputUnit' not in already_processed:
-            already_processed.add('writeThroughputUnit')
-            self.writeThroughputUnit = value
-            self.validate_ThroughputUnitType(self.writeThroughputUnit)    # validate type ThroughputUnitType
-        value = find_attr_value_('readThroughputValue', node)
-        if value is not None and 'readThroughputValue' not in already_processed:
-            already_processed.add('readThroughputValue')
-            self.readThroughputValue = value
-            self.validate_ThroughputValueType(self.readThroughputValue)    # validate type ThroughputValueType
+        value = find_attr_value_('id', node)
+        if value is not None and 'id' not in already_processed:
+            already_processed.add('id')
+            self.id = value
+            self.validate_IdType(self.id)    # validate type IdType
         value = find_attr_value_('entrySizeValue', node)
         if value is not None and 'entrySizeValue' not in already_processed:
             already_processed.add('entrySizeValue')
             self.entrySizeValue = value
             self.validate_SizeValueType(self.entrySizeValue)    # validate type SizeValueType
-        value = find_attr_value_('frequencyDomain', node)
-        if value is not None and 'frequencyDomain' not in already_processed:
-            already_processed.add('frequencyDomain')
-            self.frequencyDomain = value
-            self.validate_RefType(self.frequencyDomain)    # validate type RefType
-        value = find_attr_value_('writeLatencyValue', node)
-        if value is not None and 'writeLatencyValue' not in already_processed:
-            already_processed.add('writeLatencyValue')
-            self.writeLatencyValue = value
-            self.validate_CyclesValueType(self.writeLatencyValue)    # validate type CyclesValueType
         value = find_attr_value_('entrySizeUnit', node)
         if value is not None and 'entrySizeUnit' not in already_processed:
             already_processed.add('entrySizeUnit')
@@ -5455,6 +5610,16 @@ class FifoType(GeneratedsSuper):
             if self.entryCount <= 0:
                 raise_parse_error(node, 'Invalid PositiveInteger')
             self.validate_PositiveIntType(self.entryCount)    # validate type PositiveIntType
+        value = find_attr_value_('readThroughputValue', node)
+        if value is not None and 'readThroughputValue' not in already_processed:
+            already_processed.add('readThroughputValue')
+            self.readThroughputValue = value
+            self.validate_ThroughputValueType(self.readThroughputValue)    # validate type ThroughputValueType
+        value = find_attr_value_('readThroughputUnit', node)
+        if value is not None and 'readThroughputUnit' not in already_processed:
+            already_processed.add('readThroughputUnit')
+            self.readThroughputUnit = value
+            self.validate_ThroughputUnitType(self.readThroughputUnit)    # validate type ThroughputUnitType
         value = find_attr_value_('readLatencyValue', node)
         if value is not None and 'readLatencyValue' not in already_processed:
             already_processed.add('readLatencyValue')
@@ -5465,21 +5630,41 @@ class FifoType(GeneratedsSuper):
             already_processed.add('readLatencyUnit')
             self.readLatencyUnit = value
             self.validate_CyclesUnitType(self.readLatencyUnit)    # validate type CyclesUnitType
-        value = find_attr_value_('readThroughputUnit', node)
-        if value is not None and 'readThroughputUnit' not in already_processed:
-            already_processed.add('readThroughputUnit')
-            self.readThroughputUnit = value
-            self.validate_ThroughputUnitType(self.readThroughputUnit)    # validate type ThroughputUnitType
-        value = find_attr_value_('id', node)
-        if value is not None and 'id' not in already_processed:
-            already_processed.add('id')
-            self.id = value
-            self.validate_IdType(self.id)    # validate type IdType
+        value = find_attr_value_('writeThroughputValue', node)
+        if value is not None and 'writeThroughputValue' not in already_processed:
+            already_processed.add('writeThroughputValue')
+            self.writeThroughputValue = value
+            self.validate_ThroughputValueType(self.writeThroughputValue)    # validate type ThroughputValueType
+        value = find_attr_value_('writeThroughputUnit', node)
+        if value is not None and 'writeThroughputUnit' not in already_processed:
+            already_processed.add('writeThroughputUnit')
+            self.writeThroughputUnit = value
+            self.validate_ThroughputUnitType(self.writeThroughputUnit)    # validate type ThroughputUnitType
+        value = find_attr_value_('writeLatencyValue', node)
+        if value is not None and 'writeLatencyValue' not in already_processed:
+            already_processed.add('writeLatencyValue')
+            self.writeLatencyValue = value
+            self.validate_CyclesValueType(self.writeLatencyValue)    # validate type CyclesValueType
         value = find_attr_value_('writeLatencyUnit', node)
         if value is not None and 'writeLatencyUnit' not in already_processed:
             already_processed.add('writeLatencyUnit')
             self.writeLatencyUnit = value
             self.validate_CyclesUnitType(self.writeLatencyUnit)    # validate type CyclesUnitType
+        value = find_attr_value_('frequencyDomain', node)
+        if value is not None and 'frequencyDomain' not in already_processed:
+            already_processed.add('frequencyDomain')
+            self.frequencyDomain = value
+            self.validate_RefType(self.frequencyDomain)    # validate type RefType
+        value = find_attr_value_('voltageDomain', node)
+        if value is not None and 'voltageDomain' not in already_processed:
+            already_processed.add('voltageDomain')
+            self.voltageDomain = value
+            self.validate_RefType(self.voltageDomain)    # validate type RefType
+        value = find_attr_value_('fifoPowerModel', node)
+        if value is not None and 'fifoPowerModel' not in already_processed:
+            already_processed.add('fifoPowerModel')
+            self.fifoPowerModel = value
+            self.validate_RefType(self.fifoPowerModel)    # validate type RefType
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         pass
 # end class FifoType
@@ -5493,6 +5678,11 @@ class FifoRefType(GeneratedsSuper):
         self.fifo = _cast(None, fifo)
         self.extensiontype_ = extensiontype_
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, FifoRefType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if FifoRefType.subclass:
             return FifoRefType.subclass(*args_, **kwargs_)
         else:
@@ -5573,6 +5763,11 @@ class FifoAccessType(FifoRefType):
         super(FifoAccessType, self).__init__(fifo, )
         self.access = _cast(None, access)
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, FifoAccessType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if FifoAccessType.subclass:
             return FifoAccessType.subclass(*args_, **kwargs_)
         else:
@@ -5647,24 +5842,36 @@ class FifoAccessType(FifoRefType):
 class PhysicalLinkPowerStateType(VoltageFrequencyConditionListType):
     subclass = None
     superclass = VoltageFrequencyConditionListType
-    def __init__(self, VoltageCondition=None, FrequencyCondition=None, FrequencyVoltageCondition=None, powerValue=None, powerUnit='pW', name=None):
+    def __init__(self, VoltageCondition=None, FrequencyCondition=None, FrequencyVoltageCondition=None, name=None, powerValue=None, powerUnit='pW'):
         self.original_tagname_ = None
         super(PhysicalLinkPowerStateType, self).__init__(VoltageCondition, FrequencyCondition, FrequencyVoltageCondition, )
+        self.name = _cast(None, name)
         self.powerValue = _cast(None, powerValue)
         self.powerUnit = _cast(None, powerUnit)
-        self.name = _cast(None, name)
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, PhysicalLinkPowerStateType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if PhysicalLinkPowerStateType.subclass:
             return PhysicalLinkPowerStateType.subclass(*args_, **kwargs_)
         else:
             return PhysicalLinkPowerStateType(*args_, **kwargs_)
     factory = staticmethod(factory)
+    def get_name(self): return self.name
+    def set_name(self, name): self.name = name
     def get_powerValue(self): return self.powerValue
     def set_powerValue(self, powerValue): self.powerValue = powerValue
     def get_powerUnit(self): return self.powerUnit
     def set_powerUnit(self, powerUnit): self.powerUnit = powerUnit
-    def get_name(self): return self.name
-    def set_name(self, name): self.name = name
+    def validate_NameType(self, value):
+        # Validate type NameType, a restriction on xs:string.
+        if value is not None and Validate_simpletypes_:
+            if not self.gds_validate_simple_patterns(
+                    self.validate_NameType_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_NameType_patterns_, ))
+    validate_NameType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def validate_PowerValueType(self, value):
         # Validate type PowerValueType, a restriction on NonNegativeFloatType.
         if value is not None and Validate_simpletypes_:
@@ -5682,13 +5889,6 @@ class PhysicalLinkPowerStateType(VoltageFrequencyConditionListType):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on PowerUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_NameType(self, value):
-        # Validate type NameType, a restriction on xs:string.
-        if value is not None and Validate_simpletypes_:
-            if not self.gds_validate_simple_patterns(
-                    self.validate_NameType_patterns_, value):
-                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_NameType_patterns_, ))
-    validate_NameType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def hasContent_(self):
         if (
             super(PhysicalLinkPowerStateType, self).hasContent_()
@@ -5716,15 +5916,15 @@ class PhysicalLinkPowerStateType(VoltageFrequencyConditionListType):
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='PhysicalLinkPowerStateType'):
         super(PhysicalLinkPowerStateType, self).exportAttributes(outfile, level, already_processed, namespace_, name_='PhysicalLinkPowerStateType')
-        if self.powerValue is not None and 'powerValue' not in already_processed:
-            already_processed.add('powerValue')
-            outfile.write(' powerValue=%s' % (quote_attrib(self.powerValue), ))
-        if self.powerUnit != pW and 'powerUnit' not in already_processed:
-            already_processed.add('powerUnit')
-            outfile.write(' powerUnit=%s' % (quote_attrib(self.powerUnit), ))
         if self.name is not None and 'name' not in already_processed:
             already_processed.add('name')
             outfile.write(' name=%s' % (quote_attrib(self.name), ))
+        if self.powerValue is not None and 'powerValue' not in already_processed:
+            already_processed.add('powerValue')
+            outfile.write(' powerValue=%s' % (quote_attrib(self.powerValue), ))
+        if self.powerUnit != "pW" and 'powerUnit' not in already_processed:
+            already_processed.add('powerUnit')
+            outfile.write(' powerUnit=%s' % (quote_attrib(self.powerUnit), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='PhysicalLinkPowerStateType', fromsubclass_=False, pretty_print=True):
         super(PhysicalLinkPowerStateType, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
     def build(self, node):
@@ -5735,6 +5935,11 @@ class PhysicalLinkPowerStateType(VoltageFrequencyConditionListType):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
+        value = find_attr_value_('name', node)
+        if value is not None and 'name' not in already_processed:
+            already_processed.add('name')
+            self.name = value
+            self.validate_NameType(self.name)    # validate type NameType
         value = find_attr_value_('powerValue', node)
         if value is not None and 'powerValue' not in already_processed:
             already_processed.add('powerValue')
@@ -5745,11 +5950,6 @@ class PhysicalLinkPowerStateType(VoltageFrequencyConditionListType):
             already_processed.add('powerUnit')
             self.powerUnit = value
             self.validate_PowerUnitType(self.powerUnit)    # validate type PowerUnitType
-        value = find_attr_value_('name', node)
-        if value is not None and 'name' not in already_processed:
-            already_processed.add('name')
-            self.name = value
-            self.validate_NameType(self.name)    # validate type NameType
         super(PhysicalLinkPowerStateType, self).buildAttributes(node, attrs, already_processed)
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         super(PhysicalLinkPowerStateType, self).buildChildren(child_, node, nodeName_, True)
@@ -5760,20 +5960,25 @@ class PhysicalLinkPowerStateType(VoltageFrequencyConditionListType):
 class PhysicalLinkPowerModelType(GeneratedsSuper):
     subclass = None
     superclass = None
-    def __init__(self, leakageCurrentUnit='pA', switchedCapacitanceValue='0', leakageCurrentValue='0', switchedCapacitanceUnit='pF', transferCapacitanceValue='0', transferCapacitanceUnit='pF', id=None, PhysicalLinkPowerState=None):
+    def __init__(self, id=None, leakageCurrentValue='0', leakageCurrentUnit='pA', switchedCapacitanceValue='0', switchedCapacitanceUnit='pF', transferCapacitanceValue='0', transferCapacitanceUnit='pF', PhysicalLinkPowerState=None):
         self.original_tagname_ = None
+        self.id = _cast(None, id)
+        self.leakageCurrentValue = _cast(None, leakageCurrentValue)
         self.leakageCurrentUnit = _cast(None, leakageCurrentUnit)
         self.switchedCapacitanceValue = _cast(None, switchedCapacitanceValue)
-        self.leakageCurrentValue = _cast(None, leakageCurrentValue)
         self.switchedCapacitanceUnit = _cast(None, switchedCapacitanceUnit)
         self.transferCapacitanceValue = _cast(None, transferCapacitanceValue)
         self.transferCapacitanceUnit = _cast(None, transferCapacitanceUnit)
-        self.id = _cast(None, id)
         if PhysicalLinkPowerState is None:
             self.PhysicalLinkPowerState = []
         else:
             self.PhysicalLinkPowerState = PhysicalLinkPowerState
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, PhysicalLinkPowerModelType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if PhysicalLinkPowerModelType.subclass:
             return PhysicalLinkPowerModelType.subclass(*args_, **kwargs_)
         else:
@@ -5784,20 +5989,32 @@ class PhysicalLinkPowerModelType(GeneratedsSuper):
     def add_PhysicalLinkPowerState(self, value): self.PhysicalLinkPowerState.append(value)
     def insert_PhysicalLinkPowerState_at(self, index, value): self.PhysicalLinkPowerState.insert(index, value)
     def replace_PhysicalLinkPowerState_at(self, index, value): self.PhysicalLinkPowerState[index] = value
+    def get_id(self): return self.id
+    def set_id(self, id): self.id = id
+    def get_leakageCurrentValue(self): return self.leakageCurrentValue
+    def set_leakageCurrentValue(self, leakageCurrentValue): self.leakageCurrentValue = leakageCurrentValue
     def get_leakageCurrentUnit(self): return self.leakageCurrentUnit
     def set_leakageCurrentUnit(self, leakageCurrentUnit): self.leakageCurrentUnit = leakageCurrentUnit
     def get_switchedCapacitanceValue(self): return self.switchedCapacitanceValue
     def set_switchedCapacitanceValue(self, switchedCapacitanceValue): self.switchedCapacitanceValue = switchedCapacitanceValue
-    def get_leakageCurrentValue(self): return self.leakageCurrentValue
-    def set_leakageCurrentValue(self, leakageCurrentValue): self.leakageCurrentValue = leakageCurrentValue
     def get_switchedCapacitanceUnit(self): return self.switchedCapacitanceUnit
     def set_switchedCapacitanceUnit(self, switchedCapacitanceUnit): self.switchedCapacitanceUnit = switchedCapacitanceUnit
     def get_transferCapacitanceValue(self): return self.transferCapacitanceValue
     def set_transferCapacitanceValue(self, transferCapacitanceValue): self.transferCapacitanceValue = transferCapacitanceValue
     def get_transferCapacitanceUnit(self): return self.transferCapacitanceUnit
     def set_transferCapacitanceUnit(self, transferCapacitanceUnit): self.transferCapacitanceUnit = transferCapacitanceUnit
-    def get_id(self): return self.id
-    def set_id(self, id): self.id = id
+    def validate_IdType(self, value):
+        # Validate type IdType, a restriction on xs:ID.
+        if value is not None and Validate_simpletypes_:
+            if not self.gds_validate_simple_patterns(
+                    self.validate_IdType_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_IdType_patterns_, ))
+    validate_IdType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
+    def validate_CurrentValueType(self, value):
+        # Validate type CurrentValueType, a restriction on NonNegativeFloatType.
+        if value is not None and Validate_simpletypes_:
+            if value < 0:
+                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on CurrentValueType' % {"value" : value} )
     def validate_CurrentUnitType(self, value):
         # Validate type CurrentUnitType, a restriction on xs:string.
         if value is not None and Validate_simpletypes_:
@@ -5815,11 +6032,6 @@ class PhysicalLinkPowerModelType(GeneratedsSuper):
         if value is not None and Validate_simpletypes_:
             if value < 0:
                 warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on CapacitanceValueType' % {"value" : value} )
-    def validate_CurrentValueType(self, value):
-        # Validate type CurrentValueType, a restriction on NonNegativeFloatType.
-        if value is not None and Validate_simpletypes_:
-            if value < 0:
-                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on CurrentValueType' % {"value" : value} )
     def validate_CapacitanceUnitType(self, value):
         # Validate type CapacitanceUnitType, a restriction on xs:string.
         if value is not None and Validate_simpletypes_:
@@ -5832,13 +6044,6 @@ class PhysicalLinkPowerModelType(GeneratedsSuper):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on CapacitanceUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_IdType(self, value):
-        # Validate type IdType, a restriction on xs:ID.
-        if value is not None and Validate_simpletypes_:
-            if not self.gds_validate_simple_patterns(
-                    self.validate_IdType_patterns_, value):
-                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_IdType_patterns_, ))
-    validate_IdType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def hasContent_(self):
         if (
             self.PhysicalLinkPowerState
@@ -5865,27 +6070,27 @@ class PhysicalLinkPowerModelType(GeneratedsSuper):
         else:
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='PhysicalLinkPowerModelType'):
-        if self.leakageCurrentUnit != pA and 'leakageCurrentUnit' not in already_processed:
-            already_processed.add('leakageCurrentUnit')
-            outfile.write(' leakageCurrentUnit=%s' % (quote_attrib(self.leakageCurrentUnit), ))
-        if self.switchedCapacitanceValue != 0 and 'switchedCapacitanceValue' not in already_processed:
-            already_processed.add('switchedCapacitanceValue')
-            outfile.write(' switchedCapacitanceValue=%s' % (quote_attrib(self.switchedCapacitanceValue), ))
-        if self.leakageCurrentValue != 0 and 'leakageCurrentValue' not in already_processed:
-            already_processed.add('leakageCurrentValue')
-            outfile.write(' leakageCurrentValue=%s' % (quote_attrib(self.leakageCurrentValue), ))
-        if self.switchedCapacitanceUnit != pF and 'switchedCapacitanceUnit' not in already_processed:
-            already_processed.add('switchedCapacitanceUnit')
-            outfile.write(' switchedCapacitanceUnit=%s' % (quote_attrib(self.switchedCapacitanceUnit), ))
-        if self.transferCapacitanceValue != 0 and 'transferCapacitanceValue' not in already_processed:
-            already_processed.add('transferCapacitanceValue')
-            outfile.write(' transferCapacitanceValue=%s' % (quote_attrib(self.transferCapacitanceValue), ))
-        if self.transferCapacitanceUnit != pF and 'transferCapacitanceUnit' not in already_processed:
-            already_processed.add('transferCapacitanceUnit')
-            outfile.write(' transferCapacitanceUnit=%s' % (quote_attrib(self.transferCapacitanceUnit), ))
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
+        if self.leakageCurrentValue != "0" and 'leakageCurrentValue' not in already_processed:
+            already_processed.add('leakageCurrentValue')
+            outfile.write(' leakageCurrentValue=%s' % (quote_attrib(self.leakageCurrentValue), ))
+        if self.leakageCurrentUnit != "pA" and 'leakageCurrentUnit' not in already_processed:
+            already_processed.add('leakageCurrentUnit')
+            outfile.write(' leakageCurrentUnit=%s' % (quote_attrib(self.leakageCurrentUnit), ))
+        if self.switchedCapacitanceValue != "0" and 'switchedCapacitanceValue' not in already_processed:
+            already_processed.add('switchedCapacitanceValue')
+            outfile.write(' switchedCapacitanceValue=%s' % (quote_attrib(self.switchedCapacitanceValue), ))
+        if self.switchedCapacitanceUnit != "pF" and 'switchedCapacitanceUnit' not in already_processed:
+            already_processed.add('switchedCapacitanceUnit')
+            outfile.write(' switchedCapacitanceUnit=%s' % (quote_attrib(self.switchedCapacitanceUnit), ))
+        if self.transferCapacitanceValue != "0" and 'transferCapacitanceValue' not in already_processed:
+            already_processed.add('transferCapacitanceValue')
+            outfile.write(' transferCapacitanceValue=%s' % (quote_attrib(self.transferCapacitanceValue), ))
+        if self.transferCapacitanceUnit != "pF" and 'transferCapacitanceUnit' not in already_processed:
+            already_processed.add('transferCapacitanceUnit')
+            outfile.write(' transferCapacitanceUnit=%s' % (quote_attrib(self.transferCapacitanceUnit), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='PhysicalLinkPowerModelType', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
@@ -5901,6 +6106,16 @@ class PhysicalLinkPowerModelType(GeneratedsSuper):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
+        value = find_attr_value_('id', node)
+        if value is not None and 'id' not in already_processed:
+            already_processed.add('id')
+            self.id = value
+            self.validate_IdType(self.id)    # validate type IdType
+        value = find_attr_value_('leakageCurrentValue', node)
+        if value is not None and 'leakageCurrentValue' not in already_processed:
+            already_processed.add('leakageCurrentValue')
+            self.leakageCurrentValue = value
+            self.validate_CurrentValueType(self.leakageCurrentValue)    # validate type CurrentValueType
         value = find_attr_value_('leakageCurrentUnit', node)
         if value is not None and 'leakageCurrentUnit' not in already_processed:
             already_processed.add('leakageCurrentUnit')
@@ -5911,11 +6126,6 @@ class PhysicalLinkPowerModelType(GeneratedsSuper):
             already_processed.add('switchedCapacitanceValue')
             self.switchedCapacitanceValue = value
             self.validate_CapacitanceValueType(self.switchedCapacitanceValue)    # validate type CapacitanceValueType
-        value = find_attr_value_('leakageCurrentValue', node)
-        if value is not None and 'leakageCurrentValue' not in already_processed:
-            already_processed.add('leakageCurrentValue')
-            self.leakageCurrentValue = value
-            self.validate_CurrentValueType(self.leakageCurrentValue)    # validate type CurrentValueType
         value = find_attr_value_('switchedCapacitanceUnit', node)
         if value is not None and 'switchedCapacitanceUnit' not in already_processed:
             already_processed.add('switchedCapacitanceUnit')
@@ -5931,11 +6141,6 @@ class PhysicalLinkPowerModelType(GeneratedsSuper):
             already_processed.add('transferCapacitanceUnit')
             self.transferCapacitanceUnit = value
             self.validate_CapacitanceUnitType(self.transferCapacitanceUnit)    # validate type CapacitanceUnitType
-        value = find_attr_value_('id', node)
-        if value is not None and 'id' not in already_processed:
-            already_processed.add('id')
-            self.id = value
-            self.validate_IdType(self.id)    # validate type IdType
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         if nodeName_ == 'PhysicalLinkPowerState':
             obj_ = PhysicalLinkPowerStateType.factory()
@@ -5948,45 +6153,67 @@ class PhysicalLinkPowerModelType(GeneratedsSuper):
 class PhysicalLinkType(GeneratedsSuper):
     subclass = None
     superclass = None
-    def __init__(self, frequencyDomain=None, physicalLinkPowerModel=None, voltageDomain=None, latencyValue='0', latencyUnit='cycles', throughputUnit='bit/cycle', id=None, throughputValue=None):
+    def __init__(self, id=None, throughputValue=None, throughputUnit='bit/cycle', latencyValue='0', latencyUnit='cycles', frequencyDomain=None, voltageDomain=None, physicalLinkPowerModel=None):
         self.original_tagname_ = None
-        self.frequencyDomain = _cast(None, frequencyDomain)
-        self.physicalLinkPowerModel = _cast(None, physicalLinkPowerModel)
-        self.voltageDomain = _cast(None, voltageDomain)
-        self.latencyValue = _cast(None, latencyValue)
-        self.latencyUnit = _cast(None, latencyUnit)
-        self.throughputUnit = _cast(None, throughputUnit)
         self.id = _cast(None, id)
         self.throughputValue = _cast(None, throughputValue)
+        self.throughputUnit = _cast(None, throughputUnit)
+        self.latencyValue = _cast(None, latencyValue)
+        self.latencyUnit = _cast(None, latencyUnit)
+        self.frequencyDomain = _cast(None, frequencyDomain)
+        self.voltageDomain = _cast(None, voltageDomain)
+        self.physicalLinkPowerModel = _cast(None, physicalLinkPowerModel)
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, PhysicalLinkType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if PhysicalLinkType.subclass:
             return PhysicalLinkType.subclass(*args_, **kwargs_)
         else:
             return PhysicalLinkType(*args_, **kwargs_)
     factory = staticmethod(factory)
-    def get_frequencyDomain(self): return self.frequencyDomain
-    def set_frequencyDomain(self, frequencyDomain): self.frequencyDomain = frequencyDomain
-    def get_physicalLinkPowerModel(self): return self.physicalLinkPowerModel
-    def set_physicalLinkPowerModel(self, physicalLinkPowerModel): self.physicalLinkPowerModel = physicalLinkPowerModel
-    def get_voltageDomain(self): return self.voltageDomain
-    def set_voltageDomain(self, voltageDomain): self.voltageDomain = voltageDomain
-    def get_latencyValue(self): return self.latencyValue
-    def set_latencyValue(self, latencyValue): self.latencyValue = latencyValue
-    def get_latencyUnit(self): return self.latencyUnit
-    def set_latencyUnit(self, latencyUnit): self.latencyUnit = latencyUnit
-    def get_throughputUnit(self): return self.throughputUnit
-    def set_throughputUnit(self, throughputUnit): self.throughputUnit = throughputUnit
     def get_id(self): return self.id
     def set_id(self, id): self.id = id
     def get_throughputValue(self): return self.throughputValue
     def set_throughputValue(self, throughputValue): self.throughputValue = throughputValue
-    def validate_RefType(self, value):
-        # Validate type RefType, a restriction on xs:IDREF.
+    def get_throughputUnit(self): return self.throughputUnit
+    def set_throughputUnit(self, throughputUnit): self.throughputUnit = throughputUnit
+    def get_latencyValue(self): return self.latencyValue
+    def set_latencyValue(self, latencyValue): self.latencyValue = latencyValue
+    def get_latencyUnit(self): return self.latencyUnit
+    def set_latencyUnit(self, latencyUnit): self.latencyUnit = latencyUnit
+    def get_frequencyDomain(self): return self.frequencyDomain
+    def set_frequencyDomain(self, frequencyDomain): self.frequencyDomain = frequencyDomain
+    def get_voltageDomain(self): return self.voltageDomain
+    def set_voltageDomain(self, voltageDomain): self.voltageDomain = voltageDomain
+    def get_physicalLinkPowerModel(self): return self.physicalLinkPowerModel
+    def set_physicalLinkPowerModel(self, physicalLinkPowerModel): self.physicalLinkPowerModel = physicalLinkPowerModel
+    def validate_IdType(self, value):
+        # Validate type IdType, a restriction on xs:ID.
         if value is not None and Validate_simpletypes_:
             if not self.gds_validate_simple_patterns(
-                    self.validate_RefType_patterns_, value):
-                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_RefType_patterns_, ))
-    validate_RefType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
+                    self.validate_IdType_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_IdType_patterns_, ))
+    validate_IdType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
+    def validate_ThroughputValueType(self, value):
+        # Validate type ThroughputValueType, a restriction on NonNegativeFloatType.
+        if value is not None and Validate_simpletypes_:
+            if value < 0:
+                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on ThroughputValueType' % {"value" : value} )
+    def validate_ThroughputUnitType(self, value):
+        # Validate type ThroughputUnitType, a restriction on xs:string.
+        if value is not None and Validate_simpletypes_:
+            value = str(value)
+            enumerations = ['bit/cycle', 'B/cycle', 'kB/cycle', 'KiB/cycle']
+            enumeration_respectee = False
+            for enum in enumerations:
+                if value == enum:
+                    enumeration_respectee = True
+                    break
+            if not enumeration_respectee:
+                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on ThroughputUnitType' % {"value" : value.encode("utf-8")} )
     def validate_CyclesValueType(self, value):
         # Validate type CyclesValueType, a restriction on NonNegativeFloatType.
         if value is not None and Validate_simpletypes_:
@@ -6004,30 +6231,13 @@ class PhysicalLinkType(GeneratedsSuper):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on CyclesUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_ThroughputUnitType(self, value):
-        # Validate type ThroughputUnitType, a restriction on xs:string.
-        if value is not None and Validate_simpletypes_:
-            value = str(value)
-            enumerations = ['bit/cycle', 'B/cycle', 'kB/cycle', 'KiB/cycle']
-            enumeration_respectee = False
-            for enum in enumerations:
-                if value == enum:
-                    enumeration_respectee = True
-                    break
-            if not enumeration_respectee:
-                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on ThroughputUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_IdType(self, value):
-        # Validate type IdType, a restriction on xs:ID.
+    def validate_RefType(self, value):
+        # Validate type RefType, a restriction on xs:IDREF.
         if value is not None and Validate_simpletypes_:
             if not self.gds_validate_simple_patterns(
-                    self.validate_IdType_patterns_, value):
-                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_IdType_patterns_, ))
-    validate_IdType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
-    def validate_ThroughputValueType(self, value):
-        # Validate type ThroughputValueType, a restriction on NonNegativeFloatType.
-        if value is not None and Validate_simpletypes_:
-            if value < 0:
-                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on ThroughputValueType' % {"value" : value} )
+                    self.validate_RefType_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_RefType_patterns_, ))
+    validate_RefType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def hasContent_(self):
         if (
 
@@ -6053,30 +6263,30 @@ class PhysicalLinkType(GeneratedsSuper):
         else:
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='PhysicalLinkType'):
-        if self.frequencyDomain is not None and 'frequencyDomain' not in already_processed:
-            already_processed.add('frequencyDomain')
-            outfile.write(' frequencyDomain=%s' % (quote_attrib(self.frequencyDomain), ))
-        if self.physicalLinkPowerModel is not None and 'physicalLinkPowerModel' not in already_processed:
-            already_processed.add('physicalLinkPowerModel')
-            outfile.write(' physicalLinkPowerModel=%s' % (quote_attrib(self.physicalLinkPowerModel), ))
-        if self.voltageDomain is not None and 'voltageDomain' not in already_processed:
-            already_processed.add('voltageDomain')
-            outfile.write(' voltageDomain=%s' % (quote_attrib(self.voltageDomain), ))
-        if self.latencyValue != 0 and 'latencyValue' not in already_processed:
-            already_processed.add('latencyValue')
-            outfile.write(' latencyValue=%s' % (quote_attrib(self.latencyValue), ))
-        if self.latencyUnit != cycles and 'latencyUnit' not in already_processed:
-            already_processed.add('latencyUnit')
-            outfile.write(' latencyUnit=%s' % (quote_attrib(self.latencyUnit), ))
-        if self.throughputUnit != bit/cycle and 'throughputUnit' not in already_processed:
-            already_processed.add('throughputUnit')
-            outfile.write(' throughputUnit=%s' % (quote_attrib(self.throughputUnit), ))
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
         if self.throughputValue is not None and 'throughputValue' not in already_processed:
             already_processed.add('throughputValue')
             outfile.write(' throughputValue=%s' % (quote_attrib(self.throughputValue), ))
+        if self.throughputUnit != "bit/cycle" and 'throughputUnit' not in already_processed:
+            already_processed.add('throughputUnit')
+            outfile.write(' throughputUnit=%s' % (quote_attrib(self.throughputUnit), ))
+        if self.latencyValue != "0" and 'latencyValue' not in already_processed:
+            already_processed.add('latencyValue')
+            outfile.write(' latencyValue=%s' % (quote_attrib(self.latencyValue), ))
+        if self.latencyUnit != "cycles" and 'latencyUnit' not in already_processed:
+            already_processed.add('latencyUnit')
+            outfile.write(' latencyUnit=%s' % (quote_attrib(self.latencyUnit), ))
+        if self.frequencyDomain is not None and 'frequencyDomain' not in already_processed:
+            already_processed.add('frequencyDomain')
+            outfile.write(' frequencyDomain=%s' % (quote_attrib(self.frequencyDomain), ))
+        if self.voltageDomain is not None and 'voltageDomain' not in already_processed:
+            already_processed.add('voltageDomain')
+            outfile.write(' voltageDomain=%s' % (quote_attrib(self.voltageDomain), ))
+        if self.physicalLinkPowerModel is not None and 'physicalLinkPowerModel' not in already_processed:
+            already_processed.add('physicalLinkPowerModel')
+            outfile.write(' physicalLinkPowerModel=%s' % (quote_attrib(self.physicalLinkPowerModel), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='PhysicalLinkType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
@@ -6087,36 +6297,6 @@ class PhysicalLinkType(GeneratedsSuper):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
-        value = find_attr_value_('frequencyDomain', node)
-        if value is not None and 'frequencyDomain' not in already_processed:
-            already_processed.add('frequencyDomain')
-            self.frequencyDomain = value
-            self.validate_RefType(self.frequencyDomain)    # validate type RefType
-        value = find_attr_value_('physicalLinkPowerModel', node)
-        if value is not None and 'physicalLinkPowerModel' not in already_processed:
-            already_processed.add('physicalLinkPowerModel')
-            self.physicalLinkPowerModel = value
-            self.validate_RefType(self.physicalLinkPowerModel)    # validate type RefType
-        value = find_attr_value_('voltageDomain', node)
-        if value is not None and 'voltageDomain' not in already_processed:
-            already_processed.add('voltageDomain')
-            self.voltageDomain = value
-            self.validate_RefType(self.voltageDomain)    # validate type RefType
-        value = find_attr_value_('latencyValue', node)
-        if value is not None and 'latencyValue' not in already_processed:
-            already_processed.add('latencyValue')
-            self.latencyValue = value
-            self.validate_CyclesValueType(self.latencyValue)    # validate type CyclesValueType
-        value = find_attr_value_('latencyUnit', node)
-        if value is not None and 'latencyUnit' not in already_processed:
-            already_processed.add('latencyUnit')
-            self.latencyUnit = value
-            self.validate_CyclesUnitType(self.latencyUnit)    # validate type CyclesUnitType
-        value = find_attr_value_('throughputUnit', node)
-        if value is not None and 'throughputUnit' not in already_processed:
-            already_processed.add('throughputUnit')
-            self.throughputUnit = value
-            self.validate_ThroughputUnitType(self.throughputUnit)    # validate type ThroughputUnitType
         value = find_attr_value_('id', node)
         if value is not None and 'id' not in already_processed:
             already_processed.add('id')
@@ -6127,6 +6307,36 @@ class PhysicalLinkType(GeneratedsSuper):
             already_processed.add('throughputValue')
             self.throughputValue = value
             self.validate_ThroughputValueType(self.throughputValue)    # validate type ThroughputValueType
+        value = find_attr_value_('throughputUnit', node)
+        if value is not None and 'throughputUnit' not in already_processed:
+            already_processed.add('throughputUnit')
+            self.throughputUnit = value
+            self.validate_ThroughputUnitType(self.throughputUnit)    # validate type ThroughputUnitType
+        value = find_attr_value_('latencyValue', node)
+        if value is not None and 'latencyValue' not in already_processed:
+            already_processed.add('latencyValue')
+            self.latencyValue = value
+            self.validate_CyclesValueType(self.latencyValue)    # validate type CyclesValueType
+        value = find_attr_value_('latencyUnit', node)
+        if value is not None and 'latencyUnit' not in already_processed:
+            already_processed.add('latencyUnit')
+            self.latencyUnit = value
+            self.validate_CyclesUnitType(self.latencyUnit)    # validate type CyclesUnitType
+        value = find_attr_value_('frequencyDomain', node)
+        if value is not None and 'frequencyDomain' not in already_processed:
+            already_processed.add('frequencyDomain')
+            self.frequencyDomain = value
+            self.validate_RefType(self.frequencyDomain)    # validate type RefType
+        value = find_attr_value_('voltageDomain', node)
+        if value is not None and 'voltageDomain' not in already_processed:
+            already_processed.add('voltageDomain')
+            self.voltageDomain = value
+            self.validate_RefType(self.voltageDomain)    # validate type RefType
+        value = find_attr_value_('physicalLinkPowerModel', node)
+        if value is not None and 'physicalLinkPowerModel' not in already_processed:
+            already_processed.add('physicalLinkPowerModel')
+            self.physicalLinkPowerModel = value
+            self.validate_RefType(self.physicalLinkPowerModel)    # validate type RefType
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         pass
 # end class PhysicalLinkType
@@ -6139,6 +6349,11 @@ class PhysicalLinkRefType(GeneratedsSuper):
         self.original_tagname_ = None
         self.physicalLink = _cast(None, physicalLink)
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, PhysicalLinkRefType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if PhysicalLinkRefType.subclass:
             return PhysicalLinkRefType.subclass(*args_, **kwargs_)
         else:
@@ -6204,24 +6419,36 @@ class PhysicalLinkRefType(GeneratedsSuper):
 class DMAControllerPowerStateType(VoltageFrequencyConditionListType):
     subclass = None
     superclass = VoltageFrequencyConditionListType
-    def __init__(self, VoltageCondition=None, FrequencyCondition=None, FrequencyVoltageCondition=None, powerValue=None, powerUnit='pW', name=None):
+    def __init__(self, VoltageCondition=None, FrequencyCondition=None, FrequencyVoltageCondition=None, name=None, powerValue=None, powerUnit='pW'):
         self.original_tagname_ = None
         super(DMAControllerPowerStateType, self).__init__(VoltageCondition, FrequencyCondition, FrequencyVoltageCondition, )
+        self.name = _cast(None, name)
         self.powerValue = _cast(None, powerValue)
         self.powerUnit = _cast(None, powerUnit)
-        self.name = _cast(None, name)
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, DMAControllerPowerStateType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if DMAControllerPowerStateType.subclass:
             return DMAControllerPowerStateType.subclass(*args_, **kwargs_)
         else:
             return DMAControllerPowerStateType(*args_, **kwargs_)
     factory = staticmethod(factory)
+    def get_name(self): return self.name
+    def set_name(self, name): self.name = name
     def get_powerValue(self): return self.powerValue
     def set_powerValue(self, powerValue): self.powerValue = powerValue
     def get_powerUnit(self): return self.powerUnit
     def set_powerUnit(self, powerUnit): self.powerUnit = powerUnit
-    def get_name(self): return self.name
-    def set_name(self, name): self.name = name
+    def validate_NameType(self, value):
+        # Validate type NameType, a restriction on xs:string.
+        if value is not None and Validate_simpletypes_:
+            if not self.gds_validate_simple_patterns(
+                    self.validate_NameType_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_NameType_patterns_, ))
+    validate_NameType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def validate_PowerValueType(self, value):
         # Validate type PowerValueType, a restriction on NonNegativeFloatType.
         if value is not None and Validate_simpletypes_:
@@ -6239,13 +6466,6 @@ class DMAControllerPowerStateType(VoltageFrequencyConditionListType):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on PowerUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_NameType(self, value):
-        # Validate type NameType, a restriction on xs:string.
-        if value is not None and Validate_simpletypes_:
-            if not self.gds_validate_simple_patterns(
-                    self.validate_NameType_patterns_, value):
-                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_NameType_patterns_, ))
-    validate_NameType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def hasContent_(self):
         if (
             super(DMAControllerPowerStateType, self).hasContent_()
@@ -6273,15 +6493,15 @@ class DMAControllerPowerStateType(VoltageFrequencyConditionListType):
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='DMAControllerPowerStateType'):
         super(DMAControllerPowerStateType, self).exportAttributes(outfile, level, already_processed, namespace_, name_='DMAControllerPowerStateType')
-        if self.powerValue is not None and 'powerValue' not in already_processed:
-            already_processed.add('powerValue')
-            outfile.write(' powerValue=%s' % (quote_attrib(self.powerValue), ))
-        if self.powerUnit != pW and 'powerUnit' not in already_processed:
-            already_processed.add('powerUnit')
-            outfile.write(' powerUnit=%s' % (quote_attrib(self.powerUnit), ))
         if self.name is not None and 'name' not in already_processed:
             already_processed.add('name')
             outfile.write(' name=%s' % (quote_attrib(self.name), ))
+        if self.powerValue is not None and 'powerValue' not in already_processed:
+            already_processed.add('powerValue')
+            outfile.write(' powerValue=%s' % (quote_attrib(self.powerValue), ))
+        if self.powerUnit != "pW" and 'powerUnit' not in already_processed:
+            already_processed.add('powerUnit')
+            outfile.write(' powerUnit=%s' % (quote_attrib(self.powerUnit), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='DMAControllerPowerStateType', fromsubclass_=False, pretty_print=True):
         super(DMAControllerPowerStateType, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
     def build(self, node):
@@ -6292,6 +6512,11 @@ class DMAControllerPowerStateType(VoltageFrequencyConditionListType):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
+        value = find_attr_value_('name', node)
+        if value is not None and 'name' not in already_processed:
+            already_processed.add('name')
+            self.name = value
+            self.validate_NameType(self.name)    # validate type NameType
         value = find_attr_value_('powerValue', node)
         if value is not None and 'powerValue' not in already_processed:
             already_processed.add('powerValue')
@@ -6302,11 +6527,6 @@ class DMAControllerPowerStateType(VoltageFrequencyConditionListType):
             already_processed.add('powerUnit')
             self.powerUnit = value
             self.validate_PowerUnitType(self.powerUnit)    # validate type PowerUnitType
-        value = find_attr_value_('name', node)
-        if value is not None and 'name' not in already_processed:
-            already_processed.add('name')
-            self.name = value
-            self.validate_NameType(self.name)    # validate type NameType
         super(DMAControllerPowerStateType, self).buildAttributes(node, attrs, already_processed)
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         super(DMAControllerPowerStateType, self).buildChildren(child_, node, nodeName_, True)
@@ -6317,20 +6537,25 @@ class DMAControllerPowerStateType(VoltageFrequencyConditionListType):
 class DMAControllerPowerModelType(GeneratedsSuper):
     subclass = None
     superclass = None
-    def __init__(self, leakageCurrentUnit='pA', switchedCapacitanceValue='0', leakageCurrentValue='0', switchedCapacitanceUnit='pF', transferCapacitanceValue='0', transferCapacitanceUnit='pF', id=None, DMAControllerPowerState=None):
+    def __init__(self, id=None, leakageCurrentValue='0', leakageCurrentUnit='pA', switchedCapacitanceValue='0', switchedCapacitanceUnit='pF', transferCapacitanceValue='0', transferCapacitanceUnit='pF', DMAControllerPowerState=None):
         self.original_tagname_ = None
+        self.id = _cast(None, id)
+        self.leakageCurrentValue = _cast(None, leakageCurrentValue)
         self.leakageCurrentUnit = _cast(None, leakageCurrentUnit)
         self.switchedCapacitanceValue = _cast(None, switchedCapacitanceValue)
-        self.leakageCurrentValue = _cast(None, leakageCurrentValue)
         self.switchedCapacitanceUnit = _cast(None, switchedCapacitanceUnit)
         self.transferCapacitanceValue = _cast(None, transferCapacitanceValue)
         self.transferCapacitanceUnit = _cast(None, transferCapacitanceUnit)
-        self.id = _cast(None, id)
         if DMAControllerPowerState is None:
             self.DMAControllerPowerState = []
         else:
             self.DMAControllerPowerState = DMAControllerPowerState
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, DMAControllerPowerModelType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if DMAControllerPowerModelType.subclass:
             return DMAControllerPowerModelType.subclass(*args_, **kwargs_)
         else:
@@ -6341,20 +6566,32 @@ class DMAControllerPowerModelType(GeneratedsSuper):
     def add_DMAControllerPowerState(self, value): self.DMAControllerPowerState.append(value)
     def insert_DMAControllerPowerState_at(self, index, value): self.DMAControllerPowerState.insert(index, value)
     def replace_DMAControllerPowerState_at(self, index, value): self.DMAControllerPowerState[index] = value
+    def get_id(self): return self.id
+    def set_id(self, id): self.id = id
+    def get_leakageCurrentValue(self): return self.leakageCurrentValue
+    def set_leakageCurrentValue(self, leakageCurrentValue): self.leakageCurrentValue = leakageCurrentValue
     def get_leakageCurrentUnit(self): return self.leakageCurrentUnit
     def set_leakageCurrentUnit(self, leakageCurrentUnit): self.leakageCurrentUnit = leakageCurrentUnit
     def get_switchedCapacitanceValue(self): return self.switchedCapacitanceValue
     def set_switchedCapacitanceValue(self, switchedCapacitanceValue): self.switchedCapacitanceValue = switchedCapacitanceValue
-    def get_leakageCurrentValue(self): return self.leakageCurrentValue
-    def set_leakageCurrentValue(self, leakageCurrentValue): self.leakageCurrentValue = leakageCurrentValue
     def get_switchedCapacitanceUnit(self): return self.switchedCapacitanceUnit
     def set_switchedCapacitanceUnit(self, switchedCapacitanceUnit): self.switchedCapacitanceUnit = switchedCapacitanceUnit
     def get_transferCapacitanceValue(self): return self.transferCapacitanceValue
     def set_transferCapacitanceValue(self, transferCapacitanceValue): self.transferCapacitanceValue = transferCapacitanceValue
     def get_transferCapacitanceUnit(self): return self.transferCapacitanceUnit
     def set_transferCapacitanceUnit(self, transferCapacitanceUnit): self.transferCapacitanceUnit = transferCapacitanceUnit
-    def get_id(self): return self.id
-    def set_id(self, id): self.id = id
+    def validate_IdType(self, value):
+        # Validate type IdType, a restriction on xs:ID.
+        if value is not None and Validate_simpletypes_:
+            if not self.gds_validate_simple_patterns(
+                    self.validate_IdType_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_IdType_patterns_, ))
+    validate_IdType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
+    def validate_CurrentValueType(self, value):
+        # Validate type CurrentValueType, a restriction on NonNegativeFloatType.
+        if value is not None and Validate_simpletypes_:
+            if value < 0:
+                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on CurrentValueType' % {"value" : value} )
     def validate_CurrentUnitType(self, value):
         # Validate type CurrentUnitType, a restriction on xs:string.
         if value is not None and Validate_simpletypes_:
@@ -6372,11 +6609,6 @@ class DMAControllerPowerModelType(GeneratedsSuper):
         if value is not None and Validate_simpletypes_:
             if value < 0:
                 warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on CapacitanceValueType' % {"value" : value} )
-    def validate_CurrentValueType(self, value):
-        # Validate type CurrentValueType, a restriction on NonNegativeFloatType.
-        if value is not None and Validate_simpletypes_:
-            if value < 0:
-                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on CurrentValueType' % {"value" : value} )
     def validate_CapacitanceUnitType(self, value):
         # Validate type CapacitanceUnitType, a restriction on xs:string.
         if value is not None and Validate_simpletypes_:
@@ -6389,13 +6621,6 @@ class DMAControllerPowerModelType(GeneratedsSuper):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on CapacitanceUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_IdType(self, value):
-        # Validate type IdType, a restriction on xs:ID.
-        if value is not None and Validate_simpletypes_:
-            if not self.gds_validate_simple_patterns(
-                    self.validate_IdType_patterns_, value):
-                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_IdType_patterns_, ))
-    validate_IdType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def hasContent_(self):
         if (
             self.DMAControllerPowerState
@@ -6422,27 +6647,27 @@ class DMAControllerPowerModelType(GeneratedsSuper):
         else:
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='DMAControllerPowerModelType'):
-        if self.leakageCurrentUnit != pA and 'leakageCurrentUnit' not in already_processed:
-            already_processed.add('leakageCurrentUnit')
-            outfile.write(' leakageCurrentUnit=%s' % (quote_attrib(self.leakageCurrentUnit), ))
-        if self.switchedCapacitanceValue != 0 and 'switchedCapacitanceValue' not in already_processed:
-            already_processed.add('switchedCapacitanceValue')
-            outfile.write(' switchedCapacitanceValue=%s' % (quote_attrib(self.switchedCapacitanceValue), ))
-        if self.leakageCurrentValue != 0 and 'leakageCurrentValue' not in already_processed:
-            already_processed.add('leakageCurrentValue')
-            outfile.write(' leakageCurrentValue=%s' % (quote_attrib(self.leakageCurrentValue), ))
-        if self.switchedCapacitanceUnit != pF and 'switchedCapacitanceUnit' not in already_processed:
-            already_processed.add('switchedCapacitanceUnit')
-            outfile.write(' switchedCapacitanceUnit=%s' % (quote_attrib(self.switchedCapacitanceUnit), ))
-        if self.transferCapacitanceValue != 0 and 'transferCapacitanceValue' not in already_processed:
-            already_processed.add('transferCapacitanceValue')
-            outfile.write(' transferCapacitanceValue=%s' % (quote_attrib(self.transferCapacitanceValue), ))
-        if self.transferCapacitanceUnit != pF and 'transferCapacitanceUnit' not in already_processed:
-            already_processed.add('transferCapacitanceUnit')
-            outfile.write(' transferCapacitanceUnit=%s' % (quote_attrib(self.transferCapacitanceUnit), ))
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
+        if self.leakageCurrentValue != "0" and 'leakageCurrentValue' not in already_processed:
+            already_processed.add('leakageCurrentValue')
+            outfile.write(' leakageCurrentValue=%s' % (quote_attrib(self.leakageCurrentValue), ))
+        if self.leakageCurrentUnit != "pA" and 'leakageCurrentUnit' not in already_processed:
+            already_processed.add('leakageCurrentUnit')
+            outfile.write(' leakageCurrentUnit=%s' % (quote_attrib(self.leakageCurrentUnit), ))
+        if self.switchedCapacitanceValue != "0" and 'switchedCapacitanceValue' not in already_processed:
+            already_processed.add('switchedCapacitanceValue')
+            outfile.write(' switchedCapacitanceValue=%s' % (quote_attrib(self.switchedCapacitanceValue), ))
+        if self.switchedCapacitanceUnit != "pF" and 'switchedCapacitanceUnit' not in already_processed:
+            already_processed.add('switchedCapacitanceUnit')
+            outfile.write(' switchedCapacitanceUnit=%s' % (quote_attrib(self.switchedCapacitanceUnit), ))
+        if self.transferCapacitanceValue != "0" and 'transferCapacitanceValue' not in already_processed:
+            already_processed.add('transferCapacitanceValue')
+            outfile.write(' transferCapacitanceValue=%s' % (quote_attrib(self.transferCapacitanceValue), ))
+        if self.transferCapacitanceUnit != "pF" and 'transferCapacitanceUnit' not in already_processed:
+            already_processed.add('transferCapacitanceUnit')
+            outfile.write(' transferCapacitanceUnit=%s' % (quote_attrib(self.transferCapacitanceUnit), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='DMAControllerPowerModelType', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
@@ -6458,6 +6683,16 @@ class DMAControllerPowerModelType(GeneratedsSuper):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
+        value = find_attr_value_('id', node)
+        if value is not None and 'id' not in already_processed:
+            already_processed.add('id')
+            self.id = value
+            self.validate_IdType(self.id)    # validate type IdType
+        value = find_attr_value_('leakageCurrentValue', node)
+        if value is not None and 'leakageCurrentValue' not in already_processed:
+            already_processed.add('leakageCurrentValue')
+            self.leakageCurrentValue = value
+            self.validate_CurrentValueType(self.leakageCurrentValue)    # validate type CurrentValueType
         value = find_attr_value_('leakageCurrentUnit', node)
         if value is not None and 'leakageCurrentUnit' not in already_processed:
             already_processed.add('leakageCurrentUnit')
@@ -6468,11 +6703,6 @@ class DMAControllerPowerModelType(GeneratedsSuper):
             already_processed.add('switchedCapacitanceValue')
             self.switchedCapacitanceValue = value
             self.validate_CapacitanceValueType(self.switchedCapacitanceValue)    # validate type CapacitanceValueType
-        value = find_attr_value_('leakageCurrentValue', node)
-        if value is not None and 'leakageCurrentValue' not in already_processed:
-            already_processed.add('leakageCurrentValue')
-            self.leakageCurrentValue = value
-            self.validate_CurrentValueType(self.leakageCurrentValue)    # validate type CurrentValueType
         value = find_attr_value_('switchedCapacitanceUnit', node)
         if value is not None and 'switchedCapacitanceUnit' not in already_processed:
             already_processed.add('switchedCapacitanceUnit')
@@ -6488,11 +6718,6 @@ class DMAControllerPowerModelType(GeneratedsSuper):
             already_processed.add('transferCapacitanceUnit')
             self.transferCapacitanceUnit = value
             self.validate_CapacitanceUnitType(self.transferCapacitanceUnit)    # validate type CapacitanceUnitType
-        value = find_attr_value_('id', node)
-        if value is not None and 'id' not in already_processed:
-            already_processed.add('id')
-            self.id = value
-            self.validate_IdType(self.id)    # validate type IdType
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         if nodeName_ == 'DMAControllerPowerState':
             obj_ = DMAControllerPowerStateType.factory()
@@ -6505,52 +6730,74 @@ class DMAControllerPowerModelType(GeneratedsSuper):
 class DMAControllerType(GeneratedsSuper):
     subclass = None
     superclass = None
-    def __init__(self, channelCount=None, frequencyDomain=None, dmaControllerPowerModel=None, voltageDomain=None, latencyValue='0', latencyUnit='cycles', throughputUnit='bit/cycle', id=None, throughputValue=None):
+    def __init__(self, id=None, channelCount=None, throughputValue=None, throughputUnit='bit/cycle', latencyValue='0', latencyUnit='cycles', frequencyDomain=None, voltageDomain=None, dmaControllerPowerModel=None):
         self.original_tagname_ = None
+        self.id = _cast(None, id)
         self.channelCount = _cast(None, channelCount)
-        self.frequencyDomain = _cast(None, frequencyDomain)
-        self.dmaControllerPowerModel = _cast(None, dmaControllerPowerModel)
-        self.voltageDomain = _cast(None, voltageDomain)
+        self.throughputValue = _cast(None, throughputValue)
+        self.throughputUnit = _cast(None, throughputUnit)
         self.latencyValue = _cast(None, latencyValue)
         self.latencyUnit = _cast(None, latencyUnit)
-        self.throughputUnit = _cast(None, throughputUnit)
-        self.id = _cast(None, id)
-        self.throughputValue = _cast(None, throughputValue)
+        self.frequencyDomain = _cast(None, frequencyDomain)
+        self.voltageDomain = _cast(None, voltageDomain)
+        self.dmaControllerPowerModel = _cast(None, dmaControllerPowerModel)
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, DMAControllerType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if DMAControllerType.subclass:
             return DMAControllerType.subclass(*args_, **kwargs_)
         else:
             return DMAControllerType(*args_, **kwargs_)
     factory = staticmethod(factory)
+    def get_id(self): return self.id
+    def set_id(self, id): self.id = id
     def get_channelCount(self): return self.channelCount
     def set_channelCount(self, channelCount): self.channelCount = channelCount
-    def get_frequencyDomain(self): return self.frequencyDomain
-    def set_frequencyDomain(self, frequencyDomain): self.frequencyDomain = frequencyDomain
-    def get_dmaControllerPowerModel(self): return self.dmaControllerPowerModel
-    def set_dmaControllerPowerModel(self, dmaControllerPowerModel): self.dmaControllerPowerModel = dmaControllerPowerModel
-    def get_voltageDomain(self): return self.voltageDomain
-    def set_voltageDomain(self, voltageDomain): self.voltageDomain = voltageDomain
+    def get_throughputValue(self): return self.throughputValue
+    def set_throughputValue(self, throughputValue): self.throughputValue = throughputValue
+    def get_throughputUnit(self): return self.throughputUnit
+    def set_throughputUnit(self, throughputUnit): self.throughputUnit = throughputUnit
     def get_latencyValue(self): return self.latencyValue
     def set_latencyValue(self, latencyValue): self.latencyValue = latencyValue
     def get_latencyUnit(self): return self.latencyUnit
     def set_latencyUnit(self, latencyUnit): self.latencyUnit = latencyUnit
-    def get_throughputUnit(self): return self.throughputUnit
-    def set_throughputUnit(self, throughputUnit): self.throughputUnit = throughputUnit
-    def get_id(self): return self.id
-    def set_id(self, id): self.id = id
-    def get_throughputValue(self): return self.throughputValue
-    def set_throughputValue(self, throughputValue): self.throughputValue = throughputValue
+    def get_frequencyDomain(self): return self.frequencyDomain
+    def set_frequencyDomain(self, frequencyDomain): self.frequencyDomain = frequencyDomain
+    def get_voltageDomain(self): return self.voltageDomain
+    def set_voltageDomain(self, voltageDomain): self.voltageDomain = voltageDomain
+    def get_dmaControllerPowerModel(self): return self.dmaControllerPowerModel
+    def set_dmaControllerPowerModel(self, dmaControllerPowerModel): self.dmaControllerPowerModel = dmaControllerPowerModel
+    def validate_IdType(self, value):
+        # Validate type IdType, a restriction on xs:ID.
+        if value is not None and Validate_simpletypes_:
+            if not self.gds_validate_simple_patterns(
+                    self.validate_IdType_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_IdType_patterns_, ))
+    validate_IdType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def validate_PositiveIntType(self, value):
         # Validate type PositiveIntType, a restriction on xs:positiveInteger.
         if value is not None and Validate_simpletypes_:
             pass
-    def validate_RefType(self, value):
-        # Validate type RefType, a restriction on xs:IDREF.
+    def validate_ThroughputValueType(self, value):
+        # Validate type ThroughputValueType, a restriction on NonNegativeFloatType.
         if value is not None and Validate_simpletypes_:
-            if not self.gds_validate_simple_patterns(
-                    self.validate_RefType_patterns_, value):
-                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_RefType_patterns_, ))
-    validate_RefType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
+            if value < 0:
+                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on ThroughputValueType' % {"value" : value} )
+    def validate_ThroughputUnitType(self, value):
+        # Validate type ThroughputUnitType, a restriction on xs:string.
+        if value is not None and Validate_simpletypes_:
+            value = str(value)
+            enumerations = ['bit/cycle', 'B/cycle', 'kB/cycle', 'KiB/cycle']
+            enumeration_respectee = False
+            for enum in enumerations:
+                if value == enum:
+                    enumeration_respectee = True
+                    break
+            if not enumeration_respectee:
+                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on ThroughputUnitType' % {"value" : value.encode("utf-8")} )
     def validate_CyclesValueType(self, value):
         # Validate type CyclesValueType, a restriction on NonNegativeFloatType.
         if value is not None and Validate_simpletypes_:
@@ -6568,30 +6815,13 @@ class DMAControllerType(GeneratedsSuper):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on CyclesUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_ThroughputUnitType(self, value):
-        # Validate type ThroughputUnitType, a restriction on xs:string.
-        if value is not None and Validate_simpletypes_:
-            value = str(value)
-            enumerations = ['bit/cycle', 'B/cycle', 'kB/cycle', 'KiB/cycle']
-            enumeration_respectee = False
-            for enum in enumerations:
-                if value == enum:
-                    enumeration_respectee = True
-                    break
-            if not enumeration_respectee:
-                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on ThroughputUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_IdType(self, value):
-        # Validate type IdType, a restriction on xs:ID.
+    def validate_RefType(self, value):
+        # Validate type RefType, a restriction on xs:IDREF.
         if value is not None and Validate_simpletypes_:
             if not self.gds_validate_simple_patterns(
-                    self.validate_IdType_patterns_, value):
-                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_IdType_patterns_, ))
-    validate_IdType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
-    def validate_ThroughputValueType(self, value):
-        # Validate type ThroughputValueType, a restriction on NonNegativeFloatType.
-        if value is not None and Validate_simpletypes_:
-            if value < 0:
-                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on ThroughputValueType' % {"value" : value} )
+                    self.validate_RefType_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_RefType_patterns_, ))
+    validate_RefType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def hasContent_(self):
         if (
 
@@ -6617,33 +6847,33 @@ class DMAControllerType(GeneratedsSuper):
         else:
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='DMAControllerType'):
-        if self.channelCount is not None and 'channelCount' not in already_processed:
-            already_processed.add('channelCount')
-            outfile.write(' channelCount=%s' % (quote_attrib(self.channelCount), ))
-        if self.frequencyDomain is not None and 'frequencyDomain' not in already_processed:
-            already_processed.add('frequencyDomain')
-            outfile.write(' frequencyDomain=%s' % (quote_attrib(self.frequencyDomain), ))
-        if self.dmaControllerPowerModel is not None and 'dmaControllerPowerModel' not in already_processed:
-            already_processed.add('dmaControllerPowerModel')
-            outfile.write(' dmaControllerPowerModel=%s' % (quote_attrib(self.dmaControllerPowerModel), ))
-        if self.voltageDomain is not None and 'voltageDomain' not in already_processed:
-            already_processed.add('voltageDomain')
-            outfile.write(' voltageDomain=%s' % (quote_attrib(self.voltageDomain), ))
-        if self.latencyValue != 0 and 'latencyValue' not in already_processed:
-            already_processed.add('latencyValue')
-            outfile.write(' latencyValue=%s' % (quote_attrib(self.latencyValue), ))
-        if self.latencyUnit != cycles and 'latencyUnit' not in already_processed:
-            already_processed.add('latencyUnit')
-            outfile.write(' latencyUnit=%s' % (quote_attrib(self.latencyUnit), ))
-        if self.throughputUnit != bit/cycle and 'throughputUnit' not in already_processed:
-            already_processed.add('throughputUnit')
-            outfile.write(' throughputUnit=%s' % (quote_attrib(self.throughputUnit), ))
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
+        if self.channelCount is not None and 'channelCount' not in already_processed:
+            already_processed.add('channelCount')
+            outfile.write(' channelCount=%s' % (quote_attrib(self.channelCount), ))
         if self.throughputValue is not None and 'throughputValue' not in already_processed:
             already_processed.add('throughputValue')
             outfile.write(' throughputValue=%s' % (quote_attrib(self.throughputValue), ))
+        if self.throughputUnit != "bit/cycle" and 'throughputUnit' not in already_processed:
+            already_processed.add('throughputUnit')
+            outfile.write(' throughputUnit=%s' % (quote_attrib(self.throughputUnit), ))
+        if self.latencyValue != "0" and 'latencyValue' not in already_processed:
+            already_processed.add('latencyValue')
+            outfile.write(' latencyValue=%s' % (quote_attrib(self.latencyValue), ))
+        if self.latencyUnit != "cycles" and 'latencyUnit' not in already_processed:
+            already_processed.add('latencyUnit')
+            outfile.write(' latencyUnit=%s' % (quote_attrib(self.latencyUnit), ))
+        if self.frequencyDomain is not None and 'frequencyDomain' not in already_processed:
+            already_processed.add('frequencyDomain')
+            outfile.write(' frequencyDomain=%s' % (quote_attrib(self.frequencyDomain), ))
+        if self.voltageDomain is not None and 'voltageDomain' not in already_processed:
+            already_processed.add('voltageDomain')
+            outfile.write(' voltageDomain=%s' % (quote_attrib(self.voltageDomain), ))
+        if self.dmaControllerPowerModel is not None and 'dmaControllerPowerModel' not in already_processed:
+            already_processed.add('dmaControllerPowerModel')
+            outfile.write(' dmaControllerPowerModel=%s' % (quote_attrib(self.dmaControllerPowerModel), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='DMAControllerType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
@@ -6654,6 +6884,11 @@ class DMAControllerType(GeneratedsSuper):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
+        value = find_attr_value_('id', node)
+        if value is not None and 'id' not in already_processed:
+            already_processed.add('id')
+            self.id = value
+            self.validate_IdType(self.id)    # validate type IdType
         value = find_attr_value_('channelCount', node)
         if value is not None and 'channelCount' not in already_processed:
             already_processed.add('channelCount')
@@ -6664,21 +6899,16 @@ class DMAControllerType(GeneratedsSuper):
             if self.channelCount <= 0:
                 raise_parse_error(node, 'Invalid PositiveInteger')
             self.validate_PositiveIntType(self.channelCount)    # validate type PositiveIntType
-        value = find_attr_value_('frequencyDomain', node)
-        if value is not None and 'frequencyDomain' not in already_processed:
-            already_processed.add('frequencyDomain')
-            self.frequencyDomain = value
-            self.validate_RefType(self.frequencyDomain)    # validate type RefType
-        value = find_attr_value_('dmaControllerPowerModel', node)
-        if value is not None and 'dmaControllerPowerModel' not in already_processed:
-            already_processed.add('dmaControllerPowerModel')
-            self.dmaControllerPowerModel = value
-            self.validate_RefType(self.dmaControllerPowerModel)    # validate type RefType
-        value = find_attr_value_('voltageDomain', node)
-        if value is not None and 'voltageDomain' not in already_processed:
-            already_processed.add('voltageDomain')
-            self.voltageDomain = value
-            self.validate_RefType(self.voltageDomain)    # validate type RefType
+        value = find_attr_value_('throughputValue', node)
+        if value is not None and 'throughputValue' not in already_processed:
+            already_processed.add('throughputValue')
+            self.throughputValue = value
+            self.validate_ThroughputValueType(self.throughputValue)    # validate type ThroughputValueType
+        value = find_attr_value_('throughputUnit', node)
+        if value is not None and 'throughputUnit' not in already_processed:
+            already_processed.add('throughputUnit')
+            self.throughputUnit = value
+            self.validate_ThroughputUnitType(self.throughputUnit)    # validate type ThroughputUnitType
         value = find_attr_value_('latencyValue', node)
         if value is not None and 'latencyValue' not in already_processed:
             already_processed.add('latencyValue')
@@ -6689,21 +6919,21 @@ class DMAControllerType(GeneratedsSuper):
             already_processed.add('latencyUnit')
             self.latencyUnit = value
             self.validate_CyclesUnitType(self.latencyUnit)    # validate type CyclesUnitType
-        value = find_attr_value_('throughputUnit', node)
-        if value is not None and 'throughputUnit' not in already_processed:
-            already_processed.add('throughputUnit')
-            self.throughputUnit = value
-            self.validate_ThroughputUnitType(self.throughputUnit)    # validate type ThroughputUnitType
-        value = find_attr_value_('id', node)
-        if value is not None and 'id' not in already_processed:
-            already_processed.add('id')
-            self.id = value
-            self.validate_IdType(self.id)    # validate type IdType
-        value = find_attr_value_('throughputValue', node)
-        if value is not None and 'throughputValue' not in already_processed:
-            already_processed.add('throughputValue')
-            self.throughputValue = value
-            self.validate_ThroughputValueType(self.throughputValue)    # validate type ThroughputValueType
+        value = find_attr_value_('frequencyDomain', node)
+        if value is not None and 'frequencyDomain' not in already_processed:
+            already_processed.add('frequencyDomain')
+            self.frequencyDomain = value
+            self.validate_RefType(self.frequencyDomain)    # validate type RefType
+        value = find_attr_value_('voltageDomain', node)
+        if value is not None and 'voltageDomain' not in already_processed:
+            already_processed.add('voltageDomain')
+            self.voltageDomain = value
+            self.validate_RefType(self.voltageDomain)    # validate type RefType
+        value = find_attr_value_('dmaControllerPowerModel', node)
+        if value is not None and 'dmaControllerPowerModel' not in already_processed:
+            already_processed.add('dmaControllerPowerModel')
+            self.dmaControllerPowerModel = value
+            self.validate_RefType(self.dmaControllerPowerModel)    # validate type RefType
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         pass
 # end class DMAControllerType
@@ -6716,6 +6946,11 @@ class DMAControllerRefType(GeneratedsSuper):
         self.original_tagname_ = None
         self.dmaController = _cast(None, dmaController)
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, DMAControllerRefType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if DMAControllerRefType.subclass:
             return DMAControllerRefType.subclass(*args_, **kwargs_)
         else:
@@ -6781,39 +7016,61 @@ class DMAControllerRefType(GeneratedsSuper):
 class LogicalLinkType(GeneratedsSuper):
     subclass = None
     superclass = None
-    def __init__(self, frequencyDomain=None, latencyValue='0', latencyUnit='cycles', throughputUnit='bit/cycle', id=None, throughputValue=None):
+    def __init__(self, id=None, throughputValue=None, throughputUnit='bit/cycle', latencyValue='0', latencyUnit='cycles', frequencyDomain=None):
         self.original_tagname_ = None
-        self.frequencyDomain = _cast(None, frequencyDomain)
-        self.latencyValue = _cast(None, latencyValue)
-        self.latencyUnit = _cast(None, latencyUnit)
-        self.throughputUnit = _cast(None, throughputUnit)
         self.id = _cast(None, id)
         self.throughputValue = _cast(None, throughputValue)
+        self.throughputUnit = _cast(None, throughputUnit)
+        self.latencyValue = _cast(None, latencyValue)
+        self.latencyUnit = _cast(None, latencyUnit)
+        self.frequencyDomain = _cast(None, frequencyDomain)
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, LogicalLinkType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if LogicalLinkType.subclass:
             return LogicalLinkType.subclass(*args_, **kwargs_)
         else:
             return LogicalLinkType(*args_, **kwargs_)
     factory = staticmethod(factory)
-    def get_frequencyDomain(self): return self.frequencyDomain
-    def set_frequencyDomain(self, frequencyDomain): self.frequencyDomain = frequencyDomain
-    def get_latencyValue(self): return self.latencyValue
-    def set_latencyValue(self, latencyValue): self.latencyValue = latencyValue
-    def get_latencyUnit(self): return self.latencyUnit
-    def set_latencyUnit(self, latencyUnit): self.latencyUnit = latencyUnit
-    def get_throughputUnit(self): return self.throughputUnit
-    def set_throughputUnit(self, throughputUnit): self.throughputUnit = throughputUnit
     def get_id(self): return self.id
     def set_id(self, id): self.id = id
     def get_throughputValue(self): return self.throughputValue
     def set_throughputValue(self, throughputValue): self.throughputValue = throughputValue
-    def validate_RefType(self, value):
-        # Validate type RefType, a restriction on xs:IDREF.
+    def get_throughputUnit(self): return self.throughputUnit
+    def set_throughputUnit(self, throughputUnit): self.throughputUnit = throughputUnit
+    def get_latencyValue(self): return self.latencyValue
+    def set_latencyValue(self, latencyValue): self.latencyValue = latencyValue
+    def get_latencyUnit(self): return self.latencyUnit
+    def set_latencyUnit(self, latencyUnit): self.latencyUnit = latencyUnit
+    def get_frequencyDomain(self): return self.frequencyDomain
+    def set_frequencyDomain(self, frequencyDomain): self.frequencyDomain = frequencyDomain
+    def validate_IdType(self, value):
+        # Validate type IdType, a restriction on xs:ID.
         if value is not None and Validate_simpletypes_:
             if not self.gds_validate_simple_patterns(
-                    self.validate_RefType_patterns_, value):
-                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_RefType_patterns_, ))
-    validate_RefType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
+                    self.validate_IdType_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_IdType_patterns_, ))
+    validate_IdType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
+    def validate_ThroughputValueType(self, value):
+        # Validate type ThroughputValueType, a restriction on NonNegativeFloatType.
+        if value is not None and Validate_simpletypes_:
+            if value < 0:
+                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on ThroughputValueType' % {"value" : value} )
+    def validate_ThroughputUnitType(self, value):
+        # Validate type ThroughputUnitType, a restriction on xs:string.
+        if value is not None and Validate_simpletypes_:
+            value = str(value)
+            enumerations = ['bit/cycle', 'B/cycle', 'kB/cycle', 'KiB/cycle']
+            enumeration_respectee = False
+            for enum in enumerations:
+                if value == enum:
+                    enumeration_respectee = True
+                    break
+            if not enumeration_respectee:
+                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on ThroughputUnitType' % {"value" : value.encode("utf-8")} )
     def validate_CyclesValueType(self, value):
         # Validate type CyclesValueType, a restriction on NonNegativeFloatType.
         if value is not None and Validate_simpletypes_:
@@ -6831,30 +7088,13 @@ class LogicalLinkType(GeneratedsSuper):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on CyclesUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_ThroughputUnitType(self, value):
-        # Validate type ThroughputUnitType, a restriction on xs:string.
-        if value is not None and Validate_simpletypes_:
-            value = str(value)
-            enumerations = ['bit/cycle', 'B/cycle', 'kB/cycle', 'KiB/cycle']
-            enumeration_respectee = False
-            for enum in enumerations:
-                if value == enum:
-                    enumeration_respectee = True
-                    break
-            if not enumeration_respectee:
-                warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on ThroughputUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_IdType(self, value):
-        # Validate type IdType, a restriction on xs:ID.
+    def validate_RefType(self, value):
+        # Validate type RefType, a restriction on xs:IDREF.
         if value is not None and Validate_simpletypes_:
             if not self.gds_validate_simple_patterns(
-                    self.validate_IdType_patterns_, value):
-                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_IdType_patterns_, ))
-    validate_IdType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
-    def validate_ThroughputValueType(self, value):
-        # Validate type ThroughputValueType, a restriction on NonNegativeFloatType.
-        if value is not None and Validate_simpletypes_:
-            if value < 0:
-                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on ThroughputValueType' % {"value" : value} )
+                    self.validate_RefType_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_RefType_patterns_, ))
+    validate_RefType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def hasContent_(self):
         if (
 
@@ -6880,24 +7120,24 @@ class LogicalLinkType(GeneratedsSuper):
         else:
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='LogicalLinkType'):
-        if self.frequencyDomain is not None and 'frequencyDomain' not in already_processed:
-            already_processed.add('frequencyDomain')
-            outfile.write(' frequencyDomain=%s' % (quote_attrib(self.frequencyDomain), ))
-        if self.latencyValue != 0 and 'latencyValue' not in already_processed:
-            already_processed.add('latencyValue')
-            outfile.write(' latencyValue=%s' % (quote_attrib(self.latencyValue), ))
-        if self.latencyUnit != cycles and 'latencyUnit' not in already_processed:
-            already_processed.add('latencyUnit')
-            outfile.write(' latencyUnit=%s' % (quote_attrib(self.latencyUnit), ))
-        if self.throughputUnit != bit/cycle and 'throughputUnit' not in already_processed:
-            already_processed.add('throughputUnit')
-            outfile.write(' throughputUnit=%s' % (quote_attrib(self.throughputUnit), ))
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
         if self.throughputValue is not None and 'throughputValue' not in already_processed:
             already_processed.add('throughputValue')
             outfile.write(' throughputValue=%s' % (quote_attrib(self.throughputValue), ))
+        if self.throughputUnit != "bit/cycle" and 'throughputUnit' not in already_processed:
+            already_processed.add('throughputUnit')
+            outfile.write(' throughputUnit=%s' % (quote_attrib(self.throughputUnit), ))
+        if self.latencyValue != "0" and 'latencyValue' not in already_processed:
+            already_processed.add('latencyValue')
+            outfile.write(' latencyValue=%s' % (quote_attrib(self.latencyValue), ))
+        if self.latencyUnit != "cycles" and 'latencyUnit' not in already_processed:
+            already_processed.add('latencyUnit')
+            outfile.write(' latencyUnit=%s' % (quote_attrib(self.latencyUnit), ))
+        if self.frequencyDomain is not None and 'frequencyDomain' not in already_processed:
+            already_processed.add('frequencyDomain')
+            outfile.write(' frequencyDomain=%s' % (quote_attrib(self.frequencyDomain), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='LogicalLinkType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
@@ -6908,26 +7148,6 @@ class LogicalLinkType(GeneratedsSuper):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
-        value = find_attr_value_('frequencyDomain', node)
-        if value is not None and 'frequencyDomain' not in already_processed:
-            already_processed.add('frequencyDomain')
-            self.frequencyDomain = value
-            self.validate_RefType(self.frequencyDomain)    # validate type RefType
-        value = find_attr_value_('latencyValue', node)
-        if value is not None and 'latencyValue' not in already_processed:
-            already_processed.add('latencyValue')
-            self.latencyValue = value
-            self.validate_CyclesValueType(self.latencyValue)    # validate type CyclesValueType
-        value = find_attr_value_('latencyUnit', node)
-        if value is not None and 'latencyUnit' not in already_processed:
-            already_processed.add('latencyUnit')
-            self.latencyUnit = value
-            self.validate_CyclesUnitType(self.latencyUnit)    # validate type CyclesUnitType
-        value = find_attr_value_('throughputUnit', node)
-        if value is not None and 'throughputUnit' not in already_processed:
-            already_processed.add('throughputUnit')
-            self.throughputUnit = value
-            self.validate_ThroughputUnitType(self.throughputUnit)    # validate type ThroughputUnitType
         value = find_attr_value_('id', node)
         if value is not None and 'id' not in already_processed:
             already_processed.add('id')
@@ -6938,6 +7158,26 @@ class LogicalLinkType(GeneratedsSuper):
             already_processed.add('throughputValue')
             self.throughputValue = value
             self.validate_ThroughputValueType(self.throughputValue)    # validate type ThroughputValueType
+        value = find_attr_value_('throughputUnit', node)
+        if value is not None and 'throughputUnit' not in already_processed:
+            already_processed.add('throughputUnit')
+            self.throughputUnit = value
+            self.validate_ThroughputUnitType(self.throughputUnit)    # validate type ThroughputUnitType
+        value = find_attr_value_('latencyValue', node)
+        if value is not None and 'latencyValue' not in already_processed:
+            already_processed.add('latencyValue')
+            self.latencyValue = value
+            self.validate_CyclesValueType(self.latencyValue)    # validate type CyclesValueType
+        value = find_attr_value_('latencyUnit', node)
+        if value is not None and 'latencyUnit' not in already_processed:
+            already_processed.add('latencyUnit')
+            self.latencyUnit = value
+            self.validate_CyclesUnitType(self.latencyUnit)    # validate type CyclesUnitType
+        value = find_attr_value_('frequencyDomain', node)
+        if value is not None and 'frequencyDomain' not in already_processed:
+            already_processed.add('frequencyDomain')
+            self.frequencyDomain = value
+            self.validate_RefType(self.frequencyDomain)    # validate type RefType
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         pass
 # end class LogicalLinkType
@@ -6950,6 +7190,11 @@ class LogicalLinkRefType(GeneratedsSuper):
         self.original_tagname_ = None
         self.logicalLink = _cast(None, logicalLink)
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, LogicalLinkRefType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if LogicalLinkRefType.subclass:
             return LogicalLinkRefType.subclass(*args_, **kwargs_)
         else:
@@ -7030,6 +7275,11 @@ class CommunicationBufferType(GeneratedsSuper):
         else:
             self.CacheRef = CacheRef
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, CommunicationBufferType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if CommunicationBufferType.subclass:
             return CommunicationBufferType.subclass(*args_, **kwargs_)
         else:
@@ -7151,6 +7401,11 @@ class CommunicationPhaseType(GeneratedsSuper):
         else:
             self.LogicalLinkRef = LogicalLinkRef
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, CommunicationPhaseType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if CommunicationPhaseType.subclass:
             return CommunicationPhaseType.subclass(*args_, **kwargs_)
         else:
@@ -7288,6 +7543,11 @@ class CommunicationProducerType(GeneratedsSuper):
         self.Active = Active
         self.Passive = Passive
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, CommunicationProducerType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if CommunicationProducerType.subclass:
             return CommunicationProducerType.subclass(*args_, **kwargs_)
         else:
@@ -7392,6 +7652,11 @@ class CommunicationConsumerType(GeneratedsSuper):
         self.Passive = Passive
         self.Active = Active
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, CommunicationConsumerType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if CommunicationConsumerType.subclass:
             return CommunicationConsumerType.subclass(*args_, **kwargs_)
         else:
@@ -7489,11 +7754,11 @@ class CommunicationConsumerType(GeneratedsSuper):
 class CommunicationType(GeneratedsSuper):
     subclass = None
     superclass = None
-    def __init__(self, multicast=None, flags=None, id=None, Buffer=None, Producer=None, Consumer=None):
+    def __init__(self, id=None, multicast=None, flags=None, Buffer=None, Producer=None, Consumer=None):
         self.original_tagname_ = None
+        self.id = _cast(None, id)
         self.multicast = _cast(None, multicast)
         self.flags = _cast(None, flags)
-        self.id = _cast(None, id)
         self.Buffer = Buffer
         if Producer is None:
             self.Producer = []
@@ -7504,6 +7769,11 @@ class CommunicationType(GeneratedsSuper):
         else:
             self.Consumer = Consumer
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, CommunicationType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if CommunicationType.subclass:
             return CommunicationType.subclass(*args_, **kwargs_)
         else:
@@ -7521,12 +7791,19 @@ class CommunicationType(GeneratedsSuper):
     def add_Consumer(self, value): self.Consumer.append(value)
     def insert_Consumer_at(self, index, value): self.Consumer.insert(index, value)
     def replace_Consumer_at(self, index, value): self.Consumer[index] = value
+    def get_id(self): return self.id
+    def set_id(self, id): self.id = id
     def get_multicast(self): return self.multicast
     def set_multicast(self, multicast): self.multicast = multicast
     def get_flags(self): return self.flags
     def set_flags(self, flags): self.flags = flags
-    def get_id(self): return self.id
-    def set_id(self, id): self.id = id
+    def validate_IdType(self, value):
+        # Validate type IdType, a restriction on xs:ID.
+        if value is not None and Validate_simpletypes_:
+            if not self.gds_validate_simple_patterns(
+                    self.validate_IdType_patterns_, value):
+                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_IdType_patterns_, ))
+    validate_IdType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def validate_BooleanType(self, value):
         # Validate type BooleanType, a restriction on xs:boolean.
         if value is not None and Validate_simpletypes_:
@@ -7538,13 +7815,6 @@ class CommunicationType(GeneratedsSuper):
                     self.validate_FlagListType_patterns_, value):
                 warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_FlagListType_patterns_, ))
     validate_FlagListType_patterns_ = [['^[a-zA-Z0-9_.,]+$']]
-    def validate_IdType(self, value):
-        # Validate type IdType, a restriction on xs:ID.
-        if value is not None and Validate_simpletypes_:
-            if not self.gds_validate_simple_patterns(
-                    self.validate_IdType_patterns_, value):
-                warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_IdType_patterns_, ))
-    validate_IdType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
     def hasContent_(self):
         if (
             self.Buffer is not None or
@@ -7573,15 +7843,15 @@ class CommunicationType(GeneratedsSuper):
         else:
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='CommunicationType'):
+        if self.id is not None and 'id' not in already_processed:
+            already_processed.add('id')
+            outfile.write(' id=%s' % (quote_attrib(self.id), ))
         if self.multicast is not None and 'multicast' not in already_processed:
             already_processed.add('multicast')
             outfile.write(' multicast=%s' % (quote_attrib(self.multicast), ))
         if self.flags is not None and 'flags' not in already_processed:
             already_processed.add('flags')
             outfile.write(' flags=%s' % (quote_attrib(self.flags), ))
-        if self.id is not None and 'id' not in already_processed:
-            already_processed.add('id')
-            outfile.write(' id=%s' % (quote_attrib(self.id), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='CommunicationType', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
@@ -7601,6 +7871,11 @@ class CommunicationType(GeneratedsSuper):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
+        value = find_attr_value_('id', node)
+        if value is not None and 'id' not in already_processed:
+            already_processed.add('id')
+            self.id = value
+            self.validate_IdType(self.id)    # validate type IdType
         value = find_attr_value_('multicast', node)
         if value is not None and 'multicast' not in already_processed:
             already_processed.add('multicast')
@@ -7616,11 +7891,6 @@ class CommunicationType(GeneratedsSuper):
             already_processed.add('flags')
             self.flags = value
             self.validate_FlagListType(self.flags)    # validate type FlagListType
-        value = find_attr_value_('id', node)
-        if value is not None and 'id' not in already_processed:
-            already_processed.add('id')
-            self.id = value
-            self.validate_IdType(self.id)    # validate type IdType
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         if nodeName_ == 'Buffer':
             obj_ = CommunicationBufferType.factory()
@@ -7643,29 +7913,38 @@ class CommunicationType(GeneratedsSuper):
 class PeripheralEmulatorLibraryType(GeneratedsSuper):
     subclass = None
     superclass = None
-    def __init__(self, read=None, write=None, init=None, exit=None, library=None):
+    def __init__(self, library=None, init=None, exit=None, read=None, write=None):
         self.original_tagname_ = None
-        self.read = _cast(None, read)
-        self.write = _cast(None, write)
+        self.library = _cast(None, library)
         self.init = _cast(None, init)
         self.exit = _cast(None, exit)
-        self.library = _cast(None, library)
+        self.read = _cast(None, read)
+        self.write = _cast(None, write)
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, PeripheralEmulatorLibraryType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if PeripheralEmulatorLibraryType.subclass:
             return PeripheralEmulatorLibraryType.subclass(*args_, **kwargs_)
         else:
             return PeripheralEmulatorLibraryType(*args_, **kwargs_)
     factory = staticmethod(factory)
-    def get_read(self): return self.read
-    def set_read(self, read): self.read = read
-    def get_write(self): return self.write
-    def set_write(self, write): self.write = write
+    def get_library(self): return self.library
+    def set_library(self, library): self.library = library
     def get_init(self): return self.init
     def set_init(self, init): self.init = init
     def get_exit(self): return self.exit
     def set_exit(self, exit): self.exit = exit
-    def get_library(self): return self.library
-    def set_library(self, library): self.library = library
+    def get_read(self): return self.read
+    def set_read(self, read): self.read = read
+    def get_write(self): return self.write
+    def set_write(self, write): self.write = write
+    def validate_FileNameType(self, value):
+        # Validate type FileNameType, a restriction on xs:string.
+        if value is not None and Validate_simpletypes_:
+            pass
     def validate_NameType(self, value):
         # Validate type NameType, a restriction on xs:string.
         if value is not None and Validate_simpletypes_:
@@ -7673,10 +7952,6 @@ class PeripheralEmulatorLibraryType(GeneratedsSuper):
                     self.validate_NameType_patterns_, value):
                 warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_NameType_patterns_, ))
     validate_NameType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
-    def validate_FileNameType(self, value):
-        # Validate type FileNameType, a restriction on xs:string.
-        if value is not None and Validate_simpletypes_:
-            pass
     def hasContent_(self):
         if (
 
@@ -7702,21 +7977,21 @@ class PeripheralEmulatorLibraryType(GeneratedsSuper):
         else:
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='PeripheralEmulatorLibraryType'):
-        if self.read is not None and 'read' not in already_processed:
-            already_processed.add('read')
-            outfile.write(' read=%s' % (quote_attrib(self.read), ))
-        if self.write is not None and 'write' not in already_processed:
-            already_processed.add('write')
-            outfile.write(' write=%s' % (quote_attrib(self.write), ))
+        if self.library is not None and 'library' not in already_processed:
+            already_processed.add('library')
+            outfile.write(' library=%s' % (quote_attrib(self.library), ))
         if self.init is not None and 'init' not in already_processed:
             already_processed.add('init')
             outfile.write(' init=%s' % (quote_attrib(self.init), ))
         if self.exit is not None and 'exit' not in already_processed:
             already_processed.add('exit')
             outfile.write(' exit=%s' % (quote_attrib(self.exit), ))
-        if self.library is not None and 'library' not in already_processed:
-            already_processed.add('library')
-            outfile.write(' library=%s' % (quote_attrib(self.library), ))
+        if self.read is not None and 'read' not in already_processed:
+            already_processed.add('read')
+            outfile.write(' read=%s' % (quote_attrib(self.read), ))
+        if self.write is not None and 'write' not in already_processed:
+            already_processed.add('write')
+            outfile.write(' write=%s' % (quote_attrib(self.write), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='PeripheralEmulatorLibraryType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
@@ -7727,16 +8002,11 @@ class PeripheralEmulatorLibraryType(GeneratedsSuper):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
-        value = find_attr_value_('read', node)
-        if value is not None and 'read' not in already_processed:
-            already_processed.add('read')
-            self.read = value
-            self.validate_NameType(self.read)    # validate type NameType
-        value = find_attr_value_('write', node)
-        if value is not None and 'write' not in already_processed:
-            already_processed.add('write')
-            self.write = value
-            self.validate_NameType(self.write)    # validate type NameType
+        value = find_attr_value_('library', node)
+        if value is not None and 'library' not in already_processed:
+            already_processed.add('library')
+            self.library = value
+            self.validate_FileNameType(self.library)    # validate type FileNameType
         value = find_attr_value_('init', node)
         if value is not None and 'init' not in already_processed:
             already_processed.add('init')
@@ -7747,11 +8017,16 @@ class PeripheralEmulatorLibraryType(GeneratedsSuper):
             already_processed.add('exit')
             self.exit = value
             self.validate_NameType(self.exit)    # validate type NameType
-        value = find_attr_value_('library', node)
-        if value is not None and 'library' not in already_processed:
-            already_processed.add('library')
-            self.library = value
-            self.validate_FileNameType(self.library)    # validate type FileNameType
+        value = find_attr_value_('read', node)
+        if value is not None and 'read' not in already_processed:
+            already_processed.add('read')
+            self.read = value
+            self.validate_NameType(self.read)    # validate type NameType
+        value = find_attr_value_('write', node)
+        if value is not None and 'write' not in already_processed:
+            already_processed.add('write')
+            self.write = value
+            self.validate_NameType(self.write)    # validate type NameType
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         pass
 # end class PeripheralEmulatorLibraryType
@@ -7760,13 +8035,18 @@ class PeripheralEmulatorLibraryType(GeneratedsSuper):
 class PeripheralType(GeneratedsSuper):
     subclass = None
     superclass = None
-    def __init__(self, startAddress=None, endAddress=None, id=None, PeripheralEmulatorLibrary=None):
+    def __init__(self, id=None, startAddress=None, endAddress=None, PeripheralEmulatorLibrary=None):
         self.original_tagname_ = None
+        self.id = _cast(None, id)
         self.startAddress = _cast(None, startAddress)
         self.endAddress = _cast(None, endAddress)
-        self.id = _cast(None, id)
         self.PeripheralEmulatorLibrary = PeripheralEmulatorLibrary
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, PeripheralType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if PeripheralType.subclass:
             return PeripheralType.subclass(*args_, **kwargs_)
         else:
@@ -7774,16 +8054,12 @@ class PeripheralType(GeneratedsSuper):
     factory = staticmethod(factory)
     def get_PeripheralEmulatorLibrary(self): return self.PeripheralEmulatorLibrary
     def set_PeripheralEmulatorLibrary(self, PeripheralEmulatorLibrary): self.PeripheralEmulatorLibrary = PeripheralEmulatorLibrary
+    def get_id(self): return self.id
+    def set_id(self, id): self.id = id
     def get_startAddress(self): return self.startAddress
     def set_startAddress(self, startAddress): self.startAddress = startAddress
     def get_endAddress(self): return self.endAddress
     def set_endAddress(self, endAddress): self.endAddress = endAddress
-    def get_id(self): return self.id
-    def set_id(self, id): self.id = id
-    def validate_AddressType(self, value):
-        # Validate type AddressType, a restriction on xs:hexBinary.
-        if value is not None and Validate_simpletypes_:
-            pass
     def validate_IdType(self, value):
         # Validate type IdType, a restriction on xs:ID.
         if value is not None and Validate_simpletypes_:
@@ -7791,6 +8067,10 @@ class PeripheralType(GeneratedsSuper):
                     self.validate_IdType_patterns_, value):
                 warnings_.warn('Value "%s" does not match xsd pattern restrictions: %s' % (value.encode('utf-8'), self.validate_IdType_patterns_, ))
     validate_IdType_patterns_ = [['^[a-zA-Z0-9_.]+$']]
+    def validate_AddressType(self, value):
+        # Validate type AddressType, a restriction on xs:hexBinary.
+        if value is not None and Validate_simpletypes_:
+            pass
     def hasContent_(self):
         if (
             self.PeripheralEmulatorLibrary is not None
@@ -7817,15 +8097,15 @@ class PeripheralType(GeneratedsSuper):
         else:
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='PeripheralType'):
+        if self.id is not None and 'id' not in already_processed:
+            already_processed.add('id')
+            outfile.write(' id=%s' % (quote_attrib(self.id), ))
         if self.startAddress is not None and 'startAddress' not in already_processed:
             already_processed.add('startAddress')
             outfile.write(' startAddress=%s' % (quote_attrib(self.startAddress), ))
         if self.endAddress is not None and 'endAddress' not in already_processed:
             already_processed.add('endAddress')
             outfile.write(' endAddress=%s' % (quote_attrib(self.endAddress), ))
-        if self.id is not None and 'id' not in already_processed:
-            already_processed.add('id')
-            outfile.write(' id=%s' % (quote_attrib(self.id), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='PeripheralType', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
@@ -7841,6 +8121,11 @@ class PeripheralType(GeneratedsSuper):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
+        value = find_attr_value_('id', node)
+        if value is not None and 'id' not in already_processed:
+            already_processed.add('id')
+            self.id = value
+            self.validate_IdType(self.id)    # validate type IdType
         value = find_attr_value_('startAddress', node)
         if value is not None and 'startAddress' not in already_processed:
             already_processed.add('startAddress')
@@ -7851,11 +8136,6 @@ class PeripheralType(GeneratedsSuper):
             already_processed.add('endAddress')
             self.endAddress = value
             self.validate_AddressType(self.endAddress)    # validate type AddressType
-        value = find_attr_value_('id', node)
-        if value is not None and 'id' not in already_processed:
-            already_processed.add('id')
-            self.id = value
-            self.validate_IdType(self.id)    # validate type IdType
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         if nodeName_ == 'PeripheralEmulatorLibrary':
             obj_ = PeripheralEmulatorLibraryType.factory()
@@ -7952,6 +8232,11 @@ class SubsystemPlatformType(GeneratedsSuper):
             self.Peripheral = Peripheral
         self.extensiontype_ = extensiontype_
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, SubsystemPlatformType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if SubsystemPlatformType.subclass:
             return SubsystemPlatformType.subclass(*args_, **kwargs_)
         else:
@@ -8278,6 +8563,11 @@ class SubsystemType(SubsystemPlatformType):
         super(SubsystemType, self).__init__(Subsystem, VoltageDomain, FrequencyDomain, SchedulingPolicyList, Scheduler, ProcessorPowerModel, Processor, MemoryPowerModel, Memory, CachePowerModel, Cache, FifoPowerModel, Fifo, PhysicalLinkPowerModel, PhysicalLink, DMAControllerPowerModel, DMAController, LogicalLink, Communication, Peripheral, )
         self.id = _cast(None, id)
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, SubsystemType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if SubsystemType.subclass:
             return SubsystemType.subclass(*args_, **kwargs_)
         else:
@@ -8353,6 +8643,11 @@ class PlatformType(SubsystemPlatformType):
         self.version = _cast(None, version)
         self.generatorTarget = _cast(None, generatorTarget)
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, PlatformType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if PlatformType.subclass:
             return PlatformType.subclass(*args_, **kwargs_)
         else:
@@ -8445,6 +8740,11 @@ class FrequencyInputType(VoltageFrequencyDomainConditionListType):
         self.frequencyDomain = _cast(None, frequencyDomain)
         self.factor = _cast(None, factor)
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, FrequencyInputType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if FrequencyInputType.subclass:
             return FrequencyInputType.subclass(*args_, **kwargs_)
         else:
@@ -8532,21 +8832,31 @@ class FrequencyInputType(VoltageFrequencyDomainConditionListType):
 class FrequencyType(VoltageFrequencyDomainConditionListType):
     subclass = None
     superclass = VoltageFrequencyDomainConditionListType
-    def __init__(self, VoltageDomainCondition=None, FrequencyDomainCondition=None, unit=None, value=None):
+    def __init__(self, VoltageDomainCondition=None, FrequencyDomainCondition=None, value=None, unit=None):
         self.original_tagname_ = None
         super(FrequencyType, self).__init__(VoltageDomainCondition, FrequencyDomainCondition, )
-        self.unit = _cast(None, unit)
         self.value = _cast(None, value)
+        self.unit = _cast(None, unit)
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, FrequencyType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if FrequencyType.subclass:
             return FrequencyType.subclass(*args_, **kwargs_)
         else:
             return FrequencyType(*args_, **kwargs_)
     factory = staticmethod(factory)
-    def get_unit(self): return self.unit
-    def set_unit(self, unit): self.unit = unit
     def get_value(self): return self.value
     def set_value(self, value): self.value = value
+    def get_unit(self): return self.unit
+    def set_unit(self, unit): self.unit = unit
+    def validate_FrequencyValueType(self, value):
+        # Validate type FrequencyValueType, a restriction on NonNegativeFloatType.
+        if value is not None and Validate_simpletypes_:
+            if value < 0:
+                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on FrequencyValueType' % {"value" : value} )
     def validate_FrequencyUnitType(self, value):
         # Validate type FrequencyUnitType, a restriction on xs:string.
         if value is not None and Validate_simpletypes_:
@@ -8559,11 +8869,6 @@ class FrequencyType(VoltageFrequencyDomainConditionListType):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on FrequencyUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_FrequencyValueType(self, value):
-        # Validate type FrequencyValueType, a restriction on NonNegativeFloatType.
-        if value is not None and Validate_simpletypes_:
-            if value < 0:
-                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on FrequencyValueType' % {"value" : value} )
     def hasContent_(self):
         if (
             super(FrequencyType, self).hasContent_()
@@ -8591,12 +8896,12 @@ class FrequencyType(VoltageFrequencyDomainConditionListType):
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='FrequencyType'):
         super(FrequencyType, self).exportAttributes(outfile, level, already_processed, namespace_, name_='FrequencyType')
-        if self.unit is not None and 'unit' not in already_processed:
-            already_processed.add('unit')
-            outfile.write(' unit=%s' % (quote_attrib(self.unit), ))
         if self.value is not None and 'value' not in already_processed:
             already_processed.add('value')
             outfile.write(' value=%s' % (quote_attrib(self.value), ))
+        if self.unit is not None and 'unit' not in already_processed:
+            already_processed.add('unit')
+            outfile.write(' unit=%s' % (quote_attrib(self.unit), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='FrequencyType', fromsubclass_=False, pretty_print=True):
         super(FrequencyType, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
     def build(self, node):
@@ -8607,16 +8912,16 @@ class FrequencyType(VoltageFrequencyDomainConditionListType):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
-        value = find_attr_value_('unit', node)
-        if value is not None and 'unit' not in already_processed:
-            already_processed.add('unit')
-            self.unit = value
-            self.validate_FrequencyUnitType(self.unit)    # validate type FrequencyUnitType
         value = find_attr_value_('value', node)
         if value is not None and 'value' not in already_processed:
             already_processed.add('value')
             self.value = value
             self.validate_FrequencyValueType(self.value)    # validate type FrequencyValueType
+        value = find_attr_value_('unit', node)
+        if value is not None and 'unit' not in already_processed:
+            already_processed.add('unit')
+            self.unit = value
+            self.validate_FrequencyUnitType(self.unit)    # validate type FrequencyUnitType
         super(FrequencyType, self).buildAttributes(node, attrs, already_processed)
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         super(FrequencyType, self).buildChildren(child_, node, nodeName_, True)
@@ -8632,6 +8937,11 @@ class VoltageInputType(VoltageFrequencyDomainConditionListType):
         super(VoltageInputType, self).__init__(VoltageDomainCondition, FrequencyDomainCondition, )
         self.voltageDomain = _cast(None, voltageDomain)
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, VoltageInputType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if VoltageInputType.subclass:
             return VoltageInputType.subclass(*args_, **kwargs_)
         else:
@@ -8701,21 +9011,31 @@ class VoltageInputType(VoltageFrequencyDomainConditionListType):
 class VoltageType(VoltageFrequencyDomainConditionListType):
     subclass = None
     superclass = VoltageFrequencyDomainConditionListType
-    def __init__(self, VoltageDomainCondition=None, FrequencyDomainCondition=None, unit=None, value=None):
+    def __init__(self, VoltageDomainCondition=None, FrequencyDomainCondition=None, value=None, unit=None):
         self.original_tagname_ = None
         super(VoltageType, self).__init__(VoltageDomainCondition, FrequencyDomainCondition, )
-        self.unit = _cast(None, unit)
         self.value = _cast(None, value)
+        self.unit = _cast(None, unit)
     def factory(*args_, **kwargs_):
+        if CurrentSubclassModule_ is not None:
+            subclass = getSubclassFromModule_(
+                CurrentSubclassModule_, VoltageType)
+            if subclass is not None:
+                return subclass(*args_, **kwargs_)
         if VoltageType.subclass:
             return VoltageType.subclass(*args_, **kwargs_)
         else:
             return VoltageType(*args_, **kwargs_)
     factory = staticmethod(factory)
-    def get_unit(self): return self.unit
-    def set_unit(self, unit): self.unit = unit
     def get_value(self): return self.value
     def set_value(self, value): self.value = value
+    def get_unit(self): return self.unit
+    def set_unit(self, unit): self.unit = unit
+    def validate_VoltageValueType(self, value):
+        # Validate type VoltageValueType, a restriction on NonNegativeFloatType.
+        if value is not None and Validate_simpletypes_:
+            if value < 0:
+                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on VoltageValueType' % {"value" : value} )
     def validate_VoltageUnitType(self, value):
         # Validate type VoltageUnitType, a restriction on xs:string.
         if value is not None and Validate_simpletypes_:
@@ -8728,11 +9048,6 @@ class VoltageType(VoltageFrequencyDomainConditionListType):
                     break
             if not enumeration_respectee:
                 warnings_.warn('Value "%(value)s" does not match xsd enumeration restriction on VoltageUnitType' % {"value" : value.encode("utf-8")} )
-    def validate_VoltageValueType(self, value):
-        # Validate type VoltageValueType, a restriction on NonNegativeFloatType.
-        if value is not None and Validate_simpletypes_:
-            if value < 0:
-                warnings_.warn('Value "%(value)s" does not match xsd minInclusive restriction on VoltageValueType' % {"value" : value} )
     def hasContent_(self):
         if (
             super(VoltageType, self).hasContent_()
@@ -8760,12 +9075,12 @@ class VoltageType(VoltageFrequencyDomainConditionListType):
             outfile.write('/>%s' % (eol_, ))
     def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='VoltageType'):
         super(VoltageType, self).exportAttributes(outfile, level, already_processed, namespace_, name_='VoltageType')
-        if self.unit is not None and 'unit' not in already_processed:
-            already_processed.add('unit')
-            outfile.write(' unit=%s' % (quote_attrib(self.unit), ))
         if self.value is not None and 'value' not in already_processed:
             already_processed.add('value')
             outfile.write(' value=%s' % (quote_attrib(self.value), ))
+        if self.unit is not None and 'unit' not in already_processed:
+            already_processed.add('unit')
+            outfile.write(' unit=%s' % (quote_attrib(self.unit), ))
     def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='VoltageType', fromsubclass_=False, pretty_print=True):
         super(VoltageType, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
     def build(self, node):
@@ -8776,16 +9091,16 @@ class VoltageType(VoltageFrequencyDomainConditionListType):
             self.buildChildren(child, node, nodeName_)
         return self
     def buildAttributes(self, node, attrs, already_processed):
-        value = find_attr_value_('unit', node)
-        if value is not None and 'unit' not in already_processed:
-            already_processed.add('unit')
-            self.unit = value
-            self.validate_VoltageUnitType(self.unit)    # validate type VoltageUnitType
         value = find_attr_value_('value', node)
         if value is not None and 'value' not in already_processed:
             already_processed.add('value')
             self.value = value
             self.validate_VoltageValueType(self.value)    # validate type VoltageValueType
+        value = find_attr_value_('unit', node)
+        if value is not None and 'unit' not in already_processed:
+            already_processed.add('unit')
+            self.unit = value
+            self.validate_VoltageUnitType(self.unit)    # validate type VoltageUnitType
         super(VoltageType, self).buildAttributes(node, attrs, already_processed)
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         super(VoltageType, self).buildChildren(child_, node, nodeName_, True)
@@ -8794,62 +9109,62 @@ class VoltageType(VoltageFrequencyDomainConditionListType):
 
 
 GDSClassesMapping = {
-    'CacheRef': CacheRefType,
-    'Memory': MemoryType,
-    'Passive': CommunicationPhaseType,
-    'Platform': PlatformType,
-    'Fifo': FifoType,
-    'PeripheralEmulatorLibrary': PeripheralEmulatorLibraryType,
-    'DMAControllerPowerModel': DMAControllerPowerModelType,
-    'MemoryPowerModel': MemoryPowerModelType,
-    'DMAControllerPowerState': DMAControllerPowerStateType,
-    'VoltageDomainCondition': VoltageDomainConditionType,
-    'Buffer': CommunicationBufferType,
-    'FrequencyDomain': FrequencyDomainType,
-    'DMAControllerRef': DMAControllerRefType,
-    'ParentCacheRef': CacheRefType,
-    'ProcessorPowerState': ProcessorPowerStateType,
-    'PhysicalLinkPowerState': PhysicalLinkPowerStateType,
-    'Scheduler': SchedulerType,
     'Active': CommunicationPhaseType,
-    'DMAController': DMAControllerType,
-    'MemoryRef': MemoryRefType,
-    'LogicalLink': LogicalLinkType,
-    'FrequencyDomainCondition': FrequencyDomainConditionType,
-    'FifoRef': FifoRefType,
-    'FrequencyCondition': FrequencyConditionType,
-    'DataCacheRef': CacheRefType,
-    'SchedulingPolicy': SchedulingPolicyType,
-    'Processor': ProcessorType,
-    'CachePowerState': CachePowerStateType,
-    'VoltageDomain': VoltageDomainType,
-    'FrequencyVoltageCondition': FrequencyVoltageConditionType,
-    'MemoryPowerState': MemoryPowerStateType,
-    'InstructionCacheRef': CacheRefType,
-    'PhysicalLinkRef': PhysicalLinkRefType,
-    'FifoPowerModel': FifoPowerModelType,
-    'ParentMemoryRef': MemoryRefType,
-    'Consumer': CommunicationConsumerType,
-    'ProcessorPowerModel': ProcessorPowerModelType,
-    'CacheAccess': CacheAccessType,
-    'Subsystem': SubsystemType,
-    'Producer': CommunicationProducerType,
+    'Buffer': CommunicationBufferType,
     'Cache': CacheType,
-    'Communication': CommunicationType,
-    'Peripheral': PeripheralType,
-    'PhysicalLinkPowerModel': PhysicalLinkPowerModelType,
-    'VoltageInput': VoltageInputType,
-    'LogicalLinkRef': LogicalLinkRefType,
-    'PhysicalLink': PhysicalLinkType,
-    'VoltageCondition': VoltageConditionType,
-    'FifoAccess': FifoAccessType,
-    'Frequency': FrequencyType,
-    'SchedulingPolicyList': SchedulingPolicyListType,
-    'Voltage': VoltageType,
+    'CacheAccess': CacheAccessType,
     'CachePowerModel': CachePowerModelType,
-    'FrequencyInput': FrequencyInputType,
+    'CachePowerState': CachePowerStateType,
+    'CacheRef': CacheRefType,
+    'Communication': CommunicationType,
+    'Consumer': CommunicationConsumerType,
+    'DMAController': DMAControllerType,
+    'DMAControllerPowerModel': DMAControllerPowerModelType,
+    'DMAControllerPowerState': DMAControllerPowerStateType,
+    'DMAControllerRef': DMAControllerRefType,
+    'DataCacheRef': CacheRefType,
+    'Fifo': FifoType,
+    'FifoAccess': FifoAccessType,
+    'FifoPowerModel': FifoPowerModelType,
     'FifoPowerState': FifoPowerStateType,
+    'FifoRef': FifoRefType,
+    'Frequency': FrequencyType,
+    'FrequencyCondition': FrequencyConditionType,
+    'FrequencyDomain': FrequencyDomainType,
+    'FrequencyDomainCondition': FrequencyDomainConditionType,
+    'FrequencyInput': FrequencyInputType,
+    'FrequencyVoltageCondition': FrequencyVoltageConditionType,
+    'InstructionCacheRef': CacheRefType,
+    'LogicalLink': LogicalLinkType,
+    'LogicalLinkRef': LogicalLinkRefType,
+    'Memory': MemoryType,
     'MemoryAccess': MemoryAccessType,
+    'MemoryPowerModel': MemoryPowerModelType,
+    'MemoryPowerState': MemoryPowerStateType,
+    'MemoryRef': MemoryRefType,
+    'ParentCacheRef': CacheRefType,
+    'ParentMemoryRef': MemoryRefType,
+    'Passive': CommunicationPhaseType,
+    'Peripheral': PeripheralType,
+    'PeripheralEmulatorLibrary': PeripheralEmulatorLibraryType,
+    'PhysicalLink': PhysicalLinkType,
+    'PhysicalLinkPowerModel': PhysicalLinkPowerModelType,
+    'PhysicalLinkPowerState': PhysicalLinkPowerStateType,
+    'PhysicalLinkRef': PhysicalLinkRefType,
+    'Platform': PlatformType,
+    'Processor': ProcessorType,
+    'ProcessorPowerModel': ProcessorPowerModelType,
+    'ProcessorPowerState': ProcessorPowerStateType,
+    'Producer': CommunicationProducerType,
+    'Scheduler': SchedulerType,
+    'SchedulingPolicy': SchedulingPolicyType,
+    'SchedulingPolicyList': SchedulingPolicyListType,
+    'Subsystem': SubsystemType,
+    'Voltage': VoltageType,
+    'VoltageCondition': VoltageConditionType,
+    'VoltageDomain': VoltageDomainType,
+    'VoltageDomainCondition': VoltageDomainConditionType,
+    'VoltageInput': VoltageInputType,
 }
 
 
@@ -8877,8 +9192,8 @@ def parse(inFileName, silence=False):
     rootNode = doc.getroot()
     rootTag, rootClass = get_root_tag(rootNode)
     if rootClass is None:
-        rootTag = 'VoltageType'
-        rootClass = VoltageType
+        rootTag = 'Platform'
+        rootClass = PlatformType
     rootObj = rootClass.factory()
     rootObj.build(rootNode)
     # Enable Python to collect the space used by the DOM.
@@ -8917,9 +9232,12 @@ def parseEtree(inFileName, silence=False):
 
 
 def parseString(inString, silence=False):
-    from StringIO import StringIO
+    if sys.version_info.major == 2:
+        from StringIO import StringIO as IOBuffer
+    else:
+        from io import BytesIO as IOBuffer
     parser = None
-    doc = parsexml_(StringIO(inString), parser)
+    doc = parsexml_(IOBuffer(inString), parser)
     rootNode = doc.getroot()
     rootTag, rootClass = get_root_tag(rootNode)
     if rootClass is None:
@@ -8950,8 +9268,8 @@ def parseLiteral(inFileName, silence=False):
     # Enable Python to collect the space used by the DOM.
     doc = None
     if not silence:
-        sys.stdout.write('#from slxplat import *\n\n')
-        sys.stdout.write('import slxplat as model_\n\n')
+        sys.stdout.write('#from platform import *\n\n')
+        sys.stdout.write('import platform as model_\n\n')
         sys.stdout.write('rootObj = model_.rootClass(\n')
         rootObj.exportLiteral(sys.stdout, 0, name_=rootTag)
         sys.stdout.write(')\n')
