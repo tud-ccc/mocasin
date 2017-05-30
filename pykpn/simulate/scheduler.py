@@ -50,41 +50,33 @@ class Scheduler(object):
     def run(self):
         log.info('{0:16}'.format(self.env.now) + ': scheduler ' +
                  self.name + ' starts execution')
-
         while(True):
             log.info('{0:16}'.format(self.env.now) + ': scheduler ' +
                  self.name +' woke up')
 
-            if self.policy == 'FIFO' or self.policy == "RoundRobin" or self.policy=="None":
-                while True:
-                    p,allProcessesFinished=self.scheduling()
-                    if p is not None:
-                        delay=self.scheduling_delay(p)
-                        yield self.env.timeout(self.processor.cyclesToTicks(delay))
+            while True:
+                p,allProcessesFinished=self.scheduling()
+                if p is not None:
+                    delay=self.scheduling_delay(p)
+                    yield self.env.timeout(self.processor.cyclesToTicks(delay))
 
-                        self.vcd_writer.change(self.process_var, self.env.now,
-                                               int(p.vcd_id[0:128], 2))
-                        yield self.env.process(p.run())
-                    else:
-                        if allProcessesFinished:
-                            self.vcd_writer.change(self.process_var, self.env.now,
-                                                   None)
-                            break
+                    self.vcd_writer.change(self.process_var, self.env.now,
+                                            int(p.vcd_id[0:128], 2))
+                    yield self.env.process(p.run())
+                else:
+                    self.vcd_writer.change(self.process_var, self.env.now,
+                                            None)
 
-                        # collect unblock events
-                        self.vcd_writer.change(self.process_var, self.env.now,
-                                               None)
-                        events = []
-                        for pro in self.processes:
-                            events.append(pro.event_unblock)
-                        yield simpy.events.AnyOf(self.env, events)
-            else:
-                raise RuntimeError('The scheduling policy ' + self.policy +
-                                   ' is not supported')
+                    if allProcessesFinished:
+                        break
+
+                    # collect unblock events
+                    events = []
+                    for pro in self.processes:
+                        events.append(pro.event_unblock)
+                    yield simpy.events.AnyOf(self.env, events)
             log.info('{0:16}'.format(self.env.now) +': scheduler ' + self.name+" going to sleep")
             yield self.wake_up
-        log.info('{0:16}'.format(self.env.now) + ': scheduler ' + self.name +
-                 ' finished execution')
 
     def scheduling(self):
         if self.policy=='None':
@@ -93,6 +85,9 @@ class Scheduler(object):
             return self.fifo_sched()
         elif self.policy=='RoundRobin':
             return self.roundrobin_sched()
+        else:
+            raise RuntimeError('The scheduling policy ' + self.policy +
+                                   ' is not supported')
 
     def scheduling_delay(self, p):
         if self.policy=='None':
@@ -101,6 +96,9 @@ class Scheduler(object):
             return self.delay_fifo(p)
         elif self.policy=='RoundRobin':
             return self.delay_roundrobin()
+        else:
+            raise RuntimeError('The scheduling policy ' + self.policy +
+                                   ' is not supported')
 
     def none_sched(self):
         if self.prev_process==None and self.processes:
