@@ -9,10 +9,7 @@
 import argparse
 import logging
 import os
-import configparser
 
-from pykpn.platforms import Tomahawk2Platform
-from pykpn.platforms import GenericNocPlatform
 from pykpn.simulate import System
 from pykpn.simulate import Application
 from pykpn.simulate import SlxConfig
@@ -22,6 +19,7 @@ from pykpn.slx import SlxTraceReader
 
 
 log = logging.getLogger(__name__)
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -35,8 +33,6 @@ def main():
 
     parser.add_argument('configFile', nargs=1,
                     help="input configuration file", type=str)
-
-    reqNamed = parser.add_argument_group('required named arguments')
 
     args = parser.parse_args()
 
