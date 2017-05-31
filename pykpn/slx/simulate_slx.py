@@ -16,6 +16,7 @@ from pykpn.slx import SlxConfig
 from pykpn.slx import SlxKpnGraph
 from pykpn.slx import SlxMapping
 from pykpn.slx import SlxTraceReader
+from pykpn.slx import SlxPlatform
 
 
 log = logging.getLogger(__name__)
@@ -45,46 +46,25 @@ def main():
         logging.basicConfig(level=logging.WARNING)
 
     # Declare the list of applications
-    applications=[]
-    # Create the platform
-    config=SlxConfig(args.configFile)
-    for i in config.applications:
-        if i not in config.conf:
-            raise ValueError("application name does not match to the section key")
-        # Create a graph
-        graph = SlxKpnGraph(i+'_graph', config.get_graph(i))
+    applications = []
 
-        # Create the mapping
-        mapping = SlxMapping(graph, config.get_platform(), config.get_mapping(i))
+    # parse the config file
+    config = SlxConfig(args.configFile)
 
-        # Create the application
-        readers = {}
-        for pm in mapping.processMappings:
-            name = pm.kpnProcess.name
+    for an in config.app_names:
 
-            processors = pm.scheduler.processors
-            type = processors[0].type
-
-            for p in processors:
-                if p.type != type:
-                    log.warn(pm.kpnProcess.scheduler + ' schedules on ' +
-                             'processors of different types. Use ' + type +
-                             'for reading the process trace of ' + name)
-
-            path = os.path.join(config.get_trace(i),
-                                name + '.' + type + '.cpntrace')
-            assert os.path.isfile(path)
-            readers[name] = SlxTraceReader(path, i)
-        app = Application(i, graph, mapping, readers, config.get_ini_time(i))
+        app = Application(an,
+                          config.graphs[an],
+                          config.mappings[an],
+                          config.trace_readers[an],
+                          config.start_times[an])
         applications.append(app)
 
-        if config.get_mappingout(i):
-            mapping.outputDot(config.get_mappingout(i))
-        else:
-            config.conf[i]['mappingout']=''
+        if config.mapping_to_dot[an] is not None:
+            config.mappings[an].outputDot(config.mapping_to_dot[an])
 
     # Create the system
-    system = System(config.get_vcd(), config.get_platform(), applications)
+    system = System(config.vcd_file_name, config.platform, applications)
     # Run the simulation
     system.simulate()
 
