@@ -28,7 +28,7 @@ except ImportError:
     from xml.etree import ElementTree as etree_
 
 
-Validate_simpletypes_ = True
+Validate_simpletypes_ = False
 if sys.version_info.major == 2:
     BaseStrType_ = basestring
 else:
