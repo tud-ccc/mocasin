@@ -8,6 +8,7 @@ from pykpn.platforms import createPlatformByName
 from .kpn import SlxKpnGraph
 from .mapping import SlxMapping
 from .trace import SlxTraceReader
+from .platform import SlxPlatform
 
 
 log = logging.getLogger(__name__)
@@ -21,7 +22,11 @@ class SlxConfig:
         conf.read(config)
 
         # init function does all the parsing
-        self.platform = createPlatformByName(conf['simulation']['platform'])
+        if 'platform_desc' in conf['simulation']:
+            self.platform = SlxPlatform(conf['simulation']['platform_desc'])
+        else:
+            self.platform = createPlatformByName(conf['simulation']['platform'])
+
         self.app_names = conf['simulation']['applications'].split(",")
 
         if 'vcd' not in conf['simulation'] or conf['simulation']['vcd'] == '':
