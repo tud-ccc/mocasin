@@ -43,24 +43,12 @@ class SlxConfig:
                                  self.platform,
                                  conf[an]['mapping'])
 
-            # TODO This is realy ugly, fix it!
             readers = {}
             for pm in mapping.processMappings:
                 name = pm.kpnProcess.name
-
-                processors = pm.scheduler.processors
-                type = processors[0].type
-
-                for p in processors:
-                    if p.type != type:
-                        log.warn(pm.kpnProcess.scheduler + ' schedules on ' +
-                                 'processors of different types. Use ' + type +
-                                 'for reading the process trace of ' + name)
-
-                path = os.path.join(conf[an]['trace'],
-                                    name + '.' + type + '.cpntrace')
-                assert os.path.isfile(path)
-                readers[name] = SlxTraceReader(path, an)
+                trace_dir = os.path.join(conf[an]['trace'])
+                assert os.path.isdir(trace_dir)
+                readers[name] = SlxTraceReader(name, an, trace_dir)
 
             self.graphs[an] = graph
             self.mappings[an] = mapping

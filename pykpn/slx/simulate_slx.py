@@ -8,15 +8,10 @@
 
 import argparse
 import logging
-import os
 
 from pykpn.simulate import System
 from pykpn.simulate import Application
 from pykpn.slx import SlxConfig
-from pykpn.slx import SlxKpnGraph
-from pykpn.slx import SlxMapping
-from pykpn.slx import SlxTraceReader
-from pykpn.slx import SlxPlatform
 
 
 log = logging.getLogger(__name__)
@@ -33,7 +28,7 @@ def main():
         dest='verbosity')
 
     parser.add_argument('configFile', nargs=1,
-                    help="input configuration file", type=str)
+                        help="input configuration file", type=str)
 
     args = parser.parse_args()
 
@@ -52,7 +47,6 @@ def main():
     config = SlxConfig(args.configFile)
 
     for an in config.app_names:
-
         app = Application(an,
                           config.graphs[an],
                           config.mappings[an],

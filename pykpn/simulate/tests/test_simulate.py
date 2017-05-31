@@ -267,17 +267,12 @@ class DummyMapping(Mapping):
                                                            primitive))
 
 class DummyTraceReader(TraceReader):
-    def __init__(self, ProcessName):
-        self.ProcessName =ProcessName
-        self.buffer = None
+    def __init__(self, process_name):
+        super().__init__(process_name, None)
         self.traces=[ProcessEntry(12), ProcessEntry(1000), ProcessEntry(12),\
                 ProcessEntry(1000), ProcessEntry(12), TerminateEntry()]
         self.i=-1
 
     def getNextEntry(self):
-        if self.buffer is not None:
-            tmp = self.buffer
-            self.buffer = None
-            return tmp
         self.i+=1
         return self.traces[self.i]

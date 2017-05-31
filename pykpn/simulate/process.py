@@ -23,18 +23,13 @@ class ProcessState(Enum):
 
 class Process(object):
 
-    traceDir = None
-    processor = None
-    trace = None
-    resume = None
-    traceReader = None
-
     def __init__(self, name, system, processMapping, traceReader):
         self.env = system.env
         self.name = name
         self.channels = system.channels
         self.traceReader = traceReader
         self.processor = None
+        self.resume = None
         self.time = 0
         self.state = ProcessState.Ready
 
@@ -53,6 +48,7 @@ class Process(object):
 
     def assignProcessor(self, processor):
         self.processor = processor
+        self.traceReader.setProcessorType(processor.type)
 
     def unblock(self, event):
         assert self.state == ProcessState.Blocked
