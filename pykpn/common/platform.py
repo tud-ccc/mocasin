@@ -29,6 +29,12 @@ class Processor:
         tmp = float(cycles) * 1000000000000 / float(self.frequency)
         return int(tmp)
 
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return self.__str__()
+
 
 # This is not realy needed in the moment, but maybe we want to use
 # other NoC topologies than mesh later on.
