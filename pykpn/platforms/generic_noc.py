@@ -16,11 +16,10 @@ from ..common import Scheduler
 class GenericNocPlatform(Platform):
 
     def createConsumerPrimitive(self, m, from_, to, via):
-        p = Primitive()
-        p.typename = "consumer_cp"
-        p.from_ = self.processors[int(from_[2])]
-        p.to = self.processors[int(to[2])]
-        p.via = self.memories[int(via[2])]
+        p = Primitive("consumer_cp",
+                      self.processors[int(from_[2])],
+                      self.processors[int(to[2])],
+                      self.memories[int(via[2])])
 
         producePrepare = CostModel("299", bw=8.0)
         produceTransport = CostModel("x/bw", bw=8.0)
@@ -36,11 +35,10 @@ class GenericNocPlatform(Platform):
         return p
 
     def createProducerPrimitive(self, m, from_, to, via):
-        p = Primitive()
-        p.typename = "producer_cp"
-        p.from_ = self.processors[int(from_[2])]
-        p.to = self.processors[int(to[2])]
-        p.via = self.memories[int(via[2])]
+        p = Primitive("producer_cp",
+                      self.processors[int(from_[2])],
+                      self.processors[int(to[2])],
+                      self.memories[int(via[2])])
 
         R_r=m.get_route(to, from_) # request
         R_t=m.get_route(from_, to) # transport

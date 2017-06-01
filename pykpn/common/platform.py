@@ -322,13 +322,25 @@ class CostModel:
 
 
 class Primitive:
+    '''
+    Represents a cmmunication primitive.
 
-    typename = None
-    from_ = None
-    to = None
-    via = None
+    A communication primitive defines how
+    a process running on a processr (from_) sends data tokens to a process
+    running on a processor (to) via a memory (via). Since multiple primitives
+    may be defined for each combination of from_, via, and to, a type attribute
+    distinguishes primitives.
 
-    def __init__(self):
+    The communication is modeled as two lists of CommunicationModels, one
+    for producing tokens and one for consuming tokens. Passive communication,
+    e.g., using a DMA unit is not (yet) supported.
+    '''
+
+    def __init__(self, type, from_, via, to):
+        self.type = type
+        self.from_ = from_
+        self.via = via
+        self.to = to
         self.consume = []
         self.produce = []
 
@@ -386,9 +398,9 @@ class Platform(object):
                 return m
         return None
 
-    def findPrimitive(self, typename, processorFrom, processorTo, viaMemory):
+    def findPrimitive(self, type, processorFrom, processorTo, viaMemory):
         for p in self.primitives:
-            if p.typename == typename and p.from_ == processorFrom and \
+            if p.type == type and p.from_ == processorFrom and \
                     p.to == processorTo and p.via == viaMemory:
                 return p
         return None

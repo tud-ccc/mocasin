@@ -228,7 +228,7 @@ def common_sys():
     mappingInfo=Empty()
     mappingInfo.capacity=4
     mappingInfo.kpnChannel=kpnchannel
-    mappingInfo.primitive=Primitive()
+    mappingInfo.primitive=Primitive('dummy_cp', None, None, None)
     return system,mappingInfo
 
 class DummyKpnGraph(KpnGraph):
