@@ -4,6 +4,7 @@
 # Authors: Christian Menard
 
 from ..common import CostModel
+from ..common import FrequencyDomain
 from ..common import Memory
 from ..common import Platform
 from ..common import Primitive
@@ -66,10 +67,13 @@ class GenericNocPlatform(Platform):
         else:
             raise ValueError('specified architecture does not exist')
         z=0
+
+        fd = FrequencyDomain('fd_sys', 200000000)
+
         for i in range(x):
             for j in range(y):
                 for k in range(EP_per_router):
-                    processor = Processor("PE" + str(z), 'RISC', 200000000, 1000, 1000)
+                    processor = Processor("PE" + str(z), 'RISC', fd, 1000, 1000)
                     self.processors.append(processor)
                     memory = Memory("sp" + str(z), 32768)
                     self.memories.append(memory)

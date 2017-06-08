@@ -6,6 +6,17 @@
 import parser
 
 
+class FrequencyDomain:
+
+    def __init__(self, name, frequency):
+        self.name = name
+        self.frequency = frequency
+
+    def cyclesToTicks(self, cycles):
+        tmp = float(cycles) * 1000000000000 / float(self.frequency)
+        return int(tmp)
+
+
 class Memory:
 
     def __init__(self, name, size):
@@ -15,17 +26,13 @@ class Memory:
 
 class Processor:
 
-    def __init__(self, name, type, frequency, contextSwitchInDelay=0,
+    def __init__(self, name, type, frequency_domain, contextSwitchInDelay=0,
                  contextSwitchOutDelay=0):
         self.name = name
         self.type = type
-        self.frequency = frequency
+        self.frequency_domain = frequency_domain
         self.contextSwitchInDelay = contextSwitchInDelay
         self.contextSwitchOutDelay = contextSwitchOutDelay
-
-    def cyclesToTicks(self, cycles):
-        tmp = float(cycles) * 1000000000000 / float(self.frequency)
-        return int(tmp)
 
     def __str__(self):
         return self.name

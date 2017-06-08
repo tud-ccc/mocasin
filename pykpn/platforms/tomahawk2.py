@@ -5,6 +5,7 @@
 
 
 from ..common import CostModel
+from ..common import FrequencyDomain
 from ..common import Memory
 from ..common import MeshNoc
 from ..common import Platform
@@ -61,8 +62,10 @@ class Tomahawk2Platform(Platform):
         Platform.__init__(self)
         m = MeshNoc("yx", 2, 2)
 
+        fd = FrequencyDomain('fd_sys', 200000000)
+
         for i in range(0, 8):
-            processor = Processor("PE" + str(i), 'RISC', 200000000, 1000, 1000)
+            processor = Processor("PE" + str(i), 'RISC', fd, 1000, 1000)
             self.processors.append(processor)
             memory = Memory("sp" + str(i), 32768)
             self.memories.append(memory)
