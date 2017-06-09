@@ -58,7 +58,7 @@ class Scheduler(object):
                 p,allProcessesFinished=self.scheduling()
                 if p is not None:
                     delay=self.scheduling_delay(p)
-                    yield self.env.timeout(self.processor.frequency_domain.cyclesToTicks(delay))
+                    yield self.env.timeout(self.processor.ticks(delay))
 
                     self.vcd_writer.change(self.process_var, self.env.now,
                                             int(p.vcd_id[0:128], 2))

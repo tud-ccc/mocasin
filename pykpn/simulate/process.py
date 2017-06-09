@@ -84,7 +84,7 @@ class Process(object):
 
             if isinstance(entry, ProcessEntry):
                 cycles = entry.cycles
-                ticks = self.processor.frequency_domain.cyclesToTicks(cycles)
+                ticks = self.processor.ticks(cycles)
                 log.debug('{0:16}'.format(self.env.now) +
                           ': process ' + self.name + ' processes for ' +
                           str(cycles) + ' cycles (' + str(ticks) + ' ticks)')
@@ -104,7 +104,7 @@ class Process(object):
 
                     for c in consume:
                         cycles = round(c.getCosts(x=size))
-                        ticks = self.processor.frequency_domain.cyclesToTicks(cycles)
+                        ticks = self.processor.ticks(cycles)
                         # request all resources
                         requests = []
                         for r in c.resources:
@@ -141,7 +141,7 @@ class Process(object):
 
                     for p in produce:
                         cycles = round(p.getCosts(x=size))
-                        ticks = self.processor.frequency_domain.cyclesToTicks(cycles)
+                        ticks = self.processor.ticks(cycles)
                         # request all resources
                         requests = []
                         for r in p.resources:
@@ -154,7 +154,6 @@ class Process(object):
                         # release all resources
                         for (res, req) in zip(p.resources, requests):
                             res.res.release(req)
-
 
                     channel.produceTokens(entry.tokens)
                 else:

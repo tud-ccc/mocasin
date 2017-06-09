@@ -34,6 +34,9 @@ class Processor:
         self.contextSwitchInDelay = contextSwitchInDelay
         self.contextSwitchOutDelay = contextSwitchOutDelay
 
+    def ticks(self, cycles):
+        return self.frequency_domain.cyclesToTicks(cycles)
+
     def __str__(self):
         return self.name
 
