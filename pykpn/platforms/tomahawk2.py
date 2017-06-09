@@ -26,7 +26,7 @@ class Tomahawk2Platform(Platform):
         produceTransport = CostModel("x/bw", bw=8.0)
         consumePrepare = CostModel("164")
 
-        R=m.get_route(from_, to)
+        R = m.get_route(from_, to)
         produceTransport.resources.extend(R)
 
         p.produce.append(producePrepare)
@@ -41,12 +41,12 @@ class Tomahawk2Platform(Platform):
                       self.memories[int(via[2])],
                       self.processors[int(to[2])])
 
-        R_r=m.get_route(to, from_) # request
-        R_t=m.get_route(from_, to) # transport
+        R_r = m.get_route(to, from_)  # request
+        R_t = m.get_route(from_, to)  # transport
         producePrepare = CostModel("205")
         consumePrepare = CostModel("242")
-        consumeRequest = CostModel("8*hops", bw=8.0, hops=len(R_r)-1)
-        consumeTransport = CostModel("8*hops+x/bw", bw=8.0, hops=len(R_t)-1)
+        consumeRequest = CostModel("8*hops", bw=8.0, hops=len(R_r) - 1)
+        consumeTransport = CostModel("8*hops+x/bw", bw=8.0, hops=len(R_t) - 1)
 
         consumeRequest.resources.append(R_r[0])
         consumeRequest.resources.append(R_r[-1])
@@ -69,7 +69,7 @@ class Tomahawk2Platform(Platform):
             self.processors.append(processor)
             memory = Memory("sp" + str(i), 32768)
             self.memories.append(memory)
-            m.create_ni([memory, processor], int(i/4), int(i/4))
+            m.create_ni([memory, processor], int(i / 4), int(i / 4))
 
             # Scheduling on the Tomahawk2 is currently not possible.
             scheduler = Scheduler("SchedulerForProcessor(PE" + str(i) + ")",
@@ -79,7 +79,9 @@ class Tomahawk2Platform(Platform):
 
         for i in range(0, 8):
             for j in range(0, 8):
-                p = self.createConsumerPrimitive(m, "PE"+str(i), "PE"+str(j), "sp"+str(j))
+                p = self.createConsumerPrimitive(
+                    m, "PE" + str(i), "PE" + str(j), "sp" + str(j))
                 self.primitives.append(p)
-                p = self.createProducerPrimitive(m, "PE"+str(i), "PE"+str(j), "sp"+str(i))
+                p = self.createProducerPrimitive(
+                    m, "PE" + str(i), "PE" + str(j), "sp" + str(i))
                 self.primitives.append(p)
