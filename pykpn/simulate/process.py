@@ -81,7 +81,6 @@ class Process(object):
                 entry = self.traceReader.getNextEntry()
             else:
                 entry, self.resume = self.resume, None
-
             if isinstance(entry, ProcessEntry):
                 cycles = entry.cycles
                 ticks = self.processor.cyclesToTicks(cycles)
@@ -116,8 +115,7 @@ class Process(object):
                         # release all resources
                         for (res, req) in zip(c.resources, requests):
                             res.res.release(req)
-
-                    channel.consumeTokens(entry.tokens)
+                    channel.consumeTokens(entry.tokens, self)
                 else:
                     log.debug('                  Not enough tokens in ' +
                               'channel -> block')

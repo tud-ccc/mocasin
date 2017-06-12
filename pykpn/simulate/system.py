@@ -25,7 +25,7 @@ class System:
     entire platform and all applications running on it.
     '''
 
-    def __init__(self, vcd, platform, applications):
+    def __init__(self, vcd, platform, graphs, applications):
         self.env = simpy.Environment()
         self.platform = platform
         self.applications = applications
@@ -33,6 +33,7 @@ class System:
         self.channels = {}
         self.start_times=[]
         self.pair={}
+        self.graphs=graphs
 
         if vcd:
             self.vcd_writer=VCDWriter(open(vcd,'w'), timescale='1 ps', date='today')
@@ -47,7 +48,7 @@ class System:
             for cm in app.mapping.channelMappings:
                 name = app.name + '.' + cm.kpnChannel.name
                 log.debug('    Create channel: ' + name)
-                self.channels[name] = Channel(name, self, cm)
+                self.channels[name] = Channel(name, self, cm, self.graphs[app.name])
 
             for pm in app.mapping.processMappings:
                 name = app.name + '.' + pm.kpnProcess.name
@@ -118,13 +119,13 @@ class System:
         return None
 
     def run(self):
-        self.start_times=sorted(self.start_times, key=itemgetter(1)) 
+        self.start_times=sorted(self.start_times, key=itemgetter(1))
         # applications sorted according to their initialization times in a list
         #[application, initialization time]
 
         time_delay=[self.start_times[0][1]]+[self.start_times[i][1]-\
-                self.start_times[i-1][1] for i in 
-                range(1, len(self.start_times))] 
+                self.start_times[i-1][1] for i in
+                range(1, len(self.start_times))]
         #the differences in the initialization times of succesive applications
 
         for i in time_delay: 
@@ -132,11 +133,11 @@ class System:
             log.info('{0:19}'.format(self.env.now)\
                     +": Start application "+\
                     self.start_times[0][0].name)
-            for s in self.pair: 
-                #self.pair contains scheduler and processes key value pair 
+            for s in self.pair:
+                #self.pair contains scheduler and processes key value pair
                 #**scheduler={process1, process2,...}
                 for l in self.pair[s]: #l is the process
-                    if l.name[0:4]==self.start_times[0][0].name: 
+                    if l.name[0:4]==self.start_times[0][0].name:
                         #check if process name has the application name
                         #as in the start_times list
                             s.assignProcess(l)
