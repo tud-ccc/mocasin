@@ -3,8 +3,6 @@
 #
 # Authors: Christian Menard
 
-import parser
-
 
 class FrequencyDomain:
 
@@ -15,13 +13,6 @@ class FrequencyDomain:
     def cyclesToTicks(self, cycles):
         tmp = float(cycles) * 1000000000000 / float(self.frequency)
         return int(tmp)
-
-
-class Memory:
-
-    def __init__(self, name, size):
-        self.name = name
-        self.size = size
 
 
 class Processor:
@@ -44,32 +35,74 @@ class Processor:
         return self.__str__()
 
 
-class Resource:
+class CommunicationResource:
     '''
-    Represents a shared hardware resource.
+    Represents a resource required for communication. This can be anything from
+    a link or bus to a memory.
 
-    This class is required for modeling the usage of shared resources in the
-    cost model.
+    This is a base class that can be specialized to model more complex
+    resources like caches.
     '''
 
-    def __init__(self, name, capacity):
+    def __init__(self, name, frequency_domain, read_latency, write_latency,
+                 read_throughput=float('inf'), write_throughput=float('inf'),
+                 exclusive=False):
         self.name = name
-        self.capacity = capacity
+        self.frequency_domain = frequency_domain
+        self.read_latency = read_latency
+        self.write_latency = write_latency
+        self.read_throughput = read_throughput
+        self.write_throughput = write_throughput
+        self.exclusive = exclusive
+
+    def readLatencyInTicks(self):
+        return self.frequency_domain.cyclesToTicks(self.read_latency)
+
+    def writeLatencyInTicks(self):
+        return self.frequency_domain.cyclesToTicks(self.write_latency)
+
+    def readThroughputInTicks(self):
+        return self.read_throughput / self.frequency_domain.cyclesToTicks(1)
+
+    def writeThroughputInTicks(self):
+        return self.read_throughput / self.frequency_domain.cyclesToTicks(1)
 
 
-class CostModel:
+class CommunicationPhase:
+    '''
+    Represents a phase of communication. This basically is a list of required
+    reosurces.
+    '''
+    def __init__(self, name, resources, direction,
+                 ignore_latency=False, size=None):
+        self.name = name
+        self.resources = resources
+        self.direction = direction
+        self.ignore_latency = ignore_latency
+        self.size = size
 
-    def __init__(self, func, **params):
-        self.resources = []
-        self.params = params
-        self.func = parser.expr(func).compile()
+    def getCosts(self, size):
+        latency = 0
+        min_throughput = float('inf')
+        if self.direction == 'read':
+            for r in self.resources:
+                if not self.ignore_latency:
+                    latency += r.readLatencyInTicks()
+                min_throughput = min(min_throughput, r.readThroughputInTicks())
+        elif self.direction == 'write':
+            for r in self.resources:
+                if not self.ignore_latency:
+                    latency += r.writeLatencyInTicks()
+                min_throughput = min(min_throughput,
+                                     r.writeThroughputInTicks())
+        else:
+            raise RuntimeError('Direction must be "read" or "write"!')
+        if self.size is None:
+            return int(latency + size / min_throughput)
+        else:
+            return int(latency + self.size / min_throughput)
 
-    def getCosts(self, **params):
-        vars().update(self.params)
-        vars().update(params)
-        return eval(self.func)
-
-
+ 
 class Primitive:
     '''
     Represents a cmmunication primitive.
@@ -80,12 +113,13 @@ class Primitive:
     may be defined for each combination of from_, via, and to, a type attribute
     distinguishes primitives.
 
-    The communication is modeled as two lists of CommunicationModels, one
+    The communication is modeled as two lists of CommunicationPhases, one
     for producing tokens and one for consuming tokens. Passive communication,
     e.g., using a DMA unit is not (yet) supported.
     '''
 
     def __init__(self, type, from_, via, to):
+
         self.type = type
         self.from_ = from_
         self.via = via
@@ -125,7 +159,7 @@ class Platform(object):
 
     def __init__(self):
         self.processors = []
-        self.memories = []
+        self.storage_devices = []
         self.primitives = []
         self.schedulers = []
 
@@ -141,15 +175,15 @@ class Platform(object):
                 return p
         return None
 
-    def findMemory(self, name):
-        for m in self.memories:
-            if m.name == name:
-                return m
+    def findStorageDevice(self, name):
+        for s in self.storage_devices:
+            if s.name == name:
+                return s
         return None
 
-    def findPrimitive(self, type, processorFrom, processorTo, viaMemory):
+    def findPrimitive(self, type, processorFrom, processorTo, viaStorage):
         for p in self.primitives:
             if p.type == type and p.from_ == processorFrom and \
-                    p.to == processorTo and p.via == viaMemory:
+                    p.to == processorTo and p.via == viaStorage:
                 return p
         return None
