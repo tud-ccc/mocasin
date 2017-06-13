@@ -12,7 +12,7 @@ class FrequencyDomain:
 
     def cyclesToTicks(self, cycles):
         tmp = float(cycles) * 1000000000000 / float(self.frequency)
-        return int(tmp)
+        return int(round(tmp))
 
 
 class Processor:
@@ -104,9 +104,9 @@ class CommunicationPhase:
         else:
             raise RuntimeError('Direction must be "read" or "write"!')
         if self.size is None:
-            return int(latency + size / min_throughput)
+            return int(round(latency + size / min_throughput))
         else:
-            return int(latency + self.size / min_throughput)
+            return int(round(latency + self.size / min_throughput))
 
 
 class Primitive:
