@@ -67,6 +67,12 @@ class CommunicationResource:
     def writeThroughputInTicks(self):
         return self.read_throughput / self.frequency_domain.cyclesToTicks(1)
 
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return self.__str__()
+
 
 class CommunicationPhase:
     '''
@@ -102,7 +108,7 @@ class CommunicationPhase:
         else:
             return int(latency + self.size / min_throughput)
 
- 
+
 class Primitive:
     '''
     Represents a cmmunication primitive.
@@ -126,6 +132,13 @@ class Primitive:
         self.to = to
         self.consume = []
         self.produce = []
+
+    def __str__(self):
+        return '%s: %s -> %s -> %s' % (self.type, self.from_,
+                                       self.via, self.to)
+
+    def __repr__(self):
+        return self.__str__()
 
 
 class Scheduler:
