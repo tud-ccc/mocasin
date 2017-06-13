@@ -6,12 +6,58 @@
 
 import numpy as np
 
-from .platform import Resource
+from .platform import CommunicationResource
 
 
-# This is not realy needed in the moment, but maybe we want to use
-# other NoC topologies than mesh later on.
+class NI:
+    '''
+    Represents a network interface.
+
+    A NI is a simple object that associates a list of endpoints to a network
+    link. An enpoint is device that can send or receive packets on the network.
+    '''
+
+    def __init__(self, link, eps):
+        self.outgoing_link = link
+        self.eps = eps
+
+
+class Router():
+    '''
+    Represents a Router in the network.
+    '''
+
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.outgoing_links = []
+        self.ni = []
+
+
+class Link(CommunicationResource):
+    '''
+    Represents a communication link between hardware components.
+    '''
+
+    def __init__(self, name, frequency_domain, latency, bandwidth):
+        super().__init__(name, frequency_domain, latency,
+                         latency, bandwidth, bandwidth, True)
+
+
 class Noc:
+    '''
+    Represents a Network-on-Chip. This is just a base class and intended to be
+    specialized.
+    '''
+
+    def __init__(self, frequency_domain, hop_latency, link_bandwidth):
+        self.frequency_domain = frequency_domain
+        self.hop_latency = hop_latency
+        self.link_bandwidth = link_bandwidth
+
+    def create_link(self, name):
+        return Link(name, self.frequency_domain, self.hop_latency,
+                    self.link_bandwidth)
 
     def get_route(self, a, b):
         return None
@@ -19,35 +65,37 @@ class Noc:
 
 class TorusNoc(Noc):
 
-    def __init__(self, routing_algo, width, length):
-        self.Routers = []
+    def __init__(self, frequency_domain, hop_latency, link_bandwidth,
+                 routing_algo, width, length):
+        super().__init__(frequency_domain, hop_latency, link_bandwidth)
         self.routing_algo = routing_algo
         self.width = width
         self.length = length
 
-        routers = [[0 for l in range(length)] for w in range(width)]
+        self.routers = [[0 for l in range(length)] for w in range(width)]
 
         for l in range(length):
             for w in range(width):
                 r = Router(w, l)
                 ln = str(w) + str(l) + '_'
-                r.outgoing_links.append(
-                    Link(8, ln + str((w + 1) % width) + str(l)))
-                r.outgoing_links.append(
-                    Link(8, ln + str((w - 1) % width) + str(l)))
-                r.outgoing_links.append(
-                    Link(8, ln + str(w) + str((l + 1) % length)))
-                r.outgoing_links.append(
-                    Link(8, ln + str(w) + str((l - 1) % length)))
-                routers[w][l] = r
-        self.Routers = routers
+                r.outgoing_links = [None] * 4
+
+                r.outgoing_links[0] = \
+                    self.create_link(ln + str((w + 1) % width) + str(l))
+                r.outgoing_links[1] = \
+                    self.create_link(ln + str((w - 1) % width) + str(l))
+                r.outgoing_links[2] = \
+                    self.create_link(ln + str(w) + str((l + 1) % length))
+                r.outgoing_links[3] = \
+                    self.create_link(ln + str(w) + str((l - 1) % length))
+                self.routers[w][l] = r
 
     def create_ni(self, eps, x, y):
-        ni_inst = NI(Link(8, eps[0].name + '_' +
-                          eps[1].name + ' to ' + str(x) + str(y)), eps)
-        self.Routers[x][y].outgoing_links.append(
-            Link(8, str(x) + str(y) + ' to ' + eps[0].name + '_' + eps[1].name))
-        self.Routers[x][y].ni.append(ni_inst)
+        ln_out = eps[0].name + '_' + eps[1].name + ' to ' + str(x) + str(y)
+        ni_inst = NI(self.create_link(ln_out), eps)
+        ln_in = str(x) + str(y) + ' to ' + eps[0].name + '_' + eps[1].name
+        self.routers[x][y].outgoing_links.append(self.create_link(ln_in))
+        self.routers[x][y].ni.append(ni_inst)
 
     def get_route(self, a, b):
         if self.routing_algo == "xy":
@@ -76,19 +124,19 @@ class TorusNoc(Noc):
         for i in range(x_diff[0] * x_diff[1]):
 
             if x_diff[1] == -1:
-                out.append(self.Routers[(a_loc[0] - i * x_diff[1]) %
+                out.append(self.routers[(a_loc[0] - i * x_diff[1]) %
                                         self.width][a_loc[1]].outgoing_links[0])
             else:
-                out.append(self.Routers[(a_loc[0] - i * x_diff[1]) %
+                out.append(self.routers[(a_loc[0] - i * x_diff[1]) %
                                         self.width][a_loc[1]].outgoing_links[1])
 
         for j in range(y_diff[0] * y_diff[1]):
 
             if y_diff[1] == -1:
-                out.append(self.Routers[b_loc[0]][
+                out.append(self.routers[b_loc[0]][
                            (a_loc[1] - j * y_diff[1]) % self.length].outgoing_links[2])
             else:
-                out.append(self.Routers[b_loc[0]][
+                out.append(self.routers[b_loc[0]][
                            (a_loc[1] - j * y_diff[1]) % self.length].outgoing_links[3])
 
         out.append(b_link)
@@ -114,21 +162,19 @@ class TorusNoc(Noc):
         out = [a_ni.outgoing_link]
 
         for j in range(y_diff[0] * y_diff[1]):
-
             if y_diff[1] == -1:
-                out.append(self.Routers[b_loc[0]][
+                out.append(self.routers[b_loc[0]][
                            (a_loc[1] - j * y_diff[1]) % self.length].outgoing_links[2])
             else:
-                out.append(self.Routers[b_loc[0]][
+                out.append(self.routers[b_loc[0]][
                            (a_loc[1] - j * y_diff[1]) % self.length].outgoing_links[3])
 
         for i in range(x_diff[0] * x_diff[1]):
-
             if x_diff[1] == -1:
-                out.append(self.Routers[(a_loc[0] - i * x_diff[1]) %
+                out.append(self.routers[(a_loc[0] - i * x_diff[1]) %
                                         self.width][a_loc[1]].outgoing_links[0])
             else:
-                out.append(self.Routers[(a_loc[0] - i * x_diff[1]) %
+                out.append(self.routers[(a_loc[0] - i * x_diff[1]) %
                                         self.width][a_loc[1]].outgoing_links[1])
 
         out.append(b_link)
@@ -137,43 +183,39 @@ class TorusNoc(Noc):
 
 class MeshNoc(Noc):
 
-    def __init__(self, routing_algo, width, length):
-        self.Routers = []
+    def __init__(self, frequency_domain, hop_latency, link_bandwidth,
+                 routing_algo, width, length):
+        super().__init__(frequency_domain, hop_latency, link_bandwidth)
         self.routing_algo = routing_algo
 
-        routers = [[0 for l in range(length)] for w in range(width)]
+        self.routers = [[0 for l in range(length)] for w in range(width)]
 
         for l in range(length):
             for w in range(width):
-
                 r = Router(w, l)
+                ln = str(w) + str(l) + '_'
                 r.outgoing_links = [None] * 4
 
                 if w + 1 < width:
-                    r.outgoing_links[0] = Link(
-                        8, str(w) + str(l) + '_' + str(w + 1) + str(l))
-
+                    r.outgoing_links[0] = \
+                        self.create_link(ln + str(w + 1) + str(l))
                 if w - 1 >= 0:
-                    r.outgoing_links[1] = Link(
-                        8, str(w) + str(l) + '_' + str(w - 1) + str(l))
-
+                    r.outgoing_links[1] = \
+                        self.create_link(ln + str(w - 1) + str(l))
                 if l + 1 < length:
-                    r.outgoing_links[2] = Link(
-                        8, str(w) + str(l) + '_' + str(w) + str(l + 1))
-
+                    r.outgoing_links[2] = \
+                        self.create_link(ln + str(w) + str(l + 1))
                 if l - 1 >= 0:
-                    r.outgoing_links[3] = Link(
-                        8, str(w) + str(l) + '_' + str(w) + str(l - 1))
-
-                routers[w][l] = r
-        self.Routers = routers
+                    r.outgoing_links[3] = \
+                        self.create_link(ln + '_' + str(w) + str(l - 1))
+                self.routers[w][l] = r
 
     def create_ni(self, eps, x, y):
-        ni_inst = NI(Link(8, eps[0].name + '_' +
-                          eps[1].name + ' to ' + str(x) + str(y)), eps)
-        self.Routers[x][y].outgoing_links.append(
-            Link(8, str(x) + str(y) + ' to ' + eps[0].name + '_' + eps[1].name))
-        self.Routers[x][y].ni.append(ni_inst)
+        ln_out = eps[0].name + '_' + eps[1].name + ' to ' + str(x) + str(y)
+        ni_inst = NI(self.create_link(ln_out), eps)
+        ln_in = str(x) + str(y) + ' to ' + eps[0].name + '_' + eps[1].name
+        self.routers[x][y].outgoing_links.append(self.create_link(ln_in))
+        self.routers[x][y].ni.append(ni_inst)
 
     def get_route(self, a, b):
         if self.routing_algo == "xy":
@@ -194,26 +236,25 @@ class MeshNoc(Noc):
         for i in range(x_diff[0] * x_diff[1]):
 
             if x_diff[1] == -1:
-                out.append(self.Routers[a_loc[0] - i *
+                out.append(self.routers[a_loc[0] - i *
                                         x_diff[1]][a_loc[1]].outgoing_links[0])
             else:
-                out.append(self.Routers[a_loc[0] - i *
+                out.append(self.routers[a_loc[0] - i *
                                         x_diff[1]][a_loc[1]].outgoing_links[1])
 
         for j in range(y_diff[0] * y_diff[1]):
 
             if y_diff[1] == -1:
-                out.append(self.Routers[b_loc[0]][
+                out.append(self.routers[b_loc[0]][
                            a_loc[1] - j * y_diff[1]].outgoing_links[2])
             else:
-                out.append(self.Routers[b_loc[0]][
+                out.append(self.routers[b_loc[0]][
                            a_loc[1] - j * y_diff[1]].outgoing_links[3])
 
         out.append(b_link)
         return out
 
     def get_route_yx(self, a, b):
-
         a_loc, a_ni, b_loc, b_ni, b_link = find(self, a, b)
         x_diff = [a_loc[0] - b_loc[0]]
         x_diff.append(np.sign(x_diff[0]))
@@ -223,21 +264,19 @@ class MeshNoc(Noc):
         out = [a_ni.outgoing_link]
 
         for j in range(y_diff[0] * y_diff[1]):
-
             if y_diff[1] == -1:
-                out.append(self.Routers[b_loc[0]][
+                out.append(self.routers[b_loc[0]][
                            a_loc[1] - j * y_diff[1]].outgoing_links[2])
             else:
-                out.append(self.Routers[b_loc[0]][
+                out.append(self.routers[b_loc[0]][
                            a_loc[1] - j * y_diff[1]].outgoing_links[3])
 
         for i in range(x_diff[0] * x_diff[1]):
-
             if x_diff[1] == -1:
-                out.append(self.Routers[a_loc[0] - i *
+                out.append(self.routers[a_loc[0] - i *
                                         x_diff[1]][a_loc[1]].outgoing_links[0])
             else:
-                out.append(self.Routers[a_loc[0] - i *
+                out.append(self.routers[a_loc[0] - i *
                                         x_diff[1]][a_loc[1]].outgoing_links[1])
 
         out.append(b_link)
@@ -250,7 +289,7 @@ def find(noc, a, b):
     b_loc = []
     b_ni = 0
     b_link = 0
-    for i in noc.Routers:
+    for i in noc.routers:
         for j in i:
             for ni in j.ni:
                 for e in ni.eps:
@@ -268,32 +307,3 @@ def find(noc, a, b):
                                     b_link = k
 
     return a_loc, a_ni, b_loc, b_ni, b_link
-
-
-class NI:
-
-    def __init__(self, link, eps):
-        self.outgoing_link = link
-        self.eps = eps
-
-
-class Router:
-
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        self.outgoing_links = []
-        self.ni = []
-
-
-class Link(Resource):
-    '''
-    Represents a communication link between hardware components.
-
-    Each link defines a bandwidth and extends the Resource class. Since
-    capacity is set to 1, links may only be used exclusively.
-    '''
-
-    def __init__(self, bandwidth, name):
-        Resource.__init__(self, name, 1)
-        self.bandwidth = bandwidth
