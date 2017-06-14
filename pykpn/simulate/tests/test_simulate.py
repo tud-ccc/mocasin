@@ -42,7 +42,7 @@ class TestChannel(TestCase):
     def __init__(self, *args, **kwargs):
         super(TestChannel, self).__init__(*args, **kwargs)
         self.system, self.mappingInfo = common_sys()
-        self.c=Channel('app.c1', self.system, self.mappingInfo)
+        self.c=Channel('app.c2', self.system, self.mappingInfo, DummyKpnGraph())
 
     def test_initialized(self):
         #Channel capacity is 4, so a channel can produce maximum of 4 packets
@@ -60,7 +60,8 @@ class TestChannel(TestCase):
 
     def test_ConsumeAndProduceTokens(self):
         self.c.produceTokens(4)
-        self.c.consumeTokens(4)
+        self.c.consumeTokens(4, DummyKpnGraph().processes[1])
+        self.c.consumeTokens(4, DummyKpnGraph().processes[2])
 
     def test_overflowTokens(self):
         #since the channel can only produce maximum of 4 tokens
@@ -77,12 +78,11 @@ class TestChannel(TestCase):
         except:
             True
 
-
 class TestProcess(TestCase):
     def __init__(self, *args, **kwargs):
         super(TestProcess, self).__init__(*args, **kwargs)
         self.system, self.mappingInfo = common_sys()
-        self.system.channels={'app.c1': Channel('app.c1', self.system, self.mappingInfo)}
+        self.system.channels={'app.c2': Channel('app.c2', self.system, self.mappingInfo, DummyKpnGraph())}
         self.name='w1'
         self.traceReader=DummyTraceReader(self.name)
         self.p=Process(self.name, self.system, None, self.traceReader)
@@ -104,8 +104,8 @@ class TestScheduler(TestCase):
         self.info.name='SchedulerForProcessor(PE1)'
         self.info.processors=[Processor('PE1', 'RISC', 200000000)]
         self.info.policies={'FIFO':100}
-        self.system.channels={'app.c1': Channel('app.c1', self.system, self.mappingInfo)\
-                , 'app.c2': Channel('app.c2', self.system, self.mappingInfo)}
+        self.system.channels={'app.c3': Channel('app.c3', self.system, self.mappingInfo, DummyKpnGraph())\
+                , 'app.c2': Channel('app.c2', self.system, self.mappingInfo, DummyKpnGraph())}
         self.traceReader1=DummyTraceReader('w1')
         self.traceReader2=DummyTraceReader('w2')
         self.p=Process('w1', self.system, None, self.traceReader1)
@@ -175,8 +175,8 @@ class TestSystem(TestCase):
         super(TestSystem, self).__init__(*args, **kwargs)
         env = simpy.Environment()
         platform=Tomahawk2Platform()
-        graph = DummyKpnGraph()
-        mapping = DummyMapping(graph,
+        graph = {'app':DummyKpnGraph()}
+        mapping = DummyMapping(graph['app'],
                             platform)
         readers = {}
         for pm in mapping.processMappings:
@@ -184,7 +184,7 @@ class TestSystem(TestCase):
             processors = pm.scheduler.processors
             readers[name] = DummyTraceReader(name)
         app = Application('app', graph, mapping, readers,0)
-        self.system = System('dump.vcd', platform, [app])
+        self.system = System('dump.vcd', platform, graph, [app])
         #add processes to the schedulers
         self.system.schedulers[0].assignProcess(self.system.pair[self.system.schedulers[0]][0])
         self.system.schedulers[1].assignProcess(self.system.pair[self.system.schedulers[1]][0])
@@ -234,14 +234,17 @@ def common_sys():
 class DummyKpnGraph(KpnGraph):
     def __init__(self):
         KpnGraph.__init__(self)
-
         for i in range(2,5):
             self.channels.append(KpnChannel('c'+str(i), 4096))
 
-        for i in range(2,5):
+        for i in range(2,6):
             self.processes.append(KpnProcess('w'+str(i)))
-            self.connectProcessToOutgoingChannel(KpnProcess('w'+str(i)),KpnChannel('c'+str(i),4096))
-            self.connectProcessToIncomingChannel(KpnProcess('w'+str(i)),KpnChannel('c'+str(i-1),4096))
+
+        for i in range(2,5):
+            self.connectProcessToOutgoingChannel(self.processes[i-2],self.channels[i-2])
+            self.connectProcessToIncomingChannel(self.processes[i-1],self.channels[i-2])
+
+        self.connectProcessToIncomingChannel(self.processes[2],self.channels[0])
 
 
 class DummyMapping(Mapping):
@@ -276,3 +279,4 @@ class DummyTraceReader(TraceReader):
     def getNextEntry(self):
         self.i+=1
         return self.traces[self.i]
+

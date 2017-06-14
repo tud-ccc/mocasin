@@ -17,7 +17,7 @@ class Channel(object):
         self.graph = graph
         self.capacity = mappingInfo.capacity
         for c in graph.channels:
-            if c.name==name[5:]:
+            if c.name in name:
                 self.to_process=c.to_process
         self.primitive = mappingInfo.primitive
         self.token_size = mappingInfo.kpnChannel.token_size
@@ -47,7 +47,7 @@ class Channel(object):
             'produce called but buffer is full!'
             self.filled[p] = self.filled[p] + num
 
-        self.vcd_writer.change(self.filled_var, 
+        self.vcd_writer.change(self.filled_var,
                 self.env.now, list(self.filled.values())[0])
 
         log.debug(''.join([
@@ -69,7 +69,7 @@ class Channel(object):
 
     def consumeTokens(self, num, process):
         for p in self.to_process:
-            if p.name==process.name[5:]:
+            if p.name in process.name:
                 assert self.filled[p] - num >= 0, 'consume called but buffer is empty!'
                 self.filled[p] = self.filled[p] - num
         self.vcd_writer.change(self.filled_var,
