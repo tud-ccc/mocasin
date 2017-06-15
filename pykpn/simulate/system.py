@@ -31,18 +31,20 @@ class System:
         self.applications = applications
         self.schedulers = []
         self.channels = {}
-        self.start_times=[]
-        self.pair={}
+        self.start_times = []
+        self.pair = {}
 
         if vcd:
-            self.vcd_writer=VCDWriter(open(vcd,'w'), timescale='1 ps', date='today')
+            self.vcd_writer = VCDWriter(
+                open(vcd, 'w'), timescale='1 ps', date='today')
         else:
-            self.vcd_writer=VCDWriter(open(os.devnull,'w'), timescale='1 ps', date='today')
+            self.vcd_writer = VCDWriter(
+                open(os.devnull, 'w'), timescale='1 ps', date='today')
             self.vcd_writer.dump_off(self.env.now)
 
         log.info('Start initializing the system.')
         for app in self.applications:
-            self.start_times.append([app,int(app.start_time)])
+            self.start_times.append([app, int(app.start_time)])
             log.debug('  Load application: ' + app.name)
             for cm in app.mapping.channelMappings:
                 name = app.name + '.' + cm.kpnChannel.name
@@ -73,21 +75,21 @@ class System:
                     scheduler = Scheduler(self, [], pm.policy,
                                           pm.scheduler)
                     self.schedulers.append(scheduler)
-                    self.pair[scheduler]=[process]
+                    self.pair[scheduler] = [process]
 
         # We iterate over all channels and their cost models to get all
-        # platform resources that are required for simulation. For each
-        # platform resource we create a simpy resource object and extend the
-        # platform reource by an attribute 'res' that points to the simpy
-        # resource.
+        # communication resources that are required for simulation. For each
+        # communication resource we create a simpy resource object and extend
+        # the communication reource by an attribute 'simpy_resource' that
+        # points to the simpy resource.
         #
         # This is not the best solution (TM) but does the job of decoupling
         # the platform description and simulation.
         for key, c in self.channels.items():
-            for model in c.primitive.consume + c.primitive.produce:
-                for r in model.resources:
-                    if not hasattr(r, 'res'):
-                        r.res = Resource(self.env, capacity=r.capacity)
+            for phase in c.primitive.consume + c.primitive.produce:
+                for r in phase.resources:
+                    if r.exclusive and not hasattr(r, 'simpy_resource'):
+                        r.simpy_resource = Resource(self.env, capacity=1)
 
         log.info('Done initializing the system.')
 
@@ -108,7 +110,7 @@ class System:
         print('=== End Simulation ===')
         exec_time = float(self.env.now) / 1000000000.0
         print('Total execution time: ' + str(exec_time) + ' ms')
-        print('Total simulation time: ' + str(stop-start) + ' s')
+        print('Total simulation time: ' + str(stop - start) + ' s')
         self.vcd_writer.close()
 
     def findScheduler(self, name):
@@ -118,38 +120,38 @@ class System:
         return None
 
     def run(self):
-        self.start_times=sorted(self.start_times, key=itemgetter(1)) 
+        self.start_times = sorted(self.start_times, key=itemgetter(1))
         # applications sorted according to their initialization times in a list
-        #[application, initialization time]
+        # [application, initialization time]
 
-        time_delay=[self.start_times[0][1]]+[self.start_times[i][1]-\
-                self.start_times[i-1][1] for i in 
-                range(1, len(self.start_times))] 
-        #the differences in the initialization times of succesive applications
+        time_delay = [self.start_times[0][1]] + \
+                     [self.start_times[i][1] - self.start_times[i - 1][1]
+                      for i in range(1, len(self.start_times))]
+        # the differences in the initialization times of succesive applications
 
-        for i in time_delay: 
-            yield(self.env.timeout(i)) #delay till the start time is reached
-            log.info('{0:19}'.format(self.env.now)\
-                    +": Start application "+\
-                    self.start_times[0][0].name)
-            for s in self.pair: 
-                #self.pair contains scheduler and processes key value pair 
-                #**scheduler={process1, process2,...}
-                for l in self.pair[s]: #l is the process
-                    if l.name[0:4]==self.start_times[0][0].name: 
-                        #check if process name has the application name
-                        #as in the start_times list
-                            s.assignProcess(l)
+        for i in time_delay:
+            yield(self.env.timeout(i))  # delay till the start time is reached
+            log.info('{0:19}'.format(self.env.now)
+                     + ": Start application " +
+                     self.start_times[0][0].name)
+            for s in self.pair:
+                # self.pair contains scheduler and processes key value pair
+                # **scheduler={process1, process2,...}
+                for l in self.pair[s]:  # l is the process
+                    if l.name[0:4] == self.start_times[0][0].name:
+                        # check if process name has the application name
+                        # as in the start_times list
+                        s.assignProcess(l)
             self.start_times.pop(0)
 
-    def Migrate_ProcessToScheduler(self, process,scheduler):
+    def Migrate_ProcessToScheduler(self, process, scheduler):
         for s in self.pair:
-            if s.name==scheduler:
-                scheduler=s
+            if s.name == scheduler:
+                scheduler = s
 
         for s in self.pair:
             for l in self.pair[s]:
-                if l.name==process:
+                if l.name == process:
                     self.pair[scheduler].append(l)
                     scheduler.assignProcess(l)
                     self.pair[s].remove(l)

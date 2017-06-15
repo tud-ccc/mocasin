@@ -9,6 +9,7 @@ import simpy
 import logging
 import os
 
+from ...common import FrequencyDomain
 from ...common import Mapping
 from ...common import ChannelMappingInfo
 from ...common import ProcessMappingInfo
@@ -86,7 +87,8 @@ class TestProcess(TestCase):
         self.name='w1'
         self.traceReader=DummyTraceReader(self.name)
         self.p=Process(self.name, self.system, None, self.traceReader)
-        self.processor=Processor('PE1', 'RISC', 200000000)
+        fd = FrequencyDomain('fd_test', 200000000)
+        self.processor=Processor('PE1', 'RISC', fd)
 
     def test_RunProcess(self):
         self.p.assignProcessor(self.processor)
@@ -102,7 +104,8 @@ class TestScheduler(TestCase):
         self.policy='FIFO'
         self.info=Empty()
         self.info.name='SchedulerForProcessor(PE1)'
-        self.info.processors=[Processor('PE1', 'RISC', 200000000)]
+        fd = FrequencyDomain('fd_test', 200000000)
+        self.info.processors=[Processor('PE1', 'RISC', fd)]
         self.info.policies={'FIFO':100}
         self.system.channels={'app.c1': Channel('app.c1', self.system, self.mappingInfo)\
                 , 'app.c2': Channel('app.c2', self.system, self.mappingInfo)}
