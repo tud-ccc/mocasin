@@ -83,7 +83,7 @@ class Process(object):
                 entry, self.resume = self.resume, None
             if isinstance(entry, ProcessEntry):
                 cycles = entry.cycles
-                ticks = self.processor.cyclesToTicks(cycles)
+                ticks = self.processor.ticks(cycles)
                 log.debug('{0:16}'.format(self.env.now) +
                           ': process ' + self.name + ' processes for ' +
                           str(cycles) + ' cycles (' + str(ticks) + ' ticks)')
@@ -102,19 +102,24 @@ class Process(object):
                     consume = channel.primitive.consume
 
                     for c in consume:
-                        cycles = round(c.getCosts(x=size))
-                        ticks = self.processor.cyclesToTicks(cycles)
+                        ticks = c.getCosts(size)
                         # request all resources
                         requests = []
                         for r in c.resources:
-                            req = r.res.request()
-                            requests.append(req)
-                            yield req
+                            if hasattr(r, 'simpy_resource'):
+                                req = r.simpy_resource.request()
+                                requests.append(req)
+                                yield req
+                            else:
+                                requests.append(None)
+
                         yield self.env.timeout(ticks)
 
                         # release all resources
                         for (res, req) in zip(c.resources, requests):
-                            res.res.release(req)
+                            if req is not None:
+                                res.simpy_resource.release(req)
+
                     channel.consumeTokens(entry.tokens, self)
                 else:
                     log.debug('                  Not enough tokens in ' +
@@ -138,21 +143,23 @@ class Process(object):
                     produce = channel.primitive.produce
 
                     for p in produce:
-                        cycles = round(p.getCosts(x=size))
-                        ticks = self.processor.cyclesToTicks(cycles)
+                        ticks = p.getCosts(size)
                         # request all resources
                         requests = []
                         for r in p.resources:
-                            req = r.res.request()
-                            requests.append(req)
-                            yield req
+                            if hasattr(r, 'simpy_resource'):
+                                req = r.simpy_resource.request()
+                                requests.append(req)
+                                yield req
+                            else:
+                                requests.append(None)
 
                         yield self.env.timeout(ticks)
 
                         # release all resources
                         for (res, req) in zip(p.resources, requests):
-                            res.res.release(req)
-
+                            if req is not None:
+                                res.simpy_resource.release(req)
 
                     channel.produceTokens(entry.tokens)
                 else:
