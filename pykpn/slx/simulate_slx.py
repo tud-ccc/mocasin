@@ -56,9 +56,8 @@ def main():
 
         if config.mapping_to_dot[an] is not None:
             config.mappings[an].outputDot(config.mapping_to_dot[an])
-
     # Create the system
-    system = System(config.vcd_file_name, config.platform, applications)
+    system = System(config.vcd_file_name, config.platform, config.graphs, applications)
     # Run the simulation
     system.simulate()
 

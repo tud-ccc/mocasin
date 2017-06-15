@@ -17,7 +17,7 @@ class KpnChannel(object):
     def __init__(self, name, token_size):
         self.name = name
         self.from_process = None
-        self.to_process = None
+        self.to_process = []
         self.token_size = token_size
 
 
@@ -34,9 +34,8 @@ class KpnGraph:
         process.outgoing_channels.append(channel)
 
     def connectProcessToIncomingChannel(self, process, channel):
-        assert channel.to_process is None
 
-        channel.to_process = process
+        channel.to_process.append(process)
         process.incoming_channels.append(channel)
 
     def findProcess(self, name):
