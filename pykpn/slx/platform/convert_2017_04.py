@@ -6,7 +6,6 @@
 import logging
 from pint import UnitRegistry
 
-from ...common import Memory
 from ...common import Primitive
 from ...common import Processor
 from ...common import Scheduler

@@ -88,7 +88,7 @@ class SlxMapping(Mapping):
 
             processorFrom = platform.findProcessor(processorNameFrom)
             processorTo = platform.findProcessor(processorNameTo)
-            viaMemory = platform.findMemory(viaMemoryName)
+            viaMemory = platform.findStorageDevice(viaMemoryName)
 
             if processorFrom is None:
                 raise RuntimeError('The processor ' + processorNameFrom +
