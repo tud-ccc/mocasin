@@ -6,6 +6,8 @@
 import logging
 from pint import UnitRegistry
 
+from ...common import CommunicationResource
+from ...common import FrequencyDomain
 from ...common import Primitive
 from ...common import Processor
 from ...common import Scheduler
@@ -13,23 +15,6 @@ from ...common import Scheduler
 
 ur = UnitRegistry()
 log = logging.getLogger(__name__)
-
-
-def get_frequency(xml_platform, domain):
-    '''
-    Search for a given frequency domain and return the first frequency.
-    '''
-    for fd in xml_platform.get_FrequencyDomain():
-        if fd.get_id() == domain:
-            frequencies = fd.get_Frequency()
-            if (len(frequencies) > 1):
-                log.warn('FrequencyDomain %s has multiple frequencies set. '
-                         'Frequency switching is not yet supported'
-                         ' -> use first frequency' % domain)
-            f = frequencies[0]
-            return ur(f.get_value() + f.get_unit()).to(ur.Hz).magnitude
-
-    raise RuntimeError('Could not find the FrequencyDomain %s', domain)
 
 
 def get_policy_list(xml_platform, ref):
@@ -57,18 +42,26 @@ def convert(platform, xml_platform):
     log.warn('Pykpn does not support frequency domains. We always use the '
              'processor frequency for delay calculation. Use with care!')
 
+    # Collect all frequency domains
+    frequency_domains = {}
+    for fd in xml_platform.get_FrequencyDomain():
+        name = fd.get_id()
+        # we set the frequency to None. It will be set to the correct value
+        # when read the mapping is read.
+        frequency_domains[name] = FrequencyDomain(name, None)
+        log.debug('Found frequency domain %s', name)
+
     # Initialize all Processors
     for xp in xml_platform.get_Processor():
         name = xp.get_id()
         type = xp.get_core()
-        f = int(get_frequency(xml_platform, xp.get_frequencyDomain()))
-        p = Processor(name, type, f, 0, 0)
+        fd = frequency_domains[xp.get_frequencyDomain()]
+        p = Processor(name, type, fd, 0, 0)
         # TODO we need to set the switching delays per scheduling policy, not
         #      per processor
         schedulers_to_processors[xp.get_scheduler()].append(p)
         platform.processors.append(p)
-        log.debug('Found processor %s of type %s running at %d Hz',
-                  name, type, f)
+        log.debug('Found processor %s of type %s', name, type)
 
     # Initialize all Schedulers
     for xs in xml_platform.get_Scheduler():
@@ -78,30 +71,87 @@ def convert(platform, xml_platform):
         log.debug('Found scheduler %s for %s supporting %s',
                   name, schedulers_to_processors[name], policies)
 
-    # Initialize all Memories, Caches, and Fifos as Memories
-    # TODO implement real support for HW Fifos and Caches
+    # Initialize all Memories, Caches, and Fifos as CommunicationResources
     for xm in xml_platform.get_Memory():
         name = xm.get_id()
-        size = ur(xm.get_sizeValue() + xm.get_sizeUnit()).to(ur.byte).magnitude
-        m = Memory(name, size)
-        platform.memories.append(m)
-        log.debug('Found memory %s that is %d bytes large', name, size)
+        read_latency = 0
+        if xm.get_readLatencyValue() is not None:
+            value = ur(xm.get_readLatencyValue() + xm.get_readLatencyUnit())
+            read_latency = value.to(ur.cycle).magnitude
+        write_latency = 0
+        if xm.get_writeLatencyValue() is not None:
+            value = ur(xm.get_writeLatencyValue() + xm.get_writeLatencyUnit())
+            write_latency = value.to(ur.cycle).magnitude
+        read_throughput = float('inf')
+        if xm.get_readThroughputValue() is not None:
+            value = ur(xm.get_readThroughputValue() +
+                       xm.get_readThroughputUnit())
+            read_throughput = value.to(ur.cycle).magnitude
+        write_throughput = float('inf')
+        if xm.get_writeThroughputValue() is not None:
+            value = ur(xm.get_writeThroughputValue() +
+                       xm.get_writeThroughputUnit())
+            write_throughput = value.to(ur.cycle).magnitude
+        fd = frequency_domains[xm.get_frequencyDomain()]
+        mem = CommunicationResource(name, fd, read_latency, write_latency,
+                                    read_throughput, write_throughput)
+        platform.storage_devices.append(mem)
+        log.debug('Found memory %s', name)
 
     for xc in xml_platform.get_Cache():
         name = xc.get_id()
-        size = ur(xc.get_sizeValue() + xc.get_sizeUnit()).to(ur.byte).magnitude
-        m = Memory(name, size)
-        platform.memories.append(m)
-        log.debug('Found cache %s that is %d bytes large', name, size)
-        log.warn('Caches are not supported! -> Treat %s as a memory', name)
+        # XXX we assume 100% cache hit rate (This is also what Silexica does)
+        read_latency = 0
+        if xc.get_readHitLatencyValue() is not None:
+            value = ur(xc.get_readHitLatencyValue() +
+                       xc.get_readHitLatencyUnit())
+            read_latency = value.to(ur.cycle).magnitude
+        write_latency = 0
+        if xc.get_writeHitLatencyValue() is not None:
+            value = ur(xc.get_writeHitLatencyValue() +
+                       xc.get_writeHitLatencyUnit())
+            write_latency = value.to(ur.cycle).magnitude
+        read_throughput = float('inf')
+        if xc.get_readHitThroughputValue() is not None:
+            value = ur(xc.get_readHitThroughputValue() +
+                       xc.get_readHitThroughputUnit())
+            read_throughput = value.to(ur.cycle).magnitude
+        write_throughput = float('inf')
+        if xc.get_writeHitThroughputValue() is not None:
+            value = ur(xc.get_writeHitThroughputValue() +
+                       xc.get_writeHitThroughputUnit())
+            write_throughput = value.to(ur.cycle).magnitude
+        fd = frequency_domains[xc.get_frequencyDomain()]
+        cache = CommunicationResource(name, fd, read_latency, write_latency,
+                                      read_throughput, write_throughput)
+        platform.storage_devices.append(cache)
+        log.debug('Found cache %s', name)
 
     for xf in xml_platform.get_Fifo():
         name = xf.get_id()
-        m = Memory(name, 0)
-        platform.memories.append(m)
-        log.debug('Found Fifo %s', name)
-        log.warn('Hardware Fifos are not supported! -> Treat %s as a memory',
-                 name)
+        read_latency = 0
+        if xf.get_readLatencyValue() is not None:
+            value = ur(xf.get_readLatencyValue() + xf.get_readLatencyUnit())
+            read_latency = value.to(ur.cycle).magnitude
+        write_latency = 0
+        if xf.get_writeLatencyValue() is not None:
+            value = ur(xf.get_writeLatencyValue() + xf.get_writeLatencyUnit())
+            write_latency = value.to(ur.cycle).magnitude
+        read_throughput = float('inf')
+        if xf.get_readThroughputValue() is not None:
+            value = ur(xf.get_readThroughputValue() +
+                       xf.get_readThroughputUnit())
+            read_throughput = value.to(ur.cycle).magnitude
+        write_throughput = float('inf')
+        if xf.get_writeThroughputValue() is not None:
+            value = ur(xf.get_writeThroughputValue() +
+                       xf.get_writeThroughputUnit())
+            write_throughput = value.to(ur.cycle).magnitude
+        fd = frequency_domains[xf.get_frequencyDomain()]
+        fifo = CommunicationResource(name, fd, read_latency, write_latency,
+                                     read_throughput, write_throughput)
+        platform.storage_devices.append(fifo)
+        log.debug('Found FIFO %s', name)
 
     # Initialize all Communication Primitives
     for xcom in xml_platform.get_Communication():
@@ -153,7 +203,7 @@ def convert(platform, xml_platform):
             for cn in consumers:
                 p = Primitive(name,
                               platform.findProcessor(pn),
-                              platform.findMemory(via_name),
+                              platform.findStorageDevice(via_name),
                               platform.findProcessor(cn))
                 log.debug('Found communication primitive %s: %s -> %s -> %s'
                           ', produce(x)=%s, consume(x)=%s', name,
