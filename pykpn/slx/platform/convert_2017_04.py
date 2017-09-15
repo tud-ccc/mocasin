@@ -239,93 +239,56 @@ def find_physical_link(xml_platform, name):
 
 
 def get_active_produce_cost_func(xml_platform, active):
-    latency = ur('0 cycles')
-    min_throughput = float('inf') * ur('byte / cycle')
+    latency = 0
+    min_throughput = float('inf')
 
     for cache_acc in active.get_CacheAccess():
         assert('write' == cache_acc.get_access())
         cache_name = cache_acc.get_cache()
         cache = find_cache(xml_platform, cache_name)
-
         # XXX We assume a 100% Cache Hit rate, Silexca is doing the same...
-        lv = cache.get_writeHitLatencyValue()
-        lu = cache.get_writeHitLatencyUnit()
-        latency += ur(lv + lu)
-
-        tv = cache.get_writeHitThroughputValue()
-        tu = cache.get_writeHitThroughputUnit()
-        if tv is not None:
-            min_throughput = min(min_throughput, ur(tv + tu))
+        latency += get_value_in_cycles(cache, 'writeHitLatency', 0)
+        min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
+            cache, 'writeHitThroughput', float('inf')))
 
     for fifo_acc in active.get_FifoAccess():
         assert('write' == fifo_acc.get_access())
         fifo_name = fifo_acc.get_fifo()
         fifo = find_fifo(xml_platform, fifo_name)
-
-        lv = fifo.get_writeLatencyValue()
-        lu = fifo.get_writeLatencyUnit()
-        latency += ur(lv + lu)
-
-        tv = fifo.get_writeThroughputValue()
-        tu = fifo.get_writeThroughputUnit()
-        if tv is not None:
-            min_throughput = min(min_throughput, ur(tv + tu))
+        latency += get_value_in_cycles(fifo, 'writeLatency', 0)
+        min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
+            fifo, 'writeThroughput', float('inf')))
 
     for memory_acc in active.get_MemoryAccess():
         assert('write' == memory_acc.get_access())
         memory_name = memory_acc.get_memory()
         memory = find_memory(xml_platform, memory_name)
-
-        lv = memory.get_writeLatencyValue()
-        lu = memory.get_writeLatencyUnit()
-        latency += ur(lv + lu)
-
-        tv = memory.get_writeThroughputValue()
-        tu = memory.get_writeThroughputUnit()
-        if tv is not None:
-            min_throughput = min(min_throughput, ur(tv + tu))
+        latency += get_value_in_cycles(memory, 'writeLatency', 0)
+        min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
+            memory, 'writeThroughput', float('inf')))
 
     for dma_ref in active.get_DMAControllerRef():
         dma_name = dma_ref.get_dmaController()
         dma = find_dma(xml_platform, dma_name)
-
-        lv = dma.get_latencyValue()
-        lu = dma.get_latencyUnit()
-        latency += ur(lv + lu)
-
-        tv = dma.get_throughputValue()
-        tu = dma.get_throughputUnit()
-        if tv is not None:
-            min_throughput = min(min_throughput, ur(tv + tu))
+        latency += get_value_in_cycles(dma, 'latency', 0)
+        min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
+            dma, 'throughput', float('inf')))
 
     for ll_ref in active.get_LogicalLinkRef():
         ll_name = ll_ref.get_logicalLink()
         ll = find_logical_link(xml_platform, ll_name)
-
-        lv = ll.get_latencyValue()
-        lu = ll.get_latencyUnit()
-        latency += ur(lv + lu)
-
-        tv = ll.get_throughputValue()
-        tu = ll.get_throughputUnit()
-        if tv is not None:
-            min_throughput = min(min_throughput, ur(tv + tu))
+        latency += get_value_in_cycles(ll, 'latency', 0)
+        min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
+            ll, 'throughput', float('inf')))
 
     for pl_ref in active.get_PhysicalLinkRef():
         pl_name = pl_ref.get_physicalLink()
         pl = find_physical_link(xml_platform, pl_name)
+        latency += get_value_in_cycles(pl, 'latency', 0)
+        min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
+            pl, 'throughput', float('inf')))
 
-        lv = pl.get_latencyValue()
-        lu = pl.get_latencyUnit()
-        latency += ur(lv + lu)
-
-        tv = pl.get_throughputValue()
-        tu = pl.get_throughputUnit()
-        if tv is not None:
-            min_throughput = min(min_throughput, ur(tv + tu))
-
-    return str(latency.to('cycle').magnitude) + ' + x * ' + \
-        str((1/min_throughput).to('cycle/byte').magnitude)
+    return str(latency) + ' + x * ' + str(1/min_throughput)
 
 
 def get_active_consume_cost_func(xml_platform, active):
@@ -338,83 +301,46 @@ def get_active_consume_cost_func(xml_platform, active):
         assert('read' == cache_acc.get_access())
         cache_name = cache_acc.get_cache()
         cache = find_cache(xml_platform, cache_name)
-
         # XXX We assume a 100% Cache Hit rate, Silexca is doing the same...
-        lv = cache.get_readHitLatencyValue()
-        lu = cache.get_readHitLatencyUnit()
-        latency += ur(lv + lu)
-
-        tv = cache.get_readHitThroughputValue()
-        tu = cache.get_readHitThroughputUnit()
-        if tv is not None:
-            min_throughput = min(min_throughput, ur(tv + tu))
+        latency += get_value_in_cycles(cache, 'readHitLatency', 0)
+        min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
+            cache, 'readHitThroughput', float('inf')))
 
     for fifo_acc in active.get_FifoAccess():
         assert('read' == fifo_acc.get_access())
         fifo_name = fifo_acc.get_fifo()
         fifo = find_fifo(xml_platform, fifo_name)
-
-        lv = fifo.get_readLatencyValue()
-        lu = fifo.get_readLatencyUnit()
-        latency += ur(lv + lu)
-
-        tv = fifo.get_readThroughputValue()
-        tu = fifo.get_readThroughputUnit()
-        if tv is not None:
-            min_throughput = min(min_throughput, ur(tv + tu))
+        latency += get_value_in_cycles(fifo, 'readLatency', 0)
+        min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
+            fifo, 'readThroughput', float('inf')))
 
     for memory_acc in active.get_MemoryAccess():
         assert('read' == memory_acc.get_access())
         memory_name = memory_acc.get_memory()
         memory = find_memory(xml_platform, memory_name)
-
-        lv = memory.get_readLatencyValue()
-        lu = memory.get_readLatencyUnit()
-        latency += ur(lv + lu)
-
-        tv = memory.get_readThroughputValue()
-        tu = memory.get_readThroughputUnit()
-        if tv is not None:
-            min_throughput = min(min_throughput, ur(tv + tu))
+        latency += get_value_in_cycles(memory, 'readLatency', 0)
+        min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
+            memory, 'readThroughput', float('inf')))
 
     for dma_ref in active.get_DMAControllerRef():
         dma_name = dma_ref.get_dmaController()
         dma = find_dma(xml_platform, dma_name)
-
-        lv = dma.get_latencyValue()
-        lu = dma.get_latencyUnit()
-        latency += ur(lv + lu)
-
-        tv = dma.get_throughputValue()
-        tu = dma.get_throughputUnit()
-        if tv is not None:
-            min_throughput = min(min_throughput, ur(tv + tu))
+        latency += get_value_in_cycles(dma, 'latency', 0)
+        min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
+            dma, 'throughput', float('inf')))
 
     for ll_ref in active.get_LogicalLinkRef():
         ll_name = ll_ref.get_logicalLink()
         ll = find_logical_link(xml_platform, ll_name)
-
-        lv = ll.get_latencyValue()
-        lu = ll.get_latencyUnit()
-        latency += ur(lv + lu)
-
-        tv = ll.get_throughputValue()
-        tu = ll.get_throughputUnit()
-        if tv is not None:
-            min_throughput = min(min_throughput, ur(tv + tu))
+        latency += get_value_in_cycles(ll, 'latency', 0)
+        min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
+            ll, 'throughput', float('inf')))
 
     for pl_ref in active.get_PhysicalLinkRef():
         pl_name = pl_ref.get_physicalLink()
         pl = find_physical_link(xml_platform, pl_name)
+        latency += get_value_in_cycles(pl, 'latency', 0)
+        min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
+            pl, 'throughput', float('inf')))
 
-        lv = pl.get_latencyValue()
-        lu = pl.get_latencyUnit()
-        latency += ur(lv + lu)
-
-        tv = pl.get_throughputValue()
-        tu = pl.get_throughputUnit()
-        if tv is not None:
-            min_throughput = min(min_throughput, ur(tv + tu))
-
-    return str(latency.to('cycle').magnitude) + ' + x * ' + \
-        str((1/min_throughput).to('cycle/byte').magnitude)
+    return str(latency) + ' + x * ' + str(1/min_throughput)
