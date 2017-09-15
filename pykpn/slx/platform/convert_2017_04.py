@@ -52,6 +52,20 @@ def get_value_in_byte_per_cycle(obj, value_name, unit, default=None):
     return get_value_in_unit(obj, value_name, 'byte / cycle', default)
 
 
+def find_elem(xml_platform, type_name, elem_name):
+    """
+    Find an element of a certain type in the platform.
+    :param xml_platform: platform to search in
+    :param type_name:    type of the element to be found
+    :param elem_name:    name of the element to be found
+    """
+    get_type_elems = getattr(xml_platform, 'get_' + type_name)
+    for elem in get_type_elems():
+        if elem.get_id() == elem_name:
+            return elem
+    raise RuntimeError('%s %s was not defined', type_name, elem_name)
+
+
 def convert(platform, xml_platform):
     # keep a map of scheduler names to processors, this helps when creating
     # scheduler objects
@@ -196,48 +210,6 @@ def convert(platform, xml_platform):
                           pn, via_name, cn, producers[pn], consumers[cn])
 
 
-def find_cache(xml_platform, name):
-    for c in xml_platform.get_Cache():
-        if c.get_id() == name:
-            return c
-    raise RuntimeError('Cache %s was not defined', name)
-
-
-def find_fifo(xml_platform, name):
-    for c in xml_platform.get_Fifo():
-        if c.get_id() == name:
-            return c
-    raise RuntimeError('FIFO %s was not defined', name)
-
-
-def find_memory(xml_platform, name):
-    for c in xml_platform.get_Memory():
-        if c.get_id() == name:
-            return c
-    raise RuntimeError('Memory %s was not defined', name)
-
-
-def find_dma(xml_platform, name):
-    for c in xml_platform.get_DMAController():
-        if c.get_id() == name:
-            return c
-    raise RuntimeError('DMAController %s was not defined', name)
-
-
-def find_logical_link(xml_platform, name):
-    for c in xml_platform.get_LogicalLink():
-        if c.get_id() == name:
-            return c
-    raise RuntimeError('LogicalLink %s was not defined', name)
-
-
-def find_physical_link(xml_platform, name):
-    for c in xml_platform.get_PhysicalLink():
-        if c.get_id() == name:
-            return c
-    raise RuntimeError('PhysicalLink %s was not defined', name)
-
-
 def get_active_produce_cost_func(xml_platform, active):
     latency = 0
     min_throughput = float('inf')
@@ -245,7 +217,7 @@ def get_active_produce_cost_func(xml_platform, active):
     for cache_acc in active.get_CacheAccess():
         assert('write' == cache_acc.get_access())
         cache_name = cache_acc.get_cache()
-        cache = find_cache(xml_platform, cache_name)
+        cache = find_elem(xml_platform, 'Cache', cache_name)
         # XXX We assume a 100% Cache Hit rate, Silexca is doing the same...
         latency += get_value_in_cycles(cache, 'writeHitLatency', 0)
         min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
@@ -254,7 +226,7 @@ def get_active_produce_cost_func(xml_platform, active):
     for fifo_acc in active.get_FifoAccess():
         assert('write' == fifo_acc.get_access())
         fifo_name = fifo_acc.get_fifo()
-        fifo = find_fifo(xml_platform, fifo_name)
+        fifo = find_elem(xml_platform, 'Fifo', fifo_name)
         latency += get_value_in_cycles(fifo, 'writeLatency', 0)
         min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
             fifo, 'writeThroughput', float('inf')))
@@ -262,28 +234,28 @@ def get_active_produce_cost_func(xml_platform, active):
     for memory_acc in active.get_MemoryAccess():
         assert('write' == memory_acc.get_access())
         memory_name = memory_acc.get_memory()
-        memory = find_memory(xml_platform, memory_name)
+        memory = find_elem(xml_platform, 'Memory', memory_name)
         latency += get_value_in_cycles(memory, 'writeLatency', 0)
         min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
             memory, 'writeThroughput', float('inf')))
 
     for dma_ref in active.get_DMAControllerRef():
         dma_name = dma_ref.get_dmaController()
-        dma = find_dma(xml_platform, dma_name)
+        dma = find_elem(xml_platform, 'DMAController', dma_name)
         latency += get_value_in_cycles(dma, 'latency', 0)
         min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
             dma, 'throughput', float('inf')))
 
     for ll_ref in active.get_LogicalLinkRef():
         ll_name = ll_ref.get_logicalLink()
-        ll = find_logical_link(xml_platform, ll_name)
+        ll = find_elem(xml_platform, 'LogicalLink', ll_name)
         latency += get_value_in_cycles(ll, 'latency', 0)
         min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
             ll, 'throughput', float('inf')))
 
     for pl_ref in active.get_PhysicalLinkRef():
         pl_name = pl_ref.get_physicalLink()
-        pl = find_physical_link(xml_platform, pl_name)
+        pl = find_elem(xml_platform, 'PhysicalLink', pl_name)
         latency += get_value_in_cycles(pl, 'latency', 0)
         min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
             pl, 'throughput', float('inf')))
@@ -300,7 +272,7 @@ def get_active_consume_cost_func(xml_platform, active):
     for cache_acc in active.get_CacheAccess():
         assert('read' == cache_acc.get_access())
         cache_name = cache_acc.get_cache()
-        cache = find_cache(xml_platform, cache_name)
+        cache = find_elem(xml_platform, 'Cache', cache_name)
         # XXX We assume a 100% Cache Hit rate, Silexca is doing the same...
         latency += get_value_in_cycles(cache, 'readHitLatency', 0)
         min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
@@ -309,7 +281,7 @@ def get_active_consume_cost_func(xml_platform, active):
     for fifo_acc in active.get_FifoAccess():
         assert('read' == fifo_acc.get_access())
         fifo_name = fifo_acc.get_fifo()
-        fifo = find_fifo(xml_platform, fifo_name)
+        fifo = find_elem(xml_platform, 'Fifo', fifo_name)
         latency += get_value_in_cycles(fifo, 'readLatency', 0)
         min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
             fifo, 'readThroughput', float('inf')))
@@ -317,28 +289,28 @@ def get_active_consume_cost_func(xml_platform, active):
     for memory_acc in active.get_MemoryAccess():
         assert('read' == memory_acc.get_access())
         memory_name = memory_acc.get_memory()
-        memory = find_memory(xml_platform, memory_name)
+        memory = find_elem(xml_platform, 'Memory', memory_name)
         latency += get_value_in_cycles(memory, 'readLatency', 0)
         min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
             memory, 'readThroughput', float('inf')))
 
     for dma_ref in active.get_DMAControllerRef():
         dma_name = dma_ref.get_dmaController()
-        dma = find_dma(xml_platform, dma_name)
+        dma = find_elem(xml_platform, 'DMAController', dma_name)
         latency += get_value_in_cycles(dma, 'latency', 0)
         min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
             dma, 'throughput', float('inf')))
 
     for ll_ref in active.get_LogicalLinkRef():
         ll_name = ll_ref.get_logicalLink()
-        ll = find_logical_link(xml_platform, ll_name)
+        ll = find_elem(xml_platform, 'LogicalLink', ll_name)
         latency += get_value_in_cycles(ll, 'latency', 0)
         min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
             ll, 'throughput', float('inf')))
 
     for pl_ref in active.get_PhysicalLinkRef():
         pl_name = pl_ref.get_physicalLink()
-        pl = find_physical_link(xml_platform, pl_name)
+        pl = find_elem(xml_platform, 'PhysicalLink', pl_name)
         latency += get_value_in_cycles(pl, 'latency', 0)
         min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
             pl, 'throughput', float('inf')))
