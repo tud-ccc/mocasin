@@ -260,7 +260,7 @@ class DummyMapping(Mapping):
             kpnChannel=kpn.findChannel('c'+str(i))
             processorFrom=platform.findProcessor("PE"+str(i))
             processorTo=platform.findProcessor("PE"+str(i+1))
-            viaMemory=platform.findMemory("sp"+str(i+1))
+            viaMemory=platform.findStorageDevice("sp"+str(i+1))
             primitive = platform.findPrimitive("consumer_cp",
                                                processorFrom,
                                                processorTo,
