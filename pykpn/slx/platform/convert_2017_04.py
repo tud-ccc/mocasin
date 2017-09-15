@@ -28,6 +28,30 @@ def get_policy_list(xml_platform, ref):
     raise RuntimeError('Could not find the SchedulingPolicyList %s', ref)
 
 
+def get_value_in_unit(obj, value_name, unit, default=None):
+    """
+    Read an objects value converted to a unit from the parsed xml.
+    :param obj: the object who's value should be read
+    :param value_name: name of the value to be read
+    :param unit: the unit to  convert to
+    :param default: value returned if the value is not defined in the xml
+    """
+
+    get_value = getattr(obj, 'get_%sValue' % value_name)
+    get_unit = getattr(obj, 'get_%sUnit' % value_name)
+    if get_value() is not None:
+        return ur(get_value() + get_unit()).to(unit).magnitude
+    return default
+
+
+def get_value_in_cycles(obj, value_name, unit, default=None):
+    return get_value_in_unit(obj, value_name, 'cycle', default)
+
+
+def get_value_in_byte_per_cycle(obj, value_name, unit, default=None):
+    return get_value_in_unit(obj, value_name, 'byte / cycle', default)
+
+
 def convert(platform, xml_platform):
     # keep a map of scheduler names to processors, this helps when creating
     # scheduler objects
@@ -74,24 +98,12 @@ def convert(platform, xml_platform):
     # Initialize all Memories, Caches, and Fifos as CommunicationResources
     for xm in xml_platform.get_Memory():
         name = xm.get_id()
-        read_latency = 0
-        if xm.get_readLatencyValue() is not None:
-            value = ur(xm.get_readLatencyValue() + xm.get_readLatencyUnit())
-            read_latency = value.to(ur.cycle).magnitude
-        write_latency = 0
-        if xm.get_writeLatencyValue() is not None:
-            value = ur(xm.get_writeLatencyValue() + xm.get_writeLatencyUnit())
-            write_latency = value.to(ur.cycle).magnitude
-        read_throughput = float('inf')
-        if xm.get_readThroughputValue() is not None:
-            value = ur(xm.get_readThroughputValue() +
-                       xm.get_readThroughputUnit())
-            read_throughput = value.to(ur.cycle).magnitude
-        write_throughput = float('inf')
-        if xm.get_writeThroughputValue() is not None:
-            value = ur(xm.get_writeThroughputValue() +
-                       xm.get_writeThroughputUnit())
-            write_throughput = value.to(ur.cycle).magnitude
+        read_latency = get_value_in_cycles(xm, 'readLatency', 0)
+        write_latency = get_value_in_cycles(xm, 'writeLatency', 0)
+        read_throughput = get_value_in_byte_per_cycle(
+            xm, 'readThroughput', float('inf'))
+        write_throughput = get_value_in_byte_per_cycle(
+            xm, 'writeThroughput', float('inf'))
         fd = frequency_domains[xm.get_frequencyDomain()]
         mem = CommunicationResource(name, fd, read_latency, write_latency,
                                     read_throughput, write_throughput)
@@ -101,26 +113,12 @@ def convert(platform, xml_platform):
     for xc in xml_platform.get_Cache():
         name = xc.get_id()
         # XXX we assume 100% cache hit rate (This is also what Silexica does)
-        read_latency = 0
-        if xc.get_readHitLatencyValue() is not None:
-            value = ur(xc.get_readHitLatencyValue() +
-                       xc.get_readHitLatencyUnit())
-            read_latency = value.to(ur.cycle).magnitude
-        write_latency = 0
-        if xc.get_writeHitLatencyValue() is not None:
-            value = ur(xc.get_writeHitLatencyValue() +
-                       xc.get_writeHitLatencyUnit())
-            write_latency = value.to(ur.cycle).magnitude
-        read_throughput = float('inf')
-        if xc.get_readHitThroughputValue() is not None:
-            value = ur(xc.get_readHitThroughputValue() +
-                       xc.get_readHitThroughputUnit())
-            read_throughput = value.to(ur.cycle).magnitude
-        write_throughput = float('inf')
-        if xc.get_writeHitThroughputValue() is not None:
-            value = ur(xc.get_writeHitThroughputValue() +
-                       xc.get_writeHitThroughputUnit())
-            write_throughput = value.to(ur.cycle).magnitude
+        read_latency = get_value_in_cycles(xm, 'readHitLatency', 0)
+        write_latency = get_value_in_cycles(xm, 'writeHitLatency', 0)
+        read_throughput = get_value_in_byte_per_cycle(
+            xm, 'readHitThroughput', float('inf'))
+        write_throughput = get_value_in_byte_per_cycle(
+            xm, 'writeHitThroughput', float('inf'))
         fd = frequency_domains[xc.get_frequencyDomain()]
         cache = CommunicationResource(name, fd, read_latency, write_latency,
                                       read_throughput, write_throughput)
@@ -129,24 +127,12 @@ def convert(platform, xml_platform):
 
     for xf in xml_platform.get_Fifo():
         name = xf.get_id()
-        read_latency = 0
-        if xf.get_readLatencyValue() is not None:
-            value = ur(xf.get_readLatencyValue() + xf.get_readLatencyUnit())
-            read_latency = value.to(ur.cycle).magnitude
-        write_latency = 0
-        if xf.get_writeLatencyValue() is not None:
-            value = ur(xf.get_writeLatencyValue() + xf.get_writeLatencyUnit())
-            write_latency = value.to(ur.cycle).magnitude
-        read_throughput = float('inf')
-        if xf.get_readThroughputValue() is not None:
-            value = ur(xf.get_readThroughputValue() +
-                       xf.get_readThroughputUnit())
-            read_throughput = value.to(ur.cycle).magnitude
-        write_throughput = float('inf')
-        if xf.get_writeThroughputValue() is not None:
-            value = ur(xf.get_writeThroughputValue() +
-                       xf.get_writeThroughputUnit())
-            write_throughput = value.to(ur.cycle).magnitude
+        read_latency = get_value_in_cycles(xm, 'readLatency', 0)
+        write_latency = get_value_in_cycles(xm, 'writeLatency', 0)
+        read_throughput = get_value_in_byte_per_cycle(
+            xm, 'readThroughput', float('inf'))
+        write_throughput = get_value_in_byte_per_cycle(
+            xm, 'writeThroughput', float('inf'))
         fd = frequency_domains[xf.get_frequencyDomain()]
         fifo = CommunicationResource(name, fd, read_latency, write_latency,
                                      read_throughput, write_throughput)
