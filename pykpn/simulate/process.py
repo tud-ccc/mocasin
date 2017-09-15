@@ -50,7 +50,22 @@ class Process(object):
         self.processor = processor
         self.traceReader.setProcessorType(processor.type)
 
+    def block(self, event):
+        '''
+        Block process until an event occurs.
+        :param event: the event to wait for
+        '''
+        self.state = ProcessState.Blocked
+        event.callbacks.append(self.unblock)
+        self.vcd_writer.change(self.running_var, self.env.now, 0)
+
     def unblock(self, event):
+        '''
+        Unblock process after an event occurred.
+
+        This function is intended to be called by an event callback.
+        :param event: the event that triggered the unblock
+        '''
         assert self.state == ProcessState.Blocked
         log.debug('{0:16}'.format(self.env.now) + ': process ' + self.name +
                   ' unblocked')
@@ -97,15 +112,10 @@ class Process(object):
                           entry.channel)
 
                 if channel.canConsumeTokens(entry.tokens):
-                    size = entry.tokens * channel.token_size
-
-                    consume = channel.primitive.consume
-
-                    for c in consume:
-                        ticks = c.getCosts(size)
+                    for phase in channel.primitive.consume:
                         # request all resources
                         requests = []
-                        for r in c.resources:
+                        for r in phase.resources:
                             if hasattr(r, 'simpy_resource'):
                                 req = r.simpy_resource.request()
                                 requests.append(req)
@@ -113,10 +123,13 @@ class Process(object):
                             else:
                                 requests.append(None)
 
+                        # pay for the delay
+                        size = entry.tokens * channel.token_size
+                        ticks = phase.getCosts(size)
                         yield self.env.timeout(ticks)
 
-                        # release all resources
-                        for (res, req) in zip(c.resources, requests):
+                        # release all resources that we requested before
+                        for (res, req) in zip(phase.resources, requests):
                             if req is not None:
                                 res.simpy_resource.release(req)
 
@@ -124,29 +137,22 @@ class Process(object):
                 else:
                     log.debug('                  Not enough tokens in ' +
                               'channel -> block')
-                    self.state = ProcessState.Blocked
                     self.resume = entry
-                    channel.event_produce.callbacks.append(self.unblock)
-                    self.vcd_writer.change(self.running_var, self.env.now, 0)
+                    self.block(channel.event_produce)
                     return
             elif isinstance(entry, WriteEntry):
                 channel = self.channels[entry.channel]
-
                 log.debug('{0:16}'.format(self.env.now) +
                           ': process ' + self.name + ' writes ' +
                           str(entry.tokens) + ' tokens to channel ' +
                           entry.channel)
 
                 if channel.canProduceTokens(entry.tokens):
-                    size = entry.tokens * channel.token_size
 
-                    produce = channel.primitive.produce
-
-                    for p in produce:
-                        ticks = p.getCosts(size)
+                    for phase in channel.primitive.produce:
                         # request all resources
                         requests = []
-                        for r in p.resources:
+                        for r in phase.resources:
                             if hasattr(r, 'simpy_resource'):
                                 req = r.simpy_resource.request()
                                 requests.append(req)
@@ -154,10 +160,13 @@ class Process(object):
                             else:
                                 requests.append(None)
 
+                        # pay for the delay
+                        size = entry.tokens * channel.token_size
+                        ticks = phase.getCosts(size)
                         yield self.env.timeout(ticks)
 
-                        # release all resources
-                        for (res, req) in zip(p.resources, requests):
+                        # release all resources that we requested before
+                        for (res, req) in zip(phase.resources, requests):
                             if req is not None:
                                 res.simpy_resource.release(req)
 
@@ -165,10 +174,8 @@ class Process(object):
                 else:
                     log.debug('                  Not enough free slots ' +
                               'in channel -> block')
-                    self.state = ProcessState.Blocked
                     self.resume = entry
-                    channel.event_consume.callbacks.append(self.unblock)
-                    self.vcd_writer.change(self.running_var, self.env.now, 0)
+                    self.block(channel.event_consume)
                     return
             elif isinstance(entry, TerminateEntry):
                 self.state = ProcessState.Finished
