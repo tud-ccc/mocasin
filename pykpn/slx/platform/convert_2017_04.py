@@ -44,11 +44,11 @@ def get_value_in_unit(obj, value_name, unit, default=None):
     return default
 
 
-def get_value_in_cycles(obj, value_name, unit, default=None):
+def get_value_in_cycles(obj, value_name, default=None):
     return get_value_in_unit(obj, value_name, 'cycle', default)
 
 
-def get_value_in_byte_per_cycle(obj, value_name, unit, default=None):
+def get_value_in_byte_per_cycle(obj, value_name, default=None):
     return get_value_in_unit(obj, value_name, 'byte / cycle', default)
 
 
