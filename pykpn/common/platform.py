@@ -46,7 +46,7 @@ class CommunicationResource:
 
     def __init__(self, name, frequency_domain, read_latency, write_latency,
                  read_throughput=float('inf'), write_throughput=float('inf'),
-                 exclusive=False):
+                 exclusive=False, is_storage=False):
         self.name = name
         self.frequency_domain = frequency_domain
         self.read_latency = read_latency
@@ -54,6 +54,7 @@ class CommunicationResource:
         self.read_throughput = read_throughput
         self.write_throughput = write_throughput
         self.exclusive = exclusive
+        self.is_storage = False
 
     def readLatencyInTicks(self):
         return self.frequency_domain.cyclesToTicks(self.read_latency)
@@ -72,6 +73,18 @@ class CommunicationResource:
 
     def __repr__(self):
         return self.__str__()
+
+
+class Storage(CommunicationResource):
+    """
+    This is a specialization of the CommunicationResource class and represents
+    a storage device.
+    """
+    def __init__(self, name, frequency_domain, read_latency, write_latency,
+                 read_throughput=float('inf'), write_throughput=float('inf'),
+                 exclusive=False):
+        super().__init__(name, frequency_domain, read_latency, write_latency,
+                         read_throughput, write_throughput, exclusive, True)
 
 
 class CommunicationPhase:
@@ -164,7 +177,8 @@ class Scheduler:
 class Platform(object):
     '''
     Represents a coplete hardware architecture. This is a container for
-    processor, memory, communication primitive, and scheduler objects.
+    processor, communication resource, communication primitive, and scheduler
+    objects.
 
     This is intended as a base class. Derived classes may define a specifi
     platform by creating the corresponding objects.
@@ -172,7 +186,7 @@ class Platform(object):
 
     def __init__(self):
         self.processors = []
-        self.storage_devices = []
+        self.communication_resources = []
         self.primitives = []
         self.schedulers = []
 
@@ -188,8 +202,8 @@ class Platform(object):
                 return p
         return None
 
-    def findStorageDevice(self, name):
-        for s in self.storage_devices:
+    def findCommunicationResource(self, name):
+        for s in self.communication_resources:
             if s.name == name:
                 return s
         return None
