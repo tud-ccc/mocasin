@@ -12,6 +12,7 @@ from ..common import Processor
 from ..common import MeshNoc
 from ..common import TorusNoc
 from ..common import Scheduler
+from ..common import Storage
 
 
 class GenericNocPlatform(Platform):
@@ -93,10 +94,9 @@ class GenericNocPlatform(Platform):
                                           self.frequency_domain, 1000, 1000)
                     self.processors.append(processor)
 
-                    memory = CommunicationResource("sp" + str(z),
-                                                   self.frequency_domain,
-                                                   1, 1, 8, 8, False)
-                    self.storage_devices.append(memory)
+                    memory = Storage("sp" + str(z), self.frequency_domain,
+                                     1, 1, 8, 8, False)
+                    self.communication_resources.append(memory)
 
                     noc.create_ni([memory, processor], i, j)
 
@@ -114,8 +114,8 @@ class GenericNocPlatform(Platform):
             for j in range(num_pes):
                 pi = self.findProcessor('PE%d' % i)
                 pj = self.findProcessor('PE%d' % j)
-                mi = self.findStorageDevice('sp%d' % i)
-                mj = self.findStorageDevice('sp%d' % j)
+                mi = self.findCommunicationResource('sp%d' % i)
+                mj = self.findCommunicationResource('sp%d' % j)
 
                 cp = self.createConsumerPrimitive(noc, pi, pj, mj)
                 pp = self.createProducerPrimitive(noc, pi, pj, mi)

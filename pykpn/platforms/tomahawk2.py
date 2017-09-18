@@ -11,6 +11,7 @@ from ..common import Platform
 from ..common import Primitive
 from ..common import Processor
 from ..common import Scheduler
+from ..common import Storage
 
 
 class Tomahawk2Platform(Platform):
@@ -83,10 +84,9 @@ class Tomahawk2Platform(Platform):
                                   1000, 1000)
             self.processors.append(processor)
 
-            memory = CommunicationResource("sp" + str(i),
-                                           self.frequency_domain,
-                                           1, 1, 8, 8, False)
-            self.storage_devices.append(memory)
+            memory = Storage("sp" + str(i), self.frequency_domain,
+                             1, 1, 8, 8, False)
+            self.communication_resources.append(memory)
 
             noc.create_ni([memory, processor], int(i / 4), int(i / 4))
 
@@ -100,8 +100,8 @@ class Tomahawk2Platform(Platform):
             for j in range(0, 8):
                 pi = self.findProcessor('PE%d' % i)
                 pj = self.findProcessor('PE%d' % j)
-                mi = self.findStorageDevice('sp%d' % i)
-                mj = self.findStorageDevice('sp%d' % j)
+                mi = self.findCommunicationResource('sp%d' % i)
+                mj = self.findCommunicationResource('sp%d' % j)
 
                 cp = self.createConsumerPrimitive(noc, pi, pj, mj)
                 pp = self.createProducerPrimitive(noc, pi, pj, mi)
