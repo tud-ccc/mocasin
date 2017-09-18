@@ -153,6 +153,19 @@ def convert(platform, xml_platform):
         platform.storage_devices.append(fifo)
         log.debug('Found FIFO %s', name)
 
+    # We also need to collect all the physical and logical links
+    platform_links = []
+    for ll in xml_platform.get_LogicalLink() + xml_platform.get_PhysicalLink():
+        name = ll.get_id()
+        latency = get_value_in_cycles(ll, 'latency', 0)
+        throughput = get_value_in_byte_per_cycle(
+            ll, 'throughput', float('inf'))
+        fd = frequency_domains[ll.get_frequencyDomain()]
+        link = CommunicationResource(name, fd, latency, latency, throughput,
+                                     throughput)
+        platform_links.append(link)
+        log.debug('Found link %s', name)
+
     # Initialize all Communication Primitives
     for xcom in xml_platform.get_Communication():
         name = xcom.get_id()
