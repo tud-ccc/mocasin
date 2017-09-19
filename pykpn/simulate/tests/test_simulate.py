@@ -23,6 +23,7 @@ from ...common import WriteEntry
 from ...common import TerminateEntry
 from ...common import Primitive
 from ...common import Processor
+from ...common import SchedulingPolicy
 from ...simulate import Channel
 from ..process import ProcessState
 from unittest import TestCase
@@ -31,7 +32,7 @@ from pykpn.platforms import GenericNocPlatform
 from pykpn.platforms import Tomahawk2Platform
 from pykpn.simulate import System
 from pykpn.simulate import Process
-from pykpn.simulate import Scheduler
+from pykpn.simulate import RuntimeScheduler
 from pykpn.simulate import Application
 from vcd import VCDWriter
 
@@ -106,21 +107,21 @@ class TestScheduler(TestCase):
         self.info.name='SchedulerForProcessor(PE1)'
         fd = FrequencyDomain('fd_test', 200000000)
         self.info.processors=[Processor('PE1', 'RISC', fd)]
-        self.info.policies={'FIFO':100}
+        self.info.policies=[SchedulingPolicy('FIFO', 100)]
         self.system.channels={'app.c3': Channel('app.c3', self.system, self.mappingInfo, DummyKpnGraph())\
                 , 'app.c2': Channel('app.c2', self.system, self.mappingInfo, DummyKpnGraph())}
         self.traceReader1=DummyTraceReader('w1')
         self.traceReader2=DummyTraceReader('w2')
         self.p=Process('w1', self.system, None, self.traceReader1)
         self.P=Process('w2', self.system, None, self.traceReader2)
-        self.s=Scheduler(self.system, [], self.policy, self.info)
+        self.s=RuntimeScheduler(self.system, [], self.policy, self.info)
 
     def test_SchedulingDelay(self):
-        assert self.s.scheduling_delay(self.P)==100
+        assert self.s.scheduling_cycles(self.P)==100
 
     def test_RoundRobin(self):
         assert self.s.roundrobin_sched()==(None,True)
-        assert self.s.delay_roundrobin()==100
+        assert self.s.scheduling_cycles_roundrobin()==100
         self.s.assignProcess(self.P)
         self.s.assignProcess(self.p)
         assert self.s.roundrobin_sched()==(self.P,False)
@@ -135,8 +136,8 @@ class TestScheduler(TestCase):
 
     def test_FIFO(self):
         assert self.s.fifo_sched()==(None,True)
-        assert self.s.delay_fifo(self.P)==100
-        assert self.s.delay_fifo(self.p)==100
+        assert self.s.scheduling_cycles_fifo(self.P)==100
+        assert self.s.scheduling_cycles_fifo(self.p)==100
         self.s.assignProcess(self.p)
         self.s.assignProcess(self.P)
         assert self.s.fifo_sched()==(self.p,False)
@@ -153,7 +154,6 @@ class TestScheduler(TestCase):
         #there are no processes assigned so no process is returned
         #and allProcessesFinished is True
         assert self.s.none_sched()==(None,True)
-        assert self.s.delay_none()==0
         self.s.assignProcess(self.p)
         self.s.assignProcess(self.P)
         # the process that was assigned first is returned and since there is
@@ -256,7 +256,7 @@ class DummyMapping(Mapping):
 
         for i in range(2,5):
             scheduler=platform.findScheduler("SchedulerForProcessor(PE"+str(i)+")")
-            scheduler.policies['FIFO']=100
+            scheduler.policies = [SchedulingPolicy('FIFO', 100)]
             self.processMappings.append(ProcessMappingInfo(kpn.findProcess('w'+str(i)), scheduler, 'FIFO'))
 
         for i in range(2,5):

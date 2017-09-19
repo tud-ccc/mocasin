@@ -13,27 +13,41 @@ from .process import ProcessState
 log = logging.getLogger(__name__)
 
 
-class Scheduler(object):
+class RuntimeScheduler(object):
     """
-    Represents a scheduler in the target Platform
+    Represents the simulated runtime instance of a scheduler.
     """
 
-    def __init__(self, system, processes, policy, info):
+    def __init__(self, system, processes, policy_name, platform_scheduler):
+        '''
+        Initialize a RuntimeScheduler.
+        :param system: the simulation system object
+        :param processes: a list of processes to be scheduled by this Scheduler
+        :param policy_name: name of the scheduling policy used by this
+                            Scheduler
+        :param platform_scheduler: The platform Scheduler object that should be
+                                   instanciated
+        '''
 
-        assert len(info.processors) == 1, \
-            'only single processor scheduling supported'
+        # TODO implement multi-processor scheduling
+        assert len(platform_scheduler.processors) == 1, (
+            'only single processor scheduling supported')
 
         self.env = system.env
-        self.name = info.name
-        self.processor = info.processors[0]
+        self.name = platform_scheduler.name
+        self.processor = platform_scheduler.processors[0]
         self.processes = processes
-        self.policy = policy
+
+        self.policy = None
+        for p in platform_scheduler.policies:
+            if p.name == policy_name:
+                self.policy = p
+        if self.policy is None:
+            raise RuntimeError('The scheduling policy %s is not supported by '
+                               'the scheduler %s!', policy_name, self.name)
 
         self.prev_process = None
         self.first_iteration = False
-
-        # number of cycles required to reach a scheduling decision
-        self.scheduling_cycles = info.policies[policy]
 
         self.vcd_writer = system.vcd_writer
         self.process_var = self.vcd_writer.register_var(
@@ -59,7 +73,7 @@ class Scheduler(object):
             while True:
                 p, allProcessesFinished = self.scheduling()
                 if p is not None:
-                    delay = self.scheduling_delay(p)
+                    delay = self.scheduling_cycles(p)
                     yield self.env.timeout(self.processor.ticks(delay))
 
                     self.vcd_writer.change(self.process_var, self.env.now,
@@ -82,23 +96,23 @@ class Scheduler(object):
             yield self.wake_up
 
     def scheduling(self):
-        if self.policy == 'None':
+        if self.policy.name == 'None':
             return self.none_sched()
-        elif self.policy == 'FIFO':
+        elif self.policy.name == 'FIFO':
             return self.fifo_sched()
-        elif self.policy == 'RoundRobin':
+        elif self.policy.name == 'RoundRobin':
             return self.roundrobin_sched()
         else:
             raise RuntimeError('The scheduling policy ' + self.policy +
                                ' is not supported')
 
-    def scheduling_delay(self, p):
-        if self.policy == 'None':
-            return self.delay_none()
-        elif self.policy == 'FIFO':
-            return self.delay_fifo(p)
-        elif self.policy == 'RoundRobin':
-            return self.delay_roundrobin()
+    def scheduling_cycles(self, p):
+        if self.policy.name == 'None':
+            return 0
+        elif self.policy.name == 'FIFO':
+            return self.scheduling_cycles_fifo(p)
+        elif self.policy.name == 'RoundRobin':
+            return self.scheduling_cycles_roundrobin()
         else:
             raise RuntimeError('The scheduling policy ' + self.policy +
                                ' is not supported')
@@ -168,30 +182,27 @@ class Scheduler(object):
                 assert False, 'unknown process state'
         return None, allProcessesFinished
 
-    def delay_none(self):
-        return 0
-
-    def delay_fifo(self, p):
-        delay = self.scheduling_cycles
+    def scheduling_cycles_fifo(self, p):
+        cycles = self.policy.scheduling_cycles
         if self.prev_process is None:
             # we need to load the first process
-            delay += self.processor.context_load_cycles
+            cycles += self.processor.context_load_cycles
         elif p != self.prev_process:
-            delay += (self.processor.context_load_cycles +
-                      self.processor.context_store_cycles)
-        self.prev_process = p
-        return delay
+            cycles += (self.processor.context_load_cycles +
+                       self.processor.context_store_cycles)
+        self.prev_process = p  # XXX Why is this set here?
+        return cycles
 
-    def delay_roundrobin(self):
-        delay = self.scheduling_cycles
+    def scheduling_cycles_roundrobin(self):
+        cycles = self.policy. scheduling_cycles
         if self.first_iteration:
             # Nothing to switch out on first iteration
-            delay += self.processor.context_load_cycles
+            cycles += self.processor.context_load_cycles
             self.first_iteration = False
         else:
-            delay += (self.processor.context_load_cycles +
-                      self.processor.context_store_cycles)
-        return delay
+            cycles += (self.processor.context_load_cycles +
+                       self.processor.context_store_cycles)
+        return cycles
 
     def setTraceDir(self, dir):
         for process in self.processes:

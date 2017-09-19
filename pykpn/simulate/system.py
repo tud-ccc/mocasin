@@ -12,7 +12,7 @@ from operator import itemgetter
 from vcd import VCDWriter
 from .channel import Channel
 from .process import Process
-from .scheduler import Scheduler
+from .scheduler import RuntimeScheduler
 
 from simpy.resources.resource import Resource
 
@@ -73,8 +73,8 @@ class System:
                     self.pair[scheduler].append(process)
                 else:
                     log.debug('    Create scheduler: ' + pm.scheduler.name)
-                    scheduler = Scheduler(self, [], pm.policy,
-                                          pm.scheduler)
+                    scheduler = RuntimeScheduler(self, [], pm.policy,
+                                                 pm.scheduler)
                     self.schedulers.append(scheduler)
                     self.pair[scheduler] = [process]
 
