@@ -9,8 +9,8 @@
 import argparse
 import logging
 
-from pykpn.simulate import System
 from pykpn.simulate import Application
+from pykpn.simulate import RuntimeSystem
 from pykpn.slx import SlxConfig
 
 
@@ -57,7 +57,8 @@ def main():
         if config.mapping_to_dot[an] is not None:
             config.mappings[an].outputDot(config.mapping_to_dot[an])
     # Create the system
-    system = System(config.vcd_file_name, config.platform, config.graphs, applications)
+    system = RuntimeSystem(config.vcd_file_name, config.platform,
+                           config.graphs, applications)
     # Run the simulation
     system.simulate()
 

@@ -30,7 +30,7 @@ from unittest import TestCase
 
 from pykpn.platforms import GenericNocPlatform
 from pykpn.platforms import Tomahawk2Platform
-from pykpn.simulate import System
+from pykpn.simulate import RuntimeSystem
 from pykpn.simulate import Process
 from pykpn.simulate import RuntimeScheduler
 from pykpn.simulate import Application
@@ -187,7 +187,7 @@ class TestSystem(TestCase):
             processors = pm.scheduler.processors
             readers[name] = DummyTraceReader(name)
         app = Application('app', graph, mapping, readers,0)
-        self.system = System('dump.vcd', platform, graph, [app])
+        self.system = RuntimeSystem('dump.vcd', platform, graph, [app])
         #add processes to the schedulers
         self.system.schedulers[0].assignProcess(self.system.pair[self.system.schedulers[0]][0])
         self.system.schedulers[1].assignProcess(self.system.pair[self.system.schedulers[1]][0])

@@ -19,10 +19,11 @@ from simpy.resources.resource import Resource
 log = logging.getLogger(__name__)
 
 
-class System:
+class RuntimeSystem:
     '''
     This is the central class for managing a simulation. It contains the
-    entire platform and all applications running on it.
+    simulation environment, the entire platform, and all applications running
+    on top of it.
     '''
 
     def __init__(self, vcd, platform, graphs, applications):
