@@ -160,20 +160,46 @@ class Primitive:
         return self.__str__()
 
 
+class SchedulingPolicy:
+    '''
+    Represents a scheduling policy. Each scheduler may implement multiple
+    policies.
+    '''
+
+    def __init__(self, name, cycles, param=None):
+        '''
+        Initialize a SchedulingPolicy.
+        :param name: policy name
+        :param cycles: number of cycles a scheduler using this policy requires
+                       to reach a decision
+        :param param: an optional parameter that allows for additional
+                      configuration of the policy
+        '''
+        self.name = name
+        self.scheduling_cycles = cycles
+        self.param = param
+
+
 class Scheduler:
     '''
-    Represents a scheduler provided by the platform. It schedules processes
-    on one or more processors according to a policy. The class defines a
-    dictionary of policies and associated scheduling delays for each policy.
+    Represents a scheduler provided by the platform. It schedules processes on
+    one or more processors according to a policy. The class defines a list of
+    all supported scheduling policies.
     '''
 
-    implementedPolicies = ['None', 'FIFO', 'RoundRobin']
-
     def __init__(self, name, processors, policies):
-        assert len(processors) > 0, \
-            "A scheduler must be associated with at least one processor"
-        assert len(policies) > 0, \
-            "A scheduler must support at least one policy"
+        '''
+        Initialize a Scheduler.
+        :param name: name of the scheduler
+        :param processors: list of Processor objects that are managed by this
+                           scheduler
+        :param policies: list of SchedulingPolicies that are supported by this
+                         scheduler
+        '''
+        assert len(processors) > 0, (
+            "A scheduler must be associated with at least one processor")
+        assert len(policies) > 0, (
+            "A scheduler must support at least one policy")
 
         self.name = name
         self.processors = processors

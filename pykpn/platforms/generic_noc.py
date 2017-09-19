@@ -12,6 +12,7 @@ from ..common import Processor
 from ..common import MeshNoc
 from ..common import TorusNoc
 from ..common import Scheduler
+from ..common import SchedulingPolicy
 from ..common import Storage
 
 
@@ -102,10 +103,12 @@ class GenericNocPlatform(Platform):
 
                     # define a scheduler per PE, the scheduling delay is
                     # arbitrarily chosen
+                    fifo_policy = SchedulingPolicy('FIFO', 100)
+                    rr_policy = SchedulingPolicy('RoundRobin', 200)
                     scheduler = Scheduler("SchedulerForProcessor(PE" + str(z) +
                                           ")",
                                           [processor],
-                                          {'FIFO': 100, 'RoundRobin': 200})
+                                          [fifo_policy, rr_policy])
                     self.schedulers.append(scheduler)
                     z += 1
 

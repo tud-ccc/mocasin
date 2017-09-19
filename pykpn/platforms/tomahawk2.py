@@ -11,6 +11,7 @@ from ..common import Platform
 from ..common import Primitive
 from ..common import Processor
 from ..common import Scheduler
+from ..common import SchedulingPolicy
 from ..common import Storage
 
 
@@ -91,9 +92,10 @@ class Tomahawk2Platform(Platform):
             noc.create_ni([memory, processor], int(i / 4), int(i / 4))
 
             # Scheduling on the Tomahawk2 is currently not possible.
+            policy = SchedulingPolicy('None', 0)
             scheduler = Scheduler("SchedulerForProcessor(PE" + str(i) + ")",
                                   [processor],
-                                  {'None': 0})
+                                  [policy])
             self.schedulers.append(scheduler)
 
         for i in range(0, 8):
