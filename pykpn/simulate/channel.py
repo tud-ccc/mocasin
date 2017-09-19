@@ -9,7 +9,10 @@ import logging
 log = logging.getLogger(__name__)
 
 
-class Channel(object):
+class RuntimeChannel(object):
+    '''
+    Represents the runtime instance of a KPN channel.
+    '''
 
     def __init__(self, name, system, mappingInfo, graph):
         self.env = system.env

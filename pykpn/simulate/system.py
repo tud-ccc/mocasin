@@ -10,7 +10,7 @@ import simpy
 
 from operator import itemgetter
 from vcd import VCDWriter
-from .channel import Channel
+from .channel import RuntimeChannel
 from .process import Process
 from .scheduler import RuntimeScheduler
 
@@ -52,7 +52,8 @@ class RuntimeSystem:
             for cm in app.mapping.channelMappings:
                 name = app.name + '.' + cm.kpnChannel.name
                 log.debug('    Create channel: ' + name)
-                self.channels[name] = Channel(name, self, cm, self.graphs[app.name])
+                self.channels[name] = RuntimeChannel(
+                    name, self, cm, self.graphs[app.name])
 
             for pm in app.mapping.processMappings:
                 name = app.name + '.' + pm.kpnProcess.name

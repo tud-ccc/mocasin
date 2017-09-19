@@ -24,7 +24,7 @@ from ...common import TerminateEntry
 from ...common import Primitive
 from ...common import Processor
 from ...common import SchedulingPolicy
-from ...simulate import Channel
+from ...simulate import RuntimeChannel
 from ..process import ProcessState
 from unittest import TestCase
 
@@ -44,7 +44,7 @@ class TestChannel(TestCase):
     def __init__(self, *args, **kwargs):
         super(TestChannel, self).__init__(*args, **kwargs)
         self.system, self.mappingInfo = common_sys()
-        self.c=Channel('app.c2', self.system, self.mappingInfo, DummyKpnGraph())
+        self.c=RuntimeChannel('app.c2', self.system, self.mappingInfo, DummyKpnGraph())
 
     def test_initialized(self):
         #Channel capacity is 4, so a channel can produce maximum of 4 packets
@@ -84,7 +84,7 @@ class TestProcess(TestCase):
     def __init__(self, *args, **kwargs):
         super(TestProcess, self).__init__(*args, **kwargs)
         self.system, self.mappingInfo = common_sys()
-        self.system.channels={'app.c2': Channel('app.c2', self.system, self.mappingInfo, DummyKpnGraph())}
+        self.system.channels={'app.c2': RuntimeChannel('app.c2', self.system, self.mappingInfo, DummyKpnGraph())}
         self.name='w1'
         self.traceReader=DummyTraceReader(self.name)
         self.p=Process(self.name, self.system, None, self.traceReader)
@@ -108,8 +108,8 @@ class TestScheduler(TestCase):
         fd = FrequencyDomain('fd_test', 200000000)
         self.info.processors=[Processor('PE1', 'RISC', fd)]
         self.info.policies=[SchedulingPolicy('FIFO', 100)]
-        self.system.channels={'app.c3': Channel('app.c3', self.system, self.mappingInfo, DummyKpnGraph())\
-                , 'app.c2': Channel('app.c2', self.system, self.mappingInfo, DummyKpnGraph())}
+        self.system.channels={'app.c3': RuntimeChannel('app.c3', self.system, self.mappingInfo, DummyKpnGraph())\
+                , 'app.c2': RuntimeChannel('app.c2', self.system, self.mappingInfo, DummyKpnGraph())}
         self.traceReader1=DummyTraceReader('w1')
         self.traceReader2=DummyTraceReader('w2')
         self.p=Process('w1', self.system, None, self.traceReader1)
