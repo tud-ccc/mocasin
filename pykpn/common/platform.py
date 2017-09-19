@@ -182,11 +182,11 @@ class Scheduler:
 
 class Platform(object):
     '''
-    Represents a coplete hardware architecture. This is a container for
+    Represents a complete hardware architecture. This is a container for
     processor, communication resource, communication primitive, and scheduler
     objects.
 
-    This is intended as a base class. Derived classes may define a specifi
+    This is intended as a base class. Derived classes may define a specific
     platform by creating the corresponding objects.
     '''
 
