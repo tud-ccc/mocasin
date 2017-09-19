@@ -45,8 +45,9 @@ class RuntimeSystem:
             self.vcd_writer.dump_off(self.env.now)
 
         log.info('Start initializing the system.')
+
         for app in self.applications:
-            self.start_times.append([app, int(app.start_time)])
+            self.start_times.append([app, int(app.start_at_tick)])
             log.debug('  Load application: ' + app.name)
             for cm in app.mapping.channelMappings:
                 name = app.name + '.' + cm.kpnChannel.name
@@ -57,7 +58,7 @@ class RuntimeSystem:
                 name = app.name + '.' + pm.kpnProcess.name
                 log.debug('    Create process: ' + name)
                 process = Process(name, self, pm,
-                                  app.traceReaders[pm.kpnProcess.name])
+                                  app.trace_readers[pm.kpnProcess.name])
 
                 log.debug('      it uses the scheduler ' + pm.scheduler.name)
 

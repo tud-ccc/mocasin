@@ -9,7 +9,7 @@
 import argparse
 import logging
 
-from pykpn.simulate import Application
+from pykpn.simulate import RuntimeApplication
 from pykpn.simulate import RuntimeSystem
 from pykpn.slx import SlxConfig
 
@@ -47,11 +47,9 @@ def main():
     config = SlxConfig(args.configFile)
 
     for an in config.app_names:
-        app = Application(an,
-                          config.graphs[an],
-                          config.mappings[an],
-                          config.trace_readers[an],
-                          config.start_times[an])
+        app = RuntimeApplication(
+            an, config.graphs[an], config.mappings[an],
+            config.trace_readers[an], config.start_times[an])
         applications.append(app)
 
         if config.mapping_to_dot[an] is not None:
