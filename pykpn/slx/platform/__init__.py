@@ -9,7 +9,6 @@ from .parse_2017_04 import parse as parse_2017_04
 from .convert_2017_04 import convert as convert_2017_04
 
 from ...common import Platform
-from ...common import Processor
 
 
 log = logging.getLogger(__name__)
