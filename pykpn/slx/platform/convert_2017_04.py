@@ -12,21 +12,26 @@ from ...common import FrequencyDomain
 from ...common import Primitive
 from ...common import Processor
 from ...common import Scheduler
+from ...common import SchedulingPolicy
 
 
 ur = UnitRegistry()
 log = logging.getLogger(__name__)
 
 
-def get_policy_list(xml_platform, ref):
-    l = []
+def create_policy_list(xml_platform, list_ref):
+    policies = []
     for pl in xml_platform.get_SchedulingPolicyList():
-        if pl.get_id() == ref:
+        if pl.get_id() == list_ref:
             for p in pl.get_SchedulingPolicy():
-                l.append(p.get_schedulingAlgorithm())
-            return l
-
-    raise RuntimeError('Could not find the SchedulingPolicyList %s', ref)
+                name = p.get_schedulingAlgorithm()
+                # there is no scheduling delay in slx
+                cycles = 0
+                # 1 tick == 1 ps
+                param = get_value_in_unit(p, 'timeSlice', 'ps', None)
+                policies.append(SchedulingPolicy(name, cycles, param))
+            return policies
+    raise RuntimeError('Could not find the SchedulingPolicyList %s', list_ref)
 
 
 def get_value_in_unit(obj, value_name, unit, default=None):
@@ -91,9 +96,9 @@ def convert(platform, xml_platform):
         name = xp.get_id()
         type = xp.get_core()
         fd = frequency_domains[xp.get_frequencyDomain()]
-        p = Processor(name, type, fd, 0, 0)
-        # TODO we need to set the switching delays per scheduling policy, not
-        #      per processor
+        context_load = get_value_in_cycles(xp, 'contextLoad', 0)
+        context_store = get_value_in_cycles(xp, 'contextStore', 0)
+        p = Processor(name, type, fd, context_load, context_store)
         schedulers_to_processors[xp.get_scheduler()].append(p)
         platform.processors.append(p)
         log.debug('Found processor %s of type %s', name, type)
@@ -101,7 +106,8 @@ def convert(platform, xml_platform):
     # Initialize all Schedulers
     for xs in xml_platform.get_Scheduler():
         name = xs.get_id()
-        policies = get_policy_list(xml_platform, xs.get_schedulingPolicyList())
+        policies = create_policy_list(xml_platform,
+                                      xs.get_schedulingPolicyList())
         s = Scheduler(name, schedulers_to_processors[name], policies)
         log.debug('Found scheduler %s for %s supporting %s',
                   name, schedulers_to_processors[name], policies)
