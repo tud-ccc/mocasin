@@ -6,6 +6,7 @@
 import logging
 from pint import UnitRegistry
 
+from ...common import CommunicationPhase
 from ...common import CommunicationResource
 from ...common import FrequencyDomain
 from ...common import Primitive
@@ -76,10 +77,6 @@ def convert(platform, xml_platform):
     # TODO implement scheduling delays correctly
     log.warn('SLX platforms do not specify scheduling delays! -> assume 0')
 
-    # TODO implement support for frequency domains
-    log.warn('Pykpn does not support frequency domains. We always use the '
-             'processor frequency for delay calculation. Use with care!')
-
     # Collect all frequency domains
     frequency_domains = {}
     for fd in xml_platform.get_FrequencyDomain():
@@ -121,7 +118,7 @@ def convert(platform, xml_platform):
         fd = frequency_domains[xm.get_frequencyDomain()]
         mem = CommunicationResource(name, fd, read_latency, write_latency,
                                     read_throughput, write_throughput)
-        platform.storage_devices.append(mem)
+        platform.communication_resources.append(mem)
         log.debug('Found memory %s', name)
 
     for xc in xml_platform.get_Cache():
@@ -136,7 +133,7 @@ def convert(platform, xml_platform):
         fd = frequency_domains[xc.get_frequencyDomain()]
         cache = CommunicationResource(name, fd, read_latency, write_latency,
                                       read_throughput, write_throughput)
-        platform.storage_devices.append(cache)
+        platform.communication_resources.append(cache)
         log.debug('Found cache %s', name)
 
     for xf in xml_platform.get_Fifo():
@@ -150,12 +147,14 @@ def convert(platform, xml_platform):
         fd = frequency_domains[xf.get_frequencyDomain()]
         fifo = CommunicationResource(name, fd, read_latency, write_latency,
                                      read_throughput, write_throughput)
-        platform.storage_devices.append(fifo)
+        platform.communication_resources.append(fifo)
         log.debug('Found FIFO %s', name)
 
-    # We also need to collect all the physical and logical links
-    platform_links = []
-    for ll in xml_platform.get_LogicalLink() + xml_platform.get_PhysicalLink():
+    # We also need to collect all the physical links, logical links and dma
+    # controllers
+    for ll in (xml_platform.get_LogicalLink() +
+               xml_platform.get_PhysicalLink() +
+               xml_platform.get_DMAController()):
         name = ll.get_id()
         latency = get_value_in_cycles(ll, 'latency', 0)
         throughput = get_value_in_byte_per_cycle(
@@ -163,8 +162,8 @@ def convert(platform, xml_platform):
         fd = frequency_domains[ll.get_frequencyDomain()]
         link = CommunicationResource(name, fd, latency, latency, throughput,
                                      throughput)
-        platform_links.append(link)
-        log.debug('Found link %s', name)
+        platform.communication_resources.append(link)
+        log.debug('Found link or DMA %s', name)
 
     # Initialize all Communication Primitives
     for xcom in xml_platform.get_Communication():
@@ -193,139 +192,78 @@ def convert(platform, xml_platform):
         for xp in xcom.get_Producer():
             pn = xp.get_processor()
 
+            # TODO implement passive producing costs
             if xp.get_Passive() is not None:
                 log.warn('Passive producing costs are not supported'
-                         ' -> ignore (%s)', name)
+                         ' -> ignore passive phase of primitive %s', name)
 
-            producers[pn] = get_active_produce_cost_func(xml_platform,
-                                                         xp.get_Active())
+            # We create a single phase for each producer
+            active = CommunicationPhase(
+                'Produce Active',
+                resources_from_access(xp.get_Active(), platform),
+                'write')
+            producers[pn] = [active]
 
         # Read the Consumers
         for xc in xcom.get_Consumer():
             cn = xc.get_processor()
 
+            # TODO implement passive producing costs
             if xc.get_Passive() is not None:
                 log.warn('Passive consuming costs are not supported'
-                         ' -> ignore (%s)', name)
+                         ' -> ignore passive phase of primitive %s', name)
 
-            consumers[cn] = get_active_consume_cost_func(xml_platform,
-                                                         xc.get_Active())
+            # We create a single phase for each producer
+            active = CommunicationPhase(
+                'Consume Active',
+                resources_from_access(xp.get_Active(), platform),
+                'read')
+            consumers[pn] = [active]
 
         # Create a Primitive for each combination of producer and consumer
         for pn in producers:
             for cn in consumers:
                 p = Primitive(name,
                               platform.findProcessor(pn),
-                              platform.findStorageDevice(via_name),
+                              platform.findCommunicationResource(via_name),
                               platform.findProcessor(cn))
-                log.debug('Found communication primitive %s: %s -> %s -> %s'
-                          ', produce(x)=%s, consume(x)=%s', name,
-                          pn, via_name, cn, producers[pn], consumers[cn])
+                log.debug('Found communication primitive %s: %s -> %s -> %s',
+                          name, pn, via_name, cn, producers[pn], consumers[cn])
 
 
-def get_active_produce_cost_func(xml_platform, active):
-    latency = 0
-    min_throughput = float('inf')
-
-    for cache_acc in active.get_CacheAccess():
-        assert('write' == cache_acc.get_access())
-        cache_name = cache_acc.get_cache()
-        cache = find_elem(xml_platform, 'Cache', cache_name)
-        # XXX We assume a 100% Cache Hit rate, Silexca is doing the same...
-        latency += get_value_in_cycles(cache, 'writeHitLatency', 0)
-        min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
-            cache, 'writeHitThroughput', float('inf')))
-
-    for fifo_acc in active.get_FifoAccess():
-        assert('write' == fifo_acc.get_access())
-        fifo_name = fifo_acc.get_fifo()
-        fifo = find_elem(xml_platform, 'Fifo', fifo_name)
-        latency += get_value_in_cycles(fifo, 'writeLatency', 0)
-        min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
-            fifo, 'writeThroughput', float('inf')))
-
-    for memory_acc in active.get_MemoryAccess():
-        assert('write' == memory_acc.get_access())
-        memory_name = memory_acc.get_memory()
-        memory = find_elem(xml_platform, 'Memory', memory_name)
-        latency += get_value_in_cycles(memory, 'writeLatency', 0)
-        min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
-            memory, 'writeThroughput', float('inf')))
-
-    for dma_ref in active.get_DMAControllerRef():
-        dma_name = dma_ref.get_dmaController()
-        dma = find_elem(xml_platform, 'DMAController', dma_name)
-        latency += get_value_in_cycles(dma, 'latency', 0)
-        min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
-            dma, 'throughput', float('inf')))
-
-    for ll_ref in active.get_LogicalLinkRef():
-        ll_name = ll_ref.get_logicalLink()
-        ll = find_elem(xml_platform, 'LogicalLink', ll_name)
-        latency += get_value_in_cycles(ll, 'latency', 0)
-        min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
-            ll, 'throughput', float('inf')))
-
-    for pl_ref in active.get_PhysicalLinkRef():
-        pl_name = pl_ref.get_physicalLink()
-        pl = find_elem(xml_platform, 'PhysicalLink', pl_name)
-        latency += get_value_in_cycles(pl, 'latency', 0)
-        min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
-            pl, 'throughput', float('inf')))
-
-    return str(latency) + ' + x * ' + str(1/min_throughput)
+def find_resource(platform, id):
+    '''
+    Search for a resource in a platform and raise an error if the resource is
+    not found.
+    :param platform: The Platform object to search in
+    :param id: Name of the resource to search for
+    '''
+    resource = platform.findCommunicationResource(id)
+    if resource is None:
+        raise RuntimeError('Resource %s is not in the platform' % id)
+    return resource
 
 
-def get_active_consume_cost_func(xml_platform, active):
-    latency = ur('0 cycles')
-    min_throughput = float('inf') * ur('byte / cycle')
-
-    # TODO handle frequency domains!
-
-    for cache_acc in active.get_CacheAccess():
-        assert('read' == cache_acc.get_access())
-        cache_name = cache_acc.get_cache()
-        cache = find_elem(xml_platform, 'Cache', cache_name)
-        # XXX We assume a 100% Cache Hit rate, Silexca is doing the same...
-        latency += get_value_in_cycles(cache, 'readHitLatency', 0)
-        min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
-            cache, 'readHitThroughput', float('inf')))
-
-    for fifo_acc in active.get_FifoAccess():
-        assert('read' == fifo_acc.get_access())
-        fifo_name = fifo_acc.get_fifo()
-        fifo = find_elem(xml_platform, 'Fifo', fifo_name)
-        latency += get_value_in_cycles(fifo, 'readLatency', 0)
-        min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
-            fifo, 'readThroughput', float('inf')))
-
-    for memory_acc in active.get_MemoryAccess():
-        assert('read' == memory_acc.get_access())
-        memory_name = memory_acc.get_memory()
-        memory = find_elem(xml_platform, 'Memory', memory_name)
-        latency += get_value_in_cycles(memory, 'readLatency', 0)
-        min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
-            memory, 'readThroughput', float('inf')))
-
-    for dma_ref in active.get_DMAControllerRef():
-        dma_name = dma_ref.get_dmaController()
-        dma = find_elem(xml_platform, 'DMAController', dma_name)
-        latency += get_value_in_cycles(dma, 'latency', 0)
-        min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
-            dma, 'throughput', float('inf')))
-
-    for ll_ref in active.get_LogicalLinkRef():
-        ll_name = ll_ref.get_logicalLink()
-        ll = find_elem(xml_platform, 'LogicalLink', ll_name)
-        latency += get_value_in_cycles(ll, 'latency', 0)
-        min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
-            ll, 'throughput', float('inf')))
-
-    for pl_ref in active.get_PhysicalLinkRef():
-        pl_name = pl_ref.get_physicalLink()
-        pl = find_elem(xml_platform, 'PhysicalLink', pl_name)
-        latency += get_value_in_cycles(pl, 'latency', 0)
-        min_throughput = min(min_throughput, get_value_in_byte_per_cycle(
-            pl, 'throughput', float('inf')))
-
-    return str(latency) + ' + x * ' + str(1/min_throughput)
+def resources_from_access(access_list, platform):
+    """
+    Parse a list of accesses and references from the xml and convert it to a
+    list of communication resources. This is required for creating
+    communication primitives
+    """
+    resources = []
+    for acc in access_list.get_CacheAccess():
+        assert('write' == acc.get_access())
+        resources.append(find_resource(platform, acc.get_cache()))
+    for acc in access_list.get_FifoAccess():
+        assert('write' == acc.get_access())
+        resources.append(find_resource(platform, acc.get_fifo()))
+    for acc in access_list.get_MemoryAccess():
+        assert('write' == acc.get_access())
+        resources.append(find_resource(platform, acc.get_memory()))
+    for ref in access_list.get_DMAControllerRef():
+        resources.append(find_resource(platform, ref.get_dmaController()))
+    for ref in access_list.get_PhysicalLinkRef():
+        resources.append(find_resource(platform, ref.get_physicalLink()))
+    for ref in access_list.get_LogicalLinkRef():
+        resources.append(find_resource(platform, ref.get_logicalLink()))
+    return resources
