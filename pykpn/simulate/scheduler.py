@@ -32,7 +32,8 @@ class Scheduler(object):
         self.prev_process = None
         self.first_iteration = False
 
-        self.schedulingDelay = info.policies[policy]
+        # number of cycles required to reach a scheduling decision
+        self.scheduling_cycles = info.policies[policy]
 
         self.vcd_writer = system.vcd_writer
         self.process_var = self.vcd_writer.register_var(
@@ -171,27 +172,25 @@ class Scheduler(object):
         return 0
 
     def delay_fifo(self, p):
-        delay = self.schedulingDelay
+        delay = self.scheduling_cycles
         if self.prev_process is None:
             # we need to load the first process
-            delay = delay + self.processor.contextSwitchInDelay
+            delay += self.processor.context_load_cycles
         elif p != self.prev_process:
-            delay = delay + self.processor.contextSwitchInDelay + \
-                self.processor.contextSwitchOutDelay
+            delay += (self.processor.context_load_cycles +
+                      self.processor.context_store_cycles)
         self.prev_process = p
         return delay
 
     def delay_roundrobin(self):
-        delay = self.schedulingDelay
+        delay = self.scheduling_cycles
         if self.first_iteration:
             # Nothing to switch out on first iteration
-            delay = delay +\
-                self.processor.contextSwitchInDelay
+            delay += self.processor.context_load_cycles
             self.first_iteration = False
         else:
-            delay = delay + \
-                self.processor.contextSwitchInDelay + \
-                self.processor.contextSwitchOutDelay
+            delay += (self.processor.context_load_cycles +
+                      self.processor.context_store_cycles)
         return delay
 
     def setTraceDir(self, dir):

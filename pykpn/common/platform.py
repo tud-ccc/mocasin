@@ -17,16 +17,22 @@ class FrequencyDomain:
 
 class Processor:
 
-    def __init__(self, name, type, frequency_domain, contextSwitchInDelay=0,
-                 contextSwitchOutDelay=0):
+    def __init__(self, name, type, frequency_domain, context_load_cycles=0,
+                 context_store_cycles=0):
         self.name = name
         self.type = type
         self.frequency_domain = frequency_domain
-        self.contextSwitchInDelay = contextSwitchInDelay
-        self.contextSwitchOutDelay = contextSwitchOutDelay
+        self.context_load_cycles = context_load_cycles
+        self.context_store_cycles = context_store_cycles
 
     def ticks(self, cycles):
         return self.frequency_domain.cyclesToTicks(cycles)
+
+    def context_load_ticks(self):
+        return self.ticks(self.context_load_cycles)
+
+    def context_store_ticks(self):
+        return self.ticks(self.context_store_cycles)
 
     def __str__(self):
         return self.name
