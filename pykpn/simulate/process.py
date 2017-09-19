@@ -21,7 +21,10 @@ class ProcessState(Enum):
     Finished = 3
 
 
-class Process(object):
+class RuntimeProcess(object):
+    '''
+    Represents the runtime instance of a KPN process.
+    '''
 
     def __init__(self, name, system, processMapping, traceReader):
         self.env = system.env

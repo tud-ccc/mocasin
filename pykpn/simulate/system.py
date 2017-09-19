@@ -11,7 +11,7 @@ import simpy
 from operator import itemgetter
 from vcd import VCDWriter
 from .channel import RuntimeChannel
-from .process import Process
+from .process import RuntimeProcess
 from .scheduler import RuntimeScheduler
 
 from simpy.resources.resource import Resource
@@ -58,8 +58,8 @@ class RuntimeSystem:
             for pm in app.mapping.processMappings:
                 name = app.name + '.' + pm.kpnProcess.name
                 log.debug('    Create process: ' + name)
-                process = Process(name, self, pm,
-                                  app.trace_readers[pm.kpnProcess.name])
+                process = RuntimeProcess(
+                    name, self, pm, app.trace_readers[pm.kpnProcess.name])
 
                 log.debug('      it uses the scheduler ' + pm.scheduler.name)
 

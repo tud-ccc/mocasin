@@ -31,7 +31,7 @@ from unittest import TestCase
 from pykpn.platforms import GenericNocPlatform
 from pykpn.platforms import Tomahawk2Platform
 from pykpn.simulate import RuntimeSystem
-from pykpn.simulate import Process
+from pykpn.simulate import RuntimeProcess
 from pykpn.simulate import RuntimeScheduler
 from pykpn.simulate import RuntimeApplication
 from vcd import VCDWriter
@@ -87,7 +87,7 @@ class TestProcess(TestCase):
         self.system.channels={'app.c2': RuntimeChannel('app.c2', self.system, self.mappingInfo, DummyKpnGraph())}
         self.name='w1'
         self.traceReader=DummyTraceReader(self.name)
-        self.p=Process(self.name, self.system, None, self.traceReader)
+        self.p=RuntimeProcess(self.name, self.system, None, self.traceReader)
         fd = FrequencyDomain('fd_test', 200000000)
         self.processor=Processor('PE1', 'RISC', fd)
 
@@ -112,8 +112,8 @@ class TestScheduler(TestCase):
                 , 'app.c2': RuntimeChannel('app.c2', self.system, self.mappingInfo, DummyKpnGraph())}
         self.traceReader1=DummyTraceReader('w1')
         self.traceReader2=DummyTraceReader('w2')
-        self.p=Process('w1', self.system, None, self.traceReader1)
-        self.P=Process('w2', self.system, None, self.traceReader2)
+        self.p=RuntimeProcess('w1', self.system, None, self.traceReader1)
+        self.P=RuntimeProcess('w2', self.system, None, self.traceReader2)
         self.s=RuntimeScheduler(self.system, [], self.policy, self.info)
 
     def test_SchedulingDelay(self):
