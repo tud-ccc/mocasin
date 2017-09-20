@@ -230,9 +230,9 @@ def convert(platform, xml_platform):
         for pn in producers:
             for cn in consumers:
                 p = Primitive(name,
-                              platform.findProcessor(pn),
-                              platform.findCommunicationResource(via_name),
-                              platform.findProcessor(cn))
+                              platform.find_processor(pn),
+                              platform.find_communication_resource(via_name),
+                              platform.find_processor(cn))
                 log.debug('Found communication primitive %s: %s -> %s -> %s',
                           name, pn, via_name, cn)
 
@@ -244,7 +244,7 @@ def find_resource(platform, id):
     :param platform: The Platform object to search in
     :param id: Name of the resource to search for
     '''
-    resource = platform.findCommunicationResource(id)
+    resource = platform.find_communication_resource(id)
     if resource is None:
         raise RuntimeError('Resource %s is not in the platform' % id)
     return resource

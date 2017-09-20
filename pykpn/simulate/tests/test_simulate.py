@@ -255,19 +255,19 @@ class DummyMapping(Mapping):
         Mapping.__init__(self, kpn, platform)
 
         for i in range(2,5):
-            scheduler=platform.findScheduler("SchedulerForProcessor(PE"+str(i)+")")
+            scheduler=platform.find_scheduler("SchedulerForProcessor(PE"+str(i)+")")
             scheduler.policies = [SchedulingPolicy('FIFO', 100)]
             self.processMappings.append(ProcessMappingInfo(kpn.findProcess('w'+str(i)), scheduler, 'FIFO'))
 
         for i in range(2,5):
             kpnChannel=kpn.findChannel('c'+str(i))
-            processorFrom=platform.findProcessor("PE"+str(i))
-            processorTo=platform.findProcessor("PE"+str(i+1))
-            viaMemory=platform.findCommunicationResource("sp"+str(i+1))
-            primitive = platform.findPrimitive("consumer_cp",
-                                               processorFrom,
-                                               processorTo,
-                                               viaMemory)
+            processorFrom=platform.find_processor("PE"+str(i))
+            processorTo=platform.find_processor("PE"+str(i+1))
+            viaMemory=platform.find_communication_resource("sp"+str(i+1))
+            primitive = platform.find_primitive("consumer_cp",
+                                                processorFrom,
+                                                processorTo,
+                                                viaMemory)
             self.channelMappings.append(ChannelMappingInfo(kpnChannel,
                                                            4,
                                                            primitive))

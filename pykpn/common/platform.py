@@ -222,27 +222,27 @@ class Platform(object):
         self.primitives = []
         self.schedulers = []
 
-    def findScheduler(self, name):
+    def find_scheduler(self, name):
         for s in self.schedulers:
             if s.name == name:
                 return s
         return None
 
-    def findProcessor(self, name):
+    def find_processor(self, name):
         for p in self.processors:
             if p.name == name:
                 return p
         return None
 
-    def findCommunicationResource(self, name):
+    def find_communication_resource(self, name):
         for s in self.communication_resources:
             if s.name == name:
                 return s
         return None
 
-    def findPrimitive(self, type, processorFrom, processorTo, viaStorage):
+    def find_primitive(self, type, processor_from, processor_to, via_storage):
         for p in self.primitives:
-            if p.type == type and p.from_ == processorFrom and \
-                    p.to == processorTo and p.via == viaStorage:
+            if (p.type == type and p.from_ == processor_from and
+                    p.to == processor_to and p.via == via_storage):
                 return p
         return None

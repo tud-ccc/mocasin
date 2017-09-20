@@ -100,10 +100,10 @@ class Tomahawk2Platform(Platform):
 
         for i in range(0, 8):
             for j in range(0, 8):
-                pi = self.findProcessor('PE%d' % i)
-                pj = self.findProcessor('PE%d' % j)
-                mi = self.findCommunicationResource('sp%d' % i)
-                mj = self.findCommunicationResource('sp%d' % j)
+                pi = self.find_processor('PE%d' % i)
+                pj = self.find_processor('PE%d' % j)
+                mi = self.find_communication_resource('sp%d' % i)
+                mj = self.find_communication_resource('sp%d' % j)
 
                 cp = self.createConsumerPrimitive(noc, pi, pj, mj)
                 pp = self.createProducerPrimitive(noc, pi, pj, mi)

@@ -115,10 +115,10 @@ class GenericNocPlatform(Platform):
         num_pes = x * y * endpoints_per_router
         for i in range(num_pes):
             for j in range(num_pes):
-                pi = self.findProcessor('PE%d' % i)
-                pj = self.findProcessor('PE%d' % j)
-                mi = self.findCommunicationResource('sp%d' % i)
-                mj = self.findCommunicationResource('sp%d' % j)
+                pi = self.find_processor('PE%d' % i)
+                pj = self.find_processor('PE%d' % j)
+                mi = self.find_communication_resource('sp%d' % i)
+                mj = self.find_communication_resource('sp%d' % j)
 
                 cp = self.createConsumerPrimitive(noc, pi, pj, mj)
                 pp = self.createProducerPrimitive(noc, pi, pj, mi)
