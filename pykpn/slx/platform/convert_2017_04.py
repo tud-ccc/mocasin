@@ -112,6 +112,7 @@ def convert(platform, xml_platform):
         s = Scheduler(name, schedulers_to_processors[name], policies)
         log.debug('Found scheduler %s for %s supporting %s',
                   name, schedulers_to_processors[name], policies)
+        platform.schedulers.append(s)
 
     # Initialize all Memories, Caches, and Fifos as CommunicationResources
     for xm in xml_platform.get_Memory():
