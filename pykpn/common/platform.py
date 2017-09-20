@@ -60,7 +60,7 @@ class CommunicationResource:
         self.read_throughput = read_throughput
         self.write_throughput = write_throughput
         self.exclusive = exclusive
-        self.is_storage = False
+        self.is_storage = is_storage
 
     def readLatencyInTicks(self):
         return self.frequency_domain.cyclesToTicks(self.read_latency)
