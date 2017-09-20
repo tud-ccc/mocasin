@@ -235,6 +235,7 @@ def convert(platform, xml_platform):
                               platform.find_processor(cn))
                 log.debug('Found communication primitive %s: %s -> %s -> %s',
                           name, pn, via_name, cn)
+                platform.primitives.append(p)
 
 
 def find_resource(platform, id):
