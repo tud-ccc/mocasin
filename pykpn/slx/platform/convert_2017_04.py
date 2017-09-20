@@ -237,6 +237,8 @@ def convert(platform, xml_platform):
                               platform.find_processor(cn))
                 log.debug('Found communication primitive %s: %s -> %s -> %s',
                           name, pn, via_name, cn)
+                p.consume = consumers[cn]
+                p.produce = producers[cn]
                 platform.primitives.append(p)
 
 
