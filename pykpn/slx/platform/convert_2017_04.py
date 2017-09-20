@@ -13,6 +13,7 @@ from ...common import Primitive
 from ...common import Processor
 from ...common import Scheduler
 from ...common import SchedulingPolicy
+from ...common import Storage
 
 
 ur = UnitRegistry()
@@ -122,8 +123,8 @@ def convert(platform, xml_platform):
         write_throughput = get_value_in_byte_per_cycle(
             xm, 'writeThroughput', float('inf'))
         fd = frequency_domains[xm.get_frequencyDomain()]
-        mem = CommunicationResource(name, fd, read_latency, write_latency,
-                                    read_throughput, write_throughput)
+        mem = Storage(name, fd, read_latency, write_latency,
+                      read_throughput, write_throughput)
         platform.communication_resources.append(mem)
         log.debug('Found memory %s', name)
 
@@ -137,8 +138,8 @@ def convert(platform, xml_platform):
         write_throughput = get_value_in_byte_per_cycle(
             xm, 'writeHitThroughput', float('inf'))
         fd = frequency_domains[xc.get_frequencyDomain()]
-        cache = CommunicationResource(name, fd, read_latency, write_latency,
-                                      read_throughput, write_throughput)
+        cache = Storage(name, fd, read_latency, write_latency,
+                        read_throughput, write_throughput)
         platform.communication_resources.append(cache)
         log.debug('Found cache %s', name)
 
@@ -151,8 +152,8 @@ def convert(platform, xml_platform):
         write_throughput = get_value_in_byte_per_cycle(
             xm, 'writeThroughput', float('inf'))
         fd = frequency_domains[xf.get_frequencyDomain()]
-        fifo = CommunicationResource(name, fd, read_latency, write_latency,
-                                     read_throughput, write_throughput)
+        fifo = Storage(name, fd, read_latency, write_latency,
+                       read_throughput, write_throughput)
         platform.communication_resources.append(fifo)
         log.debug('Found FIFO %s', name)
 
