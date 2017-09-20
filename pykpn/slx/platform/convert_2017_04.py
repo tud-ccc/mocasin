@@ -224,7 +224,7 @@ def convert(platform, xml_platform):
                 'Consume Active',
                 resources_from_access(xp.get_Active(), platform),
                 'read')
-            consumers[pn] = [active]
+            consumers[cn] = [active]
 
         # Create a Primitive for each combination of producer and consumer
         for pn in producers:
