@@ -132,12 +132,12 @@ def convert(platform, xml_platform):
     for xc in xml_platform.get_Cache():
         name = xc.get_id()
         # XXX we assume 100% cache hit rate (This is also what Silexica does)
-        read_latency = get_value_in_cycles(xm, 'readHitLatency', 0)
-        write_latency = get_value_in_cycles(xm, 'writeHitLatency', 0)
+        read_latency = get_value_in_cycles(xc, 'readHitLatency', 0)
+        write_latency = get_value_in_cycles(xc, 'writeHitLatency', 0)
         read_throughput = get_value_in_byte_per_cycle(
-            xm, 'readHitThroughput', float('inf'))
+            xc, 'readHitThroughput', float('inf'))
         write_throughput = get_value_in_byte_per_cycle(
-            xm, 'writeHitThroughput', float('inf'))
+            xc, 'writeHitThroughput', float('inf'))
         fd = frequency_domains[xc.get_frequencyDomain()]
         cache = Storage(name, fd, read_latency, write_latency,
                         read_throughput, write_throughput)
@@ -146,12 +146,12 @@ def convert(platform, xml_platform):
 
     for xf in xml_platform.get_Fifo():
         name = xf.get_id()
-        read_latency = get_value_in_cycles(xm, 'readLatency', 0)
-        write_latency = get_value_in_cycles(xm, 'writeLatency', 0)
+        read_latency = get_value_in_cycles(xf, 'readLatency', 0)
+        write_latency = get_value_in_cycles(xf, 'writeLatency', 0)
         read_throughput = get_value_in_byte_per_cycle(
-            xm, 'readThroughput', float('inf'))
+            xf, 'readThroughput', float('inf'))
         write_throughput = get_value_in_byte_per_cycle(
-            xm, 'writeThroughput', float('inf'))
+            xf, 'writeThroughput', float('inf'))
         fd = frequency_domains[xf.get_frequencyDomain()]
         fifo = Storage(name, fd, read_latency, write_latency,
                        read_throughput, write_throughput)
