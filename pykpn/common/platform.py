@@ -3,6 +3,8 @@
 #
 # Authors: Christian Menard
 
+import pydot
+
 
 class FrequencyDomain:
 
@@ -246,3 +248,53 @@ class Platform(object):
                     p.to == processor_to and p.via == via_storage):
                 return p
         return None
+
+    def to_pydot(self):
+        """
+        Convert the platform to a dot graph.
+
+        This only prints processors, communication resources, and schedulers.
+        Communication primitives are not printed.
+        """
+        # TODO print communication primitives in some way
+        dot = pydot.Dot(graph_type='digraph')
+
+        fd_clusters = {}
+        processor_nodes = {}
+        resource_nodes = {}
+
+        for p in self.processors:
+            fd = p.frequency_domain.name
+            cluster = _get_fd_cluster(dot, fd_clusters, fd)
+            node = pydot.Node(p.name, label=p.name, shape='square')
+            processor_nodes[p.name] = node
+            cluster.add_node(node)
+
+        for c in self.communication_resources:
+            fd = c.frequency_domain.name
+            cluster = _get_fd_cluster(dot, fd_clusters, fd)
+            if c.is_storage:
+                shape = 'diamond'
+            else:
+                shape = 'ellipse'
+            node = pydot.Node(c.name, label=c.name, shape=shape)
+            resource_nodes[c.name] = node
+            cluster.add_node(node)
+
+        for s in self.schedulers:
+            sched_node = pydot.Node(s.name, label=s.name, shape='octagon')
+            dot.add_node(sched_node)
+            for p in s.processors:
+                dot.add_edge(pydot.Edge(processor_nodes[p.name], sched_node))
+
+        return dot
+
+
+def _get_fd_cluster(dot, fd_clusters, fd_name):
+    if fd_name in fd_clusters:
+        return fd_clusters[fd_name]
+    else:
+        cluster = pydot.Cluster(fd_name, label=fd_name)
+        dot.add_subgraph(cluster)
+        fd_clusters[fd_name] = cluster
+        return cluster
