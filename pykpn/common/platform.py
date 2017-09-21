@@ -223,30 +223,45 @@ class Platform(object):
         self.communication_resources = []
         self.primitives = []
         self.schedulers = []
+    def find_scheduler(self, name, throw=False):
 
-    def find_scheduler(self, name):
         for s in self.schedulers:
             if s.name == name:
                 return s
+        if throw:
+            raise RuntimeError('The scheduler %s is not part of the platform!',
+                               name)
         return None
 
-    def find_processor(self, name):
+    def find_processor(self, name, throw=False):
         for p in self.processors:
             if p.name == name:
                 return p
+        if throw:
+            raise RuntimeError('The processor %s is not part of the platform!',
+                               name)
         return None
 
-    def find_communication_resource(self, name):
+    def find_communication_resource(self, name, throw=False):
         for s in self.communication_resources:
             if s.name == name:
                 return s
+        if throw:
+            raise RuntimeError('The communication resource %s is not part of ',
+                               'the platform!', name)
         return None
 
-    def find_primitive(self, type, processor_from, processor_to, via_storage):
+    def find_primitive(self, type, processor_from, processor_to, via_storage,
+                       throw=False):
         for p in self.primitives:
             if (p.type == type and p.from_ == processor_from and
                     p.to == processor_to and p.via == via_storage):
                 return p
+        if throw:
+            raise RuntimeError('The communication primitive %s: %s->%s->%s is '
+                               'not part of the platform!', type,
+                               processor_from.name, via_storage.name,
+                               processor_to.name)
         return None
 
     def to_pydot(self):
