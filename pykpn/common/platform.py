@@ -209,22 +209,36 @@ class Scheduler:
 
 
 class Platform(object):
-    '''
-    Represents a complete hardware architecture. This is a container for
-    processor, communication resource, communication primitive, and scheduler
-    objects.
+    """Represents a complete hardware architecture.
+
+    This is a container for processor, communication resource, communication
+    primitive, and scheduler objects.
 
     This is intended as a base class. Derived classes may define a specific
     platform by creating the corresponding objects.
-    '''
+    """
 
     def __init__(self):
-        self.processors = []
-        self.communication_resources = []
-        self.primitives = []
-        self.schedulers = []
-    def find_scheduler(self, name, throw=False):
+        """Initialize the platform.
 
+        This initializes all attributes to empty lists. Derived classes should
+        fill these lists with objects in order to build a real platform.
+        """
+        self.processors = []               #: list of processors
+        self.communication_resources = []  #: list of communication resources
+        self.primitives = []               #: list of communication primitives
+        self.schedulers = []               #: list of schedulers
+
+    def find_scheduler(self, name, throw=False):
+        """Search for a scheduler object by its name.
+
+        :param str name: name of the scheduler to be searched for
+        :param bool throw: raise a RuntimeError if no object is
+                           found (default: False)
+
+        :raises RuntimeError: if no scheduler was found and throw is True
+        :returns: A scheduler object or None if no scheduler was found.
+        """
         for s in self.schedulers:
             if s.name == name:
                 return s
@@ -234,6 +248,15 @@ class Platform(object):
         return None
 
     def find_processor(self, name, throw=False):
+        """Search for a processor object by its name.
+
+        :param str name: name of the processor to be searched for
+        :param bool throw: raise a RuntimeError if no object is
+                           found (default: False)
+
+        :raises RuntimeError: if no processor was found and throw is True
+        :returns: A processor object or None if no processor was found.
+        """
         for p in self.processors:
             if p.name == name:
                 return p
@@ -243,6 +266,17 @@ class Platform(object):
         return None
 
     def find_communication_resource(self, name, throw=False):
+        """Search for a communication resource object by its name.
+
+        :param str name: name of the communication resource to be searched for
+        :param bool throw: raise a RuntimeError if no object is
+                           found (default: False)
+
+        :raises RuntimeError: if no communication resource was found and throw
+                              is True
+        :returns: A communication resource object or None if no communication
+                  resource was found.
+        """
         for s in self.communication_resources:
             if s.name == name:
                 return s
@@ -253,6 +287,22 @@ class Platform(object):
 
     def find_primitive(self, type, processor_from, processor_to, via_storage,
                        throw=False):
+        """Search for a communication primitive.
+
+        :param str type: type of the communication primitvie to be searched for
+        :param Processor processor_from: the Processor the primitive originates
+            from
+        :param Processor processor_to: the Processor the primitive goes to
+        :param CommunicationResource via_storage: the CommunicationResource
+            the primitve uses for storage.
+        :param bool throw: raise a RuntimeError if no object is
+                           found (default: False)
+
+        :raises RuntimeError: if no communication primitive was found and throw
+                              is True
+        :returns: A communication primitive object or None if no communication
+                  primitive was found.
+        """
         for p in self.primitives:
             if (p.type == type and p.from_ == processor_from and
                     p.to == processor_to and p.via == via_storage):
