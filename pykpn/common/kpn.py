@@ -3,6 +3,8 @@
 #
 # Authors: Christian Menard
 
+import pydot
+
 
 class KpnProcess(object):
     """Represents a KPN process
@@ -123,3 +125,22 @@ class KpnGraph(object):
         if throw:
             raise RuntimeError('The channel %s is not part of the graph', name)
         return None
+
+    def to_pydot(self):
+        """Convert the KPN graph to a dot graph."""
+        dot = pydot.Dot(graph_type='digraph')
+
+        process_nodes = {}
+
+        for p in self.processes:
+            node = pydot.Node('process_' + p.name, label=p.name)
+            process_nodes[p.name] = node
+            dot.add_node(node)
+
+        for c in self.channels:
+            src_node = process_nodes[c.source.name]
+            for s in c.sinks:
+                sink_node = process_nodes[s.name]
+                dot.add_edge(pydot.Edge(src_node, sink_node, label=c.name))
+
+        return dot
