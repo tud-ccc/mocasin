@@ -38,7 +38,8 @@ def convert(mapping, xml_mapping):
     for xp in xml_mapping.get_Process():
         name = xp.get_id()
         affinity_ref = xp.get_ProcessorAffinityRef()
-        processor = affinity_ref[0].get_processor()
+        p_name = affinity_ref[0].get_processor()
+        processor = platform.find_processor(p_name, True)
         info = ProcessMappingInfo(process_scheduler[name], processor)
         mapping._process_info[name] = info
 
