@@ -9,131 +9,101 @@ import pydot
 
 
 class ChannelMappingInfo:
-    '''
-    Simple container that associates a KPN channel with a capacity (number of
-    tokens) and a communication primitve (defined by the platform)
-    '''
-    def __init__(self, kpnChannel, capacity, primitive):
-        self.kpnChannel = kpnChannel
-        self.capacity = capacity
+    """Simple record to store mapping infos associated with a KpnChannel.
+
+    :ivar Primitive primitive: the primitive that the channel is mapped to
+    :ivar int capacity: the capacity that the channel is bound to
+    """
+    def __init__(self, primitive, capacity):
         self.primitive = primitive
+        self.capacity = capacity
 
 
 class ProcessMappingInfo:
-    '''
-    Simple container that associates a KPN process with a scheduler (defined by
-    the platform) and the scheduling policy that the scheduler is supposed to
-    use.
-    '''
-    def __init__(self, kpnProcess, scheduler, policy):
-        self.kpnProcess = kpnProcess
+    """Simple record to store mapping infos associated with a KpnProcess.
+
+    :ivar Scheduler scheduler: the scheduler that the process is mapped to
+    :ivar Processor affinity: the processor that the process should run on
+    """
+    def __init__(self, scheduler, affinity):
         self.scheduler = scheduler
+        self.affinity = affinity
+
+
+class SchedulerMappingInfo:
+    """Simple record to store mapping infos associated with a Scheduler.
+
+    :ivar list[KpnProcess] processes: a list of processes mapped to this
+                                      scheduler
+    :ivar SchedulingPolicy policy: the policy to be used by the scheduler
+    :ivar param: a paramter that can be used to configure a scheduling policy
+    """
+    def __init__(self, processes, policy, param):
+        self.processes = processes
         self.policy = policy
+        self.param = param
 
 
 class Mapping:
-    '''
-    Represents the mapping of a KPN graph to a platform. Contains a
-    ProcessMappingInfo and ChannelMappingInfo object for each KPN process and
-    channel in the graph.
+    """Describes the mapping of a KpnGraph to a Platform."""
 
-    This is just a base class that does not provide any functionality for
-    conveniently defining mappings.
-    '''
     def __init__(self, kpn, platform):
-        '''
-        Create an empty mapping.
+        """Initialize a Mapping
 
-        Derived classes should extend this function to actually define
-        process and channel mappings.
-        '''
-        self.kpn = kpn
-        self.platform = platform
-        self.processMappings = []
-        self.channelMappings = []
+        :param KpnGraph kpn: the kpn graph
+        :param Platform platform: the platform
+        """
+        # The ProcessInfo record is not really required as it only has one
+        # item. However, we might want to extend it later
 
-    def getSchedulerToProcessesDict(self):
-        '''
-        Returns a dictionary that associates scheduler names with a list of
-        KPN processes.
-        '''
-        sched2proc = dict()
+        self._kpn = kpn            #: the kpn graph
+        self._platform = platform  #: the platform
 
-        # initialize with empty list
-        for s in self.platform.schedulers:
-            sched2proc[s.name] = []
+        self._channel_info = {}    #: dict of ChannelMappingInfo
+        self._process_info = {}    #: dict of ProcessMappingInfo
+        self._scheduler_info = {}  #: dict of SchedulerMappingInfo
 
-        for pm in self.processMappings:
-            sched2proc[pm.scheduler.name].append(pm.kpnProcess)
+        # initialize all valid dictionary entries to None
+        for p in kpn.processes:
+            self._process_info[p.name] = None
+        for c in kpn.channels:
+            self._channel_info[c.name] = None
+        for s in platform.schedulers:
+            self._scheduler_info[s.name] = None
 
-        return sched2proc
+    def channel_info(self, channel):
+        """Look up the mapping info of a channel.
 
-    def toPyDot(self, proc_labels=True, pe_labels=True, link_labels=False):
-        '''
-        Create a dot graph visualizing how the application is mapped to the
-        platform
+        :param KpnChannel channel: channel to look up
+        :return the mapping info if the channel is mapped
+        :rtype ChannelMappingInfo or None
+        """
+        return self._channel_info[channel.name]
 
-        :param proc_labels: print KPN process names
-        :param pe_labels: print processor names
-        :param link_labels: print KPN channel names
+    def process_info(self, process):
+        """Look up the mapping info of a process.
+
+        :param KpnProcess process: process to look up
+        :return the mapping info if the process is mapped
+        :rtype ProcessMappingInfo or None
+        """
+        return self._process_info[process.name]
+
+    def scheduler_info(self, scheduler):
+        """Look up the mapping info of a scheduler.
+
+        :param KpnScheduler scheduler: scheduler to look up
+        :return the mapping info if the scheduler is mapped
+        :rtype SchedulerMappingInfo or None
+        """
+        return self._scheduler_info[scheduler.name]
+
+    def to_pydot(self):
+        """Convert the mapping to a dot graph
+
+        The generated graph visualizes how a KPN application is mapped
+        to a platform.
+
         :returns: pydot object
-        '''
-        sched2proc = self.getSchedulerToProcessesDict()
-        cpn_graph = pydot.Dot(graph_type='digraph')
-
-        for s in self.platform.schedulers:
-            if len(s.processors) == 1:
-                p_name = s.processors[0].name
-                if pe_labels is True:
-                    cluster = pydot.Cluster(p_name, label=p_name)
-                else:
-                    cluster = pydot.Cluster(p_name)
-
-                for p in sched2proc[s.name]:
-                    if proc_labels is True:
-                        cluster.add_node(pydot.Node(p.name, label=p.name))
-                    else:
-                        cluster.add_node(pydot.Node(p.name, label=" "))
-                cpn_graph.add_subgraph(cluster)
-            else:
-                raise RuntimeError('The scheduler ' + s.name + ' manages ' +
-                                   'multiple processors. Visualization for ' +
-                                   'that is not yet implemented!')
-
-        # Create and add empty fifo channels for all the pn channels
-        links_from = {}
-        links_to = {}
-        for pnchannel in self.kpn.channels:
-            links_from[pnchannel.name] = []
-            links_to[pnchannel.name] = []
-
-        for proc in self.kpn.processes:
-            for out_edge in proc.outgoing_channels:
-                links_from[out_edge.name].append(proc.name)
-            for in_edge in proc.incoming_channels:
-                links_to[in_edge.name].append(proc.name)
-
-        for link in links_from:
-            edges = product(*[links_from[link], links_to[link]])
-            for (v, w) in edges:
-                if link_labels is True:
-                    cpn_graph.add_edge(pydot.Edge(v, w, label=link))
-                else:
-                    cpn_graph.add_edge(pydot.Edge(v, w))
-
-        return cpn_graph
-
-    def outputDot(self, filename, proc_labels=True, pe_labels=True,
-                  link_labels=False):
-        '''
-        Create a dot graph visualizing how the application is mapped to the
-        platform and write it to file.
-
-        :param filename: name of the output file
-        :param proc_labels: print KPN process names
-        :param pe_labels: print processor names
-        :param link_labels: print KPN channel names
-        '''
-        self.toPyDot(proc_labels=proc_labels,
-                     pe_labels=pe_labels,
-                     link_labels=link_labels).write_raw(filename)
+        """
+        return self._platform.to_pydot()
