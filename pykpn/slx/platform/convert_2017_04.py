@@ -177,22 +177,6 @@ def convert(platform, xml_platform):
     # Initialize all Communication Primitives
     for xcom in xml_platform.get_Communication():
         name = xcom.get_id()
-        xbuf = xcom.get_Buffer()
-
-        via_name = None
-        xmem = xbuf.get_MemoryRef()
-        xfifo = xbuf.get_FifoRef()
-        xcache = xbuf.get_CacheRef()
-
-        # TODO we should do more sanity checks here
-        if len(xmem) > 0:
-            via_name = xmem[0].get_memory()
-        elif len(xfifo) > 0:
-            via_name = xfifo[0].get_fifo()
-        elif len(xcache) > 0:
-            via_name = xcache[0].get_cache()
-        else:
-            raise RuntimeError('No buffer set for primitive %s!', name)
 
         producers = {}
         consumers = {}
@@ -234,10 +218,9 @@ def convert(platform, xml_platform):
             for cn in consumers:
                 p = Primitive(name,
                               platform.find_processor(pn),
-                              platform.find_communication_resource(via_name),
                               platform.find_processor(cn))
-                log.debug('Found communication primitive %s: %s -> %s -> %s',
-                          name, pn, via_name, cn)
+                log.debug('Found communication primitive %s: %s -> %s',
+                          name, pn, cn)
                 p.consume = consumers[cn]
                 p.produce = producers[cn]
                 platform.primitives.append(p)

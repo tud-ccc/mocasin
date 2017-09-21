@@ -18,7 +18,7 @@ from ..common import Storage
 class Tomahawk2Platform(Platform):
 
     def createConsumerPrimitive(self, noc, pe_from, pe_to, mem):
-        p = Primitive('consumer_cp', pe_from, mem, pe_to)
+        p = Primitive('consumer_cp', pe_from, pe_to)
 
         links = noc.get_route(pe_from.name, pe_to.name)
 
@@ -38,7 +38,7 @@ class Tomahawk2Platform(Platform):
         return p
 
     def createProducerPrimitive(self, noc, pe_from, pe_to, mem):
-        p = Primitive('producer_cp', pe_from, mem, pe_to)
+        p = Primitive('producer_cp', pe_from, pe_to)
 
         request_links = noc.get_route(pe_to.name, pe_from.name)
         transport_links = noc.get_route(pe_from.name, pe_to.name)

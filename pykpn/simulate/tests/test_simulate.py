@@ -231,7 +231,7 @@ def common_sys():
     mappingInfo=Empty()
     mappingInfo.capacity=4
     mappingInfo.kpnChannel=kpnchannel
-    mappingInfo.primitive=Primitive('dummy_cp', None, None, None)
+    mappingInfo.primitive=Primitive('dummy_cp', None, None)
     return system,mappingInfo
 
 class DummyKpnGraph(KpnGraph):
@@ -266,8 +266,7 @@ class DummyMapping(Mapping):
             viaMemory=platform.find_communication_resource("sp"+str(i+1))
             primitive = platform.find_primitive("consumer_cp",
                                                 processorFrom,
-                                                processorTo,
-                                                viaMemory)
+                                                processorTo)
             self.channelMappings.append(ChannelMappingInfo(kpnChannel,
                                                            4,
                                                            primitive))

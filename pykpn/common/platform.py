@@ -132,31 +132,27 @@ class CommunicationPhase:
 
 class Primitive:
     '''
-    Represents a cmmunication primitive.
+    Represents a communication primitive.
 
-    A communication primitive defines how
-    a process running on a processr (from_) sends data tokens to a process
-    running on a processor (to) via a memory (via). Since multiple primitives
-    may be defined for each combination of from_, via, and to, a type attribute
-    distinguishes primitives.
+    A communication primitive defines how a process running on a processor
+    (from_) sends data tokens to a process running on a processor (to). Since
+    multiple primitives may be defined for each combination of from_ and to, a
+    type attribute distinguishes different kinds of primitives.
 
     The communication is modeled as two lists of CommunicationPhases, one
     for producing tokens and one for consuming tokens. Passive communication,
     e.g., using a DMA unit is not (yet) supported.
     '''
 
-    def __init__(self, type, from_, via, to):
-
+    def __init__(self, type, from_, to):
         self.type = type
         self.from_ = from_
-        self.via = via
         self.to = to
         self.consume = []
         self.produce = []
 
     def __str__(self):
-        return '%s: %s -> %s -> %s' % (self.type, self.from_,
-                                       self.via, self.to)
+        return '%s: %s -> %s' % (self.type, self.from_, self.to)
 
     def __repr__(self):
         return self.__str__()
@@ -300,16 +296,13 @@ class Platform(object):
                                'the platform!', name)
         return None
 
-    def find_primitive(self, type, processor_from, processor_to, via_storage,
-                       throw=False):
+    def find_primitive(self, type, processor_from, processor_to, throw=False):
         """Search for a communication primitive.
 
         :param str type: type of the communication primitvie to be searched for
         :param Processor processor_from: the Processor the primitive originates
             from
         :param Processor processor_to: the Processor the primitive goes to
-        :param CommunicationResource via_storage: the CommunicationResource
-            the primitve uses for storage.
         :param bool throw: raise a RuntimeError if no object is
                            found (default: False)
 
@@ -320,13 +313,12 @@ class Platform(object):
         """
         for p in self.primitives:
             if (p.type == type and p.from_ == processor_from and
-                    p.to == processor_to and p.via == via_storage):
+                    p.to == processor_to):
                 return p
         if throw:
-            raise RuntimeError('The communication primitive %s: %s->%s->%s is '
+            raise RuntimeError('The communication primitive %s: %s -> %s is '
                                'not part of the platform!', type,
-                               processor_from.name, via_storage.name,
-                               processor_to.name)
+                               processor_from.name, processor_to.name)
         return None
 
     def to_pydot(self):
