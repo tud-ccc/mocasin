@@ -12,7 +12,7 @@ class FrequencyDomain:
         self.name = name
         self.frequency = frequency
 
-    def cyclesToTicks(self, cycles):
+    def cycles_to_ticks(self, cycles):
         tmp = float(cycles) * 1000000000000 / float(self.frequency)
         return int(round(tmp))
 
@@ -28,7 +28,7 @@ class Processor:
         self.context_store_cycles = context_store_cycles
 
     def ticks(self, cycles):
-        return self.frequency_domain.cyclesToTicks(cycles)
+        return self.frequency_domain.cycles_to_ticks(cycles)
 
     def context_load_ticks(self):
         return self.ticks(self.context_load_cycles)
@@ -56,25 +56,27 @@ class CommunicationResource:
                  read_throughput=float('inf'), write_throughput=float('inf'),
                  exclusive=False, is_storage=False):
         self.name = name
-        self.frequency_domain = frequency_domain
-        self.read_latency = read_latency
-        self.write_latency = write_latency
-        self.read_throughput = read_throughput
-        self.write_throughput = write_throughput
+        self._frequency_domain = frequency_domain
+        self._read_latency = read_latency
+        self._write_latency = write_latency
+        self._read_throughput = read_throughput
+        self._write_throughput = write_throughput
         self.exclusive = exclusive
         self.is_storage = is_storage
 
-    def readLatencyInTicks(self):
-        return self.frequency_domain.cyclesToTicks(self.read_latency)
+    def read_latency(self):
+        return self.frequency_domain.cycles_to_ticks(self._read_latency)
 
-    def writeLatencyInTicks(self):
-        return self.frequency_domain.cyclesToTicks(self.write_latency)
+    def write_latency(self):
+        return self.frequency_domain.cycles_to_ticks(self._write_latency)
 
-    def readThroughputInTicks(self):
-        return self.read_throughput / self.frequency_domain.cyclesToTicks(1)
+    def read_throughput(self):
+        return (self._read_throughput /
+                self.frequency_domain.cycles_to_ticks(1))
 
-    def writeThroughputInTicks(self):
-        return self.read_throughput / self.frequency_domain.cyclesToTicks(1)
+    def write_throughput(self):
+        return (self._write_throughput /
+                self.frequency_domain.cycles_to_ticks(1))
 
     def __str__(self):
         return self.name
@@ -98,7 +100,7 @@ class Storage(CommunicationResource):
 class CommunicationPhase:
     '''
     Represents a phase of communication. This basically is a list of required
-    reosurces.
+    resources.
     '''
     def __init__(self, name, resources, direction,
                  ignore_latency=False, size=None):
@@ -108,20 +110,20 @@ class CommunicationPhase:
         self.ignore_latency = ignore_latency
         self.size = size
 
-    def getCosts(self, size):
+    def get_costs(self, size):
         latency = 0
         min_throughput = float('inf')
         if self.direction == 'read':
             for r in self.resources:
                 if not self.ignore_latency:
-                    latency += r.readLatencyInTicks()
-                min_throughput = min(min_throughput, r.readThroughputInTicks())
+                    latency += r.read_latency()
+                min_throughput = min(min_throughput, r.read_throughput())
         elif self.direction == 'write':
             for r in self.resources:
                 if not self.ignore_latency:
-                    latency += r.writeLatencyInTicks()
+                    latency += r.write_latency()
                 min_throughput = min(min_throughput,
-                                     r.writeThroughputInTicks())
+                                     r.write_throughput())
         else:
             raise RuntimeError('Direction must be "read" or "write"!')
         if self.size is None:

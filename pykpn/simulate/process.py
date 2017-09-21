@@ -128,7 +128,7 @@ class RuntimeProcess(object):
 
                         # pay for the delay
                         size = entry.tokens * channel.token_size
-                        ticks = phase.getCosts(size)
+                        ticks = phase.get_costs(size)
                         yield self.env.timeout(ticks)
 
                         # release all resources that we requested before
@@ -165,7 +165,7 @@ class RuntimeProcess(object):
 
                         # pay for the delay
                         size = entry.tokens * channel.token_size
-                        ticks = phase.getCosts(size)
+                        ticks = phase.get_costs(size)
                         yield self.env.timeout(ticks)
 
                         # release all resources that we requested before
