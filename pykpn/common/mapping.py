@@ -11,11 +11,11 @@ import pydot
 class ChannelMappingInfo:
     """Simple record to store mapping infos associated with a KpnChannel.
 
-    :ivar Primitive primitive: the primitive that the channel is mapped to
+    :ivar str primitive_type: the primitive type that the channel is mapped to
     :ivar int capacity: the capacity that the channel is bound to
     """
-    def __init__(self, primitive, capacity):
-        self.primitive = primitive
+    def __init__(self, primitive_type, capacity):
+        self.primitive_type = primitive_type
         self.capacity = capacity
 
 
