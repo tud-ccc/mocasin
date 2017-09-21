@@ -207,6 +207,21 @@ class Scheduler:
         self.processors = processors
         self.policies = policies
 
+    def find_policy(self, name, throw=False):
+        """Lookup a policy by its name.
+
+        :param str name: name of the policy to search for
+        :raises RuntimeError: if no processor was found and throw is True
+        :returns: A scheduling policy object or None if no policy was found.
+        """
+        for p in self.policies:
+            if p.name == name:
+                return p
+        if throw:
+            raise RuntimeError('The policy %s is not defined for this '
+                               'scheduler!', name)
+        return None
+
 
 class Platform(object):
     """Represents a complete hardware architecture.
