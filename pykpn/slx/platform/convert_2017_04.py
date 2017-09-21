@@ -35,6 +35,7 @@ def create_policy_list(xml_platform, list_ref):
     raise RuntimeError('Could not find the SchedulingPolicyList %s', list_ref)
 
 
+# TODO this should be placed somewhere more central
 def get_value_in_unit(obj, value_name, unit, default=None):
     """
     Read an objects value converted to a unit from the parsed xml.
