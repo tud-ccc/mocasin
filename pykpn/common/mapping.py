@@ -4,7 +4,6 @@
 # Authors: Christian Menard, Andres Goens
 
 
-from itertools import product
 import pydot
 
 
@@ -106,4 +105,48 @@ class Mapping:
 
         :returns: pydot object
         """
-        return self._platform.to_pydot()
+        dot = pydot.Dot(graph_type='digraph')
+
+        processor_clusters = {}
+        for s in self._platform.schedulers:
+            cluster = pydot.Cluster('scheduler_' + s.name, label=s.name)
+            dot.add_subgraph(cluster)
+            for p in s.processors:
+                p_cluster = pydot.Cluster('processor_' + p.name, label=p.name)
+                p_cluster.add_node(
+                    pydot.Node('dummy_' + p.name, style='invis'))
+                processor_clusters[p.name] = p_cluster
+                cluster.add_subgraph(p_cluster)
+
+        primitive_nodes = {}
+        for p in self._platform.primitives:
+            if p.type not in primitive_nodes:
+                node = pydot.Node('primitive_' + p.type, label=p.type)
+                dot.add_node(node)
+                primitive_nodes[p.type] = node
+
+        process_nodes = {}
+        for p in self._kpn.processes:
+            info = self._process_info[p.name]
+            p_cluster = processor_clusters[info.affinity.name]
+            node = pydot.Node('process_' + p.name, label=p.name)
+            process_nodes[p.name] = node
+            p_cluster.add_node(node)
+
+        channel_nodes = {}
+        for c in self._kpn.channels:
+            node = pydot.Node('channel_' + c.name, label=c.name,
+                              shape='diamond')
+            channel_nodes[c.name] = node
+            dot.add_node(node)
+            from_node = process_nodes[c.source.name]
+            dot.add_edge(pydot.Edge(from_node, node, minlen=4))
+            for p in c.sinks:
+                to_node = process_nodes[p.name]
+                dot.add_edge(pydot.Edge(node, to_node, minlen=4))
+            info = self._channel_info[c.name]
+            prim_node = primitive_nodes[info.primitive_type]
+            dot.add_edge(pydot.Edge(node, prim_node, style='dashed',
+                                    arrowhead='none'))
+
+        return dot
