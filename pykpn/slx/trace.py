@@ -19,7 +19,7 @@ class SlxTraceReader(TraceReader):
         self.trace = None
         self.buffer = None
 
-    def getNextEntry(self):
+    def get_next_entry(self):
         if self.trace is None:  # first read, need to open trace file
             assert(self.type is not None)
             self.trace = open('%s/%s.%s.cpntrace' % (self.trace_dir,

@@ -51,7 +51,7 @@ class RuntimeProcess(object):
 
     def assignProcessor(self, processor):
         self.processor = processor
-        self.traceReader.setProcessorType(processor.type)
+        self.traceReader.set_processor_type(processor.type)
 
     def block(self, event):
         '''
@@ -96,7 +96,7 @@ class RuntimeProcess(object):
         while not self.state == ProcessState.Finished:
             entry = None
             if self.resume is None:
-                entry = self.traceReader.getNextEntry()
+                entry = self.traceReader.get_next_entry()
             else:
                 entry, self.resume = self.resume, None
             if isinstance(entry, ProcessEntry):

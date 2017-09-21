@@ -278,7 +278,7 @@ class DummyTraceReader(TraceReader):
                 ProcessEntry(1000), ProcessEntry(12), TerminateEntry()]
         self.i=-1
 
-    def getNextEntry(self):
+    def get_next_entry(self):
         self.i+=1
         return self.traces[self.i]
 

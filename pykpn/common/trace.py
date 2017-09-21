@@ -39,7 +39,7 @@ class TraceReader(object):
     known when on object initialization. Therefore, the type needs to be set
     after initialization and before the first trace entry is read.
     """
-    def setProcessorType(self, type):
+    def set_processor_type(self, type):
         # the type may only be set once, changing the type during simulation
         # (migrating to another core of another type) is not possible (yet!)
         if (self.type is not None and self.type != type):
@@ -48,6 +48,6 @@ class TraceReader(object):
         else:
             self.type = type
 
-    def getNextEntry(self):
+    def get_next_entry(self):
         # TODO Implement a default trace reader
         return None
