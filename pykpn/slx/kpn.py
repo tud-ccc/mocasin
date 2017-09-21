@@ -55,8 +55,7 @@ class SlxKpnGraph(KpnGraph):
                         channel = c
                         break
                 assert channel is not None
-
-                self.connectProcessToOutgoingChannel(kpn_process, channel)
+                kpn_process.connect_to_outgoing_channel(channel)
 
             for cn in incoming:
                 channel = None
@@ -65,6 +64,5 @@ class SlxKpnGraph(KpnGraph):
                         channel = c
                         break
                 assert channel is not None
-
-                self.connectProcessToIncomingChannel(kpn_process, channel)
+                kpn_process.connect_to_incomming_channel(channel)
         log.info('Done parsing the PnGraph')

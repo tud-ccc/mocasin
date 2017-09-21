@@ -244,10 +244,10 @@ class DummyKpnGraph(KpnGraph):
             self.processes.append(KpnProcess('w'+str(i)))
 
         for i in range(2,5):
-            self.connectProcessToOutgoingChannel(self.processes[i-2],self.channels[i-2])
-            self.connectProcessToIncomingChannel(self.processes[i-1],self.channels[i-2])
+            self.processes[i-2].connect_to_outgoing_channel(self.channels[i-2])
+            self.processes[i-1].connect_to_incomming_channel(self.channels[i-2])
 
-        self.connectProcessToIncomingChannel(self.processes[2],self.channels[0])
+        self.processes[2].connect_to_incomming_channel(self.channels[0])
 
 
 class DummyMapping(Mapping):
@@ -257,10 +257,10 @@ class DummyMapping(Mapping):
         for i in range(2,5):
             scheduler=platform.find_scheduler("SchedulerForProcessor(PE"+str(i)+")")
             scheduler.policies = [SchedulingPolicy('FIFO', 100)]
-            self.processMappings.append(ProcessMappingInfo(kpn.findProcess('w'+str(i)), scheduler, 'FIFO'))
+            self.processMappings.append(ProcessMappingInfo(kpn.find_process('w'+str(i)), scheduler, 'FIFO'))
 
         for i in range(2,5):
-            kpnChannel=kpn.findChannel('c'+str(i))
+            kpnChannel=kpn.find_channel('c'+str(i))
             processorFrom=platform.find_processor("PE"+str(i))
             processorTo=platform.find_processor("PE"+str(i+1))
             viaMemory=platform.find_communication_resource("sp"+str(i+1))

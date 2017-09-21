@@ -11,41 +11,47 @@ class KpnProcess(object):
         self.outgoing_channels = []
         self.incoming_channels = []
 
+    def connect_to_outgoing_channel(self, channel):
+        if channel.source is not None:
+            raise RuntimeError('The channel %s is already connected to a '
+                               'source process!', channel.name)
+        channel.source = self
+        self.outgoing_channels.append(channel)
+
+    def connect_to_incomming_channel(self, channel):
+        channel.sinks.append(self)
+        self.incoming_channels.append(channel)
+
 
 class KpnChannel(object):
 
     def __init__(self, name, token_size):
         self.name = name
-        self.from_process = None
-        self.to_process = []
+        self.source = None
+        self.sinks = []
         self.token_size = token_size
 
 
-class KpnGraph:
+class KpnGraph(object):
 
     def __init__(self):
         self.processes = []
         self.channels = []
 
-    def connectProcessToOutgoingChannel(self, process, channel):
-        assert channel.from_process is None
+    def find_process(self, name, throw=False):
 
-        channel.from_process = process
-        process.outgoing_channels.append(channel)
 
-    def connectProcessToIncomingChannel(self, process, channel):
-
-        channel.to_process.append(process)
-        process.incoming_channels.append(channel)
-
-    def findProcess(self, name):
         for p in self.processes:
             if p.name == name:
                 return p
+        if throw:
+            raise RuntimeError('The process %s is not part of the graph', name)
         return None
 
-    def findChannel(self, name):
+    def find_channel(self, name, throw=False):
         for c in self.channels:
             if c.name == name:
                 return c
+        if throw:
+            raise RuntimeError('The channel %s is not part of the graph', name)
         return None

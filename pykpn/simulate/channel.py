@@ -21,7 +21,7 @@ class RuntimeChannel(object):
         self.capacity = mappingInfo.capacity
         for c in graph.channels:
             if c.name in name:
-                self.to_process=c.to_process
+                self.to_process=c.sinks
         self.primitive = mappingInfo.primitive
         self.token_size = mappingInfo.kpnChannel.token_size
         self.filled={}
