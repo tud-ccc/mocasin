@@ -349,7 +349,7 @@ class Platform(object):
                 dot.add_node(node)
             from_node = processor_nodes[p.from_.name]
             to_node = processor_nodes[p.to.name]
-            dot.add_edge(pydot.Edge(from_node, node))
-            dot.add_edge(pydot.Edge(node, to_node))
+            dot.add_edge(pydot.Edge(from_node, node, minlen=4))
+            dot.add_edge(pydot.Edge(node, to_node, minlen=4))
 
         return dot
