@@ -7,11 +7,11 @@
 
 
 import argparse
-import logging
 
 from pykpn.simulate import RuntimeApplication
 from pykpn.simulate import RuntimeSystem
 from pykpn.slx import SlxConfig
+import pykpn.common.logging as logging
 
 
 log = logging.getLogger(__name__)
@@ -20,25 +20,14 @@ log = logging.getLogger(__name__)
 def main():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument(
-        '-v',
-        '--verbosity',
-        action="count",
-        help="increase output verbosity (e.g., -vv is more than -v)",
-        dest='verbosity')
+    logging.add_cli_args(parser)
 
     parser.add_argument('configFile', nargs=1,
                         help="input configuration file", type=str)
 
     args = parser.parse_args()
 
-    if args.verbosity is not None:
-        if args.verbosity >= 2:
-            logging.basicConfig(level=logging.DEBUG)
-        elif args.verbosity >= 1:
-            logging.basicConfig(level=logging.INFO)
-    else:
-        logging.basicConfig(level=logging.WARNING)
+    logging.setup_from_args(args)
 
     # Declare the list of applications
     applications = []
