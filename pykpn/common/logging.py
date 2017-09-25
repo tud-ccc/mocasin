@@ -4,7 +4,7 @@
 # Authors: Christian Menard
 
 
-import logging
+import logging as l
 from termcolor import colored
 
 
@@ -19,18 +19,18 @@ COLORS = {
 _indent_level = 0
 
 
-def increment_logger_indent():
+def inc_indent():
     global _indent_level
     _indent_level += 1
 
 
-def decrement_logger_indent():
+def dec_indent():
     global _indent_level
     _indent_level -= 1
     assert _indent_level >= 0
 
 
-class PykpnFormatter(logging.Formatter):
+class PykpnFormatter(l.Formatter):
 
     def __init__(self, msg, use_color):
         super().__init__(msg)
@@ -58,17 +58,64 @@ class PykpnFormatter(logging.Formatter):
         return super().format(record)
 
 
-def setup_root_logger(level, filters=None, use_color=True):
-    logger = logging.getLogger('pykpn')
+class WhitelistFilter(l.Filter):
+
+    def __init__(self, names):
+        self._filters = [l.Filter(n) for n in names]
+
+    def filter(self, record):
+        return any(f.filter(record) for f in self._filters)
+
+
+def setup(level, filters=None, use_color=True):
+    logger = l.getLogger('pykpn')
     logger.setLevel(level)
 
-    handler = logging.StreamHandler()
+    handler = l.StreamHandler()
     handler.setLevel(level)
 
-    if filters is not None:
-        for f in filters:
-            logger.addFilter(logging.Filter(f))
+    if filters is None:
+        filters = []
+    handler.addFilter(WhitelistFilter(filters))
 
     formatter = PykpnFormatter('%(levelname)s %(message)s', use_color)
     handler.setFormatter(formatter)
     logger.addHandler(handler)
+
+
+def add_cli_args(parser):
+    parser.add_argument(
+        '-v',
+        '--verbosity',
+        action="count",
+        help="increase output verbosity (e.g., -vv is more than -v)",
+        dest='verbosity')
+
+    parser.add_argument(
+        '-f',
+        '--filter',
+        action="append",
+        help="add a log filter (e.g. pykpn.common)",
+        dest='filter')
+
+    parser.add_argument(
+        '--no-color',
+        action="store_false",
+        help="disable colored output",
+        dest='color')
+    parser.set_defaults(color=True)
+
+
+def setup_from_args(args):
+    log_level = l.WARNING
+    if args.verbosity is not None:
+        if args.verbosity >= 2:
+            log_level = l.DEBUG
+        elif args.verbosity >= 1:
+            log_level = l.INFO
+
+    setup(log_level, args.filter, args.color)
+
+
+def getLogger(name):
+    return l.getLogger(name)
