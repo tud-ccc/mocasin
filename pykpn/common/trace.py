@@ -4,50 +4,72 @@
 # Authors: Christian Menard
 
 
-class ProcessEntry(object):
-    def __init__(self, cycles):
-        self.cycles = cycles
+class TraceSegment(object):
+    """Represents a segment in a process' execution trace
 
+    :ivar processing_cycles:
+        Duration (in cycles) of a processing segment. None if the segment does
+        not contain any computations.
+    :type processing_cycles: int or None
+    :ivar read_from_channel:
+        Name of the channel to read from at the end of the segment (after
+        processing). None if no read access is to be performed. If not None,
+        write_to_channel must be None.
+    :type read_from_channel: str or None
+    :ivar write_to_channel:
+        Name of the channel to write to at the end of the segment (after
+        processing). None if no write access is to be performed. If not None,
+        read_from_channel must be None.
+    :type write_to_channel: str or None
+    :ivar n_tokens:
+        Number of tokens to be read from or written to a channel. None if
+        neither a write access nor a read access is to be performed at the end
+        of the segment.
+    :type n_tokens: int or None
+    :ivar bool terminate:
+        If True, this is the last segment of the execution trace.
+    """
 
-class ReadEntry(object):
-    def __init__(self, channel, tokens):
-        self.channel = channel
-        self.tokens = tokens
-
-
-class WriteEntry(object):
-    def __init__(self, channel, tokens):
-        self.channel = channel
-        self.tokens = tokens
-
-
-class TerminateEntry(object):
     def __init__(self):
-        pass
+        """Initialize a neutral (does not do anything) tracs segment)"""
+        self.processing_cycles = None
+        self.read_from_channel = None
+        self.write_to_channel = None
+        self.n_tokens = None
+        self.terminate=False
+
+    def sanity_check(self):
+        """Perform a series of sanity checks on the object"""
+        if (self.read_from_channel is not None and
+            self.write_to_channel is not None):
+            raise RuntimeError('A trace segment may not contain both a read '
+                               'and a write access')
+        if (self.n_tokens is None and (self.read_from_channel is not None or
+                                       self.write_to_channel is not None)):
+            raise RuntimeError('Trace segments contains a channel access but '
+                               'the number of tokens is not specified!')
 
 
-class TraceReader(object):
-    def __init__(self, process_name, app_name):
-        self.type = None
-        self.process_name = process_name
-        self.app_name = app_name
+class TraceGenerator(object):
+    """Creates trace segments
 
+    This class is intended as a base class. A superclass could extend the
+    functionality by generating random traces or reading traces from a file.
     """
-    Sets the type of the processor the process is running on.
 
-    This information is essential for most trace readers. However, it is not
-    known when on object initialization. Therefore, the type needs to be set
-    after initialization and before the first trace entry is read.
-    """
-    def set_processor_type(self, type):
-        # the type may only be set once, changing the type during simulation
-        # (migrating to another core of another type) is not possible (yet!)
-        if (self.type is not None and self.type != type):
-            raise RuntimeError('Reassigning a process to a processor of ' +
-                               'another type is not supported!')
-        else:
-            self.type = type
+    def get_next_entry(self, process_name, processor_type):
+        """Return the next trace segment.
 
-    def get_next_entry(self):
-        # TODO Implement a default trace reader
+        Returns the next trace segment for a process running on a processor of
+        the specified type (the segments could differ for different processor
+        types). This should be overridden by a subclass. The default behaviuour
+        is to return None
+
+        :param str process_name:
+            name of the process that a segment is requested for
+        :param str processor_type:
+            the processor type that a segment is requested for
+        :returns: the next trace segment or None if there is none
+        :rtype: TraceSegment or None
+        """
         return None
