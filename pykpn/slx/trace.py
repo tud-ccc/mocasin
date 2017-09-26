@@ -4,47 +4,70 @@
 # Authors: Christian Menard
 
 
-from ..common import TraceReader
-from ..common import ProcessEntry
-from ..common import ReadEntry
-from ..common import WriteEntry
-from ..common import TerminateEntry
+from ..common import TraceGenerator
+from ..common import TraceSegment
 
 
-class SlxTraceReader(TraceReader):
+class SlxTraceReader(TraceGenerator):
+    """A TraceGenerator that reads SLX trace files"""
 
-    def __init__(self, process_name, app_name, trace_dir):
-        super().__init__(process_name, app_name)
-        self.trace_dir = trace_dir
-        self.trace = None
-        self.buffer = None
+    def __init__(self, trace_dir):
+        """Initialize the trace reader
 
-    def get_next_entry(self):
-        if self.trace is None:  # first read, need to open trace file
-            assert(self.type is not None)
-            self.trace = open('%s/%s.%s.cpntrace' % (self.trace_dir,
-                                                     self.process_name,
-                                                     self.type))
-            assert(self.trace is not None)
+        :param str trace_dir: path to the directory containing all trace files
+        """
+        self._trace_dir = trace_dir
 
-        if self.buffer is not None:
-            tmp = self.buffer
-            self.buffer = None
-            return tmp
+        self._trace_files = {}
+        self._processor_types = {}
+
+    def get_next_entry(self, process_name, processor_type):
+        """Return the next trace segment.
+
+        Returns the next trace segment for a process running on a processor of
+        the specified type (the segments could differ for different processor
+        types). This should be overridden by a subclass. The default behaviuour
+        is to return None
+
+        :param str process_name:
+            name of the process that a segment is requested for
+        :param str processor_type:
+            the processor type that a segment is requested for
+        :returns: the next trace segment or None if there is none
+        :rtype: TraceSegment or None
+        """
+        if processor_name not in self._trace_files:
+            fh = open('%s/%s.%s.cpntrace' % (self._trace_dir,
+                                             process_name,
+                                             processor_type))
+            assert fh is not None
+            self._trace_files[process_name] = fh
+            self._processor_types[process_name] = processor_type
+        else:
+            fh = self._trace_files[process_name]
+
+        if self._processor_types[process_name] != processor_type:
+            raise RuntimeError('The SlxTraceReader does not support migration '
+                               'of processes from one type of processor to '
+                               'another!')
 
         traceline = self.trace.readline().split(' ')
 
+        segment = TraceSegment()
+
         if traceline[0] == 'm':
-            return ProcessEntry(int(traceline[2]))
+            segment.processing_cycles = int(traceline[2])
         elif traceline[0] == 'r':
-            self.buffer = ReadEntry(self.app_name + '.' + traceline[1],
-                                    int(traceline[3]))
-            return ProcessEntry(int(traceline[4]))
+            segment.processing_cycles = int(traceline[4])
+            segment.read_from_channel = traceline[1]
+            segment.n_tokens = int(tracline[3])
         elif traceline[0] == 'w':
-            self.buffer = WriteEntry(self.app_name + '.' + traceline[1],
-                                     int(traceline[2]))
-            return ProcessEntry(int(traceline[3]))
+            segment.processing_cycles = int(traceline[3])
+            segment.write_to_channel = traceline[1]
+            segment.n_tokens = int(tracline[2])
         elif traceline[0] == 'e':
-            return TerminateEntry()
+            segment.terminate = True
         else:
             raise RuntimeError('Unexpected trace entry ' + traceline[0])
+
+        return segment
