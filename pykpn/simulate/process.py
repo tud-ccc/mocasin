@@ -15,174 +15,82 @@ log = logging.getLogger(__name__)
 
 
 class ProcessState(Enum):
-    Ready = 0
-    Running = 1
-    Blocked = 2
-    Finished = 3
+    """Denotes the state of a runtime process object.
+    :cvar int NOT_STARTED: The process is instantiated but not started yet.
+    :cvar int READY:       The process is ready and waits to be scheduled.
+    :cvar int RUNNING:     The process is currently being executed.
+    :cvar int BLOCKED:     The process is blocked and waits for a resource to
+                           become available.
+    :cvar int FINISHED:    The process completed its execution.
+    """
+    NOT_STARTED = 0
+    READY = 1
+    RUNNING = 2
+    BLOCKED = 3
+    FINISHED = 4
 
 
 class RuntimeProcess(object):
-    '''
-    Represents the runtime instance of a KPN process.
-    '''
+    """Represents the runtime instance of a KPN process.
 
-    def __init__(self, name, system, processMapping, traceReader):
-        self.env = system.env
-        self.name = name
-        self.channels = system.channels
-        self.traceReader = traceReader
-        self.processor = None
-        self.resume = None
-        self.time = 0
-        self.state = ProcessState.Ready
+    :ivar str name:
+        the process name
+    :ivar _env:
+        the simpy environment
+    :ivar dict[str, RuntimeChannel] _channels:
+        Dictionary of channel names and there corresponding runtime
+        object. This only includes channels that may be accessed by this
+        process.
+    :ivar ProcessState _state:
+        The current process state.
+    """
 
-        self.event_unblock = self.env.event()
+    def __init__(self, name, mapping_info, env, start_at_tick=0):
+        """Initialize a runtime process
 
-        self.vcd_writer = system.vcd_writer
-        self.running_var = self.vcd_writer.register_var(
-                'system.processes.' + name,
-                'running',
-                'integer',
-                size=1,
-                init=0)
+        :param str name:
+            The process name. This should be unique across applications within
+            the same system.
+        :param ProcessMappingInfo mapping_info:
+            the mapping info object for this process
+        :param env:
+            the simpy environment
+        :param int start_at_tick:
+            delay the process start to this tick
+        """
+        log.debug('initialize new runtime process: %s', name)
 
-        # ASCII encoded name for display in VCD traces
-        self.vcd_id = ''.join(['{0:08b}'.format(ord(c)) for c in self.name])
+        self.name = name     #: the process name
+        self._env = env      #: the simpy environment
+        self._channels = {}  #: a dict of channel names and channel objects
+        self._state = ProcessState.NOT_STARTED
 
-    def assignProcessor(self, processor):
-        self.processor = processor
-        self.traceReader.set_processor_type(processor.type)
+    def connect_to_incomming_channel(self, channel):
+        """Connect the process to a incoming runtime channel
 
-    def block(self, event):
-        '''
-        Block process until an event occurs.
-        :param event: the event to wait for
-        '''
-        self.state = ProcessState.Blocked
-        event.callbacks.append(self.unblock)
-        self.vcd_writer.change(self.running_var, self.env.now, 0)
+        This makes this process a sink of the channel.
 
-    def unblock(self, event):
-        '''
-        Unblock process after an event occurred.
+        :param RuntimeChannel channel:
+            the channel to connect to
+        """
+        self._channels[channel.name] = channel
+        channel.add_sink(self)
 
-        This function is intended to be called by an event callback.
-        :param event: the event that triggered the unblock
-        '''
-        assert self.state == ProcessState.Blocked
-        log.debug('{0:16}'.format(self.env.now) + ': process ' + self.name +
-                  ' unblocked')
-        self.state = ProcessState.Ready
-        self.time = self.env.now
-        self.event_unblock.succeed()
-        self.event_unblock = self.env.event()
+    def connect_to_outgoing_channel(self, channel):
+        """Connect the process to a outgoing runtime channel
+
+        This makes this process the source of the channel.
+
+        :param RuntimeChannel channel:
+            the channel to connect to
+        """
+        self._channels[channel.name] = channel
+        channel.set_src(self)
 
     def run(self):
+        """SimPy process
+
+        Replays the execution trace of a kpn process.
         """
-        A SimPy process that replays the process trace
-        """
-
-        self.state = ProcessState.Running
-
-        if self.resume is None:
-            log.debug('{0:16}'.format(self.env.now) + ': process ' +
-                      self.name + ' starts execution')
-        else:
-            log.debug('{0:16}'.format(self.env.now) + ': process ' +
-                      self.name + ' resumes execution')
-
-        self.vcd_writer.change(self.running_var, self.env.now, 1)
-
-        while not self.state == ProcessState.Finished:
-            entry = None
-            if self.resume is None:
-                entry = self.traceReader.get_next_entry()
-            else:
-                entry, self.resume = self.resume, None
-            if isinstance(entry, ProcessEntry):
-                cycles = entry.cycles
-                ticks = self.processor.ticks(cycles)
-                log.debug('{0:16}'.format(self.env.now) +
-                          ': process ' + self.name + ' processes for ' +
-                          str(cycles) + ' cycles (' + str(ticks) + ' ticks)')
-
-                yield self.env.timeout(ticks)
-            elif isinstance(entry, ReadEntry):
-                channel = self.channels[entry.channel]
-                log.debug('{0:16}'.format(self.env.now) +
-                          ': process ' + self.name + ' reads ' +
-                          str(entry.tokens) + ' tokens from channel ' +
-                          entry.channel)
-
-                if channel.canConsumeTokens(entry.tokens):
-                    for phase in channel.primitive.consume:
-                        # request all resources
-                        requests = []
-                        for r in phase.resources:
-                            if hasattr(r, 'simpy_resource'):
-                                req = r.simpy_resource.request()
-                                requests.append(req)
-                                yield req
-                            else:
-                                requests.append(None)
-
-                        # pay for the delay
-                        size = entry.tokens * channel.token_size
-                        ticks = phase.get_costs(size)
-                        yield self.env.timeout(ticks)
-
-                        # release all resources that we requested before
-                        for (res, req) in zip(phase.resources, requests):
-                            if req is not None:
-                                res.simpy_resource.release(req)
-
-                    channel.consumeTokens(entry.tokens, self)
-                else:
-                    log.debug('                  Not enough tokens in ' +
-                              'channel -> block')
-                    self.resume = entry
-                    self.block(channel.event_produce)
-                    return
-            elif isinstance(entry, WriteEntry):
-                channel = self.channels[entry.channel]
-                log.debug('{0:16}'.format(self.env.now) +
-                          ': process ' + self.name + ' writes ' +
-                          str(entry.tokens) + ' tokens to channel ' +
-                          entry.channel)
-
-                if channel.canProduceTokens(entry.tokens):
-
-                    for phase in channel.primitive.produce:
-                        # request all resources
-                        requests = []
-                        for r in phase.resources:
-                            if hasattr(r, 'simpy_resource'):
-                                req = r.simpy_resource.request()
-                                requests.append(req)
-                                yield req
-                            else:
-                                requests.append(None)
-
-                        # pay for the delay
-                        size = entry.tokens * channel.token_size
-                        ticks = phase.get_costs(size)
-                        yield self.env.timeout(ticks)
-
-                        # release all resources that we requested before
-                        for (res, req) in zip(phase.resources, requests):
-                            if req is not None:
-                                res.simpy_resource.release(req)
-
-                    channel.produceTokens(entry.tokens)
-                else:
-                    log.debug('                  Not enough free slots ' +
-                              'in channel -> block')
-                    self.resume = entry
-                    self.block(channel.event_consume)
-                    return
-            elif isinstance(entry, TerminateEntry):
-                self.state = ProcessState.Finished
-            else:
-                assert False, "found an unexpected trace entry"
-        log.debug('{0:16}'.format(self.env.now) + ': process ' + self.name +
-                  ' finished execution')
+        assert self._state == ProcessState.NOT_STARTED
+        pass
