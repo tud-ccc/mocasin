@@ -91,7 +91,7 @@ class Mapping:
     def scheduler_info(self, scheduler):
         """Look up the mapping info of a scheduler.
 
-        :param KpnScheduler scheduler: scheduler to look up
+        :param Scheduler scheduler: scheduler to look up
         :return the mapping info if the scheduler is mapped
         :rtype SchedulerMappingInfo or None
         """
