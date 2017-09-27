@@ -40,7 +40,7 @@ class PykpnFormatter(l.Formatter):
         # add brackets
         levelname = '[%s]' % (record.levelname)
         # fill with spaces
-        levelname = '%-10s' % (levelname)
+        levelname = '%-9s' % (levelname)
         # colorize
         if self._use_color:
             if record.levelname in COLORS:
@@ -54,6 +54,10 @@ class PykpnFormatter(l.Formatter):
         if _indent_level > 0:
             indent_string = '%s* ' % (' ' * _indent_level * 2)
             record.msg = indent_string + record.msg
+
+        # ensure that multiline messages are properly indented
+        record.msg = record.msg.replace('\n', '\n%s' % (
+            ' ' * (10 + _indent_level * 2)))
 
         return super().format(record)
 
