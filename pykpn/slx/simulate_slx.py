@@ -7,6 +7,7 @@
 
 
 import argparse
+import simpy
 
 from pykpn.simulate import RuntimeApplication
 from pykpn.simulate import RuntimeSystem
@@ -35,17 +36,16 @@ def main():
     # parse the config file
     config = SlxConfig(args.configFile)
 
+    env = simpy.Environment()
+
     for an in config.app_names:
         app = RuntimeApplication(
             an, config.graphs[an], config.mappings[an],
-            config.trace_readers[an], config.start_times[an])
+            env, config.start_times[an])
         applications.append(app)
 
-        if config.mapping_to_dot[an] is not None:
-            config.mappings[an].outputDot(config.mapping_to_dot[an])
     # Create the system
-    system = RuntimeSystem(config.vcd_file_name, config.platform,
-                           config.graphs, applications)
+    system = RuntimeSystem(config.platform, applications, env)
     # Run the simulation
     system.simulate()
 

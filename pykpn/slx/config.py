@@ -37,7 +37,6 @@ class SlxConfig:
         self.graphs = {}
         self.mappings = {}
         self.trace_readers = {}
-        self.mapping_to_dot = {}
         self.start_times = {}
         for an in self.app_names:
             if an not in conf:
@@ -48,20 +47,13 @@ class SlxConfig:
                                  self.platform,
                                  conf[an]['mapping'])
 
-            readers = {}
-            for pm in mapping.processMappings:
-                name = pm.kpnProcess.name
-                trace_dir = os.path.join(conf[an]['trace'])
-                assert os.path.isdir(trace_dir)
-                readers[name] = SlxTraceReader(name, an, trace_dir)
+            trace_dir = os.path.join(conf[an]['trace'])
+            assert os.path.isdir(trace_dir)
+            reader = SlxTraceReader(trace_dir)
 
             self.graphs[an] = graph
             self.mappings[an] = mapping
-            self.trace_readers[an] = readers
-            if 'mappingout' not in conf[an] or conf[an]['mappingout'] == '':
-                self.mapping_to_dot[an] = None
-            else:
-                self.mapping_to_dot[an] = conf[an]['mappingout']
+            self.trace_readers[an] = reader
             self.vcd_file_name = conf['simulation']['vcd']
             ureg = UnitRegistry()
             time = conf[an]['start_time']
