@@ -5,10 +5,6 @@
 
 
 import logging
-from ..common.trace import ProcessEntry
-from ..common.trace import ReadEntry
-from ..common.trace import WriteEntry
-from ..common.trace import TerminateEntry
 from enum import Enum
 
 log = logging.getLogger(__name__)
