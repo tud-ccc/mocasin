@@ -4,7 +4,9 @@
 # Authors: Christian Menard
 
 
+from .adapter import SimulateLoggerAdapter
 from ..common import logging
+
 
 log = logging.getLogger(__name__)
 
@@ -14,6 +16,8 @@ class RuntimeScheduler(object):
 
     :ivar str name: the scheduler name
     :ivar _env: the simpy environment
+    :ivar _log: an logger adapter to print messages with simulation context
+    :type _log: SimulateLoggerAdapter
     :ivar _processor: the processor managed by this scheduler
     :type _processor: Processor
     :ivar _processes: list of runtime processes managed by this scheduler
@@ -31,6 +35,7 @@ class RuntimeScheduler(object):
         log.debug('Initialize new runtime scheduler (%s)' % self.name)
 
         self._env = env
+        self._log = SimulateLoggerAdapter(log, self.name, env)
 
         # TODO implement multi-processor scheduling
         if len(platform_scheduler.processors) > 1:
@@ -74,3 +79,9 @@ class RuntimeScheduler(object):
             log.debug('%s: Append process %s', self.name, p.name)
             self._processes.append(p)
         logging.dec_indent()
+
+    def run(self):
+        """SimPy process that implements the scheduler logic"""
+        self._log.debug('Scheduler starts')
+        yield self._env.timeout(10)  # this is just a dummy
+        self._log.debug('Scheduler terminates')
