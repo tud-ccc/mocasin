@@ -61,6 +61,8 @@ class PykpnFormatter(l.Formatter):
 class WhitelistFilter(l.Filter):
 
     def __init__(self, names):
+        if len(names) == 0:
+            names = ['pykpn']
         self._filters = [l.Filter(n) for n in names]
 
     def filter(self, record):
