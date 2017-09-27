@@ -72,3 +72,19 @@ class RuntimeApplication:
             logging.dec_indent()
 
         logging.dec_indent()
+
+    def processes(self):
+        """Get a list of all processes
+
+        :returns: a list of the application's processes
+        :rtype: list[RuntimeProcess]
+        """
+        return self._processes.values()
+
+    def channels(self):
+        """Get a list of all channels
+
+        :returns: a list of the application's channels
+        :rtype: list[RuntimeChannel]
+        """
+        return self._channels.values()
