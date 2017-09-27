@@ -16,6 +16,8 @@ class RuntimeApplication:
 
     :ivar str name:
         the application name
+    :ivar Mapping mapping:
+        mapping object for this application
     :ivar list[RuntimeProcess] _pocesses:
         a list of runtime processes that belong to this application
     :ivar list[RuntimeChannel] _channels:
@@ -37,8 +39,9 @@ class RuntimeApplication:
             delay the application start to this tick
         """
         self.name = name
+        self.mapping = mapping
 
-        log.debug('initialize new runtime application: %s', name)
+        log.info('initialize new runtime application: %s', name)
         logging.inc_indent()
 
         # Instantiate all channels
