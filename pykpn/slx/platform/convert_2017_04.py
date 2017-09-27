@@ -21,6 +21,7 @@ log = logging.getLogger(__name__)
 
 
 def create_policy_list(xml_platform, list_ref):
+    log.warning('SLX platforms do not define scheduling delays. -> default to 0')
     policies = []
     for pl in xml_platform.get_SchedulingPolicyList():
         if pl.get_id() == list_ref:
@@ -28,9 +29,7 @@ def create_policy_list(xml_platform, list_ref):
                 name = p.get_schedulingAlgorithm()
                 # there is no scheduling delay in slx
                 cycles = 0
-                # 1 tick == 1 ps
-                param = get_value_in_unit(p, 'timeSlice', 'ps', None)
-                policies.append(SchedulingPolicy(name, cycles, param))
+                policies.append(SchedulingPolicy(name, cycles))
             return policies
     raise RuntimeError('Could not find the SchedulingPolicyList %s', list_ref)
 
@@ -80,9 +79,6 @@ def convert(platform, xml_platform):
     schedulers_to_processors = {}
     for s in xml_platform.get_Scheduler():
         schedulers_to_processors[s.get_id()] = []
-
-    # TODO implement scheduling delays correctly
-    log.warn('SLX platforms do not specify scheduling delays! -> assume 0')
 
     # Collect all frequency domains
     frequency_domains = {}
