@@ -29,7 +29,7 @@ class RuntimeChannel(object):
         :type mapping_info: ChannelMappingInfo
         :param env: the simpy environment
         """
-        log.debug('initialize new runtime channel: %s', name)
+        log.debug('initialize new runtime channel: (%s)', name)
 
         self.name = name
         self._env = env

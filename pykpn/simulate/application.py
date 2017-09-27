@@ -60,6 +60,7 @@ class RuntimeApplication:
             proc = RuntimeProcess(
                 p_name, mapping_info, env, start_at_tick)
             self._processes[p.name] = proc
+            logging.inc_indent()
             for c in p.incoming_channels:
                 rc = self._channels[c.name]
                 log.debug('make process %s a sink to %s', p_name, rc.name)
@@ -68,5 +69,6 @@ class RuntimeApplication:
                 rc = self._channels[c.name]
                 log.debug('make process %s a source to %s', p_name, rc.name)
                 proc.connect_to_outgoing_channel(rc)
+            logging.dec_indent()
 
         logging.dec_indent()

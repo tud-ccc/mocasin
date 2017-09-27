@@ -58,7 +58,7 @@ class RuntimeProcess(object):
         :param int start_at_tick:
             delay the process start to this tick
         """
-        log.debug('initialize new runtime process: %s', name)
+        log.debug('initialize new runtime process (%s)', name)
 
         self.name = name     #: the process name
         self._env = env      #: the simpy environment
