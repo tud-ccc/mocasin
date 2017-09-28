@@ -91,10 +91,41 @@ class RuntimeProcess(object):
         self._log = SimulateLoggerAdapter(log, name, env)
 
         # setup the events
+        #self.ready = self._env.event()
+        #self.ready.callbacks.append(self._cb_ready)
         self.running = self._env.event()
         self.running.callbacks.append(self._cb_running)
         self.finished = self._env.event()
         self.finished.callbacks.append(self._cb_finished)
+
+    def _transition(self, state_name):
+        """Helper function for convenient state transitions.
+
+        This updates the process state (:attr:`_state`), triggers the
+        corresponding event, and reinitializes the event. Thereby it is ensured
+        that a new event object is in place # before succeed() is called. This
+        way, the event's callbacks can # immediately register themselves again.
+        :param str state_name: name of the state to be transitioned to
+        """
+        if not hasattr(ProcessState, state_name):
+            raise RuntimeError(
+                'Tried to transition to an invalid state (%s)' % (state_name))
+
+        event_name = state_name.lower()
+        cb_name = '_cb_' + state_name.lower()
+        assert hasattr(self, event_name)
+        assert hasattr(self, cb_name)
+
+        # update the state
+        self._state = getattr(ProcessState, state_name)
+
+        # XXX This seems hacky. Maybe there is a better way...
+        old_event = getattr(self, event_name)
+        new_event = self._env.event()
+        new_event.callbacks.append(getattr(self, '_cb_' + event_name))
+        setattr(self, event_name, new_event)
+
+        old_event.succeed()
 
     def start(self, event=None):
         """Start the process execution.
@@ -106,8 +137,7 @@ class RuntimeProcess(object):
         """
         assert(self._state == ProcessState.NOT_STARTED)
         log.debug('Process starts its execution.')
-        self._state = ProcessState.RUNNING
-        self.running.succeed(self)
+        self._transition('RUNNING')
 
     def finish(self, event=None):
         """Finish the process execution.
@@ -119,7 +149,7 @@ class RuntimeProcess(object):
         """
         assert(self._state == ProcessState.RUNNING)
         self._log.debug('Process finishes its execution.')
-        self._state = ProcessState.FINISHED
+        self._transition('FINISHED')
 
     def _cb_running(self, event):
         """Callback invoked upon entering the ``RUNNING`` state
