@@ -15,5 +15,5 @@ class SimulateLoggerAdapter(logging.LoggerAdapter):
         self._env = env
 
     def process(self, msg, kwargs):
-        msg = '%s\n=== @%d %s ===' % (msg, self._env.now, self._instance)
+        msg = '%s: @%d\n  %s' % (self._instance, self._env.now, msg)
         return msg, kwargs
