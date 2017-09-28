@@ -5,7 +5,7 @@
 
 
 from .channel import RuntimeChannel
-from .process import RuntimeProcess
+from .process import RuntimeKpnProcess
 from ..common import logging
 
 log = logging.getLogger(__name__)
@@ -57,7 +57,7 @@ class RuntimeApplication:
         for p in kpn_graph.processes:
             p_name = '%s.%s' % (name, p.name)
             mapping_info = mapping.process_info(p)
-            proc = RuntimeProcess(
+            proc = RuntimeKpnProcess(
                 p_name, mapping_info, env, start_at_tick)
             self._processes[p.name] = proc
             logging.inc_indent()
