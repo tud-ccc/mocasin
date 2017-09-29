@@ -280,10 +280,16 @@ class RuntimeKpnProcess(RuntimeProcess):
         channel.set_src(self)
 
     def workload(self):
-        self._log.debug('workload')
+        self._log.debug('start or continue workload execution')
 
-        for i in range(0, 10):
-            self._log.debug('process i=%d', i)
-            yield self._env.timeout(20)  # dummy workload
+        while True:
+            segment = self._trace_generator.next_segment(
+                self.name, self._processor.type)
+            if segment.processing_cycles is not None:
+                ticks = self._processor.ticks(segment.processing_cycles)
+                yield self._env.timeout(ticks)
+
+            if segment.terminate:
+                break
 
         self.finish()
