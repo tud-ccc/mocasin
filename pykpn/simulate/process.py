@@ -128,7 +128,7 @@ class RuntimeProcess(object):
         new_event.callbacks.append(getattr(self, '_cb_' + event_name))
         setattr(self, event_name, new_event)
 
-        old_event.succeed()
+        old_event.succeed(self)
 
     def start(self, event=None):
         """Start the process.
