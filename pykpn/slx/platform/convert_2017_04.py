@@ -84,10 +84,17 @@ def convert(platform, xml_platform):
     frequency_domains = {}
     for fd in xml_platform.get_FrequencyDomain():
         name = fd.get_id()
+        max_frequency = 0
+        for f in fd.get_Frequency():
+            frequency = ur(f.get_value() + f.get_unit()).to('Hz').magnitude
+            max_frequency = max(frequency, max_frequency)
         # we set the frequency to None. It will be set to the correct value
         # when read the mapping is read.
-        frequency_domains[name] = FrequencyDomain(name, None)
-        log.debug('Found frequency domain %s', name)
+        frequency_domains[name] = FrequencyDomain(name, max_frequency)
+        log.debug('Found frequency domain %s (%d Hz)', name, frequency)
+        if len(fd.get_Frequency()) > 1:
+            log.warn('The xml defines multiple frequencies for the domain %s.'
+                     ' -> Select Maximum', name)
 
     # Initialize all Processors
     for xp in xml_platform.get_Processor():
