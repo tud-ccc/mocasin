@@ -36,7 +36,7 @@ class SlxTraceReader(TraceGenerator):
         :returns: the next trace segment or None if there is none
         :rtype: TraceSegment or None
         """
-        if processor_name not in self._trace_files:
+        if processor_type not in self._trace_files:
             fh = open('%s/%s.%s.cpntrace' % (self._trace_dir,
                                              process_name,
                                              processor_type))
@@ -60,11 +60,11 @@ class SlxTraceReader(TraceGenerator):
         elif traceline[0] == 'r':
             segment.processing_cycles = int(traceline[4])
             segment.read_from_channel = traceline[1]
-            segment.n_tokens = int(tracline[3])
+            segment.n_tokens = int(traceline[3])
         elif traceline[0] == 'w':
             segment.processing_cycles = int(traceline[3])
             segment.write_to_channel = traceline[1]
-            segment.n_tokens = int(tracline[2])
+            segment.n_tokens = int(traceline[2])
         elif traceline[0] == 'e':
             segment.terminate = True
         else:
