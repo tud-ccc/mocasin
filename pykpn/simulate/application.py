@@ -88,3 +88,11 @@ class RuntimeApplication:
         :rtype: list[RuntimeChannel]
         """
         return self._channels.values()
+
+    def find_process(self, process_name):
+        """Find a process by name"""
+        return self._processes[process_name]
+
+    def find_channel(self, channel_name):
+        """Find a channel by name"""
+        return self._channeles[channel_name]
