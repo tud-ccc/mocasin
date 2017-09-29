@@ -5,7 +5,7 @@
 
 import timeit
 
-from .scheduler import RuntimeScheduler
+from .scheduler import create_scheduler
 from ..common import logging
 
 from simpy.resources.resource import Resource
@@ -27,6 +27,8 @@ class RuntimeSystem:
     def __init__(self, platform, applications, env):
         """Initialize a runtime system.
 
+        Most importantly, this sets up all the schedulers in the system.
+
         :param platform: the platform to be simulated
         :type platform: Platform
         :param applications: list of applications to be run on the system
@@ -41,13 +43,18 @@ class RuntimeSystem:
         # initialize all schedulers
         self._schedulers = []
         for s in platform.schedulers:
-            scheduler = RuntimeScheduler(s, env)
-            logging.inc_indent()
+            policy, policy_param = self._find_scheduler_policy(s, applications)
+
+            if policy is None:
+                log.debug('The scheduler %s is unused', s.name)
+
+            scheduler = create_scheduler(s, policy, policy_param, env)
+            self._schedulers.append(scheduler)
+
             for app in applications:
                 mapping_info = app.mapping.scheduler_info(s)
-                scheduler.add_application(app, mapping_info)
-            logging.dec_indent()
-            self._schedulers.append(scheduler)
+                for p in mapping_info.processes:
+                    scheduler.add_process(app.find_process(p.name))
 
         # Since the platform classes are designed such that they are
         # independent of the simulation implementation, the communication
@@ -71,13 +78,33 @@ class RuntimeSystem:
         logging.dec_indent()
         return
 
+    def _find_scheduler_policy(self, scheduler, applications):
+        policy = None
+        policy_param = None
+        for app in applications:
+            mapping_info = app.mapping.scheduler_info(scheduler)
+            if policy is None:
+                policy = mapping_info.policy
+                policy_param = mapping_info.param
+                log.debug('The scheduler %s uses the policy %s',
+                          scheduler.name, policy.name)
+            else:
+                if policy.name != mapping_info.policy.name:
+                    log.warning(
+                        '%s: The scheduling policy was already set' ' to %s '
+                        'but the application %s requested a different policy '
+                        '(%s) -> force old policy', self.name, policy.name,
+                        app.name, mapping_info.policy.name)
+                elif policy_param != mapping_info.param:
+                    log.warning(
+                        '%s: The application %s requested a different '
+                        'scheduling policy parameter than the application '
+                        'before -> use old parameter', self.name, app.name)
+        return policy, policy_param
+
     def simulate(self):
         log.info('Start the simulation')
         start = timeit.default_timer()
-
-        # start all the schedulers
-        for s in self._schedulers:
-            self._env.process(s.run())
 
         self._env.run()
 
