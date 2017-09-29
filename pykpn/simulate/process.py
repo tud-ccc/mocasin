@@ -130,6 +130,9 @@ class RuntimeProcess(object):
 
         old_event.succeed(self)
 
+    def check_state(self, state):
+        return self._state == state
+
     def start(self, event=None):
         """Start the process.
 
