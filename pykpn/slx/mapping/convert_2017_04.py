@@ -31,7 +31,7 @@ def convert(mapping, xml_mapping):
             pname = pref.get_process()
             process_scheduler[pname] = scheduler
             processes.append(kpn.find_process(pname))
-        info = SchedulerMappingInfo(None, policy, param)
+        info = SchedulerMappingInfo(processes, policy, param)
         mapping._scheduler_info[name] = info
 
     # parse processes
