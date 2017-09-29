@@ -218,9 +218,14 @@ class RuntimeKpnProcess(RuntimeProcess):
         runtime object. This only includes channels that may be accessed by
         this process.
     :type _channels: dict[str, RuntimeChannel]
+    :ivar _trace_generator: a trace generator object
+    :type _trace_generator: TraceGenerator
+    :ivar _start: an event that triggers the start of this process
+    :type _start: simpy.events.Timeout
     """
 
-    def __init__(self, name, mapping_info, env, start_at_tick=0):
+    def __init__(self, name, mapping_info, trace_generator, env,
+                 start_at_tick=0):
         """Initialize a kpn runtime process
 
         :param name: The process name. This should be unique across
@@ -228,6 +233,8 @@ class RuntimeKpnProcess(RuntimeProcess):
         :type name: str
         :param mapping_info: the mapping info object for this process
         :type mapping_info: ProcessMappingInfo
+        :param trace_generator: a trace generator object
+        :type trace_generator: TraceGenerator
         :param env: the simpy environment
         :type env: simpy.core.Environment
         :param start_at_tick: tick at which the process execution should start
@@ -238,6 +245,7 @@ class RuntimeKpnProcess(RuntimeProcess):
         super().__init__(name, env)
 
         self._channels = {}
+        self._trace_generator = trace_generator
 
         self._start = env.timeout(start_at_tick)
         self._start.callbacks.append(self.start)

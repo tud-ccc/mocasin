@@ -21,7 +21,7 @@ class SlxTraceReader(TraceGenerator):
         self._trace_files = {}
         self._processor_types = {}
 
-    def get_next_entry(self, process_name, processor_type):
+    def next_segment(self, process_name, processor_type):
         """Return the next trace segment.
 
         Returns the next trace segment for a process running on a processor of

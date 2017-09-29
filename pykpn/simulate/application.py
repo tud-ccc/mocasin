@@ -24,19 +24,22 @@ class RuntimeKpnApplication:
         a list of runtime channels that belong to this application
     """
 
-    def __init__(self, name, kpn_graph, mapping, env, start_at_tick=0):
+    def __init__(self, name, kpn_graph, mapping, trace_generator, env,
+                 start_at_tick=0):
         """Initialize a RuntimeKpnApplication.
 
-        :param str name:
-            name of the application
-        :param KpnGraph kpn_graph:
-            the corresponding KpnGraph object
-        :param Mapping mapping:
-            the corresponding Mapping object
-        :param env:
-            the simpy environment object
-        :param int start_at_tick:
-            delay the application start to this tick
+        :param name: name of the application
+        :type name: str
+        :param kpn_graph: the corresponding KpnGraph object
+        :type kpn_graph: KpnGraph
+        :param mapping: the corresponding Mapping object
+        :type mapping: Mapping
+        :param trace_generator: the trace generator object to be used by the
+            processes belonging to this application
+        :type trace_generator: TraceGenerator
+        :param env: the simpy environment object
+        :param start_at_tick: delay the application start to this tick
+        :type start_at_tick: int
         """
         self.name = name
         self.mapping = mapping
@@ -58,7 +61,7 @@ class RuntimeKpnApplication:
             p_name = '%s.%s' % (name, p.name)
             mapping_info = mapping.process_info(p)
             proc = RuntimeKpnProcess(
-                p_name, mapping_info, env, start_at_tick)
+                p_name, mapping_info, trace_generator, env, start_at_tick)
             self._processes[p.name] = proc
             logging.inc_indent()
             for c in p.incoming_channels:

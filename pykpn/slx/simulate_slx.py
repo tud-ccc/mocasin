@@ -41,7 +41,7 @@ def main():
     for an in config.app_names:
         app = RuntimeKpnApplication(
             an, config.graphs[an], config.mappings[an],
-            env, config.start_times[an])
+            config.trace_readers[an], env, config.start_times[an])
         applications.append(app)
 
     # Create the system

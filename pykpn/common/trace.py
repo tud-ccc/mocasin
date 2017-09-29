@@ -57,7 +57,7 @@ class TraceGenerator(object):
     functionality by generating random traces or reading traces from a file.
     """
 
-    def get_next_entry(self, process_name, processor_type):
+    def next_segment(self, process_name, processor_type):
         """Return the next trace segment.
 
         Returns the next trace segment for a process running on a processor of
