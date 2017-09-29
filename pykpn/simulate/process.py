@@ -286,7 +286,9 @@ class RuntimeKpnProcess(RuntimeProcess):
             segment = self._trace_generator.next_segment(
                 self.name, self._processor.type)
             if segment.processing_cycles is not None:
-                ticks = self._processor.ticks(segment.processing_cycles)
+                cycles = segment.processing_cycles
+                self._log.debug('process for %d cycles', cycles)
+                ticks = self._processor.ticks(cycles)
                 yield self._env.timeout(ticks)
 
             if segment.terminate:
