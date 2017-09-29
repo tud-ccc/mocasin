@@ -60,18 +60,21 @@ class RuntimeProcess(object):
 
     Events
     ------
+    * :attr:`ready`:  Triggered on entering the ``READY`` state.
     * :attr:`running`:  Triggered on entering the ``RUNNING`` state.
     * :attr:`finished`: Triggered on entering the ``FINISHED`` state.
 
     Entry Actions
     -------------
+    * :func:`_cb_ready`:  Callback of :attr:`ready`
     * :func:`_cb_running`:  Callback of :attr:`running`
     * :func:`_cb_finished`: Callback of :attr:`finished`
 
     Transitions
     -----------
-    * :func:`start`:  Transition from ``NOT_STARTED`` to ``RUNNING``
-    * :func:`finish`: Transition from ``RUNNING`` to ``FINISHED``
+    * :func:`start`:    Transition from ``NOT_STARTED`` to ``READY``
+    * :func:`activate`: Transition from ``READY`` to ``RUNNING``
+    * :func:`finish`:   Transition from ``RUNNING`` to ``FINISHED``
     """
 
     def __init__(self, name, env):
@@ -91,8 +94,8 @@ class RuntimeProcess(object):
         self._log = SimulateLoggerAdapter(log, name, env)
 
         # setup the events
-        #self.ready = self._env.event()
-        #self.ready.callbacks.append(self._cb_ready)
+        self.ready = self._env.event()
+        self.ready.callbacks.append(self._cb_ready)
         self.running = self._env.event()
         self.running.callbacks.append(self._cb_running)
         self.finished = self._env.event()
@@ -128,28 +131,49 @@ class RuntimeProcess(object):
         old_event.succeed()
 
     def start(self, event=None):
-        """Start the process execution.
+        """Start the process.
 
-        Start the process execution and transition to the ``RUNNING``
+        Start the process by transitioning to the ``READY``
         state. This function may be called directly or be registered as a
         callback to a simpy event.
-        :param event: unused (only required for usage as a simpy ecallback)
+        :param event: unused (only required for usage as a simpy callback)
         """
         assert(self._state == ProcessState.NOT_STARTED)
-        log.debug('Process starts its execution.')
+        self._log.debug('Process starts.')
+        self._transition('READY')
+
+    def activate(self, event=None):
+        """Start the process execution.
+
+        Start the workload execution by transitioning to the ``RUNNING``
+        state. This function may be called directly or be registered as a
+        callback to a simpy event.
+        :param event: unused (only required for usage as a simpy callback)
+        """
+        assert(self._state == ProcessState.READY)
+        self._log.debug('Start workload execution')
         self._transition('RUNNING')
 
     def finish(self, event=None):
-        """Finish the process execution.
+        """Terminate the process.
 
-        Finish the process execution and transition to the ``FINISHED``
+        Terminate the process execution by transitioning to the ``FINISHED``
         state. This function may be called directly or be registered as a
         callback to a simpy event.
-        :param event: unused (only required for usage as a simpy ecallback)
+        :param event: unused (only required for usage as a simpy callback)
         """
         assert(self._state == ProcessState.RUNNING)
-        self._log.debug('Process finishes its execution.')
+        self._log.debug('Workload execution finished.')
         self._transition('FINISHED')
+
+    def _cb_ready(self, event):
+        """Callback invoked upon entering the ``READY`` state
+
+        Starts a simpy process that executes :func:`workload`
+        :param event: unused (only required to provide the callback interface)
+        """
+        assert(self._state == ProcessState.READY)
+        self._log.debug('Entered READY state')
 
     def _cb_running(self, event):
         """Callback invoked upon entering the ``RUNNING`` state
