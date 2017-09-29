@@ -36,9 +36,9 @@ class SlxTraceReader(TraceGenerator):
         :returns: the next trace segment or None if there is none
         :rtype: TraceSegment or None
         """
-        if processor_type not in self._trace_files:
+        if process_name not in self._trace_files:
             fh = open('%s/%s.%s.cpntrace' % (self._trace_dir,
-                                             process_name,
+                                             process_name[4:],
                                              processor_type))
             assert fh is not None
             self._trace_files[process_name] = fh
@@ -51,8 +51,7 @@ class SlxTraceReader(TraceGenerator):
                                'of processes from one type of processor to '
                                'another!')
 
-        traceline = self.trace.readline().split(' ')
-
+        traceline = fh.readline().split(' ')
         segment = TraceSegment()
 
         if traceline[0] == 'm':
