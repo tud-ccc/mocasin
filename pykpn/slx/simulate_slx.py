@@ -9,7 +9,7 @@
 import argparse
 import simpy
 
-from pykpn.simulate import RuntimeApplication
+from pykpn.simulate import RuntimeKpnApplication
 from pykpn.simulate import RuntimeSystem
 from pykpn.slx import SlxConfig
 import pykpn.common.logging as logging
@@ -39,7 +39,7 @@ def main():
     env = simpy.Environment()
 
     for an in config.app_names:
-        app = RuntimeApplication(
+        app = RuntimeKpnApplication(
             an, config.graphs[an], config.mappings[an],
             env, config.start_times[an])
         applications.append(app)

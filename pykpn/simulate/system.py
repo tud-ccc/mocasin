@@ -32,7 +32,7 @@ class RuntimeSystem:
         :param platform: the platform to be simulated
         :type platform: Platform
         :param applications: list of applications to be run on the system
-        :type applications: list[RuntimeApplication]
+        :type applications: list[RuntimeKpnApplication]
         :param env: the simpy environment
         """
         log.info('Initialize the system')

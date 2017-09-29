@@ -33,7 +33,7 @@ from pykpn.platforms import Tomahawk2Platform
 from pykpn.simulate import RuntimeSystem
 from pykpn.simulate import RuntimeProcess
 from pykpn.simulate import RuntimeScheduler
-from pykpn.simulate import RuntimeApplication
+from pykpn.simulate import RuntimeKpnApplication
 from vcd import VCDWriter
 
 log = logging.getLogger(__name__)
@@ -186,7 +186,7 @@ class TestSystem(TestCase):
             name = pm.kpnProcess.name
             processors = pm.scheduler.processors
             readers[name] = DummyTraceReader(name)
-        app = RuntimeApplication('app', graph, mapping, readers,0)
+        app = RuntimeKpnApplication('app', graph, mapping, readers,0)
         self.system = RuntimeSystem('dump.vcd', platform, graph, [app])
         #add processes to the schedulers
         self.system.schedulers[0].assignProcess(self.system.pair[self.system.schedulers[0]][0])

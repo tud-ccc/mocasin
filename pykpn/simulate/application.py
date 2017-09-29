@@ -11,7 +11,7 @@ from ..common import logging
 log = logging.getLogger(__name__)
 
 
-class RuntimeApplication:
+class RuntimeKpnApplication:
     """Represents the runtime instance of a kpn application.
 
     :ivar str name:
@@ -25,7 +25,7 @@ class RuntimeApplication:
     """
 
     def __init__(self, name, kpn_graph, mapping, env, start_at_tick=0):
-        """Initialize a RuntimeApplication.
+        """Initialize a RuntimeKpnApplication.
 
         :param str name:
             name of the application
