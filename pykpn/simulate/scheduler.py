@@ -142,7 +142,7 @@ class DummyScheduler(RuntimeScheduler):
                 self._current_process = self._ready_queue.pop(0)
                 self._log.debug('activate process %s',
                                 self._current_process.name)
-                self._current_process.activate()
+                self._current_process.activate(self._processor)
 
 
 def create_scheduler(platform_scheduler, policy, param, env):

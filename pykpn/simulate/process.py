@@ -45,6 +45,10 @@ class RuntimeProcess(object):
     :ivar _log: an logger adapter to print messages with simulation context
     :type _log: SimulateLoggerAdapter
 
+    :ivar _processor: the processor that the processes currently runs on. This
+        attribute is only valid in the ``RUNNING`` state.
+    :type _processor: Processor
+
     :ivar running: An event that triggers on entering the ``RUNNING`` state.
     :ivar finished: An event that triggers on entering the ``FINISHED`` state.
     :type running: :class:`simpy.events.Event`
@@ -91,6 +95,7 @@ class RuntimeProcess(object):
         self.name = name
         self._env = env
         self._state = ProcessState.NOT_STARTED
+        self._processor = None
         self._log = SimulateLoggerAdapter(log, name, env)
 
         # setup the events
@@ -143,30 +148,32 @@ class RuntimeProcess(object):
         """
         assert(self._state == ProcessState.NOT_STARTED)
         self._log.debug('Process starts.')
+        self._processor = None
         self._transition('READY')
 
-    def activate(self, event=None):
+    def activate(self, processor):
         """Start the process execution.
 
         Start the workload execution by transitioning to the ``RUNNING``
-        state. This function may be called directly or be registered as a
-        callback to a simpy event.
-        :param event: unused (only required for usage as a simpy callback)
+        state.
+        :param processor: The processor that executes the workload
+        :type processor: Processor
         """
         assert(self._state == ProcessState.READY)
-        self._log.debug('Start workload execution')
+        self._log.debug('Start workload execution on processor %s',
+                        processor.name)
+        self._processor = processor
         self._transition('RUNNING')
 
-    def finish(self, event=None):
+    def finish(self):
         """Terminate the process.
 
         Terminate the process execution by transitioning to the ``FINISHED``
-        state. This function may be called directly or be registered as a
-        callback to a simpy event.
-        :param event: unused (only required for usage as a simpy callback)
+        state.
         """
         assert(self._state == ProcessState.RUNNING)
         self._log.debug('Workload execution finished.')
+        self._processor = None
         self._transition('FINISHED')
 
     def _cb_ready(self, event):
