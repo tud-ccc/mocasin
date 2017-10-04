@@ -269,6 +269,8 @@ class RuntimeKpnProcess(RuntimeProcess):
     :type _trace_generator: TraceGenerator
     :ivar _start: an event that triggers the start of this process
     :type _start: simpy.events.Timeout
+    :ivar _current_segment: The trace segment that is currently processed
+    :type _current_segment: TraceSegment
     """
 
     def __init__(self, name, mapping_info, trace_generator, env,
@@ -297,6 +299,8 @@ class RuntimeKpnProcess(RuntimeProcess):
         self._start = env.timeout(start_at_tick)
         self._start.callbacks.append(self.start)
 
+        self._current_segment = None
+
     def connect_to_incomming_channel(self, channel):
         """Connect the process to a incoming runtime channel
 
@@ -320,25 +324,52 @@ class RuntimeKpnProcess(RuntimeProcess):
         channel.set_src(self)
 
     def workload(self):
-        self._log.debug('start or continue workload execution')
+
+        if self._current_segment is None:
+            self._log.debug('start workload execution')
+        else:
+            self._log.debug('continue workload execution')
 
         while True:
-            segment = self._trace_generator.next_segment(
-                self.name, self._processor.type)
-            segment.sanity_check()
-            if segment.processing_cycles is not None:
-                cycles = segment.processing_cycles
+            if self._current_segment is None:
+                self._current_segment = self._trace_generator.next_segment(
+                    self.name, self._processor.type)
+            s = self._current_segment
+            s.sanity_check()
+            if s.processing_cycles is not None:
+                cycles = s.processing_cycles
                 self._log.debug('process for %d cycles', cycles)
                 ticks = self._processor.ticks(cycles)
+                s.processing_cycles = None
                 yield self._env.timeout(ticks)
-            if segment.read_from_channel is not None:
-                c = self._channels[segment.read_from_channel]
-                yield self._env.process(c.consume(self, segment.n_tokens))
-            if segment.write_to_channel is not None:
-                c = self._channels[segment.write_to_channel]
-                yield self._env.process(c.produce(self, segment.n_tokens))
-            if segment.terminate:
+            if s.read_from_channel is not None:
+                c = self._channels[s.read_from_channel]
+                self._log.debug('read %d tokens from channel %s', s.n_tokens,
+                                c.name)
+                if not c.can_consume(self, s.n_tokens):
+                    self._log.debug('not enough tokens available -> block')
+                    self.block()
+                    self._env.process(c.wait_for_tokens(self, s.n_tokens))
+                    return
+                else:
+                    s.read_from_channel = None
+                    yield c.consume(self, s.n_tokens)
+            if s.write_to_channel is not None:
+                c = self._channels[s.write_to_channel]
+                self._log.debug('write %d tokens to channel %s', s.n_tokens,
+                                c.name)
+                if not c.can_produce(self, s.n_tokens):
+                    self._log.debug('not enough slots available -> block')
+                    self.block()
+                    self._env.process(c.wait_for_slots(self, s.n_tokens))
+                    return
+                else:
+                    s.write_to_channel = None
+                    yield c.produce(self, s.n_tokens)
+            if s.terminate:
                 self._log.debug('process terminates')
                 break
+
+            self._current_segment = None
 
         self.finish()
