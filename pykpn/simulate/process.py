@@ -137,13 +137,12 @@ class RuntimeProcess(object):
         # update the state
         self._state = getattr(ProcessState, state_name)
 
-        # XXX This seems hacky. Maybe there is a better way...
         old_event = getattr(self, event_name)
+        old_event.succeed(self)
+
         new_event = self._env.event()
         new_event.callbacks.append(getattr(self, '_cb_' + event_name))
         setattr(self, event_name, new_event)
-
-        old_event.succeed(self)
 
     def check_state(self, state):
         return self._state == state
