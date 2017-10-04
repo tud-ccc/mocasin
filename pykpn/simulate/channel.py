@@ -149,6 +149,10 @@ class RuntimeChannel(object):
 
         self._log.debug('consume operation completed')
 
+        # notify waiting processes
+        self.tokens_consumed.succeed()
+        self.tokens_consumed = self._env.event()
+
     def produce(self, process, num):
         assert self._src is process
 
@@ -180,3 +184,7 @@ class RuntimeChannel(object):
             self._fifo_state[p] += num
 
         self._log.debug('produce operation completed')
+
+        # notify waiting processes
+        self.tokens_produced.succeed()
+        self.tokens_produced = self._env.event()
