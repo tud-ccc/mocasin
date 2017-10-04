@@ -107,8 +107,8 @@ class RuntimeChannel(object):
         :returns: ``True`` if the process can consume ``num`` tokens
         :rtype: bool
         """
-        return not all([self._fifo_state[p.name] + num < self._capacity
-                        for p in self._sinks])
+        return all([(self._fifo_state[p.name] + num) < self._capacity
+                    for p in self._sinks])
 
     def consume(self, process, num):
         """Consume tokens
