@@ -38,7 +38,7 @@ class SlxTraceReader(TraceGenerator):
         """
         if process_name not in self._trace_files:
             fh = open('%s/%s.%s.cpntrace' % (self._trace_dir,
-                                             process_name[4:],
+                                             process_name,
                                              processor_type))
             assert fh is not None
             self._trace_files[process_name] = fh

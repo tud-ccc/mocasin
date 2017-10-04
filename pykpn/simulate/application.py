@@ -60,8 +60,8 @@ class RuntimeKpnApplication:
         for p in kpn_graph.processes:
             p_name = '%s.%s' % (name, p.name)
             mapping_info = mapping.process_info(p)
-            proc = RuntimeKpnProcess(
-                p_name, mapping_info, trace_generator, env, start_at_tick)
+            proc = RuntimeKpnProcess(p_name, mapping_info, trace_generator,
+                                     p.name, env, start_at_tick)
             self._processes[p.name] = proc
             logging.inc_indent()
             for c in p.incoming_channels:
