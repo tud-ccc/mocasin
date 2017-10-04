@@ -5,6 +5,8 @@
 
 
 import logging as l
+import re
+
 from termcolor import colored
 
 
@@ -65,24 +67,53 @@ class PykpnFormatter(l.Formatter):
 class WhitelistFilter(l.Filter):
 
     def __init__(self, names):
-        if len(names) == 0:
-            names = ['pykpn']
         self._filters = [l.Filter(n) for n in names]
 
     def filter(self, record):
-        return any(f.filter(record) for f in self._filters)
+        if record.levelno > l.DEBUG:
+            return True
+        else:
+            return any(f.filter(record) for f in self._filters)
 
 
-def setup(level, filters=None, use_color=True):
+class BlacklistFilter(l.Filter):
+
+    def __init__(self, names):
+        self._filters = [l.Filter(n) for n in names]
+
+    def filter(self, record):
+        if record.levelno > l.DEBUG:
+            return True
+        else:
+            return not any(f.filter(record) for f in self._filters)
+
+
+class RegexFilter(l.Filter):
+
+    def __init__(self, regex):
+        self._pattern = re.compile(regex)
+
+    def filter(self, record):
+        if record.levelno > l.DEBUG:
+            return True
+        else:
+            return bool(self._pattern.search(record.msg))
+
+
+def setup(level, whitelist=None, blacklist=None, message_filer=None,
+          use_color=True):
     logger = l.getLogger('pykpn')
     logger.setLevel(level)
 
     handler = l.StreamHandler()
     handler.setLevel(level)
 
-    if filters is None:
-        filters = []
-    handler.addFilter(WhitelistFilter(filters))
+    if whitelist is not None:
+        handler.addFilter(WhitelistFilter(whitelist))
+    if blacklist is not None:
+        handler.addFilter(BlacklistFilter(blacklist))
+    if message_filer is not None:
+        handler.addFilter(RegexFilter(message_filer))
 
     formatter = PykpnFormatter('%(levelname)s %(message)s', use_color)
     handler.setFormatter(formatter)
@@ -98,11 +129,25 @@ def add_cli_args(parser):
         dest='verbosity')
 
     parser.add_argument(
-        '-f',
-        '--filter',
-        action="append",
-        help="add a log filter (e.g. pykpn.common)",
-        dest='filter')
+        '-w',
+        '--log-whitelist',
+        nargs='+',
+        help='add a log whitelist filter (e.g. pykpn.common)',
+        dest='whitelist')
+
+    parser.add_argument(
+        '-b',
+        '--log-blacklist',
+        nargs='+',
+        help='add a log blacklist filter (e.g. pykpn.common)',
+        dest='blacklist')
+
+    parser.add_argument(
+        '-r',
+        '--log-regex',
+        type=str,
+        help='Add a regex filter that matches the message',
+        dest='regex')
 
     parser.add_argument(
         '--no-color',
@@ -120,7 +165,7 @@ def setup_from_args(args):
         elif args.verbosity >= 1:
             log_level = l.INFO
 
-    setup(log_level, args.filter, args.color)
+    setup(log_level, args.whitelist, args.blacklist, args.regex, args.color)
 
 
 def getLogger(name):
