@@ -103,6 +103,8 @@ class RuntimeChannel(object):
 
         Check if all FIFO have at least ``num`` empty slots.
 
+        :param process: the process that tries to produce tokens
+        :type process: RuntimeKpnProcess
         :param num: number of tokens to be produced
         :type num: int
         :returns: ``True`` if the process can consume ``num`` tokens
@@ -113,6 +115,15 @@ class RuntimeChannel(object):
                     for p in self._sinks])
 
     def wait_for_tokens(self, process, num):
+        """A simpy process that waits for tokens.
+
+        Wait until the process ``process`` can consume ``num`` tokens. Then,
+        unblock the process.
+        :param process: the process that waits
+        :type process: RuntimeKpnProcess
+        :param num: number of tokens to wait for
+        :type num: int
+        """
         assert process.check_state(ProcessState.BLOCKED)
 
         self._log.debug('wait until %s can consume %d tokens', process.name,
@@ -127,6 +138,15 @@ class RuntimeChannel(object):
         process.unblock()
 
     def wait_for_slots(self, process, num):
+        """A simpy process that waits for free slots.
+
+        Wait until the process ``process`` can produce ``num`` tokens. Then,
+        unblock the process.
+        :param process: the process that waits
+        :type process: RuntimeKpnProcess
+        :param num: number of free slots to wait for
+        :type num: int
+        """
         assert process.check_state(ProcessState.BLOCKED)
 
         self._log.debug('wait until %s can produce %d tokens', process.name,
@@ -147,6 +167,9 @@ class RuntimeChannel(object):
         :type process: RuntimeKpnProcess
         :param num: number of tokens to be consumed
         :type num: int
+        :returns: a simpy Event that is triggered after the consume operation
+            completed.
+        :rtype: simpy.events.Event
         """
         assert self.can_consume(process, num)
 
@@ -166,6 +189,16 @@ class RuntimeChannel(object):
         return self._env.timeout(10000)
 
     def produce(self, process, num):
+        """Produce tokens
+
+        :param process: the process that produces tokens
+        :type process: RuntimeKpnProcess
+        :param num: number of tokens to be produced
+        :type num: int
+        :returns: a simpy Event that is triggered after the produce operation
+            completed.
+        :rtype: simpy.events.Event
+        """
         assert self._src is process
 
         self._log.debug('starts a produce operation writing %d tokens.', num)
