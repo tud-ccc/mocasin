@@ -102,7 +102,7 @@ class RegexFilter(l.Filter):
 
 def setup(level, whitelist=None, blacklist=None, message_filer=None,
           use_color=True):
-    logger = l.getLogger('pykpn')
+    logger = l.getLogger('')
     logger.setLevel(level)
 
     handler = l.StreamHandler()
