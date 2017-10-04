@@ -297,6 +297,7 @@ class RuntimeKpnProcess(RuntimeProcess):
                 yield self._env.timeout(ticks)
 
             if segment.terminate:
+                self._log.debug('process terminates')
                 break
 
         self.finish()
