@@ -49,10 +49,14 @@ class RuntimeProcess(object):
         attribute is only valid in the ``RUNNING`` state.
     :type _processor: Processor
 
+    :ivar ready: An event that triggers on entering the ``READY`` state.
     :ivar running: An event that triggers on entering the ``RUNNING`` state.
     :ivar finished: An event that triggers on entering the ``FINISHED`` state.
+    :ivar blocked: An event that triggers on entering the ``BLOCKED`` state.
+    :type ready: :class:`simpy.events.Event`
     :type running: :class:`simpy.events.Event`
     :type finished: :class:`simpy.events.Event`
+    :type blocked: :class:`simpy.events.Event`
 
     State Machine
     =============
@@ -67,18 +71,22 @@ class RuntimeProcess(object):
     * :attr:`ready`:  Triggered on entering the ``READY`` state.
     * :attr:`running`:  Triggered on entering the ``RUNNING`` state.
     * :attr:`finished`: Triggered on entering the ``FINISHED`` state.
+    * :attr:`blocked`: Triggered on entering the ``BLOCKED`` state.
 
     Entry Actions
     -------------
     * :func:`_cb_ready`:  Callback of :attr:`ready`
     * :func:`_cb_running`:  Callback of :attr:`running`
     * :func:`_cb_finished`: Callback of :attr:`finished`
+    * :func:`_cb_blocked`: Callback of :attr:`blocked`
 
     Transitions
     -----------
     * :func:`start`:    Transition from ``NOT_STARTED`` to ``READY``
     * :func:`activate`: Transition from ``READY`` to ``RUNNING``
     * :func:`finish`:   Transition from ``RUNNING`` to ``FINISHED``
+    * :func:`block`:    Transition from ``RUNNING`` to ``BLOCKED``
+    * :func:`unblock`:  Transition from ``RUNNING`` to ``READY``
     """
 
     def __init__(self, name, env):
@@ -105,6 +113,8 @@ class RuntimeProcess(object):
         self.running.callbacks.append(self._cb_running)
         self.finished = self._env.event()
         self.finished.callbacks.append(self._cb_finished)
+        self.blocked = self._env.event()
+        self.blocked.callbacks.append(self._cb_blocked)
 
     def _transition(self, state_name):
         """Helper function for convenient state transitions.
@@ -176,6 +186,28 @@ class RuntimeProcess(object):
         self._processor = None
         self._transition('FINISHED')
 
+    def block(self):
+        """Block the process.
+
+        Interrupt the process execution by transitioning to the ``BLOCKED``
+        state.
+        """
+        assert(self._state == ProcessState.RUNNING)
+        self._log.debug('Process blocks')
+        self._processor = None
+        self._transition('BLOCKED')
+
+    def unblock(self):
+        """Unblock the process.
+
+        Mark the process as ready for execution by transitioning to the
+        ``READY`` state.
+        """
+        assert(self._state == ProcessState.BLOCKED)
+        self._log.debug('Process unblocks')
+        self._processor = None
+        self._transition('READY')
+
     def _cb_ready(self, event):
         """Callback invoked upon entering the ``READY`` state
 
@@ -204,6 +236,15 @@ class RuntimeProcess(object):
         assert(self._state == ProcessState.FINISHED)
         self._log.debug('Entered FINISHED state')
         # TODO do smth useful
+
+    def _cb_blocked(self, event):
+        """Callback invoked upon entering the ``BLOCKED`` state
+
+        Does not do anything useful yet
+        :param event: unused (only required to provide the callback interface)
+        """
+        assert(self._state == ProcessState.BLOCKED)
+        self._log.debug('Entered BLOCKED state')
 
     def workload(self):
         """Implements the functionality of this process
