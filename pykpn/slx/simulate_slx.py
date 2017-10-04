@@ -60,7 +60,7 @@ def main():
                 log.warn('The process %s did not finish its execution!',
                          p.name)
         if some_blocked:
-            log.error('The application %s is in a deadlocked!', app.name)
+            log.error('The application %s is deadlocked!', app.name)
 
 
 if __name__ == '__main__':
