@@ -11,15 +11,18 @@ from ..common import TraceSegment
 class SlxTraceReader(TraceGenerator):
     """A TraceGenerator that reads SLX trace files"""
 
-    def __init__(self, trace_dir):
+    def __init__(self, trace_dir, prefix):
         """Initialize the trace reader
 
         :param str trace_dir: path to the directory containing all trace files
+        :param str prefix: the prefix that is used for channel and process
+            names
         """
         self._trace_dir = trace_dir
 
         self._trace_files = {}
         self._processor_types = {}
+        self._prefix = prefix
 
     def next_segment(self, process_name, processor_type):
         """Return the next trace segment.
@@ -36,9 +39,10 @@ class SlxTraceReader(TraceGenerator):
         :returns: the next trace segment or None if there is none
         :rtype: TraceSegment or None
         """
+        assert process_name.startswith(self._prefix)
         if process_name not in self._trace_files:
             fh = open('%s/%s.%s.cpntrace' % (self._trace_dir,
-                                             process_name,
+                                             process_name[len(self._prefix):],
                                              processor_type))
             assert fh is not None
             self._trace_files[process_name] = fh
@@ -58,11 +62,11 @@ class SlxTraceReader(TraceGenerator):
             segment.processing_cycles = int(traceline[2])
         elif traceline[0] == 'r':
             segment.processing_cycles = int(traceline[4])
-            segment.read_from_channel = traceline[1]
+            segment.read_from_channel = self._prefix + traceline[1]
             segment.n_tokens = int(traceline[3])
         elif traceline[0] == 'w':
             segment.processing_cycles = int(traceline[3])
-            segment.write_to_channel = traceline[1]
+            segment.write_to_channel = self._prefix + traceline[1]
             segment.n_tokens = int(traceline[2])
         elif traceline[0] == 'e':
             segment.terminate = True

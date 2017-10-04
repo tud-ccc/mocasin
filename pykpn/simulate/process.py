@@ -227,13 +227,11 @@ class RuntimeKpnProcess(RuntimeProcess):
     :type _channels: dict[str, RuntimeChannel]
     :ivar _trace_generator: a trace generator object
     :type _trace_generator: TraceGenerator
-    :ivar _trace_name: process name to be used for the trace generator
-    :type _trace_name: str
     :ivar _start: an event that triggers the start of this process
     :type _start: simpy.events.Timeout
     """
 
-    def __init__(self, name, mapping_info, trace_generator, trace_name, env,
+    def __init__(self, name, mapping_info, trace_generator, env,
                  start_at_tick=0):
         """Initialize a kpn runtime process
 
@@ -244,8 +242,6 @@ class RuntimeKpnProcess(RuntimeProcess):
         :type mapping_info: ProcessMappingInfo
         :param trace_generator: a trace generator object
         :type trace_generator: TraceGenerator
-        :param trace_name: process name to be used for the trace generator
-        :type trace_name: str
         :param env: the simpy environment
         :type env: simpy.core.Environment
         :param start_at_tick: tick at which the process execution should start
@@ -257,7 +253,6 @@ class RuntimeKpnProcess(RuntimeProcess):
 
         self._channels = {}
         self._trace_generator = trace_generator
-        self._trace_name = trace_name
 
         self._start = env.timeout(start_at_tick)
         self._start.callbacks.append(self.start)
@@ -289,7 +284,7 @@ class RuntimeKpnProcess(RuntimeProcess):
 
         while True:
             segment = self._trace_generator.next_segment(
-                self._trace_name, self._processor.type)
+                self.name, self._processor.type)
             if segment.processing_cycles is not None:
                 cycles = segment.processing_cycles
                 self._log.debug('process for %d cycles', cycles)

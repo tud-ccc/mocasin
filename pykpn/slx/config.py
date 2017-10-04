@@ -49,7 +49,7 @@ class SlxConfig:
 
             trace_dir = os.path.join(conf[an]['trace'])
             assert os.path.isdir(trace_dir)
-            reader = SlxTraceReader(trace_dir)
+            reader = SlxTraceReader(trace_dir, '%s.' % (an))
 
             self.graphs[an] = graph
             self.mappings[an] = mapping
