@@ -124,13 +124,24 @@ class RuntimeChannel(object):
                         process.name, num)
 
         # wait until there are enough tokens available
+        blocked = False
         while True:
             if self._can_consume(process, num):
                 self._log.debug('consume successful')
                 break
             else:
                 self._log.debug('not enough tokens available')
+                if not blocked:
+                    blocked = True
+                    process.block()
                 yield self.tokens_produced
+
+        # If we blocked the process, we need to unblock it and wait until it is
+        # running again.
+        if blocked:
+            process.unblock()
+            yield process.running
+            self._log.debug('continue consume after process was blocked')
 
         # update the state
         new_state = self._fifo_state[process.name] - num
@@ -145,13 +156,24 @@ class RuntimeChannel(object):
                         process.name, num)
 
         # wait until there are enough tokens available
+        blocked = False
         while True:
             if self._can_produce(num):
                 self._log.debug('produce successful')
                 break
             else:
                 self._log.debug('not enough free slots available')
+                if not blocked:
+                    blocked = True
+                    process.block()
                 yield self.tokens_consumed
+
+        # If we blocked the process, we need to unblock it and wait until it is
+        # running again.
+        if blocked:
+            process.unblock()
+            yield process.running
+            self._log.debug('continue consume after process was blocked')
 
         # update the state
         for p in self._fifo_state:
