@@ -324,11 +324,19 @@ class RuntimeKpnProcess(RuntimeProcess):
         channel.set_src(self)
 
     def workload(self):
+        """Replay a KPN execution trace
+
+        This iterates over all segments in the execution trace and performs
+        actions as specified by the segments. By returning, the execution
+        terminates. However, this does not mean that it is actually complete. A
+        process may also return when it blocks. Then the execution is resumed
+        on the next call of this method.
+        """
 
         if self._current_segment is None:
             self._log.debug('start workload execution')
         else:
-            self._log.debug('continue workload execution')
+            self._log.debug('resume workload execution')
 
         while True:
             if self._current_segment is None:
