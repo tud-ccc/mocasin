@@ -49,6 +49,14 @@ def main():
     # Run the simulation
     system.simulate()
 
+    all_finished = True
+    for app in applications:
+        for p in app.processes():
+            log.warn('The process %s did not finish its execution!', p.name)
+            all_finished = False
+    if not all_finished:
+        log.warn('Unfinished processes indicate a deadlock!')
+
 
 if __name__ == '__main__':
     main()
