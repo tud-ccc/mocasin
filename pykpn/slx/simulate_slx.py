@@ -7,12 +7,13 @@
 
 
 import argparse
+
 import simpy
 
-from pykpn.simulate import RuntimeKpnApplication
-from pykpn.simulate import RuntimeSystem
-from pykpn.slx import SlxConfig
 import pykpn.common.logging as logging
+from pykpn.simulate import RuntimeKpnApplication, RuntimeSystem
+from pykpn.simulate.process import ProcessState
+from pykpn.slx import SlxConfig
 
 
 log = logging.getLogger(__name__)
@@ -49,13 +50,17 @@ def main():
     # Run the simulation
     system.simulate()
 
-    all_finished = True
     for app in applications:
+        some_blocked = False
         for p in app.processes():
-            log.warn('The process %s did not finish its execution!', p.name)
-            all_finished = False
-    if not all_finished:
-        log.warn('Unfinished processes indicate a deadlock!')
+            if p.check_state(ProcessState.BLOCKED):
+                log.error('The process %s is blocked', p.name)
+                some_blocked = True
+            elif not p.check_state(ProcessState.FINISHED):
+                log.warn('The process %s did not finish its execution!',
+                         p.name)
+        if some_blocked:
+            log.error('The application %s is in a deadlocked!', app.name)
 
 
 if __name__ == '__main__':
