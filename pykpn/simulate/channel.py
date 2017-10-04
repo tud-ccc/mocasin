@@ -7,6 +7,7 @@
 import logging
 
 from pykpn.simulate.adapter import SimulateLoggerAdapter
+from pykpn.simulate.process import ProcessState
 
 
 log = logging.getLogger(__name__)
@@ -81,7 +82,7 @@ class RuntimeChannel(object):
         self._sinks.append(process)
         self._fifo_state[process.name] = 0
 
-    def _can_consume(self, process, num):
+    def can_consume(self, process, num):
         """Check if a number of tokens can be consumed.
 
         Check if at least ``num`` tokens are stored in the FIFO for the sink
@@ -94,10 +95,10 @@ class RuntimeChannel(object):
         :returns: ``True`` if the process can consume ``num`` tokens
         :rtype: bool
         """
-        assert len(self._sinks) > 1
+        assert process in self._sinks
         return bool(self._fifo_state[process.name] >= num)
 
-    def _can_produce(self, num):
+    def can_produce(self, process, num):
         """Check if a number of tokens can be produced
 
         Check if all FIFO have at least ``num`` empty slots.
@@ -107,8 +108,37 @@ class RuntimeChannel(object):
         :returns: ``True`` if the process can consume ``num`` tokens
         :rtype: bool
         """
+        assert self._src is process
         return all([(self._fifo_state[p.name] + num) <= self._capacity
                     for p in self._sinks])
+
+    def wait_for_tokens(self, process, num):
+        assert process.check_state(ProcessState.BLOCKED)
+
+        self._log.debug('wait until %s can consume %d tokens', process.name,
+                        num)
+
+        while True:
+            yield self.tokens_produced
+            if self.can_consume(process, num):
+                break
+
+        self._log.debug('enough tokens available -> unblock %s', process.name)
+        process.unblock()
+
+    def wait_for_slots(self, process, num):
+        assert process.check_state(ProcessState.BLOCKED)
+
+        self._log.debug('wait until %s can produce %d tokens', process.name,
+                        num)
+
+        while True:
+            yield self.tokens_produced
+            if self.can_produce(process, num):
+                break
+
+        self._log.debug('enough slots available -> unblock %s', process.name)
+        process.unblock()
 
     def consume(self, process, num):
         """Consume tokens
@@ -118,30 +148,9 @@ class RuntimeChannel(object):
         :param num: number of tokens to be consumed
         :type num: int
         """
-        assert process in self._sinks
+        assert self.can_consume(process, num)
 
-        self._log.debug('%s starts a consume operation requesting %d tokens.',
-                        process.name, num)
-
-        # wait until there are enough tokens available
-        blocked = False
-        while True:
-            if self._can_consume(process, num):
-                self._log.debug('consume successful')
-                break
-            else:
-                self._log.debug('not enough tokens available')
-                if not blocked:
-                    blocked = True
-                    process.block()
-                yield self.tokens_produced
-
-        # If we blocked the process, we need to unblock it and wait until it is
-        # running again.
-        if blocked:
-            process.unblock()
-            yield process.running
-            self._log.debug('continue consume after process was blocked')
+        self._log.debug('start a consume operation reading %d tokens.', num)
 
         # update the state
         new_state = self._fifo_state[process.name] - num
@@ -153,31 +162,13 @@ class RuntimeChannel(object):
         self.tokens_consumed.succeed()
         self.tokens_consumed = self._env.event()
 
+        # TODO model the timing
+        return self._env.timeout(10000)
+
     def produce(self, process, num):
         assert self._src is process
 
-        self._log.debug('%s starts a produce operation writing %d tokens.',
-                        process.name, num)
-
-        # wait until there are enough tokens available
-        blocked = False
-        while True:
-            if self._can_produce(num):
-                self._log.debug('produce successful')
-                break
-            else:
-                self._log.debug('not enough free slots available')
-                if not blocked:
-                    blocked = True
-                    process.block()
-                yield self.tokens_consumed
-
-        # If we blocked the process, we need to unblock it and wait until it is
-        # running again.
-        if blocked:
-            process.unblock()
-            yield process.running
-            self._log.debug('continue consume after process was blocked')
+        self._log.debug('starts a produce operation writing %d tokens.', num)
 
         # update the state
         for p in self._fifo_state:
@@ -188,3 +179,6 @@ class RuntimeChannel(object):
         # notify waiting processes
         self.tokens_produced.succeed()
         self.tokens_produced = self._env.event()
+
+        # TODO model the timing
+        return self._env.timeout(10000)
