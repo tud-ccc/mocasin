@@ -285,12 +285,18 @@ class RuntimeKpnProcess(RuntimeProcess):
         while True:
             segment = self._trace_generator.next_segment(
                 self.name, self._processor.type)
+            segment.sanity_check()
             if segment.processing_cycles is not None:
                 cycles = segment.processing_cycles
                 self._log.debug('process for %d cycles', cycles)
                 ticks = self._processor.ticks(cycles)
                 yield self._env.timeout(ticks)
-
+            if segment.read_from_channel is not None:
+                c = self._channels[segment.read_from_channel]
+                yield self._env.process(c.consume(self, segment.n_tokens))
+            if segment.write_to_channel is not None:
+                c = self._channels[segment.write_to_channel]
+                yield self._env.process(c.produce(self, segment.n_tokens))
             if segment.terminate:
                 self._log.debug('process terminates')
                 break
