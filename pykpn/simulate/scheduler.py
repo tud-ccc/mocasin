@@ -61,6 +61,7 @@ class RuntimeScheduler(object):
         self._processes.append(process)
         process.ready.callbacks.append(self._cb_process_ready)
         process.finished.callbacks.append(self._cb_process_finished)
+        process.blocked.callbacks.append(self._cb_process_blocked)
 
     def _cb_process_ready(self, event):
         """Callback for the ready event of runtime processes
@@ -87,6 +88,20 @@ class RuntimeScheduler(object):
         if not isinstance(event.value, RuntimeProcess):
             raise ValueError('Expected a RuntimeProcess to be passed as value '
                              'of the triggering event!')
+        self.schedule()
+
+    def _cb_process_blocked(self, event):
+        """Callback for the blocked event of runtime processes
+
+        Call :func:`schedule`.
+        :param event: The event calling the callback. This function expects
+            ``event.value`` to be a valid RuntimeProcess object.
+        """
+        if not isinstance(event.value, RuntimeProcess):
+            raise ValueError('Expected a RuntimeProcess to be passed as value '
+                             'of the triggering event!')
+        process = event.value
+        process.blocked.callbacks.append(self._cb_process_blocked)
         self.schedule()
 
     def schedule(self):
@@ -140,6 +155,10 @@ class DummyScheduler(RuntimeScheduler):
             if (self._current_process is None or
                     self._current_process.check_state(ProcessState.FINISHED)):
                 self._current_process = self._ready_queue.pop(0)
+                self._log.debug('activate process %s',
+                                self._current_process.name)
+                self._current_process.activate(self._processor)
+            elif self._current_process.check_state(ProcessState.READY):
                 self._log.debug('activate process %s',
                                 self._current_process.name)
                 self._current_process.activate(self._processor)
