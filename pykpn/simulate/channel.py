@@ -153,7 +153,7 @@ class RuntimeChannel(object):
                         num)
 
         while True:
-            yield self.tokens_produced
+            yield self.tokens_consumed
             if self.can_produce(process, num):
                 break
 
