@@ -228,6 +228,46 @@ class DummyScheduler(RuntimeScheduler):
         return None
 
 
+class FifoScheduler(RuntimeScheduler):
+    """A FIFO Scheduler.
+
+    Always schedules the process that became ready first
+    """
+
+    def __init__(self, name, processor, context_switch_mode, scheduling_cycles,
+                 env):
+        """Initialize a FIFO scheduler
+
+        Calls :func:`RuntimeScheduler.__init__`.
+        """
+        super().__init__(name, processor, context_switch_mode,
+                         scheduling_cycles, env)
+
+    def schedule(self):
+        """Perform the scheduling.
+
+        Returns the next ready process or the current process if it is ready.
+        """
+        cp = self.current_process
+
+        if cp is None:
+            # Schedule next ready process if no process was loaded before
+            if len(self._ready_queue) > 0:
+                return self._ready_queue[0]
+        elif (cp.check_state(ProcessState.FINISHED) or
+              cp.check_state(ProcessState.BLOCKED)):
+            # Schedule next ready process if current process finished or is
+            # blocked
+            if len(self._ready_queue) > 0:
+                return self._ready_queue[0]
+        elif cp.check_state(ProcessState.READY):
+            # Schedule the current process if it became ready again
+            return cp
+
+        # sleep otherwise
+        return None
+
+
 def create_scheduler(platform_scheduler, policy, param, env):
     if len(platform_scheduler.processors) > 1:
         raise RuntimeError("Multiprocessor scheduling is not supported")
@@ -239,22 +279,20 @@ def create_scheduler(platform_scheduler, policy, param, env):
                            policy.scheduling_cycles,
                            env)
     if policy.name == 'FIFO':
-        # TODO Actually implement FIFO
-        log.warn('FIFO scheduler is not yet implemented -> Fall back to Dummy')
-        s = DummyScheduler(platform_scheduler.name,
-                           platform_scheduler.processors[0],
-                           ContextSwitchMode.NEVER,
-                           policy.scheduling_cycles,
-                           env)
+        s = FifoScheduler(platform_scheduler.name,
+                          platform_scheduler.processors[0],
+                          ContextSwitchMode.NEVER,
+                          policy.scheduling_cycles,
+                          env)
     elif policy.name == 'RoundRobin':
         # TODO Actually implement RoundRobin
         log.warn('RoundRobin scheduler is not yet implemented -> Fall back to '
-                 'Dummy')
-        s = DummyScheduler(platform_scheduler.name,
-                           platform_scheduler.processors[0],
-                           ContextSwitchMode.NEVER,
-                           policy.scheduling_cycles,
-                           env)
+                 'FIFO')
+        s = FifoScheduler(platform_scheduler.name,
+                          platform_scheduler.processors[0],
+                          ContextSwitchMode.NEVER,
+                          policy.scheduling_cycles,
+                          env)
     else:
         raise NotImplementedError(
             'The simulation module does not implement the %s scheduling '
