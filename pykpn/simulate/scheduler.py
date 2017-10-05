@@ -114,7 +114,6 @@ class RuntimeScheduler(object):
         process = event.value
         self._ready_queue.append(event.value)
         process.ready.callbacks.append(self._cb_process_ready)
-        self.schedule()
 
     def schedule(self):
         """Perform the scheduling.
@@ -168,6 +167,7 @@ class RuntimeScheduler(object):
 
                 # activate the process
                 self.current_process = np
+                self._ready_queue.remove(np)
                 np.activate(self._processor)
                 # wait until the process stops its execution
                 yield self._env.any_of([np.blocked, np.finished])
