@@ -3,14 +3,31 @@
 #
 # Authors: Christian Menard
 
+import logging
+from enum import Enum
 
-from .adapter import SimulateLoggerAdapter
-from .process import RuntimeProcess
-from .process import ProcessState
-from ..common import logging
+from pykpn.simulate.adapter import SimulateLoggerAdapter
+from pykpn.simulate.process import ProcessState, RuntimeProcess
 
 
 log = logging.getLogger(__name__)
+
+
+class ContextSwitchMode(Enum):
+    """Indicates when a scheduler should perform a context switch
+
+    :cvar int ALWAYS: Always perform a context switch. Process blocks/finishes
+        -> store context -> schedule -> load context -> activate process
+    :cvar int AFTER_SCHEDULING: Only perform a context switch when the
+        scheduler decides to load another process. Process blocks/finishes ->
+        schedule -> (store context -> load context) -> activate process)
+    :cvar int NEVER: Never perform a context switch. For instance, this is
+        useful to model protothreads. Process blocks/finishes -> schedule ->
+        activate process
+    """
+    ALWAYS = 0
+    AFTER_SCHEDULING = 1
+    NEVER = 2
 
 
 class RuntimeScheduler(object):
@@ -20,6 +37,12 @@ class RuntimeScheduler(object):
     functionality. Derived subclasses implement the actual scheduling policies.
 
     :ivar str name: the scheduler name
+    :ivar _processor: the processor managed by this scheduler
+    :type _processor: Processor
+    :ivar _context_switch_mode: the mode to be used for context switches
+    :type _context_switch_mode: ContextSwitchMode
+    :ivar int _scheduling_cycles: number of cycles required to reach a
+        scheduling decision
     :ivar _env: the simpy environment
     :ivar _log: an logger adapter to print messages with simulation context
     :type _log: SimulateLoggerAdapter
@@ -29,39 +52,54 @@ class RuntimeScheduler(object):
         the front of the list became ready earlier than the processes at the
         end.
     :type _ready_queue: list[RuntimeProcess]
+    :ivar current_process: the process that is currently executed
+    :type current_process: RuntimeProcess
     """
 
-    def __init__(self, name, env):
+    def __init__(self, name, processor, context_switch_mode, scheduling_cycles,
+                 env):
         """Initialize a runtime scheduler.
 
-        :param platform_scheduler: scheduler object as defined by the platform
-        :type platform_scheduler: Scheduler
+        :param str name: the scheduler name
+        :param processor: the processor managed by this scheduler
+        :type processor: Processor
+        :param context_switch_mode: the mode to be used for context switches
+        :type context_switch_mode: ContextSwitchMode
+        :param int scheduling_cycles: number of cycles required to reach a
+            scheduling decision
         :param env: the simpy environment
         """
-        self.name = name
+        log.debug('Initialize new scheduler (%s)', name)
 
+        self.name = name
+        self._processor = processor
+        self._context_switch_mode = context_switch_mode
+        self._scheduling_cycles = scheduling_cycles
         self._env = env
-        self._log = SimulateLoggerAdapter(log, name, env)
+
+        self._log = SimulateLoggerAdapter(log, self.name, env)
 
         self._processes = []
         self._ready_queue = []
+
+        self.current_process = None
 
     def add_process(self, process):
         """Add a process to this scheduler.
 
         Append the process to the :attr:`_processes` list and register all
-        required event callbacks
+        required event callbacks. This may not be called after the simulation
+        started.
         :param process: the process to be added
         :type process: RuntimeProcess
         """
+        assert self._env.now == 0
         self._log.debug('add process %s', process.name)
         if not process.check_state(ProcessState.NOT_STARTED):
             raise RuntimeError('Processes that are already started cannot be '
                                'added to a scheduler')
         self._processes.append(process)
         process.ready.callbacks.append(self._cb_process_ready)
-        process.finished.callbacks.append(self._cb_process_finished)
-        process.blocked.callbacks.append(self._cb_process_blocked)
 
     def _cb_process_ready(self, event):
         """Callback for the ready event of runtime processes
@@ -78,38 +116,73 @@ class RuntimeScheduler(object):
         process.ready.callbacks.append(self._cb_process_ready)
         self.schedule()
 
-    def _cb_process_finished(self, event):
-        """Callback for the finished event of runtime processes
-
-        Call :func:`schedule`.
-        :param event: The event calling the callback. This function expects
-            ``event.value`` to be a valid RuntimeProcess object.
-        """
-        if not isinstance(event.value, RuntimeProcess):
-            raise ValueError('Expected a RuntimeProcess to be passed as value '
-                             'of the triggering event!')
-        self.schedule()
-
-    def _cb_process_blocked(self, event):
-        """Callback for the blocked event of runtime processes
-
-        Call :func:`schedule`.
-        :param event: The event calling the callback. This function expects
-            ``event.value`` to be a valid RuntimeProcess object.
-        """
-        if not isinstance(event.value, RuntimeProcess):
-            raise ValueError('Expected a RuntimeProcess to be passed as value '
-                             'of the triggering event!')
-        process = event.value
-        process.blocked.callbacks.append(self._cb_process_blocked)
-        self.schedule()
-
     def schedule(self):
         """Perform the scheduling.
 
-        Do nothing. This should be overridden by subclasses.
+        This should return the next process and the time (in ticks) taken to
+        reach the decision.
+
+        :raises: NotImplementedError
+        :rtype: (RuntimeKpnProcess, int)
         """
-        pass
+        raise NotImplementedError(
+            'This method needs to be overridden by a subclass')
+
+    def run(self):
+        log = self._log
+
+        log.debug('scheduler starts')
+
+        if len(self._processes) == 0:
+            log.debug('Scheduler has no assigned processes -> terminate')
+            return
+
+        while True:
+            log.debug('run scheduling algorithm')
+
+            cp = self.current_process
+            np = self.schedule()
+
+            # Found a process to be scheduled?
+            if np is not None:
+                # pay for the scheduling delay
+                ticks = self._processor.ticks(self._scheduling_cycles)
+                yield self._env.timeout(ticks)
+
+                log.debug('schedule process %s next', np.name)
+
+                # pay for context switching
+                mode = self._context_switch_mode
+                if mode == ContextSwitchMode.ALWAYS:
+                    log.debug('load context of process %s', np.name)
+                    ticks = self._processor.context_load_ticks()
+                    yield self._env.timeout(ticks)
+                elif (mode == ContextSwitchMode.AFTER_SCHEDULING and
+                      np is not self.current_process):
+                    log.debug('store the context of process %s', cp.name)
+                    ticks = self._processor.context_store_ticks()
+                    yield self._env.timeout(ticks)
+                    log.debug('load context of process %s', np.name)
+                    ticks = self._processor.context_load_ticks()
+                    yield self._env.timeout(ticks)
+
+                # activate the process
+                self.current_process = np
+                np.activate(self._processor)
+                # wait until the process stops its execution
+                yield self._env.any_of([np.blocked, np.finished])
+
+                # pay for context switching
+                if self._context_switch_mode == ContextSwitchMode.ALWAYS:
+                    self._log.debug('store the context of process %s', np.name)
+                    yield self._env.timeout(
+                        self._processor.context_store_ticks())
+            else:
+                # Wait for ready events if the scheduling algorithm did not
+                # find a process that is ready for execution
+                self._log.debug('There is no ready process -> sleep')
+                ready_events = [p.ready for p in self._processes]
+                yield self._env.any_of(ready_events)
 
 
 class DummyScheduler(RuntimeScheduler):
@@ -119,62 +192,69 @@ class DummyScheduler(RuntimeScheduler):
     when there is no scheduler in the platform. This scheduler simply runs all
     processes sequentially. It always waits until the current process finishes
     before starting a new one.
-
-    :ivar _processor: the processor managed by this scheduler
-    :type _processor: Processor
-    :ivar _current_process: the process that is currently executed
-    :type _current_process: RuntimeProcess
     """
 
-    def __init__(self, platform_scheduler, env):
-        """Initialize a runtime scheduler.
+    def __init__(self, name, processor, context_switch_mode, scheduling_cycles,
+                 env):
+        """Initialize a dummy scheduler
 
-        :param platform_scheduler: scheduler object as defined by the platform
-        :type platform_scheduler: Scheduler
-        :param env: the simpy environment
+        Calls :func:`RuntimeScheduler.__init__`.
         """
-        super().__init__(platform_scheduler.name, env)
-        log.debug('Initialize new FIFO scheduler (%s)' % self.name)
-
-        # TODO implement multi-processor scheduling
-        if len(platform_scheduler.processors) > 1:
-            raise RuntimeError(
-                'Multi-processor scheduling is not yet supported!')
-        self._processor = platform_scheduler.processors[0]
-
-        self._current_process = None
+        super().__init__(name, processor, context_switch_mode,
+                         scheduling_cycles, env)
 
     def schedule(self):
         """Perform the scheduling.
 
-        Activate the next process from the ready queue if the current process
-        is finished or no process is currently being executed.
+        Returns the next process from the ready queue if the current process is
+        finished or no process is currently being executed. Returns the
+        current_process if it is ready. Returns None in all other cases.
         """
-        self._log.debug('scheduler runs')
-        if len(self._ready_queue) > 0:
-            if (self._current_process is None or
-                    self._current_process.check_state(ProcessState.FINISHED)):
-                self._current_process = self._ready_queue.pop(0)
-                self._log.debug('activate process %s',
-                                self._current_process.name)
-                self._current_process.activate(self._processor)
-            elif self._current_process.check_state(ProcessState.READY):
-                self._log.debug('activate process %s',
-                                self._current_process.name)
-                self._current_process.activate(self._processor)
-        else:
-            self._log.debug('nothing to do')
+        cp = self.current_process
+
+        if cp is None:
+            # Schedule next ready process if no process was loaded before
+            if len(self._ready_queue) > 0:
+                return self._ready_queue[0]
+        elif cp.check_state(ProcessState.FINISHED):
+            # Schedule next ready process if current process finished
+            if len(self._ready_queue) > 0:
+                return self._ready_queue[0]
+        elif cp.check_state(ProcessState.READY):
+            # Schedule the current process if it became ready again
+            return cp
+
+        # sleep otherwise
+        return None
 
 
 def create_scheduler(platform_scheduler, policy, param, env):
+    if len(platform_scheduler.processors) > 1:
+        raise RuntimeError("Multiprocessor scheduling is not supported")
+
     if policy.name == 'Dummy':
-        s = DummyScheduler(platform_scheduler, env)
+        s = DummyScheduler(platform_scheduler.name,
+                           platform_scheduler.processors[0],
+                           ContextSwitchMode.NEVER,
+                           policy.scheduling_cycles,
+                           env)
     if policy.name == 'FIFO':
         # TODO Actually implement FIFO
-        s = DummyScheduler(platform_scheduler, env)
+        log.warn('FIFO scheduler is not yet implemented -> Fall back to Dummy')
+        s = DummyScheduler(platform_scheduler.name,
+                           platform_scheduler.processors[0],
+                           ContextSwitchMode.NEVER,
+                           policy.scheduling_cycles,
+                           env)
     elif policy.name == 'RoundRobin':
         # TODO Actually implement RoundRobin
-        s = DummyScheduler(platform_scheduler, env)
+        log.warn('RoundRobin scheduler is not yet implemented -> Fall back to '
+                 'Dummy')
+        s = DummyScheduler(platform_scheduler.name,
+                           platform_scheduler.processors[0],
+                           ContextSwitchMode.NEVER,
+                           policy.scheduling_cycles,
+                           env)
     else:
         raise NotImplementedError(
             'The simulation module does not implement the %s scheduling '

@@ -106,6 +106,9 @@ class RuntimeSystem:
         log.info('Start the simulation')
         start = timeit.default_timer()
 
+        for s in self._schedulers:
+            self._env.process(s.run())
+
         self._env.run()
 
         stop = timeit.default_timer()
