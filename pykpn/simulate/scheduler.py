@@ -158,9 +158,10 @@ class RuntimeScheduler(object):
                     yield self._env.timeout(ticks)
                 elif (mode == ContextSwitchMode.AFTER_SCHEDULING and
                       np is not self.current_process):
-                    log.debug('store the context of process %s', cp.name)
-                    ticks = self._processor.context_store_ticks()
-                    yield self._env.timeout(ticks)
+                    if cp is not None:
+                        log.debug('store the context of process %s', cp.name)
+                        ticks = self._processor.context_store_ticks()
+                        yield self._env.timeout(ticks)
                     log.debug('load context of process %s', np.name)
                     ticks = self._processor.context_load_ticks()
                     yield self._env.timeout(ticks)
