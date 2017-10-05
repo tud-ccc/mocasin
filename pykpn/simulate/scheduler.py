@@ -281,7 +281,7 @@ def create_scheduler(platform_scheduler, policy, param, env):
     if policy.name == 'FIFO':
         s = FifoScheduler(platform_scheduler.name,
                           platform_scheduler.processors[0],
-                          ContextSwitchMode.NEVER,
+                          ContextSwitchMode.AFTER_SCHEDULING,
                           policy.scheduling_cycles,
                           env)
     elif policy.name == 'RoundRobin':
@@ -290,7 +290,7 @@ def create_scheduler(platform_scheduler, policy, param, env):
                  'FIFO')
         s = FifoScheduler(platform_scheduler.name,
                           platform_scheduler.processors[0],
-                          ContextSwitchMode.NEVER,
+                          ContextSwitchMode.AFTER_SCHEDULING,
                           policy.scheduling_cycles,
                           env)
     else:
