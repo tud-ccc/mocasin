@@ -86,7 +86,7 @@ class RuntimeProcess(object):
     * :func:`activate`: Transition from ``READY`` to ``RUNNING``
     * :func:`finish`:   Transition from ``RUNNING`` to ``FINISHED``
     * :func:`block`:    Transition from ``RUNNING`` to ``BLOCKED``
-    * :func:`unblock`:  Transition from ``RUNNING`` to ``READY``
+    * :func:`unblock`:  Transition from ``BLOCKED`` to ``READY``
     """
 
     def __init__(self, name, env):
