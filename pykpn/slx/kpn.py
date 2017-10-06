@@ -29,7 +29,7 @@ class SlxKpnGraph(KpnGraph):
             log.debug(''.join([
                 'Found the channel ', name, ' with a token size of ',
                 str(token_size), ' bytes']))
-            self.channels.append(KpnChannel(name, token_size))
+            self.add_channel(KpnChannel(name, token_size))
 
         for process in xmlroot.iter('PNprocess'):
             name = process.find('Name').text
@@ -46,11 +46,11 @@ class SlxKpnGraph(KpnGraph):
             log.debug('and writes to the channels ' + str(outgoing))
 
             kpn_process = KpnProcess(name)
-            self.processes.append(kpn_process)
+            self.add_process(kpn_process)
 
             for cn in outgoing:
                 channel = None
-                for c in self.channels:
+                for c in self.channels.values():
                     if cn == c.name:
                         channel = c
                         break
@@ -59,7 +59,7 @@ class SlxKpnGraph(KpnGraph):
 
             for cn in incoming:
                 channel = None
-                for c in self.channels:
+                for c in self.channels.values():
                     if cn == c.name:
                         channel = c
                         break
