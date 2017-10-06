@@ -133,66 +133,35 @@ class CommunicationPhase:
 
 
 class Primitive:
-    '''
-    Represents a communication primitive.
+    """Represents a communication primitive
 
-    A communication primitive defines how a process running on a processor
-    (from_) sends data tokens to a process running on a processor (to). Since
-    multiple primitives may be defined for each combination of from_ and to, a
-    type attribute distinguishes different kinds of primitives.
+    A communication primitive defines how a producer processor may send data
+    tokens to a consumer processor. This class defines a list of communication
+    phases for each producer and consumer of the primitive. The phases specify
+    how exactly tokens are produced or consumed. Only processors that are known
+    to the primitive may communicate using this primitive.
+    """
 
-    The communication is modeled as two lists of CommunicationPhases, one
-    for producing tokens and one for consuming tokens. Passive communication,
-    e.g., using a DMA unit is not (yet) supported.
-    '''
+    def __init__(self, name):
+        self.name = name
+        self.consume_phases = {}
+        self.produce_phases = {}
+        self.consumers = []
+        self.producers = []
 
-    def __init__(self, type, from_, to):
-        self.type = type
-        self.from_ = from_
-        self.to = to
-        self.consume = []
-        self.produce = []
+    def add_consumer(self, sink, phases):
+        if sink.name in self.consume_phases:
+            raise RuntimeError('Primitive already has a consumer %s' %
+                               sink.name)
+        self.consume_phases[sink.name] = phases
+        self.consumers.append(sink)
 
-    def __str__(self):
-        return '%s: %s -> %s' % (self.type, self.from_, self.to)
-
-    def __repr__(self):
-        return self.__str__()
-
-
-class PrimitiveGroup:
-    """Groups communication primitives of the same type"""
-
-    def __init__(self, type, primitives=None):
-        self.type = type
-        self._primitives = {}
-        self._sources = set()
-        self._sinks = set()
-        if primitives is not None:
-            for p in primitives:
-                self.add_primitive(p)
-
-    def get_primitive(self, from_, to):
-        return self._primitives[from_._name][to._name]
-
-    def add_primitive(self, primitive):
-        assert self.type == primitive.type
-        from_name = primitive.from_.name
-        to_name = primitive.to.name
-        if from_name not in self._primitives:
-            self._primitives[from_name] = {}
-        if to_name in self._primitives[from_name]:
-            raise RuntimeError('Group already contains the primitive %s' %
-                               (str(primitive)))
-        self._primitives[from_name][to_name] = primitive
-        self._sources.add(primitive.from_)
-        self._sinks.add(primitive.to)
-
-    def sources(self):
-        return self._sources
-
-    def sinks(self):
-        return self._sinks
+    def add_producer(self, src, phases):
+        if src.name in self.produce_phases:
+            raise RuntimeError('Primitive already has a producer %s' %
+                               src.name)
+        self.produce_phases[src.name] = phases
+        self.producers.append(src)
 
 
 class SchedulingPolicy:
@@ -277,7 +246,7 @@ class Platform(object):
         """
         self.processors = []               #: list of processors
         self.communication_resources = []  #: list of communication resources
-        self.primitive_groups = []  #: list of communication primitive groups
+        self.primitives = []               #: list of communication primitives
         self.schedulers = []               #: list of schedulers
 
     def find_scheduler(self, name, throw=False):
@@ -336,11 +305,10 @@ class Platform(object):
                                'the platform!', name)
         return None
 
-    def find_primitive_group(self, type, throw=False):
+    def find_primitive(self, name, throw=False):
         """Search for a communication primitive group.
 
-        :param str type: type of the communication primitive group to be
-                         searched for
+        :param str name: name of the communication primitive to be searched for
         :param bool throw: raise a RuntimeError if no object is
                            found (default: False)
 
@@ -349,12 +317,12 @@ class Platform(object):
         :returns: A communication primitive group object or None if no
                   group was found.
         """
-        for pg in self.primitive_groups:
-            if pg.type == type:
-                return pg
+        for p in self.primitives:
+            if p.name == name:
+                return p
         if throw:
             raise RuntimeError('The primitive group %s is not part of the '
-                               'platform!' % (type))
+                               'platform!' % (name))
         return None
 
     def to_pydot(self):
@@ -377,16 +345,16 @@ class Platform(object):
                 cluster.add_node(node)
 
         primitive_nodes = {}
-        for pg in self.primitive_groups:
-            if pg.type in primitive_nodes:
-                node = primitive_nodes[pg.type]
+        for p in self.primitives:
+            if p.name in primitive_nodes:
+                node = primitive_nodes[p.name]
             else:
-                node = pydot.Node('primitive_' + pg.type, label=pg.type)
+                node = pydot.Node('primitive_' + p.name, label=p.name)
                 dot.add_node(node)
-            for x in pg.sources():
+            for x in p.producers:
                 from_node = processor_nodes[x.name]
                 dot.add_edge(pydot.Edge(from_node, node, minlen=4))
-            for x in pg.sinks():
+            for x in p.consumers:
                 to_node = processor_nodes[x.name]
                 dot.add_edge(pydot.Edge(node, to_node, minlen=4))
 
