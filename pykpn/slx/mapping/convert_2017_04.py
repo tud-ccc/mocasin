@@ -23,7 +23,7 @@ def convert(mapping, xml_mapping):
     # parse schedulers
     for xs in xml_mapping.get_Scheduler():
         name = xs.get_id()
-        scheduler = platform.find_scheduler(name, True)
+        scheduler = platform.find_scheduler(name)
         policy = scheduler.find_policy(xs.get_policy())
         param = get_value_in_unit(xs, 'timeSlice', 'ps', None)
         processes = []

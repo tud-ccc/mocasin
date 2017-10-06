@@ -105,7 +105,7 @@ def convert(platform, xml_platform):
         context_store = get_value_in_cycles(xp, 'contextStore', 0)
         p = Processor(name, type, fd, context_load, context_store)
         schedulers_to_processors[xp.get_scheduler()].append(p)
-        platform.processors.append(p)
+        platform.add_processor(p)
         log.debug('Found processor %s of type %s', name, type)
 
     # Initialize all Schedulers
@@ -116,7 +116,7 @@ def convert(platform, xml_platform):
         s = Scheduler(name, schedulers_to_processors[name], policies)
         log.debug('Found scheduler %s for %s supporting %s',
                   name, schedulers_to_processors[name], policies)
-        platform.schedulers.append(s)
+        platform.add_scheduler(s)
 
     # Initialize all Memories, Caches, and Fifos as CommunicationResources
     for xm in xml_platform.get_Memory():
@@ -130,7 +130,7 @@ def convert(platform, xml_platform):
         fd = frequency_domains[xm.get_frequencyDomain()]
         mem = Storage(name, fd, read_latency, write_latency,
                       read_throughput, write_throughput)
-        platform.communication_resources.append(mem)
+        platform.add_communication_resource(mem)
         log.debug('Found memory %s', name)
 
     for xc in xml_platform.get_Cache():
@@ -145,7 +145,7 @@ def convert(platform, xml_platform):
         fd = frequency_domains[xc.get_frequencyDomain()]
         cache = Storage(name, fd, read_latency, write_latency,
                         read_throughput, write_throughput)
-        platform.communication_resources.append(cache)
+        platform.add_communication_resource(cache)
         log.debug('Found cache %s', name)
 
     for xf in xml_platform.get_Fifo():
@@ -159,7 +159,7 @@ def convert(platform, xml_platform):
         fd = frequency_domains[xf.get_frequencyDomain()]
         fifo = Storage(name, fd, read_latency, write_latency,
                        read_throughput, write_throughput)
-        platform.communication_resources.append(fifo)
+        platform.add_communication_resource(fifo)
         log.debug('Found FIFO %s', name)
 
     # We also need to collect all the physical links, logical links and dma
@@ -174,7 +174,7 @@ def convert(platform, xml_platform):
         fd = frequency_domains[ll.get_frequencyDomain()]
         link = CommunicationResource(name, fd, latency, latency, throughput,
                                      throughput)
-        platform.communication_resources.append(link)
+        platform.add_communication_resource(link)
         log.debug('Found link or DMA %s', name)
 
     # Initialize all Communication Primitives
@@ -227,7 +227,7 @@ def convert(platform, xml_platform):
         log.debug('Found the communication primitive %s: %s -> %s' %
                   (name, str(producers.keys()), str(consumers.keys())))
 
-        platform.primitives.append(primitive)
+        platform.add_primitive(primitive)
 
 
 def find_resource(platform, id):
