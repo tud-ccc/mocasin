@@ -68,7 +68,7 @@ class Mapping:
             self._process_info[p.name] = None
         for c in kpn.channels:
             self._channel_info[c.name] = None
-        for s in platform.schedulers:
+        for s in platform.schedulers.values():
             self._scheduler_info[s.name] = None
 
     def channel_info(self, channel):
@@ -109,7 +109,7 @@ class Mapping:
         dot = pydot.Dot(graph_type='digraph')
 
         processor_clusters = {}
-        for s in self._platform.schedulers:
+        for s in self._platform.schedulers.values():
             cluster = pydot.Cluster('scheduler_' + s.name, label=s.name)
             dot.add_subgraph(cluster)
             for p in s.processors:
@@ -120,7 +120,7 @@ class Mapping:
                 cluster.add_subgraph(p_cluster)
 
         primitive_nodes = {}
-        for p in self._platform.primitives:
+        for p in self._platform.primitives.values():
             if p.name not in primitive_nodes:
                 node = pydot.Node('primitive_' + p.name, label=p.name)
                 dot.add_node(node)

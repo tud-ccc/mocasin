@@ -241,89 +241,54 @@ class Platform(object):
     def __init__(self):
         """Initialize the platform.
 
-        This initializes all attributes to empty lists. Derived classes should
-        fill these lists with objects in order to build a real platform.
+        This initializes all attributes to empty dicts. Derived classes should
+        fill these dicts with objects in order to build a real platform.
         """
-        self.processors = []               #: list of processors
-        self.communication_resources = []  #: list of communication resources
-        self.primitives = []               #: list of communication primitives
-        self.schedulers = []               #: list of schedulers
+        self.processors = {}               #: dict of processors
+        self.communication_resources = {}  #: dict of communication resources
+        self.primitives = {}               #: dict of communication primitives
+        self.schedulers = {}               #: dict of schedulers
 
-    def find_scheduler(self, name, throw=False):
-        """Search for a scheduler object by its name.
-
-        :param str name: name of the scheduler to be searched for
-        :param bool throw: raise a RuntimeError if no object is
-                           found (default: False)
-
-        :raises RuntimeError: if no scheduler was found and throw is True
-        :returns: A scheduler object or None if no scheduler was found.
-        """
-        for s in self.schedulers:
-            if s.name == name:
-                return s
-        if throw:
-            raise RuntimeError('The scheduler %s is not part of the platform!',
-                               name)
-        return None
+    def find_scheduler(self, name):
+        """Search for a scheduler object by its name."""
+        return self.schedulers[name]
 
     def find_processor(self, name, throw=False):
-        """Search for a processor object by its name.
-
-        :param str name: name of the processor to be searched for
-        :param bool throw: raise a RuntimeError if no object is
-                           found (default: False)
-
-        :raises RuntimeError: if no processor was found and throw is True
-        :returns: A processor object or None if no processor was found.
-        """
-        for p in self.processors:
-            if p.name == name:
-                return p
-        if throw:
-            raise RuntimeError('The processor %s is not part of the platform!',
-                               name)
-        return None
+        """Search for a processor object by its name."""
+        return self.processors[name]
 
     def find_communication_resource(self, name, throw=False):
-        """Search for a communication resource object by its name.
-
-        :param str name: name of the communication resource to be searched for
-        :param bool throw: raise a RuntimeError if no object is
-                           found (default: False)
-
-        :raises RuntimeError: if no communication resource was found and throw
-                              is True
-        :returns: A communication resource object or None if no communication
-                  resource was found.
-        """
-        for s in self.communication_resources:
-            if s.name == name:
-                return s
-        if throw:
-            raise RuntimeError('The communication resource %s is not part of ',
-                               'the platform!', name)
-        return None
+        """Search for a communication resource object by its name."""
+        return self.communication_resources[name]
 
     def find_primitive(self, name, throw=False):
-        """Search for a communication primitive group.
+        """Search for a communication primitive group."""
+        return self.primitives[name]
 
-        :param str name: name of the communication primitive to be searched for
-        :param bool throw: raise a RuntimeError if no object is
-                           found (default: False)
+    def add_scheduler(self, x):
+        if x.name in self.schedulers:
+            raise RuntimeError(
+                'Scheduler %s was already added to the platform' % (x.name))
+        self.schedulers[x.name] = x
 
-        :raises RuntimeError: if no communication primitive was found and throw
-                              is True
-        :returns: A communication primitive group object or None if no
-                  group was found.
-        """
-        for p in self.primitives:
-            if p.name == name:
-                return p
-        if throw:
-            raise RuntimeError('The primitive group %s is not part of the '
-                               'platform!' % (name))
-        return None
+    def add_processor(self, x):
+        if x.name in self.processors:
+            raise RuntimeError(
+                'Processor %s was already added to the platform' % (x.name))
+        self.processors[x.name] = x
+
+    def add_communication_resource(self, x):
+        if x.name in self.communication_resources:
+            raise RuntimeError(
+                'Communication_Resource %s was already added to the platform' %
+                (x.name))
+        self.communication_resources[x.name] = x
+
+    def add_primitive(self, x):
+        if x.name in self.primitives:
+            raise RuntimeError(
+                'Primitive %s was already added to the platform' % (x.name))
+        self.primitives[x.name] = x
 
     def to_pydot(self):
         """
@@ -335,7 +300,7 @@ class Platform(object):
         dot = pydot.Dot(graph_type='digraph', strict=True)
 
         processor_nodes = {}
-        for s in self.schedulers:
+        for s in self.schedulers.values():
             cluster = pydot.Cluster('scheduler_' + s.name, label=s.name)
             dot.add_subgraph(cluster)
             for p in s.processors:
@@ -345,7 +310,7 @@ class Platform(object):
                 cluster.add_node(node)
 
         primitive_nodes = {}
-        for p in self.primitives:
+        for p in self.primitives.values():
             if p.name in primitive_nodes:
                 node = primitive_nodes[p.name]
             else:
