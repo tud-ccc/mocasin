@@ -81,50 +81,36 @@ class KpnChannel(object):
 class KpnGraph(object):
     """Represents the DAG of a KPN application.
 
-    :ivar processes: a list of KPN processes representing the graph's nodes
-    :type processes: list[KpnProcess]
-    :ivar channels: a list of KPN channels representing the graph's edges
-    :type channels: list[KpnChannel]
+    :ivar processes: a dict of KPN processes representing the graph's nodes
+    :type processes: dict[str, KpnProcess]
+    :ivar channels: a dict of KPN channels representing the graph's edges
+    :type channels: dict[str, KpnChannel]
     """
 
     def __init__(self):
         """Create an empty graph"""
-        self.processes = []
-        self.channels = []
+        self.processes = {}
+        self.channels = {}
 
-    def find_process(self, name, throw=False):
-        """Search for a KPN process by its name.
-
-        :param str name: name of the process to be searched for
-        :param bool throw: raise a RuntimeError if no process is
-                           found (default: False)
-
-        :raises RuntimeError: if no process was found and throw is True
-        :returns: A KPN process object or None if no process was found.
-        """
-        for p in self.processes:
-            if p.name == name:
-                return p
-        if throw:
-            raise RuntimeError('The process %s is not part of the graph', name)
-        return None
+    def find_process(self, name):
+        """Search for a KPN process by its name."""
+        return self.processes[name]
 
     def find_channel(self, name, throw=False):
-        """Search for a KPN channel by its name.
+        """Search for a KPN channel by its name."""
+        return self.channels[name]
 
-        :param str name: name of the channel to be searched for
-        :param bool throw: raise a RuntimeError if no channel is
-                           found (default: False)
+    def add_process(self, x):
+        if x.name in self.processes:
+            raise RuntimeError(
+                'Process %s was already added to the graph' % (x.name))
+        self.processes[x.name] = x
 
-        :raises RuntimeError: if no channel was found and throw is True
-        :returns: A KPN channel object or None if no channel was found.
-        """
-        for c in self.channels:
-            if c.name == name:
-                return c
-        if throw:
-            raise RuntimeError('The channel %s is not part of the graph', name)
-        return None
+    def add_channel(self, x):
+        if x.name in self.channels:
+            raise RuntimeError(
+                'Channel %s was already added to the graph' % (x.name))
+        self.channels[x.name] = x
 
     def to_pydot(self):
         """Convert the KPN graph to a dot graph."""
@@ -132,12 +118,12 @@ class KpnGraph(object):
 
         process_nodes = {}
 
-        for p in self.processes:
-            node = pydot.Node('process_' + p.name, label=p.name)
-            process_nodes[p.name] = node
+        for p in self.processes.keys():
+            node = pydot.Node('process_' + p, label=p)
+            process_nodes[p] = node
             dot.add_node(node)
 
-        for c in self.channels:
+        for c in self.channels.values():
             src_node = process_nodes[c.source.name]
             for s in c.sinks:
                 sink_node = process_nodes[s.name]
