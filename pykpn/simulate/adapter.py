@@ -5,6 +5,7 @@
 
 
 import logging
+from termcolor import colored
 
 
 class SimulateLoggerAdapter(logging.LoggerAdapter):
@@ -15,5 +16,6 @@ class SimulateLoggerAdapter(logging.LoggerAdapter):
         self._env = env
 
     def process(self, msg, kwargs):
-        msg = '%s: @%d\n  %s' % (self._instance, self._env.now, msg)
+        instance = colored(self._instance, 'green')
+        msg = '@%14d %s: %s' % (self._env.now, instance, msg)
         return msg, kwargs
