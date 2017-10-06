@@ -10,11 +10,12 @@ import pydot
 class ChannelMappingInfo:
     """Simple record to store mapping infos associated with a KpnChannel.
 
-    :ivar str primitive_type: the primitive type that the channel is mapped to
+    :ivar primitive_group: the primitive group that the channel is mapped to
+    :type primitive_group: PrimitiveGroup
     :ivar int capacity: the capacity that the channel is bound to
     """
-    def __init__(self, primitive_type, capacity):
-        self.primitive_type = primitive_type
+    def __init__(self, primitive_group, capacity):
+        self.primitive_group = primitive_group
         self.capacity = capacity
 
 
@@ -119,11 +120,11 @@ class Mapping:
                 cluster.add_subgraph(p_cluster)
 
         primitive_nodes = {}
-        for p in self._platform.primitives:
-            if p.type not in primitive_nodes:
-                node = pydot.Node('primitive_' + p.type, label=p.type)
+        for pg in self._platform.primitive_groups:
+            if pg.type not in primitive_nodes:
+                node = pydot.Node('primitive_' + pg.type, label=pg.type)
                 dot.add_node(node)
-                primitive_nodes[p.type] = node
+                primitive_nodes[pg.type] = node
 
         process_nodes = {}
         for p in self._kpn.processes:
@@ -145,7 +146,7 @@ class Mapping:
                 to_node = process_nodes[p.name]
                 dot.add_edge(pydot.Edge(node, to_node, minlen=4))
             info = self._channel_info[c.name]
-            prim_node = primitive_nodes[info.primitive_type]
+            prim_node = primitive_nodes[info.primitive_group.type]
             dot.add_edge(pydot.Edge(node, prim_node, style='dashed',
                                     arrowhead='none'))
 
