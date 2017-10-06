@@ -10,7 +10,6 @@ from ...common import CommunicationPhase
 from ...common import CommunicationResource
 from ...common import FrequencyDomain
 from ...common import Primitive
-from ...common import PrimitiveGroup
 from ...common import Processor
 from ...common import Scheduler
 from ...common import SchedulingPolicy
@@ -218,21 +217,17 @@ def convert(platform, xml_platform):
             consumers[cn] = [active]
 
         # Create a Primitive for each combination of producer and consumer
-        primitives = []
-        for pn in producers:
-            for cn in consumers:
-                p = Primitive(name,
-                              platform.find_processor(pn),
-                              platform.find_processor(cn))
-                log.debug('Found communication primitive %s: %s -> %s',
-                          name, pn, cn)
-                p.consume = consumers[cn]
-                p.produce = producers[cn]
-                primitives.append(p)
+        primitive = Primitive(name)
 
-        # Create a primitive group
-        group = PrimitiveGroup(name, primitives)
-        platform.primitive_groups.append(group)
+        for pn in producers:
+            primitive.add_producer(platform.find_processor(pn), producers[pn])
+        for cn in consumers:
+            primitive.add_consumer(platform.find_processor(cn), consumers[cn])
+
+        log.debug('Found the communication primitive %s: %s -> %s' %
+                  (name, str(producers.keys()), str(consumers.keys())))
+
+        platform.primitives.append(primitive)
 
 
 def find_resource(platform, id):

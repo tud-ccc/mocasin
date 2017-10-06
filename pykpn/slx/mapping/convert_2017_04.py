@@ -47,7 +47,7 @@ def convert(mapping, xml_mapping):
     for xc in xml_mapping.get_Channel():
         name = xc.get_id()
         capacity = int(xc.get_bound())
-        prim_type = xc.get_commPrimitive()
-        group = platform.find_primitive_group(prim_type)
+        prim_name = xc.get_commPrimitive()
+        group = platform.find_primitive(prim_name)
         info = ChannelMappingInfo(group, capacity)
         mapping._channel_info[name] = info
