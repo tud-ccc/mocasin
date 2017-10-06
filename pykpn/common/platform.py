@@ -160,6 +160,41 @@ class Primitive:
         return self.__str__()
 
 
+class PrimitiveGroup:
+    """Groups communication primitives of the same type"""
+
+    def __init__(self, type, primitives=None):
+        self.type = type
+        self._primitives = {}
+        self._sources = set()
+        self._sinks = set()
+        if primitives is not None:
+            for p in primitives:
+                self.add_primitive(p)
+
+    def get_primitive(self, from_, to):
+        return self._primitives[from_._name][to._name]
+
+    def add_primitive(self, primitive):
+        assert self.type == primitive.type
+        from_name = primitive.from_.name
+        to_name = primitive.to.name
+        if from_name not in self._primitives:
+            self._primitives[from_name] = {}
+        if to_name in self._primitives[from_name]:
+            raise RuntimeError('Group already contains the primitive %s' %
+                               (str(primitive)))
+        self._primitives[from_name][to_name] = primitive
+        self._sources.add(primitive.from_)
+        self._sinks.add(primitive.to)
+
+    def sources(self):
+        return self._sources
+
+    def sinks(self):
+        return self._sinks
+
+
 class SchedulingPolicy:
     """Represents a scheduling policy.
 
@@ -242,7 +277,7 @@ class Platform(object):
         """
         self.processors = []               #: list of processors
         self.communication_resources = []  #: list of communication resources
-        self.primitives = []               #: list of communication primitives
+        self.primitive_groups = []  #: list of communication primitive groups
         self.schedulers = []               #: list of schedulers
 
     def find_scheduler(self, name, throw=False):
@@ -301,29 +336,25 @@ class Platform(object):
                                'the platform!', name)
         return None
 
-    def find_primitive(self, type, processor_from, processor_to, throw=False):
-        """Search for a communication primitive.
+    def find_primitive_group(self, type, throw=False):
+        """Search for a communication primitive group.
 
-        :param str type: type of the communication primitvie to be searched for
-        :param Processor processor_from: the Processor the primitive originates
-            from
-        :param Processor processor_to: the Processor the primitive goes to
+        :param str type: type of the communication primitive group to be
+                         searched for
         :param bool throw: raise a RuntimeError if no object is
                            found (default: False)
 
         :raises RuntimeError: if no communication primitive was found and throw
                               is True
-        :returns: A communication primitive object or None if no communication
-                  primitive was found.
+        :returns: A communication primitive group object or None if no
+                  group was found.
         """
-        for p in self.primitives:
-            if (p.type == type and p.from_ == processor_from and
-                    p.to == processor_to):
-                return p
+        for pg in self.primitive_groups:
+            if pg.type == type:
+                return pg
         if throw:
-            raise RuntimeError('The communication primitive %s: %s -> %s is '
-                               'not part of the platform!', type,
-                               processor_from.name, processor_to.name)
+            raise RuntimeError('The primitive group %s is not part of the '
+                               'platform!' % (type))
         return None
 
     def to_pydot(self):
@@ -346,15 +377,17 @@ class Platform(object):
                 cluster.add_node(node)
 
         primitive_nodes = {}
-        for p in self.primitives:
-            if p.type in primitive_nodes:
-                node = primitive_nodes[p.type]
+        for pg in self.primitive_groups:
+            if pg.type in primitive_nodes:
+                node = primitive_nodes[pg.type]
             else:
-                node = pydot.Node('primitive_' + p.type, label=p.type)
+                node = pydot.Node('primitive_' + pg.type, label=pg.type)
                 dot.add_node(node)
-            from_node = processor_nodes[p.from_.name]
-            to_node = processor_nodes[p.to.name]
-            dot.add_edge(pydot.Edge(from_node, node, minlen=4))
-            dot.add_edge(pydot.Edge(node, to_node, minlen=4))
+            for x in pg.sources():
+                from_node = processor_nodes[x.name]
+                dot.add_edge(pydot.Edge(from_node, node, minlen=4))
+            for x in pg.sinks():
+                to_node = processor_nodes[x.name]
+                dot.add_edge(pydot.Edge(node, to_node, minlen=4))
 
         return dot
