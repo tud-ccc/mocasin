@@ -3,13 +3,12 @@
 #
 # Authors: Christian Menard
 
-import logging
-from ..platform.convert_2017_04 import get_value_in_unit
 
+from pykpn.common import logging
+from pykpn.common.mapping import (ChannelMappingInfo, ProcessMappingInfo,
+    SchedulerMappingInfo)
+from pykpn.slx.platform.convert_2017_04 import get_value_in_unit
 
-from ...common import ChannelMappingInfo
-from ...common import ProcessMappingInfo
-from ...common import SchedulerMappingInfo
 
 log = logging.getLogger(__name__)
 

@@ -5,10 +5,11 @@
 #
 # Authors: Christian Menard
 
-import argparse
-import logging
 
-from .kpn import SlxKpnGraph
+import argparse
+
+from pykpn.common import logging
+from pykpn.slx.kpn import SlxKpnGraph
 
 
 log = logging.getLogger(__name__)

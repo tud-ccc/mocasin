@@ -1,14 +1,20 @@
+# Copyright (C) 2017 TU Dresden
+# All Rights Reserved
+#
+# Authors: Christian Menard
+
+
 import configparser
-import logging
 import os
 
 from pint import UnitRegistry
-from pykpn.platforms import createPlatformByName
 
-from .kpn import SlxKpnGraph
-from .mapping import SlxMapping
-from .trace import SlxTraceReader
-from .platform import SlxPlatform
+from pykpn.common import logging
+from pykpn.platforms import createPlatformByName
+from pykpn.slx.kpn import SlxKpnGraph
+from pykpn.slx.mapping import SlxMapping
+from pykpn.slx.platform import SlxPlatform
+from pykpn.slx.trace import SlxTraceReader
 
 
 log = logging.getLogger(__name__)

@@ -10,10 +10,11 @@ import argparse
 
 import simpy
 
-import pykpn.common.logging as logging
-from pykpn.simulate import RuntimeKpnApplication, RuntimeSystem
+from pykpn.common import logging
+from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.simulate.process import ProcessState
-from pykpn.slx import SlxConfig
+from pykpn.simulate.system import RuntimeSystem
+from pykpn.slx.config import SlxConfig
 
 
 log = logging.getLogger(__name__)

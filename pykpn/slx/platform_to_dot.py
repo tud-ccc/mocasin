@@ -5,10 +5,11 @@
 #
 # Authors: Christian Menard
 
-import argparse
-import logging
 
-from .platform import SlxPlatform
+import argparse
+
+from pykpn.common import logging
+from pykpn.slx.platform import SlxPlatform
 
 
 log = logging.getLogger(__name__)

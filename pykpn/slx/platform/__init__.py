@@ -3,12 +3,11 @@
 #
 # Authors: Christian Menard
 
-import logging
 
-from .parse_2017_04 import parse as parse_2017_04
 from .convert_2017_04 import convert as convert_2017_04
-
-from ...common import Platform
+from .parse_2017_04 import parse as parse_2017_04
+from pykpn.common import logging
+from pykpn.common.platform import Platform
 
 
 log = logging.getLogger(__name__)

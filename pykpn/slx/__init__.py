@@ -1,5 +1,4 @@
-from .config import *
-from .kpn import *
-from .mapping import *
-from .trace import *
-from .platform import *
+# Copyright (C) 2017 TU Dresden
+# All Rights Reserved
+#
+# Authors: Christian Menard

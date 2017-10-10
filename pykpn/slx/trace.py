@@ -4,8 +4,7 @@
 # Authors: Christian Menard
 
 
-from ..common import TraceGenerator
-from ..common import TraceSegment
+from pykpn.common.trace import TraceGenerator, TraceSegment
 
 
 class SlxTraceReader(TraceGenerator):
