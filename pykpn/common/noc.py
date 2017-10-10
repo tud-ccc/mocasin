@@ -6,7 +6,7 @@
 
 import numpy as np
 
-from .platform import CommunicationResource
+from pykpn.common.platform import CommunicationResource
 
 
 # XXX This code is likely to be broken after recent changes in other modules.
