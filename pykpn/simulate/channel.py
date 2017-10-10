@@ -179,20 +179,55 @@ class RuntimeChannel(object):
         """
         assert self.can_consume(process, num)
 
-        self._log.debug('start a consume operation reading %d tokens.', num)
+        sink = process.processor
+        prim = self._primitive
+        log = self._log
+
+        log.debug('start a consume operation reading %d tokens using %s',
+                  num, prim.name)
 
         # update the state
         new_state = self._fifo_state[process.name] - num
         self._fifo_state[process.name] = new_state
 
-        self._log.debug('consume operation completed')
+        if sink not in prim.consumers:
+            raise RuntimeError(
+                'processor %s cannot consume tokens using the primitive %s' %
+                (sink.name, prim.name))
+
+        for phase in prim.consume_phases[sink.name]:
+            log.debug('start communication phase "%s"', phase.name)
+
+            # 1. request all resouces
+            requests = []
+            for r in phase.resources:
+                log.debug('via resource: %s', r.name)
+                if hasattr(r, 'simpy_resource'):
+                    req = r.simpy_resource.request()
+                    requests.append(req)
+                    log.debug('request resource %s', r.name)
+                    yield req
+                else:
+                    requests.append(None)
+
+            # pay for the delay
+            size = num * self._token_size
+            ticks = phase.get_costs(size)
+            yield self._env.timeout(ticks)
+
+            # release all resources that we requested before
+            for (res, req) in zip(phase.resources, requests):
+                if req is not None:
+                    log.debug('release resource %s', r.name)
+                    res.simpy_resource.release(req)
+
+            log.debug('communication phase completed')
+
+        log.debug('consume operation completed')
 
         # notify waiting processes
         self.tokens_consumed.succeed()
         self.tokens_consumed = self._env.event()
-
-        # TODO model the timing
-        return self._env.timeout(10000)
 
     def produce(self, process, num):
         """Produce tokens
@@ -205,19 +240,54 @@ class RuntimeChannel(object):
             completed.
         :rtype: simpy.events.Event
         """
-        assert self._src is process
+        assert self.can_produce(process, num)
 
-        self._log.debug('starts a produce operation writing %d tokens.', num)
+        src = process.processor
+        prim = self._primitive
+        log = self._log
+
+        log.debug('start a produce operation writing %d tokens using %s',
+                  num, prim.name)
 
         # update the state
         for p in self._fifo_state:
             self._fifo_state[p] += num
 
-        self._log.debug('produce operation completed')
+        if src not in prim.producers:
+            raise RuntimeError(
+                'processor %s cannot produce tokens using the primitive %s' %
+                (src.name, prim.name))
+
+        for phase in prim.produce_phases[src.name]:
+            log.debug('start communication phase "%s"', phase.name)
+
+            # 1. request all resouces
+            requests = []
+            for r in phase.resources:
+                log.debug('via resource: %s', r.name)
+                if hasattr(r, 'simpy_resource'):
+                    req = r.simpy_resource.request()
+                    requests.append(req)
+                    log.debug('request resource %s', r.name)
+                    yield req
+                else:
+                    requests.append(None)
+
+            # pay for the delay
+            size = num * self._token_size
+            ticks = phase.get_costs(size)
+            yield self._env.timeout(ticks)
+
+            # release all resources that we requested before
+            for (res, req) in zip(phase.resources, requests):
+                if req is not None:
+                    log.debug('release resource %s', r.name)
+                    res.simpy_resource.release(req)
+
+            log.debug('communication phase completed')
+
+        log.debug('produce operation completed')
 
         # notify waiting processes
         self.tokens_produced.succeed()
         self.tokens_produced = self._env.event()
-
-        # TODO model the timing
-        return self._env.timeout(10000)

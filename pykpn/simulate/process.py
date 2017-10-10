@@ -361,7 +361,7 @@ class RuntimeKpnProcess(RuntimeProcess):
                     return
                 else:
                     s.read_from_channel = None
-                    yield c.consume(self, s.n_tokens)
+                    yield self._env.process(c.consume(self, s.n_tokens))
             if s.write_to_channel is not None:
                 c = self._channels[s.write_to_channel]
                 self._log.debug('write %d tokens to channel %s', s.n_tokens,
@@ -373,7 +373,7 @@ class RuntimeKpnProcess(RuntimeProcess):
                     return
                 else:
                     s.write_to_channel = None
-                    yield c.produce(self, s.n_tokens)
+                    yield self._env.process(c.produce(self, s.n_tokens))
             if s.terminate:
                 self._log.debug('process terminates')
                 break
