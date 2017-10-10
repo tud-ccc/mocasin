@@ -65,18 +65,18 @@ class CommunicationResource:
         self.is_storage = is_storage
 
     def read_latency(self):
-        return self.frequency_domain.cycles_to_ticks(self._read_latency)
+        return self._frequency_domain.cycles_to_ticks(self._read_latency)
 
     def write_latency(self):
-        return self.frequency_domain.cycles_to_ticks(self._write_latency)
+        return self._frequency_domain.cycles_to_ticks(self._write_latency)
 
     def read_throughput(self):
         return (self._read_throughput /
-                self.frequency_domain.cycles_to_ticks(1))
+                self._frequency_domain.cycles_to_ticks(1))
 
     def write_throughput(self):
         return (self._write_throughput /
-                self.frequency_domain.cycles_to_ticks(1))
+                self._frequency_domain.cycles_to_ticks(1))
 
     def __str__(self):
         return self.name
