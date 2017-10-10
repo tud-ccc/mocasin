@@ -34,20 +34,24 @@ class RuntimeChannel(object):
     :type _fifo_state: dict[str, int]
     :ivar _capacity: maximum number of tokens that can be stored in a FIFO
     :type _capacity: int
+    :ivar _primitive: The communication primitive this channel is mmapped to
+    :type _primitive: PrimitiveGroup
     :ivar tokens_produced: a simpy event triggered when new tokens where witten
         to this channel
     :type tokens_produced: simpy.events.Event
     :ivar tokens_consumed: a simpy event triggered when tokens where read from
         the channel
     :type tokens_consumed: simpy.events.Event
+    :ivar int _token_size: size of one data token in bytes
     """
 
-    def __init__(self, name, mapping_info, env):
+    def __init__(self, name, mapping_info, token_size, env):
         """Initialize a runtime channel.
 
         :param str name: the channel name
         :param mapping_info: a channel mapping info object
         :type mapping_info: ChannelMappingInfo
+        :param int token_size: size of one data token in bytes
         :param env: the simpy environment
         """
         log.debug('initialize new runtime channel: (%s)', name)
@@ -60,6 +64,8 @@ class RuntimeChannel(object):
         self._sinks = []
         self._fifo_state = {}
         self._capacity = mapping_info.capacity
+        self._primitive = mapping_info.primitive
+        self._token_size = token_size
 
         self.tokens_produced = env.event()
         self.tokens_consumed = env.event()
