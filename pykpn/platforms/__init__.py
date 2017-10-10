@@ -4,8 +4,8 @@
 # Authors: Christian Menard
 
 
-from pykpn.platforms import Tomahawk2Platform
-from pykpn.platforms import GenericNocPlatform
+from pykpn.platforms.generic_noc import GenericNocPlatform
+from pykpn.platforms.tomahawk2 import Tomahawk2Platform
 
 
 # TODO see if we can implement this in a better way

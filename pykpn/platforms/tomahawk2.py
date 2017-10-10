@@ -3,16 +3,11 @@
 #
 # Authors: Christian Menard
 
-from ..common import CommunicationPhase
-from ..common import CommunicationResource
-from ..common import FrequencyDomain
-from ..common import MeshNoc
-from ..common import Platform
-from ..common import Primitive
-from ..common import Processor
-from ..common import Scheduler
-from ..common import SchedulingPolicy
-from ..common import Storage
+
+from pykpn.common.noc import MeshNoc
+from pykpn.common.platform import (CommunicationPhase, CommunicationResource,
+    FrequencyDomain, Platform, Primitive, Processor, Scheduler,
+    SchedulingPolicy, Storage)
 
 
 class Tomahawk2Platform(Platform):
