@@ -45,9 +45,9 @@ class RuntimeProcess(object):
     :ivar _log: an logger adapter to print messages with simulation context
     :type _log: SimulateLoggerAdapter
 
-    :ivar _processor: the processor that the processes currently runs on. This
+    :ivar processor: the processor that the processes currently runs on. This
         attribute is only valid in the ``RUNNING`` state.
-    :type _processor: Processor
+    :type processor: Processor
 
     :ivar ready: An event that triggers on entering the ``READY`` state.
     :ivar running: An event that triggers on entering the ``RUNNING`` state.
@@ -103,7 +103,7 @@ class RuntimeProcess(object):
         self.name = name
         self._env = env
         self._state = ProcessState.NOT_STARTED
-        self._processor = None
+        self.processor = None
         self._log = SimulateLoggerAdapter(log, name, env)
 
         # setup the events
@@ -157,7 +157,7 @@ class RuntimeProcess(object):
         """
         assert(self._state == ProcessState.NOT_STARTED)
         self._log.debug('Process starts.')
-        self._processor = None
+        self.processor = None
         self._transition('READY')
 
     def activate(self, processor):
@@ -171,7 +171,7 @@ class RuntimeProcess(object):
         assert(self._state == ProcessState.READY)
         self._log.debug('Start workload execution on processor %s',
                         processor.name)
-        self._processor = processor
+        self.processor = processor
         self._transition('RUNNING')
 
     def finish(self):
@@ -182,7 +182,7 @@ class RuntimeProcess(object):
         """
         assert(self._state == ProcessState.RUNNING)
         self._log.debug('Workload execution finished.')
-        self._processor = None
+        self.processor = None
         self._transition('FINISHED')
 
     def block(self):
@@ -193,7 +193,7 @@ class RuntimeProcess(object):
         """
         assert(self._state == ProcessState.RUNNING)
         self._log.debug('Process blocks')
-        self._processor = None
+        self.processor = None
         self._transition('BLOCKED')
 
     def unblock(self):
@@ -204,7 +204,7 @@ class RuntimeProcess(object):
         """
         assert(self._state == ProcessState.BLOCKED)
         self._log.debug('Process unblocks')
-        self._processor = None
+        self.processor = None
         self._transition('READY')
 
     def _cb_ready(self, event):
@@ -341,13 +341,13 @@ class RuntimeKpnProcess(RuntimeProcess):
         while True:
             if self._current_segment is None:
                 self._current_segment = self._trace_generator.next_segment(
-                    self.name, self._processor.type)
+                    self.name, self.processor.type)
             s = self._current_segment
             s.sanity_check()
             if s.processing_cycles is not None:
                 cycles = s.processing_cycles
                 self._log.debug('process for %d cycles', cycles)
-                ticks = self._processor.ticks(cycles)
+                ticks = self.processor.ticks(cycles)
                 s.processing_cycles = None
                 yield self._env.timeout(ticks)
             if s.read_from_channel is not None:
