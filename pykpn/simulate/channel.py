@@ -4,8 +4,7 @@
 # Authors: Christian Menard
 
 
-import logging
-
+from pykpn.common import logging
 from pykpn.simulate.adapter import SimulateLoggerAdapter
 from pykpn.simulate.process import ProcessState
 

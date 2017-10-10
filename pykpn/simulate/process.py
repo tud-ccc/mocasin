@@ -4,10 +4,11 @@
 # Authors: Christian Menard
 
 
-import logging
 from enum import Enum
 
-from .adapter import SimulateLoggerAdapter
+from pykpn.common import logging
+from pykpn.simulate.adapter import SimulateLoggerAdapter
+
 
 log = logging.getLogger(__name__)
 

@@ -1,5 +1,4 @@
-from .application import *
-from .channel import *
-from .process import *
-from .scheduler import *
-from .system import *
+# Copyright (C) 2017 TU Dresden
+# All Rights Reserved
+#
+# Authors: Christian Menard

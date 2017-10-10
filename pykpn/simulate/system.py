@@ -3,12 +3,14 @@
 #
 # Authors: Christian Menard
 
+
 import timeit
 
-from .scheduler import create_scheduler
-from ..common import logging
-
 from simpy.resources.resource import Resource
+
+from pykpn.common import logging
+from pykpn.simulate.scheduler import create_scheduler
+
 
 log = logging.getLogger(__name__)
 

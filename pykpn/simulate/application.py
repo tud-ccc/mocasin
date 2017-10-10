@@ -4,9 +4,10 @@
 # Authors: Christian Menard
 
 
-from .channel import RuntimeChannel
-from .process import RuntimeKpnProcess
-from ..common import logging
+from pykpn.common import logging
+from pykpn.simulate.channel import RuntimeChannel
+from pykpn.simulate.process import RuntimeKpnProcess
+
 
 log = logging.getLogger(__name__)
 
