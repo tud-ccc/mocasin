@@ -15,10 +15,10 @@ log = logging.getLogger(__name__)
 
 class SlxMapping(Mapping):
 
-    def __init__(self, kpn, platform, mapping_file, version='2017.04'):
+    def __init__(self, kpn, platform, mapping_file, version='2017.10'):
         super().__init__(kpn, platform)
         log.info('Start parsing the SLX mapping ' + mapping_file)
-        if version == '2017.04':
+        if (version == '2017.04' or version == '2017.10'):
             xml_mapping = parse_2017_04(mapping_file, True)
             convert_2017_04(self, xml_mapping)
         else:
