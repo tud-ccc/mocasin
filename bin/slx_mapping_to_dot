@@ -5,4 +5,4 @@ script_dir=$(dirname $0)
 cd "$script_dir"
 cd ..
 
-python3 -m pykpn.slx.scripts.platform_to_dot $@
+python3 -m pykpn.slx.scripts.mapping_to_dot $@
