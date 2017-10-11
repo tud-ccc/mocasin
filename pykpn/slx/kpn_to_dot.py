@@ -18,25 +18,14 @@ log = logging.getLogger(__name__)
 def main():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument(
-        '-v',
-        '--verbosity',
-        action="count",
-        help="increase output verbosity (e.g., -vv is more than -v)",
-        dest='verbosity')
+    logging.add_cli_args(parser)
 
     parser.add_argument('kpn', help="xml kpn graph description", type=str)
     parser.add_argument('dot', help="dot output file", type=str)
 
     args = parser.parse_args()
 
-    if args.verbosity is not None:
-        if args.verbosity >= 2:
-            logging.basicConfig(level=logging.DEBUG)
-        elif args.verbosity >= 1:
-            logging.basicConfig(level=logging.INFO)
-    else:
-        logging.basicConfig(level=logging.WARNING)
+    logging.setup_from_args(args)
 
     kpn = SlxKpnGraph('app', args.kpn)
     dot = kpn.to_pydot()
