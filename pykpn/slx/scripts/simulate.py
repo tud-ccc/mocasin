@@ -11,10 +11,8 @@ import argparse
 import simpy
 
 from pykpn.common import logging
-from pykpn.simulate.application import RuntimeKpnApplication
-from pykpn.simulate.process import ProcessState
-from pykpn.simulate.system import RuntimeSystem
-from pykpn.slx.config import SlxConfig
+from pykpn.slx.config import SlxSimulationConfig
+from pykpn.slx.system import SlxRuntimeSystem
 
 
 log = logging.getLogger(__name__)
@@ -32,36 +30,17 @@ def main():
 
     logging.setup_from_args(args)
 
-    # Declare the list of applications
-    applications = []
-
     # parse the config file
-    config = SlxConfig(args.configFile)
-
-    env = simpy.Environment()
-
-    for an in config.app_names:
-        app = RuntimeKpnApplication(
-            an, config.graphs[an], config.mappings[an],
-            config.trace_readers[an], env, config.start_times[an])
-        applications.append(app)
+    config = SlxSimulationConfig(args.configFile)
 
     # Create the system
-    system = RuntimeSystem(config.platform, applications, env)
+    env = simpy.Environment()
+    system = SlxRuntimeSystem(config, env)
+
     # Run the simulation
     system.simulate()
 
-    for app in applications:
-        some_blocked = False
-        for p in app.processes():
-            if p.check_state(ProcessState.BLOCKED):
-                log.error('The process %s is blocked', p.name)
-                some_blocked = True
-            elif not p.check_state(ProcessState.FINISHED):
-                log.warn('The process %s did not finish its execution!',
-                         p.name)
-        if some_blocked:
-            log.error('The application %s is deadlocked!', app.name)
+    system.check_errors()
 
 
 if __name__ == '__main__':
