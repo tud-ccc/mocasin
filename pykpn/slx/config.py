@@ -7,60 +7,97 @@
 import configparser
 import os
 
-from pint import UnitRegistry
+import pint
 
 from pykpn.common import logging
-from pykpn.platforms import createPlatformByName
-from pykpn.slx.kpn import SlxKpnGraph
-from pykpn.slx.mapping import SlxMapping
-from pykpn.slx.platform import SlxPlatform
-from pykpn.slx.trace import SlxTraceReader
+from pykpn.slx import VERSIONS
 
 
 log = logging.getLogger(__name__)
 
 
-class SlxConfig:
+class SlxApplicationConfig:
+    """INI parser for application sections
 
-    def __init__(self, config):
+    :ivar str name: application name
+    :ivar str mapping_xml: path to the mapping descriptor
+    :ivar str cpn_xml: path to the cpn graph descriptor
+    :ivar str trace_dir: path to the trace directory
+    :ivar int start_at_tick: tick at which the application starts
+    """
+
+    def __init__(self, name, conf):
+        """Initialize application config object by parsing a section of an INI
+        file.
+
+        :param str name: name of the application section to be parsed
+        :param ConfigParser conf: a config parser object
+        """
+        self.name = name
+
+        # parse the mapping
+        mapping_xml = conf[name]['mapping_xml']
+        if not os.path.isfile(mapping_xml):
+            raise ValueError('The mapping description does not exist: %s' %
+                             mapping_xml)
+        self.mapping_xml = mapping_xml
+
+        # parse the cpn graph
+        cpn_xml = conf[name]['cpn_xml']
+        if not os.path.isfile(cpn_xml):
+            raise ValueError('The cpn graph description does not exist: %s' %
+                             cpn_xml)
+        self.cpn_xml = cpn_xml
+
+        # parse the trace dir
+        trace_dir = conf[name]['trace_dir']
+        if not os.path.isdir(trace_dir):
+            raise ValueError('The trace directory does not exist: %s' %
+                             trace_dir)
+        self.trace_dir = trace_dir
+
+        # parse the start time
+        ureg = pint.UnitRegistry()
+        time = conf[name]['start_time']
+        self.start_at_tick = ureg(time).to(ureg.ps).magnitude
+
+
+class SlxSimulationConfig:
+    """INI parser for simulation configurations
+
+    A template for a valid ini file can be found in conf/slx_config.ini.
+
+    :ivar str platform_xml: path to the platform descriptor
+    :ivar str slx_version: slx version string
+    :ivar applications: list of application configurations
+    :type applications: list[SlxApplicationConfig]
+    """
+
+    def __init__(self, config_file):
+        """Initialize config object by parsing an INI file.
+
+        :param str config_file: configuration file to be parsed
+        """
+
         # read the ini file
         conf = configparser.ConfigParser()
-        conf.read(config)
+        conf.read(config_file)
 
-        # init function does all the parsing
-        if 'platform_desc' in conf['simulation']:
-            self.platform = SlxPlatform(conf['simulation']['platform_desc'])
-        else:
-            self.platform = createPlatformByName(conf['simulation']['platform'])
+        # parse the ini version
+        version = conf['simulation']['slx_version']
+        if version not in VERSIONS:
+            raise ValueError('SLX version %s is not supported' % self.version)
+        self.slx_version = version
 
-        self.app_names = conf['simulation']['applications'].split(",")
+        # parse the platform
+        platform_xml = conf['simulation']['platform_xml']
+        if not os.path.isfile(platform_xml):
+            raise ValueError('The platform description does not exist: %s' %
+                             platform_xml)
+        self.platform_xml = platform_xml
 
-        if 'vcd' not in conf['simulation'] or conf['simulation']['vcd'] == '':
-            self.vcd_file_name = None
-        else:
-            self.vcd_file_name = conf['simulation']['vcd']
-
-        self.graphs = {}
-        self.mappings = {}
-        self.trace_readers = {}
-        self.start_times = {}
-        for an in self.app_names:
-            if an not in conf:
-                raise ValueError("application name does not match to the "
-                                 "section key")
-            graph = SlxKpnGraph(an + '_graph', conf[an]['graph'])
-            mapping = SlxMapping(graph,
-                                 self.platform,
-                                 conf[an]['mapping'])
-
-            trace_dir = os.path.join(conf[an]['trace'])
-            assert os.path.isdir(trace_dir)
-            reader = SlxTraceReader(trace_dir, '%s.' % (an))
-
-            self.graphs[an] = graph
-            self.mappings[an] = mapping
-            self.trace_readers[an] = reader
-            self.vcd_file_name = conf['simulation']['vcd']
-            ureg = UnitRegistry()
-            time = conf[an]['start_time']
-            self.start_times[an] = ureg(time).to(ureg.ps).magnitude
+        # parse all applications
+        app_names = conf['simulation']['applications'].split(",")
+        self.applications = []
+        for an in app_names:
+            self.applications.append(SlxApplicationConfig(an, conf))
