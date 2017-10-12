@@ -9,6 +9,7 @@ import timeit
 from simpy.resources.resource import Resource
 
 from pykpn.common import logging
+from pykpn.simulate.process import ProcessState
 from pykpn.simulate.scheduler import create_scheduler
 
 
@@ -24,6 +25,8 @@ class RuntimeSystem:
     :ivar _env: the simpy environment
     :ivar schedulers: list of all runtime schedulers
     :type schedulers: list[RuntimeScheduler]
+    :ivar _applications: list of all applications
+    :type _applications: list[RuntimeKpnApplication]
     """
 
     def __init__(self, platform, applications, env):
@@ -41,6 +44,7 @@ class RuntimeSystem:
         logging.inc_indent()
 
         self._env = env
+        self._applications = applications
 
         # initialize all schedulers
         self._schedulers = []
@@ -119,3 +123,16 @@ class RuntimeSystem:
         exec_time = float(self._env.now) / 1000000000.0
         print('Total simulated time: ' + str(exec_time) + ' ms')
         print('Total simulation time: ' + str(stop - start) + ' s')
+
+    def check_errors(self):
+        for app in self._applications:
+            some_blocked = False
+            for p in app.processes():
+                if p.check_state(ProcessState.BLOCKED):
+                    log.error('The process %s is blocked', p.name)
+                    some_blocked = True
+                elif not p.check_state(ProcessState.FINISHED):
+                    log.warn('The process %s did not finish its execution!',
+                             p.name)
+            if some_blocked:
+                log.error('The application %s is deadlocked!', app.name)
