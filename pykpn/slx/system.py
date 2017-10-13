@@ -29,8 +29,8 @@ class SlxRuntimeSystem(RuntimeSystem):
             kpn = SlxKpnGraph(name, app_config.cpn_xml)
             mapping = SlxMapping(
                 kpn, platform, app_config.mapping_xml, version)
-            trace_reader = SlxTraceReader(
-                app_config.trace_dir, '%s.' % (app_config.name))
+            trace_reader = SlxTraceReader.factory(
+                app_config.trace_dir, '%s.' % (app_config.name), version)
             app = RuntimeKpnApplication(name, kpn, mapping, trace_reader, env,
                                         app_config.start_at_tick)
             applications.append(app)

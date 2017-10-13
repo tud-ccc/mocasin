@@ -8,7 +8,31 @@ from pykpn.common.trace import TraceGenerator, TraceSegment
 
 
 class SlxTraceReader(TraceGenerator):
-    """A TraceGenerator that reads SLX trace files"""
+    """Base class for SLX trace generators"""
+
+    def __init__(self):
+        super().__init__()
+
+    @staticmethod
+    def factory(trace_dir, prefix, version):
+        """Factory method.
+
+        Create a SlxTraceReader object according to version.
+
+        :param str trace_dir: path to the directory containing all trace files
+        :param str prefix: the prefix that is used for channel and process
+            names
+        :param str version: slx version
+        """
+        if version == '2017.04':
+            return SlxTraceReader_2017_04(trace_dir, prefix)
+        else:
+            raise NotImplementedError(
+                'The slx trace reader does not support version %s' % version)
+
+
+class SlxTraceReader_2017_04(TraceGenerator):
+    """A TraceGenerator that reads SLX 2017.04 trace files"""
 
     def __init__(self, trace_dir, prefix):
         """Initialize the trace reader
