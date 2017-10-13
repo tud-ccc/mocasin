@@ -24,10 +24,12 @@ class ProcessMappingInfo:
 
     :ivar Scheduler scheduler: the scheduler that the process is mapped to
     :ivar Processor affinity: the processor that the process should run on
+    :ivar int priority: the scheduling priority
     """
-    def __init__(self, scheduler, affinity):
+    def __init__(self, scheduler, affinity, priority=0):
         self.scheduler = scheduler
         self.affinity = affinity
+        self.priority = priority
 
 
 class SchedulerMappingInfo:
