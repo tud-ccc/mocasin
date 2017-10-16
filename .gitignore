@@ -2,3 +2,6 @@ __pycache__
 *.pyc
 *.swp
 pykpn.egg-info
+.#*
+*.ini
+apps
