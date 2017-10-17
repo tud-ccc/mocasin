@@ -48,7 +48,7 @@ class RuntimeSystem:
 
         # initialize all schedulers
         self._schedulers = []
-        for s in platform.schedulers.values():
+        for s in platform.schedulers():
             policy, policy_param = self._find_scheduler_policy(s, applications)
 
             if policy is None:
@@ -76,7 +76,7 @@ class RuntimeSystem:
         # communication resource we create a simpy resource object and extend
         # the communication reource by an attribute 'simpy_resource' that
         # points to the simpy resource.
-        for r in platform.communication_resources.values():
+        for r in platform.communication_resources():
             if r.exclusive and not hasattr(r, 'simpy_resource'):
                 r.simpy_resource = Resource(self.env, capacity=1)
 

@@ -246,51 +246,63 @@ class Platform(object):
         This initializes all attributes to empty dicts. Derived classes should
         fill these dicts with objects in order to build a real platform.
         """
-        self.processors = {}               #: dict of processors
-        self.communication_resources = {}  #: dict of communication resources
-        self.primitives = {}               #: dict of communication primitives
-        self.schedulers = {}               #: dict of schedulers
+        self._processors = {}               #: dict of processors
+        self._communication_resources = {}  #: dict of communication resources
+        self._primitives = {}               #: dict of communication primitives
+        self._schedulers = {}               #: dict of schedulers
+
+    def processors(self):
+        return self._processors.values()
+
+    def primitives(self):
+        return self._primitives.values()
+
+    def schedulers(self):
+        return self._schedulers.values()
+
+    def communication_resources(self):
+        return self._communication_resources.values()
 
     def find_scheduler(self, name):
         """Search for a scheduler object by its name."""
-        return self.schedulers[name]
+        return self._schedulers[name]
 
-    def find_processor(self, name, throw=False):
+    def find_processor(self, name):
         """Search for a processor object by its name."""
-        return self.processors[name]
+        return self._processors[name]
 
-    def find_communication_resource(self, name, throw=False):
+    def find_communication_resource(self, name):
         """Search for a communication resource object by its name."""
-        return self.communication_resources[name]
+        return self._communication_resources[name]
 
-    def find_primitive(self, name, throw=False):
+    def find_primitive(self, name):
         """Search for a communication primitive group."""
-        return self.primitives[name]
+        return self._primitives[name]
 
     def add_scheduler(self, x):
-        if x.name in self.schedulers:
+        if x.name in self._schedulers:
             raise RuntimeError(
                 'Scheduler %s was already added to the platform' % (x.name))
-        self.schedulers[x.name] = x
+        self._schedulers[x.name] = x
 
     def add_processor(self, x):
-        if x.name in self.processors:
+        if x.name in self._processors:
             raise RuntimeError(
                 'Processor %s was already added to the platform' % (x.name))
-        self.processors[x.name] = x
+        self._processors[x.name] = x
 
     def add_communication_resource(self, x):
-        if x.name in self.communication_resources:
+        if x.name in self._communication_resources:
             raise RuntimeError(
                 'Communication_Resource %s was already added to the platform' %
                 (x.name))
-        self.communication_resources[x.name] = x
+        self._communication_resources[x.name] = x
 
     def add_primitive(self, x):
-        if x.name in self.primitives:
+        if x.name in self._primitives:
             raise RuntimeError(
                 'Primitive %s was already added to the platform' % (x.name))
-        self.primitives[x.name] = x
+        self._primitives[x.name] = x
 
     def to_pydot(self):
         """
@@ -302,7 +314,7 @@ class Platform(object):
         dot = pydot.Dot(graph_type='digraph', strict=True)
 
         processor_nodes = {}
-        for s in self.schedulers.values():
+        for s in self.schedulers():
             cluster = pydot.Cluster('scheduler_' + s.name, label=s.name)
             dot.add_subgraph(cluster)
             for p in s.processors:
@@ -312,7 +324,7 @@ class Platform(object):
                 cluster.add_node(node)
 
         primitive_nodes = {}
-        for p in self.primitives.values():
+        for p in self.primitives():
             if p.name in primitive_nodes:
                 node = primitive_nodes[p.name]
             else:

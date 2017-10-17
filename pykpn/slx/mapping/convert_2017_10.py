@@ -39,7 +39,7 @@ def convert(mapping, xml_mapping):
         name = xp.get_id()
         affinity_ref = xp.get_ProcessorAffinityRef()
         p_name = affinity_ref[0].get_processor()
-        processor = platform.find_processor(p_name, True)
+        processor = platform.find_processor(p_name)
         priority = int(xp.get_priority())
         info = ProcessMappingInfo(process_scheduler[name], processor, priority)
         mapping._process_info[name] = info
