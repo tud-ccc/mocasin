@@ -2,27 +2,3 @@
 # All Rights Reserved
 #
 # Authors: Christian Menard
-
-
-from pykpn.platforms.generic_noc import GenericNocPlatform
-from pykpn.platforms.tomahawk2 import Tomahawk2Platform
-
-
-# TODO see if we can implement this in a better way
-
-def createPlatformByName(name):
-    if name is None:
-        raise ValueError('Define the platform')
-
-    elif name[0:name.find('_')] == 'generic':
-        temp1 = name.find('_')
-        temp2 = name[temp1 + 1:].find('_')
-        arch = name[temp1 + 1:temp1 + temp2 + 1]
-        x = int(name[-1])
-        y = int(name[-3])
-        return GenericNocPlatform(arch, x, y)
-
-    elif name == 'tomahawk2':
-        return (Tomahawk2Platform())
-    else:
-        raise ValueError('Platform does not exist')
