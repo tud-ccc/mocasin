@@ -4,6 +4,8 @@
 # Authors: Christian Menard
 
 
+from collections import deque
+
 from pykpn.common.platform import (CommunicationPhase, CommunicationResource,
     Primitive, Processor)
 
@@ -64,17 +66,16 @@ class Bus(CommunicationResource):
         """
         if connections is None:
             connections = []
-
         if hierarchy is None:
-            hierarchy = [self]
-        else:
-            hierarchy.prepend(self)
+            hierarchy = deque()
 
-        connections.append((hierarchy, self._processors))
+        hierarchy.appendleft(self)
+        connections.append((list(hierarchy), self._processors))
 
-        for bus in self._slave_links:
+        for bus in self._master_links:
             bus.get_processor_connections(hierarchy, connections)
 
+        hierarchy.popleft()
         return connections
 
 
@@ -98,7 +99,6 @@ def primitives_from_buses(buses):
     for storage in storages:
         prim = Primitive('cp_%s' % (storage.name))
 
-        print('storage: %s', storage.name)
         # find the bus that connects to this storage
         storage_bus = None
         for b in buses:
@@ -107,10 +107,12 @@ def primitives_from_buses(buses):
                 break
 
         connections = storage_bus.get_processor_connections()
-        for buses, processors in connections:
-            produce = CommunicationPhase('produce', buses + [storage], 'write')
-            consume = CommunicationPhase('consume', buses + [storage], 'read')
-            for p in processors:
+        for c_buses, c_processors in connections:
+            produce = CommunicationPhase(
+                'produce', c_buses + [storage], 'write')
+            consume = CommunicationPhase(
+                'consume', c_buses + [storage], 'read')
+            for p in c_processors:
                 prim.add_producer(p, produce)
                 prim.add_consumer(p, consume)
 
