@@ -40,7 +40,7 @@ class SchedulerMappingInfo:
     :ivar SchedulingPolicy policy: the policy to be used by the scheduler
     :ivar param: a paramter that can be used to configure a scheduling policy
     """
-    def __init__(self, processes, policy, param):
+    def __init__(self, policy, param):
         self.policy = policy
         self.param = param
 
