@@ -49,7 +49,7 @@ class SlxKpnGraph(KpnGraph):
 
             for cn in outgoing:
                 channel = None
-                for c in self.channels.values():
+                for c in self.channels():
                     if cn == c.name:
                         channel = c
                         break
@@ -58,7 +58,7 @@ class SlxKpnGraph(KpnGraph):
 
             for cn in incoming:
                 channel = None
-                for c in self.channels.values():
+                for c in self.channels():
                     if cn == c.name:
                         channel = c
                         break

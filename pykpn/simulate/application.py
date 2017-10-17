@@ -50,7 +50,7 @@ class RuntimeKpnApplication:
 
         # Instantiate all channels
         self._channels = {}
-        for c in kpn_graph.channels.values():
+        for c in kpn_graph.channels():
             c_name = '%s.%s' % (name, c.name)
             mapping_info = mapping.channel_info(c)
             self._channels[c.name] = RuntimeChannel(
@@ -58,7 +58,7 @@ class RuntimeKpnApplication:
 
         # Instantiate all processes
         self._processes = {}
-        for p in kpn_graph.processes.values():
+        for p in kpn_graph.processes():
             p_name = '%s.%s' % (name, p.name)
             mapping_info = mapping.process_info(p)
             proc = RuntimeKpnProcess(p_name, mapping_info, trace_generator,

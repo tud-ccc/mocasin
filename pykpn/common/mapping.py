@@ -66,9 +66,9 @@ class Mapping:
         self._scheduler_info = {}  #: dict of SchedulerMappingInfo
 
         # initialize all valid dictionary entries to None
-        for p in kpn.processes:
+        for p in kpn.processes():
             self._process_info[p] = None
-        for c in kpn.channels:
+        for c in kpn.channels():
             self._channel_info[c] = None
         for s in platform.schedulers:
             self._scheduler_info[s] = None
@@ -129,15 +129,15 @@ class Mapping:
                 primitive_nodes[p.name] = node
 
         process_nodes = {}
-        for p in self._kpn.processes.keys():
-            info = self._process_info[p]
+        for p in self._kpn.processes():
+            info = self._process_info[p.name]
             p_cluster = processor_clusters[info.affinity.name]
-            node = pydot.Node('process_' + p, label=p)
-            process_nodes[p] = node
+            node = pydot.Node('process_' + p.name, label=p.name)
+            process_nodes[p.name] = node
             p_cluster.add_node(node)
 
         channel_nodes = {}
-        for c in self._kpn.channels.values():
+        for c in self._kpn.channels():
             node = pydot.Node('channel_' + c.name, label=c.name,
                               shape='diamond')
             channel_nodes[c.name] = node

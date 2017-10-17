@@ -81,36 +81,42 @@ class KpnChannel(object):
 class KpnGraph(object):
     """Represents the DAG of a KPN application.
 
-    :ivar processes: a dict of KPN processes representing the graph's nodes
-    :type processes: dict[str, KpnProcess]
-    :ivar channels: a dict of KPN channels representing the graph's edges
-    :type channels: dict[str, KpnChannel]
+    :ivar _processes: a dict of KPN _processes representing the graph's nodes
+    :type _processes: dict[str, KpnProcess]
+    :ivar _channels: a dict of KPN _channels representing the graph's edges
+    :type _channels: dict[str, KpnChannel]
     """
 
     def __init__(self):
         """Create an empty graph"""
-        self.processes = {}
-        self.channels = {}
+        self._processes = {}
+        self._channels = {}
 
     def find_process(self, name):
         """Search for a KPN process by its name."""
-        return self.processes[name]
+        return self._processes[name]
 
     def find_channel(self, name, throw=False):
         """Search for a KPN channel by its name."""
-        return self.channels[name]
+        return self._channels[name]
+
+    def processes(self):
+        return self._processes.values()
+
+    def channels(self):
+        return self._channels.values()
 
     def add_process(self, x):
-        if x.name in self.processes:
+        if x.name in self._processes:
             raise RuntimeError(
                 'Process %s was already added to the graph' % (x.name))
-        self.processes[x.name] = x
+        self._processes[x.name] = x
 
     def add_channel(self, x):
-        if x.name in self.channels:
+        if x.name in self._channels:
             raise RuntimeError(
                 'Channel %s was already added to the graph' % (x.name))
-        self.channels[x.name] = x
+        self._channels[x.name] = x
 
     def to_pydot(self):
         """Convert the KPN graph to a dot graph."""
@@ -118,12 +124,12 @@ class KpnGraph(object):
 
         process_nodes = {}
 
-        for p in self.processes.keys():
+        for p in self._processes.keys():
             node = pydot.Node('process_' + p, label=p)
             process_nodes[p] = node
             dot.add_node(node)
 
-        for c in self.channels.values():
+        for c in self._channels.values():
             src_node = process_nodes[c.source.name]
             for s in c.sinks:
                 sink_node = process_nodes[s.name]
