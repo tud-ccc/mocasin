@@ -124,6 +124,7 @@ class RuntimeChannel(object):
 
         Wait until the process ``process`` can consume ``num`` tokens. Then,
         unblock the process.
+
         :param process: the process that waits
         :type process: RuntimeKpnProcess
         :param num: number of tokens to wait for
@@ -147,6 +148,7 @@ class RuntimeChannel(object):
 
         Wait until the process ``process`` can produce ``num`` tokens. Then,
         unblock the process.
+
         :param process: the process that waits
         :type process: RuntimeKpnProcess
         :param num: number of free slots to wait for

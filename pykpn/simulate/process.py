@@ -15,6 +15,7 @@ log = logging.getLogger(__name__)
 
 class ProcessState(Enum):
     """Denotes the state of a runtime process object.
+
     :cvar int NOT_STARTED: The process is instantiated but not started yet.
     :cvar int READY:       The process is ready and waits to be scheduled.
     :cvar int RUNNING:     The process is currently being executed.
@@ -95,6 +96,7 @@ class RuntimeProcess(object):
 
         This is not intended to be used directly and should always be called
         by a subclass.
+
         :param name: The process name. This should be unique within the system.
         :param env: the simpy environment
         :type name: str
