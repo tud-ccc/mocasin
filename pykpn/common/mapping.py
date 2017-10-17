@@ -41,7 +41,6 @@ class SchedulerMappingInfo:
     :ivar param: a paramter that can be used to configure a scheduling policy
     """
     def __init__(self, processes, policy, param):
-        self.processes = processes
         self.policy = policy
         self.param = param
 
@@ -99,6 +98,20 @@ class Mapping:
         :rtype SchedulerMappingInfo or None
         """
         return self._scheduler_info[scheduler.name]
+
+    def scheduler_processes(self, scheduler):
+        """Get a list of processes mapped to a scheduler
+
+        :param Scheduler scheduler: scheduler to look up
+        :return: a list of processes
+        :rtype: list[KpnProcess]
+        """
+        processes = []
+        for p in self._kpn.processes():
+            info = self.process_info(p)
+            if scheduler is info.scheduler:
+                processes.append(p)
+        return processes
 
     def to_pydot(self):
         """Convert the mapping to a dot graph

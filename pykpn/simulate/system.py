@@ -58,8 +58,7 @@ class RuntimeSystem:
             self._schedulers.append(scheduler)
 
             for app in applications:
-                mapping_info = app.mapping.scheduler_info(s)
-                for p in mapping_info.processes:
+                for p in app.mapping.scheduler_processes(s):
                     scheduler.add_process(app.find_process(p.name))
 
         # Since the platform classes are designed such that they are
