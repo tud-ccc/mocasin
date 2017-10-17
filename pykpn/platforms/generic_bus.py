@@ -12,7 +12,7 @@ from pykpn.common.platform.bus import Bus, primitives_from_buses
 class GenericBusPlatform(Platform):
     """Represents a flat bus-based platform"""
 
-    def __init__(self, num_processors):
+    def __init__(self, name, num_processors):
         """Initialize the platform
 
         Generate `num_processors` processors and schedulers and connect
@@ -20,7 +20,7 @@ class GenericBusPlatform(Platform):
         connects it to the bus. Based on this bus setup, the primitive for
         communication via shared RAM is generated.
         """
-        super().__init__()
+        super().__init__(name)
 
         fd_pes = FrequencyDomain('fd_pes', 500000000)
         fd_ram = FrequencyDomain('fd_ram', 100000000)
@@ -49,7 +49,7 @@ class GenericBusPlatform(Platform):
 class GenericClusteredPlatform(Platform):
     """Represents a hierarchical, clustered, bus-based platform"""
 
-    def __init__(self, num_clusters, cluster_size, hierarchy_levels):
+    def __init__(self, name, num_clusters, cluster_size, hierarchy_levels):
         """Initialize the platform
 
         Generate a hierarchy of clusters connected by buses. On the lowest
@@ -64,11 +64,12 @@ class GenericClusteredPlatform(Platform):
         cluster_size chilren. The leafe nodes are processors and all other
         nodes are buses.
 
+        :param str name: platform name
         :param int num_clusters: number of top-level clusters
         :param int cluster_size: number of nodes per cluster
         :param int hierarchy_levels: number of levels in the hierarchy
         """
-        super().__init__()
+        super().__init__(name)
 
         if hierarchy_levels < 2:
             raise ValueError('Number of hierarchies needs to be at least 2')

@@ -240,12 +240,13 @@ class Platform(object):
     platform by creating the corresponding objects.
     """
 
-    def __init__(self):
+    def __init__(self, name):
         """Initialize the platform.
 
         This initializes all attributes to empty dicts. Derived classes should
         fill these dicts with objects in order to build a real platform.
         """
+        self.name = name
         self._processors = {}               #: dict of processors
         self._communication_resources = {}  #: dict of communication resources
         self._primitives = {}               #: dict of communication primitives

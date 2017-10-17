@@ -22,7 +22,8 @@ class SlxRuntimeSystem(RuntimeSystem):
         :param simpy.Environment env: the simpy environment
         """
         version = config.slx_version
-        platform = SlxPlatform(config.platform_xml, config.slx_version)
+        platform = SlxPlatform('slx_platform', config.platform_xml,
+                               config.slx_version)
         applications = []
         for app_config in config.applications:
             name = app_config.name
