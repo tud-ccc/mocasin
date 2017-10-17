@@ -5,6 +5,8 @@
 
 import pydot
 
+import math
+
 
 class FrequencyDomain:
 
@@ -316,11 +318,12 @@ class Platform(object):
             else:
                 node = pydot.Node('primitive_' + p.name, label=p.name)
                 dot.add_node(node)
+            minlen = 1 + math.log(len(p.consumers) + len(p.producers)) * 2
             for x in p.producers:
                 from_node = processor_nodes[x.name]
-                dot.add_edge(pydot.Edge(from_node, node, minlen=4))
+                dot.add_edge(pydot.Edge(from_node, node, minlen=minlen))
             for x in p.consumers:
                 to_node = processor_nodes[x.name]
-                dot.add_edge(pydot.Edge(node, to_node, minlen=4))
+                dot.add_edge(pydot.Edge(node, to_node, minlen=minlen))
 
         return dot
