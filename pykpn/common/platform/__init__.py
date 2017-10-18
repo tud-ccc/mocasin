@@ -165,6 +165,29 @@ class Primitive:
         self.produce_phases[src.name] = phases
         self.producers.append(src)
 
+    def is_suitable(self, src, sinks):
+        """Check if the primitive is suitable to implement a desired channel
+
+        Checks if the `src` processor is in the :attr:`producers` list and
+        if all `sink` processors are in the :attr:`consumers` list.
+
+        :param src: a src processor
+        :type src: Processor
+        :param sinks: non-empty list of sink processors
+        :type sinks: list[Processor]
+        :returns: ``True`` if the primitive is suitable for implementing the
+            channel
+        :rtype: bool
+        """
+        assert(len(sinks) > 0)
+
+        if src not in self.producers:
+            return False
+        for s in sinks:
+            if s not in self.consumers:
+                return False
+        return True
+
 
 class SchedulingPolicy:
     """Represents a scheduling policy.
