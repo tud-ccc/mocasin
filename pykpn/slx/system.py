@@ -4,6 +4,8 @@
 # Authors: Christian Menard
 
 
+import os
+
 from pykpn import slx
 from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.simulate.system import RuntimeSystem
@@ -23,7 +25,9 @@ class SlxRuntimeSystem(RuntimeSystem):
         :param simpy.Environment env: the simpy environment
         """
         slx.set_version(config.slx_version)
-        platform = SlxPlatform('slx_platform', config.platform_xml)
+
+        name = os.path.splitext(os.path.basename(config.platform_xml))[0]
+        platform = SlxPlatform(name, config.platform_xml)
 
         applications = []
         for app_config in config.applications:
