@@ -66,11 +66,11 @@ class Mapping:
 
         # initialize all valid dictionary entries to None
         for p in kpn.processes():
-            self._process_info[p] = None
+            self._process_info[p.name] = None
         for c in kpn.channels():
-            self._channel_info[c] = None
+            self._channel_info[c.name] = None
         for s in platform.schedulers():
-            self._scheduler_info[s] = None
+            self._scheduler_info[s.name] = None
 
     def channel_info(self, channel):
         """Look up the mapping info of a channel.
@@ -112,6 +112,24 @@ class Mapping:
             if scheduler is info.scheduler:
                 processes.append(p)
         return processes
+
+    def add_channel_info(self, channel, info):
+        """Add a channel mapping"""
+        assert channel.name in self._channel_info
+        assert self._channel_info[channel.name] is None
+        self._channel_info[channel.name] = info
+
+    def add_process_info(self, process, info):
+        """Add a process mapping"""
+        assert process.name in self._process_info
+        assert self._process_info[process.name] is None
+        self._process_info[process.name] = info
+
+    def add_scheduler_info(self, scheduler, info):
+        """Add a scheduler config"""
+        assert scheduler.name in self._scheduler_info
+        assert self._scheduler_info[scheduler.name] is None
+        self._scheduler_info[scheduler.name] = info
 
     def to_pydot(self):
         """Convert the mapping to a dot graph
