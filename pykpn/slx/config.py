@@ -10,7 +10,6 @@ import os
 import pint
 
 from pykpn.common import logging
-from pykpn.slx import VERSIONS
 
 
 log = logging.getLogger(__name__)
@@ -85,8 +84,6 @@ class SlxSimulationConfig:
 
         # parse the ini version
         version = conf['simulation']['slx_version']
-        if version not in VERSIONS:
-            raise ValueError('SLX version %s is not supported' % self.version)
         self.slx_version = version
 
         # parse the platform

@@ -6,6 +6,7 @@
 
 import pint
 
+from pykpn import slx
 from pykpn.common import logging
 from pykpn.common.mapping import (ChannelMappingInfo, Mapping,
     ProcessMappingInfo, SchedulerMappingInfo)
@@ -19,12 +20,12 @@ _ur = pint.UnitRegistry()
 
 class SlxMapping(Mapping):
 
-    def __init__(self, kpn, platform, mapping_file, version='2017.10'):
+    def __init__(self, kpn, platform, mapping_file):
         super().__init__(kpn, platform)
 
-        self._slx_version = version
-
         log.info('Start parsing the SLX mapping ' + mapping_file)
+
+        version = slx.get_version()
 
         # load the xml
         with open(mapping_file) as mf:
@@ -96,10 +97,12 @@ class SlxMapping(Mapping):
         log.info('Done parsing the SLX mapping')
 
     def export(self, file_name):
-        export_slx_mapping(self, file_name, self._slx_version)
+        export_slx_mapping(self, file_name)
 
 
-def export_slx_mapping(mapping, file_name, version='2017.10'):
+def export_slx_mapping(mapping, file_name):
+    version = slx.get_version()
+
     if (version == '2017.10'):
         from ._2017_10 import slxmapping
     elif (version == '2017.04'):
