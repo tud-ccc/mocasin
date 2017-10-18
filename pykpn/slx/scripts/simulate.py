@@ -30,17 +30,22 @@ def main():
 
     logging.setup_from_args(args)
 
-    # parse the config file
-    config = SlxSimulationConfig(args.configFile)
+    try:
+        # parse the config file
+        config = SlxSimulationConfig(args.configFile)
 
-    # Create the system
-    env = simpy.Environment()
-    system = SlxRuntimeSystem(config, env)
+        # Create the system
+        env = simpy.Environment()
+        system = SlxRuntimeSystem(config, env)
 
-    # Run the simulation
-    system.simulate()
+        # Run the simulation
+        system.simulate()
 
-    system.check_errors()
+        system.check_errors()
+    except Exception as e:
+        log.exception(str(e))
+        if hasattr(e, 'details'):
+            log.info(e.details())
 
 
 if __name__ == '__main__':
