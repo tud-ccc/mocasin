@@ -36,9 +36,19 @@ def main():
     parser.add_argument('configFile', nargs=1,
                         help="input configuration file", type=str)
 
+    parser.add_argument(
+        '-n',
+        '--num-iterations',
+        type=int,
+        help='number of iterations to perform (default: 1000)',
+        dest='num_iterations',
+        default=1000)
+
     args = parser.parse_args()
 
     logging.setup_from_args(args)
+
+    num_iterations = args.num_iterations
 
     try:
         # parse the config file
@@ -59,7 +69,7 @@ def main():
 
         results = []
         start = timeit.default_timer()
-        for i in range(0, 1000):
+        for i in range(0, num_iterations):
             # create the mappings
             mappings = {}
             for app_config in config.applications:
@@ -96,9 +106,10 @@ def main():
                 best_result = r
 
         stop = timeit.default_timer()
-        print('Tested 1000 mappings in ' + str(stop - start) + ' s')
+        print('Tried %d random mappings in %0.1fs' %
+              (num_iterations, stop - start))
         exec_time = float(best_result[0] / 1000000000.0)
-        print('Best simulated execution time: ' + str(exec_time) + ' ms')
+        print('Best simulated execution time: %0.1fms' % (exec_time))
 
     except Exception as e:
         log.exception(str(e))
