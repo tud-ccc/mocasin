@@ -49,6 +49,13 @@ def main():
         help='plot the distribution of execution times (requires matplotlib)',
         dest='plot_distribution')
 
+    parser.add_argument(
+        '-p',
+        '--progess',
+        action='store_true',
+        help='show a progress bar and ETA (requires tqdm)',
+        dest='progress')
+
     args = parser.parse_args()
 
     logging.setup_from_args(args)
@@ -74,7 +81,14 @@ def main():
 
         results = []
         start = timeit.default_timer()
-        for i in range(0, num_iterations):
+
+        if args.progress:
+            from tqdm import tqdm
+            iterator = tqdm(range(0, num_iterations))
+        else:
+            iterator = range(0, num_iterations)
+
+        for i in iterator:
             # create the mappings
             mappings = {}
             for app_config in config.applications:
