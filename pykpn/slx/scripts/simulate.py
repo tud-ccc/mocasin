@@ -7,6 +7,7 @@
 
 
 import argparse
+import timeit
 
 import simpy
 
@@ -39,7 +40,13 @@ def main():
         system = SlxRuntimeSystem(config, env)
 
         # Run the simulation
+        start = timeit.default_timer()
         system.simulate()
+        stop = timeit.default_timer()
+
+        exec_time = float(env.now) / 1000000000.0
+        print('Total simulated time: ' + str(exec_time) + ' ms')
+        print('Total simulation time: ' + str(stop - start) + ' s')
 
         system.check_errors()
     except Exception as e:

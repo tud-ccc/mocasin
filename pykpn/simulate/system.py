@@ -4,8 +4,6 @@
 # Authors: Christian Menard
 
 
-import timeit
-
 from simpy.resources.resource import Resource
 
 from pykpn.common import logging
@@ -109,19 +107,13 @@ class RuntimeSystem:
 
     def simulate(self):
         log.info('Start the simulation')
-        start = timeit.default_timer()
 
         for s in self._schedulers:
             self._env.process(s.run())
 
         self._env.run()
 
-        stop = timeit.default_timer()
-
         log.info('Simulation done')
-        exec_time = float(self._env.now) / 1000000000.0
-        print('Total simulated time: ' + str(exec_time) + ' ms')
-        print('Total simulation time: ' + str(stop - start) + ' s')
 
     def check_errors(self):
         for app in self._applications:
