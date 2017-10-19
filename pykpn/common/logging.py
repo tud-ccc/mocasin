@@ -129,6 +129,13 @@ def add_cli_args(parser):
         dest='verbosity')
 
     parser.add_argument(
+        '-s',
+        '--silent',
+        action="store_true",
+        help='suppress all output except errors (overrides verbosity)',
+        dest='silent')
+
+    parser.add_argument(
         '-w',
         '--log-whitelist',
         nargs='+',
@@ -158,12 +165,15 @@ def add_cli_args(parser):
 
 
 def setup_from_args(args):
-    log_level = l.WARNING
-    if args.verbosity is not None:
+    if args.silent:
+        log_level = l.ERROR
+    elif args.verbosity is not None:
         if args.verbosity >= 2:
             log_level = l.DEBUG
         elif args.verbosity >= 1:
             log_level = l.INFO
+    else:
+        log_level = l.WARNING
 
     setup(log_level, args.whitelist, args.blacklist, args.regex, args.color)
 
