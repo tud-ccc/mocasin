@@ -106,6 +106,8 @@ class SlxTraceReader_2017_04(TraceGenerator):
             segment.n_tokens = int(traceline[2])
         elif traceline[0] == 'e':
             segment.terminate = True
+            # this was the last entry, thus we can and should close the file
+            fh.close()
         else:
             raise RuntimeError('Unexpected trace entry ' + traceline[0])
 
