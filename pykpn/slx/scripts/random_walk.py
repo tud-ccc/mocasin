@@ -23,8 +23,6 @@ from pykpn.simulate.system import RuntimeSystem
 from pykpn.slx.config import SlxSimulationConfig
 
 
-import matplotlib.pyplot as plt
-
 log = logging.getLogger(__name__)
 
 
@@ -43,6 +41,13 @@ def main():
         help='number of iterations to perform (default: 1000)',
         dest='num_iterations',
         default=1000)
+
+    parser.add_argument(
+        '-d',
+        '--plot-distribution',
+        action='store_true',
+        help='plot the distribution of execution times (requires matplotlib)',
+        dest='plot_distribution')
 
     args = parser.parse_args()
 
@@ -110,6 +115,18 @@ def main():
               (num_iterations, stop - start))
         exec_time = float(best_result[0] / 1000000000.0)
         print('Best simulated execution time: %0.1fms' % (exec_time))
+
+        # plot results
+        if args.plot_distribution:
+            import matplotlib.pyplot as plt
+            # exec time in milliseconds
+            exec_times = [float(r[0] / 1000000000.0) for r in results]
+            plt.hist(exec_times, bins=int(num_iterations/20), normed=True)
+            plt.yscale('log', nonposy='clip')
+            plt.title("Mapping Distribution")
+            plt.xlabel("Execution Time [ms]")
+            plt.ylabel("Probability")
+            plt.show()
 
     except Exception as e:
         log.exception(str(e))
