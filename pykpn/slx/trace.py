@@ -108,6 +108,7 @@ class SlxTraceReader_2017_04(TraceGenerator):
             segment.terminate = True
             # this was the last entry, thus we can and should close the file
             fh.close()
+            self._trace_files[process_name] = None
         else:
             raise RuntimeError('Unexpected trace entry ' + traceline[0])
 
