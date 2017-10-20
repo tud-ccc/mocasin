@@ -139,7 +139,7 @@ def main():
 
                 sim_context.app_contexts.append(app_context)
 
-                simulations.append(sim_context)
+            simulations.append(sim_context)
 
         # run the simulations and search for the best mapping
         pool = mp.Pool(processes=args.jobs)
