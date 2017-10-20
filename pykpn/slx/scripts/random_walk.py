@@ -7,13 +7,15 @@
 
 
 import argparse
+import multiprocessing as mp
 import os
 import timeit
-import multiprocessing as mp
 
 import simpy
 
+from ..config import SlxSimulationConfig
 from ..kpn import SlxKpnGraph
+from ..mapping import export_slx_mapping
 from ..platform import SlxPlatform
 from ..trace import SlxTraceReader
 from pykpn import slx
@@ -21,7 +23,6 @@ from pykpn.common import logging
 from pykpn.mapper.random import RandomMapping
 from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.simulate.system import RuntimeSystem
-from pykpn.slx.config import SlxSimulationConfig
 
 
 log = logging.getLogger(__name__)
@@ -54,8 +55,11 @@ def main():
 
     logging.add_cli_args(parser)
 
-    parser.add_argument('configFile', nargs=1,
+    parser.add_argument('config', nargs=1,
                         help="input configuration file", type=str)
+
+    parser.add_argument('outdir',
+                        help="output directory", type=str)
 
     parser.add_argument(
         '-j',
@@ -95,7 +99,7 @@ def main():
 
     try:
         # parse the config file
-        config = SlxSimulationConfig(args.configFile)
+        config = SlxSimulationConfig(args.config)
 
         slx.set_version(config.slx_version)
 
@@ -171,6 +175,14 @@ def main():
             plt.xlabel("Execution Time [ms]")
             plt.ylabel("Probability")
             plt.show()
+
+        outdir = args.outdir
+        if not os.path.exists(outdir):
+            os.makedirs(outdir)
+
+        for ac in best_result.app_contexts:
+            mapping_name = '%s.mapping' % (ac.name)
+            export_slx_mapping(ac.mapping, os.path.join(outdir, mapping_name))
 
     except Exception as e:
         log.exception(str(e))
