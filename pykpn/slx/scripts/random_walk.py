@@ -3,7 +3,7 @@
 # Copyright (C) 2017 TU Dresden
 # All Rights Reserved
 #
-# Authors: Christian Menard
+# Authors: Christian Menard, Andres Goens
 
 
 import argparse
@@ -20,6 +20,7 @@ from ..platform import SlxPlatform
 from ..trace import SlxTraceReader
 from pykpn import slx
 from pykpn.common import logging
+from pykpn.common import mapping
 from pykpn.mapper.random import RandomMapping
 from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.simulate.system import RuntimeSystem
@@ -91,11 +92,19 @@ def main():
         help='show a progress bar and ETA (requires tqdm)',
         dest='progress')
 
+    parser.add_argument(
+        '-V',
+        '--visualize',
+        action='store_true',
+        help='show a visualization of the searched space using t-SNE',
+        dest='visualize')
+
     args = parser.parse_args()
 
     logging.setup_from_args(args)
 
     num_iterations = args.num_iterations
+    visualize = args.visualize
 
     try:
         # parse the config file
@@ -116,6 +125,9 @@ def main():
 
         start = timeit.default_timer()
 
+        if args.visualize:
+            mappings = []
+
         simulations = []
         for i in range(0, num_iterations):
 
@@ -132,6 +144,8 @@ def main():
 
                 # generate a random mapping
                 app_context.mapping = RandomMapping(kpn, platform)
+                if args.visualize:
+                    mappings.append(app_context.mapping)
 
                 # create the trace reader
                 app_context.trace_reader = SlxTraceReader.factory(
@@ -175,6 +189,28 @@ def main():
             plt.xlabel("Execution Time [ms]")
             plt.ylabel("Probability")
             plt.show()
+
+        # visualize searched space
+        if args.visualize:
+            from third_party_dependencies.tsne import tsne
+            import numpy as np
+            from matplotlib import pyplot as plt
+            from matplotlib import cm as cm
+            from matplotlib import mlab as ml
+
+            mapping_tuples = np.array(list(map(lambda o: o.to_list(), mappings)))
+            print(mappings[0].to_list())
+            X = tsne.tsne(mapping_tuples, 2, len(mappings[0]._kpn.processes())+ len(mappings[0]._kpn.channels()), 20.0)
+            #pylab.scatter(X[:,0], X[:,1], 20, exec_times);
+
+
+            gridsize=50
+            plt.subplot(111)
+            plt.hexbin(X[:,0], X[:,1], C=exec_times, gridsize=gridsize, cmap=cm.viridis_r, bins=None)
+            #plt.axis([x.min(), x.max(), y.min(), y.max()])
+
+            cb = plt.colorbar()
+            plt.show()   
 
         outdir = args.outdir
         if not os.path.exists(outdir):

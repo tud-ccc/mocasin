@@ -131,6 +131,39 @@ class Mapping:
         assert self._scheduler_info[scheduler.name] is None
         self._scheduler_info[scheduler.name] = info
 
+    def to_list(self):
+        """Convert to a list (tuple) with processes as entries 
+        and PEs labeled from 0 to NUM_PES"""
+
+        #initialize lists for numbers
+        procs_list = list(map(lambda o: o.name,self._kpn.processes()))
+        chans_list = list(map(lambda o: o.name,self._kpn.channels()))
+        pes_list = list(map(lambda o: o.name,self._platform.processors()))
+        pes = {}
+        for i,pe in enumerate(pes_list):
+            pes[pe] = i
+        res = []
+
+        for proc in procs_list:
+            info = self._process_info[proc]
+            proc_target = pes[info.affinity.name]
+            res.append( proc_target)
+
+        for chan in chans_list:
+            info = self._channel_info[chan]
+            kpn_chan = self._kpn.find_channel(chan)
+            src = kpn_chan.source 
+            src_proc = self._process_info[src.name].affinity
+            snks = kpn_chan.sinks 
+            for snk in snks:
+                snk_proc = self._process_info[snk.name].affinity
+                primitive_costs = info.primitive.static_costs(
+                    src_proc.name, snk_proc.name, token_size=kpn_chan.token_size)
+                primitive_costs *= 1e-7
+                res.append( primitive_costs)
+
+        return res
+
     def to_pydot(self):
         """Convert the mapping to a dot graph
 
