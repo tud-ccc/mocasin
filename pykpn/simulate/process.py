@@ -16,14 +16,14 @@ log = logging.getLogger(__name__)
 class ProcessState(Enum):
     """Denotes the state of a runtime process object.
 
-    :cvar int NOT_STARTED: The process is instantiated but not started yet.
+    :cvar int CREATED: The process is instantiated but not started yet.
     :cvar int READY:       The process is ready and waits to be scheduled.
     :cvar int RUNNING:     The process is currently being executed.
     :cvar int BLOCKED:     The process is blocked and waits for a resource to
                            become available.
     :cvar int FINISHED:    The process completed its execution.
     """
-    NOT_STARTED = 0
+    CREATED = 0
     READY = 1
     RUNNING = 2
     BLOCKED = 3
@@ -84,7 +84,7 @@ class RuntimeProcess(object):
 
     Transitions
     -----------
-    * :func:`start`:    Transition from ``NOT_STARTED`` to ``READY``
+    * :func:`start`:    Transition from ``CREATED`` to ``READY``
     * :func:`activate`: Transition from ``READY`` to ``RUNNING``
     * :func:`finish`:   Transition from ``RUNNING`` to ``FINISHED``
     * :func:`block`:    Transition from ``RUNNING`` to ``BLOCKED``
@@ -105,7 +105,7 @@ class RuntimeProcess(object):
         """
         self.name = name
         self._env = env
-        self._state = ProcessState.NOT_STARTED
+        self._state = ProcessState.CREATED
         self.processor = None
         self._log = SimulateLoggerAdapter(log, name, env)
 
@@ -158,7 +158,7 @@ class RuntimeProcess(object):
         callback to a simpy event.
         :param event: unused (only required for usage as a simpy callback)
         """
-        assert(self._state == ProcessState.NOT_STARTED)
+        assert(self._state == ProcessState.CREATED)
         self._log.debug('Process starts.')
         self.processor = None
         self._transition('READY')

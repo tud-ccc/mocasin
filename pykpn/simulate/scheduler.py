@@ -96,7 +96,7 @@ class RuntimeScheduler(object):
         """
         assert self._env.now == 0
         self._log.debug('add process %s', process.name)
-        if not process.check_state(ProcessState.NOT_STARTED):
+        if not process.check_state(ProcessState.CREATED):
             raise RuntimeError('Processes that are already started cannot be '
                                'added to a scheduler')
         self._processes.append(process)
