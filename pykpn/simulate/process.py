@@ -4,6 +4,15 @@
 # Authors: Christian Menard
 
 
+"""Contains classes that manage simulation of (KPN) processes.
+
+**Classes:**
+    * :class:`ProcessState`: an enumeration of process states
+    * :class:`RuntimeProcess`: base process model
+    * :class:`RuntimeKpnProcess`: KPN process model
+"""
+
+
 from enum import Enum
 
 from pykpn.common import logging
@@ -360,8 +369,8 @@ class RuntimeKpnProcess(RuntimeProcess):
     def workload(self):
         """Replay a KPN execution trace
 
-        This iterates over all segments in the execution trace and performs
-        actions as specified by the segments. By returning, the execution
+        Iterates over all segments in the execution trace and performs actions
+        as specified by the segments. By returning, the execution
         terminates. However, this does not mean that it is actually complete. A
         process may also return when it blocks. Then the execution is resumed
         on the next call of this method.
