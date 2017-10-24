@@ -131,36 +131,87 @@ class Mapping:
         assert self._scheduler_info[scheduler.name] is None
         self._scheduler_info[scheduler.name] = info
 
-    def to_list(self):
-        """Convert to a list (tuple) with processes as entries 
-        and PEs labeled from 0 to NUM_PES"""
+    def affinity(self, process):
+        """Returns the affinity of a KPN process
 
-        #initialize lists for numbers
-        procs_list = list(map(lambda o: o.name,self._kpn.processes()))
-        chans_list = list(map(lambda o: o.name,self._kpn.channels()))
-        pes_list = list(map(lambda o: o.name,self._platform.processors()))
+        :param KpnProcess process: the KPN process
+        :rtype Processor:
+        """
+        return self._process_info[process.name].affinity
+
+    def scheduler(self, process):
+        """Returns the scheduler that a KPN process is mapped to
+
+        :param KpnProcess process: the KPN process
+        :rtype Scheduler:
+        """
+        return self._process_info[process.name].scheduler
+
+    def primitive(self, channel):
+        """Returns the primitive that a KPN channel is mapped to
+
+        :param KpnChannel channel: the KPN channel
+        :rtype Primitive:
+        """
+        return self._channel_info[channel.name].primitive
+
+    def capacity(self, channel):
+        """Returns the capacity (number of tokens) of a KPN channel
+
+        :param KpnChannel channel: the KPN channel
+        :rtype int:
+        """
+        return self._channel_info[channel.name].capacity
+
+    def channel_source(self, channel):
+        """Returns the source processor of a KPN channel
+
+        :param KpnChannel channel: the KPN channel
+        :rtype Processor:
+        """
+        source = self._kpn.find_channel(channel.name).source
+        return self.affinity(source)
+
+    def channel_sinks(self, channel):
+        """Returns the list of sink processors for a KPN channel
+
+        :param KpnChannel channel: the KPN channel
+        :rtype list[Processor]:
+        """
+        sinks = self._kpn.find_channel(channel.name).sinks
+        return [self.affinity(s) for s in sinks]
+
+    def to_list(self):
+        """Convert to a list (tuple) with processes as entries and PEs labeled
+        from 0 to NUM_PES"""
+
+        # initialize lists for numbers
+        procs_list = self._kpn.processes()
+        chans_list = self._kpn.channels()
+        pes_list = self._platform.processors()
+
+        # map PEs to an integer
         pes = {}
-        for i,pe in enumerate(pes_list):
-            pes[pe] = i
+        for i, pe in enumerate(pes_list):
+            pes[pe.name] = i
         res = []
 
+        # add one result entry for each process mapping
         for proc in procs_list:
-            info = self._process_info[proc]
-            proc_target = pes[info.affinity.name]
-            res.append( proc_target)
+            res.append(pes[self.affinity(proc).name])
 
+        # add one result entry for each KPN channel (multiple in case of
+        # multiple reader channels)
         for chan in chans_list:
-            info = self._channel_info[chan]
-            kpn_chan = self._kpn.find_channel(chan)
-            src = kpn_chan.source 
-            src_proc = self._process_info[src.name].affinity
-            snks = kpn_chan.sinks 
-            for snk in snks:
-                snk_proc = self._process_info[snk.name].affinity
-                primitive_costs = info.primitive.static_costs(
-                    src_proc.name, snk_proc.name, token_size=kpn_chan.token_size)
-                primitive_costs *= 1e-7
-                res.append( primitive_costs)
+            src = self.channel_source(chan)
+            sinks = self.channel_sinks(chan)
+            prim = self.primitive(chan)
+            for snk in sinks:
+                primitive_costs = prim.static_costs(
+                    src, snk, token_size=chan.token_size)
+                primitive_costs *= 1e-7  # scale down
+                # TODO Probably it is better to normalize the values
+                res.append(primitive_costs)
 
         return res
 
