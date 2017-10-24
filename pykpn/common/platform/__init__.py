@@ -165,6 +165,41 @@ class Primitive:
         self.produce_phases[src.name] = phases
         self.producers.append(src)
 
+    def static_consume_costs(self,sink_processor_name,token_size=8):
+        """Returns the total (static) costs for a consume operation
+
+        :param token_size: the size of a token for the costs
+        :param sink_processor_name: name of the sink processor for which the
+            costs are to be retrieved
+        """
+        costs = 0
+        for ph in self.consume_phases[sink_processor_name]:
+            costs += ph.get_costs(token_size)
+        return costs
+            
+    def static_produce_costs(self,src_processor_name,token_size=8):
+        """Returns the total (static) costs for a produce operation
+
+        :param token_size: the size of a token for the costs
+        :param processor_name: name of the processor for which the
+            costs are to be retrieved
+        """
+        costs = 0
+        for ph in self.produce_phases[src_processor_name]:
+            costs += ph.get_costs(token_size)
+        return costs
+
+    def static_costs(self,src_processor_name,sink_processor_name,token_size=8):
+        """Returns the total (static) costs for a produce and 
+        consume operation
+
+        :param token_size: the size of a token for the costs
+        :param processor_name: name of the processor for which the
+            costs are to be retrieved
+        """
+        return(self.static_consume_costs(src_processor_name,token_size=token_size) +
+               self.static_consume_costs(sink_processor_name,token_size=token_size))
+
     def is_suitable(self, src, sinks):
         """Check if the primitive is suitable to implement a desired channel
 
