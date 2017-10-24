@@ -310,15 +310,12 @@ class RuntimeKpnProcess(RuntimeProcess):
     :vartype _current_segment: TraceSegment
     """
 
-    def __init__(self, name, mapping_info, trace_generator, env,
-                 start_at_tick=0):
+    def __init__(self, name, trace_generator, env, start_at_tick=0):
         """Initialize a kpn runtime process
 
         :param name: The process name. This should be unique across
             applications within the same system.
         :type name: str
-        :param mapping_info: the mapping info object for this process
-        :type mapping_info: ProcessMappingInfo
         :param trace_generator: a trace generator object
         :type trace_generator: TraceGenerator
         :param env: the simpy environment
