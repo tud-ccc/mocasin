@@ -12,12 +12,22 @@ from pykpn.simulate.process import (ProcessState, RuntimeKpnProcess,
     RuntimeProcess)
 
 
+@pytest.fixture
+def kpn_process(env):
+    return RuntimeKpnProcess('test', Mock(), env, start_at_tick=1000)
+
+
+@pytest.fixture
+def base_process(env):
+    return RuntimeProcess('test', env)
+
+
 @pytest.fixture(params=['base', 'kpn'])
 def process(request, env):
     if request.param == 'base':
-        proc = RuntimeProcess('test', env)
+        proc = base_process(env)
     elif request.param == 'kpn':
-        proc = RuntimeKpnProcess('test', None, env, start_at_tick=1000)
+        proc = kpn_process(env)
     else:
         raise ValueError('Unexpected fixture parameter')
 
@@ -120,11 +130,6 @@ class TestRuntimeProcess(object):
 
 
 @pytest.fixture
-def kpn_process(env):
-    return RuntimeKpnProcess('test', Mock(), env, start_at_tick=1000)
-
-
-@pytest.fixture
 def processor():
     processor = Mock()
     processor.name = 'Test'
@@ -204,6 +209,17 @@ class TestRuntimeKpnProcess:
             self.i += 1
             return t
 
+    class InvalidTraceGenerator(TraceGenerator):
+
+        def next_segment(self, process_name, processor_type):
+            t = TraceSegment()
+            t.processing_cycles = 10
+            t.write_to_channel = 'chan1'
+            t.n_tokens = 1
+            t.read_from_channel = 'chan2'
+            t.terminate = True
+            return t
+
     def _run(self, env, kpn_process, processor, trace_generator=None,
              channel=None):
         kpn_process._trace_generator = trace_generator
@@ -215,7 +231,7 @@ class TestRuntimeKpnProcess:
     def test_auto_start(self, env, kpn_process):
         event = kpn_process.ready
         env.run()
-        assert kpn_process._state == ProcessState.READY
+        assert kpn_process.check_state(ProcessState.READY)
         assert event.ok
 
     def test_workload_execution(self, env, kpn_process, processor):
@@ -285,3 +301,31 @@ class TestRuntimeKpnProcess:
         self._run_after_block(env, kpn_process, processor)
         assert kpn_process._state == ProcessState.FINISHED
         assert env.now == 6015
+
+    def test_workload_invalid(self, env, kpn_process, processor):
+        with pytest.raises(RuntimeError):
+            self._run(env, kpn_process, processor,
+                      self.InvalidTraceGenerator())
+
+    def test_connect_to_incomming_channel(self, kpn_process):
+        channel = Mock()
+        channel.name = 'test'
+        kpn_process.connect_to_incomming_channel(channel)
+        assert kpn_process._channels['test'] is channel
+        channel.add_sink.assert_called_once_with(kpn_process)
+
+    def test_connect_to_outgoing_channel(self, kpn_process):
+        channel = Mock()
+        channel.name = 'test'
+        kpn_process.connect_to_outgoing_channel(channel)
+        assert kpn_process._channels['test'] is channel
+        channel.set_src.assert_called_once_with(kpn_process)
+
+
+def test_default_workload(env):
+    process = RuntimeProcess('test', env)
+    process.start()
+    env.run()
+    process.activate(Mock())
+    with pytest.raises(NotImplementedError):
+        env.run()
