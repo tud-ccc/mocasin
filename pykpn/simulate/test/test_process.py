@@ -8,26 +8,15 @@ from unittest.mock import Mock
 
 import pytest
 from pykpn.common.trace import TraceGenerator, TraceSegment
-from pykpn.simulate.process import (ProcessState, RuntimeKpnProcess,
-    RuntimeProcess)
-
-
-@pytest.fixture
-def kpn_process(env):
-    return RuntimeKpnProcess('test', Mock(), env, start_at_tick=1000)
-
-
-@pytest.fixture
-def base_process(env):
-    return RuntimeProcess('test', env)
+from pykpn.simulate.process import ProcessState, RuntimeProcess
 
 
 @pytest.fixture(params=['base', 'kpn'])
-def process(request, env):
+def process(request, base_process, kpn_process):
     if request.param == 'base':
-        proc = base_process(env)
+        proc = base_process
     elif request.param == 'kpn':
-        proc = kpn_process(env)
+        proc = kpn_process
     else:
         raise ValueError('Unexpected fixture parameter')
 
@@ -43,7 +32,7 @@ def state(request):
 class TestRuntimeProcess(object):
 
     def test_init_process_state(self, process):
-        assert process.name == 'test'
+        assert process.name == 'test_proc'
         assert process.processor is None
         assert process._state == ProcessState.CREATED
 
@@ -127,14 +116,6 @@ class TestRuntimeProcess(object):
         else:
             with pytest.raises(AssertionError):
                 process.unblock()
-
-
-@pytest.fixture
-def processor():
-    processor = Mock()
-    processor.name = 'Test'
-    processor.ticks = lambda x: x
-    return processor
 
 
 @pytest.fixture
