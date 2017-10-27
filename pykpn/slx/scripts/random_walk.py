@@ -20,10 +20,10 @@ from ..platform import SlxPlatform
 from ..trace import SlxTraceReader
 from pykpn import slx
 from pykpn.common import logging
-from pykpn.common import mapping
 from pykpn.mapper.random import RandomMapping
 from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.simulate.system import RuntimeSystem
+from pykpn.util import plot
 
 
 log = logging.getLogger(__name__)
@@ -104,7 +104,6 @@ def main():
     logging.setup_from_args(args)
 
     num_iterations = args.num_iterations
-    visualize = args.visualize
 
     try:
         # parse the config file
@@ -192,25 +191,7 @@ def main():
 
         # visualize searched space
         if args.visualize:
-            from third_party_dependencies.tsne import tsne
-            import numpy as np
-            from matplotlib import pyplot as plt
-            from matplotlib import cm as cm
-            from matplotlib import mlab as ml
-
-            mapping_tuples = np.array(list(map(lambda o: o.to_list(), mappings)))
-            print(mappings[0].to_list())
-            X = tsne.tsne(mapping_tuples, 2, len(mappings[0]._kpn.processes())+ len(mappings[0]._kpn.channels()), 20.0)
-            #pylab.scatter(X[:,0], X[:,1], 20, exec_times);
-
-
-            gridsize=50
-            plt.subplot(111)
-            plt.hexbin(X[:,0], X[:,1], C=exec_times, gridsize=gridsize, cmap=cm.viridis_r, bins=None)
-            #plt.axis([x.min(), x.max(), y.min(), y.max()])
-
-            cb = plt.colorbar()
-            plt.show()   
+            plot.visualize_mapping_space(mappings, exec_times)
 
         outdir = args.outdir
         if not os.path.exists(outdir):
