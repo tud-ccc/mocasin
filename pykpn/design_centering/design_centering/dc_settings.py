@@ -13,7 +13,7 @@ show_polynomials      = False      # show approximation polynomials
 show_points           = True       # show hit and miss points
 
 
-max_pe = 16                        # number of processors
+max_pe = 16                        # number of processors (for presentation only)
 distr = "uniform"                  # distribution of samples (uniform, binomial)
 shape = "cube"                     # shape of the used hypervolume (cube)
 oracle = "TestTwoPrKPN"            # oracle to use

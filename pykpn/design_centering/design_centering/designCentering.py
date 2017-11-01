@@ -119,6 +119,7 @@ def main():
             tp.plot_samples(dc.samples)
         logging.info(" >>> center: {} radius: {:f}".format(dc.vol.center, dc.vol.radius))
         print(">>> center: {} radius: {:f}".format(dc.vol.center, dc.vol.radius))
+        print("===== DC done =====")
     else:
         print("usage: python designCentering [x1,x2,...,xn]\n")
 

@@ -21,6 +21,7 @@ from ..trace import SlxTraceReader
 from pykpn import slx
 from pykpn.common import logging
 from pykpn.common import mapping
+from pykpn.common import annotate
 from pykpn.mapper.random import RandomMapping
 from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.simulate.system import RuntimeSystem
@@ -200,14 +201,25 @@ def main():
 
             mapping_tuples = np.array(list(map(lambda o: o.to_list(), mappings)))
             print(mappings[0].to_list())
+            #print(mapping_tuples) #array of mappings
+            
             X = tsne.tsne(mapping_tuples, 2, len(mappings[0]._kpn.processes())+ len(mappings[0]._kpn.channels()), 20.0)
+
+            #print(X[:,0])
+            #print(X[:,1])
             #pylab.scatter(X[:,0], X[:,1], 20, exec_times);
 
 
             gridsize=50
-            plt.subplot(111)
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
             plt.hexbin(X[:,0], X[:,1], C=exec_times, gridsize=gridsize, cmap=cm.viridis_r, bins=None)
             #plt.axis([x.min(), x.max(), y.min(), y.max()])
+            
+            # the sorting seems to be uneffected from the mapping tuples to X
+            annotes = mapping_tuples
+            af =  annotate.AnnoteFinder(X[:,0],X[:,1], annotes, ax=ax)
+            fig.canvas.mpl_connect('button_press_event', af)
 
             cb = plt.colorbar()
             plt.show()   
