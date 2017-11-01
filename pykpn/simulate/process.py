@@ -4,6 +4,15 @@
 # Authors: Christian Menard
 
 
+"""Contains classes that manage simulation of (KPN) processes.
+
+**Classes:**
+    * :class:`ProcessState`: an enumeration of process states
+    * :class:`RuntimeProcess`: base process model
+    * :class:`RuntimeKpnProcess`: KPN process model
+"""
+
+
 from enum import Enum
 
 from pykpn.common import logging
@@ -14,95 +23,91 @@ log = logging.getLogger(__name__)
 
 
 class ProcessState(Enum):
-    """Denotes the state of a runtime process object.
+    """Denotes the state of a runtime process."""
 
-    :cvar int CREATED: The process is instantiated but not started yet.
-    :cvar int READY:       The process is ready and waits to be scheduled.
-    :cvar int RUNNING:     The process is currently being executed.
-    :cvar int BLOCKED:     The process is blocked and waits for a resource to
-                           become available.
-    :cvar int FINISHED:    The process completed its execution.
-    """
     CREATED = 0
+    """The process is instantiated but not started yet."""
     READY = 1
+    """The process is ready and waits to be scheduled."""
     RUNNING = 2
+    """The process is currently being executed."""
     BLOCKED = 3
+    """The process is blocked and waits for a resource to become available."""
     FINISHED = 4
+    """The process completed its execution."""
 
 
 class RuntimeProcess(object):
     """Runtime instance of a process.
 
-    This class implements the process state machine and provides an API for
-    managing the process from outside (e.g. by a scheduler). It is designed to
-    be a base class and does not provide any functionality. In order to be
-    useful, subclasses need to override the :func:`workload` method.
+    Implements a process state machine and provides an API for triggering valid
+    transitions from outside (e.g. by a scheduler). This class is designed to
+    be a base class and does not provide any functionality. Subclasses should
+    override :func:`workload` to implement the process functionality.
 
-    :ivar name: the process name
-    :type name: str
-    :ivar _env: the simpy environment
-    :type _env: simpy.core.Environment
-    :ivar _state: The current process state.
-    :type _state: ProcessState
-    :ivar _log: an logger adapter to print messages with simulation context
-    :type _log: SimulateLoggerAdapter
+    **State Machine:**
 
-    :ivar processor: the processor that the processes currently runs on. This
-        attribute is only valid in the ``RUNNING`` state.
-    :type processor: Processor
+        **States:** See :class:`ProcessState`.
 
-    :ivar ready: An event that triggers on entering the ``READY`` state.
-    :ivar running: An event that triggers on entering the ``RUNNING`` state.
-    :ivar finished: An event that triggers on entering the ``FINISHED`` state.
-    :ivar blocked: An event that triggers on entering the ``BLOCKED`` state.
-    :type ready: :class:`simpy.events.Event`
-    :type running: :class:`simpy.events.Event`
-    :type finished: :class:`simpy.events.Event`
-    :type blocked: :class:`simpy.events.Event`
+        **Events:**
+          * :attr:`~created`: Triggered on entering the
+            :const:`~ProcessState.CREATED` state.
+          * :attr:`~ready`: Triggered on entering the
+            :const:`~ProcessState.READY` state.
+          * :attr:`~running`: Triggered on entering the
+            :const:`~ProcessState.RUNNING` state.
+          * :attr:`~finished`: Triggered on entering the
+            :const:`~ProcessState.FINISHED` state.
+          * :attr:`~blocked`: Triggered on entering the
+            :const:`~ProcessState.BLOCKED` state.
 
-    State Machine
-    =============
-    This section describes the state machine that this class implements.
+        **Entry Actions:**
+          * :func:`_cb_created`:  Callback of :attr:`created`
+          * :func:`_cb_ready`:  Callback of :attr:`ready`
+          * :func:`_cb_running`:  Callback of :attr:`running`
+          * :func:`_cb_finished`: Callback of :attr:`finished`
+          * :func:`_cb_blocked`: Callback of :attr:`blocked`
 
-    States
-    ------
-    See :class:`ProcessState`.
+        **Transitions:**
+          * :func:`start`: Transition from :const:`~ProcessState.CREATED` to
+            :const:`~ProcessState.READY`
+          * :func:`activate`: Transition from :const:`~ProcessState.READY` to
+            :const:`~ProcessState.RUNNING`
+          * :func:`finish`: Transition from :const:`~ProcessState.RUNNING` to
+            :const:`~ProcessState.FINISHED`
+          * :func:`block`: Transition from :const:`~ProcessState.RUNNING` to
+            :const:`~ProcessState.BLOCKED`
+          * :func:`unblock`: Transition from :const:`~ProcessState.BLOCKED` to
+            :const:`~ProcessState.READY`
 
-    Events
-    ------
-    * :attr:`ready`:  Triggered on entering the ``READY`` state.
-    * :attr:`running`:  Triggered on entering the ``RUNNING`` state.
-    * :attr:`finished`: Triggered on entering the ``FINISHED`` state.
-    * :attr:`blocked`: Triggered on entering the ``BLOCKED`` state.
-
-    Entry Actions
-    -------------
-    * :func:`_cb_ready`:  Callback of :attr:`ready`
-    * :func:`_cb_running`:  Callback of :attr:`running`
-    * :func:`_cb_finished`: Callback of :attr:`finished`
-    * :func:`_cb_blocked`: Callback of :attr:`blocked`
-
-    Transitions
-    -----------
-    * :func:`start`:    Transition from ``CREATED`` to ``READY``
-    * :func:`activate`: Transition from ``READY`` to ``RUNNING``
-    * :func:`finish`:   Transition from ``RUNNING`` to ``FINISHED``
-    * :func:`block`:    Transition from ``RUNNING`` to ``BLOCKED``
-    * :func:`unblock`:  Transition from ``BLOCKED`` to ``READY``
+    Note:
+        This class should never be instantiated directly. Instead a subclass
+        that overrides :func:`workload` should be defined.
+    Attributes:
+        name (str): the process name
+        _env (~simpy.core.Environment): the simpy environment
+        _state (ProcessState): The current process state.
+        _log (SimulateLoggerAdapter): an logger adapter to print messages with
+            simulation context
+        processor (Processor): the processor that the processes currently runs
+            on. This attribute is only valid in the
+            :const:`~ProcessState.RUNNING` state.
+        created (~simpy.events.Event): An event that triggers on entering the
+            :const:`~ProcessState.CREATED` state.
+        ready (~simpy.events.Event): An event that triggers on entering the
+            :const:`~ProcessState.READY` state.
+        running (~simpy.events.Event): An event that triggers on entering the
+            :const:`~ProcessState.RUNNING` state.
+        finished (~simpy.events.Event): An event that triggers on entering the
+            :const:`~ProcessState.FINISHED` state.
+        blocked (~simpy.events.Event): An event that triggers on entering the
+            :const:`~ProcessState.BLOCKED` state.
+    Args:
+        name (str): The process name (should be unique within the system)
+        env (~simpy.core.Environment): the simpy environment
     """
 
     def __init__(self, name, env):
-        """Initialize a runtime process.
-
-        This is not intended to be used directly and should always be called
-        by a subclass.
-
-        :param name: The process name. This should be unique within the system.
-        :param env: the simpy environment
-        :type name: str
-        :type env: simpy.core.Environment
-        :type start_event: simpy.events.Event
-        """
         self.name = name
         self._env = env
         self._state = ProcessState.CREATED
@@ -110,6 +115,8 @@ class RuntimeProcess(object):
         self._log = SimulateLoggerAdapter(log, name, env)
 
         # setup the events
+        self.created = self._env.event()
+        self.created.callbacks.append(self._cb_created)
         self.ready = self._env.event()
         self.ready.callbacks.append(self._cb_ready)
         self.running = self._env.event()
@@ -122,11 +129,11 @@ class RuntimeProcess(object):
     def _transition(self, state_name):
         """Helper function for convenient state transitions.
 
-        This updates the process state (:attr:`_state`), triggers the
-        corresponding event, and reinitializes the event. Thereby it is ensured
-        that a new event object is in place # before succeed() is called. This
-        way, the event's callbacks can # immediately register themselves again.
-        :param str state_name: name of the state to be transitioned to
+        Updates the process state (:attr:`_state`), triggers the corresponding
+        event, and reinitializes the event.
+
+        Args:
+            state_name(str): name of the state to be transitioned to
         """
         if not hasattr(ProcessState, state_name):
             raise RuntimeError(
@@ -148,15 +155,27 @@ class RuntimeProcess(object):
         setattr(self, event_name, new_event)
 
     def check_state(self, state):
+        """Compare to internal state
+
+        Args:
+            state(ProcessState): the state to compare to
+        Return:
+            bool: ``True`` if states are equal
+        """
         return self._state == state
 
     def start(self, event=None):
         """Start the process.
 
-        Start the process by transitioning to the ``READY``
-        state. This function may be called directly or be registered as a
-        callback to a simpy event.
-        :param event: unused (only required for usage as a simpy callback)
+        Transition to the :const:`~ProcessState.READY` state. This function may
+        be called directly, but can also be registered as a callback to a simpy
+        event.
+
+        Args:
+            event(~simpy.events.Event): unused (only required for usage as a
+                 simpy callback)
+        Raises:
+            AssertionError: if not in :const:`ProcessState.CREATED` state
         """
         assert(self._state == ProcessState.CREATED)
         self._log.debug('Process starts.')
@@ -166,10 +185,13 @@ class RuntimeProcess(object):
     def activate(self, processor):
         """Start the process execution.
 
-        Start the workload execution by transitioning to the ``RUNNING``
-        state.
-        :param processor: The processor that executes the workload
-        :type processor: Processor
+        Transition to the :const:`~ProcessState.RUNNING` state and update
+        :attr:`processor`.
+
+        Args:
+            processor (Processor): The processor that executes the workload
+        Raises:
+            AssertionError: if not in :const:`ProcessState.READY` state
         """
         assert(self._state == ProcessState.READY)
         self._log.debug('Start workload execution on processor %s',
@@ -180,8 +202,10 @@ class RuntimeProcess(object):
     def finish(self):
         """Terminate the process.
 
-        Terminate the process execution by transitioning to the ``FINISHED``
-        state.
+        Transition to the :const:`~ProcessState.FINISHED` state.
+
+        Raises:
+            AssertionError: if not in :const:`ProcessState.RUNNING` state
         """
         assert(self._state == ProcessState.RUNNING)
         self._log.debug('Workload execution finished.')
@@ -191,8 +215,8 @@ class RuntimeProcess(object):
     def block(self):
         """Block the process.
 
-        Interrupt the process execution by transitioning to the ``BLOCKED``
-        state.
+        Interrupt the process execution by transitioning to the
+        :const:`~ProcessState.BLOCKED` state.
         """
         assert(self._state == ProcessState.RUNNING)
         self._log.debug('Process blocks')
@@ -202,8 +226,10 @@ class RuntimeProcess(object):
     def unblock(self):
         """Unblock the process.
 
-        Mark the process as ready for execution by transitioning to the
-        ``READY`` state.
+        Transitioning to the :const:`~ProcessState.READY` state.
+
+        Raises:
+            AssertionError: if not in :const:`ProcessState.BLOCKED` state
         """
         assert(self._state == ProcessState.BLOCKED)
         self._log.debug('Process unblocks')
@@ -211,50 +237,72 @@ class RuntimeProcess(object):
         self._transition('READY')
 
     def _cb_ready(self, event):
-        """Callback invoked upon entering the ``READY`` state
+        """Callback invoked upon entering the :const:`~ProcessState.READY`
+        state.
 
-        Starts a simpy process that executes :func:`workload`
-        :param event: unused (only required to provide the callback interface)
+        Args:
+            event (~simpy.events.Event): unused (only required to provide the
+                callback interface)
         """
         assert(self._state == ProcessState.READY)
         self._log.debug('Entered READY state')
 
     def _cb_running(self, event):
-        """Callback invoked upon entering the ``RUNNING`` state
+        """Callback invoked upon entering the :const:`~ProcessState.RUNNING`
+        state.
 
         Starts a simpy process that executes :func:`workload`
-        :param event: unused (only required to provide the callback interface)
+
+        Args:
+            event (~simpy.events.event): unused (only required to provide the
+                callback interface)
         """
         assert(self._state == ProcessState.RUNNING)
         self._log.debug('Entered RUNNING state')
         self._env.process(self.workload())
 
     def _cb_finished(self, event):
-        """Callback invoked upon entering the ``FINISHED`` state
+        """Callback invoked upon entering the :const:`~ProcessState.FINISHED`
+        state.
 
-        Does not do anything useful yet
-        :param event: unused (only required to provide the callback interface)
+        Args:
+            event (~simpy.events.event): unused (only required to provide the
+                callback interface)
         """
         assert(self._state == ProcessState.FINISHED)
         self._log.debug('Entered FINISHED state')
-        # TODO do smth useful
 
     def _cb_blocked(self, event):
-        """Callback invoked upon entering the ``BLOCKED`` state
+        """Callback invoked upon entering the :const:`~ProcessState.BLOCKED`
+        state.
 
-        Does not do anything useful yet
-        :param event: unused (only required to provide the callback interface)
+        Args:
+            event (~simpy.events.event): unused (only required to provide the
+                callback interface)
         """
         assert(self._state == ProcessState.BLOCKED)
         self._log.debug('Entered BLOCKED state')
 
+    def _cb_created(self, event):
+        """Callback invoked upon entering the :const:`~ProcessState.CREATED`
+        state.
+
+        Args:
+            event (~simpy.events.event): unused (only required to provide the
+                callback interface)
+        """
+        assert(self._state == ProcessState.CREATED)
+        self._log.debug('Entered CREATED state')
+        print('created')
+
     def workload(self):
-        """Implements the functionality of this process
+        """Implements the process functionality.
 
         This is just a stub and may not be called. This has to be overridden by
         a subclass.
 
-        :raises: NotImplementedError
+        Raises:
+            NotImplementedError
         """
         raise NotImplementedError(
             'This function does not provide any functionality and should '
@@ -264,34 +312,24 @@ class RuntimeProcess(object):
 class RuntimeKpnProcess(RuntimeProcess):
     """Runtime instance of a KPN process.
 
-    :ivar _channels: Dictionary of channel names and there corresponding
-        runtime object. This only includes channels that may be accessed by
-        this process.
-    :type _channels: dict[str, RuntimeChannel]
-    :ivar _trace_generator: a trace generator object
-    :type _trace_generator: TraceGenerator
-    :ivar _start: an event that triggers the start of this process
-    :type _start: simpy.events.Timeout
-    :ivar _current_segment: The trace segment that is currently processed
-    :type _current_segment: TraceSegment
+    Attributes:
+        _channels(dict[str, RuntimeChannel]): Dictionary of channel names and
+            there corresponding runtime object. This only includes channels
+            that may be accessed by this process.
+        _trace_generator (TraceGenerator): a trace generator object
+        _start (~simpy.events.Timeout): a timeout event that triggers the start
+            of this process
+        _current_segment (TraceSegment): The trace segment that is currently
+            processed
+    Args:
+        name (str): The process name. This should be unique across applications
+            within the same system.
+        trace_generator (TraceGenerator): a trace generator object
+        env (~simpy.core.Environment): the simpy environment
+        start_at_tick (int): tick at which the process execution should start
     """
 
-    def __init__(self, name, mapping_info, trace_generator, env,
-                 start_at_tick=0):
-        """Initialize a kpn runtime process
-
-        :param name: The process name. This should be unique across
-            applications within the same system.
-        :type name: str
-        :param mapping_info: the mapping info object for this process
-        :type mapping_info: ProcessMappingInfo
-        :param trace_generator: a trace generator object
-        :type trace_generator: TraceGenerator
-        :param env: the simpy environment
-        :type env: simpy.core.Environment
-        :param start_at_tick: tick at which the process execution should start
-        :type start_at_tick: int
-        """
+    def __init__(self, name, trace_generator, env, start_at_tick=0):
         log.debug('initialize new KPN runtime process (%s)', name)
 
         super().__init__(name, env)
@@ -305,23 +343,23 @@ class RuntimeKpnProcess(RuntimeProcess):
         self._current_segment = None
 
     def connect_to_incomming_channel(self, channel):
-        """Connect the process to a incoming runtime channel
+        """Connect the process to an incoming runtime channel
 
-        This makes this process a sink of the channel.
+        Also makes the process a sink of the channel.
 
-        :param RuntimeChannel channel:
-            the channel to connect to
+        Args:
+            channel (RuntimeChannel): the channel to connect to
         """
         self._channels[channel.name] = channel
         channel.add_sink(self)
 
     def connect_to_outgoing_channel(self, channel):
-        """Connect the process to a outgoing runtime channel
+        """Connect the process to an outgoing runtime channel
 
-        This makes this process the source of the channel.
+        Also makes the process the source of the channel.
 
-        :param RuntimeChannel channel:
-            the channel to connect to
+        Args:
+            channel (RuntimeChannel): the channel to connect to
         """
         self._channels[channel.name] = channel
         channel.set_src(self)
@@ -329,8 +367,8 @@ class RuntimeKpnProcess(RuntimeProcess):
     def workload(self):
         """Replay a KPN execution trace
 
-        This iterates over all segments in the execution trace and performs
-        actions as specified by the segments. By returning, the execution
+        Iterates over all segments in the execution trace and performs actions
+        as specified by the segments. By returning, the execution
         terminates. However, this does not mean that it is actually complete. A
         process may also return when it blocks. Then the execution is resumed
         on the next call of this method.

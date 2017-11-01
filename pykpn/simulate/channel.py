@@ -4,6 +4,10 @@
 # Authors: Christian Menard
 
 
+"""Contains the :class:`RuntimeChannel` class which manages the simulation of
+KPN channels."""
+
+
 from pykpn.common import logging
 from pykpn.simulate.adapter import SimulateLoggerAdapter
 from pykpn.simulate.process import ProcessState
@@ -15,44 +19,35 @@ log = logging.getLogger(__name__)
 class RuntimeChannel(object):
     """Represents the runtime instance of a KPN channel.
 
-    This implements a multiple reader channel, meaning that a channel may have
-    multiple consumers. This is an optimization to the more restrictive KPN
-    channel that only allows one reader. The channel ensures that each consumer
-    receives a copy of each token written to the channel. This implementation
-    keeps a FIFO for every sink process and copies the tokens upon production.
+    Implements the semantics of a multiple reader channel. This means that a
+    channel may have multiple consumers. This is an optimization to the more
+    restrictive KPN channel that only allows one reader. The channel ensures
+    that each consumer receives a copy of each token written to the channel.
+    This implementation keeps a FIFO for each consumer and copies tokens when
+    produced. Initially all FIFOs are empty.
 
-    :ivar name:   the channel name
-    :type name:   str
-    :ivar _env:   the simpy environment
-    :ivar _src:   the source process of this channel
-    :type _src:   RuntimeProcess
-    :ivar _sinks: list of sink processes of this channel
-    :type _sinks: list[RuntimeProcess]
-    :ivar _fifo_state: A dictionary of sink process names (keys) and the number
-                       of tokens currently stored in the FIFO as values.
-    :type _fifo_state: dict[str, int]
-    :ivar _capacity: maximum number of tokens that can be stored in a FIFO
-    :type _capacity: int
-    :ivar _primitive: The communication primitive this channel is mmapped to
-    :type _primitive: PrimitiveGroup
-    :ivar tokens_produced: a simpy event triggered when new tokens where witten
-        to this channel
-    :type tokens_produced: simpy.events.Event
-    :ivar tokens_consumed: a simpy event triggered when tokens where read from
-        the channel
-    :type tokens_consumed: simpy.events.Event
-    :ivar int _token_size: size of one data token in bytes
+    Attributes:
+        name (str): the channel name
+        tokens_consumed (~simpy.events.Event): a simpy event triggered when
+            tokens where read from the channel
+        tokens_produced (~simpy.events.Event): a simpy event triggered when new
+            tokens where written to this channel
+        _env (~simpy.core.Environment): the simpy Environment
+        _src (RuntimeProcess): the source process
+        _sinks (list[RuntimeProcess]): the sink processes
+        _fifo_state (dict[str, int]): A dictionary of sink process names (keys)
+            and the number of tokens currently stored in the FIFO as values.
+        _capacity (int): maximum number of tokens that can be stored in a FIFO
+        _primitive (Primitive): The communication primitive this channel is
+            mmapped to
+
+    Args:
+        name (str): the channel name
+        mapping_info (ChannelMappingInfo): a channel mapping info object
+        token_size(int): size of one data token in bytes
+        env(~simpy.core.Environment): the simpy environment
     """
-
     def __init__(self, name, mapping_info, token_size, env):
-        """Initialize a runtime channel.
-
-        :param str name: the channel name
-        :param mapping_info: a channel mapping info object
-        :type mapping_info: ChannelMappingInfo
-        :param int token_size: size of one data token in bytes
-        :param env: the simpy environment
-        """
         log.debug('initialize new runtime channel: (%s)', name)
 
         self._log = SimulateLoggerAdapter(log, name, env)
@@ -70,65 +65,87 @@ class RuntimeChannel(object):
         self.tokens_consumed = env.event()
 
     def set_src(self, process):
-        """Set the source process
+        """Set the source process.
 
-        :param process: the process to become source to this channel
-        :type process: RuntimeProcess
+        Args:
+            process (RuntimeProcess): the process to become source
+        Raises:
+            AssertionError: if the source was already set
         """
         assert self._src is None
         self._src = process
 
     def add_sink(self, process):
-        """Register a process as sink
+        """Add a sink process.
 
-        :param process: the process to become a sink to this channel
-        :type process: RuntimeProcess
+        Args:
+            process (RuntimeProcess): the process to become a sink
+        Warning:
+            Adding a sink during a simulation might have unexpected effects.
         """
         self._sinks.append(process)
         self._fifo_state[process.name] = 0
 
     def can_consume(self, process, num):
-        """Check if a number of tokens can be consumed.
+        """Check if a process can consume a number of tokens.
 
-        Check if at least ``num`` tokens are stored in the FIFO for the sink
-        process ``process``.
-
-        :param process: the process that tries to consume tokens
-        :type process: RuntimeKpnProcess
-        :param num: number of tokens to be consumed
-        :type num: int
-        :returns: ``True`` if the process can consume ``num`` tokens
-        :rtype: bool
+        Args:
+            process (RuntimeProcess): the process that tries to consume tokens
+            num (int): number of tokens to be consumed (>0)
+        Returns:
+            bool: ``True`` if the process can consume `num` tokens
+        Raises:
+            ValueError: if the process is not registered as a sink
+            ValueError: if `num` is not an integer greater than 0
+            RuntimeError: if no source is registered to the channel
         """
-        assert process in self._sinks
+        if process not in self._sinks:
+            raise ValueError('Process %s is not a sink' % process.name)
+        if (not isinstance(num, int)) or num < 1:
+            raise ValueError('num must be an integer greater than 0')
+        if self._src is None:
+            raise RuntimeError('No source registered to the channel')
         return bool(self._fifo_state[process.name] >= num)
 
     def can_produce(self, process, num):
-        """Check if a number of tokens can be produced
+        """Check if a process can produce a number of tokens.
 
-        Check if all FIFO have at least ``num`` empty slots.
-
-        :param process: the process that tries to produce tokens
-        :type process: RuntimeKpnProcess
-        :param num: number of tokens to be produced
-        :type num: int
-        :returns: ``True`` if the process can consume ``num`` tokens
-        :rtype: bool
+        Args:
+            process (RuntimeProcess): the process that tries to produce tokens
+            num (int): number of tokens to be produced
+        Returns:
+            bool: ``True`` if the process can produce `num` tokens
+        Raises:
+            ValueError: if the process is not registered as a source
+            ValueError: if `num` is not an integer greater than 0
+            RuntimeError: if no sinks are registered to the channel
         """
-        assert self._src is process
+        if process is not self._src:
+            raise ValueError('Process %s is not the source' % process.name)
+        if (not isinstance(num, int)) or num < 1:
+            raise ValueError('num must be an integer greater than 0')
+        if len(self._sinks) == 0:
+            raise RuntimeError('No sinks registered to the channel')
         return all([(self._fifo_state[p.name] + num) <= self._capacity
                     for p in self._sinks])
 
     def wait_for_tokens(self, process, num):
-        """A simpy process that waits for tokens.
+        """An event generator that waits for tokens.
 
-        Wait until the process ``process`` can consume ``num`` tokens. Then,
-        unblock the process.
+        Wait until `process` can consume `num` tokens. Then, unblock `process`
+        and return.
 
-        :param process: the process that waits
-        :type process: RuntimeKpnProcess
-        :param num: number of tokens to wait for
-        :type num: int
+        Note:
+            The process must be in the
+            :const:`~pykpn.simulate.process.ProcessState.BLOCKED` state!
+
+        Args:
+            process (RuntimeProcess): the process that waits for tokens
+            num (int): number of tokens to wait for
+
+        Yields:
+            ~simpy.events.Event: a series of events until `process`
+            can consume `num` tokens
         """
         assert process.check_state(ProcessState.BLOCKED)
 
@@ -144,15 +161,22 @@ class RuntimeChannel(object):
         process.unblock()
 
     def wait_for_slots(self, process, num):
-        """A simpy process that waits for free slots.
+        """An event generator that waits for empty slots.
 
-        Wait until the process ``process`` can produce ``num`` tokens. Then,
-        unblock the process.
+        Wait until `process` can produce `num` tokens. Then, unblock `process`
+        and return.
 
-        :param process: the process that waits
-        :type process: RuntimeKpnProcess
-        :param num: number of free slots to wait for
-        :type num: int
+        Note:
+            The process must be in the
+            :const:`~pykpn.simulate.process.ProcessState.BLOCKED` state!
+
+        Args:
+            process (RuntimeProcess): the process that waits for tokens
+            num (int): number of tokens to wait for
+
+        Yields:
+            ~simpy.events.Event: a series of events until `process`
+            can produce `num` tokens
         """
         assert process.check_state(ProcessState.BLOCKED)
 
@@ -168,17 +192,33 @@ class RuntimeChannel(object):
         process.unblock()
 
     def consume(self, process, num):
-        """Consume tokens
+        """An event generator that models a consume operation.
 
-        :param process: the process that consumes tokens
-        :type process: RuntimeKpnProcess
-        :param num: number of tokens to be consumed
-        :type num: int
-        :returns: a simpy Event that is triggered after the consume operation
-            completed.
-        :rtype: simpy.events.Event
+        Models the consume operation according to the associated primitive
+        (:attr:`_primitive`). It iterates over all communication phases and
+        pays for the communication costs as calculated by the phase object.
+        For each phase, it also iterates over all resources and checks for the
+        ``simpy_resource`` attribute. If present, the resource is requested at
+        the start of the phase and released at its end.
+
+        Note:
+            The process must be in the
+            :const:`~pykpn.simulate.process.ProcessState.RUNNING` state!
+        Args:
+            process (RuntimeProcess): the process that waits for tokens
+            num (int): number of tokens to wait for
+        Yields:
+            ~simpy.events.Event: a series of events until `process`
+            completes the consume operation
+        Raises:
+            ValueError: if the process is not registered as a sink
+            ValueError: if `num` is not an integer greater than 0
+            RuntimeError: if no source is registered to the channel
+            RuntimeError: if `process` cannot access the communication
+                primitive
         """
         assert self.can_consume(process, num)
+        assert process.check_state(ProcessState.RUNNING)
 
         sink = process.processor
         prim = self._primitive
@@ -187,14 +227,14 @@ class RuntimeChannel(object):
         log.debug('start a consume operation reading %d tokens using %s',
                   num, prim.name)
 
-        # update the state
-        new_state = self._fifo_state[process.name] - num
-        self._fifo_state[process.name] = new_state
-
         if sink not in prim.consumers:
             raise RuntimeError(
                 'processor %s cannot consume tokens using the primitive %s' %
                 (sink.name, prim.name))
+
+        # update the state
+        new_state = self._fifo_state[process.name] - num
+        self._fifo_state[process.name] = new_state
 
         for phase in prim.consume_phases[sink.name]:
             log.debug('start communication phase "%s"', phase.name)
@@ -231,17 +271,33 @@ class RuntimeChannel(object):
         self.tokens_consumed = self._env.event()
 
     def produce(self, process, num):
-        """Produce tokens
+        """An event generator that models a produce operation.
 
-        :param process: the process that produces tokens
-        :type process: RuntimeKpnProcess
-        :param num: number of tokens to be produced
-        :type num: int
-        :returns: a simpy Event that is triggered after the produce operation
-            completed.
-        :rtype: simpy.events.Event
+        Models the produce operation according to the associated primitive
+        (:attr:`_primitive`). It iterates over all communication phases and
+        pays for the communication costs as calculated by the phase object.
+        For each phase, it also iterates over all resources and checks for the
+        ``simpy_resource`` attribute. If present, the resource is requested at
+        the start of the phase and released at its end.
+
+        Note:
+            The process must be in the
+            :const:`~pykpn.simulate.process.ProcessState.RUNNING` state!
+        Args:
+            process (RuntimeProcess): the process that waits for tokens
+            num (int): number of tokens to wait for
+        Yields:
+            ~simpy.events.Event: a series of events until `process`
+            completes the produce operation
+        Raises:
+            ValueError: if the process is not registered as a sink
+            ValueError: if `num` is not an integer greater than 0
+            RuntimeError: if no source is registered to the channel
+            RuntimeError: if `process` cannot access the communication
+                primitive
         """
         assert self.can_produce(process, num)
+        assert process.check_state(ProcessState.RUNNING)
 
         src = process.processor
         prim = self._primitive
@@ -250,14 +306,14 @@ class RuntimeChannel(object):
         log.debug('start a produce operation writing %d tokens using %s',
                   num, prim.name)
 
-        # update the state
-        for p in self._fifo_state:
-            self._fifo_state[p] += num
-
         if src not in prim.producers:
             raise RuntimeError(
                 'processor %s cannot produce tokens using the primitive %s' %
                 (src.name, prim.name))
+
+        # update the state
+        for p in self._fifo_state:
+            self._fifo_state[p] += num
 
         for phase in prim.produce_phases[src.name]:
             log.debug('start communication phase "%s"', phase.name)

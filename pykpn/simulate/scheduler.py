@@ -106,7 +106,8 @@ class RuntimeScheduler(object):
         """Callback for the ready event of runtime processes
 
         Append process to the ready queue and call :func:`schedule`.
-        :param event: The event calling the callback. This function expects
+
+        :param event: The event calling the callback. This function expects \
             ``event.value`` to be a valid RuntimeProcess object.
         """
         if not isinstance(event.value, RuntimeProcess):

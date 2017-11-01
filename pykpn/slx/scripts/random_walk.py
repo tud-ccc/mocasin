@@ -20,11 +20,10 @@ from ..platform import SlxPlatform
 from ..trace import SlxTraceReader
 from pykpn import slx
 from pykpn.common import logging
-from pykpn.common import mapping
-from pykpn.common import annotate
 from pykpn.mapper.random import RandomMapping
 from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.simulate.system import RuntimeSystem
+from pykpn.util import plot
 
 
 log = logging.getLogger(__name__)
@@ -100,12 +99,17 @@ def main():
         help='show a visualization of the searched space using t-SNE',
         dest='visualize')
 
+    parser.add_argument(
+        '--export-all',
+        action='store_true',
+        help='export all random mappings to <outdir>',
+        dest='export_all')
+
     args = parser.parse_args()
 
     logging.setup_from_args(args)
 
     num_iterations = args.num_iterations
-    visualize = args.visualize
 
     try:
         # parse the config file
@@ -126,9 +130,8 @@ def main():
 
         start = timeit.default_timer()
 
-        if args.visualize:
-            mappings = []
-
+        # Create a list of 'simulations'. These are later executed by multiple
+        # worker processes.
         simulations = []
         for i in range(0, num_iterations):
 
@@ -145,8 +148,6 @@ def main():
 
                 # generate a random mapping
                 app_context.mapping = RandomMapping(kpn, platform)
-                if args.visualize:
-                    mappings.append(app_context.mapping)
 
                 # create the trace reader
                 app_context.trace_reader = SlxTraceReader.factory(
@@ -159,28 +160,51 @@ def main():
         # run the simulations and search for the best mapping
         pool = mp.Pool(processes=args.jobs)
 
-        best_result = None
-        exec_times = []  # keep a list of exec_times for later
+        # execute the simulations in parallel
         if args.progress:
             import tqdm
-            iter = tqdm.tqdm(pool.imap_unordered(run_simualtion, simulations,
-                                                 chunksize=10),
-                             total=num_iterations)
+            results = list(tqdm.tqdm(pool.map(run_simualtion, simulations,
+                                              chunksize=10),
+                                     total=num_iterations))
         else:
-            iter = pool.imap_unordered(run_simualtion, simulations,
-                                       chunksize=10)
-        for r in iter:
+            results = list(pool.map(run_simualtion, simulations, chunksize=10))
+
+        # calculate the execution times in milliseconds and look for the best
+        # result
+        best_result = results[0]
+        exec_times = []  # keep a list of exec_times for later
+        for r in results:
             exec_times.append(float(r.exec_time / 1000000000.0))
-            if best_result is None or r.exec_time < best_result.exec_time:
+            if r.exec_time < best_result.exec_time:
                 best_result = r
+
+        # When we reach this point, all simulations completed
 
         stop = timeit.default_timer()
         print('Tried %d random mappings in %0.1fs' %
-              (num_iterations, stop - start))
+              (len(results), stop - start))
         exec_time = float(best_result.exec_time / 1000000000.0)
         print('Best simulated execution time: %0.1fms' % (exec_time))
 
-        # plot results
+        # export the best mapping
+        outdir = args.outdir
+        if not os.path.exists(outdir):
+            os.makedirs(outdir)
+        for ac in best_result.app_contexts:
+            mapping_name = '%s.best.mapping' % (ac.name)
+            export_slx_mapping(ac.mapping, os.path.join(outdir, mapping_name))
+
+        # export all mappings if requested
+        idx = 1
+        if args.export_all:
+            for r in results:
+                for ac in r.app_contexts:
+                    mapping_name = '%s.rnd_%08d.mapping' % (ac.name, idx)
+                    export_slx_mapping(ac.mapping,
+                                       os.path.join(outdir, mapping_name))
+                idx += 1
+
+        # plot result distribution
         if args.plot_distribution:
             import matplotlib.pyplot as plt
             # exec time in milliseconds
@@ -193,44 +217,11 @@ def main():
 
         # visualize searched space
         if args.visualize:
-            from third_party_dependencies.tsne import tsne
-            import numpy as np
-            from matplotlib import pyplot as plt
-            from matplotlib import cm as cm
-            from matplotlib import mlab as ml
-
-            mapping_tuples = np.array(list(map(lambda o: o.to_list(), mappings)))
-            print(mappings[0].to_list())
-            #print(mapping_tuples) #array of mappings
-            
-            X = tsne.tsne(mapping_tuples, 2, len(mappings[0]._kpn.processes())+ len(mappings[0]._kpn.channels()), 20.0)
-
-            #print(X[:,0])
-            #print(X[:,1])
-            #pylab.scatter(X[:,0], X[:,1], 20, exec_times);
-
-
-            gridsize=50
-            fig = plt.figure()
-            ax = fig.add_subplot(111)
-            plt.hexbin(X[:,0], X[:,1], C=exec_times, gridsize=gridsize, cmap=cm.viridis_r, bins=None)
-            #plt.axis([x.min(), x.max(), y.min(), y.max()])
-            
-            # the sorting seems to be uneffected from the mapping tuples to X
-            annotes = mapping_tuples
-            af =  annotate.AnnoteFinder(X[:,0],X[:,1], annotes, ax=ax)
-            fig.canvas.mpl_connect('button_press_event', af)
-
-            cb = plt.colorbar()
-            plt.show()   
-
-        outdir = args.outdir
-        if not os.path.exists(outdir):
-            os.makedirs(outdir)
-
-        for ac in best_result.app_contexts:
-            mapping_name = '%s.mapping' % (ac.name)
-            export_slx_mapping(ac.mapping, os.path.join(outdir, mapping_name))
+            if len(results[0].app_contexts) > 1:
+                raise RuntimeError('Search space visualization only works '
+                                   'for single application mappings')
+            mappings = [r.app_contexts[0].mapping for r in results]
+            plot.visualize_mapping_space(mappings, exec_times)
 
     except Exception as e:
         log.exception(str(e))

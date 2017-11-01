@@ -46,7 +46,17 @@ class SchedulerMappingInfo:
 
 
 class Mapping:
-    """Describes the mapping of a KpnGraph to a Platform."""
+    """Describes the mapping of a KpnGraph to a Platform.
+
+    :ivar KpnGraph _kpn: the kpn graph
+    :ivar Platform _platform: the platform
+    :ivar dict[str, ChannelMappingInfo] _channel_info:
+        dict of channel mapping infos
+    :ivar dict[str, ProcessMappingInfo] _process_info:
+        dict of process mapping infos
+    :ivar dict[str, SchedulerMappingInfo] _scheduler_info:
+        dict of scheduler mapping infos
+    """
 
     def __init__(self, kpn, platform):
         """Initialize a Mapping
@@ -57,12 +67,12 @@ class Mapping:
         # The ProcessInfo record is not really required as it only has one
         # item. However, we might want to extend it later
 
-        self._kpn = kpn            #: the kpn graph
-        self._platform = platform  #: the platform
+        self._kpn = kpn
+        self._platform = platform
 
-        self._channel_info = {}    #: dict of ChannelMappingInfo
-        self._process_info = {}    #: dict of ProcessMappingInfo
-        self._scheduler_info = {}  #: dict of SchedulerMappingInfo
+        self._channel_info = {}
+        self._process_info = {}
+        self._scheduler_info = {}
 
         # initialize all valid dictionary entries to None
         for p in kpn.processes():
@@ -76,8 +86,8 @@ class Mapping:
         """Look up the mapping info of a channel.
 
         :param KpnChannel channel: channel to look up
-        :return the mapping info if the channel is mapped
-        :rtype ChannelMappingInfo or None
+        :returns: the mapping info if the channel is mapped
+        :rtype: ChannelMappingInfo or None
         """
         return self._channel_info[channel.name]
 
@@ -85,8 +95,8 @@ class Mapping:
         """Look up the mapping info of a process.
 
         :param KpnProcess process: process to look up
-        :return the mapping info if the process is mapped
-        :rtype ProcessMappingInfo or None
+        :returns: the mapping info if the process is mapped
+        :rtype: ProcessMappingInfo or None
         """
         return self._process_info[process.name]
 
@@ -94,8 +104,8 @@ class Mapping:
         """Look up the mapping info of a scheduler.
 
         :param Scheduler scheduler: scheduler to look up
-        :return the mapping info if the scheduler is mapped
-        :rtype SchedulerMappingInfo or None
+        :returns: the mapping info if the scheduler is mapped
+        :rtype: SchedulerMappingInfo or None
         """
         return self._scheduler_info[scheduler.name]
 
@@ -103,7 +113,7 @@ class Mapping:
         """Get a list of processes mapped to a scheduler
 
         :param Scheduler scheduler: scheduler to look up
-        :return: a list of processes
+        :returns: a list of processes
         :rtype: list[KpnProcess]
         """
         processes = []
@@ -135,7 +145,7 @@ class Mapping:
         """Returns the affinity of a KPN process
 
         :param KpnProcess process: the KPN process
-        :rtype Processor:
+        :rtype: Processor
         """
         return self._process_info[process.name].affinity
 
@@ -143,7 +153,7 @@ class Mapping:
         """Returns the scheduler that a KPN process is mapped to
 
         :param KpnProcess process: the KPN process
-        :rtype Scheduler:
+        :rtype: Scheduler
         """
         return self._process_info[process.name].scheduler
 
@@ -151,7 +161,7 @@ class Mapping:
         """Returns the primitive that a KPN channel is mapped to
 
         :param KpnChannel channel: the KPN channel
-        :rtype Primitive:
+        :rtype: Primitive
         """
         return self._channel_info[channel.name].primitive
 
@@ -159,7 +169,7 @@ class Mapping:
         """Returns the capacity (number of tokens) of a KPN channel
 
         :param KpnChannel channel: the KPN channel
-        :rtype int:
+        :rtype: int
         """
         return self._channel_info[channel.name].capacity
 
@@ -167,7 +177,7 @@ class Mapping:
         """Returns the source processor of a KPN channel
 
         :param KpnChannel channel: the KPN channel
-        :rtype Processor:
+        :rtype: Processor
         """
         source = self._kpn.find_channel(channel.name).source
         return self.affinity(source)
@@ -176,7 +186,7 @@ class Mapping:
         """Returns the list of sink processors for a KPN channel
 
         :param KpnChannel channel: the KPN channel
-        :rtype list[Processor]:
+        :rtype: list[Processor]
         """
         sinks = self._kpn.find_channel(channel.name).sinks
         return [self.affinity(s) for s in sinks]
