@@ -191,6 +191,39 @@ class Mapping:
         sinks = self._kpn.find_channel(channel.name).sinks
         return [self.affinity(s) for s in sinks]
 
+    def to_string(self):
+        """Convert mapping to a simple readable string 
+        :rtype: string 
+        """
+        procs_list = self._kpn.processes()
+        chans_list = self._kpn.channels()
+        pes_list = self._platform.processors()
+        
+        # return processor - process mapping
+        s = ("\nCore Mapping: \n")
+        pes2procs = {}
+        for pe in pes_list:
+            pes2procs.update({pe.name:[]})
+        max_width = max(map(len,pes2procs))
+        for proc in procs_list:
+            pes2procs[self.affinity(proc).name].append(proc.name)
+        for key in sorted(pes2procs):
+            s = ("{0}    {1:{3}} {2}\n".format(s, key,pes2procs[key],max_width))
+
+        # return channel mapping
+        chan2prim = {}
+        s = ("{}Channels:\n".format(s))
+        for c in chans_list:
+            chan2prim.update({c.name:(self.channel_source(c).name,
+                                      self.primitive(c).name)})
+
+        max_width = max(map(len,chan2prim))
+        for key in sorted(chan2prim):
+            s = ("{0}    {1:{4}} {2} - {3}\n".format(s,key,chan2prim[key][0],
+                                                     chan2prim[key][1],max_width))
+
+        return s
+
     def to_list(self):
         """Convert to a list (tuple) with processes as entries and PEs labeled
         from 0 to NUM_PES"""

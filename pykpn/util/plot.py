@@ -8,6 +8,11 @@ from third_party_dependencies.tsne import tsne
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import cm as cm
+from pykpn.util import annotate
+
+#used for pydot -> networkx support
+#import networkx.drawing.nx_pydot as nx
+#import networkx as nwx
 
 
 def visualize_mapping_space(mappings, exec_times):
@@ -25,11 +30,39 @@ def visualize_mapping_space(mappings, exec_times):
     assert len(mappings) == len(exec_times)
 
     mapping_tuples = np.array(list(map(lambda o: o.to_list(), mappings)))
+    
+    #Code to derive mapping from dot graph:
+    #Unfortunately with embarrising results :( 
+
+    #graph.write_png('test_graph.png')
+    #tmp = nx.from_pydot(mappings[0].to_pydot())
+    #nwx.draw(tmp)
+    #plt.show()
+
+    annotes = []
+    for e,m in zip(exec_times,mappings):
+        a = "Execution Time: {0:10.1f}\n{1}".format(e,m.to_string())
+        annotes.append(a)
+
+
+    #print(mapping_tuples)
     X = tsne.tsne(mapping_tuples,
                   no_dims=2,
                   initial_dims=len(mappings[0].to_list()),
                   perplexity=20.0)
 
+    fig = plt.figure(figsize=(14,8))
+    ax = fig.add_subplot(111)
+
     plt.hexbin(X[:, 0], X[:, 1], C=exec_times, cmap=cm.viridis_r, bins=None)
-    plt.colorbar()
+    
+    #some magic adjustments to make room for legend and mapping string
+    plt.subplots_adjust(right=0.6)
+    plt.subplots_adjust(left=0.18)
+    
+    #add annotions on click
+    af = annotate.AnnoteFinder(X[:,0],X[:,1], annotes, ax=ax)
+    fig.canvas.mpl_connect('button_press_event', af)
+    cbaxes = fig.add_axes([0.012, 0.1, 0.03, 0.8])
+    plt.colorbar(cax=cbaxes)
     plt.show()
