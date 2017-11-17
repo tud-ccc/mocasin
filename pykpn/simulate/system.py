@@ -46,18 +46,33 @@ class RuntimeSystem:
 
         # initialize all schedulers
         self._schedulers = []
-        for s in platform.schedulers():
-            policy, policy_param = self._find_scheduler_policy(s, applications)
+        for sched in platform.schedulers():
+            policy, policy_param = self._find_scheduler_policy(sched,
+                                                               applications)
+            if len(sched.processors) == 1:
+                scheduler = create_scheduler(sched.name, sched.processors[0],
+                                             policy, policy_param, env)
+                self._schedulers.append(scheduler)
 
-            if policy is None:
-                log.debug('The scheduler %s is unused', s.name)
+                for app in applications:
+                    for p in app.mapping.scheduler_processes(sched):
+                        scheduler.add_process(app.find_process(p.name))
+            else:
+                log.warn('True multi-processor scheduling is not supported '
+                         'yet! -> split the %s scheduler into multiple '
+                         'single-processor schedulers', sched.name)
+                for proc in sched.processors:
+                    name = '%s_%s' % (sched.name, proc.name)
+                    scheduler = create_scheduler(name, proc, policy,
+                                                 policy_param, env)
+                    self._schedulers.append(scheduler)
 
-            scheduler = create_scheduler(s, policy, policy_param, env)
-            self._schedulers.append(scheduler)
-
-            for app in applications:
-                for p in app.mapping.scheduler_processes(s):
-                    scheduler.add_process(app.find_process(p.name))
+                    for app in applications:
+                        for p in app.mapping.scheduler_processes(sched):
+                            affinity = app.mapping.affinity(p)
+                            assert affinity in sched.processors
+                            if affinity == proc:
+                                scheduler.add_process(app.find_process(p.name))
 
         # Since the platform classes are designed such that they are
         # independent of the simulation implementation, the communication

@@ -271,31 +271,19 @@ class FifoScheduler(RuntimeScheduler):
         return None
 
 
-def create_scheduler(platform_scheduler, policy, param, env):
-    if len(platform_scheduler.processors) > 1:
-        raise RuntimeError("Multiprocessor scheduling is not supported")
-
+def create_scheduler(name, processor, policy, param, env):
     if policy.name == 'Dummy':
-        s = DummyScheduler(platform_scheduler.name,
-                           platform_scheduler.processors[0],
-                           ContextSwitchMode.NEVER,
-                           policy.scheduling_cycles,
-                           env)
+        s = DummyScheduler(name, processor, ContextSwitchMode.NEVER,
+                           policy.scheduling_cycles, env)
     if policy.name == 'FIFO':
-        s = FifoScheduler(platform_scheduler.name,
-                          platform_scheduler.processors[0],
-                          ContextSwitchMode.AFTER_SCHEDULING,
-                          policy.scheduling_cycles,
-                          env)
+        s = FifoScheduler(name, processor, ContextSwitchMode.AFTER_SCHEDULING,
+                          policy.scheduling_cycles, env)
     elif policy.name == 'RoundRobin':
         # TODO Actually implement RoundRobin
         log.warn('RoundRobin scheduler is not yet implemented -> Fall back to '
                  'FIFO')
-        s = FifoScheduler(platform_scheduler.name,
-                          platform_scheduler.processors[0],
-                          ContextSwitchMode.AFTER_SCHEDULING,
-                          policy.scheduling_cycles,
-                          env)
+        s = FifoScheduler(name, processor, ContextSwitchMode.AFTER_SCHEDULING,
+                          policy.scheduling_cycles, env)
     else:
         raise NotImplementedError(
             'The simulation module does not implement the %s scheduling '
