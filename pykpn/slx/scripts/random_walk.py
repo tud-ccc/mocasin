@@ -163,8 +163,8 @@ def main():
         # execute the simulations in parallel
         if args.progress:
             import tqdm
-            results = list(tqdm.tqdm(pool.map(run_simualtion, simulations,
-                                              chunksize=10),
+            results = list(tqdm.tqdm(pool.imap(run_simualtion, simulations,
+                                               chunksize=10),
                                      total=num_iterations))
         else:
             results = list(pool.map(run_simualtion, simulations, chunksize=10))
