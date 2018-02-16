@@ -114,19 +114,20 @@ def main():
     try:
         # parse the config file
         config = SlxSimulationConfig(args.config)
-
-        slx.set_version(config.slx_version)
+        slx_version = config.slx_version
 
         # create the platform
         platform_name = os.path.splitext(
             os.path.basename(config.platform_xml))[0]
-        platform = SlxPlatform(platform_name, config.platform_xml)
+        platform = SlxPlatform(platform_name, config.platform_xml, slx_version)
 
         # create all graphs
         kpns = {}
         for app_config in config.applications:
             app_name = app_config.name
-            kpns[app_name] = SlxKpnGraph(app_name, app_config.cpn_xml)
+            kpns[app_name] = SlxKpnGraph(app_name,
+                                         app_config.cpn_xml,
+                                         slx_version)
 
         start = timeit.default_timer()
 
@@ -151,7 +152,7 @@ def main():
 
                 # create the trace reader
                 app_context.trace_reader = SlxTraceReader.factory(
-                    app_config.trace_dir, '%s.' % (name))
+                    app_config.trace_dir, '%s.' % (name), slx_version)
 
                 sim_context.app_contexts.append(app_context)
 
@@ -192,7 +193,9 @@ def main():
             os.makedirs(outdir)
         for ac in best_result.app_contexts:
             mapping_name = '%s.best.mapping' % (ac.name)
-            export_slx_mapping(ac.mapping, os.path.join(outdir, mapping_name))
+            export_slx_mapping(ac.mapping,
+                               os.path.join(outdir, mapping_name),
+                               slx_version)
 
         # export all mappings if requested
         idx = 1
@@ -201,7 +204,8 @@ def main():
                 for ac in r.app_contexts:
                     mapping_name = '%s.rnd_%08d.mapping' % (ac.name, idx)
                     export_slx_mapping(ac.mapping,
-                                       os.path.join(outdir, mapping_name))
+                                       os.path.join(outdir, mapping_name),
+                                       slx_version)
                 idx += 1
 
         # plot result distribution

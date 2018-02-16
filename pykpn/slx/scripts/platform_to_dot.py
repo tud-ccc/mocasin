@@ -22,12 +22,14 @@ def main():
 
     parser.add_argument('platform', help="xml platform description", type=str)
     parser.add_argument('dot', help="dot output file", type=str)
+    parser.add_argument('--slx-version', help="dot output file", type=str,
+                        default='2017.04')
 
     args = parser.parse_args()
 
     logging.setup_from_args(args)
 
-    platform = SlxPlatform(args.platform)
+    platform = SlxPlatform('SlxPlatform', args.platform, args.slx_version)
     dot = platform.to_pydot()
     dot.write_raw(args.dot)
 

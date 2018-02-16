@@ -6,7 +6,6 @@
 
 import glob
 
-from pykpn import slx
 from pykpn.common import logging
 from pykpn.common.trace import TraceGenerator, TraceSegment
 
@@ -21,7 +20,7 @@ class SlxTraceReader(TraceGenerator):
         super().__init__()
 
     @staticmethod
-    def factory(trace_dir, prefix):
+    def factory(trace_dir, prefix, version):
         """Factory method.
 
         Create a SlxTraceReader object according to version.
@@ -29,8 +28,9 @@ class SlxTraceReader(TraceGenerator):
         :param str trace_dir: path to the directory containing all trace files
         :param str prefix: the prefix that is used for channel and process
             names
+        :param str version: the version of SLX that was used to produce the
+            traces
         """
-        version = slx.get_version()
 
         if version == '2017.04':
             return SlxTraceReader_2017_04(trace_dir, prefix)

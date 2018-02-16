@@ -29,14 +29,16 @@ def main():
     parser.add_argument('mapping', help="xml description of the mapping",
                         type=str)
     parser.add_argument('dot', help="dot output file", type=str)
+    parser.add_argument('--slx-version', help="dot output file", type=str,
+                        default='2017.04')
 
     args = parser.parse_args()
 
     logging.setup_from_args(args)
 
-    graph = SlxKpnGraph('app', args.graph)
-    platform = SlxPlatform(args.platform)
-    mapping = SlxMapping(graph, platform, args.mapping)
+    graph = SlxKpnGraph('app', args.graph, args.slx_version)
+    platform = SlxPlatform('platform', args.platform, args.slx_version)
+    mapping = SlxMapping(graph, platform, args.mapping, args.slx_version)
     dot = mapping.to_pydot()
     dot.write_raw(args.dot)
 
