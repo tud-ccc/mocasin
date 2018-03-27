@@ -4,8 +4,8 @@
 ; git-subrepo command. See https://github.com/git-commands/git-subrepo#readme
 ;
 [subrepo]
-	remote = julia:/net/home/cmenard/git/pykpn/pykpn-design_centering.git
+	remote = git@factor:pykpn/subrepos/pykpn-design_centering.git
 	branch = master
-	commit = ac64a51ecb2176cf1b29ca07e0792fd1d3a025a6
-	parent = 58e5899dd86ac07a382103f94413549f8d0f7557
+	commit = 5f18b053fb5f31ca7eca6445341cad06d795b659
+	parent = e93f28095bb7ddca892f8f0212b2445a11eced21
 	cmdver = 0.3.1
