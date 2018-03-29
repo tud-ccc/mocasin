@@ -3,10 +3,14 @@ import re
 import sys
 import json
 import logging
+import argparse
+
 from . import dc_oracle
 from . import dc_sample
 from . import dc_volume
 from . import dc_settings as conf
+from . import perturbationManager as p
+from pykpn.common import logging
 import numpy as np
 import matplotlib.pyplot as plt
 from ... import representations as reps
@@ -62,47 +66,79 @@ class DesignCentering(object):
 
     def ds_explore(self):
         """ explore design space (main loop of the DC algorithm) """
+
         for i in range(0, conf.max_samples, conf.adapt_samples):
             s_set = dc_sample.SampleSet()
             s = dc_sample.SampleGeometricGen()
             #M = finiteMetricSpaceLP(exampleClusterArch,d=2)
             #M = reps.finiteMetricSpaceLPSym(reps.exampleClusterArchSymmetries,d=2)
             #s = dc_sample.MetricSpaceSampleGen(M)
-
+            
+            # TODO: may genrate identical samples which makes things ineffective 
             samples = s.gen_samples_in_ball(type(self).vol, type(self).distr, conf.adapt_samples)
+            #print(samples)
             #print(str([s.sample for s in samples]))
-            for s in samples:
-                s.feasible = type(self).oracle.validate(s)
 
+            #serial
+            #for s in samples:
+            #    s.feasible = type(self).oracle.validate(s) #validate one sample
+            #parallel
+
+            #generate mapping from sample
+            #for s in samples:
+            #    m = genenrate_mapping(s)
+            #    mappings.append(m)
+
+            #put samples as paramater in simulation
+            print("Input samples:\n {}".format(samples))
+            samples = type(self).oracle.validate_set(samples) # validate multiple samples
+            #print("list {}".format(feasible_list))
+            #for s in samples:
+            #    print("Feasible: {}".format(s.feasible))
+            #print(s)
+
+
+
+            #for s in samples:
+                # add to internal overall sample set
+            #    type(self).samples.update({s.sample2tuple():s.feasible})
+            
             s_set.add_sample_list(samples)
 
-            for s in samples:
-                # add to internal overall sample set
-                type(self).samples.update({s.sample2tuple():s.feasible})
-
-            #print(s_set.get_feasible())
+            print("Output fesaible samples:\n {}".format(s_set.get_feasible()))
             old_center = type(self).vol.center
             center = type(self).vol.adapt_center(s_set)
-            if not type(self).oracle.validate(dc_sample.GeometricSample(center)): #this breaks the rest!
-                c_cur = dc_sample.GeometricSample(center)
-                c_old = dc_sample.GeometricSample(old_center)
-                new_center = type(self).vol.correct_center(s_set, c_cur, c_old)
-                print("Correction of infeasible center: {} take {} instead".format(center, new_center))
+           # if not type(self).oracle.validate(dc_sample.GeometricSample(center)): #this breaks the rest!
+           #     c_cur = dc_sample.GeometricSample(center)
+           #     c_old = dc_sample.GeometricSample(old_center)
+           #     new_center = type(self).vol.correct_center(s_set, c_cur, c_old)
+           #     print("Correction of infeasible center: {} take {} instead".format(center, new_center))
             cur_p = type(self).vol.adapt_volume(s_set, type(self).p_value[i], type(self).s_value[i])
-            logging.debug(" center: {} radius: {:f} p: {}".format(type(self).vol.center, type(self).vol.radius, cur_p))
+            #logging.debug(" center: {} radius: {:f} p: {}".format(type(self).vol.center, type(self).vol.radius, cur_p))
             print("center: {} radius: {:f} p: {}".format(type(self).vol.center, type(self).vol.radius, cur_p))
 
+# Of course, the existing DFG already provides a valid schedule derived from the order of GIMPLE statements, 
+# but this neither exploits parallel execution or consider any resource contraints. 
 
 def main():
+    parser = argparse.ArgumentParser()
+
+    logging.add_cli_args(parser)
+    parser.add_argument('configFile', nargs=1,
+                        help="input configuration file", type=str)
+    args = parser.parse_args()
+
+
     argv = sys.argv
     print("===== run DC =====")
-    logging.basicConfig(filename="dc.log", filemode = 'w', level=logging.DEBUG)
+    #logging.basicConfig(filename="dc.log", filemode = 'w', level=logging.DEBUG)
     tp = ThingPlotter()
 
     if (len(argv) > 1):
         # read cmd-line and settings
         try:
-            center = json.loads(argv[1])
+            center = [1,2,3,4,5,6,7,8]
+            #json.loads(argv[1])
         except ValueError:
             print(" {:s} is not a vector \n".format(argv[1]))
             sys.stderr.write("JSON decoding failed (in function main) \n")
@@ -111,15 +147,28 @@ def main():
             v = dc_volume.Cube(center, len(center))
 
         # run DC algorithm
-        dc = DesignCentering(v, conf.distr, dc_oracle.Oracle())
+        config = args.configFile
+        oracle = dc_oracle.Oracle(args.configFile)
+        dc = DesignCentering(v, conf.distr, oracle)
         dc.ds_explore()
 
-        # plot explored design space
-        if True:
-            tp.plot_samples(dc.samples)
-        logging.info(" >>> center: {} radius: {:f}".format(dc.vol.center, dc.vol.radius))
+        # plot explored design space (in 2D)
+        #if True:
+        #    tp.plot_samples(dc.samples)
+        #logging.info(" >>> center: {} radius: {:f}".format(dc.vol.center, dc.vol.radius))
         print(">>> center: {} radius: {:f}".format(dc.vol.center, dc.vol.radius))
         print("===== DC done =====")
+
+        # run perturbation test
+        num_pert = 5
+        num_mappings = 10
+        pm = p.PerturbationManager( config, num_mappings, num_pert)
+        map_set = pm.create_randomMappings()
+        for m in map_set:
+            pm.run_perturbation(m, pm.apply_singlePerturbation)
+
+
+
     else:
         print("usage: python designCentering [x1,x2,...,xn]\n")
 
@@ -128,4 +177,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# run script with config file:
+# ./dc_run ~/misc_code/kpn-apps/audio_filter/parallella/config.ini
 

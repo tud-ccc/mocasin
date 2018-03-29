@@ -27,6 +27,15 @@ class Sample(list):
 
     def dist(self,s):
         return None
+    
+    # returns a spacialized string represantation
+    def __str__(self):
+        return "Sample: {}".format(tuple(self.sample))
+    def __unicode__(self):
+        return "Sample: {}".format(tuple(self.sample))
+    def __repr__(self):
+        return "Sample: {}".format(tuple(self.sample))
+
 
 class SampleGenerator():
     def gen_samples_in_ball(self,vol,distr,nsamples=1):
@@ -37,7 +46,8 @@ class SampleGenerator():
         return res
 
 class GeometricSample(Sample):
-    # This class overrides the self.sample and prvides a dist function
+    # This class defines a geometric sample as subclass from Sample
+    # provides a specialized dist function
     def dist(self,s):
         # use Manhattan metric
         return np.linalg.norm(self.sample - s.sample, 2)
@@ -49,6 +59,7 @@ class SampleGeometricGen(SampleGenerator):
         for _ in range(nsamples):
             s = self.gen_sample_in_vol(vol,distr)
             res.append(GeometricSample(s))
+        print("\ngen sample in ball\n {}\n".format(res[0].sample2tuple()))
         return res
 
     def gen_random_sample(self):
@@ -63,10 +74,11 @@ class SampleGeometricGen(SampleGenerator):
         for _d in vol.center:
             if (distr == "uniform"):
                 rand_val = self.uniform_distribution(round(_d - vol.radius), round(_d + vol.radius))
-                sample.append(rand_val)
+                sample.append(rand_val % 16)
             if (distr == "binomial"):
                 rand_val = self.binomial_distribution(_d, vol.radius)
                 sample.append(rand_val)
+        #print("\n{} from {} distr.".format(sample,distr))
         return sample
 
     def uniform_distribution(self, min_s, max_s):
@@ -96,7 +108,6 @@ class MetricSpaceSampleGen(SampleGenerator):
             print("Error!, distribution '" + str(distr) + "' not supported (yet).")
             exit(1)
         sample_ints =  self.M.uniformFromBall(ball.center,ball.radius,nsamples)
-        #print(sample_ints)
         sample_list = list(map(lambda s: MetricSpaceSample(self.M,s), sample_ints))
         return sample_list
 
