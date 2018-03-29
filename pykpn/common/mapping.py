@@ -1,7 +1,7 @@
 # Copyright (C) 2017 TU Dresden
 # All Rights Reserved
 #
-# Authors: Christian Menard, Andres Goens
+# Authors: Christian Menard, Andres Goens, Gerald Hempel
 
 
 import pydot
@@ -48,8 +48,8 @@ class SchedulerMappingInfo:
 class Mapping:
     """Describes the mapping of a KpnGraph to a Platform.
 
-    :ivar KpnGraph _kpn: the kpn graph
-    :ivar Platform _platform: the platform
+    :ivar KpnGraph kpn: the kpn graph
+    :ivar Platform platform: the platform
     :ivar dict[str, ChannelMappingInfo] _channel_info:
         dict of channel mapping infos
     :ivar dict[str, ProcessMappingInfo] _process_info:
@@ -67,8 +67,8 @@ class Mapping:
         # The ProcessInfo record is not really required as it only has one
         # item. However, we might want to extend it later
 
-        self._kpn = kpn
-        self._platform = platform
+        self.kpn = kpn
+        self.platform = platform
 
         self._channel_info = {}
         self._process_info = {}
@@ -89,6 +89,7 @@ class Mapping:
         :returns: the mapping info if the channel is mapped
         :rtype: ChannelMappingInfo or None
         """
+        # test if return value == None 
         return self._channel_info[channel.name]
 
     def process_info(self, process):
@@ -108,7 +109,38 @@ class Mapping:
         :rtype: SchedulerMappingInfo or None
         """
         return self._scheduler_info[scheduler.name]
+# TODO: not clear here
+   # def get_unmapped_schedulers(self):
+   #     """Returns a list of unmapped schedulers
+   #     
+   #     :returns: List of unmapped schedulers
+   #     :rtype: List[Schedulers]
+   #     """
+   #     # filter all channels with name is partof list
+   #     unmapped_schedulers = dict(filter(lambda s: s[1] is None, self._scheduler_info.items())).keys()
+   #     return list(filter(lambda s: s.name in unmapped_schedulerss, self.kpn.schedulers()))
 
+    def get_unmapped_channels(self):
+        """Returns a list of unmapped channels
+        
+        :returns: List of unmapped channels
+        :rtype: List[Channels]
+        """
+        print("mapping remaining channels: {}".format(dict(filter(lambda c: c[1] is None, self._channel_info.items())).keys()))
+        # filter all channels with name is partof list
+        unmapped_channels = dict(filter(lambda c: c[1] is None, self._channel_info.items())).keys()
+        return list(filter(lambda c: c.name in unmapped_channels, self.kpn.channels()))
+    
+    def get_unmapped_processes(self):
+        """Returns a list of unmapped processes
+
+        :returns: List of unmapped processes
+        :rtype: List[KpnProcess]
+        """
+        print("mapping remaining processes: {}".format(dict(filter(lambda c: c[1] is None, self._process_info.items())).keys()))
+        unmapped_processes = dict(filter(lambda p: p[1] is None, self._process_info.items())).keys()
+        return list(filter(lambda p: p.name in unmapped_processes, self.kpn.processes()))
+    
     def scheduler_processes(self, scheduler):
         """Get a list of processes mapped to a scheduler
 
@@ -117,7 +149,7 @@ class Mapping:
         :rtype: list[KpnProcess]
         """
         processes = []
-        for p in self._kpn.processes():
+        for p in self.kpn.processes():
             info = self.process_info(p)
             if scheduler is info.scheduler:
                 processes.append(p)
@@ -137,6 +169,7 @@ class Mapping:
 
     def add_scheduler_info(self, scheduler, info):
         """Add a scheduler config"""
+        print("sched info (should be none): {} , {}, {}".format(self._scheduler_info[scheduler.name], scheduler.name, info))
         assert scheduler.name in self._scheduler_info
         assert self._scheduler_info[scheduler.name] is None
         self._scheduler_info[scheduler.name] = info
@@ -179,7 +212,7 @@ class Mapping:
         :param KpnChannel channel: the KPN channel
         :rtype: Processor
         """
-        source = self._kpn.find_channel(channel.name).source
+        source = self.kpn.find_channel(channel.name).source
         return self.affinity(source)
 
     def channel_sinks(self, channel):
@@ -188,16 +221,23 @@ class Mapping:
         :param KpnChannel channel: the KPN channel
         :rtype: list[Processor]
         """
-        sinks = self._kpn.find_channel(channel.name).sinks
+        sinks = self.kpn.find_channel(channel.name).sinks
         return [self.affinity(s) for s in sinks]
+
+    def get_numPEs(self):
+        """Returns the maximum number of PEs for the platform
+
+        :rtype: numPEs
+        """
+        return len(self.platform.processors()) - 1
 
     def to_string(self):
         """Convert mapping to a simple readable string 
         :rtype: string 
         """
-        procs_list = self._kpn.processes()
-        chans_list = self._kpn.channels()
-        pes_list = self._platform.processors()
+        procs_list = self.kpn.processes()
+        chans_list = self.kpn.channels()
+        pes_list = self.platform.processors()
         
         # return processor - process mapping
         s = ("\nCore Mapping: \n")
@@ -229,9 +269,9 @@ class Mapping:
         from 0 to NUM_PES"""
 
         # initialize lists for numbers
-        procs_list = self._kpn.processes()
-        chans_list = self._kpn.channels()
-        pes_list = self._platform.processors()
+        procs_list = self.kpn.processes()
+        chans_list = self.kpn.channels()
+        pes_list = self.platform.processors()
 
         # map PEs to an integer
         pes = {}
@@ -269,7 +309,7 @@ class Mapping:
         dot = pydot.Dot(graph_type='digraph')
 
         processor_clusters = {}
-        for s in self._platform.schedulers():
+        for s in self.platform.schedulers():
             cluster = pydot.Cluster('scheduler_' + s.name, label=s.name)
             dot.add_subgraph(cluster)
             for p in s.processors:
@@ -280,14 +320,14 @@ class Mapping:
                 cluster.add_subgraph(p_cluster)
 
         primitive_nodes = {}
-        for p in self._platform.primitives():
+        for p in self.platform.primitives():
             if p.name not in primitive_nodes:
                 node = pydot.Node('primitive_' + p.name, label=p.name)
                 dot.add_node(node)
                 primitive_nodes[p.name] = node
 
         process_nodes = {}
-        for p in self._kpn.processes():
+        for p in self.kpn.processes():
             info = self._process_info[p.name]
             p_cluster = processor_clusters[info.affinity.name]
             node = pydot.Node('process_' + p.name, label=p.name)
@@ -295,7 +335,7 @@ class Mapping:
             p_cluster.add_node(node)
 
         channel_nodes = {}
-        for c in self._kpn.channels():
+        for c in self.kpn.channels():
             node = pydot.Node('channel_' + c.name, label=c.name,
                               shape='diamond')
             channel_nodes[c.name] = node
