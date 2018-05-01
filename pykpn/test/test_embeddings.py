@@ -1,6 +1,6 @@
-from representations.embeddings import *
-import representations.metric_spaces as metric
-from representations.examples import *
+from pykpn.representations.embeddings import *
+import pykpn.representations.metric_spaces as metric
+from pykpn.representations.examples import *
 
 np.set_printoptions(threshold=np.nan)
 
