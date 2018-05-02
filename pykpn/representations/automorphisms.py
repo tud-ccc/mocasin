@@ -1,7 +1,7 @@
 # Copyright (C) 2018 TU Dresden
 # All Rights Reserved
 #
-# Authors: Andres Goen
+ # Authors: Andres Goen
 
 import third_party_dependencies.pynauty as pynauty
 
