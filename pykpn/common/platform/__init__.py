@@ -1,7 +1,7 @@
 # Copyright (C) 2017-2018 TU Dresden
 # All Rights Reserved
 #
-# Authors: Christian Menard, Andres Goen
+# Authors: Christian Menard, Andres Goens
 
 import pydot
 
@@ -26,8 +26,8 @@ class Processor:
         self.name = name
         self.type = type
         self.frequency_domain = frequency_domain
-        self.context_load_cycles = context_load_cycle
-        self.context_store_cycles = context_store_cycle
+        self.context_load_cycles = context_load_cycles
+        self.context_store_cycles = context_store_cycles
 
     def ticks(self, cycles):
         return self.frequency_domain.cycles_to_ticks(cycles)
@@ -89,7 +89,7 @@ class CommunicationResource:
 
 class Storage(CommunicationResource):
     """
-    This is a specialization of the CommunicationResource class and represent
+    This is a specialization of the CommunicationResource class and represents
     a storage device.
     """
     def __init__(self, name, frequency_domain, read_latency, write_latency,
@@ -107,7 +107,7 @@ class CommunicationPhase:
     def __init__(self, name, resources, direction,
                  ignore_latency=False, size=None):
         self.name = name
-        self.resources = resource
+        self.resources = resources
         self.direction = direction
         self.ignore_latency = ignore_latency
         self.size = size
@@ -155,44 +155,44 @@ class Primitive:
         if sink.name in self.consume_phases:
             raise RuntimeError('Primitive already has a consumer %s' %
                                sink.name)
-        self.consume_phases[sink.name] = phase
+        self.consume_phases[sink.name] = phases
         self.consumers.append(sink)
 
     def add_producer(self, src, phases):
         if src.name in self.produce_phases:
             raise RuntimeError('Primitive already has a producer %s' %
                                src.name)
-        self.produce_phases[src.name] = phase
+        self.produce_phases[src.name] = phases
         self.producers.append(src)
 
     def static_consume_costs(self, sink_processor, token_size=8):
         """Returns the total (static) costs for a consume operation
 
-        :param token_size: the size of a token for the cost
+        :param token_size: the size of a token for the costs
         :param sink_processor: the sink processor for which the costs are to be
             retrieved
         """
         costs = 0
         for ph in self.consume_phases[sink_processor.name]:
             costs += ph.get_costs(token_size)
-        return cost
+        return costs
 
     def static_produce_costs(self, src_processor, token_size=8):
         """Returns the total (static) costs for a produce operation
 
-        :param token_size: the size of a token for the cost
+        :param token_size: the size of a token for the costs
         :param src_processor: the processor for which the costs are to be
             retrieved
         """
         costs = 0
         for ph in self.produce_phases[src_processor.name]:
             costs += ph.get_costs(token_size)
-        return cost
+        return costs
 
     def static_costs(self, src_processor, sink_processor, token_size=8):
         """Returns the total (static) costs for a produce and consume operation
 
-        :param token_size: the size of a token for the cost
+        :param token_size: the size of a token for the costs
         :param src_processor: the src processor for which the costs are to be
             retrieved
         :param sink_processor: the sink processor for which the costs are to be
@@ -209,7 +209,7 @@ class Primitive:
 
         :param src: a src processor
         :type src: Processor
-        :param sinks: non-empty list of sink processor
+        :param sinks: non-empty list of sink processors
         :type sinks: list[Processor]
         :returns: ``True`` if the primitive is suitable for implementing the
             channel
@@ -245,7 +245,7 @@ class SchedulingPolicy:
             decision
         """
         self.name = name
-        self.scheduling_cycles = cycle
+        self.scheduling_cycles = cycles
 
 
 class Scheduler:
@@ -259,9 +259,9 @@ class Scheduler:
         '''
         Initialize a Scheduler.
         :param name: name of the scheduler
-        :param processors: list of Processor objects that are managed by thi
+        :param processors: list of Processor objects that are managed by this
                            scheduler
-        :param policies: list of SchedulingPolicies that are supported by thi
+        :param policies: list of SchedulingPolicies that are supported by this
                          scheduler
         '''
         assert len(processors) > 0, (
@@ -270,8 +270,8 @@ class Scheduler:
             "A scheduler must support at least one policy")
 
         self.name = name
-        self.processors = processor
-        self.policies = policie
+        self.processors = processors
+        self.policies = policies
 
     def find_policy(self, name, throw=False):
         """Lookup a policy by its name.
@@ -306,10 +306,10 @@ class Platform(object):
         fill these dicts with objects in order to build a real platform.
         """
         self.name = name
-        self._processors = {}               #: dict of processor
-        self._communication_resources = {}  #: dict of communication resource
-        self._primitives = {}               #: dict of communication primitive
-        self._schedulers = {}               #: dict of scheduler
+        self._processors = {}               #: dict of processors
+        self._communication_resources = {}  #: dict of communication resources
+        self._primitives = {}               #: dict of communication primitives
+        self._schedulers = {}               #: dict of schedulers
 
     def processors(self):
         return self._processors.values()
@@ -417,7 +417,7 @@ class Platform(object):
     
         for s in self.schedulers():
             for p in s.processors:
-                vertices[p.name] = num_vertice
+                vertices[p.name] = num_vertices
                 num_vertices = num_vertices + 1
 
 
@@ -428,6 +428,7 @@ class Platform(object):
                     adjacency_dict[x.name] = {}
                 for y in p.consumers:
                     cost = p.static_costs(x,y, token_size=8)
+                    #print( (x,y,cost))
                     if y.name not in adjacency_dict[x.name]:
                         adjacency_dict[x.name][y.name] = cost 
                     #here we should decide what to do with the different primitive
@@ -437,4 +438,4 @@ class Platform(object):
         res = {}
         for elem in adjacency_dict:
             res[elem] = [(adjacent, adjacency_dict[elem][adjacent]) for adjacent in adjacency_dict[elem]]
-        return re
+        return res

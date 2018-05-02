@@ -1,7 +1,7 @@
 # Copyright (C) 2018 TU Dresden
 # All Rights Reserved
 #
- # Authors: Andres Goen
+ # Authors: Andres Goens
 
 import third_party_dependencies.pynauty as pynauty
 
@@ -49,7 +49,7 @@ def list_to_tuple_permutation(perm):
             while(i < n and visited[i] == 1):
                 i = i + 1
             current = i
-    return re
+    return res
 
 def edge_to_node_autgrp(aut,nodes_correspondence):
     new_gens = []
