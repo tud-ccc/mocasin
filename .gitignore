@@ -5,3 +5,8 @@ pykpn.egg-info
 .#*
 *.ini
 apps
+
+# pynauty
+build
+*.o
+third_party_dependencies/pynauty-0.6/nauty/config.*
