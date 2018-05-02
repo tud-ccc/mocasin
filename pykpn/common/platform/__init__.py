@@ -429,10 +429,10 @@ class Platform(object):
                 for y in p.consumers:
                     cost = p.static_costs(x,y, token_size=8)
                     if y.name not in adjacency_dict[x.name]:
-                        adjacency_dict[x.name][y.name] = 0
+                        adjacency_dict[x.name][y.name] = cost 
                     #here we should decide what to do with the different primitive
-                    #I dediced to just add them for now.
-                    adjacency_dict[x.name][y.name] += cost
+                    #I dediced to just take the minimum for now.
+                    adjacency_dict[x.name][y.name] = min(adjacency_dict[x.name][y.name],cost)
                     
         res = {}
         for elem in adjacency_dict:
