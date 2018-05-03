@@ -35,9 +35,9 @@ def main():
 
     platform = SlxPlatform('SlxPlatform', args.platform, args.slx_version)
     log.info("start converting platform to edge graph for automorphisms.")
-    adjacency_dict= platform.to_adjacency_dict()
+    plat_graph = platform.to_adjacency_dict()
 
-    adjacency_dict, num_vertices, coloring, nodes_correspondence = aut.to_labeled_edge_graph(adjacency_dict)
+    adjacency_dict, num_vertices, coloring, nodes_correspondence = aut.to_labeled_edge_graph(plat_graph)
     log.info("done converting platform to edge graph for automorphisms.")
     #print(nodes_correspondence)
     #print(coloring)
@@ -58,8 +58,10 @@ def main():
 
     log.info("start writing to file.")
     with open(args.out, 'w') as f:
+        f.write("Platform Graph:")
+        f.write(str(plat_graph))
         #f.write("Edge Group with ~" + str(autgrp_edges[1]) + " * 10^" + str(autgrp_edges[2]) + " elements.\n")
-        f.write("Generators:")
+        f.write("Symmetry group generators:")
         f.write(str(list(permutations_lists)))
         f.write("\nCorrespondence:")
         f.write(str(new_nodes_correspondence))

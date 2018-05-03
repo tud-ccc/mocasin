@@ -24,6 +24,7 @@ from pykpn.mapper.random import RandomMapping
 from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.simulate.system import RuntimeSystem
 from pykpn.util import plot
+from pykpn.representations.representations import RepresentationType
 
 
 log = logging.getLogger(__name__)
@@ -100,6 +101,14 @@ def main():
         dest='visualize')
 
     parser.add_argument(
+        '-R',
+        '--representation',
+        type=str,
+        help='Select the representation type for the mapping space',
+        dest='rep_type_str',
+        default='SimpleVector')
+
+    parser.add_argument(
         '--export-all',
         action='store_true',
         help='export all random mappings to <outdir>',
@@ -110,6 +119,7 @@ def main():
     logging.setup_from_args(args)
 
     num_iterations = args.num_iterations
+    rep_type_str = args.rep_type_str
 
     try:
         # parse the config file
@@ -148,7 +158,7 @@ def main():
                 app_context.start_time = app_config.start_at_tick
 
                 # generate a random mapping
-                app_context.mapping = RandomMapping(kpn, platform)
+                app_context.mapping = RandomMapping(kpn, platform, representation_type = RepresentationType[rep_type_str])
 
                 # create the trace reader
                 app_context.trace_reader = SlxTraceReader.factory(

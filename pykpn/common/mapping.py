@@ -1,11 +1,16 @@
-# Copyright (C) 2017 TU Dresden
+# Copyright (C) 2017-2018 TU Dresden
 # All Rights Reserved
 #
 # Authors: Christian Menard, Andres Goens
 
 
 import pydot
+import random
+from pykpn.common import logging
+from pykpn.representations.representations import RepresentationType #MappingRepresentation, MetricSpaceRepresentation, SymmetryRepresentation, MetricSymmetryRepresentation, MetricEmbeddingRepresentation
 
+
+log = logging.getLogger(__name__)
 
 class ChannelMappingInfo:
     """Simple record to store mapping infos associated with a KpnChannel.
@@ -56,9 +61,10 @@ class Mapping:
         dict of process mapping infos
     :ivar dict[str, SchedulerMappingInfo] _scheduler_info:
         dict of scheduler mapping infos
+    :ivar MappingRepresentation _representation: the representation for mappings.
     """
 
-    def __init__(self, kpn, platform):
+    def __init__(self, kpn, platform, representation_type=RepresentationType['SimpleVector']):
         """Initialize a Mapping
 
         :param KpnGraph kpn: the kpn graph
@@ -69,6 +75,8 @@ class Mapping:
 
         self._kpn = kpn
         self._platform = platform
+        self._representation_type = representation_type
+        self._representation = self._representation_type.getClassType()(self._kpn,self._platform)
 
         self._channel_info = {}
         self._process_info = {}
@@ -225,7 +233,8 @@ class Mapping:
         return s
 
     def to_list(self):
-        """Convert to a list (tuple) with processes as entries and PEs labeled
+        """Convert to a list (tuple), the simple vector representation.
+        It is a list with processes as entries and PEs labeled
         from 0 to NUM_PES"""
 
         # initialize lists for numbers
@@ -255,8 +264,72 @@ class Mapping:
                 primitive_costs *= 1e-7  # scale down
                 # TODO Probably it is better to normalize the values
                 res.append(primitive_costs)
-
         return res
+
+    def from_list(self,list_from):
+        """Convert from a list (tuple), the simple vector representation.
+           Priority and policy chosen at random, and scheduler chosen randomly from the possible ones.
+           If list has length # processes + # channels, then channels are chosen as the second part of the list.
+           Otherwise, they are chosen at random.
+           Note that this function assumes the input is sane.
+
+           TODO: make it possible to give schedulers, too.
+           TODO: check if we need to use correspondence of representation to ensure ordering is right
+        """
+        processors = list(self._platform.processors())
+        all_schedulers = list(self._platform.schedulers())
+        all_primitives = list(self._platform.primitives())
+        #print(list_from)
+
+        # configure schedulers
+        for s in all_schedulers:
+            i = random.randrange(0, len(s.policies))
+            policy = s.policies[i]
+            info = SchedulerMappingInfo(policy, None)
+            self.add_scheduler_info(s, info)
+            log.debug('configure scheduler %s to use the %s policy',
+                      s.name, policy.name)
+            
+        # map processes
+        for i,p in enumerate(self._kpn.processes()):
+            idx = list_from[i]
+            schedulers = [ sched for sched in all_schedulers if processors[idx] in sched.processors]
+            j = random.randrange(0, len(schedulers))
+            scheduler = schedulers[j]
+            affinity = processors[idx] 
+            priority = random.randrange(0, 20)
+            info = ProcessMappingInfo(scheduler, affinity, priority)
+            self.add_process_info(p, info)
+            log.debug('map process %s to scheduler %s and processor %s '
+                      '(priority: %d)', p.name, scheduler.name, affinity.name,
+                      priority)
+
+        # map channels
+        for i,c in enumerate(self._kpn.channels(),start=i+1):
+            capacity = 4
+            suitable_primitives = []
+            for p in all_primitives:
+                src = self.process_info(c.source).affinity
+                sinks = [self.process_info(s).affinity for s in c.sinks]
+                if p.is_suitable(src, sinks):
+                    suitable_primitives.append(p)
+            if len(suitable_primitives) == 0:
+                raise RuntimeError('Mapping failed! No suitable primitive for '
+                                   'communication from %s to %s found!' %
+                                   (src.name, str(sinks)))
+            if len(list_from) == len(self._kpn.processes()) :
+                idx = random.randrange(0, len(suitable_primitives))
+                primitive = suitable_primitives[i]
+            else:
+                idx = list_from[i]
+                primitive = all_primitives[idx]
+                assert(primitive in suitable_primitives)
+
+            info = ChannelMappingInfo(primitive, capacity)
+            self.add_channel_info(c, info)
+            log.debug('map channel %s to the primitive %s and bound to %d '
+                      'tokens' % (c.name, primitive.name, capacity))
+    
 
     def to_pydot(self):
         """Convert the mapping to a dot graph
@@ -311,3 +384,9 @@ class Mapping:
                                     arrowhead='none'))
 
         return dot
+
+    def toRepresentation(self):
+        return self._representation.simpleVec2Elem(self.to_list())
+
+    def fromRepresentation(self,elem):
+        self.from_list(self._representation.elem2SimpleVec(elem))

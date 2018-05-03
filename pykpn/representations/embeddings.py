@@ -1,4 +1,8 @@
-#Author: Andres Goens, 2017
+# Copyright (C) 2017-2018 TU Dresden
+# All Rights Reserved
+#
+# Author: Andres Goens
+
 from __future__ import print_function
 import numpy as np
 import cvxpy as cvx

@@ -400,7 +400,7 @@ class Platform(object):
 
         return dot
 
-    def to_adjacency_dict(self):
+    def to_adjacency_dict(self,precision=5):
         """
         Convert the platform to an adjacency dictionary.
 
@@ -408,6 +408,9 @@ class Platform(object):
         The edges are annotated with the static communication cost
         for a simple token of size 8.
         Schedulers and communication primitives are not considered.
+        
+        precision: number of siginifcant figures to consider on costs.
+        for full precision, select -1
         """
         num_vertices = 0
         vertices = {}
@@ -428,12 +431,20 @@ class Platform(object):
                     adjacency_dict[x.name] = {}
                 for y in p.consumers:
                     cost = p.static_costs(x,y, token_size=8)
+                    if precision < 0 or cost == 0:
+                        pass
+                    else:
+                        cost = round(cost, precision-1-int(math.floor(math.log10(abs(cost)))))
                     #print( (x,y,cost))
                     if y.name not in adjacency_dict[x.name]:
                         adjacency_dict[x.name][y.name] = cost 
                     #here we should decide what to do with the different primitive
                     #I dediced to just take the minimum for now.
                     adjacency_dict[x.name][y.name] = min(adjacency_dict[x.name][y.name],cost)
+                    if precision < 0 or cost == 0:
+                        pass
+                    else:
+                        cost = round(cost, precision-1-int(math.floor(math.log10(abs(cost)))))
                     
         res = {}
         for elem in adjacency_dict:
