@@ -104,7 +104,8 @@ def main():
         '-R',
         '--representation',
         type=str,
-        help='Select the representation type for the mapping space',
+        help='Select the representation type for the mapping space.\nAvailable:'
+        + ", ".join(dir(RepresentationType)),
         dest='rep_type_str',
         default='SimpleVector')
 
@@ -120,6 +121,9 @@ def main():
 
     num_iterations = args.num_iterations
     rep_type_str = args.rep_type_str
+    if rep_type_str not in dir(RepresentationType):
+        log.exception("Representation " + rep_type_str + " not recognized. Available: " + ", ".join(dir(RepresentationType)))
+        raise RuntimeError('Unrecognized representation.')
 
     try:
         # parse the config file
