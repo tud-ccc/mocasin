@@ -44,9 +44,12 @@ class FiniteMetricSpace():
 
     def _uniformFromBallNaive(self,p,r,npoints=1):
         ball = self.ball(p,r)
-        point_positions = randint(0,len(ball),size=npoints)
+        point_positions = randint(0,len(ball)-1,size=npoints)
         points = [ ball[i] for i in point_positions]
         return points
+
+    def uniform(self):
+       return randint(0,self.n-1)
 
 class FiniteMetricSpaceLP(FiniteMetricSpace):
     def __init__(self,M,d=2,p=1):
@@ -123,6 +126,12 @@ class FiniteMetricSpaceLP(FiniteMetricSpace):
             exit(1)
         return FiniteMetricSpace.ball(self,point,r)
 
+    def uniform(self):
+        res = []
+        for i in range(0,self.d):
+            res.append(self.M.uniform())
+        return res
+    
 class FiniteMetricSpaceSym(FiniteMetricSpace):
     def __init__(self,M,G):
         self.D = None
@@ -271,6 +280,7 @@ class FiniteMetricSpaceLPSym(FiniteMetricSpaceLP,FiniteMetricSpaceSym):
 
     def int2Tuple(self, point):
         return FiniteMetricSpaceSym.elem2Tuple(self,point)
+
 
 def dijkstra(graph,node_from):
     inf = float('inf')

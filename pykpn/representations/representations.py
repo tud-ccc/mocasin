@@ -120,7 +120,9 @@ class MetricSymmetryRepresentation(FiniteMetricSpaceLPSym, metaclass=MappingRepr
         self._topologyGraph = platform.to_adjacency_dict()
         self._kpn = kpn
         self._platform = platform
-        M, self._arch_nc, self._arch_nc_inv = arch_graph_to_distance_metric(self._topologyGraph)
+        self._d = len(kpn.processes())
+        M_matrix, self._arch_nc, self._arch_nc_inv = arch_graph_to_distance_metric(self._topologyGraph)
+        M = FiniteMetricSpace(M_matrix)
         adjacency_dict, num_vertices, coloring, self._arch_nc = aut.to_labeled_edge_graph(self._topologyGraph)
         init_app_ncs(self,kpn)
         self._arch_nc_inv = {}
@@ -128,19 +130,21 @@ class MetricSymmetryRepresentation(FiniteMetricSpaceLPSym, metaclass=MappingRepr
             self._arch_nc_inv[self._arch_nc[node]] = node
         #TODO: ensure that nodes_correspondence fits simpleVec
             
+        n = len(self._platform.processors())
         nautygraph = pynauty.Graph(num_vertices,True,adjacency_dict, coloring)
         autgrp_edges = pynauty.autgrp(nautygraph)
         autgrp, new_nodes_correspondence = aut.edge_to_node_autgrp(autgrp_edges[0],self._arch_nc)
         permutations_lists = map(aut.list_to_tuple_permutation,autgrp)
-        permutations = map(perm.Permutation,permutations_lists)
-        self._G = perm.PermutationGroup(list(permutations))
-        super.__init__(M,d,self._G)
+        permutations = [perm.Permutation(p,n= n) for p in permutations_lists]
+        self._G = perm.PermutationGroup(permutations)
+        FiniteMetricSpaceLPSym.__init__(self,M,self._G,self._d)
         
         
     def simpleVec2Elem(self,x): 
         return x
     def elem2SimpleVec(self,x):
         return x
+
 
 
 class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepresentation):
