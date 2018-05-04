@@ -1,6 +1,7 @@
-from representations.metric_spaces import *
-from representations.examples import *
+from pykpn.representations.metric_spaces import *
+from pykpn.representations.examples import *
 
+print("using dijkstra everywhere:" + str(arch_graph_to_distance_metric(exampleDiijkstra)))
 N = 10000
 testSpace = exampleClusterArch
 runs = testSpace.uniformFromBall(3,1,N)

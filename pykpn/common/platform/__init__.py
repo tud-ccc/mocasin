@@ -1,7 +1,7 @@
-# Copyright (C) 2017 TU Dresden
+# Copyright (C) 2017-2018 TU Dresden
 # All Rights Reserved
 #
-# Authors: Christian Menard
+# Authors: Christian Menard, Andres Goens
 
 import pydot
 
@@ -430,3 +430,54 @@ class Platform(object):
                 dot.add_edge(pydot.Edge(node, to_node, minlen=minlen))
 
         return dot
+
+    def to_adjacency_dict(self,precision=5):
+        """
+        Convert the platform to an adjacency dictionary.
+
+        This only prints processors and communication resources.
+        The edges are annotated with the static communication cost
+        for a simple token of size 8.
+        Schedulers and communication primitives are not considered.
+        
+        precision: number of siginifcant figures to consider on costs.
+        for full precision, select -1
+        """
+        num_vertices = 0
+        vertices = {}
+        adjacency_dict = {}
+        coloring = []
+
+    
+        for s in self.schedulers():
+            for p in s.processors:
+                vertices[p.name] = num_vertices
+                num_vertices = num_vertices + 1
+
+
+        for p in self.primitives():
+             
+            for x in p.producers:
+                if x.name not in adjacency_dict:
+                    adjacency_dict[x.name] = {}
+                for y in p.consumers:
+                    cost = p.static_costs(x,y, token_size=8)
+                    if precision < 0 or cost == 0:
+                        pass
+                    else:
+                        cost = round(cost, precision-1-int(math.floor(math.log10(abs(cost)))))
+                    #print( (x,y,cost))
+                    if y.name not in adjacency_dict[x.name]:
+                        adjacency_dict[x.name][y.name] = cost 
+                    #here we should decide what to do with the different primitive
+                    #I dediced to just take the minimum for now.
+                    adjacency_dict[x.name][y.name] = min(adjacency_dict[x.name][y.name],cost)
+                    if precision < 0 or cost == 0:
+                        pass
+                    else:
+                        cost = round(cost, precision-1-int(math.floor(math.log10(abs(cost)))))
+                    
+        res = {}
+        for elem in adjacency_dict:
+            res[elem] = [(adjacent, adjacency_dict[elem][adjacent]) for adjacent in adjacency_dict[elem]]
+        return res

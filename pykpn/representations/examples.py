@@ -1,5 +1,5 @@
-from representations.metric_spaces import *
-from representations.permutations import *
+from pykpn.representations.metric_spaces import *
+from pykpn.representations.permutations import *
 import numpy as np
 
 exampleClusterArch = finiteMetricSpace( [ [0,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2],
@@ -47,6 +47,26 @@ exampleParallella16 = generateExampleParallella(4,2,20)
 S4 = perm.SymmetricGroupTranspositions(4)
 autExampleClusterArch = perm.ProductGroup([S4,S4,S4,S4]) # this should actually be a wreath product...
 exampleClusterArchSymmetries = finiteMetricSpaceSym(exampleClusterArch,autExampleClusterArch)
+
+# from: https://people.sc.fsu.edu/~jburkardt/m_src/dijkstra/dijkstra.html
+#   N0--15--N2-100--N3
+#     \      |     /
+#      \     |    /
+#       40  20  10
+#         \  |  /
+#          \ | /
+#           N1
+#           / \
+#          /   \
+#         6    25
+#        /       \
+#       /         \
+#     N5----8-----N4
+exampleDiijkstra = {'N0' : [('N1' , 40), ('N2' , 15)], 'N2' : [('N0' , 15), ('N3' , 100), ('N1' , 20)],
+                    'N3' : [('N2' , 100), ('N1' , 10)], 'N1': [('N0' , 40), ('N2', 20), ('N3' , 10), ('N5' , 6), ('N4' , 25)],
+                    'N4': [('N1' , 25),( 'N5' , 8)], 'N5' : [('N1' , 6), ('N4' , 8)]}
+
+
 
 
 

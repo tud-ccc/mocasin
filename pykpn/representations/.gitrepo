@@ -4,8 +4,8 @@
 ; git-subrepo command. See https://github.com/git-commands/git-subrepo#readme
 ;
 [subrepo]
-	remote = julia:/net/home/cmenard/git/pykpn/pykpn-representations.git
+	remote = git@factor:pykpn/subrepos/pykpn-representations.git
 	branch = master
-	commit = e19344dfc152fe2736af188c9456fa4d41c0cd5b
-	parent = 51a0fa499ae00bbf19b097415a97b5f4aaa80407
+	commit = 35485cf71aaed474c731f3c693137d17c7a42525
+	parent = b5932fb36ea7b1d10a6269d568aaa22e2d7332de
 	cmdver = 0.3.1

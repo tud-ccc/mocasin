@@ -209,7 +209,7 @@ def convert(platform, xml_platform):
             # We create a single phase for each producer
             active = CommunicationPhase(
                 'Consume Active',
-                resources_from_access(xp.get_Active(), platform),
+                resources_from_access(xc.get_Active(), platform),
                 'read')
             consumers[cn] = [active]
 
@@ -248,13 +248,10 @@ def resources_from_access(access_list, platform):
     """
     resources = []
     for acc in access_list.get_CacheAccess():
-        assert('write' == acc.get_access())
         resources.append(find_resource(platform, acc.get_cache()))
     for acc in access_list.get_FifoAccess():
-        assert('write' == acc.get_access())
         resources.append(find_resource(platform, acc.get_fifo()))
     for acc in access_list.get_MemoryAccess():
-        assert('write' == acc.get_access())
         resources.append(find_resource(platform, acc.get_memory()))
     for ref in access_list.get_DMAControllerRef():
         resources.append(find_resource(platform, ref.get_dmaController()))

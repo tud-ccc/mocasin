@@ -22,7 +22,7 @@ def main():
 
     parser.add_argument('platform', help="xml platform description", type=str)
     parser.add_argument('dot', help="dot output file", type=str)
-    parser.add_argument('--slx-version', help="dot output file", type=str,
+    parser.add_argument('--slx-version', help="silexica version", type=str,
                         default='2017.04')
 
     args = parser.parse_args()

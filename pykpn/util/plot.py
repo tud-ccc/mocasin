@@ -48,7 +48,7 @@ def visualize_mapping_space(mappings, exec_times):
     #print(mapping_tuples)
     X = tsne.tsne(mapping_tuples,
                   no_dims=2,
-                  initial_dims=len(mappings[0].to_list()),
+                  initial_dims=len(mappings[0].toRepresentation()),
                   perplexity=20.0)
 
     fig = plt.figure(figsize=(14,8))

@@ -1,12 +1,17 @@
-#Author: Andres Goens, 2017
+# Copyright (C) 2017-2018 TU Dresden
+# All Rights Reserved
+#
+# Author: Andres Goens
+
 from __future__ import print_function
 import numpy as np
 from sys import exit,stdout
 from numpy.random import randint
 from itertools import product
 from . import permutations as perm
+#from pykpn.representations.representations_base import MappingRepresentation
 
-class finiteMetricSpace():
+class FiniteMetricSpace():
     def __init__(self,matrix):
         try:
             self.D = np.matrix(matrix)
@@ -39,11 +44,14 @@ class finiteMetricSpace():
 
     def _uniformFromBallNaive(self,p,r,npoints=1):
         ball = self.ball(p,r)
-        point_positions = randint(0,len(ball),size=npoints)
+        point_positions = randint(0,len(ball)-1,size=npoints)
         points = [ ball[i] for i in point_positions]
         return points
 
-class finiteMetricSpaceLP(finiteMetricSpace):
+    def uniform(self):
+       return randint(0,self.n-1)
+
+class FiniteMetricSpaceLP(FiniteMetricSpace):
     def __init__(self,M,d=2,p=1):
         self.D = None
         self.M = M
@@ -64,7 +72,7 @@ class finiteMetricSpaceLP(finiteMetricSpace):
                 y_l = self.tuple2Int(y)
                 return self.D[x_l,y_l]
             else:
-                return finiteMetricSpaceLP._distCalc(self,x,y)
+                return FiniteMetricSpaceLP._distCalc(self,x,y)
         else:
             print( "An error ocurred while trying to calculate the distance of two points (wrong types?)")
             print( str(x))
@@ -116,12 +124,18 @@ class finiteMetricSpaceLP(finiteMetricSpace):
             print("An error ocurred while calculating the ball, unknown point")
             print(str(p))
             exit(1)
-        return finiteMetricSpace.ball(self,point,r)
+        return FiniteMetricSpace.ball(self,point,r)
 
-class finiteMetricSpaceSym(finiteMetricSpace):
+    def uniform(self):
+        res = []
+        for i in range(0,self.d):
+            res.append(self.M.uniform())
+        return res
+    
+class FiniteMetricSpaceSym(FiniteMetricSpace):
     def __init__(self,M,G):
         self.D = None
-        assert isinstance(M,finiteMetricSpace)
+        assert isinstance(M,FiniteMetricSpace)
         self.M = M
         assert isinstance(G,perm.PermutationGroup)
         self.G = G
@@ -191,22 +205,22 @@ class finiteMetricSpaceSym(finiteMetricSpace):
             print(str(p))
             print(type(p))
             exit(1)
-        return finiteMetricSpace.ball(self,point,r)
+        return FiniteMetricSpace.ball(self,point,r)
 
     def int2Tuple(self,point):
         return self.elem2Tuple(point)
 
 
 
-class finiteMetricSpaceLPSym(finiteMetricSpaceLP,finiteMetricSpaceSym):
+class FiniteMetricSpaceLPSym(FiniteMetricSpaceLP,FiniteMetricSpaceSym):
     def __init__(self,M,G=None,d=2,p=1):
-        if isinstance(M,finiteMetricSpaceSym):
+        if isinstance(M,FiniteMetricSpaceSym):
             G = M.G
             M = M.M # take the base space (no symmetries)
 
         if G is None:
             G = perm.TrivialGroup(M.n)
-        finiteMetricSpaceLP.__init__(self,M,d=d,p=p)
+        FiniteMetricSpaceLP.__init__(self,M,d=d,p=p)
         self.G =  perm.DuplicateGroup(G,times=d)
         #print("LP, n: " + str(self.n))
         orbits = G.enumerate_tuple_orbits(d)
@@ -221,7 +235,7 @@ class finiteMetricSpaceLPSym(finiteMetricSpaceLP,finiteMetricSpaceSym):
 
     # three types of elemnts:
     # (1) int : representation in the size of the metric space
-    # (2) list of insts: tuples in M^d (no symmetries)
+    # (2) list of ints: tuples in M^d (no symmetries)
     # (3) lists of lists of ints: orbits of the action on M^d (w/symmetries)
 
     def dist(self,x,y):
@@ -257,38 +271,65 @@ class finiteMetricSpaceLPSym(finiteMetricSpaceLP,finiteMetricSpaceSym):
         # we need to iterate over the orbits of *tuples*
         # again one is enough
         orb = list(self.elem2orb[self.orb2elem[tuple(x[0])]])
-        dists = map( lambda xs : finiteMetricSpaceLP.dist(self,list(xs),list(y[0])), orb)
-        #print(list(map( lambda xs : (finiteMetricSpaceLP.dist(self,list(xs),y[0]),(xs,tuple(y[0]))), self.elem2orb[self.orb2elem[tuple(x[0])]])))
+        dists = map( lambda xs : FiniteMetricSpaceLP.dist(self,list(xs),list(y[0])), orb)
+        #print(list(map( lambda xs : (FiniteMetricSpaceLP.dist(self,list(xs),y[0]),(xs,tuple(y[0]))), self.elem2orb[self.orb2elem[tuple(x[0])]])))
         return min(dists)
 
     def ball(self, p, r):
-        return finiteMetricSpaceSym.ball(self,p,r)
+        return FiniteMetricSpaceSym.ball(self,p,r)
 
     def int2Tuple(self, point):
-        return finiteMetricSpaceSym.elem2Tuple(self,point)
+        return FiniteMetricSpaceSym.elem2Tuple(self,point)
 
 
+def dijkstra(graph,node_from):
+    inf = float('inf')
+    unvisited = set(graph.keys())
+    tentative_distances = {}
+    distances = {}
+    for node in graph:
+        distances[node] = inf
+    distances[node_from] = 0
+    current = node_from
+    
+    while len(unvisited) != 0:
+        for (neighbor,dist) in graph[current]:
+            if neighbor in unvisited:
+                tentative_distance = distances[current] +  dist
+                if tentative_distance < distances[neighbor]:
+                    distances[neighbor] = tentative_distance
+
+        min_dist = inf
+        next_node = None
+        unvisited.remove(current)
+        for unvisited_node in unvisited:
+            if distances[unvisited_node] < min_dist:
+                min_dist = distances[unvisited_node]
+                next_node = unvisited_node
+        
+        current = next_node
+    return distances
 
 
-exampleClusterArch = finiteMetricSpace( [ [0,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2],
-                                          [1,0,1,1,2,2,2,2,2,2,2,2,2,2,2,2],
-                                          [1,1,0,1,2,2,2,2,2,2,2,2,2,2,2,2],
-                                          [1,1,1,0,2,2,2,2,2,2,2,2,2,2,2,2],
-                                          [2,2,2,2,0,1,1,1,2,2,2,2,2,2,2,2],
-                                          [2,2,2,2,1,0,1,1,2,2,2,2,2,2,2,2],
-                                          [2,2,2,2,1,1,0,1,2,2,2,2,2,2,2,2],
-                                          [2,2,2,2,1,1,1,0,2,2,2,2,2,2,2,2],
-                                          [2,2,2,2,2,2,2,2,0,1,1,1,2,2,2,2],
-                                          [2,2,2,2,2,2,2,2,1,0,1,1,2,2,2,2],
-                                          [2,2,2,2,2,2,2,2,1,1,0,1,2,2,2,2],
-                                          [2,2,2,2,2,2,2,2,1,1,1,0,2,2,2,2],
-                                          [2,2,2,2,2,2,2,2,2,2,2,2,0,1,1,1],
-                                          [2,2,2,2,2,2,2,2,2,2,2,2,1,0,1,1],
-                                          [2,2,2,2,2,2,2,2,2,2,2,2,1,1,0,1],
-                                          [2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,0]])
-S4 = perm.SymmetricGroupTranspositions(4)
-autExampleClusterArch = perm.ProductGroup([S4,S4,S4,S4]) # this should actually be a wreath product...
-exampleClusterArchSymmetries = finiteMetricSpaceSym(exampleClusterArch,autExampleClusterArch)
+def arch_graph_to_distance_metric(graph):
+    inf = float('inf')
+    n = 0
+    nodes_correspondence = {}
+    nc_inv = {}
+    dist_metric_named = {}
+    for node in graph:
+        nodes_correspondence[n] = node
+        nc_inv[node] = n
+        n += 1
+        dist_metric_named[node] = dijkstra(graph,node)
 
-
+    #We use the corresp. dictionaries to make sure we don't mess up the order
+    res = []
+    for node_from in range(0,n):
+        line = [inf]*n
+        for node_to_named in dist_metric_named[nodes_correspondence[node_from]]:
+            line[nc_inv[node_to_named]] = dist_metric_named[nodes_correspondence[node_from]][node_to_named]
+        res.append(line)
+    return res,nodes_correspondence,nc_inv
+        
 
