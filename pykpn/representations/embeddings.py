@@ -6,6 +6,7 @@
 from __future__ import print_function
 import numpy as np
 import cvxpy as cvx
+import random
 #import fjlt.fjlt as fjlt #TODO: use fjlt to (automatically) lower the dimension of embedding
 from . import permutations as perm
 from . import metric_spaces as metric
@@ -20,13 +21,13 @@ DEFAULT_DISTORTION = 1.05
 #  and then handle the case M^d \hat \iota R^{kd} specially.
 class MetricSpaceEmbeddingBase():
     def __init__(self,M,distortion=DEFAULT_DISTORTION):
-        assert( isinstance(M,metric.finiteMetricSpace))
+        assert( isinstance(M,metric.FiniteMetricSpace))
         self.M = M
         self.distortion = distortion
         self.k = M.n
 
         #First: calculate a good embedding by solving an optimization problem
-        E = self.calculateEmbeddingMatrix(np.matrix(M.D),distortion)
+        E,self._k = self.calculateEmbeddingMatrix(np.matrix(M.D),distortion)
         #print(E)
 
         #Populate look-up table
@@ -91,11 +92,11 @@ class MetricSpaceEmbeddingBase():
         #print(L)
         #lowerdim = fjlt.fjlt(L,10,1)
         #print(lowerdim)
-        return L
+        return L,n
 
     def approx(self,vec):
         vecs = [list(self.iota[i]) for i in range(len(self.iota))]
-        dists = [np.linalg.norm(v-vec) for v in vecs]
+        dists = [np.linalg.norm(np.array(v)-np.array(vec)) for v in vecs]
         idx = np.argmin(dists)
         #print(idx)
         return self.iota[idx]
@@ -109,6 +110,7 @@ class MetricSpaceEmbeddingBase():
 class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
     def __init__(self,M,d=1,distortion=DEFAULT_DISTORTION):
         MetricSpaceEmbeddingBase.__init__(self,M,distortion)
+        self._d = d
     
     def i(self,vec):
         #iota^d: elementwise iota
@@ -132,10 +134,24 @@ class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
         #since the subspaces for every component are orthogonal
         #we can find the minimal vectors componentwise
         assert( type(vec) is list)
+        assert( len(vec) == self._k * self._d)
         res = []
-        for i in vec:
-           res.append(MetricSpaceEmbeddingBase.approx(self,i))
+        for i in range(0,self._d):
+            comp = []
+            for j in range(0,self._k):
+                comp.append(vec[self._k*i +j])
+
+            res.append(MetricSpaceEmbeddingBase.approx(self,tuple(comp)))
         return res
 
     def invapprox(self,vec):
         return self.inv(self.approx(vec))
+
+    def uniformVector(self):
+        k = len(self.iota)
+        res = []
+        for i in range(0,self._d):
+            idx = random.randint(0,k-1)
+            res = res + list(self.iota[idx])
+        return res
+            

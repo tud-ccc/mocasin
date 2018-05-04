@@ -8,7 +8,7 @@ from numpy.random import random_integers
 
 import third_party_dependencies.pynauty as pynauty
 
-from .metric_spaces import FiniteMetricSpaceSym, FiniteMetricSpaceLP, FiniteMetricSpaceLPSym, arch_graph_to_distance_metric
+from .metric_spaces import FiniteMetricSpace, FiniteMetricSpaceSym, FiniteMetricSpaceLP, FiniteMetricSpaceLPSym, arch_graph_to_distance_metric
 from .embeddings import MetricSpaceEmbedding, DEFAULT_DISTORTION
 import pykpn.representations.automorphisms as aut
 import pykpn.representations.permutations as perm
@@ -145,21 +145,26 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
         self._M = FiniteMetricSpace(M_matrix)
         self._kpn = kpn
         self._platform = platform
+        self._d = len(kpn.processes())
         init_app_ncs(self,kpn)
-        super.__init__(self._M,d,distortion)
+        MetricSpaceEmbedding.__init__(self,self._M,self._d,distortion)
         
     def simpleVec2Elem(self,x): 
-        return self.i(x)# [value for comp in self.i(x) for value in comp]
+        proc_vec = x[:self._d]
+        return self.i(proc_vec)# [value for comp in self.i(x) for value in comp]
 
     def elem2SimpleVec(self,x):
         return self.invapprox(x)
+
+    def uniform(self):
+        return self.uniformVector()
     
 class RepresentationType(Enum):
     """Simple enum to store the different types of representations a mapping can have.
     """
     SimpleVector = SimpleVectorRepresentation
     FiniteMetricSpaceLP = FiniteMetricSpaceLP
-    FiniteMetricSpaceSym = FiniteMetricSpaceSym
+    Symmetries = FiniteMetricSpaceSym
     FiniteMetricSpaceLPSym = FiniteMetricSpaceLPSym
     MetricSpaceEmbedding = MetricSpaceEmbedding
 

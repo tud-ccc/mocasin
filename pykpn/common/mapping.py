@@ -318,8 +318,11 @@ class Mapping:
                                    'communication from %s to %s found!' %
                                    (src.name, str(sinks)))
             if len(list_from) == len(self._kpn.processes()) :
-                idx = random.randrange(0, len(suitable_primitives))
-                primitive = suitable_primitives[i]
+                if len(suitable_primitives) == 1:
+                    primitive = suitable_primitives[0]
+                else:
+                    idx = random.randrange(0, len(suitable_primitives)-1)
+                    primitive = suitable_primitives[idx]
             else:
                 idx = list_from[i]
                 primitive = all_primitives[idx]
