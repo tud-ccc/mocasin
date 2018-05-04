@@ -23,8 +23,14 @@ class SlxRuntimeSystem(RuntimeSystem):
         :param SlxSimulationConfig config: an slx simulation config object
         :param simpy.Environment env: the simpy environment
         """
-        name = os.path.splitext(os.path.basename(config.platform_xml))[0]
-        platform = SlxPlatform(name, config.platform_xml, config.slx_version)
+
+        if config.platform_class is not None:
+            platform = config.platform_class()
+            name = platform.name
+        else:
+            name = os.path.splitext(os.path.basename(config.platform_xml))[0]
+            platform = SlxPlatform(name, config.platform_xml,
+                                   config.slx_version)
 
         applications = []
         for app_config in config.applications:

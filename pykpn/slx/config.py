@@ -9,6 +9,7 @@ import os
 
 import pint
 
+import pykpn.platforms
 from pykpn.common import logging
 
 
@@ -87,11 +88,17 @@ class SlxSimulationConfig:
         self.slx_version = version
 
         # parse the platform
-        platform_xml = conf['simulation']['platform_xml']
-        if not os.path.isfile(platform_xml):
-            raise ValueError('The platform description does not exist: %s' %
-                             platform_xml)
-        self.platform_xml = platform_xml
+        if 'platform' in conf['simulation']:
+            platform = conf['simulation']['platform']
+            self.platform_class = getattr(pykpn.platforms, platform)
+            self.platform_xml = None
+        else:
+            platform_xml = conf['simulation']['platform_xml']
+            if not os.path.isfile(platform_xml):
+                raise ValueError('The platform description does not exist: %s' %
+                                 platform_xml)
+            self.platform_xml = platform_xml
+            self.platform_class = None
 
         # parse all applications
         app_names = conf['simulation']['applications'].split(",")
