@@ -6,7 +6,10 @@
 from enum import Enum
 from numpy.random import random_integers
 
-import third_party_dependencies.pynauty as pynauty
+try:
+  import pynauty as pynauty
+except:
+   pass
 
 from .metric_spaces import FiniteMetricSpace, FiniteMetricSpaceSym, FiniteMetricSpaceLP, FiniteMetricSpaceLPSym, arch_graph_to_distance_metric
 from .embeddings import MetricSpaceEmbedding, DEFAULT_DISTORTION

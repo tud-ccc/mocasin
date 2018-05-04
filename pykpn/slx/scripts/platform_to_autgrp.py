@@ -8,7 +8,7 @@
 
 import argparse
 
-import third_party_dependencies.pynauty as pynauty
+import pynauty as pynauty
 
 from pykpn.common import logging
 from pykpn.slx.platform import SlxPlatform
