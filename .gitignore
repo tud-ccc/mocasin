@@ -4,7 +4,6 @@ __pycache__
 pykpn.egg-info
 .#*
 *.ini
-apps
 
 # pynauty
 build
