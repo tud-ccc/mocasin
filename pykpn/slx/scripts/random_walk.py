@@ -131,9 +131,14 @@ def main():
         slx_version = config.slx_version
 
         # create the platform
-        platform_name = os.path.splitext(
-            os.path.basename(config.platform_xml))[0]
-        platform = SlxPlatform(platform_name, config.platform_xml, slx_version)
+        if config.platform_class is not None:
+            platform = config.platform_class()
+            platform_name = platform.name
+        else:
+            platform_name = os.path.splitext(
+                os.path.basename(config.platform_xml))[0]
+            platform = SlxPlatform(platform_name, config.platform_xml,
+                                   slx_version)
 
         # create all graphs
         kpns = {}
