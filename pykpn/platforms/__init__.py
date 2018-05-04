@@ -2,3 +2,6 @@
 # All Rights Reserved
 #
 # Authors: Christian Menard
+
+
+from pykpn.platforms.exynos_2chips import Exynos2Chips
