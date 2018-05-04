@@ -180,14 +180,14 @@ class FiniteMetricSpaceSym(FiniteMetricSpace):
         return min(dists)
 
     def _populateD(self):
-        print("Populating D...",end='')
+        #print("Populating D...",end='')
         if self.n == -1:
             self.n = len( G.enumerate_orbits()) # should I remove this per default? Could be very expensive!
         stdout.flush()
         self.D = np.zeros((self.n,self.n))
         for (x,y) in product(range(self.n),repeat=2):
-            self.D[x,y] = self._distCalc(x,y)
-        print("done.")
+            self.D[x,y] = self._distCalc(list(self.elem2orb[x]),list(self.elem2orb[y]))
+        #print("done.")
 
     def elem2Tuple(self,elem):
         return min(self.elem2orb[elem])
@@ -213,6 +213,7 @@ class FiniteMetricSpaceSym(FiniteMetricSpace):
 
 
 class FiniteMetricSpaceLPSym(FiniteMetricSpaceLP,FiniteMetricSpaceSym):
+    
     def __init__(self,M,G=None,d=2,p=1):
         if isinstance(M,FiniteMetricSpaceSym):
             G = M.G
