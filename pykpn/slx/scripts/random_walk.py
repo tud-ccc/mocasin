@@ -96,8 +96,10 @@ def main():
     parser.add_argument(
         '-V',
         '--visualize',
-        action='store_true',
-        help='show a visualization of the searched space using t-SNE',
+        nargs='?',
+        type=str,
+        const="",
+        help='show a visualization of the searched space using t-SNE. If given a name it will store the visualization in that file.',
         dest='visualize')
 
     parser.add_argument(
@@ -239,12 +241,15 @@ def main():
             plt.show()
 
         # visualize searched space
-        if args.visualize:
+        if args.visualize != None:
             if len(results[0].app_contexts) > 1:
                 raise RuntimeError('Search space visualization only works '
                                    'for single application mappings')
             mappings = [r.app_contexts[0].mapping for r in results]
-            plot.visualize_mapping_space(mappings, exec_times)
+            if len(args.visualize) == 0:
+                plot.visualize_mapping_space(mappings, exec_times)
+            else:
+                plot.visualize_mapping_space(mappings, exec_times,dest=args.visualize)
 
     except Exception as e:
         log.exception(str(e))
