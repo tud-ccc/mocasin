@@ -3,7 +3,6 @@ __pycache__
 *.swp
 pykpn.egg-info
 .#*
-*.ini
 
 # pynauty
 build
