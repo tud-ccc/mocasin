@@ -90,6 +90,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         self._topologyGraph = platform.to_adjacency_dict()
         self._kpn = kpn
         self._platform = platform
+        self._d = len(kpn.processes())
         adjacency_dict, num_vertices, coloring, self._arch_nc = aut.to_labeled_edge_graph(self._topologyGraph)
         init_app_ncs(self,kpn)
         self._arch_nc_inv = {}
@@ -97,17 +98,21 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
             self._arch_nc_inv[self._arch_nc[node]] = node
         #TODO: ensure that nodes_correspondence fits simpleVec
             
+        n = len(self._platform.processors())
         nautygraph = pynauty.Graph(num_vertices,True,adjacency_dict, coloring)
         autgrp_edges = pynauty.autgrp(nautygraph)
         autgrp, new_nodes_correspondence = aut.edge_to_node_autgrp(autgrp_edges[0],self._arch_nc)
         permutations_lists = map(aut.list_to_tuple_permutation,autgrp)
-        permutations = map(perm.Permutation,permutations_lists)
-        self._G = perm.PermutationGroup(list(permutations))
+        permutations = [perm.Permutation(p,n= n) for p in permutations_lists]
+        self._G = perm.PermutationGroup(permutations)
         
     def simpleVec2Elem(self,x): 
-        return self._G.tuple_normalize(x)
+        return self._G.tuple_normalize(x[:self._d])
     def elem2SimpleVec(self,x):
         return x
+    def uniform(self):
+        procs_only = SimpleVectorRepresentation.uniform(self)[:self._d]
+        return self._G.tuple_normalize(procs_only)
 
 #FIXME: UNTESTED!!
 class MetricSymmetryRepresentation(FiniteMetricSpaceLPSym, metaclass=MappingRepresentation):
