@@ -58,9 +58,9 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
                     sinks = [self._platform.find_processor(snk) for snk in sink_pe_names]
                     if p.is_suitable(src,sinks):
                         suitable_primitives.append(p)
-                    primitive = suitable_primitives[random_integers(0,len(suitable_primitives)-1)].name
-                    primitive_idx = [i for i,x in enumerate(CPs) if x == primitive][0]
-                    res.append(primitive_idx)
+                primitive = suitable_primitives[random_integers(0,len(suitable_primitives)-1)].name
+                primitive_idx = [i for i,x in enumerate(CPs) if x == primitive][0]
+                res.append(primitive_idx)
             return res
 
     def simpleVec2Elem(self,x):
