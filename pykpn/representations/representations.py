@@ -145,6 +145,7 @@ class MetricSymmetryRepresentation(FiniteMetricSpaceLPSym, metaclass=MappingRepr
         return x
     def elem2SimpleVec(self,x):
         return x
+      
 
 
 
@@ -186,9 +187,9 @@ class SymmetryEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRep
         permutations = [perm.Permutation(p,n= n) for p in permutations_lists]
         self._G = perm.PermutationGroup(permutations)
         M = FiniteMetricSpace(M_matrix)
-        self._M = FiniteMetricSpaceSym(M,self._G)
+        self._M = FiniteMetricSpaceLPSym(M,self._G,self._d)
         self._M._populateD()
-        MetricSpaceEmbedding.__init__(self,self._M,self._d,distortion)
+        MetricSpaceEmbedding.__init__(self,self._M,1,distortion)
         
     def simpleVec2Elem(self,x): 
         proc_vec = x[:self._d]
