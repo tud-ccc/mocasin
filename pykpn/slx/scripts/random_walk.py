@@ -96,15 +96,18 @@ def main():
     parser.add_argument(
         '-V',
         '--visualize',
-        action='store_true',
-        help='show a visualization of the searched space using t-SNE',
+        nargs='?',
+        type=str,
+        const="",
+        help='show a visualization of the searched space using t-SNE. If given a name it will store the visualization in that file.',
         dest='visualize')
 
     parser.add_argument(
         '-R',
         '--representation',
         type=str,
-        help='Select the representation type for the mapping space',
+        help='Select the representation type for the mapping space.\nAvailable:'
+        + ", ".join(dir(RepresentationType)),
         dest='rep_type_str',
         default='SimpleVector')
 
@@ -120,6 +123,9 @@ def main():
 
     num_iterations = args.num_iterations
     rep_type_str = args.rep_type_str
+    if rep_type_str not in dir(RepresentationType):
+        log.exception("Representation " + rep_type_str + " not recognized. Available: " + ", ".join(dir(RepresentationType)))
+        raise RuntimeError('Unrecognized representation.')
 
     try:
         # parse the config file
@@ -127,9 +133,14 @@ def main():
         slx_version = config.slx_version
 
         # create the platform
-        platform_name = os.path.splitext(
-            os.path.basename(config.platform_xml))[0]
-        platform = SlxPlatform(platform_name, config.platform_xml, slx_version)
+        if config.platform_class is not None:
+            platform = config.platform_class()
+            platform_name = platform.name
+        else:
+            platform_name = os.path.splitext(
+                os.path.basename(config.platform_xml))[0]
+            platform = SlxPlatform(platform_name, config.platform_xml,
+                                   slx_version)
 
         # create all graphs
         kpns = {}
@@ -230,12 +241,15 @@ def main():
             plt.show()
 
         # visualize searched space
-        if args.visualize:
+        if args.visualize != None:
             if len(results[0].app_contexts) > 1:
                 raise RuntimeError('Search space visualization only works '
                                    'for single application mappings')
             mappings = [r.app_contexts[0].mapping for r in results]
-            plot.visualize_mapping_space(mappings, exec_times)
+            if len(args.visualize) == 0:
+                plot.visualize_mapping_space(mappings, exec_times)
+            else:
+                plot.visualize_mapping_space(mappings, exec_times,dest=args.visualize)
 
     except Exception as e:
         log.exception(str(e))

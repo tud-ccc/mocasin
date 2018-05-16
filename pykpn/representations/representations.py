@@ -6,7 +6,10 @@
 from enum import Enum
 from numpy.random import random_integers
 
-import third_party_dependencies.pynauty as pynauty
+try:
+  import pynauty as pynauty
+except:
+   pass
 
 from .metric_spaces import FiniteMetricSpace, FiniteMetricSpaceSym, FiniteMetricSpaceLP, FiniteMetricSpaceLPSym, arch_graph_to_distance_metric
 from .embeddings import MetricSpaceEmbedding, DEFAULT_DISTORTION
@@ -58,9 +61,9 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
                     sinks = [self._platform.find_processor(snk) for snk in sink_pe_names]
                     if p.is_suitable(src,sinks):
                         suitable_primitives.append(p)
-                    primitive = suitable_primitives[random_integers(0,len(suitable_primitives)-1)].name
-                    primitive_idx = [i for i,x in enumerate(CPs) if x == primitive][0]
-                    res.append(primitive_idx)
+                primitive = suitable_primitives[random_integers(0,len(suitable_primitives)-1)].name
+                primitive_idx = [i for i,x in enumerate(CPs) if x == primitive][0]
+                res.append(primitive_idx)
             return res
 
     def simpleVec2Elem(self,x):
@@ -68,7 +71,6 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
     def elem2SimpleVec(self,x):
         return x
 
-#FIXME: UNTESTED!!
 class MetricSpaceRepresentation(FiniteMetricSpaceLP, metaclass=MappingRepresentation):
     def __init__(self,kpn, platform):
         self._topologyGraph = platform.to_adjacency_dict()
@@ -84,7 +86,6 @@ class MetricSpaceRepresentation(FiniteMetricSpaceLP, metaclass=MappingRepresenta
     def elem2SimpleVec(self,x):
         return x
 
-#FIXME: UNTESTED!!
 class SymmetryRepresentation(metaclass=MappingRepresentation):
     def __init__(self,kpn, platform):
         self._topologyGraph = platform.to_adjacency_dict()
@@ -144,6 +145,7 @@ class MetricSymmetryRepresentation(FiniteMetricSpaceLPSym, metaclass=MappingRepr
         return x
     def elem2SimpleVec(self,x):
         return x
+      
 
 
 
@@ -168,6 +170,37 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
     def uniform(self):
         return self.uniformVector()
     
+class SymmetryEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepresentation):
+    def __init__(self,kpn, platform, distortion=DEFAULT_DISTORTION):
+        self._kpn = kpn
+        self._platform = platform
+        self._d = len(kpn.processes())
+        self._topologyGraph = platform.to_adjacency_dict()
+        init_app_ncs(self,kpn)
+        n = len(self._platform.processors())
+        M_matrix, self._arch_nc, self._arch_nc_inv = arch_graph_to_distance_metric(self._topologyGraph)
+        adjacency_dict, num_vertices, coloring, self._arch_nc = aut.to_labeled_edge_graph(self._topologyGraph)
+        nautygraph = pynauty.Graph(num_vertices,True,adjacency_dict, coloring)
+        autgrp_edges = pynauty.autgrp(nautygraph)
+        autgrp, new_nodes_correspondence = aut.edge_to_node_autgrp(autgrp_edges[0],self._arch_nc)
+        permutations_lists = map(aut.list_to_tuple_permutation,autgrp)
+        permutations = [perm.Permutation(p,n= n) for p in permutations_lists]
+        self._G = perm.PermutationGroup(permutations)
+        M = FiniteMetricSpace(M_matrix)
+        self._M = FiniteMetricSpaceLPSym(M,self._G,self._d)
+        self._M._populateD()
+        MetricSpaceEmbedding.__init__(self,self._M,1,distortion)
+        
+    def simpleVec2Elem(self,x): 
+        proc_vec = x[:self._d]
+        return self.i(proc_vec)# [value for comp in self.i(x) for value in comp]
+
+    def elem2SimpleVec(self,x):
+        return self.invapprox(x)
+
+    def uniform(self):
+        return self.uniformVector()
+    
 class RepresentationType(Enum):
     """Simple enum to store the different types of representations a mapping can have.
     """
@@ -176,6 +209,7 @@ class RepresentationType(Enum):
     Symmetries = FiniteMetricSpaceSym
     FiniteMetricSpaceLPSym = FiniteMetricSpaceLPSym
     MetricSpaceEmbedding = MetricSpaceEmbedding
+    SymmetryEmbedding = SymmetryEmbeddingRepresentation
 
     def getClassType(self):
 
@@ -189,4 +223,5 @@ class RepresentationType(Enum):
             return MetricSymmetryRepresentation
         if self is RepresentationType['MetricSpaceEmbedding']:
             return MetricEmbeddingRepresentation
-
+        if self is RepresentationType['SymmetryEmbedding']:
+            return SymmetryEmbeddingRepresentation

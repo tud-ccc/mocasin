@@ -3,7 +3,10 @@
 #
  # Authors: Andres Goens
 
-import third_party_dependencies.pynauty as pynauty
+try:
+  import pynauty as pynauty
+except:
+  pass
 
 def to_labeled_edge_graph(g):
     original_nodes = list(g.keys())

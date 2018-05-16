@@ -15,7 +15,7 @@ from pykpn.util import annotate
 #import networkx as nwx
 
 
-def visualize_mapping_space(mappings, exec_times):
+def visualize_mapping_space(mappings, exec_times, dest=None):
     """Visualize a multi-dimensional mapping space using t-SNE
 
     Args:
@@ -65,4 +65,7 @@ def visualize_mapping_space(mappings, exec_times):
     fig.canvas.mpl_connect('button_press_event', af)
     cbaxes = fig.add_axes([0.012, 0.1, 0.03, 0.8])
     plt.colorbar(cax=cbaxes)
-    plt.show()
+    if dest == None:
+        plt.show()
+    else:
+        fig.savefig(dest + ".pdf")
