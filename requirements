@@ -1,0 +1,8 @@
+cvxpy
+simpy
+pint
+pydot
+termcolor
+matplotlib
+lxml
+tqdm
