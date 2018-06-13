@@ -263,7 +263,7 @@ def run_simualtion(sim_context):
     env = simpy.Environment()
 
     # create the applications
-    applications = []
+    applications = [];
     mappings = {}
     for ac in sim_context.app_contexts:
         app = RuntimeKpnApplication(ac.name, ac.kpn, ac.mapping,

@@ -26,7 +26,7 @@ def visualize_mapping_space(mappings, exec_times, dest=None,representation_type=
     Note:
          The two lists `mappings` and `exec_times` are assumed to have the same
          order. This means that ``exec_times[idx]`` is expected to hold the
-         execution time of the mapping ``exec_times[idx]``.
+         execution time of ``mapping[idx]``.
     """
     assert len(mappings) == len(exec_times)
 
@@ -48,6 +48,7 @@ def visualize_mapping_space(mappings, exec_times, dest=None,representation_type=
 
     representation = representation_type.getClassType()(mappings[0].kpn,mappings[0].platform)
     #print(mapping_tuples)
+    print("MAPPING TUPLES: {}".format(mapping_tuples[0]))
     X = tsne.tsne(mapping_tuples,
                   no_dims=2,
                   initial_dims=len(toRepresentation(representation,mappings[0])),
@@ -56,7 +57,8 @@ def visualize_mapping_space(mappings, exec_times, dest=None,representation_type=
     fig = plt.figure(figsize=(14,8))
     ax = fig.add_subplot(111)
 
-    plt.hexbin(X[:, 0], X[:, 1], C=exec_times, cmap=cm.viridis_r, bins=None)
+    #plt.hexbin(X[:, 0], X[:, 1], C=exec_times, cmap=cm.viridis_r, bins=None, alpha=1)
+    plt.scatter(X[:, 0], X[:, 1], c=exec_times, cmap=cm.viridis_r)
     
     #some magic adjustments to make room for legend and mapping string
     plt.subplots_adjust(right=0.6)
