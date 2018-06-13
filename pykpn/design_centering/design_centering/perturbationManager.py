@@ -43,9 +43,11 @@ class PerturbationManager(object):
         
         vec = []
         #assign cores to vector
-        pe_mapping = dcMapGen.get_pe_mapping()
+        pe_mapping = dcMapGen.get_pe_name_mapping()
+        print(pe_mapping)
         for p in self.kpns[0].processes():
-            vec.append(pe_mapping[mapping.affinity(p)])
+            print(mapping.affinity(p).name) 
+            vec.append(pe_mapping[mapping.affinity(p).name])
 
         print("vec: {} ".format(vec))
         #permutate vector
@@ -89,4 +91,8 @@ class PerturbationManager(object):
             else:
                 feasible.append(True)
 
-        print("exec. Times: {} Feasible: {}".format(exec_times, feasible))
+        print("exec. Times: {} Feasible: {} History: {}".format(exec_times, feasible, history))
+        # generate gridpoint from history by wighting feasible and infeasible
+        simple_res = 100 * len([i for i in feasible if i is True]) / len(feasible)
+        return simple_res
+

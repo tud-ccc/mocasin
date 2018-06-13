@@ -11,6 +11,7 @@ from . import dc_volume
 from . import dc_settings as conf
 from . import perturbationManager as p
 from pykpn.common import logging
+from pykpn.util import plot # t-SNE plotting stuff
 import numpy as np
 import matplotlib.pyplot as plt
 from ... import representations as reps
@@ -33,6 +34,26 @@ class ThingPlotter(object):
             plt.plot(_j, data[_j],"o", color='b')
         plt.xticks(range(0, conf.max_samples, interval))
         plt.yticks(np.arange(0, 1, 0.1))
+        plt.show()
+
+    def plot_perturbations(sef, pert_res_list):
+        # the first list element is the center
+        x = []
+        y = []
+        for i,p in enumerate(sorted(pert_res_list, reverse=True)):
+            if p is pert_res_list[0]:
+                center_x = i
+                break
+                
+        center_y = pert_res_list[0]
+        for i,p in enumerate(sorted(pert_res_list, reverse=True)):
+            x.append(i)
+            y.append(p)
+
+        plt.scatter(x,y)
+        plt.scatter(center_x, center_y, color='r')
+        plt.xlabel("Mappings")
+        plt.ylabel("Perturbations Passed")
         plt.show()
 
 class DesignCentering(object):
@@ -67,13 +88,13 @@ class DesignCentering(object):
     def ds_explore(self):
         """ explore design space (main loop of the DC algorithm) """
 
+        s_set = dc_sample.SampleSet()
         for i in range(0, conf.max_samples, conf.adapt_samples):
-            s_set = dc_sample.SampleSet()
             s = dc_sample.SampleGeometricGen()
             #M = finiteMetricSpaceLP(exampleClusterArch,d=2)
             #M = reps.finiteMetricSpaceLPSym(reps.exampleClusterArchSymmetries,d=2)
             #s = dc_sample.MetricSpaceSampleGen(M)
-            
+            print(">>>>>>>>> Iteration {}".format(i))
             # TODO: may genrate identical samples which makes things ineffective 
             samples = s.gen_samples_in_ball(type(self).vol, type(self).distr, conf.adapt_samples)
             #print(samples)
@@ -92,6 +113,10 @@ class DesignCentering(object):
             #put samples as paramater in simulation
             print("Input samples:\n {}".format(samples))
             samples = type(self).oracle.validate_set(samples) # validate multiple samples
+            print("Output samples:\n {}".format(samples))
+
+
+
             #print("list {}".format(feasible_list))
             #for s in samples:
             #    print("Feasible: {}".format(s.feasible))
@@ -104,6 +129,7 @@ class DesignCentering(object):
             #    type(self).samples.update({s.sample2tuple():s.feasible})
             
             s_set.add_sample_list(samples)
+            s_set.add_sample_group(samples)
 
             print("Output fesaible samples:\n {}".format(s_set.get_feasible()))
             old_center = type(self).vol.center
@@ -116,6 +142,68 @@ class DesignCentering(object):
             cur_p = type(self).vol.adapt_volume(s_set, type(self).p_value[i], type(self).s_value[i])
             #logging.debug(" center: {} radius: {:f} p: {}".format(type(self).vol.center, type(self).vol.radius, cur_p))
             print("center: {} radius: {:f} p: {}".format(type(self).vol.center, type(self).vol.radius, cur_p))
+
+        #modify last sample
+        #TODO build mapping from center 
+        center_sample = dc_sample.Sample(sample=center)
+        center_sample_list = []
+        center_sample_list.append(center_sample)
+        center_res_sample = type(self).oracle.validate_set(center_sample_list)
+        self.visualize_mappings(s_set.sample_groups)
+        print("center sample: {} {} {}".format(center_res_sample, center_sample, center))
+        return center_res_sample[0]
+    
+    def visualize_mappings(self, sample_groups):
+        # put all evaluated samples in a big array
+        mappings = []
+        exec_times = []
+        print(sample_groups)
+        c = 0
+        for g in sample_groups:
+            c = c + 0.1
+            for s in g:
+                mappings.append(s.getSimContext().app_contexts[0].mapping)
+                exec_times.append(float(s.getSimContext().exec_time / 1000000000.0))
+                #exec_times.append(float(c))
+
+        print("===== drawing mapping space =====")
+        # it seems there are samples inside
+        #plot.visualize_mapping_space(mappings, exec_times)
+        
+        thresholds = []
+        #>>> visualize feasibility threshold in T-sne
+        #for e in exec_times:
+        #    if e < conf.threshold:
+        #        thresholds.append(1)
+        #    else:
+        #        thresholds.append(0)
+        #thresholds[-1] = 0.5
+        #>>> visualize ARM usage in T-sne
+        for m in mappings:
+            pes_list = list(m.platform.processors())
+            procs_list = m.kpn.processes()
+
+            # map PEs to an integer
+            #pes = {}
+            #for i, pe in enumerate(pes_list):
+            #    pes[pe.name] = i
+            res = []
+            for proc in procs_list:
+                res.append(m.affinity(proc).name)
+
+            print(res)
+            if "ARM0" in res or "ARM1" in res:
+                thresholds.append(1)
+            elif "ARM0" in res and "ARM1" in res and "E00" in res:
+                thresholds.append(0.8)
+            elif "ARM0" in res and "ARM1" in res and  "E01" in res:
+                thresholds.append(0.6)
+            else:
+                thresholds.append(0)
+        thresholds[-1] = 0.5
+        #print("thresholds: {}".format(thresholds))
+        plot.visualize_mapping_space(mappings, thresholds)
+
 
 # Of course, the existing DFG already provides a valid schedule derived from the order of GIMPLE statements, 
 # but this neither exploits parallel execution or consider any resource contraints. 
@@ -150,7 +238,7 @@ def main():
         config = args.configFile
         oracle = dc_oracle.Oracle(args.configFile)
         dc = DesignCentering(v, conf.distr, oracle)
-        dc.ds_explore()
+        center = dc.ds_explore()
 
         # plot explored design space (in 2D)
         #if True:
@@ -160,14 +248,20 @@ def main():
         print("===== DC done =====")
 
         # run perturbation test
-        num_pert = 5
-        num_mappings = 10
-        pm = p.PerturbationManager( config, num_mappings, num_pert)
-        map_set = pm.create_randomMappings()
-        for m in map_set:
-            pm.run_perturbation(m, pm.apply_singlePerturbation)
+        if conf.run_perturbation:
+            num_pert = conf.num_perturbations
+            num_mappings = conf.num_mappings
+            pm = p.PerturbationManager( config, num_mappings, num_pert)
+            map_set = pm.create_randomMappings()
 
+            pert_res = []
+            pert_res.append(pm.run_perturbation(center.getMapping(0), pm.apply_singlePerturbation))
 
+            for m in map_set:
+                pert_res.append(pm.run_perturbation(m, pm.apply_singlePerturbation))
+
+            tp.plot_perturbations(pert_res)
+        
 
     else:
         print("usage: python designCentering [x1,x2,...,xn]\n")

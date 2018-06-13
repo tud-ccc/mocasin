@@ -130,7 +130,7 @@ class Simulation(object):
                 app_config.trace_dir, '%s.' % (app_name), config.slx_version)
             
             sim_context.app_contexts.append(app_context)
-             
+            samples[i].setSimContext(sim_context)
             simulation_contexts.append(sim_context)
         return simulation_contexts
 
@@ -170,23 +170,28 @@ class Simulation(object):
         # TODO: this is somehow broken
         # pool = mp.Pool(processes=4)
         # results = list(pool.map(self.run_simulation, simulations, chunksize=4))
+        # TODO read mapping from sim_contexts
+        # this must be in simulation_contexts
+
+        # results list of simulation contexts
         results = list(map(self.run_simulation, simulation_contexts))
         
         #find runtime from results
         exec_times = []
         for r in results:
             exec_times.append(float(r.exec_time / 1000000000.0))
-
+        
         feasible = []
-        for e,s in zip(exec_times,samples):
-            if (e > conf.threshold):
-                s.feasible = False
+        for s in samples:
+            if (s.getSimContext().exec_time / 1000000000.0 > conf.threshold):
+                s.setFeasibility(False)
                 feasible.append(False)
             else:
-                s.feasible = True
+                s.setFeasibility(True)
                 feasible.append(True)
 
         print("exec. Times: {} Feasible: {}".format(exec_times, feasible))
+        # return smaples with the according sim context 
         return samples
 
     

@@ -63,7 +63,7 @@ class Mapping:
         dict of scheduler mapping infos
     """
 
-    def __init__(self, kpn, platform):
+    def __init__(self, kpn, platform, representation_type=RepresentationType['SimpleVector']):
         """Initialize a Mapping
 
         :param KpnGraph kpn: the kpn graph
@@ -74,6 +74,8 @@ class Mapping:
 
         self.kpn = kpn
         self.platform = platform
+        self._representation_type = representation_type
+        self._representation = self._representation_type.getClassType()(self.kpn,self.platform)
 
         self._channel_info = {}
         self._process_info = {}

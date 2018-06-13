@@ -34,9 +34,12 @@ class DC_MappingGenerator(object):
         # build a reverse dict of the pe_vec_mapping dictionary (since it is a one-to-one dict)
         self.vec_pe_mapping = dict([(self.pe_vec_mapping[key],key) for key in self.pe_vec_mapping])
 
-    def get_pe_mapping(self):
-        """Return the used mapping of PEs to integerers"""
-        return self.pe_vec_mapping
+    def get_pe_name_mapping(self):
+        """Return the used mapping of PE names to integers"""
+        res = {}
+        for key in self.pe_vec_mapping:
+            res[key.name] = self.pe_vec_mapping[key]
+        return res
 
     def generate_mapping(self, vec, map_history = []):
         """ Generates an unique partial mapping for a numeric vector

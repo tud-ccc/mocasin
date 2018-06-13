@@ -28,11 +28,13 @@ class Cube(Volume):
         self.dim = dim
 
     def adapt_center(self, s_set):
+        #all feas. samples in s_set
         fs_set = list(map(lambda s: s.sample,  s_set.get_feasible()))
         if not fs_set:
             return self.center
         # take mean of feasible points as new center
         m = np.mean(fs_set, axis=0)
+        print("mean mapping {}".format(m))
         self.center = np.around(m)
         return self.center
     

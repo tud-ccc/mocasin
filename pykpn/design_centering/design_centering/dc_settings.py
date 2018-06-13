@@ -1,5 +1,5 @@
-max_samples           = 100        # maximum number of samples
-adapt_samples         = 10         # interval of samples for adaption of p-value
+max_samples           = 50      # maximum number of samples
+adapt_samples         = 10        # interval of samples for adaption of p-value
 
 # list of p_values used as supporting points for a generated polynomial
 hitting_propability   = [0.1, 0.5, 0.6, 0.7, 0.9]
@@ -20,4 +20,8 @@ oracle = "simulation"              # test set to use
 
 random_seed  = 42                  # Initialization for the RNG (None means random init)
 threshold    = 280                 # Threshold for feasibility
+
+run_perturbation  = True           # Run Perturbation Tests
+num_perturbations = 10             # Number of perturbations per mapping
+num_mappings      = 10             # Number of random mappings to compare with
 

@@ -2,22 +2,34 @@ import numpy as np
 import random as rand
 
 from . import dc_volume
+from . import dc_oracle
 from . import dc_settings as conf
-from ...representations import finiteMetricSpace
+from pykpn.representations.metric_spaces import FiniteMetricSpace
+from pykpn.common.mapping import Mapping
 
 from sys import exit
 
 
 class Sample(list):
-    def __init__(self,sample=None):
+    def __init__(self,sample=None,simContext=None):
         self.feasible = False
         if sample is None:
             sample = []
         self.sample = sample
+        self.simContext = simContext
 
     def setFeasibility(self,feasibility):
         assert type(feasibility) is bool
         self.feasible = feasibility
+
+    def setSimContext(self,simContext):
+        self.simContext = simContext
+    
+    def getSimContext(self):
+        return self.simContext
+
+    def getMapping(self, idx):
+        return self.simContext.app_contexts[idx].mapping
 
     def getFeasibility(self,feasibility):
         return self.feasible
@@ -129,13 +141,19 @@ class MetricSpaceSample(Sample):
 class SampleSet(object):
 
     def __init__(self):
+        # list of all samples
         type(self).sample_set = []
+        # list of all samples per iteration
+        type(self).sample_groups = []
 
     def add_sample(self, sample):
         type(self).sample_set.append(sample)
 
     def add_sample_list(self, samples):
         type(self).sample_set += samples
+    
+    def add_sample_group(self, samples):
+        type(self).sample_groups.append(samples)
 
     def get_feasible(self):
         feasible_samples = []
