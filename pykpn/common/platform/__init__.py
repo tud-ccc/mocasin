@@ -45,7 +45,7 @@ class Processor:
         return self.__str__()
 
 
-class CommunicationResource:
+class CommunicationResource(object):
     '''
     Represents a resource required for communication. This can be anything from
     a link or bus to a memory.
@@ -95,7 +95,7 @@ class Storage(CommunicationResource):
     def __init__(self, name, frequency_domain, read_latency, write_latency,
                  read_throughput=float('inf'), write_throughput=float('inf'),
                  exclusive=False):
-        super().__init__(name, frequency_domain, read_latency, write_latency,
+        super(Storage, self).__init__(name, frequency_domain, read_latency, write_latency,
                          read_throughput, write_throughput, exclusive, True)
 
 
