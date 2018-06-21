@@ -1,4 +1,5 @@
 #author Felix Teweleit
+from mercurial.revset import contains
 
 class listOperations(object):
     '''
@@ -83,3 +84,22 @@ class listOperations(object):
             else:
                 continue
         return j
+    
+    
+    '''
+    checks if a list contains somewhere the given item, even if the list contains other lists which may contain the searched item
+    '''
+    @staticmethod
+    def containsItem(self, givenList, element):
+        if not isinstance(givenList, list):
+            if givenList == element:
+                return True
+            else:
+                return False
+        else:
+            for item in givenList:
+                if self.containsItem(listOperations, item, element):
+                    return True
+        return False        
+            
+            
