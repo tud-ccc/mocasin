@@ -1,7 +1,5 @@
 #author Felix Teweleit
 
-from pykpn.common.platform import __init__
-from numpy import integer
 
 class platformOperations (object):
     '''
@@ -11,8 +9,8 @@ class platformOperations (object):
     
     
     '''
-    takes the processor dictionary of an platform and converts it in a dictionary with a key for every class of processors which contains a list of the processors 
-    of the class      
+    takes the processor dictionary of an platform and converts it in tupel with a list for of class of processors and a list of the processors 
+    of each class      
     '''
     @staticmethod
     def getProcessorScheme(self, processorDict):
@@ -24,8 +22,13 @@ class platformOperations (object):
                 recognizedClasses[processor.type].append(processor.name) 
             else:
                 recognizedClasses[processor.type].append(processor.name)
+        classes = []
+        processors = []
+        for key in recognizedClasses:
+            classes.append(key)
+            processors.append(recognizedClasses[key])
         
-        return recognizedClasses
+        return (classes, processors)
     
     
     '''
@@ -34,12 +37,11 @@ class platformOperations (object):
     @staticmethod
     def getSortedProcessorScheme(self, processorDict):     
         recognizedClasses = self.getProcessorScheme(self, processorDict)
+        
         orderedClasses = []
-        processorClasses= []
-        for processorClass in recognizedClasses:
-            processorClasses.append(processorClass)
+        for processorClass in recognizedClasses[0]:
             processorList = []
-            for processor in recognizedClasses[processorClass]:
+            for processor in recognizedClasses[1][recognizedClasses[0].index(processorClass)]:
                 tmpList = list(processor)
                 tmpString = ''
                 for item in tmpList:
@@ -62,9 +64,65 @@ class platformOperations (object):
                             pass
                     if not inserted:
                         ordered.append(toAppend)
+            finalList = []
             for item in ordered:
-                item.reverse()
-                item.pop()
-            orderedClasses.append(ordered)
-        return (processorClasses, orderedClasses)
-                    
+                finalList.append(item[1])
+            orderedClasses.append(finalList)
+        return (recognizedClasses[0], orderedClasses)
+    
+    
+    '''
+    takes a list of processing elements of the same class and the dict of primitives of the platform, then it sorts the pe's  by 
+    the primitives they are part of 
+    '''
+    @staticmethod
+    def sortByPrimitives(self, peList, primitives):
+        recognizedPrimitives = []
+        memberAmount = []
+        
+        for primitive in primitives:
+            members = []
+            for consumer in primitive.consumers:
+                if peList.count(consumer.name) > 0 :
+                    if recognizedPrimitives.count(primitive.name) == 0:
+                        recognizedPrimitives.append(primitive.name) 
+                    if members.count(consumer.name) == 0:
+                        members.append(consumer.name)
+
+            for producer in primitive.producers:
+                if peList.count(producer.name) > 0:
+                    if recognizedPrimitives.count(primitive.name) == 0:
+                        recognizedPrimitives.append(primitive.name)
+                    if members.count(producer.name) == 0:
+                        members.append(producer.name)
+            if len(members) > 0:
+                memberAmount.append(len(members))
+                
+        primitivesWithAmount = []
+        i = 0
+        while(i < len(recognizedPrimitives)):
+            if len(primitivesWithAmount) == 0:
+                primitivesWithAmount.append([recognizedPrimitives[i], memberAmount[i]])
+            else:
+                isInserted = False
+                for primitive in primitivesWithAmount:
+                    if memberAmount[i] > primitive[1]:
+                        primitivesWithAmount.insert(primitivesWithAmount.index(primitive), [recognizedPrimitives[i], memberAmount[i]])
+                        isInserted = True
+                        break
+                    else:
+                        pass
+                if not isInserted:
+                    primitivesWithAmount.append([recognizedPrimitives[i], memberAmount[i]])
+            i += 1
+            
+        i = len(primitivesWithAmount) - 1 #use of magic number 1 because len gives total length but the index is counted 0 based
+        return primitivesWithAmount
+    
+    
+    
+    
+    
+    
+    
+        
