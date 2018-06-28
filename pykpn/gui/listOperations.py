@@ -91,14 +91,20 @@ class listOperations(object):
     '''
     @staticmethod
     def containsItem(self, givenList, element):
-        if not isinstance(givenList, list):
+        if not isinstance(givenList, list) and not isinstance(givenList, tuple):
             if givenList == element:
                 return True
             else:
                 return False
         else:
-            for item in givenList:
-                if self.containsItem(listOperations, item, element):
+            if isinstance(givenList, list):
+                for item in givenList:
+                    if listOperations.containsItem(listOperations, item, element):
+                        return True
+            elif isinstance(givenList, tuple):
+                if listOperations.containsItem(listOperations, givenList[0], element):
+                    return True
+                if listOperations.containsItem(listOperations, givenList[1], element):
                     return True
         return False        
             

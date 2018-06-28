@@ -1,4 +1,6 @@
 #author Felix Teweleit
+from SimPy.tkconsole import members
+from listOperations import listOperations
 
 
 class platformOperations (object):
@@ -70,59 +72,64 @@ class platformOperations (object):
             orderedClasses.append(finalList)
         return (recognizedClasses[0], orderedClasses)
     
-    
     '''
-    takes a list of processing elements of the same class and the dict of primitives of the platform, then it sorts the pe's  by 
-    the primitives they are part of 
+    takes a list of processing Elements and returns a list only containing the names of the elements as strings
     '''
     @staticmethod
-    def sortByPrimitives(self, peList, primitives):
-        recognizedPrimitives = []
-        memberAmount = []
-        
-        for primitive in primitives:
-            members = []
-            for consumer in primitive.consumers:
-                if peList.count(consumer.name) > 0 :
-                    if recognizedPrimitives.count(primitive.name) == 0:
-                        recognizedPrimitives.append(primitive.name) 
-                    if members.count(consumer.name) == 0:
-                        members.append(consumer.name)
-
-            for producer in primitive.producers:
-                if peList.count(producer.name) > 0:
-                    if recognizedPrimitives.count(primitive.name) == 0:
-                        recognizedPrimitives.append(primitive.name)
-                    if members.count(producer.name) == 0:
-                        members.append(producer.name)
-            if len(members) > 0:
-                memberAmount.append(len(members))
-                
-        primitivesWithAmount = []
-        i = 0
-        while(i < len(recognizedPrimitives)):
-            if len(primitivesWithAmount) == 0:
-                primitivesWithAmount.append([recognizedPrimitives[i], memberAmount[i]])
-            else:
-                isInserted = False
-                for primitive in primitivesWithAmount:
-                    if memberAmount[i] > primitive[1]:
-                        primitivesWithAmount.insert(primitivesWithAmount.index(primitive), [recognizedPrimitives[i], memberAmount[i]])
-                        isInserted = True
-                        break
-                    else:
-                        pass
-                if not isInserted:
-                    primitivesWithAmount.append([recognizedPrimitives[i], memberAmount[i]])
+    def peToString(self, peList):
+        stringList = []
+        for processor in peList:
+            stringList.append(processor.name)
+        return stringList
+    
+    '''
+    takes a primtive and returns a list, containing all processing units that either consume or produce for this primitive. As an aspect for security you have to also pass a list of processing
+    elements that may can be used by the primitive, otherwise they will not be added to the list
+    '''
+    @staticmethod
+    def getMembersOfPrimitive(self, peList, primitive):
+        members = []
+        for consumer in primitive.consumers:
+            if peList.count(consumer.name) > 0: 
+                if members.count(consumer.name) == 0:
+                    members.append(consumer.name)
+        for producer in primitive.producers:
+            if peList.count(producer.name) > 0:
+                if members.count(producer.name) == 0:
+                    members.append(producer.name)
+        return members
+    
+    '''
+    takes a list of all processing units of the platform and a list of all primitives of the platform and returns a list of tuples, where each tuple consists of the name of the primitive and 
+    the list of included processing units, if a primitive includes all elements of an other primitive the tuple of the second primitive will be included in the list of the first one
+    '''
+    @staticmethod
+    def primitiveReworked(self, peList, primitives):
+        i = 1   #var to hold the amount of members in the primitive, start with two because one is special case and handled below
+        primitiveStructure = []
+        peList = self.peToString(self, peList)
+        while(0 < len(primitives)):
+            primitivesCopy = list(primitives)
+            for primitive in primitivesCopy:
+                members = self.getMembersOfPrimitive(self, peList, primitive)
+                if len(members) == i:
+                    tempMemberSet = []
+                    for member in members:
+                        if not listOperations.containsItem(self, tempMemberSet, member):
+                            isInserted = False
+                            for entry in primitiveStructure:
+                                if listOperations.containsItem(self, entry[1], member):
+                                    tempMemberSet.append(entry)
+                                    primitiveStructure.pop(primitiveStructure.index(entry))
+                                    isInserted = True
+                            if not isInserted:
+                                tempMemberSet.append(member)
+                    primitiveStructure.append((primitive.name, tempMemberSet))
+                    primitives.pop(primitives.index(primitive))
+                else:
+                    pass
             i += 1
             
-        i = len(primitivesWithAmount) - 1 #use of magic number 1 because len gives total length but the index is counted 0 based
-        return primitivesWithAmount
-    
-    
-    
-    
-    
-    
-    
+        return primitiveStructure
+            
         
