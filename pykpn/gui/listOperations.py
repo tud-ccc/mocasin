@@ -109,3 +109,29 @@ class listOperations(object):
         return False        
             
             
+    '''
+    calculates the maximal depth of a list that contain more lists
+    '''
+    @staticmethod
+    def getListDepth(self, givenList):
+        listDepths=  []
+        if not isinstance(givenList, list) and not isinstance(givenList, tuple):
+            return 0
+        for item in givenList:
+            if isinstance(item, list):
+                listDepths.append(1 + self.getListDepth(self, item))
+            elif isinstance(item, tuple):
+                listDepths.append(1 + self.getListDepth(self, item[1]))
+            else:
+                listDepths.append(0)
+        i = 0
+        for item in listDepths:
+            if item > i:
+                i = item
+        return i 
+        
+            
+
+
+
+            
