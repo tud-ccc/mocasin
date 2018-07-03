@@ -11,6 +11,8 @@ from pykpn.platforms.exynos_2chips import Exynos2Chips
 
 i = Exynos2Chips()
 
-primitives = platformOperations.primitiveReworked(platformOperations, i.processors(), i.primitives())
+primitives = platformOperations.getPlatformDescription(platformOperations, i.processors(), i.primitives())
 
-#print primitives
+number = listOperations.getListDepth(listOperations, list)
+print number
+print primitives

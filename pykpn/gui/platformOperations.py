@@ -104,7 +104,7 @@ class platformOperations (object):
     the list of included processing units, if a primitive includes all elements of an other primitive the tuple of the second primitive will be included in the list of the first one
     '''
     @staticmethod
-    def primitiveReworked(self, peList, primitives):
+    def getPlatformDescription(self, peList, primitives):
         i = 1   #var to hold the amount of members in the primitive, start with two because one is special case and handled below
         primitiveStructure = []
         peList = self.peToString(self, peList)
