@@ -34,43 +34,38 @@ class platformOperations (object):
     
     
     '''
-    does the same as getProcessorScheme() but also sorts the processors by there indices if they are given in the name
+    takes a List of processing units and, if there name includes there index, give them back in an ordered List
     '''
     @staticmethod
-    def getSortedProcessorScheme(self, processorDict):     
-        recognizedClasses = self.getProcessorScheme(self, processorDict)
-        
-        orderedClasses = []
-        for processorClass in recognizedClasses[0]:
-            processorList = []
-            for processor in recognizedClasses[1][recognizedClasses[0].index(processorClass)]:
-                tmpList = list(processor)
-                tmpString = ''
-                for item in tmpList:
-                    if item.isdigit():
-                        tmpString += item
-                value = int(tmpString)
-                processorList.append([value, processor])
-            ordered = []
-            for toAppend in processorList:
-                if len(ordered) == 0:
+    def getSortedProcessorScheme(self, peList):     
+        processors = []
+        for pe in peList:
+            tmpList = list(pe)
+            tmpString = ''
+            for item in tmpList:
+                if item.isdigit():
+                    tmpString += item
+            value = int(tmpString)
+            processors.append([value, pe])
+        ordered = []
+        for toAppend in processors:
+            if len(ordered) == 0:
+                ordered.append(toAppend)
+            else:
+                for item in ordered:
+                    inserted = False
+                    if item[0] > toAppend[0]:
+                        ordered.insert(ordered.index(item), toAppend)
+                        inserted = True
+                        break
+                    else:
+                        pass
+                if not inserted:
                     ordered.append(toAppend)
-                else:
-                    for item in ordered:
-                        inserted = False
-                        if item[0] > toAppend[0]:
-                            ordered.insert(ordered.index(item), toAppend)
-                            inserted = True
-                            break
-                        else:
-                            pass
-                    if not inserted:
-                        ordered.append(toAppend)
-            finalList = []
-            for item in ordered:
-                finalList.append(item[1])
-            orderedClasses.append(finalList)
-        return (recognizedClasses[0], orderedClasses)
+        finalList = []
+        for item in ordered:
+            finalList.append(item[1])
+        return finalList
     
     '''
     takes a list of processing Elements and returns a list only containing the names of the elements as strings
