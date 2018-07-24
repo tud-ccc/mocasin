@@ -1,6 +1,5 @@
 #author Felix Teweleit
-from SimPy.tkconsole import members
-from listOperations import listOperations
+from pykpn.gui.listOperations import listOperations
 
 
 class platformOperations (object):
@@ -102,6 +101,7 @@ class platformOperations (object):
     def getPlatformDescription(self, peList, primitives):
         i = 1   #var to hold the amount of members in the primitive, start with two because one is special case and handled below
         primitiveStructure = []
+        primitives = list(primitives)
         peList = self.peToString(self, peList)
         while(0 < len(primitives)):
             primitivesCopy = list(primitives)

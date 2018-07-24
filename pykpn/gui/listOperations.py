@@ -1,5 +1,4 @@
 #author Felix Teweleit
-from mercurial.revset import contains
 
 class listOperations(object):
     '''
@@ -47,7 +46,7 @@ class listOperations(object):
         else:
             #in case matrix is not a square matrix and the last row is not complete, j holds the elements in the last row
             j = 1
-            while not isinstance(((len(givenList)-j)/i), int):
+            while not ((len(givenList)-j)/i).is_integer():
                 j += 1  #calculate amount of elements in the last row 
             k = (len(givenList)-j) / i
             animationMatrix = []

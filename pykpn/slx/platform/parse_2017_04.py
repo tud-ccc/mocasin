@@ -25,6 +25,7 @@ import warnings as warnings_
 try:
     from lxml import etree as etree_
 except ImportError:
+    print('test')
     from xml.etree import ElementTree as etree_
 
 
