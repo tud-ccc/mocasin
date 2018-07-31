@@ -93,16 +93,18 @@ def load():
     
     
     #open file dialog, ready to work
-    '''
+    
     filename =  filedialog.askopenfilename(initialdir = os.getcwd(),title = 'Select file',filetypes = (('platform files','*.platform'),('all files','*.*')))
     platform = SlxPlatform('SlxPlatform', filename, '2017.04') 
     drawButton['state'] = tk.NORMAL
     variables.platformDescription = platformOperations.getPlatformDescription(platformOperations, platform.processors(), platform.primitives())
+    
     '''
     #for test issues:
     platform = SlxPlatform('SlxPlatform', '/net/home/teweleit/eclipseWorkspace/pykpn/pykpn/apps/audio_filter/parallella/parallella.platform', '2017.04') 
     drawButton['state'] = tk.NORMAL
     variables.platformDescription = platformOperations.getPlatformDescription(platformOperations, platform.processors(), platform.primitives())
+    '''
 '''
 wrapper method to easily hand arguments to the openSettings method
 '''
