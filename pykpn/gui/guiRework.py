@@ -1,13 +1,14 @@
 #author Felix Teweleit
 
-import tkinter as tk
 import sys
-import os
-from tkinter import filedialog
-
 sys.path.append('../..')
-from pykpn.slx.platform import SlxPlatform
+import os
+import tkinter as tk
+from pykpn.gui.listOperations import listOperations
 from pykpn.gui.platformOperations import platformOperations
+from tkinter import filedialog
+from tkinter import messagebox
+from pykpn.slx.platform import SlxPlatform
 
 class controlPanel(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
@@ -15,37 +16,138 @@ class controlPanel(tk.Frame):
         self.parent = parent
         
         loadButton = tk.Button(text='Load', command=self.load)
-        loadButton.pack()
-        drawButton = tk.Button(text='Draw')
-        drawButton.pack()
+        loadButton.grid(row = 0)
+        drawButton = tk.Button(text='Draw', command=self.draw)
+        drawButton.grid(row = 1)
+        clearButton = tk.Button(text='Clear', command=self.parent.drawPanel.clear)
+        clearButton.grid(row = 2)
         settingButton = tk.Button(text='Settings', command=self.parent.settingDialog.showDialog)
-        settingButton.pack()
+        settingButton.grid(row = 3)
         exitButton = tk.Button(text='Exit', command=parent.quit)
-        exitButton.pack()
-        
-        
-           
+        exitButton.grid(row = 4)
+                  
     def load(self):
         filename =  filedialog.askopenfilename(initialdir = os.getcwd(),title = 'Select file',filetypes = (('platform files','*.platform'),('all files','*.*')))
         platform = SlxPlatform('SlxPlatform', filename, '2017.04') 
         self.parent.variables.platformDescription = platformOperations.getPlatformDescription(platformOperations, platform.processors(), platform.primitives())
-    def openSettings(self):
-        return
+        if self.parent.variables.getCurrentlyDrawn():
+            self.parent.drawPanel.clear()
 
+    def draw(self):
+        if(self.parent.variables.getPlatformDescription()== []):
+            messagebox.showwarning('Warning', 'There is no platform description available!')
+        else: 
+            self.parent.variables.setCurrentlyDrawn(True)
+            toDraw = self.parent.variables.getPlatformDescription()
+            i = 0
+            sizeX = self.parent.variables.getDrawWidth() / len(toDraw)
+            sizeY = self.parent.variables.getDrawHeight() - self.parent.variables.getInnerBorder()
+            for item in toDraw:
+                self.parent.drawPanel.drawPlatform(item, sizeX, sizeY, (i * sizeX))
+                i += 1
+        
 class drawPanel(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
         self.parent = parent
-    
+        self.drawDevice = tk.Canvas(width = parent.variables.getDrawWidth(), height = parent.variables.getDrawHeight())
+        self.drawDevice.create_rectangle(0,0, self.parent.variables.getDrawWidth(), self.parent.variables.getDrawHeight(), fill='#fffafa')
+        self.drawDevice.grid(row = 0, column = 1, rowspan = 5)
+        
     def redraw(self):
-        return
-    def drawPlatform(self):
-        return
-    def drawPEs(self):
+        for item in self.drawDevice.find_all():
+            self.drawDevice.delete(item)
+        self.drawDevice.config(width = self.parent.variables.getDrawWidth(), height = self.parent.variables.getDrawHeight())
+        self.drawDevice.create_rectangle(0,0, self.parent.variables.getDrawWidth(), self.parent.variables.getDrawHeight(), fill='#fffafa')
+        if self.parent.variables.getCurrentlyDrawn():
+            toDraw = self.parent.variables.getPlatformDescription()
+            i = 0
+            sizeX = self.parent.variables.getDrawWidth() / len(toDraw)
+            sizeY = self.parent.variables.getDrawHeight() - self.parent.variables.getInnerBorder()
+            for item in toDraw:
+                self.parent.drawPanel.drawPlatform(item, sizeX, sizeY, (i * sizeX))
+                i += 1
         return
     
+    def drawPlatform(self, toDraw, restSizeX, restSizeY, relativeXValue):
+        listDepth = listOperations.getListDepth(listOperations, toDraw)    
+        sizeY = restSizeY / 15
+        sizeX = restSizeX - 2 * self.parent.variables.getInnerBorder()
+        
+        startPointX = relativeXValue + self.parent.variables.getInnerBorder()
+        startPointY = restSizeY - sizeY
+        
+        endPointX = startPointX + sizeX
+        endPointY = startPointY + sizeY
+        
+        color = self.parent.variables.resolveColor(listDepth)
+        self.drawDevice.create_rectangle(startPointX, startPointY, endPointX, endPointY, fill=color)
+        textPointX = endPointX - (endPointX - startPointX)/2
+        textPointY = endPointY - (endPointY - startPointY)/2
+        self.drawDevice.create_text(textPointX,textPointY, text = toDraw[0])
+        
+        if listDepth > 2:
+            i = 0
+            newRestSizeX = restSizeX / len(toDraw[1])
+            newRestsizeY = restSizeY - sizeY - self.parent.variables.getInnerBorder()
+            for item in toDraw[1]:
+                self.drawPlatform(item, newRestSizeX, newRestsizeY, relativeXValue + (i * newRestSizeX))
+                i += 1
+        elif listDepth == 2 or listDepth == 1:
+            peList = []
+            for item in toDraw[1]:
+                if listDepth == 2:      #every pe has its own primitive
+                    for pe in item[1]:
+                        peList.append(pe)
+                elif listDepth == 1:    #there is one primitive for a lot of pe's
+                    peList.append(item)
+            newRestsizeY = restSizeY - sizeY - self.parent.variables.getInnerBorder()
+            if newRestsizeY > restSizeX:
+                indent = newRestsizeY - restSizeX
+                self.drawPEs(peList, restSizeX, restSizeX, relativeXValue, 1, indent)
+            else:
+                    self.drawPEs(peList, restSizeX, newRestsizeY, relativeXValue, 1, 0)
+        else:
+            raise RuntimeError('The list can not be drawn any further. Please check if if your platform description is correct!')
+        return
+    
+    def drawPEs(self, toDraw, restSizeX, restSizeY, relativeXValue, colorValue, indent):
+        toDraw = platformOperations.getSortedProcessorScheme(platformOperations, toDraw)
+        matrix = listOperations.convertToMatrix(listOperations, toDraw)
+        dimension = listOperations.getDimension(listOperations, matrix)
+    
+        sizeX = (restSizeX - dimension * self.parent.variables.getInnerBorder()) / dimension
+        sizeY = (restSizeY - (dimension - 1) * self.parent.variables.getInnerBorder() ) / dimension
+    
+        color = self.parent.variables.resolveColor(colorValue)
+    
+        i = 0
+        for row in matrix:
+            startPointY = restSizeY - (dimension - i) * self.parent.variables.getInnerBorder() - ((dimension - i) * sizeY) + indent
+            endPointY = startPointY + sizeY 
+            textPointY = endPointY - (endPointY - startPointY)/2
+            j = 0
+            for item in row:
+                startPointX = relativeXValue + ((j+1) * self.parent.variables.getInnerBorder()) + (j * sizeX)
+                endPointX = startPointX + sizeX
+                textPointX = endPointX - (endPointX - startPointX)/2
+            
+                self.drawDevice.create_rectangle(startPointX, startPointY, endPointX, endPointY, fill = color)
+                self.drawDevice.create_text(textPointX, textPointY, text = item)
+            
+                j += 1
+            i += 1
+        return
+        
+    def clear(self):
+        for item in self.drawDevice.find_all():
+            self.drawDevice.delete(item)
+        self.drawDevice.create_rectangle(0,0, self.parent.variables.getDrawWidth(), self.parent.variables.getDrawHeight(), fill='#fffafa')
+        self.parent.variables.setCurrentlyDrawn(False)
+        
 class guiVariables(object):
     def __init__(self, innerBorder, outerBorder, width, height):
+        self.currentlyDrawn = False
         self.platformDescription = []
         self.mappingDescription = []
         self.innerBorder = innerBorder
@@ -85,7 +187,11 @@ class guiVariables(object):
         return self.drawWidth
     def getDrawHeight(self):
         return self.drawHeight
+    def getCurrentlyDrawn(self):
+        return self.currentlyDrawn
     
+    def setCurrentlyDrawn(self, currentlyDrawn):
+        self.currentlyDrawn = currentlyDrawn
     def setInnerBorder(self, innerBorder):
         self.innerBorder = innerBorder
         return
@@ -163,7 +269,7 @@ class settingDialog(tk.Frame):
     
         self.submitButton = tk.Button(self.buttonPanel, text='Submit', command=self.applySettings)
         self.submitButton.pack(side=tk.LEFT)
-        self.cancelButton = tk.Button(self.buttonPanel, text='Cancel', command=self.quit)
+        self.cancelButton = tk.Button(self.buttonPanel, text='Cancel', command=self.settingWindow.destroy)
         self.cancelButton.pack(side=tk.LEFT)
     
         self.buttonPanel.pack()
@@ -199,20 +305,38 @@ class settingDialog(tk.Frame):
             everythingCorrect = False
             
         if everythingCorrect:
-            self.quit()
+            self.parent.drawPanel.redraw()
+            self.settingWindow.destroy()
        
 class mainWindow(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
         self.parent = parent
         self.settingDialog = settingDialog(self)
-        self.variables = guiVariables(0,0,0,0)
-        self.controlPanel = controlPanel(self)
-        self.controlPanel.pack(side='left', fill='x')
+        self.variables = guiVariables(5,5,800,800)
         self.drawPanel = drawPanel(self)
-
+        self.controlPanel = controlPanel(self)
+        for argument in sys.argv:
+            if argument == os.path.basename(__file__):
+                pass
+            if self.platformFile(argument):
+                try:
+                    platform = SlxPlatform('SlxPlatform', argument, '2017.04')
+                    self.variables.platformDescription = platformOperations.getPlatformDescription(platformOperations, platform.processors(), platform.primitives())
+                except:
+                    pass
+        
+    def platformFile(self, argument):
+        try:
+            tmpString = argument.split('/')
+            toCheck = tmpString[len(tmpString)-1].split('.')
+            if toCheck[1] == 'platform':
+                return True
+            return False
+        except:
+            return False
 
 if __name__ == '__main__':
     root = tk.Tk()
-    mainWindow(root).pack(side='top', fill='both', expand=True)
+    mainWindow(root)
     root.mainloop()
