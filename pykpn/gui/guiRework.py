@@ -26,12 +26,16 @@ class controlPanel(tk.Frame):
         exitButton = tk.Button(text='Exit', command=parent.quit)
         exitButton.grid(row = 4)
                   
-    def load(self):
-        filename =  filedialog.askopenfilename(initialdir = os.getcwd(),title = 'Select file',filetypes = (('platform files','*.platform'),('all files','*.*')))
-        platform = SlxPlatform('SlxPlatform', filename, '2017.04') 
-        self.parent.variables.platformDescription = platformOperations.getPlatformDescription(platformOperations, platform.processors(), platform.primitives())
-        if self.parent.variables.getCurrentlyDrawn():
-            self.parent.drawPanel.clear()
+    def load(self, filename = 'default'):
+        if filename == 'default':
+            filename =  filedialog.askopenfilename(initialdir = os.getcwd(),title = 'Select file',filetypes = (('platform files','*.platform'),('all files','*.*')))
+            platform = SlxPlatform('SlxPlatform', filename, '2017.04') 
+            self.parent.variables.platformDescription = platformOperations.getPlatformDescription(platformOperations, platform.processors(), platform.primitives())
+            if self.parent.variables.getCurrentlyDrawn():
+                self.parent.drawPanel.clear()
+        else:
+            platform = SlxPlatform('SlxPlatform', filename, '2017.04') 
+            self.parent.variables.platformDescription = platformOperations.getPlatformDescription(platformOperations, platform.processors(), platform.primitives())
 
     def draw(self):
         if(self.parent.variables.getPlatformDescription()== []):
@@ -321,11 +325,11 @@ class mainWindow(tk.Frame):
                 pass
             if self.platformFile(argument):
                 try:
-                    platform = SlxPlatform('SlxPlatform', argument, '2017.04')
-                    self.variables.platformDescription = platformOperations.getPlatformDescription(platformOperations, platform.processors(), platform.primitives())
+                    self.controlPanel.load(argument)
+                    print('File successfully loaded')
                 except:
-                    pass
-        
+                    print('Error during load of platform description')
+                
     def platformFile(self, argument):
         try:
             tmpString = argument.split('/')
