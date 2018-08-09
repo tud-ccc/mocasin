@@ -15,10 +15,14 @@ from pykpn.slx.platform import SlxPlatform
 
 
 platform = SlxPlatform('SlxPlatform', '/net/home/teweleit/eclipseWorkspace/pykpn/pykpn/apps/audio_filter/exynos/exynos.platform', '2017.04')
-print(platform.processors())
-listToPrint = platformOperations.findEqualPrimitives(platformOperations, platform)
-for item in listToPrint:
-    print(item)
+
+platformDescription = platformOperations.getPlatformDescription(platformOperations, platform.processors(), platform.primitives())
+equalList = platformOperations.findEqualPrimitives(platformOperations, platform)
+
+print(platformDescription)
+platformDescription = platformOperations.mergeEqualPrimitives(platformOperations, platformDescription, equalList)
+
+print(platformDescription)
 
 '''
 for entry in platform.to_adjacency_dict():

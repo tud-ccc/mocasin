@@ -1,6 +1,7 @@
 #author Felix Teweleit
 
 import sys
+from pykpn.gui.testBench import platformDescription
 sys.path.append('../..')
 import os
 import tkinter as tk
@@ -29,8 +30,11 @@ class controlPanel(tk.Frame):
     def load(self, filename = 'default'):
         if filename == 'default':
             filename =  filedialog.askopenfilename(initialdir = os.getcwd(),title = 'Select file',filetypes = (('platform files','*.platform'),('all files','*.*')))
-            platform = SlxPlatform('SlxPlatform', filename, '2017.04') 
-            self.parent.variables.platformDescription = platformOperations.getPlatformDescription(platformOperations, platform.processors(), platform.primitives())
+            platform = SlxPlatform('SlxPlatform', filename, '2017.04')
+            description = platformOperations.getPlatformDescription(platformOperations, platform.processors(), platform.primitives())
+            equalList = platformOperations.findEqualPrimitives(platformOperations, platform)
+            description = platformOperations.mergeEqualPrimitives(platformOperations, description, equalList) 
+            self.parent.variables.platformDescription = description
             if self.parent.variables.getCurrentlyDrawn():
                 self.parent.drawPanel.clear()
         else:
