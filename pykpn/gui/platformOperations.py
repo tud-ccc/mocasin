@@ -165,15 +165,34 @@ class platformOperations (object):
     '''
     @staticmethod
     def mergeEqualPrimitives(self, platformDescription, equalList):
-        mergedDescription = []
-        
-        for tupel in platformDescription:
-            newTupel = (tupel[0], [])
-            
-            for item in tupel[1]:
-                pass
-            
-            mergedDescription.append(newTupel)
+        if isinstance(platformDescription, list):
+            mergedDescription = []
+            for item in platformDescription:
+                newItem = (item[0], [])
+                if(len(item[1]) > 1):
+                    for innerItem in item[1]:
+                        newItem[1].append(self.mergeEqualPrimitives(self, innerItem, equalList))
+                elif(len(item[1]) == 1):
+                    item = self.mergeEqualPrimitives(self, item, equalList)
+                    newItem[1].append(item)
+                mergedDescription.append(newItem)
+            return mergedDescription
+        elif isinstance(platformDescription, tuple):
+            if len(platformDescription[1]) > 1:
+                return platformDescription
+            mergedSomething = False
+            for equalSheet in equalList:
+                if(listOperations.containsItem(listOperations, equalSheet, platformDescription[0]) and listOperations.containsItem(listOperations, equalSheet, platformDescription[1][0][0])):
+                    copy = platformDescription[1][0][1]
+                    platformDescription = (platformDescription[0], copy)
+                    mergedSomething = True
+                    if(mergedSomething):
+                        platformDescription = self.mergeEqualPrimitives(self, platformDescription, equalList)
+                        if(len(equalSheet) > 2):
+                            platformDescription = ('network_on_chip', platformDescription[1])
+            return platformDescription
+        else:
+            raise RuntimeError('you are trying to merge something, that is rather a list or an tuple. Please stop!')
         
     
     
