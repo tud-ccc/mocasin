@@ -193,7 +193,127 @@ class platformOperations (object):
             return platformDescription
         else:
             raise RuntimeError('you are trying to merge something, that is rather a list or an tuple. Please stop!')
+    
+    '''
+    this method is basically a wrapper for the organizePEs method, it just searches for the noc entry platform
+    description and then calls the organizePEs method on this entry
+    '''    
+    @staticmethod
+    def createNocMatrix(self, platformDescription, platform):
+        for element in platformDescription:
+            if isinstance(element, tuple):
+                if(element[0] == 'network_on_chip'):
+                    element[1] = self.organizePEs(self, element[1], platform.to_adjacency_dict())
+                else:
+                    element[1] = self.createNocMatrix(self, element[1], platform)
+            else:
+                pass
+        return platformDescription
+    
+    @staticmethod
+    def organizePEs(self, peList, adjacencyDict):
+        peValues = []
+        for entry in adjacencyDict:
+            if listOperations.containsItem(listOperations, peList, entry):
+                minimalCost = 1000000000 #this is just a number so high, that there must be a value below
+                peWithMinimalCost = []
+                for tupel in adjacencyDict[entry]:
+                    if tupel[1] < minimalCost and tupel[1] > 0:
+                        minimalCost = tupel[1]
+                        peWithMinimalCost = []
+                    if tupel[1] == minimalCost:
+                        peWithMinimalCost.append(tupel[0])
+                peValues.append([entry, len(peWithMinimalCost), [peWithMinimalCost]])
         
+        
+        organizedPEs = []
+        isEven = False
+        isOnOuterBorder = True
+        while(len(peValues) > 0):
+            if len(organizedPEs) > 0:
+                lastEntry = organizedPEs.pop()
+                organizedPEs.append(lastEntry)
+                nothingChanged = True
+            
+            if len(organizedPEs) == 0:
+                for entry in peValues:
+                    if entry[1] == 2:
+                        organizedPEs.append(entry[0])
+                        peValues.pop(peValues.index(entry))
+                        break
+                    pass
+            
+            if not isEven and not isOnOuterBorder:
+                for entry in peValues:
+                    if listOperations.containsItem(listOperations, entry[2], lastEntry) and entry[1] == 4:
+                        organizedPEs.append(entry[0])
+                        peValues.pop(peValues.index(entry))
+                        nothingChanged = False
+                        break
+                if nothingChanged:
+                    for entry in peValues:
+                        if listOperations.containsItem(listOperations, entry[2], lastEntry) and entry[1] == 3:
+                            organizedPEs.append(entry[0])
+                            peValues.pop(peValues.index(entry))
+                            break
+                    isEven = True
+                pass
+                    
+            elif not isEven and isOnOuterBorder:
+                for entry in peValues:
+                    if listOperations.containsItem(listOperations, entry[2], lastEntry) and entry[1] == 3:
+                        organizedPEs.append(entry[0])
+                        peValues.pop(peValues.index(entry))
+                        nothingChanged = False
+                        break
+                if nothingChanged:
+                    for entry in peValues:
+                        if listOperations.containsItem(listOperations, entry[2], lastEntry) and entry[1] == 2:
+                            organizedPEs.append(entry[0])
+                            peValues.pop(peValues.index(entry))
+                            break
+                    isEven = True
+                    isOnOuterBorder = False
+                        
+                
+                pass
+                    
+            elif isEven and not isOnOuterBorder:
+                for entry in peValues:
+                    if listOperations.containsItem(listOperations, entry[2], lastEntry) and entry[1] == 3:
+                        organizedPEs.append(entry[0])
+                        peValues.pop(peValues.index(entry))
+                        nothingChanged = False
+                        isEven = False
+                        break
+                if nothingChanged:
+                    for entry in peValues:
+                        if listOperations.containsItem(listOperations, entry[2], lastEntry) and entry[1] == 2:
+                            organizedPEs.append(entry[0])
+                            peValues.pop(peValues.index(entry))
+                            isEven = False
+                            isOnOuterBorder = True
+                            break
+                
+                pass
+            
+           
+
+
+
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     

@@ -1,7 +1,6 @@
 #author Felix Teweleit
 
 import sys
-from pykpn.gui.testBench import platformDescription
 sys.path.append('../..')
 import os
 import tkinter as tk
@@ -28,18 +27,34 @@ class controlPanel(tk.Frame):
         exitButton.grid(row = 4)
                   
     def load(self, filename = 'default'):
+        '''
+        loading the platform xml from the file system
+        '''
         if filename == 'default':
             filename =  filedialog.askopenfilename(initialdir = os.getcwd(),title = 'Select file',filetypes = (('platform files','*.platform'),('all files','*.*')))
             platform = SlxPlatform('SlxPlatform', filename, '2017.04')
-            description = platformOperations.getPlatformDescription(platformOperations, platform.processors(), platform.primitives())
-            equalList = platformOperations.findEqualPrimitives(platformOperations, platform)
-            description = platformOperations.mergeEqualPrimitives(platformOperations, description, equalList) 
-            self.parent.variables.platformDescription = description
-            if self.parent.variables.getCurrentlyDrawn():
-                self.parent.drawPanel.clear()
         else:
-            platform = SlxPlatform('SlxPlatform', filename, '2017.04') 
-            self.parent.variables.platformDescription = platformOperations.getPlatformDescription(platformOperations, platform.processors(), platform.primitives())
+            platform = SlxPlatform('SlxPlatform', filename, '2017.04')
+            
+            
+        description = platformOperations.getPlatformDescription(platformOperations, platform.processors(), platform.primitives())
+            
+        '''
+        check if this platform contains a network on chip
+        '''
+        noc = False
+        
+        equalList = platformOperations.findEqualPrimitives(platformOperations, platform)
+        for equalSheet in equalList:
+            if len(equalSheet) > 2:
+                    noc = True
+        if noc:        
+            description = platformOperations.mergeEqualPrimitives(platformOperations, description, equalList) 
+            description = platformOperations.createNocMatrix(platformOperations, description, platform)
+            
+        self.parent.variables.platformDescription = description
+        if self.parent.variables.getCurrentlyDrawn():
+            self.parent.drawPanel.clear()
 
     def draw(self):
         if(self.parent.variables.getPlatformDescription()== []):

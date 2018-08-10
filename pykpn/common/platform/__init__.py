@@ -7,6 +7,15 @@ import pydot
 
 import math
 
+from enum import Enum
+
+#enum added by Felix Teweleit, 10.08.2018
+class CommunicationResourceType(Enum):
+    PhysicalLink = 1
+    LogicalLink = 2
+    DMAController = 3
+    Storage = 4
+    
 
 class FrequencyDomain:
 
@@ -53,11 +62,13 @@ class CommunicationResource(object):
     This is a base class that can be specialized to model more complex
     resources like caches.
     '''
+    #resource Type attribute added by Felix Teweleit 10.08.2018
 
-    def __init__(self, name, frequency_domain, read_latency, write_latency,
+    def __init__(self, name, frequency_domain, resource_type, read_latency, write_latency,
                  read_throughput=float('inf'), write_throughput=float('inf'),
-                 exclusive=False, is_storage=False):
+                 exclusive=False, is_storage=False, ):
         self.name = name
+        self._resource_type = resource_type
         self._frequency_domain = frequency_domain
         self._read_latency = read_latency
         self._write_latency = write_latency
@@ -65,6 +76,9 @@ class CommunicationResource(object):
         self._write_throughput = write_throughput
         self.exclusive = exclusive
         self.is_storage = is_storage
+        
+    def ressource_type(self):
+        return self.ressource_type
 
     def read_latency(self):
         return self._frequency_domain.cycles_to_ticks(self._read_latency)
@@ -95,7 +109,7 @@ class Storage(CommunicationResource):
     def __init__(self, name, frequency_domain, read_latency, write_latency,
                  read_throughput=float('inf'), write_throughput=float('inf'),
                  exclusive=False):
-        super(Storage, self).__init__(name, frequency_domain, read_latency, write_latency,
+        super(Storage, self).__init__(name, frequency_domain, CommunicationResourceType.Storage, read_latency, write_latency,
                          read_throughput, write_throughput, exclusive, True)
 
 

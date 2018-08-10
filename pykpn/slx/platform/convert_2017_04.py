@@ -8,7 +8,7 @@ import logging
 
 from pint import UnitRegistry
 
-from pykpn.common.platform import (CommunicationPhase, CommunicationResource,
+from pykpn.common.platform import (CommunicationPhase, CommunicationResource, CommunicationResourceType,
     FrequencyDomain, Primitive, Processor, Scheduler, SchedulingPolicy,
     Storage)
 
@@ -161,18 +161,43 @@ def convert(platform, xml_platform):
 
     # We also need to collect all the physical links, logical links and dma
     # controllers
-    for ll in (xml_platform.get_LogicalLink() +
-               xml_platform.get_PhysicalLink() +
-               xml_platform.get_DMAController()):
+    
+    #modified by Felix Teweleit 10.08.2018
+    
+    for ll in xml_platform.get_PhysicalLink():
         name = ll.get_id()
         latency = get_value_in_cycles(ll, 'latency', 0)
         throughput = get_value_in_byte_per_cycle(
             ll, 'throughput', float('inf'))
         fd = frequency_domains[ll.get_frequencyDomain()]
-        link = CommunicationResource(name, fd, latency, latency, throughput,
+        link = CommunicationResource(name, fd, CommunicationResourceType.PhysicalLink, latency, latency, throughput,
                                      throughput)
         platform.add_communication_resource(link)
         log.debug('Found link or DMA %s', name)
+        
+    for ll in xml_platform.get_LogicalLink():
+        name = ll.get_id()
+        latency = get_value_in_cycles(ll, 'latency', 0)
+        throughput = get_value_in_byte_per_cycle(
+            ll, 'throughput', float('inf'))
+        fd = frequency_domains[ll.get_frequencyDomain()]
+        link = CommunicationResource(name, fd, CommunicationResourceType.LogicalLink, latency, latency, throughput,
+                                     throughput)
+        platform.add_communication_resource(link)
+        log.debug('Found link or DMA %s', name)
+    
+    for ll in xml_platform.get_DMAController():
+        name = ll.get_id()
+        latency = get_value_in_cycles(ll, 'latency', 0)
+        throughput = get_value_in_byte_per_cycle(
+            ll, 'throughput', float('inf'))
+        fd = frequency_domains[ll.get_frequencyDomain()]
+        link = CommunicationResource(name, fd, CommunicationResourceType.DMAController, latency, latency, throughput,
+                                     throughput)
+        platform.add_communication_resource(link)
+        log.debug('Found link or DMA %s', name)
+    
+    #end of modified code
 
     # Initialize all Communication Primitives
     for xcom in xml_platform.get_Communication():
