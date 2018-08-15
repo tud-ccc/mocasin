@@ -200,16 +200,22 @@ class platformOperations (object):
     '''    
     @staticmethod
     def createNocMatrix(self, platformDescription, platform):
+        newDescription = []
         for element in platformDescription:
             if isinstance(element, tuple):
-                if(element[0] == 'network_on_chip'):
-                    element[1] = self.organizePEs(self, element[1], platform.to_adjacency_dict())
+                if element[0] == 'network_on_chip':
+                    element = (element[0], self.organizePEs(self, element[1], platform.to_adjacency_dict()))
+                    newDescription.append(element)
                 else:
-                    element[1] = self.createNocMatrix(self, element[1], platform)
-            else:
-                pass
-        return platformDescription
+                    element = (element[0], self.createNocMatrix(self, element[1], platform))
+                    newDescription.append(element)
+        
+        return newDescription
     
+    '''
+    this method creates a list of PEs which can be later converted in to a Matrix via the convertToMatrix method in the list operation class. Each PE will be located next to the
+    PEs it has i physical link to
+    '''
     @staticmethod
     def organizePEs(self, peList, adjacencyDict):
         peValues = []
@@ -223,84 +229,88 @@ class platformOperations (object):
                         peWithMinimalCost = []
                     if tupel[1] == minimalCost:
                         peWithMinimalCost.append(tupel[0])
-                peValues.append([entry, len(peWithMinimalCost), [peWithMinimalCost]])
+                peValues.append([entry, len(peWithMinimalCost), peWithMinimalCost])
         
         
         organizedPEs = []
-        isEven = False
-        isOnOuterBorder = True
+        firstRow = True
+        rowLength = 0
+        lastAppended = 0        #keep the amount of neighbors of the last appended PE and the PE before that, to check if new row had begun 
+        lastlastAppended = 0
         while(len(peValues) > 0):
-            if len(organizedPEs) > 0:
-                lastEntry = organizedPEs.pop()
-                organizedPEs.append(lastEntry)
-                nothingChanged = True
             
             if len(organizedPEs) == 0:
                 for entry in peValues:
                     if entry[1] == 2:
                         organizedPEs.append(entry[0])
                         peValues.pop(peValues.index(entry))
+                        lastAppended = entry[1]
                         break
-                    pass
+                continue
             
-            if not isEven and not isOnOuterBorder:
-                for entry in peValues:
-                    if listOperations.containsItem(listOperations, entry[2], lastEntry) and entry[1] == 4:
-                        organizedPEs.append(entry[0])
-                        peValues.pop(peValues.index(entry))
-                        nothingChanged = False
-                        break
-                if nothingChanged:
-                    for entry in peValues:
-                        if listOperations.containsItem(listOperations, entry[2], lastEntry) and entry[1] == 3:
-                            organizedPEs.append(entry[0])
-                            peValues.pop(peValues.index(entry))
-                            break
-                    isEven = True
-                pass
-                    
-            elif not isEven and isOnOuterBorder:
-                for entry in peValues:
-                    if listOperations.containsItem(listOperations, entry[2], lastEntry) and entry[1] == 3:
-                        organizedPEs.append(entry[0])
-                        peValues.pop(peValues.index(entry))
-                        nothingChanged = False
-                        break
-                if nothingChanged:
-                    for entry in peValues:
-                        if listOperations.containsItem(listOperations, entry[2], lastEntry) and entry[1] == 2:
-                            organizedPEs.append(entry[0])
-                            peValues.pop(peValues.index(entry))
-                            break
-                    isEven = True
-                    isOnOuterBorder = False
-                        
-                
-                pass
-                    
-            elif isEven and not isOnOuterBorder:
-                for entry in peValues:
-                    if listOperations.containsItem(listOperations, entry[2], lastEntry) and entry[1] == 3:
-                        organizedPEs.append(entry[0])
-                        peValues.pop(peValues.index(entry))
-                        nothingChanged = False
-                        isEven = False
-                        break
-                if nothingChanged:
-                    for entry in peValues:
-                        if listOperations.containsItem(listOperations, entry[2], lastEntry) and entry[1] == 2:
-                            organizedPEs.append(entry[0])
-                            peValues.pop(peValues.index(entry))
-                            isEven = False
-                            isOnOuterBorder = True
-                            break
-                
-                pass
             
-           
+            candidates = []
+            
+            if firstRow:
+                if lastAppended < lastlastAppended:
+                    rowLength = len(organizedPEs)
+                    firstRow = False
+                    lastEntry = organizedPEs[len(organizedPEs) - rowLength]
+                else:
+                    lastEntry = organizedPEs[len(organizedPEs) - 1]
+                
+                for entry in peValues:
+                    if listOperations.containsItem(listOperations, entry[2], lastEntry) and (entry[1] == 2 or entry[1] == 3):
+                        candidates.append(entry)
+                
+            if not firstRow:
+                if lastAppended < lastlastAppended:
+                    lastEntry = organizedPEs[len(organizedPEs) - rowLength]
+                else:
+                    lastEntry = organizedPEs[len(organizedPEs) - 1]
+            
+                for entry in peValues:
+                    if listOperations.containsItem(listOperations, entry[2], lastEntry):
+                        candidates.append(entry)
+            
+            if len(candidates) == 0:
+                raise RuntimeError('No neighbor found for PE: ' + lastEntry + ' in NOC')
+            
+            elif len(candidates) == 1:
+                organizedPEs.append(candidates[0][0])
+                peValues.pop(peValues.index(candidates[0]))
+                lastlastAppended = lastAppended
+                lastAppended = candidates[0][1]
+            
+            else:
+                toAppend = self.lovedNeighbor(self, candidates, organizedPEs)
+                organizedPEs.append(toAppend[0])
+                peValues.pop(peValues.index(toAppend))
+                lastlastAppended = lastAppended
+                lastAppended = toAppend[1]
+                continue
+        return organizedPEs
 
-
-
+    '''
+    help function to determine which PE has the most physical links in to the existing noc structure
+    '''
+    @staticmethod
+    def lovedNeighbor(self, candidates, domicile):
+        amountOfNeighbors = []
+        for candidate in candidates:
+            i = 0
+            for neighbor in candidate[2]:
+                if listOperations.containsItem(listOperations, domicile, neighbor):
+                    i += 1
+            amountOfNeighbors.append((i, candidate))
+        
+        favourite = amountOfNeighbors[0]
+        
+        for neighbor in amountOfNeighbors:
+            if neighbor[0] > favourite[0]:
+                favourite = neighbor
+        
+        return favourite[1]
 
     
     

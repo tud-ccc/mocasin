@@ -62,12 +62,7 @@ class controlPanel(tk.Frame):
         else: 
             self.parent.variables.setCurrentlyDrawn(True)
             toDraw = self.parent.variables.getPlatformDescription()
-            i = 0
-            sizeX = self.parent.variables.getDrawWidth() / len(toDraw)
-            sizeY = self.parent.variables.getDrawHeight() - self.parent.variables.getInnerBorder()
-            for item in toDraw:
-                self.parent.drawPanel.drawPlatform(item, sizeX, sizeY, (i * sizeX))
-                i += 1
+            self.parent.drawPanel.drawPlatform(toDraw)
         
 class drawPanel(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
@@ -84,54 +79,23 @@ class drawPanel(tk.Frame):
         self.drawDevice.create_rectangle(0,0, self.parent.variables.getDrawWidth(), self.parent.variables.getDrawHeight(), fill='#fffafa')
         if self.parent.variables.getCurrentlyDrawn():
             toDraw = self.parent.variables.getPlatformDescription()
-            i = 0
-            sizeX = self.parent.variables.getDrawWidth() / len(toDraw)
-            sizeY = self.parent.variables.getDrawHeight() - self.parent.variables.getInnerBorder()
-            for item in toDraw:
-                self.parent.drawPanel.drawPlatform(item, sizeX, sizeY, (i * sizeX))
-                i += 1
+            self.drawPlatform(toDraw)
         return
     
-    def drawPlatform(self, toDraw, restSizeX, restSizeY, relativeXValue):
-        listDepth = listOperations.getListDepth(listOperations, toDraw)    
-        sizeY = restSizeY / 15
-        sizeX = restSizeX - 2 * self.parent.variables.getInnerBorder()
+    def drawPlatform(self, toDraw):
         
-        startPointX = relativeXValue + self.parent.variables.getInnerBorder()
-        startPointY = restSizeY - sizeY
+        width = self.parent.variables.getDrawWidth() / len(toDraw)
+        drawHeight = self.parent.variables.getDrawHeight()
         
-        endPointX = startPointX + sizeX
-        endPointY = startPointY + sizeY
+        for item in toDraw:
+            
+            pass
         
-        color = self.parent.variables.resolveColor(listDepth)
-        self.drawDevice.create_rectangle(startPointX, startPointY, endPointX, endPointY, fill=color)
-        textPointX = endPointX - (endPointX - startPointX)/2
-        textPointY = endPointY - (endPointY - startPointY)/2
-        self.drawDevice.create_text(textPointX,textPointY, text = toDraw[0])
-        
-        if listDepth > 2:
-            i = 0
-            newRestSizeX = restSizeX / len(toDraw[1])
-            newRestsizeY = restSizeY - sizeY - self.parent.variables.getInnerBorder()
-            for item in toDraw[1]:
-                self.drawPlatform(item, newRestSizeX, newRestsizeY, relativeXValue + (i * newRestSizeX))
-                i += 1
-        elif listDepth == 2 or listDepth == 1:
-            peList = []
-            for item in toDraw[1]:
-                if listDepth == 2:      #every pe has its own primitive
-                    for pe in item[1]:
-                        peList.append(pe)
-                elif listDepth == 1:    #there is one primitive for a lot of pe's
-                    peList.append(item)
-            newRestsizeY = restSizeY - sizeY - self.parent.variables.getInnerBorder()
-            if newRestsizeY > restSizeX:
-                indent = newRestsizeY - restSizeX
-                self.drawPEs(peList, restSizeX, restSizeX, relativeXValue, 1, indent)
-            else:
-                    self.drawPEs(peList, restSizeX, newRestsizeY, relativeXValue, 1, 0)
-        else:
-            raise RuntimeError('The list can not be drawn any further. Please check if if your platform description is correct!')
+        '''
+        due several reworks in the backend, this method needs a complet rework
+        '''
+        return
+    def drawInnerRessource(self, toDraw, drawWidth, drawHeight, relativeXValue):
         return
     
     def drawPEs(self, toDraw, restSizeX, restSizeY, relativeXValue, colorValue, indent):

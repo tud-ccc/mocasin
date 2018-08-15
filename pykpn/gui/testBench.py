@@ -16,3 +16,4 @@ description = platformOperations.getPlatformDescription(platformOperations, plat
 equalList = platformOperations.findEqualPrimitives(platformOperations, platform)
 description = platformOperations.mergeEqualPrimitives(platformOperations, description, equalList) 
 description = platformOperations.createNocMatrix(platformOperations, description, platform)
+print('stop')
