@@ -164,33 +164,32 @@ class platformOperations (object):
     together in one primitive
     '''
     @staticmethod
-    def mergeEqualPrimitives(self, platformDescription, equalList):
+    def mergeEqualPrimitives(self, platformDescription):
+        copy = platformDescription
+        mergedDescription = []
         if isinstance(platformDescription, list):
-            mergedDescription = []
             for item in platformDescription:
-                newItem = (item[0], [])
-                if(len(item[1]) > 1):
-                    for innerItem in item[1]:
-                        newItem[1].append(self.mergeEqualPrimitives(self, innerItem, equalList))
-                elif(len(item[1]) == 1):
-                    item = self.mergeEqualPrimitives(self, item, equalList)
-                    newItem[1].append(item)
-                mergedDescription.append(newItem)
-            return mergedDescription
-        elif isinstance(platformDescription, tuple):
-            if len(platformDescription[1]) > 1:
-                return platformDescription
-            mergedSomething = False
-            for equalSheet in equalList:
-                if(listOperations.containsItem(listOperations, equalSheet, platformDescription[0]) and listOperations.containsItem(listOperations, equalSheet, platformDescription[1][0][0])):
-                    copy = platformDescription[1][0][1]
-                    platformDescription = (platformDescription[0], copy)
-                    mergedSomething = True
-                    if(mergedSomething):
-                        platformDescription = self.mergeEqualPrimitives(self, platformDescription, equalList)
-                        if(len(equalSheet) > 2):
-                            platformDescription = ('network_on_chip', platformDescription[1])
-            return platformDescription
+                if isinstance(item, tuple):
+                    newItem = (item[0],[])
+                    if len(item[1]) == 1 and isinstance(item[1][0], tuple):
+                        for toAppend in self.mergeEqualPrimitives(self, item[1][0][1]):
+                            newItem[1].append(toAppend)
+                    elif len(item[1]) == 1 and not isinstance(item[1][0], tuple):
+                        newItem[1].append(item[1][0])
+                    elif len(item[1])>1:
+                        for innerItem in item[1]:
+                            if(isinstance(innerItem, tuple)):
+                                newInnerItem = (innerItem[0],self.mergeEqualPrimitives(self, innerItem[1]))
+                                newItem[1].append(newInnerItem)
+                            else:
+                                newItem[1].append(innerItem)
+                    mergedDescription.append(newItem)
+                else:
+                    mergedDescription.append(item)
+            
+            if mergedDescription != copy:
+                mergedDescription = self.mergeEqualPrimitives(self, mergedDescription)
+            return mergedDescription        
         else:
             raise RuntimeError('you are trying to merge something, that is rather a list or an tuple. Please stop!')
     
@@ -209,7 +208,8 @@ class platformOperations (object):
                 else:
                     element = (element[0], self.createNocMatrix(self, element[1], platform))
                     newDescription.append(element)
-        
+            else:
+                newDescription.append(element)
         return newDescription
     
     '''

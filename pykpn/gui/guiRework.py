@@ -30,13 +30,16 @@ class controlPanel(tk.Frame):
         '''
         loading the platform xml from the file system
         '''
+        
+        
         if filename == 'default':
             filename =  filedialog.askopenfilename(initialdir = os.getcwd(),title = 'Select file',filetypes = (('platform files','*.platform'),('all files','*.*')))
             platform = SlxPlatform('SlxPlatform', filename, '2017.04')
         else:
             platform = SlxPlatform('SlxPlatform', filename, '2017.04')
-            
-            
+        
+        #platform = SlxPlatform('SlxPlatform', '/net/home/teweleit/eclipseWorkspace/pykpn/pykpn/apps/audio_filter/exynos/exynos.platform', '2017.04')
+        
         description = platformOperations.getPlatformDescription(platformOperations, platform.processors(), platform.primitives())
             
         '''
@@ -45,11 +48,12 @@ class controlPanel(tk.Frame):
         noc = False
         
         equalList = platformOperations.findEqualPrimitives(platformOperations, platform)
+        description = platformOperations.mergeEqualPrimitives(platformOperations, description) 
         for equalSheet in equalList:
             if len(equalSheet) > 2:
                     noc = True
-        if noc:        
-            description = platformOperations.mergeEqualPrimitives(platformOperations, description, equalList) 
+        
+        if noc:         
             description = platformOperations.createNocMatrix(platformOperations, description, platform)
             
         self.parent.variables.platformDescription = description
@@ -84,21 +88,71 @@ class drawPanel(tk.Frame):
     
     def drawPlatform(self, toDraw):
         
-        width = self.parent.variables.getDrawWidth() / len(toDraw)
+        drawWidth = self.parent.variables.getDrawWidth() / len(toDraw)
         drawHeight = self.parent.variables.getDrawHeight()
         
+        i = 0
         for item in toDraw:
-            
-            pass
-        
-        '''
-        due several reworks in the backend, this method needs a complet rework
-        '''
+            self.drawInnerRessource(item, drawWidth, drawHeight, i, 0, 20, len(toDraw))
+            i += 1
+
         return
-    def drawInnerRessource(self, toDraw, drawWidth, drawHeight, relativeXValue):
+    
+    def drawInnerRessource(self, toDraw, drawWidth, drawHeight, relativeXValue, xIndent, colorValue, amount):
+        
+        innerBorder = self.parent.variables.getInnerBorder()
+        outerBorder = self.parent.variables.getOuterBorder()
+        length = drawWidth - innerBorder
+        
+        startPointX = outerBorder + relativeXValue * (length + innerBorder) + xIndent
+        startPointY = drawHeight - outerBorder - drawHeight / self.parent.variables.getHeightScaling()
+        
+        endPointX = startPointX + length
+        endPointY = drawHeight  - outerBorder
+        
+        textPointX = endPointX - (endPointX - startPointX) / 2
+        textPointY = endPointY - (endPointY  - startPointY) / 2
+        
+        color = self.parent.variables.resolveColor(colorValue)
+        
+        self.drawDevice.create_rectangle(startPointX, startPointY, endPointX, endPointY, fill = color)
+        self.drawDevice.create_text(textPointX, textPointY, text = toDraw[0])
+        
+        
+        restSizeX = drawWidth / len(toDraw[1])
+        restSizeY = drawHeight - drawHeight / self.parent.variables.getHeightScaling() - innerBorder
+        
+        
+        drawPEs = True
+        for item in toDraw[1]:
+            if isinstance(item, tuple):
+                drawPEs = False
+                
+        drawPEsWithPrimitive = True
+        for item in toDraw:
+            if not isinstance(item, tuple) or len(item[1]) > 1:
+                drawPEsWithPrimitive = False
+        
+        if drawPEs:
+            nextColor = colorValue - 1 
+            if(toDraw[0] == 'network_on_chip'):
+                #self.drawPEs(toDraw[1], drawWidth, restSizeY, relativeXValue, nextColor, indent = 0)
+                pass
+            else:
+                #self.drawPEs(toDraw, drawWidth, drawHeight, relativeXValue, nextColor, indent = 0)
+                pass
+        elif drawPEsWithPrimitive:
+            pass
+        else:
+            i = 0
+            for item in toDraw[1]:
+                self.drawInnerRessource(item, restSizeX, restSizeY, i, relativeXValue * drawWidth, colorValue - 1, len(toDraw[1]))
+                i += 1
         return
     
     def drawPEs(self, toDraw, restSizeX, restSizeY, relativeXValue, colorValue, indent):
+
+        
         toDraw = platformOperations.getSortedProcessorScheme(platformOperations, toDraw)
         matrix = listOperations.convertToMatrix(listOperations, toDraw)
         dimension = listOperations.getDimension(listOperations, matrix)
@@ -125,6 +179,9 @@ class drawPanel(tk.Frame):
                 j += 1
             i += 1
         return
+    
+    def drawNOC(self, toDraw, restSizeX, restSizeY, relativeXValue, colorValue, indent):
+        return
         
     def clear(self):
         for item in self.drawDevice.find_all():
@@ -141,6 +198,7 @@ class guiVariables(object):
         self.outerBorder = outerBorder
         self.drawWidth = width
         self.drawHeight = height
+        self.heightScaling = 15
         self.colorDict = {1:'aliceblue', 
                           2:'aqua', 
                           3:'azure1', 
@@ -176,6 +234,8 @@ class guiVariables(object):
         return self.drawHeight
     def getCurrentlyDrawn(self):
         return self.currentlyDrawn
+    def getHeightScaling(self):
+        return self.heightScaling
     
     def setCurrentlyDrawn(self, currentlyDrawn):
         self.currentlyDrawn = currentlyDrawn
