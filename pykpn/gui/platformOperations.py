@@ -164,22 +164,31 @@ class platformOperations (object):
     together in one primitive
     '''
     @staticmethod
-    def mergeEqualPrimitives(self, platformDescription):
+    def mergeEqualPrimitives(self, platformDescription, equalList):
         copy = platformDescription
         mergedDescription = []
         if isinstance(platformDescription, list):
             for item in platformDescription:
                 if isinstance(item, tuple):
-                    newItem = (item[0],[])
+                    
+                    noc = False
+                    for equalSheet in equalList:
+                            if listOperations.containsItem(listOperations, equalSheet, item[0]) and len(equalSheet) > 2:
+                                noc = True
+                    if noc:
+                        newItem = ('network_on_chip', [])
+                    else:
+                        newItem = (item[0],[])
+                    
                     if len(item[1]) == 1 and isinstance(item[1][0], tuple):
-                        for toAppend in self.mergeEqualPrimitives(self, item[1][0][1]):
+                        for toAppend in self.mergeEqualPrimitives(self, item[1][0][1], equalList):
                             newItem[1].append(toAppend)
                     elif len(item[1]) == 1 and not isinstance(item[1][0], tuple):
                         newItem[1].append(item[1][0])
                     elif len(item[1])>1:
                         for innerItem in item[1]:
                             if(isinstance(innerItem, tuple)):
-                                newInnerItem = (innerItem[0],self.mergeEqualPrimitives(self, innerItem[1]))
+                                newInnerItem = (innerItem[0],self.mergeEqualPrimitives(self, innerItem[1], equalList))
                                 newItem[1].append(newInnerItem)
                             else:
                                 newItem[1].append(innerItem)
@@ -188,7 +197,7 @@ class platformOperations (object):
                     mergedDescription.append(item)
             
             if mergedDescription != copy:
-                mergedDescription = self.mergeEqualPrimitives(self, mergedDescription)
+                mergedDescription = self.mergeEqualPrimitives(self, mergedDescription, equalList)
             return mergedDescription        
         else:
             raise RuntimeError('you are trying to merge something, that is rather a list or an tuple. Please stop!')
