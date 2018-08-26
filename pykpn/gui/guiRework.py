@@ -36,7 +36,7 @@ class controlPanel(tk.Frame):
             filename =  filedialog.askopenfilename(initialdir = os.getcwd(),title = 'Select file',filetypes = (('platform files','*.platform'),('all files','*.*')))
             platform = SlxPlatform('SlxPlatform', filename, '2017.04')
         else:
-            platform = SlxPlatform('SlxPlatform', filename, '2017.04')
+            platform = SlxPlatform('SlxPlatform', filename, '2017.    04')
         
         #platform = SlxPlatform('SlxPlatform', '/net/home/teweleit/eclipseWorkspace/pykpn/pykpn/apps/audio_filter/exynos/exynos.platform', '2017.04')
         
@@ -48,7 +48,7 @@ class controlPanel(tk.Frame):
         noc = False
         
         equalList = platformOperations.findEqualPrimitives(platformOperations, platform)
-        description = platformOperations.mergeEqualPrimitives(platformOperations, description) 
+        description = platformOperations.mergeEqualPrimitives(platformOperations, description, equalList) 
         for equalSheet in equalList:
             if len(equalSheet) > 2:
                     noc = True
@@ -129,18 +129,22 @@ class drawPanel(tk.Frame):
                 drawPEs = False
                 
         drawPEsWithPrimitive = True
-        for item in toDraw:
+        for item in toDraw[1]:
             if not isinstance(item, tuple) or len(item[1]) > 1:
                 drawPEsWithPrimitive = False
         
         if drawPEs:
             nextColor = colorValue - 1 
-            if(toDraw[0] == 'network_on_chip'):
-                #self.drawPEs(toDraw[1], drawWidth, restSizeY, relativeXValue, nextColor, indent = 0)
-                pass
+            if drawWidth < restSizeY:
+                yIndent = restSizeY - drawWidth
+                restSizeY = drawWidth
             else:
-                #self.drawPEs(toDraw, drawWidth, drawHeight, relativeXValue, nextColor, indent = 0)
-                pass
+                yIndent = 0
+            
+            if(toDraw[0] == 'network_on_chip'):
+                self.drawPEs(toDraw[1], drawWidth, restSizeY, relativeXValue, nextColor, xIndent + relativeXValue * (length + innerBorder), yIndent, True)
+            else:
+                self.drawPEs(toDraw[1], drawWidth, restSizeY, relativeXValue, nextColor, xIndent + relativeXValue * (length + innerBorder), yIndent, False)
         elif drawPEsWithPrimitive:
             pass
         else:
@@ -150,10 +154,13 @@ class drawPanel(tk.Frame):
                 i += 1
         return
     
-    def drawPEs(self, toDraw, restSizeX, restSizeY, relativeXValue, colorValue, indent):
-
+    def drawPEs(self, toDraw, restSizeX, restSizeY, relativeXValue, colorValue, indentX, indentY, noc):
         
-        toDraw = platformOperations.getSortedProcessorScheme(platformOperations, toDraw)
+        if not noc:
+            try:
+                toDraw = platformOperations.getSortedProcessorScheme(platformOperations, toDraw)
+            except:
+                pass
         matrix = listOperations.convertToMatrix(listOperations, toDraw)
         dimension = listOperations.getDimension(listOperations, matrix)
     
@@ -164,24 +171,38 @@ class drawPanel(tk.Frame):
     
         i = 0
         for row in matrix:
-            startPointY = restSizeY - (dimension - i) * self.parent.variables.getInnerBorder() - ((dimension - i) * sizeY) + indent
+            startPointY = restSizeY - (dimension - i) * self.parent.variables.getInnerBorder() - ((dimension - i) * sizeY) + indentY
             endPointY = startPointY + sizeY 
             textPointY = endPointY - (endPointY - startPointY)/2
             j = 0
             for item in row:
-                startPointX = relativeXValue + ((j+1) * self.parent.variables.getInnerBorder()) + (j * sizeX)
+                startPointX = relativeXValue + ((j+1) * self.parent.variables.getInnerBorder()) + (j * sizeX) + indentX
                 endPointX = startPointX + sizeX
                 textPointX = endPointX - (endPointX - startPointX)/2
-            
+                
                 self.drawDevice.create_rectangle(startPointX, startPointY, endPointX, endPointY, fill = color)
                 self.drawDevice.create_text(textPointX, textPointY, text = item)
+                
+                if noc:
+                    linkRightStartX = endPointX
+                    linkRightStartY = endPointY - (endPointY - startPointY)/2
+                    linkRightEndX = endPointX + self.parent.variables.getInnerBorder()
+                    linkRightEndY = linkRightStartY
+                    
+                    linkDownStartX = endPointX - (endPointX - startPointX)/2
+                    linkDownStartY = endPointY
+                    linkDownEndX = linkDownStartX
+                    linkDownEndY = endPointY + self.parent.variables.getInnerBorder()
+                    
+                    if i < dimension - 1:
+                        self.drawDevice.create_line(linkDownStartX, linkDownStartY, linkDownEndX, linkDownEndY, width = 2)
+                    if j < dimension - 1:
+                        self.drawDevice.create_line(linkRightStartX, linkRightStartY, linkRightEndX, linkRightEndY, width = 2)
             
                 j += 1
             i += 1
         return
     
-    def drawNOC(self, toDraw, restSizeX, restSizeY, relativeXValue, colorValue, indent):
-        return
         
     def clear(self):
         for item in self.drawDevice.find_all():
