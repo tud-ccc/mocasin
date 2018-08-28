@@ -61,10 +61,9 @@ class Mapping:
         dict of process mapping infos
     :ivar dict[str, SchedulerMappingInfo] _scheduler_info:
         dict of scheduler mapping infos
-    :ivar MappingRepresentation _representation: the representation for mappings.
     """
 
-    def __init__(self, kpn, platform, representation_type=RepresentationType['SimpleVector']):
+    def __init__(self, kpn, platform):
         """Initialize a Mapping
 
         :param KpnGraph kpn: the kpn graph
@@ -75,8 +74,6 @@ class Mapping:
 
         self._kpn = kpn
         self._platform = platform
-        self._representation_type = representation_type
-        self._representation = self._representation_type.getClassType()(self._kpn,self._platform)
 
         self._channel_info = {}
         self._process_info = {}
@@ -388,8 +385,5 @@ class Mapping:
 
         return dot
 
-    def toRepresentation(self):
-        return self._representation.simpleVec2Elem(self.to_list())
-
-    def fromRepresentation(self,elem):
-        self.from_list(self._representation.elem2SimpleVec(elem))
+    def fromRepresentation(self,elem,representation):
+        self.from_list(representation.elem2SimpleVec(elem))

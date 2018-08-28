@@ -32,6 +32,9 @@ class MappingRepresentation(type):
             cls._instances[cls]._representationType = cls
         return cls._instances[cls]
 
+    def toRepresentation(mapping):
+      self.simpleVec2Elem(mapping.to_list())
+
 def init_app_ncs(self,kpn):
     n = 0
     self._app_nc = {}

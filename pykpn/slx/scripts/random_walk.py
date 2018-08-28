@@ -169,7 +169,8 @@ def main():
                 app_context.start_time = app_config.start_at_tick
 
                 # generate a random mapping
-                app_context.mapping = RandomMapping(kpn, platform, representation_type = RepresentationType[rep_type_str])
+                app_context.representation = RepresentationType[rep_type_str]
+                app_context.mapping = RandomMapping(kpn, platform)
 
                 # create the trace reader
                 app_context.trace_reader = SlxTraceReader.factory(
@@ -247,9 +248,9 @@ def main():
                                    'for single application mappings')
             mappings = [r.app_contexts[0].mapping for r in results]
             if len(args.visualize) == 0:
-                plot.visualize_mapping_space(mappings, exec_times)
+                plot.visualize_mapping_space(mappings, exec_times,representation_type=RepresentationType[rep_type_str])
             else:
-                plot.visualize_mapping_space(mappings, exec_times,dest=args.visualize)
+                plot.visualize_mapping_space(mappings, exec_times,representation_type=RepresentationType[rep_type_str],dest=args.visualize)
 
     except Exception as e:
         log.exception(str(e))

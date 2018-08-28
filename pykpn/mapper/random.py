@@ -62,16 +62,13 @@ class RandomMapping(Mapping):
         """
 
         log.debug('start random mapper for %s on %s', kpn.name, platform.name)
-
-        if mapping == None: #Uniformly (simple vector)
-            super().__init__(kpn,platform,representation_type)
-        else:
-            super().__init__(kpn,platform,mapping._representation_type)
+        representation = representation_type.getClassType()(kpn,platform)
+        super().__init__(kpn,platform)
             
         #elem = None
         if(radius == float("inf")): #uniform
-            elem = self._representation.uniform()
+            elem = representation.uniform()
         else:
-            self._representation.uniformFromBall(mapping.inRepresentation(),radius)
-            elem = self._representation.uniform()
-        self.fromRepresentation(elem)
+            self._representation.uniformFromBall(representation.inRepresentation(),radius)
+            elem = self.representation.uniform()
+        self.fromRepresentation(elem,representation)

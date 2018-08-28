@@ -9,13 +9,14 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import cm as cm
 from pykpn.util import annotate
+from pykpn.representations.representations import RepresentationType
 
 #used for pydot -> networkx support
 #import networkx.drawing.nx_pydot as nx
 #import networkx as nwx
 
 
-def visualize_mapping_space(mappings, exec_times, dest=None):
+def visualize_mapping_space(mappings, exec_times, dest=None,representation_type=RepresentationType['SimpleVector']):
     """Visualize a multi-dimensional mapping space using t-SNE
 
     Args:
@@ -45,10 +46,11 @@ def visualize_mapping_space(mappings, exec_times, dest=None):
         annotes.append(a)
 
 
+    representation = representation_type.getClassType()(mappings[0]._kpn,mappings[0]._platform)
     #print(mapping_tuples)
     X = tsne.tsne(mapping_tuples,
                   no_dims=2,
-                  initial_dims=len(mappings[0].toRepresentation()),
+                  initial_dims=len(representation.toRepresentation(mappings[0])),
                   perplexity=20.0)
 
     fig = plt.figure(figsize=(14,8))
