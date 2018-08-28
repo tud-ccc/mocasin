@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2018 TU Dresden
+# Copyright (C) 2017 TU Dresden
 # All Rights Reserved
 #
 # Authors: Christian Menard, Andres Goens, Gerald Hempel
@@ -135,16 +135,36 @@ class Mapping:
         # filter all channels with name is partof list
         unmapped_channels = dict(filter(lambda c: c[1] is None, self._channel_info.items())).keys()
         return list(filter(lambda c: c.name in unmapped_channels, self.kpn.channels()))
+
+   # def get_unmapped_schedulers(self):
+   #     """Returns a list of unmapped schedulers
+   #     
+   #     :returns: List of unmapped schedulers
+   #     :rtype: List[Schedulers]
+   #     """
+   #     # filter all channels with name is partof list
+   #     unmapped_schedulers = dict(filter(lambda s: s[1] is None, self._scheduler_info.items())).keys()
+   #     return list(filter(lambda s: s.name in unmapped_schedulerss, self.kpn.schedulers()))
+
+    def get_unmapped_channels(self):
+        """Returns a list of unmapped channels
+        
+        :returns: List of unmapped channels
+        :rtype: List[Channels]
+        """
+        print("mapping remaining channels: {}".format(dict(filter(lambda c: c[1] is None, self._channel_info.items())).keys()))
+        # filter all channels with name is partof list
+        unmapped_channels = dict(filter(lambda c: c[1] is None, self._channel_info.items())).keys()
+        return list(filter(lambda c: c.name in unmapped_channels, self.kpn.channels()))
     
     def get_unmapped_processes(self):
         """Returns a list of unmapped processes
-
         :returns: List of unmapped processes
         :rtype: List[KpnProcess]
-        """
         print("mapping remaining processes: {}".format(dict(filter(lambda c: c[1] is None, self._process_info.items())).keys()))
         unmapped_processes = dict(filter(lambda p: p[1] is None, self._process_info.items())).keys()
         return list(filter(lambda p: p.name in unmapped_processes, self.kpn.processes()))
+        """
     
     def scheduler_processes(self, scheduler):
         """Get a list of processes mapped to a scheduler
@@ -301,6 +321,7 @@ class Mapping:
                 primitive_costs *= 1e-7  # scale down
                 # TODO Probably it is better to normalize the values
                 res.append(primitive_costs)
+
         return res
 
     def from_list(self,list_from):
