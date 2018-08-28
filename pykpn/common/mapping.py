@@ -313,9 +313,9 @@ class Mapping:
            TODO: make it possible to give schedulers, too.
            TODO: check if we need to use correspondence of representation to ensure ordering is right
         """
-        processors = list(self._platform.processors())
-        all_schedulers = list(self._platform.schedulers())
-        all_primitives = list(self._platform.primitives())
+        processors = list(self.platform.processors())
+        all_schedulers = list(self.platform.schedulers())
+        all_primitives = list(self.platform.primitives())
         #print(list_from)
 
         # configure schedulers
@@ -328,7 +328,7 @@ class Mapping:
                       s.name, policy.name)
             
         # map processes
-        for i,p in enumerate(self._kpn.processes()):
+        for i,p in enumerate(self.kpn.processes()):
             idx = list_from[i]
             schedulers = [ sched for sched in all_schedulers if processors[idx] in sched.processors]
             j = random.randrange(0, len(schedulers))
@@ -342,7 +342,7 @@ class Mapping:
                       priority)
 
         # map channels
-        for i,c in enumerate(self._kpn.channels(),start=i+1):
+        for i,c in enumerate(self.kpn.channels(),start=i+1):
             capacity = 4
             suitable_primitives = []
             for p in all_primitives:
@@ -354,7 +354,7 @@ class Mapping:
                 raise RuntimeError('Mapping failed! No suitable primitive for '
                                    'communication from %s to %s found!' %
                                    (src.name, str(sinks)))
-            if len(list_from) == len(self._kpn.processes()) :
+            if len(list_from) == len(self.kpn.processes()) :
                 if len(suitable_primitives) == 1:
                     primitive = suitable_primitives[0]
                 else:

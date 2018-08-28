@@ -9,7 +9,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import cm as cm
 from pykpn.util import annotate
-from pykpn.representations.representations import RepresentationType
+from pykpn.representations.representations import RepresentationType, toRepresentation
 
 #used for pydot -> networkx support
 #import networkx.drawing.nx_pydot as nx
@@ -46,11 +46,11 @@ def visualize_mapping_space(mappings, exec_times, dest=None,representation_type=
         annotes.append(a)
 
 
-    representation = representation_type.getClassType()(mappings[0]._kpn,mappings[0]._platform)
+    representation = representation_type.getClassType()(mappings[0].kpn,mappings[0].platform)
     #print(mapping_tuples)
     X = tsne.tsne(mapping_tuples,
                   no_dims=2,
-                  initial_dims=len(representation.toRepresentation(mappings[0])),
+                  initial_dims=len(toRepresentation(representation,mappings[0])),
                   perplexity=20.0)
 
     fig = plt.figure(figsize=(14,8))

@@ -32,36 +32,36 @@ class MappingRepresentation(type):
             cls._instances[cls]._representationType = cls
         return cls._instances[cls]
 
-    def toRepresentation(mapping):
-      self.simpleVec2Elem(mapping.to_list())
+def toRepresentation(representation,mapping): #this could also be in some base class?
+  return representation.simpleVec2Elem(mapping.to_list())
 
 def init_app_ncs(self,kpn):
     n = 0
     self._app_nc = {}
     self._app_nc_inv = {}
-    for proc in self._kpn.processes():
+    for proc in self.kpn.processes():
         self._app_nc[n] = proc
         self._app_nc_inv[proc] = n
 
 class SimpleVectorRepresentation(metaclass=MappingRepresentation):
     def __init__(self, kpn, platform):
-        self._kpn = kpn
-        self._platform = platform
+        self.kpn = kpn
+        self.platform = platform
     def uniform(self):
-            Procs = list(self._kpn._processes.keys())
-            PEs = list(self._platform._processors.keys())
-            CPs = list(self._platform._primitives.keys())
+            Procs = list(self.kpn._processes.keys())
+            PEs = list(self.platform._processors.keys())
+            CPs = list(self.platform._primitives.keys())
             res = list(random_integers(0,len(PEs)-1,size=len(Procs)))
-            for c in self._kpn.channels():
+            for c in self.kpn.channels():
                 suitable_primitives = []
-                for p in self._platform.primitives():
+                for p in self.platform.primitives():
                     #assert: len([..]) list in next line == 1
                     src_proc_idx = [i for i,x in enumerate(Procs) if x == c.source.name][0]
                     src_pe_name = PEs[res[src_proc_idx]]
-                    src = self._platform.find_processor(src_pe_name)
+                    src = self.platform.find_processor(src_pe_name)
                     sink_procs_idxs = [i for i,x in enumerate(Procs) if x in [snk.name for snk in c.sinks]]
                     sink_pe_names = [PEs[res[s]] for s in sink_procs_idxs]
-                    sinks = [self._platform.find_processor(snk) for snk in sink_pe_names]
+                    sinks = [self.platform.find_processor(snk) for snk in sink_pe_names]
                     if p.is_suitable(src,sinks):
                         suitable_primitives.append(p)
                 primitive = suitable_primitives[random_integers(0,len(suitable_primitives)-1)].name
@@ -78,8 +78,8 @@ class MetricSpaceRepresentation(FiniteMetricSpaceLP, metaclass=MappingRepresenta
     def __init__(self,kpn, platform):
         self._topologyGraph = platform.to_adjacency_dict()
         M, self._arch_nc, self._arch_nc_inv = arch_graph_to_distance_metric(self._topologyGraph)
-        self._kpn = kpn
-        self._platform = platform
+        self.kpn = kpn
+        self.platform = platform
         init_app_ncs(self,kpn)
         super.__init__(M,d)
         
@@ -92,8 +92,8 @@ class MetricSpaceRepresentation(FiniteMetricSpaceLP, metaclass=MappingRepresenta
 class SymmetryRepresentation(metaclass=MappingRepresentation):
     def __init__(self,kpn, platform):
         self._topologyGraph = platform.to_adjacency_dict()
-        self._kpn = kpn
-        self._platform = platform
+        self.kpn = kpn
+        self.platform = platform
         self._d = len(kpn.processes())
         adjacency_dict, num_vertices, coloring, self._arch_nc = aut.to_labeled_edge_graph(self._topologyGraph)
         init_app_ncs(self,kpn)
@@ -102,7 +102,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
             self._arch_nc_inv[self._arch_nc[node]] = node
         #TODO: ensure that nodes_correspondence fits simpleVec
             
-        n = len(self._platform.processors())
+        n = len(self.platform.processors())
         nautygraph = pynauty.Graph(num_vertices,True,adjacency_dict, coloring)
         autgrp_edges = pynauty.autgrp(nautygraph)
         autgrp, new_nodes_correspondence = aut.edge_to_node_autgrp(autgrp_edges[0],self._arch_nc)
@@ -122,8 +122,8 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
 class MetricSymmetryRepresentation(FiniteMetricSpaceLPSym, metaclass=MappingRepresentation):
     def __init__(self,kpn, platform):
         self._topologyGraph = platform.to_adjacency_dict()
-        self._kpn = kpn
-        self._platform = platform
+        self.kpn = kpn
+        self.platform = platform
         self._d = len(kpn.processes())
         M_matrix, self._arch_nc, self._arch_nc_inv = arch_graph_to_distance_metric(self._topologyGraph)
         M = FiniteMetricSpace(M_matrix)
@@ -134,7 +134,7 @@ class MetricSymmetryRepresentation(FiniteMetricSpaceLPSym, metaclass=MappingRepr
             self._arch_nc_inv[self._arch_nc[node]] = node
         #TODO: ensure that nodes_correspondence fits simpleVec
             
-        n = len(self._platform.processors())
+        n = len(self.platform.processors())
         nautygraph = pynauty.Graph(num_vertices,True,adjacency_dict, coloring)
         autgrp_edges = pynauty.autgrp(nautygraph)
         autgrp, new_nodes_correspondence = aut.edge_to_node_autgrp(autgrp_edges[0],self._arch_nc)
@@ -157,8 +157,8 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
         self._topologyGraph = platform.to_adjacency_dict()
         M_matrix, self._arch_nc, self._arch_nc_inv = arch_graph_to_distance_metric(self._topologyGraph)
         self._M = FiniteMetricSpace(M_matrix)
-        self._kpn = kpn
-        self._platform = platform
+        self.kpn = kpn
+        self.platform = platform
         self._d = len(kpn.processes())
         init_app_ncs(self,kpn)
         MetricSpaceEmbedding.__init__(self,self._M,self._d,distortion)
@@ -175,12 +175,12 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
     
 class SymmetryEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepresentation):
     def __init__(self,kpn, platform, distortion=DEFAULT_DISTORTION):
-        self._kpn = kpn
-        self._platform = platform
+        self.kpn = kpn
+        self.platform = platform
         self._d = len(kpn.processes())
         self._topologyGraph = platform.to_adjacency_dict()
         init_app_ncs(self,kpn)
-        n = len(self._platform.processors())
+        n = len(self.platform.processors())
         M_matrix, self._arch_nc, self._arch_nc_inv = arch_graph_to_distance_metric(self._topologyGraph)
         adjacency_dict, num_vertices, coloring, self._arch_nc = aut.to_labeled_edge_graph(self._topologyGraph)
         nautygraph = pynauty.Graph(num_vertices,True,adjacency_dict, coloring)
