@@ -133,7 +133,7 @@ class Mapping:
         :returns: List of unmapped channels
         :rtype: List[Channels]
         """
-        print("mapping remaining channels: {}".format(dict(filter(lambda c: c[1] is None, self._channel_info.items())).keys()))
+        log.debug("mapping remaining channels: {}".format(dict(filter(lambda c: c[1] is None, self._channel_info.items())).keys()))
         # filter all channels with name is partof list
         unmapped_channels = dict(filter(lambda c: c[1] is None, self._channel_info.items())).keys()
         return list(filter(lambda c: c.name in unmapped_channels, self.kpn.channels()))
@@ -154,7 +154,7 @@ class Mapping:
         :returns: List of unmapped channels
         :rtype: List[Channels]
         """
-        print("mapping remaining channels: {}".format(dict(filter(lambda c: c[1] is None, self._channel_info.items())).keys()))
+        log.debug("mapping remaining channels: {}".format(dict(filter(lambda c: c[1] is None, self._channel_info.items())).keys()))
         # filter all channels with name is partof list
         unmapped_channels = dict(filter(lambda c: c[1] is None, self._channel_info.items())).keys()
         return list(filter(lambda c: c.name in unmapped_channels, self.kpn.channels()))
@@ -163,10 +163,11 @@ class Mapping:
         """Returns a list of unmapped processes
         :returns: List of unmapped processes
         :rtype: List[KpnProcess]
-        print("mapping remaining processes: {}".format(dict(filter(lambda c: c[1] is None, self._process_info.items())).keys()))
+        """
+        log.debug("mapping remaining processes: {}".format(dict(filter(lambda c: c[1] is None, self._process_info.items())).keys()))
         unmapped_processes = dict(filter(lambda p: p[1] is None, self._process_info.items())).keys()
         return list(filter(lambda p: p.name in unmapped_processes, self.kpn.processes()))
-        """
+        
     
     def scheduler_processes(self, scheduler):
         """Get a list of processes mapped to a scheduler
@@ -196,7 +197,7 @@ class Mapping:
 
     def add_scheduler_info(self, scheduler, info):
         """Add a scheduler config"""
-        print("sched info (should be none): {} , {}, {}".format(self._scheduler_info[scheduler.name], scheduler.name, info))
+        log.debug("sched info (should be none): {} , {}, {}".format(self._scheduler_info[scheduler.name], scheduler.name, info))
         assert scheduler.name in self._scheduler_info
         assert self._scheduler_info[scheduler.name] is None
         self._scheduler_info[scheduler.name] = info

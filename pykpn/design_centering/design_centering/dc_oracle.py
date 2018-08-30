@@ -23,6 +23,10 @@ from . import dc_settings as conf
 
 from sys import exit
 
+from pykpn.common import logging
+
+log = logging.getLogger(__name__)
+
 class ApplicationContext(object):
     def __init__(self, name=None, kpn=None, mapping=None, trace_reader=None,
                  start_time=None):
@@ -51,7 +55,7 @@ class Oracle(object):
         elif conf.oracle == "simulation":
              type(self).oracle = Simulation(config)
         else:
-             print("Error, unknown oracle:" + conf.oracle)
+             log.error("Error, unknown oracle:" + conf.oracle)
              exit(1)
 
     def validate(self, sample):
@@ -117,13 +121,13 @@ class Simulation(object):
             app_context.start_time = app_config.start_at_tick
             
             # generate a mapping for the given sample
-            print("using simcontext no.: {} {}".format(i,samples[i]))
+            log.debug("using simcontext no.: {} {}".format(i,samples[i]))
             randMapGen = RandomMappingGenerator(kpn, platform)
             dcMapGen = DC_MappingGenerator(kpn, platform, randMapGen)
             #app_context.mapping = RandomMapping(kpn, platform)
             app_context.mapping = dcMapGen.generate_mapping(samples[i].sample2tuple())
             #app_context.mapping = randMapGen.generate_mapping(42, randMapGen.mapping)
-            print("####### Mapping i={} toList: {}".format(i, app_context.mapping.to_list()))
+            log.debug("####### Mapping i={} toList: {}".format(i, app_context.mapping.to_list()))
             
             # create the trace reader
             app_context.trace_reader = SlxTraceReader.factory(
@@ -190,7 +194,7 @@ class Simulation(object):
                 s.setFeasibility(True)
                 feasible.append(True)
 
-        print("exec. Times: {} Feasible: {}".format(exec_times, feasible))
+        log.debug("exec. Times: {} Feasible: {}".format(exec_times, feasible))
         # return smaples with the according sim context 
         return samples
 
@@ -219,7 +223,7 @@ class Simulation(object):
             sim_context.exec_time = env.now
 
         except Exception as e:
-            print("Exception in Simulation: {}".format(str(e)))
+            log.debug("Exception in Simulation: {}".format(str(e)))
             traceback.print_exc()
             #log.exception(str(e))
             if hasattr(e, 'details'):
@@ -233,7 +237,7 @@ class TestSet(object):
         """ test oracle function (2-dim) """
         #print("oracle for: " + str(s))
         if (len(s) != 2):
-            print("test oracle requires a dimension of 2\n")
+            log.error("test oracle requires a dimension of 2\n")
             exit(1)
         x = s[0]
         y = s[1]
@@ -253,7 +257,7 @@ class TestTwoPrKPN():
     def is_feasible(self,s):
          """ test oracle function (2-dim) """
          if (len(s) != 2):
-              print("test oracle requires a dimension of 2\n")
+              log.error("test oracle requires a dimension of 2\n")
               exit(1)
          x = s[0]
          y = s[1]

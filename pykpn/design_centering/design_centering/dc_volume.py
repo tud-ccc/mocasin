@@ -2,18 +2,21 @@ import sys
 import logging
 import numpy as np
 from . import dc_settings as conf
+from pykpn.common import logging
+
+log = logging.getLogger(__name__)
 
 class Volume(object):
 
     def __init__(self):
-        print("create default volume")
+        log.debug("create default volume")
 
     def adapt(vol):
-        print("adapt volume")
+        log.debug("adapt volume")
         return vol
 
     def shrink(vol):
-        print("shrink volume")
+        log.debug("shrink volume")
         return vol
 
 class Cube(Volume):
@@ -21,7 +24,7 @@ class Cube(Volume):
     def __init__(self, center, dim):
         # define initial cube with radius 1 at the given center
         if (len(center) != dim):
-            print("Dimensions do not match to the given center. (-1)")
+            log.error("Dimensions do not match to the given center. (-1)")
             sys.exit(-1)
         self.center = list(center)
         self.radius = 0.5
@@ -34,7 +37,7 @@ class Cube(Volume):
             return self.center
         # take mean of feasible points as new center
         m = np.mean(fs_set, axis=0)
-        print("mean mapping {}".format(m))
+        log.debug("mean mapping {}".format(m))
         self.center = np.around(m)
         return self.center
     
@@ -58,14 +61,14 @@ class Cube(Volume):
         fs_set = list(map(lambda s: s.sample,  s_set.get_feasible()))
         # adjust radius
         p = len(s_set.get_feasible()) / len(s_set.sample_set)
-        print("---------- adapt_volume() -----------")
-        print("p-factors: {} {}".format(s_set.get_feasible(), len(s_set.sample_set)))
+        log.debug("---------- adapt_volume() -----------")
+        log.debug("p-factors: {} {}".format(s_set.get_feasible(), len(s_set.sample_set)))
         if (p >= target_p):
             # simple adaptation: cube does not support shape adaption
-            print ("extend at p: {:f} target_p {:f} r: {:f}".format(p, target_p, self.radius))
+            log.debug ("extend at p: {:f} target_p {:f} r: {:f}".format(p, target_p, self.radius))
             self.extend(s_val)
         else:
-            print ("shrink at p: {:f} target_p {:f} r: {:f}".format(p, target_p, self.radius))
+            log.debug ("shrink at p: {:f} target_p {:f} r: {:f}".format(p, target_p, self.radius))
             self.shrink(s_val)
         return p
 

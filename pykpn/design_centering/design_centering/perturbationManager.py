@@ -10,6 +10,10 @@ from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.mapper.rand_mapgen import RandomMappingGenerator
 from pykpn.mapper.dc_mapgen import DC_MappingGenerator
 
+from pykpn.common import logging
+
+log = logging.getLogger(__name__)
+
 class PerturbationManager(object):
 
     def __init__(self, config ,num_mappings=0, num_tests=0):
@@ -44,14 +48,14 @@ class PerturbationManager(object):
         vec = []
         #assign cores to vector
         pe_mapping = dcMapGen.get_pe_name_mapping()
-        print(pe_mapping)
+        log.debug(str(pe_mapping))
         for p in self.kpns[0].processes():
-            print(mapping.affinity(p).name) 
+            log.debug(mapping.affinity(p).name) 
             vec.append(pe_mapping[mapping.affinity(p).name])
 
-        print("vec: {} ".format(vec))
+        log.debug("vec: {} ".format(vec))
         #permutate vector
-        print ("pr: {} vec: {}".format(process, vec))
+        log.debug("pr: {} vec: {}".format(process, vec))
         vec[process] = pe
 
         while True:
@@ -91,7 +95,7 @@ class PerturbationManager(object):
             else:
                 feasible.append(True)
 
-        print("exec. Times: {} Feasible: {} History: {}".format(exec_times, feasible, history))
+        log.debug("exec. Times: {} Feasible: {} History: {}".format(exec_times, feasible, history))
         # generate gridpoint from history by wighting feasible and infeasible
         simple_res = 100 * len([i for i in feasible if i is True]) / len(feasible)
         return simple_res

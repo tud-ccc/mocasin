@@ -9,6 +9,9 @@ from pykpn.common.mapping import Mapping
 
 from sys import exit
 
+from pykpn.common import logging
+
+log = logging.getLogger(__name__)
 
 class Sample(list):
     def __init__(self,sample=None,simContext=None):
@@ -71,7 +74,7 @@ class SampleGeometricGen(SampleGenerator):
         for _ in range(nsamples):
             s = self.gen_sample_in_vol(vol,distr)
             res.append(GeometricSample(s))
-        print("\ngen sample in ball\n {}\n".format(res[0].sample2tuple()))
+        log.debug("\ngen sample in ball\n {}\n".format(res[0].sample2tuple()))
         return res
 
     def gen_random_sample(self):
@@ -117,7 +120,7 @@ class MetricSpaceSampleGen(SampleGenerator):
 
     def gen_samples_in_ball(self,ball,distr,nsamples=1):
         if distr != "uniform":
-            print("Error!, distribution '" + str(distr) + "' not supported (yet).")
+            log.error("Error!, distribution '" + str(distr) + "' not supported (yet).")
             exit(1)
         sample_ints =  self.M.uniformFromBall(ball.center,ball.radius,nsamples)
         sample_list = list(map(lambda s: MetricSpaceSample(self.M,s), sample_ints))
