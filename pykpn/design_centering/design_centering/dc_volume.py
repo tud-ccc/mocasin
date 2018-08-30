@@ -68,14 +68,14 @@ class Cube(Volume):
         fs_set = list(map(lambda s: s.sample,  s_set.get_feasible()))
         # adjust radius
         p = len(s_set.get_feasible()) / len(s_set.sample_set)
-        print("---------- adapt_volume() -----------")
-        print("p-factors: {} {}".format(s_set.get_feasible(), len(s_set.sample_set)))
+        log.debug("---------- adapt_volume() -----------")
+        log.debug("p-factors: {} {}".format(s_set.get_feasible(), len(s_set.sample_set)))
         if (p >= target_p):
             # simple adaptation: cube does not support shape adaption
-            print ("extend at p: {:f} target_p {:f} r: {:f}".format(p, target_p, self.radius))
+            log.debug ("extend at p: {:f} target_p {:f} r: {:f}".format(p, target_p, self.radius))
             self.extend(s_val)
         else:
-            print ("shrink at p: {:f} target_p {:f} r: {:f}".format(p, target_p, self.radius))
+            log.debug ("shrink at p: {:f} target_p {:f} r: {:f}".format(p, target_p, self.radius))
             self.shrink(s_val)
         return p
 
