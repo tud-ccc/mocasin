@@ -198,7 +198,7 @@ class Primitive:
         :param sink_processor: the sink processor for which the costs are to be
             retrieved
         """
-        return(self.static_consume_costs(src_processor, token_size) +
+        return(self.static_produce_costs(src_processor, token_size) +
                self.static_consume_costs(sink_processor, token_size))
 
     def is_suitable(self, src, sinks):
