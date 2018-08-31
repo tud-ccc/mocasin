@@ -55,7 +55,7 @@ class DC_MappingGenerator(object):
         :raises: RuntimeError if the algorithm is not able to find a suitable
             channel mapping for a random process mapping.
         """
-        log.debug('start mapping generation for {} on {} with {}'
+        log.debug('dc_map: start mapping generation for {} on {} with {}'
                    .format(self.kpn.name,self.platform.name,vec))
 
         # map processes to scheduler and processor
@@ -71,13 +71,13 @@ class DC_MappingGenerator(object):
             info = ProcessMappingInfo(scheduler, affinity, priority)
             # configure mapping
             self.mapping.add_process_info(p, info)
-            log.debug('map process %s to scheduler %s and processor %s '
+            log.debug('dc_map: map process %s to scheduler %s and processor %s '
                       '(priority: %d)', p.name, scheduler.name, affinity.name,
                       priority)
             if self.mapping in map_history:
                 return None
             else:
-                return self.fullGenerator.generate_mapping(42, self.mapping)
+                return self.fullGenerator.generate_mapping(self.mapping)
 
         
 

@@ -48,7 +48,7 @@ class RandomMappingGenerator(object):
 
         # check if the platform/kpn is equivalent
         if not part_mapping.platform is self.platform or not part_mapping.kpn is self.kpn:
-           raise RuntimeError('Try to map partial mapping of platform,KPN %s,%s to %s,%s',
+           raise RuntimeError('rand_map: Try to map partial mapping of platform,KPN %s,%s to %s,%s',
                              part_mapping.platform.name, part_mapping.kpn.name, 
                              self.platform.name, self.kpn.name)
 
@@ -60,7 +60,7 @@ class RandomMappingGenerator(object):
             policy = s.policies[i]
             info = SchedulerMappingInfo(policy, None)
             part_mapping.add_scheduler_info(s, info)
-            log.debug('configure scheduler %s to use the %s policy',
+            log.debug('rand_map: configure scheduler %s to use the %s policy',
                       s.name, policy.name)
         
         # map processes
@@ -74,7 +74,7 @@ class RandomMappingGenerator(object):
             priority = random.randrange(0, 20)
             info = ProcessMappingInfo(scheduler, affinity, priority)
             part_mapping.add_process_info(p, info)
-            log.debug('map process %s to scheduler %s and processor %s '
+            log.debug('rand_map: map process %s to scheduler %s and processor %s '
                       '(priority: %d)', p.name, scheduler.name, affinity.name,
                       priority)          
         
@@ -89,14 +89,14 @@ class RandomMappingGenerator(object):
                 if p.is_suitable(src, sinks):
                     suitable_primitives.append(p)
             if len(suitable_primitives) == 0:
-                raise RuntimeError('Mapping failed! No suitable primitive for '
+                raise RuntimeError('rand_map: Mapping failed! No suitable primitive for '
                                    'communication from %s to %s found!' %
                                    (src.name, str(sinks)))
             i = random.randrange(0, len(suitable_primitives))
             primitive = suitable_primitives[i]
             info = ChannelMappingInfo(primitive, capacity)
             part_mapping.add_channel_info(c, info)
-            log.debug('map channel %s to the primitive %s and bound to %d '
+            log.debug('rand_map: map channel %s to the primitive %s and bound to %d '
                       'tokens' % (c.name, primitive.name, capacity)) 
 
         # finally check if the mapping is fully specified

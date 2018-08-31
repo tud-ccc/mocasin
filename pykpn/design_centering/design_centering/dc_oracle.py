@@ -17,6 +17,7 @@ from pykpn.simulate.system import RuntimeSystem
 #from pykpn.mapper.random import RandomMapping
 from pykpn.mapper.dc_mapgen import DC_MappingGenerator
 from pykpn.mapper.rand_mapgen import RandomMappingGenerator
+from pykpn.mapper.com_mapgen import ComMappingGenerator
 from pykpn.mapper.random import RandomMapping
 from . import dc_sample
 from . import dc_settings as conf
@@ -122,8 +123,10 @@ class Simulation(object):
             
             # generate a mapping for the given sample
             log.debug("using simcontext no.: {} {}".format(i,samples[i]))
+            # pipeline of mapping gnererators
             randMapGen = RandomMappingGenerator(kpn, platform)
-            dcMapGen = DC_MappingGenerator(kpn, platform, randMapGen)
+            comMapGen = ComMappingGenerator(kpn, platform, randMapGen)
+            dcMapGen = DC_MappingGenerator(kpn, platform, comMapGen)
             #app_context.mapping = RandomMapping(kpn, platform)
             app_context.mapping = dcMapGen.generate_mapping(samples[i].sample2tuple())
             #app_context.mapping = randMapGen.generate_mapping(42, randMapGen.mapping)
