@@ -231,6 +231,20 @@ class Mapping:
                                                      chan2prim[key][1],max_width))
 
         return s
+    
+    def to_coreList(self):
+        """added by Felix Teweleit, just returns a dict where
+        processing elements are the keys and mapped procs are
+        the values
+        """
+        procs_list = self._kpn.processes()
+        pes_list = self._platform.processors()
+        pes2procs = {}
+        for pe in pes_list:
+            pes2procs.update({pe.name:[]})
+        for proc in procs_list:
+            pes2procs[self.affinity(proc).name].append(proc.name)
+        return pes2procs
 
     def to_list(self):
         """Convert to a list (tuple), the simple vector representation.
