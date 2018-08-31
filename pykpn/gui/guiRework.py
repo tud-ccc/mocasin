@@ -31,14 +31,14 @@ class controlPanel(tk.Frame):
         loading the platform xml from the file system
         '''
         
-        
+        '''
         if filename == 'default':
             filename =  filedialog.askopenfilename(initialdir = os.getcwd(),title = 'Select file',filetypes = (('platform files','*.platform'),('all files','*.*')))
             platform = SlxPlatform('SlxPlatform', filename, '2017.04')
         else:
-            platform = SlxPlatform('SlxPlatform', filename, '2017.    04')
-        
-        #platform = SlxPlatform('SlxPlatform', '/net/home/teweleit/eclipseWorkspace/pykpn/pykpn/apps/audio_filter/exynos/exynos.platform', '2017.04')
+            platform = SlxPlatform('SlxPlatform', filename, '2017.04')
+        '''
+        platform = SlxPlatform('SlxPlatform', '/net/home/teweleit/eclipseWorkspace/pykpn/pykpn/apps/audio_filter/exynos/exynos.platform', '2017.04')
         
         description = platformOperations.getPlatformDescription(platformOperations, platform.processors(), platform.primitives())
             
@@ -133,24 +133,27 @@ class drawPanel(tk.Frame):
             if not isinstance(item, tuple) or len(item[1]) > 1:
                 drawPEsWithPrimitive = False
         
-        if drawPEs:
-            nextColor = colorValue - 1 
+        nextColor = colorValue - 1 
+        
+        if drawPEs or drawPEsWithPrimitive:
             if drawWidth < restSizeY:
                 yIndent = restSizeY - drawWidth
                 restSizeY = drawWidth
             else:
                 yIndent = 0
-            
-            if(toDraw[0] == 'network_on_chip'):
+            if drawPEs and (toDraw[0] == 'network_on_chip'):
                 self.drawPEs(toDraw[1], drawWidth, restSizeY, relativeXValue, nextColor, xIndent + relativeXValue * (length + innerBorder), yIndent, True)
-            else:
+            elif drawPEs:
                 self.drawPEs(toDraw[1], drawWidth, restSizeY, relativeXValue, nextColor, xIndent + relativeXValue * (length + innerBorder), yIndent, False)
-        elif drawPEsWithPrimitive:
-            pass
-        else:
+            elif drawPEsWithPrimitive:
+                self.drawPEsWithPrimitive(toDraw[1], drawWidth, restSizeY, relativeXValue, nextColor, xIndent + relativeXValue * (length + innerBorder), yIndent)
+            else:
+                raise(RuntimeError("There is no known primitive Structure to draw"))
+        
+        elif not drawPEs and not drawPEsWithPrimitive:
             i = 0
             for item in toDraw[1]:
-                self.drawInnerRessource(item, restSizeX, restSizeY, i, relativeXValue * drawWidth, colorValue - 1, len(toDraw[1]))
+                self.drawInnerRessource(item, restSizeX, restSizeY, i, relativeXValue * drawWidth, nextColor, len(toDraw[1]))
                 i += 1
         return
     
@@ -202,7 +205,47 @@ class drawPanel(tk.Frame):
                 j += 1
             i += 1
         return
-    
+ 
+    def drawPEsWithPrimitive(self, toDraw, restSizeX, restSizeY, relativeXValue, colorValue, indentX, indentY):
+        
+        matrix = listOperations.convertToMatrix(listOperations, toDraw)
+        dimension = listOperations.getDimension(listOperations, matrix)
+        
+        sizeX = (restSizeX - dimension * self.parent.variables.getInnerBorder()) / dimension
+        sizeY = (restSizeY - (dimension - 1) * self.parent.variables.getInnerBorder() ) / dimension
+        
+        sizePEY = sizeY * 0.8
+        sizePrimitiveY = sizeY * 0.2
+        
+        colorPE = self.parent.variables.resolveColor(colorValue)
+        colorPrimitive = self.parent.variables.resolveColor(colorValue - 1)
+        
+        i = 0
+        for row in matrix:
+            startPointPEY = restSizeY - (dimension - i) * self.parent.variables.getInnerBorder() - ((dimension - i) * sizeY) + indentY
+            startPointPrimitiveY = startPointPEY + sizePEY
+            
+            endPointPEY = startPointPEY + sizePEY 
+            endPointPrimitiveY = startPointPrimitiveY + sizePrimitiveY
+            
+            textPointPEY = endPointPEY - (endPointPEY - startPointPEY)/2
+            textPointPrimitiveY = endPointPrimitiveY - (endPointPrimitiveY - startPointPrimitiveY) / 2
+            
+            j = 0
+            for item in row:
+                startPointX = relativeXValue + ((j+1) * self.parent.variables.getInnerBorder()) + (j * sizeX) + indentX
+                endPointX = startPointX + sizeX
+                textPointX = endPointX - (endPointX - startPointX)/2
+                
+                self.drawDevice.create_rectangle(startPointX, startPointPEY, endPointX, endPointPEY, fill = colorPE)
+                self.drawDevice.create_text(textPointX, textPointPEY, text = item[1][0])
+                
+                self.drawDevice.create_rectangle(startPointX, startPointPrimitiveY, endPointX, endPointPrimitiveY, fill = colorPrimitive)
+                self.drawDevice.create_text(textPointX, textPointPrimitiveY, text = item[0])
+                j += 1
+            i += 1
+        
+        return
         
     def clear(self):
         for item in self.drawDevice.find_all():
