@@ -5,6 +5,7 @@ created by Felix Teweleit
 
 from pykpn.gui.listOperations import listOperations
 from pykpn.gui.platformOperations import platformOperations
+from tkinter.constants import HIDDEN, NORMAL
 
 class drawAPI():
     '''
@@ -13,28 +14,36 @@ class drawAPI():
     means each element will take 1/15 of the remaining height, width and height should match width and height of the canvas, platform-
     and mappingColor are optional parameters which represent a list of color names or codes in python
     '''
-    def __init__(self, drawDevice, border, scaling, width, height, platformColors = ['default'], mappingColors = ['default']):
-        self.drawDevice = drawDevice
-        self.innerBorder = border
-        self.outerBorder = border
-        self.scaling = scaling
-        self.drawHeight = height
-        self.drawWidth  = width
-        self.platformColors = {}                    #holds the available colors for platform elements
-        self.mappingColors = {}                     #holds the available colors for mapping elements
-        self.platformDescription = []               #holds the description of the platform which should be drawn
-        self.mappingDescription = {}                #holds the description of the currently applied mappings
-        self.equalList = []                         #a list of lists of primitives which connect the same processing elements
-        self.coreDict = {}                          #dictionary, which will hold PE name, start and end points, will be updated during draw Process
-        self.platformDrawn = False
-        self.mappingDrawn = False
-        self.PESize = height                        #the minimum of PE length or height after drawing, is set to height because no PE can be drawn with initial height value
-                                                    #so it must reduce
-        self.mappingIDs = []
-        self.mappingHandles = []                    #list contains handles of all drawn mapping elements in purpose to easily remove them
+    def __init__(self, drawDevice, border, scaling, width, height, textSpace = 10):
+        self.__drawDevice = drawDevice
+        self.__innerBorder = border
+        self.__outerBorder = border
+        self.__scaling = scaling
+        self.__drawHeight = height
+        self.__drawWidth  = width
         
-        self.initializePlatformColors(platformColors)
-        self.initializeMappingColors(mappingColors)
+        self.__platformColors = {}                    #holds the available colors for platform elements
+        self.__mappingColors = {}                     #holds the available colors for mapping elements
+        self.__peColors = {}                          #holds the available colors for mapping elements
+        
+        self.__platformDescription = []               #holds the description of the platform which should be drawn
+        self.__mappingDescription = {}                #holds the description of the currently applied mappings
+        self.__equalList = []                         #a list of lists of primitives which connect the same processing elements
+        self.__coreDict = {}                          #dictionary, which will hold PE name, start and end points, will be updated during draw Process
+        self.__coreClasses = []                       #list which has one entry for every core size
+        
+        self.__platformDrawn = False
+        self.__mappingDrawn = False
+        self.__displayTaskNames = True
+        
+        self.__PESize = height                        #the minimum of PE length or height after drawing, do not mess with
+        self.__textSpace = textSpace                  #the space for PE names, so tasks will not overlay them
+        
+        self.__mappingIDs = []
+        self.__mappingHandles = []                    #list contains handles of all drawn mapping elements in purpose to easily remove them
+        self.__mappingNameHandles = []
+        
+        self.setColorVectors()
           
     '''
     first method that should be called, requires an object of the platform class and sets platform description and equalList
@@ -53,30 +62,40 @@ class drawAPI():
         if noc:         
             description = platformOperations.createNocMatrix(platformOperations, description, platform)
             
-        self.platformDescription = description    
-  
+        self.__platformDescription = description
+    
+    '''
+    gives the possibility to set custom color vectors for platform, mapping and cores. Arguments should be lists of color names
+    '''
+    def setColorVectors(self, platformColors = ['default'], mappingColors = ['default'], peColors = ['default']):
+        self.__initializePlatformColors(platformColors)
+        self.__initializeMappingColors(mappingColors)
+        self.__initializePEColors(peColors)
+        
+        return
+    
     '''
     requires an object of the mapping class and sets the mapping description of the drawAPI instance, should be called before
     attempting to draw the mapping
     '''
     def addMapping(self, mapping, mappingID):
-        if listOperations.containsItem(listOperations, self.mappingIDs, mappingID) or not isinstance(mappingID, int):
+        if listOperations.containsItem(listOperations, self.__mappingIDs, mappingID) or not isinstance(mappingID, int):
             raise(RuntimeError('This mapping id is already in use or not an integer!'))
         else:
-            self.mappingIDs.append(mappingID)
+            self.__mappingIDs.append(mappingID)
             
         tmpMappingDescription = mapping.to_coreList()
         
-        if self.mappingDescription == {}:
+        if self.__mappingDescription == {}:
             for key in tmpMappingDescription:
-                self.mappingDescription.update({key : {}})
+                self.__mappingDescription.update({key : {}})
         
         for key in tmpMappingDescription:
             if len(tmpMappingDescription[key]) == 0:
                 continue
             else:
-                self.mappingDescription[key].update({mappingID : tmpMappingDescription[key]})
-        if self.mappingDrawn:
+                self.__mappingDescription[key].update({mappingID : tmpMappingDescription[key]})
+        if self.__mappingDrawn:
             self.clearMappings()
             self.drawMapping()
         
@@ -86,23 +105,26 @@ class drawAPI():
     removes the mapping belonging to the given mapping ID and redraw the mappings
     '''
     def removeMapping(self, mappingID):
-        if not listOperations.containsItem(listOperations, self.mappingIDs, mappingID):
+        if not listOperations.containsItem(listOperations, self.__mappingIDs, mappingID):
             raise(RuntimeError('This ID is currently not in use!'))
         else:
-            for key in self.mappingDescription:
-                if mappingID in self.mappingDescription[key]:
-                    del self.mappingDescription[key][mappingID]
-            self.mappingIDs.remove(mappingID)
-            if self.mappingDrawn:
+            for key in self.__mappingDescription:
+                if mappingID in self.__mappingDescription[key]:
+                    del self.__mappingDescription[key][mappingID]
+            self.__mappingIDs.remove(mappingID)
+            if self.__mappingDrawn:
                 self.clearMappings()
         return    
+    
     '''
     deletes all drawn mapping elements
     '''
     def clearMappings(self):  
-        for handle in self.mappingHandles:
-            self.drawDevice.delete(handle)
-        self.mappingHandles = []
+        for handle in self.__mappingHandles:
+            self.__drawDevice.delete(handle)
+        for handle in self.__mappingNameHandles:
+            self.__drawDevice.delete(handle)
+        self.__mappingHandles = []
         self.drawMapping()
     
     '''
@@ -110,14 +132,14 @@ class drawAPI():
     the given canvas to draw the platform
     '''    
     def drawPlatform(self):
-        self.platformDrawn = True
-        toDraw = self.platformDescription
-        drawWidth = self.drawWidth / len(toDraw)
-        drawHeight = self.drawHeight
+        self.__platformDrawn = True
+        toDraw = self.__platformDescription
+        drawWidth = self.__drawWidth / len(toDraw)
+        drawHeight = self.__drawHeight
         
         i = 0
         for item in toDraw:
-            self.drawInnerRessource(item, drawWidth, drawHeight, i, 0, 1, len(toDraw))
+            self.__drawInnerRessource(item, drawWidth, drawHeight, i, 0, 0, len(toDraw))
             i += 1
 
         return
@@ -127,18 +149,18 @@ class drawAPI():
     of the platform description
     '''
     def drawMapping(self):
-        self.mappingDrawn = True
-        if self.mappingDescription == {}:
+        self.__mappingDrawn = True
+        if self.__mappingDescription == {}:
             raise(RuntimeError('Please set a mapping description before attempt to draw a mapping'))
-        if not self.platformDrawn:
+        if not self.__platformDrawn:
             raise(RuntimeError('Please draw a platform before attempt to draw a mapping'))
         
         keyWithMostProcs = None
         mostProcs = 0
-        for key in self.mappingDescription:
+        for key in self.__mappingDescription:
             amount = 0
-            for innerKey in self.mappingDescription[key]:
-                amount += len(self.mappingDescription[key][innerKey])
+            for innerKey in self.__mappingDescription[key]:
+                amount += len(self.__mappingDescription[key][innerKey])
             if amount > mostProcs:
                 mostProcs = amount
                 keyWithMostProcs = key
@@ -146,28 +168,29 @@ class drawAPI():
         #creating a tempList containing all mapping elements of the PE with most mapping elements on it, its not really needed
         #and just for the purpose of calculating the draw size of the mapping dots
         tmpList = []
-        for key in self.mappingDescription[keyWithMostProcs]:
-                for element in self.mappingDescription[keyWithMostProcs][key]:
+        for key in self.__mappingDescription[keyWithMostProcs]:
+                for element in self.__mappingDescription[keyWithMostProcs][key]:
                     tmpList.append(element)
         matrix = listOperations.convertToMatrix(listOperations, tmpList)
         maxLength = listOperations.getDimension(listOperations, matrix)
-        radius = self.PESize / (2 * maxLength)
+        radius = self.__PESize / (2 * maxLength)
         
-        for key in self.mappingDescription:
-            if bool(self.mappingDescription[key]):
-                startPointX = self.coreDict[key][0]
-                endPointX = self.coreDict[key][1]
-                startPointY = self.coreDict[key][2]
+        for key in self.__mappingDescription:
+            if bool(self.__mappingDescription[key]):
+                startPointX = self.__coreDict[key][0]
+                endPointX = self.__coreDict[key][1]
+                startPointY = self.__coreDict[key][2]
                 currentX = startPointX + radius
                 currentY = startPointY + radius
-                for innerKey in self.mappingDescription[key]:
-                    color = self.resolveMappingColor(innerKey)
-                    for entry in self.mappingDescription[key][innerKey]:
+                for innerKey in self.__mappingDescription[key]:
+                    color = self.__resolveMappingColor(innerKey)
+                    for entry in self.__mappingDescription[key][innerKey]:
                         if (currentX + radius) > endPointX:
                             currentY += 2 * radius
                             currentX = startPointX + radius
-                        self.mappingHandles.append(self.drawDevice.create_oval(currentX - radius, currentY - radius, currentX + radius, currentY + radius, fill = color))
-                        self.mappingHandles.append(self.drawDevice.create_text(currentX, currentY, text = entry))
+                        self.__mappingHandles.append(self.__drawDevice.create_oval(currentX - radius, currentY - radius, currentX + radius, currentY + radius, fill = color))
+                        if self.__displayTaskNames:
+                            self.__mappingNameHandles.append(self.__drawDevice.create_text(currentX, currentY, text = entry))
                         currentX += (2 * radius)
             
             else:
@@ -177,33 +200,55 @@ class drawAPI():
         return
     
     '''
+    toggles if task names should be displayed or not
+    '''
+    def toggleTaskNames(self):
+        if self.__displayTaskNames:
+            self.__displayTaskNames = False
+            for handle in self.__mappingNameHandles:
+                self.__drawDevice.itemconfigure(handle, state = HIDDEN)
+        else:
+            self.__displayTaskNames = True
+            for handle in self.__mappingNameHandles:
+                self.__drawDevice.itemconfigure(handle, state = NORMAL)
+        return
+    
+    '''
     method is used internally to determine the colors for the drawn elements, should not be called manually
     '''    
-    def resolvePlatformColor(self, colorValue):
-        if isinstance(colorValue, int) and colorValue <= 10 and colorValue > 0:
-            return self.platformColors[colorValue]
+    def __resolvePlatformColor(self, colorValue):
+        if isinstance(colorValue, int) and colorValue >= 0 and colorValue <= 6:
+            return self.__platformColors[colorValue]
         else:
             raise ValueError('Wrong color value to resolve given!')
         
     '''
     method is used internally to determine the colors for the drawn elements, should not be called manually
     '''    
-    def resolveMappingColor(self, colorValue):
-        if isinstance(colorValue, int) and colorValue <= 10 and colorValue > 0:
-            return self.mappingColors[colorValue]
+    def __resolveMappingColor(self, colorValue):
+        if isinstance(colorValue, int) and colorValue >= 0 and colorValue <= 6:
+            return self.__mappingColors[colorValue]
         else:
             raise ValueError('Wrong color value to resolve given!')
-        
+    
+    '''
+    method is used internally to determine the colors for the drawn elements, should not be called manually
+    '''
+    def __resolvePEColor(self, coreSize):
+        multiplicator = len(self.__peColors) / len(self.__coreClasses)
+        return self.__peColors[int(multiplicator) * self.__coreClasses.index(coreSize)]
+        pass
+       
     '''
     method draws primitives, should not be called manually
     '''
-    def drawInnerRessource(self, toDraw, drawWidth, drawHeight, relativeXValue, xIndent, colorValue, amount):      
-        innerBorder = self.innerBorder
-        outerBorder = self.outerBorder
+    def __drawInnerRessource(self, toDraw, drawWidth, drawHeight, relativeXValue, xIndent, colorValue, amount):      
+        innerBorder = self.__innerBorder
+        outerBorder = self.__outerBorder
         length = drawWidth - innerBorder
         
         startPointX = outerBorder + relativeXValue * (length + innerBorder) + xIndent
-        startPointY = drawHeight - outerBorder - drawHeight / self.scaling
+        startPointY = drawHeight - outerBorder - drawHeight / self.__scaling
         
         endPointX = startPointX + length
         endPointY = drawHeight  - outerBorder
@@ -211,14 +256,14 @@ class drawAPI():
         textPointX = endPointX - (endPointX - startPointX) / 2
         textPointY = endPointY - (endPointY  - startPointY) / 2
         
-        color = self.resolvePlatformColor(colorValue)
+        color = self.__resolvePlatformColor(colorValue)
         
-        self.drawDevice.create_rectangle(startPointX, startPointY, endPointX, endPointY, fill = color)
-        self.drawDevice.create_text(textPointX, textPointY, text = toDraw[0])
+        self.__drawDevice.create_rectangle(startPointX, startPointY, endPointX, endPointY, fill = color)
+        self.__drawDevice.create_text(textPointX, textPointY, text = toDraw[0], width = length)
         
         
         restSizeX = drawWidth / len(toDraw[1])
-        restSizeY = drawHeight - drawHeight / self.scaling - innerBorder
+        restSizeY = drawHeight - drawHeight / self.__scaling - innerBorder
         
         
         drawPEs = True
@@ -240,66 +285,68 @@ class drawAPI():
             else:
                 yIndent = 0
             if drawPEs and (toDraw[0] == 'network_on_chip'):
-                self.drawPEs(toDraw[1], drawWidth, restSizeY, relativeXValue, nextColor, xIndent + relativeXValue * (length + innerBorder), yIndent, True)
+                self.__drawPEs(toDraw[1], drawWidth, restSizeY, relativeXValue, nextColor, xIndent + relativeXValue * (length + innerBorder), yIndent, True)
             elif drawPEs:
-                self.drawPEs(toDraw[1], drawWidth, restSizeY, relativeXValue, nextColor, xIndent + relativeXValue * (length + innerBorder), yIndent, False)
+                self.__drawPEs(toDraw[1], drawWidth, restSizeY, relativeXValue, nextColor, xIndent + relativeXValue * (length + innerBorder), yIndent, False)
             elif drawPEsWithPrimitive:
-                self.drawPEsWithPrimitive(toDraw[1], drawWidth, restSizeY, relativeXValue, nextColor, xIndent + relativeXValue * (length + innerBorder), yIndent)
+                self.__drawPEsWithPrimitive(toDraw[1], drawWidth, restSizeY, relativeXValue, nextColor, xIndent + relativeXValue * (length + innerBorder), yIndent)
             else:
-                raise(RuntimeError("There is no known primitive Structure to draw"))
+                raise(RuntimeError('There is no known primitive Structure to draw'))
         
         elif not drawPEs and not drawPEsWithPrimitive:
             i = 0
             for item in toDraw[1]:
-                self.drawInnerRessource(item, restSizeX, restSizeY, i, relativeXValue * drawWidth, nextColor, len(toDraw[1]))
+                self.__drawInnerRessource(item, restSizeX, restSizeY, i, relativeXValue * drawWidth, nextColor, len(toDraw[1]))
                 i += 1
         return
     
     '''
     method draws processing elements, should not be called manually
     '''
-    def drawPEsWithPrimitive(self, toDraw, restSizeX, restSizeY, relativeXValue, colorValue, indentX, indentY):
+    def __drawPEsWithPrimitive(self, toDraw, restSizeX, restSizeY, relativeXValue, colorValue, indentX, indentY):
         
         matrix = listOperations.convertToMatrix(listOperations, toDraw)
         dimension = listOperations.getDimension(listOperations, matrix)
         
-        sizeX = (restSizeX - dimension * self.innerBorder) / dimension
-        sizeY = (restSizeY - (dimension - 1) * self.innerBorder ) / dimension
+        sizeX = (restSizeX - dimension * self.__innerBorder) / dimension
+        sizeY = (restSizeY - (dimension - 1) * self.__innerBorder ) / dimension
+        
+        self.__addCoreClass(sizeX)
         
         sizePEY = sizeY * 0.8
         sizePrimitiveY = sizeY * 0.2
         
-        if sizePEY < sizeX and sizePEY < self.PESize:
-            self.PESize = sizePEY
-        elif sizeX <= sizePEY and sizeX < self.PESize:
-            self.PESize = sizeX
+        if (sizePEY - self.__textSpace) < sizeX and (sizePEY - self.__textSpace) < self.__PESize:
+            self.__PESize = sizePEY - self.__textSpace
+        elif sizeX <= sizePEY and sizeX < self.__PESize:
+            self.__PESize = sizeX
         
-        colorPE = self.resolvePlatformColor(colorValue)
-        colorPrimitive = self.resolvePlatformColor(colorValue + 1)
+        colorPE = self.__resolvePEColor(sizeX)
+        colorPrimitive = self.__resolvePlatformColor(colorValue + 1)
         
         i = 0
         for row in matrix:
-            startPointPEY = restSizeY - (dimension - i) * self.innerBorder - ((dimension - i) * sizeY) + indentY
+            startPointPEY = restSizeY - (dimension - i) * self.__innerBorder - ((dimension - i) * sizeY) + indentY
             startPointPrimitiveY = startPointPEY + sizePEY
             
             endPointPEY = startPointPEY + sizePEY 
             endPointPrimitiveY = startPointPrimitiveY + sizePrimitiveY
             
-            textPointPEY = endPointPEY - (endPointPEY - startPointPEY)/2
+            textPointPEY = endPointPEY - (self.__textSpace / 2)
             textPointPrimitiveY = endPointPrimitiveY - (endPointPrimitiveY - startPointPrimitiveY) / 2
             
             j = 0
             for item in row:
-                startPointX = relativeXValue + ((j+1) * self.innerBorder) + (j * sizeX) + indentX
+                startPointX = relativeXValue + ((j+1) * self.__innerBorder) + (j * sizeX) + indentX
                 endPointX = startPointX + sizeX
                 textPointX = endPointX - (endPointX - startPointX)/2
                 
-                self.drawDevice.create_rectangle(startPointX, startPointPEY, endPointX, endPointPEY, fill = colorPE)
-                self.drawDevice.create_text(textPointX, textPointPEY, text = item[1][0])
-                self.coreDict.update({item[1][0] : [startPointX, endPointX, startPointPEY, endPointPEY]})
+                self.__drawDevice.create_rectangle(startPointX, startPointPEY, endPointX, endPointPEY, fill = colorPE)
+                self.__drawDevice.create_text(textPointX, textPointPEY, text = item[1][0], width = sizeX)
+                self.__coreDict.update({item[1][0] : [startPointX, endPointX, startPointPEY, endPointPEY]})
                 
-                self.drawDevice.create_rectangle(startPointX, startPointPrimitiveY, endPointX, endPointPrimitiveY, fill = colorPrimitive)
-                self.drawDevice.create_text(textPointX, textPointPrimitiveY, text = item[0])
+                self.__drawDevice.create_rectangle(startPointX, startPointPrimitiveY, endPointX, endPointPrimitiveY, fill = colorPrimitive)
+                self.__drawDevice.create_text(textPointX, textPointPrimitiveY, text = item[0], width = sizeX)
                 j += 1
             i += 1
         
@@ -308,7 +355,7 @@ class drawAPI():
     '''
     method draws processing elements, should not be called manually
     '''    
-    def drawPEs(self, toDraw, restSizeX, restSizeY, relativeXValue, colorValue, indentX, indentY, noc):
+    def __drawPEs(self, toDraw, restSizeX, restSizeY, relativeXValue, colorValue, indentX, indentY, noc):
         
         if not noc:
             try:
@@ -318,66 +365,87 @@ class drawAPI():
         matrix = listOperations.convertToMatrix(listOperations, toDraw)
         dimension = listOperations.getDimension(listOperations, matrix)
     
-        sizeX = (restSizeX - dimension * self.innerBorder) / dimension
-        sizeY = (restSizeY - (dimension - 1) * self.innerBorder ) / dimension
+        sizeX = (restSizeX - dimension * self.__innerBorder) / dimension
+        sizeY = (restSizeY - (dimension - 1) * self.__innerBorder ) / dimension
         
-        if sizeY < sizeX and sizeY < self.PESize:
-            self.PESize = sizeY
-        elif sizeX <= sizeY and sizeX < self.PESize:
-            self.PESize = sizeX
+        self.__addCoreClass(sizeX)
+        
+        if (sizeY - self.__textSpace) < sizeX and (sizeY - self.__textSpace) < self.__PESize:
+            self.__PESize = sizeY - self.__textSpace
+        elif sizeX <= sizeY and sizeX < self.__PESize:
+            self.__PESize = sizeX - self.__textSpace
     
-        color = self.resolvePlatformColor(colorValue)
+        color = self.__resolvePEColor(sizeX)
     
         i = 0
         for row in matrix:
-            startPointY = restSizeY - (dimension - i) * self.innerBorder - ((dimension - i) * sizeY) + indentY
+            startPointY = restSizeY - (dimension - i) * self.__innerBorder - ((dimension - i) * sizeY) + indentY
             endPointY = startPointY + sizeY 
-            textPointY = endPointY - (endPointY - startPointY)/2
+            textPointY = endPointY - (self.__textSpace / 2)
             j = 0
             for item in row:
-                startPointX = relativeXValue + ((j+1) * self.innerBorder) + (j * sizeX) + indentX
+                startPointX = relativeXValue + ((j+1) * self.__innerBorder) + (j * sizeX) + indentX
                 endPointX = startPointX + sizeX
                 textPointX = endPointX - (endPointX - startPointX)/2
                 
-                self.drawDevice.create_rectangle(startPointX, startPointY, endPointX, endPointY, fill = color)
-                self.drawDevice.create_text(textPointX, textPointY, text = item)
-                self.coreDict.update({item : [startPointX, endPointX, startPointY, endPointY]})
+                self.__drawDevice.create_rectangle(startPointX, startPointY, endPointX, endPointY, fill = color)
+                self.__drawDevice.create_text(textPointX, textPointY, text = item, width = sizeX)
+                self.__coreDict.update({item : [startPointX, endPointX, startPointY, endPointY]})
                 
                 if noc:
                     linkRightStartX = endPointX
                     linkRightStartY = endPointY - (endPointY - startPointY)/2
-                    linkRightEndX = endPointX + self.innerBorder
+                    linkRightEndX = endPointX + self.__innerBorder
                     linkRightEndY = linkRightStartY
                     
                     linkDownStartX = endPointX - (endPointX - startPointX)/2
                     linkDownStartY = endPointY
                     linkDownEndX = linkDownStartX
-                    linkDownEndY = endPointY + self.innerBorder
+                    linkDownEndY = endPointY + self.__innerBorder
                     
                     if i < dimension - 1:
-                        self.drawDevice.create_line(linkDownStartX, linkDownStartY, linkDownEndX, linkDownEndY, width = 2)
+                        self.__drawDevice.create_line(linkDownStartX, linkDownStartY, linkDownEndX, linkDownEndY, width = 2)
                     if j < dimension - 1:
-                        self.drawDevice.create_line(linkRightStartX, linkRightStartY, linkRightEndX, linkRightEndY, width = 2)
+                        self.__drawDevice.create_line(linkRightStartX, linkRightStartY, linkRightEndX, linkRightEndY, width = 2)
             
                 j += 1
             i += 1
         return    
     
     '''
+    adds a new PE class to the class dict
+    '''
+    def __addCoreClass(self, length):
+        i = 0
+        isInserted = False
+        if self.__coreClasses == []:
+                self.__coreClasses.append(length)
+                return
+        for entry in self.__coreClasses:
+            if entry == length:
+                return
+            elif entry < length:
+                i += 1
+            else:
+                self.__coreClasses.insert(i, length)
+                isInserted = True
+        if not isInserted:
+            self.__coreClasses.insert(i, length)
+        return
+    
+    '''
     method initialize the color dictionary for platform elements, should not be called manually
     '''
-    def initializePlatformColors(self, colorList):
+    def __initializePlatformColors(self, colorList):
         if colorList[0] == 'default':
-            self.platformColors = { 1: 'orange',
-                                    2: 'chartreuse1',
-                                    3: 'azure1',
-                                    4: 'cornsilk2',
-                                    5: 'coral',
-                                    6: 'cornflowerblue',
-                                    7: 'cyan2',
-                                    8: 'darkgoldenrod1',
-                                    9: 'aqua',
-                                    10: 'darkorchid'}
+            self.__platformColors = { 0: 'royalblue1',
+                                    1: 'steelblue1',
+                                    2: 'skyblue1',
+                                    3: 'lightskyblue1',
+                                    4: 'slategray1',
+                                    5: 'lightsteelblue1',
+                                    6: 'lightblue1'
+                                    }
         else:
             i = 1
             for entry in colorList:
@@ -388,26 +456,42 @@ class drawAPI():
     '''
     method initialize the color dictionary for platform elements, should not be called manually
     '''
-    def initializeMappingColors(self, colorList):
+    def __initializeMappingColors(self, colorList):
         if colorList[0] == 'default':
-            self.mappingColors = { 1:'aliceblue', 
-                                   2:'darkorange', 
-                                   3:'chocolate', 
-                                   4:'yellow', 
-                                   5:'bisque1', 
-                                   6:'blue', 
-                                   7:'blueviolet', 
-                                   8:'brown1', 
-                                   9:'burlywood',
-                                   10: 'cadetblue'}
+            self.__mappingColors = { 0:'red2', 
+                                   1:'orangered3', 
+                                   2:'tomato2', 
+                                   3:'coral2', 
+                                   4:'salmon2', 
+                                   5:'darkorange2', 
+                                   6:'orange3' 
+                                   }
         else:
             i = 1
             for entry in colorList:
-                self.mappingColors.update({i : entry})
+                self.__mappingColors.update({i : entry})
                 i += 1
         return
-        
-        
+    
+    '''
+    method initialize the color dictionary for processing elements, should not be called manually
+    '''    
+    def __initializePEColors(self, colorList):
+        if colorList[0] == 'default':
+            self.__peColors = { 0:'snow', 
+                               1:'burlywood',
+                               2: 'whitesmoke',
+                               3: 'linen',
+                               4: 'antique white',
+                               5: 'lemonchiffon',
+                               6: 'navajowhite'
+                               }
+        else:
+            i = 0
+            for entry in colorList:
+                self.__peColors.update({i : entry})
+                i += 1
+        return   
         
         
         
