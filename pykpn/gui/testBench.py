@@ -35,13 +35,13 @@ mapping1 = RandomMapping(kpnInstance, platform)
 mapping2 = RandomMapping(kpnInstance, platform)
 mapping3 = RandomMapping(kpnInstance, platform)
 
+
 classInstance.setPlatform(platform)
-classInstance.addMapping(mapping1, 1)
-classInstance.addMapping(mapping2, 2)
+classInstance.addMapping(mapping1, 0)
+classInstance.addMapping(mapping2, 1)
 classInstance.drawPlatform()
 classInstance.drawMapping()
-classInstance.addMapping(mapping3, 3)
-classInstance.removeMapping(2)
+classInstance.addMapping(mapping3, 2)
 print('just a break point')
 root.mainloop()
 

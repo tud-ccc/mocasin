@@ -118,7 +118,17 @@ class platformOperations (object):
                                     isInserted = True
                             if not isInserted:
                                 tempMemberSet.append(member)
-                    primitiveStructure.append((primitive.name, tempMemberSet))
+                    name = primitive.name.split("_")
+                    newName = ""
+                    for fragment in name:
+                        if fragment == 'putget':
+                            continue
+                        else:
+                            if len(newName) == 0:
+                                newName += fragment
+                            else:
+                                newName += "_" + fragment
+                    primitiveStructure.append((newName, tempMemberSet))
                     primitives.pop(primitives.index(primitive))
                 else:
                     pass
