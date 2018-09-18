@@ -6,6 +6,7 @@ created by Felix Teweleit
 from pykpn.gui.listOperations import listOperations
 from pykpn.gui.platformOperations import platformOperations
 from tkinter.constants import HIDDEN, NORMAL
+import tkinter as tk
 
 class drawAPI():
     '''
@@ -14,13 +15,14 @@ class drawAPI():
     means each element will take 1/15 of the remaining height, width and height should match width and height of the canvas, platform-
     and mappingColor are optional parameters which represent a list of color names or codes in python
     '''
-    def __init__(self, drawDevice, border, scaling, width, height, textSpace = 10):
+    def __init__(self, drawDevice, border, scaling, width, height,textSpace = 10, fontSize = 'default'):
         self.__drawDevice = drawDevice
         self.__innerBorder = border
         self.__outerBorder = border
         self.__scaling = scaling
         self.__drawHeight = height
         self.__drawWidth  = width
+        self.__fontSize = fontSize
         
         self.__platformColors = {}                    #holds the available colors for platform elements
         self.__mappingColors = {}                     #holds the available colors for mapping elements
@@ -190,7 +192,11 @@ class drawAPI():
                             currentX = startPointX + radius
                         self.__mappingHandles.append(self.__drawDevice.create_oval(currentX - radius, currentY - radius, currentX + radius, currentY + radius, fill = color))
                         if self.__displayTaskNames:
-                            self.__mappingNameHandles.append(self.__drawDevice.create_text(currentX, currentY, text = entry))
+                            if self.__fontSize != 'default' and isinstance(self.__fontSize, int):
+                                i = self.__drawDevice.create_text(currentX, currentY, font = ('Helvetica', self.__fontSize), text = entry)
+                            else:
+                                i = self.__drawDevice.create_text(currentX, currentY, text = entry)
+                            self.__mappingNameHandles.append(i)
                         currentX += (2 * radius)
             
             else:
@@ -259,8 +265,11 @@ class drawAPI():
         color = self.__resolvePlatformColor(colorValue)
         
         self.__drawDevice.create_rectangle(startPointX, startPointY, endPointX, endPointY, fill = color)
-        self.__drawDevice.create_text(textPointX, textPointY, text = toDraw[0], width = length)
         
+        if self.__fontSize != 'default' and isinstance(self.__fontSize, int):
+            self.__drawDevice.create_text(textPointX, textPointY, font=('Helevetica',self.__fontSize), text = toDraw[0], width = length)
+        else:
+            self.__drawDevice.create_text(textPointX, textPointY, text = toDraw[0], width = length)
         
         restSizeX = drawWidth / len(toDraw[1])
         restSizeY = drawHeight - drawHeight / self.__scaling - innerBorder
@@ -289,7 +298,7 @@ class drawAPI():
             elif drawPEs:
                 self.__drawPEs(toDraw[1], drawWidth, restSizeY, relativeXValue, nextColor, xIndent + relativeXValue * (length + innerBorder), yIndent, False)
             elif drawPEsWithPrimitive:
-                self.__drawPEsWithPrimitive(toDraw[1], drawWidth, restSizeY, relativeXValue, nextColor, xIndent + relativeXValue * (length + innerBorder), yIndent)
+                self.__drawPEsWithPrimitive(toDraw[1], drawWidth, restSizeY, relativeXValue, nextColor, xIndent + relativeXValue * (length + innerBorder), yIndent, toDraw[0].split('_')[2])
             else:
                 raise(RuntimeError('There is no known primitive Structure to draw'))
         
@@ -303,7 +312,7 @@ class drawAPI():
     '''
     method draws processing elements, should not be called manually
     '''
-    def __drawPEsWithPrimitive(self, toDraw, restSizeX, restSizeY, relativeXValue, colorValue, indentX, indentY):
+    def __drawPEsWithPrimitive(self, toDraw, restSizeX, restSizeY, relativeXValue, colorValue, indentX, indentY, coreSize):
         
         matrix = listOperations.convertToMatrix(listOperations, toDraw)
         dimension = listOperations.getDimension(listOperations, matrix)
@@ -341,12 +350,22 @@ class drawAPI():
                 endPointX = startPointX + sizeX
                 textPointX = endPointX - (endPointX - startPointX)/2
                 
-                self.__drawDevice.create_rectangle(startPointX, startPointPEY, endPointX, endPointPEY, fill = colorPE)
-                self.__drawDevice.create_text(textPointX, textPointPEY, text = item[1][0], width = sizeX)
+                if coreSize == 'A15':
+                    self.__drawDevice.create_rectangle(startPointX, startPointPEY, endPointX, endPointPEY, fill = 'snow')
+                else:
+                    self.__drawDevice.create_rectangle(startPointX, startPointPEY, endPointX, endPointPEY, fill = 'antique white')
+                                  
+                if self.__fontSize != 'default' and isinstance(self.__fontSize, int):
+                    self.__drawDevice.create_text(textPointX, textPointPEY, font=('Helvetica', self.__fontSize), text = item[1][0], width = sizeX)
+                else:
+                    self.__drawDevice.create_text(textPointX, textPointPEY, text = item[1][0], width = sizeX)
                 self.__coreDict.update({item[1][0] : [startPointX, endPointX, startPointPEY, endPointPEY]})
                 
                 self.__drawDevice.create_rectangle(startPointX, startPointPrimitiveY, endPointX, endPointPrimitiveY, fill = colorPrimitive)
-                self.__drawDevice.create_text(textPointX, textPointPrimitiveY, text = item[0], width = sizeX)
+                if self.__fontSize != 'default' and isinstance(self.__fontSize, int):
+                    self.__drawDevice.create_text(textPointX, textPointPrimitiveY, font=('Helvetica', self.__fontSize), text = item[0], width = sizeX)
+                else:
+                    self.__drawDevice.create_text(textPointX, textPointPrimitiveY, text = item[0], width = sizeX)
                 j += 1
             i += 1
         
@@ -389,7 +408,11 @@ class drawAPI():
                 textPointX = endPointX - (endPointX - startPointX)/2
                 
                 self.__drawDevice.create_rectangle(startPointX, startPointY, endPointX, endPointY, fill = color)
-                self.__drawDevice.create_text(textPointX, textPointY, text = item, width = sizeX)
+                
+                if self.__fontSize != 'default' and isinstance(self.__fontSize, int):
+                    self.__drawDevice.create_text(textPointX, textPointY, font=('Helvetica', self.__fontSize), text = item, width = sizeX)
+                else:
+                    self.__drawDevice.create_text(textPointX, textPointY, text = item, width = sizeX)
                 self.__coreDict.update({item : [startPointX, endPointX, startPointY, endPointY]})
                 
                 if noc:
@@ -492,7 +515,6 @@ class drawAPI():
                 self.__peColors.update({i : entry})
                 i += 1
         return   
-        
         
         
         
