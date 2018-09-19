@@ -99,7 +99,6 @@ class drawAPI():
                 self.__mappingDescription[key].update({mappingID : tmpMappingDescription[key]})
         if self.__mappingDrawn:
             self.clearMappings()
-            self.drawMapping()
         
         return
     
@@ -127,7 +126,8 @@ class drawAPI():
         for handle in self.__mappingNameHandles:
             self.__drawDevice.delete(handle)
         self.__mappingHandles = []
-        self.drawMapping()
+        if self.__mappingHandles != []:
+            self.drawMapping()
     
     '''
     after initialization of the drawAPI class via constructor and setPlatform method, draw can be called which introduces
@@ -151,6 +151,8 @@ class drawAPI():
     of the platform description
     '''
     def drawMapping(self):
+        if self.__mappingHandles == []:
+            return
         self.__mappingDrawn = True
         if self.__mappingDescription == {}:
             raise(RuntimeError('Please set a mapping description before attempt to draw a mapping'))
