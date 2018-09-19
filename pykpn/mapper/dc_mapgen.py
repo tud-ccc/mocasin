@@ -4,11 +4,10 @@ from pykpn.common import logging
 from pykpn.common.mapping import (ChannelMappingInfo, Mapping,
     ProcessMappingInfo, SchedulerMappingInfo)
 
-
 log = logging.getLogger(__name__)
 
 class DC_MappingGenerator(object):
-    """Generates a partial mapping derived from a vector
+    """Generates a partial mapping derived from a vector for a specific embedding
 
     This class is used to generate a partial mapping for a given
     platform and KPN application. 
@@ -48,14 +47,15 @@ class DC_MappingGenerator(object):
         that describes the mapping. Each value in the vector stand 
         for a Process -> PE mapping.
 
-        :param vec: a vector describing the mapping
-        :type vec: tuple of integers
+        :param reprVec: a vector describing the mapping in the initilized representation 
+        :type reprVec: tuple describing the representation
         :param map_history: exclution list of already generated mappings
         :type map_history: list of mappings
         :raises: RuntimeError if the algorithm is not able to find a suitable
             channel mapping for a random process mapping.
         """
-        log.debug('dc_map: start mapping generation for {} on {} with {}'
+
+        log.debug('dc_map: start mapping generation for {} on {} with simpleVec: {}'
                    .format(self.kpn.name,self.platform.name,vec))
 
         # map processes to scheduler and processor

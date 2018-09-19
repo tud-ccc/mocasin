@@ -6,6 +6,7 @@ from . import dc_oracle
 from . import dc_settings as conf
 from pykpn.representations.metric_spaces import FiniteMetricSpace
 from pykpn.common.mapping import Mapping
+from pykpn.representations.representations import RepresentationType
 
 from sys import exit
 
@@ -14,12 +15,22 @@ from pykpn.common import logging
 log = logging.getLogger(__name__)
 
 class Sample(list):
-    def __init__(self,sample=None,simContext=None):
+    def __init__(self,sample=None,simContext=None, representation_type=RepresentationType['SimpleVector']):
+        """Describes a sample from a volume for a given representation. 
+
+        :param sample: a vector describing the sample
+        :type sample: Sample
+        :simContext: the context (platform, kpn etc.) set after simulation of the sample
+        :type: SimulationContext
+        :param representation_type: a representation type
+        :type platform: RepresentationType
+        """
         self.feasible = False
         if sample is None:
             sample = []
         self.sample = sample
         self.simContext = simContext
+        self.representation_type = representation_type
 
     def setFeasibility(self,feasibility):
         assert type(feasibility) is bool
@@ -39,6 +50,14 @@ class Sample(list):
 
     def sample2tuple(self):
         return tuple(self.sample)
+
+    def sample2simpleTuple(self, kpn=None, platform=None):
+        if not kpn or not platform:
+            log.warning("sample2tuple(): kpn and platform not set - return simple tuple for sample")
+            return tuple(self.sample)
+        representation = self.representation_type.getClassType()(kpn,platform)
+        #print ("Tuple::::: {}".format(tuple(representation.elem2SimpleVec(self.sample))))
+        return tuple(representation.elem2SimpleVec(self.sample))
 
     def dist(self,s):
         return None

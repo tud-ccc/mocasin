@@ -61,7 +61,7 @@ class Oracle(object):
 
     def validate(self, sample):
         """ check whether a single sample is feasible """
-        res = type(self).oracle.is_feasible(sample.sample2tuple())
+        res = type(self).oracle.is_feasible(sample.sample2simpleTuple())
 
     def validate_set(self, samples):
         """ check whether a set of samples is feasible """
@@ -69,7 +69,7 @@ class Oracle(object):
         res = []
         if conf.oracle != "simulation":
             for s in samples:
-                res.append(type(self).oracle.is_feasible(s.sample2tuple()))
+                res.append(type(self).oracle.is_feasible(s.sample2simpleTuple()))
         else:
             res = type(self).oracle.is_feasible(samples)
 
@@ -128,7 +128,7 @@ class Simulation(object):
             comMapGen = ComMappingGenerator(kpn, platform, randMapGen)
             dcMapGen = DC_MappingGenerator(kpn, platform, comMapGen)
             #app_context.mapping = RandomMapping(kpn, platform)
-            app_context.mapping = dcMapGen.generate_mapping(samples[i].sample2tuple())
+            app_context.mapping = dcMapGen.generate_mapping(samples[i].sample2simpleTuple(kpn, platform))
             #app_context.mapping = randMapGen.generate_mapping(42, randMapGen.mapping)
             log.debug("####### Mapping i={} toList: {}".format(i, app_context.mapping.to_list()))
             
