@@ -42,6 +42,8 @@ classInstance.removeMapping(0)
 classInstance.addMapping(mapping2, 1)
 classInstance.drawPlatform()
 classInstance.drawMapping()
+classInstance.removeMapping(1)
+classInstance.addMapping(mapping2, 0)
 print('just a break point')
 root.mainloop()
 

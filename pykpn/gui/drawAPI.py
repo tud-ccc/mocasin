@@ -462,6 +462,7 @@ class drawAPI():
     method initialize the color dictionary for platform elements, should not be called manually
     '''
     def __initializePlatformColors(self, colorList):
+        self.__platformColors = {}
         if colorList[0] == 'default':
             self.__platformColors = { 0: 'royalblue1',
                                     1: 'steelblue1',
@@ -482,6 +483,7 @@ class drawAPI():
     method initialize the color dictionary for platform elements, should not be called manually
     '''
     def __initializeMappingColors(self, colorList):
+        self.__mappingColors = {}
         if colorList[0] == 'default':
             self.__mappingColors = { 0:'red2', 
                                    1:'orangered3', 
@@ -502,6 +504,7 @@ class drawAPI():
     method initialize the color dictionary for processing elements, should not be called manually
     '''    
     def __initializePEColors(self, colorList):
+        self.__peColors = {}
         if colorList[0] == 'default':
             self.__peColors = { 0:'snow', 
                                1:'burlywood',
