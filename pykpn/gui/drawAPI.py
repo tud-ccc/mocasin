@@ -126,7 +126,7 @@ class drawAPI():
         for handle in self.__mappingNameHandles:
             self.__drawDevice.delete(handle)
         self.__mappingHandles = []
-        if self.__mappingHandles != []:
+        if self.__mappingIDs != []:
             self.drawMapping()
     
     '''
@@ -151,7 +151,7 @@ class drawAPI():
     of the platform description
     '''
     def drawMapping(self):
-        if self.__mappingHandles == []:
+        if self.__mappingIDs == []:
             return
         self.__mappingDrawn = True
         if self.__mappingDescription == {}:
