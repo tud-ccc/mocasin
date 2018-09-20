@@ -41,7 +41,7 @@ class drawAPI():
         self.__PESize = height                        #the minimum of PE length or height after drawing, do not mess with
         self.__textSpace = textSpace                  #the space for PE names, so tasks will not overlay them
         
-        self.__mappingIDs = []
+        self.__mappingIDs = {}
         self.__mappingHandles = []                    #list contains handles of all drawn mapping elements in purpose to easily remove them
         self.__mappingNameHandles = []
         
@@ -80,11 +80,14 @@ class drawAPI():
     requires an object of the mapping class and sets the mapping description of the drawAPI instance, should be called before
     attempting to draw the mapping
     '''
-    def addMapping(self, mapping, mappingID):
+    def addMapping(self, mapping, mappingID, color = 'default'):
         if listOperations.containsItem(listOperations, self.__mappingIDs, mappingID) or not isinstance(mappingID, int):
             raise(RuntimeError('This mapping id is already in use or not an integer!'))
         else:
-            self.__mappingIDs.append(mappingID)
+            if color == 'default':
+                self.__mappingIDs.update({mappingID : self.__mappingColors[mappingID]})
+            else:
+                self.__mappingIDs.update({mappingID : color})
             
         tmpMappingDescription = mapping.to_coreList()
         
@@ -106,13 +109,13 @@ class drawAPI():
     removes the mapping belonging to the given mapping ID and redraw the mappings
     '''
     def removeMapping(self, mappingID):
-        if not listOperations.containsItem(listOperations, self.__mappingIDs, mappingID):
+        if not mappingID in self.__mappingIDs:
             raise(RuntimeError('This ID is currently not in use!'))
         else:
             for key in self.__mappingDescription:
                 if mappingID in self.__mappingDescription[key]:
                     del self.__mappingDescription[key][mappingID]
-            self.__mappingIDs.remove(mappingID)
+            del self.__mappingIDs[mappingID]
             if self.__mappingDrawn:
                 self.clearMappings()
         return    
@@ -151,7 +154,7 @@ class drawAPI():
     of the platform description
     '''
     def drawMapping(self):
-        if self.__mappingIDs == []:
+        if self.__mappingIDs == {}:
             return
         self.__mappingDrawn = True
         if self.__mappingDescription == {}:
@@ -187,7 +190,7 @@ class drawAPI():
                 currentX = startPointX + radius
                 currentY = startPointY + radius
                 for innerKey in self.__mappingDescription[key]:
-                    color = self.__resolveMappingColor(innerKey)
+                    color = self.__mappingIDs[innerKey]
                     for entry in self.__mappingDescription[key][innerKey]:
                         if (currentX + radius) > endPointX:
                             currentY += 2 * radius
@@ -230,14 +233,6 @@ class drawAPI():
         else:
             raise ValueError('Wrong color value to resolve given!')
         
-    '''
-    method is used internally to determine the colors for the drawn elements, should not be called manually
-    '''    
-    def __resolveMappingColor(self, colorValue):
-        if isinstance(colorValue, int) and colorValue >= 0 and colorValue <= 6:
-            return self.__mappingColors[colorValue]
-        else:
-            raise ValueError('Wrong color value to resolve given!')
     
     '''
     method is used internally to determine the colors for the drawn elements, should not be called manually
