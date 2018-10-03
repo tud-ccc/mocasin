@@ -2,39 +2,99 @@
 
 import sys
 sys.path.append('../..')
-import os
 import tkinter as tk
-from pykpn.gui.listOperations import listOperations
-from pykpn.gui.platformOperations import platformOperations
-from tkinter import filedialog
-from tkinter import messagebox
 from pykpn.slx.platform import SlxPlatform
+from pykpn.slx.kpn import SlxKpnGraph
+from pykpn.mapper.random import RandomMapping
 from pykpn.gui import drawAPI
 
 class controlPanel(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
         self.parent = parent
+        self.__kpnInstance = SlxKpnGraph('SlxKpnGraph','/net/home/teweleit/eclipseWorkspace/pykpn/pykpn/apps/audio_filter.cpn.xml','2017.04')
+        self.__platform = None      
+        self.__mappingIDs = []
         
-        loadButton = tk.Button(text='Load')
-        loadButton.grid(row = 0)
-        drawButton = tk.Button(text='Draw')
-        drawButton.grid(row = 1)
-        clearButton = tk.Button(text='Clear')
-        clearButton.grid(row = 2)
-        settingButton = tk.Button(text='Settings')
-        settingButton.grid(row = 3)
-        exitButton = tk.Button(text='Exit')
-        exitButton.grid(row = 4)
+        self.loadExButton = tk.Button(text='Load Exynos', command=self.__loadExynos)
+        self.loadExButton.grid(sticky='EW', row = 0)
+        self.loadPaButton = tk.Button(text='Load Parallella', command=self.__loadParallella)
+        self.loadPaButton.grid(sticky='EW',row = 1)
+        self.loadMdButton = tk.Button(text='Load MultiDSP', command=self.__loadMultiDSP)
+        self.loadMdButton.grid(sticky='EW',row = 2)
+        self.addMappingButton = tk.Button(text='Add random mapping', state='disabled',command=self.__addRandomMapping)
+        self.addMappingButton.grid(sticky='EW',row = 3)       
+        self.idTextBox = tk.Text(height = 1, width=20, state='disabled')
+        self.idTextBox.grid(sticky='EW',row = 4) 
+        self.removeLastMappingButton = tk.Button(text='Remove last mapping', state='disabled', command=self.__removeLastMapping)
+        self.removeLastMappingButton.grid(sticky='EW',row = 5)
+        self.toggleNamesButton = tk.Button(text='Toggle task names', command=self.parent.drawPanel.drawDevice.toggleTaskNames)
+        self.toggleNamesButton.grid(sticky='EW',row = 6)
+        self.exitButton = tk.Button(text='Exit', command=root.destroy)
+        self.exitButton.grid(sticky='EW',row = 7)
+    
+    def __loadExynos(self):
+        platform =  SlxPlatform('SlxPlatform', '/net/home/teweleit/eclipseWorkspace/pykpn/pykpn/apps/audio_filter/exynos/exynos.platform', '2017.04')
+        self.__platform = platform
+        self.parent.drawPanel.drawDevice.setPlatform(platform)
+        self.parent.drawPanel.drawDevice.drawPlatform()
+        self.loadPaButton['state'] = 'disabled'
+        self.loadMdButton['state'] = 'disabled'
+        self.addMappingButton['state'] = 'normal'
                   
+    def __loadParallella(self):
+        platform =  SlxPlatform('SlxPlatform', '/net/home/teweleit/eclipseWorkspace/pykpn/pykpn/apps/audio_filter/parallella/parallella.platform', '2017.04')
+        self.__platform = platform
+        self.parent.drawPanel.drawDevice.setPlatform(platform)
+        self.parent.drawPanel.drawDevice.drawPlatform()
+        self.loadExButton['state'] = 'disabled'
+        self.loadMdButton['state'] = 'disabled'
+        self.addMappingButton['state'] = 'normal'
+    
+    def __loadMultiDSP(self):
+        platform =  SlxPlatform('SlxPlatform', '/net/home/teweleit/eclipseWorkspace/pykpn/pykpn/apps/audio_filter/multidsp/multidsp.platform', '2017.04')
+        self.__platform = platform
+        self.parent.drawPanel.drawDevice.setPlatform(platform)
+        self.parent.drawPanel.drawDevice.drawPlatform()
+        self.loadExButton['state'] = 'disabled'
+        self.loadPaButton['state'] = 'disabled'
+        self.addMappingButton['state'] = 'normal'
+    
+    def __addRandomMapping(self):
+        mapping = RandomMapping(self.__kpnInstance, self.__platform)
+        mappingID = len(self.__mappingIDs)
+        self.__mappingIDs.append(mappingID)
+        self.parent.drawPanel.drawDevice.addMapping(mapping, mappingID)
+        self.removeLastMappingButton['state'] = 'normal'
+        if len(self.__mappingIDs) > 6:
+            self.addMappingButton['state'] = 'disabled'
+        self.__propertyChanged()
+    
+    def __removeLastMapping(self):
+        mappingID = self.__mappingIDs.pop()
+        self.parent.drawPanel.drawDevice.removeMapping(mappingID)
+        self.addMappingButton['state'] = 'normal'
+        if len(self.__mappingIDs) == 0:
+            self.removeLastMappingButton['state'] = 'disabled'
+        self.__propertyChanged()
+    
+    def __propertyChanged(self):
+        self.idTextBox['state'] = 'normal'
+        self.idTextBox.delete(1.0, tk.END)
+        for mID in self.__mappingIDs:
+            if self.__mappingIDs.index(mID) == 0:
+                self.idTextBox.insert(tk.END, str(mID))
+            else:
+                self.idTextBox.insert(tk.END, ', ' + str(mID))
+        self.idTextBox['state'] = 'disabled'
         
 class drawPanel(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
         self.parent = parent
         self.__canvas = tk.Canvas(width = 800, height = 600)
-        self.__canvas.grid(row = 0, column = 1, rowspan = 5)
-        self.drawDevice = drawAPI(self.__canvas, 5, 15, 800, 600)
+        self.__canvas.grid(row = 0, column = 1, rowspan = 8)
+        self.drawDevice = drawAPI.drawAPI(self.__canvas, 5, 15, 800, 600)
 
        
 class mainWindow(tk.Frame):

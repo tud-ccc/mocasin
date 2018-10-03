@@ -6,7 +6,6 @@ created by Felix Teweleit
 from pykpn.gui.listOperations import listOperations
 from pykpn.gui.platformOperations import platformOperations
 from tkinter.constants import HIDDEN, NORMAL
-import tkinter as tk
 
 class drawAPI():
     '''
@@ -34,6 +33,9 @@ class drawAPI():
         self.__coreDict = {}                          #dictionary, which will hold PE name, start and end points, will be updated during draw Process
         self.__coreClasses = []                       #list which has one entry for every core size
         
+        
+        self.__peHandles = []                         #list to hold the hanvas handles for PEs
+        
         self.__platformDrawn = False
         self.__mappingDrawn = False
         self.__displayTaskNames = True
@@ -46,6 +48,20 @@ class drawAPI():
         self.__mappingNameHandles = []
         
         self.setColorVectors()
+        
+        self.__draggedItemID = None
+        self.__mouseX = None
+        self.__mouseY = None
+        
+        self.__startX = None
+        self.__startY = None
+        
+        self.__radius = None
+        
+        '''
+        disable drag and drop per default because implementation is only half done
+        '''
+        self.__ENABLEDRAGANDDROP = False
           
     '''
     first method that should be called, requires an object of the platform class and sets platform description and equalList
@@ -100,8 +116,7 @@ class drawAPI():
                 continue
             else:
                 self.__mappingDescription[key].update({mappingID : tmpMappingDescription[key]})
-        if self.__mappingDrawn:
-            self.clearMappings()
+        self.clearMappings()
         
         return
     
@@ -181,6 +196,7 @@ class drawAPI():
         matrix = listOperations.convertToMatrix(listOperations, tmpList)
         maxLength = listOperations.getDimension(listOperations, matrix)
         radius = self.__PESize / (2 * maxLength)
+        self.__radius = radius
         
         for key in self.__mappingDescription:
             if bool(self.__mappingDescription[key]):
@@ -195,7 +211,9 @@ class drawAPI():
                         if (currentX + radius) > endPointX:
                             currentY += 2 * radius
                             currentX = startPointX + radius
-                        self.__mappingHandles.append(self.__drawDevice.create_oval(currentX - radius, currentY - radius, currentX + radius, currentY + radius, fill = color))
+                        handle = self.__drawDevice.create_oval(currentX - radius, currentY - radius, currentX + radius, currentY + radius, fill = color)
+                        self.__mappingHandles.append(handle)
+                        self.__drawDevice.tag_bind(handle, "<ButtonPress-1>", self.__onPress)
                         if self.__displayTaskNames:
                             if self.__fontSize != 'default' and isinstance(self.__fontSize, int):
                                 i = self.__drawDevice.create_text(currentX, currentY, font = ('Helvetica', self.__fontSize), text = entry)
@@ -222,6 +240,7 @@ class drawAPI():
             self.__displayTaskNames = True
             for handle in self.__mappingNameHandles:
                 self.__drawDevice.itemconfigure(handle, state = NORMAL)
+        self.clearMappings()
         return
     
     '''
@@ -327,7 +346,6 @@ class drawAPI():
         elif sizeX <= sizePEY and sizeX < self.__PESize:
             self.__PESize = sizeX
         
-        colorPE = self.__resolvePEColor(sizeX)
         colorPrimitive = self.__resolvePlatformColor(colorValue + 1)
         
         i = 0
@@ -348,9 +366,9 @@ class drawAPI():
                 textPointX = endPointX - (endPointX - startPointX)/2
                 
                 if coreSize == 'A15':
-                    self.__drawDevice.create_rectangle(startPointX, startPointPEY, endPointX, endPointPEY, fill = 'snow')
+                    self.__peHandles.append(self.__drawDevice.create_rectangle(startPointX, startPointPEY, endPointX, endPointPEY, fill = 'snow'))
                 else:
-                    self.__drawDevice.create_rectangle(startPointX, startPointPEY, endPointX, endPointPEY, fill = 'antique white')
+                    self.__peHandles.append(self.__drawDevice.create_rectangle(startPointX, startPointPEY, endPointX, endPointPEY, fill = 'antique white'))
                                   
                 if self.__fontSize != 'default' and isinstance(self.__fontSize, int):
                     self.__drawDevice.create_text(textPointX, textPointPEY, font=('Helvetica', self.__fontSize), text = item[1][0], width = sizeX)
@@ -404,7 +422,7 @@ class drawAPI():
                 endPointX = startPointX + sizeX
                 textPointX = endPointX - (endPointX - startPointX)/2
                 
-                self.__drawDevice.create_rectangle(startPointX, startPointY, endPointX, endPointY, fill = color)
+                self.__peHandles.append(self.__drawDevice.create_rectangle(startPointX, startPointY, endPointX, endPointY, fill = color))
                 
                 if self.__fontSize != 'default' and isinstance(self.__fontSize, int):
                     self.__drawDevice.create_text(textPointX, textPointY, font=('Helvetica', self.__fontSize), text = item, width = sizeX)
@@ -516,7 +534,94 @@ class drawAPI():
                 i += 1
         return   
         
+    '''
+    method defines mapping item behavior on left mouse button press
+    '''
+    def __onPress(self, event):
+        if self.__ENABLEDRAGANDDROP:
+            self.__mouseX = event.x
+            self.__mouseY = event.y
         
+            for handle in self.__mappingHandles:
+                coordinates = self.__drawDevice.coords(handle)
+            
+                midX = coordinates[0] + (coordinates[2] - coordinates[0]) / 2
+                midY = coordinates[1] + (coordinates[3] - coordinates[1]) / 2
+            
+            
+                if (self.__mouseX - midX) ** 2 + (self.__mouseY - midY) ** 2 <= self.__radius ** 2:
+                    self.__draggedItemID = handle
+                    self.__startX = midX
+                    self.__startY = midY
+                    break;
+        
+            if not self.__draggedItemID == None:
+                self.__drawDevice.tag_bind(self.__draggedItemID, "<Motion>", self.__onMove)
+                self.__drawDevice.tag_bind(self.__draggedItemID, "<ButtonRelease-1>", self.__onRelease, '+')
+  
+    def __onMove(self, event):
+        x = event.x
+        y = event.y
+        differenceX = x - self.__mouseX
+        differenceY = y - self.__mouseY
+        
+        if differenceX >= 1 or differenceX <= -1:
+            self.__drawDevice.move(self.__draggedItemID, differenceX, 0)
+            if self.__displayTaskNames:
+                self.__drawDevice.move(self.__draggedItemID + 1, differenceX, 0)
+            self.__mouseX = x
+        if differenceY >= 1 or differenceY <= -1:
+            self.__drawDevice.move(self.__draggedItemID, 0, differenceY)
+            if self.__displayTaskNames:
+                self.__drawDevice.move(self.__draggedItemID + 1, 0, differenceY)
+            self.__mouseY = y  
+            
+    def __onRelease(self, event):
+        mappingHandle = self.__draggedItemID
+        
+        self.__drawDevice.tag_unbind(self.__draggedItemID, "<Motion>")
+        self.__drawDevice.tag_unbind(self.__draggedItemID, "<ButtonRelease-1>")
+        self.__drawDevice.tag_bind(self.__draggedItemID, "<ButtonPress-1>", self.__onPress)
+        self.__draggedItemID = None
+        self.__draggedSomething = False
+        
+        coordinates = self.__drawDevice.coords(mappingHandle)
+            
+        midX = coordinates[0] + (coordinates[2] - coordinates[0]) / 2
+        midY = coordinates[1] + (coordinates[3] - coordinates[1]) / 2
+        
+        peHandle = None
+        for handle in self.__peHandles:
+            coordinates = self.__drawDevice.coords(handle)
+            
+            if midX >= coordinates[0] and midX <= coordinates[2] and midY >= coordinates[1] and midY <= coordinates[3]:
+                peHandle = handle
+            else:
+                pass
+        
+        if not peHandle == None:
+            pass
+        else:
+            diffX = self.__startX - midX
+            diffY = self.__startY - midY
+            self.__drawDevice.move(mappingHandle, diffX, diffY)
+            if self.__displayTaskNames:
+                self.__drawDevice.move(mappingHandle + 1, diffX, diffY)                              
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+       
         
         
         

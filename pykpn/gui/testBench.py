@@ -12,8 +12,6 @@ from pykpn.gui.drawAPI import drawAPI
 #parses the platform
 from pykpn.slx.platform import SlxPlatform
 
-#parses the mapping file
-from pykpn.slx.mapping import SlxMapping
 
 #parses the Kpn Graph
 from pykpn.slx.kpn import SlxKpnGraph
