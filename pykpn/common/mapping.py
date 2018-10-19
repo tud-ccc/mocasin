@@ -199,6 +199,19 @@ class Mapping:
         sinks = self._kpn.find_channel(channel.name).sinks
         return [self.affinity(s) for s in sinks]
 
+    def change_affinity(self, processName, processorName):
+        newProcessor = None
+        for processor in self._platform.processors():
+            if processor.name == processorName:
+                newProcessor = processor
+                break
+        if newProcessor != None:
+            priority = self._process_info[processName].priority
+            scheduler = self._process_info[processName].scheduler
+            del self._process_info[processName]
+            self._process_info.update({processName : ProcessMappingInfo(scheduler, newProcessor, priority)})
+        return
+    
     def to_string(self):
         """Convert mapping to a simple readable string 
         :rtype: string 
@@ -232,7 +245,7 @@ class Mapping:
 
         return s
     
-    def to_coreList(self):
+    def to_coreDict(self):
         """added by Felix Teweleit, just returns a dict where
         processing elements are the keys and mapped procs are
         the values

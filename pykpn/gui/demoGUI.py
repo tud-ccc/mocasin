@@ -1,5 +1,4 @@
 #author Felix Teweleit
-
 import sys
 sys.path.append('../..')
 import tkinter as tk
@@ -30,14 +29,15 @@ class controlPanel(tk.Frame):
         self.removeLastMappingButton.grid(sticky='EW',row = 5)
         self.toggleNamesButton = tk.Button(text='Toggle task names', command=self.parent.drawPanel.drawDevice.toggleTaskNames)
         self.toggleNamesButton.grid(sticky='EW',row = 6)
+        self.toggleDaDButton = tk.Button(text='Toggle DaD function', command=self.parent.drawPanel.drawDevice.toggleDragAndDrop)
+        self.toggleDaDButton.grid(sticky='EW',row = 7)
         self.exitButton = tk.Button(text='Exit', command=root.destroy)
-        self.exitButton.grid(sticky='EW',row = 7)
+        self.exitButton.grid(sticky='EW',row = 8)
     
     def __loadExynos(self):
         platform =  SlxPlatform('SlxPlatform', '/net/home/teweleit/eclipseWorkspace/pykpn/pykpn/apps/audio_filter/exynos/exynos.platform', '2017.04')
         self.__platform = platform
         self.parent.drawPanel.drawDevice.setPlatform(platform)
-        self.parent.drawPanel.drawDevice.drawPlatform()
         self.loadPaButton['state'] = 'disabled'
         self.loadMdButton['state'] = 'disabled'
         self.addMappingButton['state'] = 'normal'
@@ -46,7 +46,6 @@ class controlPanel(tk.Frame):
         platform =  SlxPlatform('SlxPlatform', '/net/home/teweleit/eclipseWorkspace/pykpn/pykpn/apps/audio_filter/parallella/parallella.platform', '2017.04')
         self.__platform = platform
         self.parent.drawPanel.drawDevice.setPlatform(platform)
-        self.parent.drawPanel.drawDevice.drawPlatform()
         self.loadExButton['state'] = 'disabled'
         self.loadMdButton['state'] = 'disabled'
         self.addMappingButton['state'] = 'normal'
@@ -55,7 +54,6 @@ class controlPanel(tk.Frame):
         platform =  SlxPlatform('SlxPlatform', '/net/home/teweleit/eclipseWorkspace/pykpn/pykpn/apps/audio_filter/multidsp/multidsp.platform', '2017.04')
         self.__platform = platform
         self.parent.drawPanel.drawDevice.setPlatform(platform)
-        self.parent.drawPanel.drawDevice.drawPlatform()
         self.loadExButton['state'] = 'disabled'
         self.loadPaButton['state'] = 'disabled'
         self.addMappingButton['state'] = 'normal'
@@ -66,7 +64,7 @@ class controlPanel(tk.Frame):
         self.__mappingIDs.append(mappingID)
         self.parent.drawPanel.drawDevice.addMapping(mapping, mappingID)
         self.removeLastMappingButton['state'] = 'normal'
-        if len(self.__mappingIDs) > 6:
+        if len(self.__mappingIDs) > 9:
             self.addMappingButton['state'] = 'disabled'
         self.__propertyChanged()
     
@@ -93,7 +91,7 @@ class drawPanel(tk.Frame):
         tk.Frame.__init__(self, parent, *args, **kwargs)
         self.parent = parent
         self.__canvas = tk.Canvas(width = 800, height = 600)
-        self.__canvas.grid(row = 0, column = 1, rowspan = 8)
+        self.__canvas.grid(row = 0, column = 1, rowspan = 9)
         self.drawDevice = drawAPI.drawAPI(self.__canvas, 5, 15, 800, 600)
 
        
