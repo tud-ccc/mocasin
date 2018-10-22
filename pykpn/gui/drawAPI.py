@@ -7,7 +7,7 @@ class drawAPI():
     """"Main interface for the user to visualize platforms and mapped processes.
     
     :ivar platformInformation __mPlatform: The platform that should be visualized.
-    :ivar dict [int, mappingInformation] __mMappings: dict of processes mapped on the platform
+    :ivar dict {int, mappingInformation} __mMappings: dict of processes mapped on the platform
     :ivar drawManager __mDrawManager: does the actual visualization
     """
     def __init__(self, canvas, border, scaling, width, height,textSpace = 10, fontSize = 'default'):
@@ -26,7 +26,7 @@ class drawAPI():
      
      
     """
-    Functions that can be called by the user.
+    Methods that can be called by the user.
     """
        
     def setPlatform(self, platform):

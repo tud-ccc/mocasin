@@ -4,7 +4,7 @@ from pykpn.gui.utils import platformOperations
 import tkinter as tk
 
 class drawManager():
-    """Handle the user requests send via the drawAPI
+    """Handle the user requests send via the drawAPI.
     :ivar drawAPI __mApiInstance: holds the instance of the api that initialized the manager.
     :ivar Canvas __mCanvas: A Tkinter canvas from the GUI of the user. Everything will be drawn in this canvas.
     :ivar dragAndDropManger __mDragAndDropManager: This manager provides the methods for DaD behavior.
@@ -19,7 +19,7 @@ class drawManager():
     :ivar bool __enableDragAndDrop: State if whether drag and drop feature is enabled or not. Is false by default.
     """
     def __init__(self, apiInstance, canvas, border, scaling, width, height,textSpace = 10, fontSize = 'default'):
-        """Initizalizes a drawManager
+        """Initizalizes a drawManager.
         :param drawAPI apiInstance: Holds the instance of the api that initialized the manager.
         :param Canvas canvas: A Tkinter canvas from the GUI of the user. Everything will be drawn in this canvas.
         :param int border: Defines the space between components of the platform and the canvas edge and between components themselves.
@@ -83,7 +83,7 @@ class drawManager():
         
         i = 0
         for item in toDraw:
-            self.__drawInnerRessource(item, drawWidth, drawHeight, i, 0, 0, len(toDraw))
+            self.__drawInnerRessource(item, drawWidth, drawHeight, i, 0, 0)
             i += 1
 
         return
@@ -312,7 +312,16 @@ class drawManager():
                 i += 1
         return 
 
-    def __drawInnerRessource(self, toDraw, drawWidth, drawHeight, relativeXValue, xIndent, colorValue, amount):      
+    def __drawInnerRessource(self, toDraw, drawWidth, drawHeight, relativeXValue, xIndent, colorValue):      
+        """Draws components, mostly primitives, of the platform. Calls itself recursively as long as there are primitives left.
+        :param list[(str, [str])] toDraw: List that contains tuples with first the name of the primitive an second a list of primitives and or processing
+                                          elements that communicate via this primitive.
+        :param int drawWidth: The width of the canvas left to draw this primitive.
+        :param int drawHeight: The height of the canvas left to draw this primitive.
+        :param int relativeXValue: The amount of components on the same hierarchy level and the same parent primitive that are allready drawn.
+        :param int XIndent: The space taken by components on the same hierarchy level but different parent primitives that are allready drawn.
+        :param int colorValue: An integer used to resolve the color for the primtive. Each level of hierarchy resolves in the same color.
+        """
         border = self.__border
         length = drawWidth - border
         
@@ -368,11 +377,21 @@ class drawManager():
         elif not drawPEs and not drawPEsWithPrimitive:
             i = 0
             for item in toDraw[1]:
-                self.__drawInnerRessource(item, restSizeX, restSizeY, i, relativeXValue * drawWidth, nextColor, len(toDraw[1]))
+                self.__drawInnerRessource(item, restSizeX, restSizeY, i, relativeXValue * drawWidth, nextColor)
                 i += 1
         return
  
     def __drawPEsWithPrimitive(self, toDraw, restSizeX, restSizeY, relativeXValue, colorValue, indentX, indentY, coreName):
+        """Draws the level of the hierarchy on which the processing elements are placed. This method is called of every processing element has its own primitive.
+        :param list[(str, [str])] toDraw: A list of tuples which contains first, the name of the primitive and second a list that contains only the name of the
+                                          processing element.
+        :param int drawWidth: The width of the canvas left to draw this primitive.
+        :param int drawHeight: The height of the canvas left to draw this primitive.
+        :param int relativeXValue: The amount of components on the same hierarchy level and the same parent primitive that are allready drawn.
+        :param int indentX: The space taken by components on the same hierarchy level but different parent primitives that are allready drawn.
+        :param int indentY: Indent to the top border of the canvas, so the processing element structure is drawn on top of the last primitive.
+        :param str coreName: The name of the processing elements. Needed to resolve cores with higher power consumption in differen colors.
+        """
         platform = self.__mApiInstance.getPlatform()
         
         matrix = listOperations.convertToMatrix(listOperations, toDraw)
@@ -432,9 +451,20 @@ class drawManager():
         
         return
     
-    def __drawPEs(self, toDraw, restSizeX, restSizeY, relativeXValue, colorValue, indentX, indentY, noc):
+    def __drawPEs(self, toDraw, restSizeX, restSizeY, relativeXValue, colorValue, indentX, indentY, networkOnChip):
+        """Draws the level of the hierarchy on which the processing elements are placed. This method is called if there are nor further primitives on 
+           in the structure of processing elements.
+        :param list[(str, [str])] toDraw: A list of tuples which contains first, the name of the primitive and second a list that contains only the name of the
+                                          processing element.
+        :param int drawWidth: The width of the canvas left to draw this primitive.
+        :param int drawHeight: The height of the canvas left to draw this primitive.
+        :param int relativeXValue: The amount of components on the same hierarchy level and the same parent primitive that are allready drawn.
+        :param int indentX: The space taken by components on the same hierarchy level but different parent primitives that are allready drawn.
+        :param int indentY: Indent to the top border of the canvas, so the processing element structure is drawn on top of the last primitive.
+        :param bool networkOnChip: Marks if the processing elements communicate through a network on chip to each other.
+        """
         platform = self.__mApiInstance.getPlatform()
-        if not noc:
+        if not networkOnChip:
             try:
                 toDraw = platformOperations.getSortedProcessorScheme(platformOperations, toDraw)
             except:
@@ -473,7 +503,7 @@ class drawManager():
                     self.__mCanvas.create_text(textPointX, textPointY, text = item, width = sizeX)
                 platform.updateCoreDict(item, [startPointX, endPointX, startPointY, endPointY, peHandle])
                 
-                if noc:
+                if networkOnChip:
                     linkRightStartX = endPointX
                     linkRightStartY = endPointY - (endPointY - startPointY)/2
                     linkRightEndX = endPointX + self.__border
@@ -494,7 +524,21 @@ class drawManager():
         return   
     
 class dragAndDropManager():
+    """This manager provides the necessary method for dragging and dropping elements of a canvas.
+    :ivar drawManager __mDrawManager: The drawManager object that created the instance of the dragAndDropManager.
+    :ivar Canvas __mCanvas: The canvas which elements should be dragged and dropped.
+    :ivar drawAPI __mApiInstance: The drawAPI object that created the instance of the drawManager object.
+    :ivar int __startX: If a element is moved this holds the x value of the original position.
+    :ivar int __startY: If a element is moved this holds the y value of the original position.
+    :ivar int __mouseX: Holds the x value of the mouse if an event is handled.
+    :ivar int __mouseY: Holds the y value if the mouse if an event is handled.
+    :ivar int __radius: Holds the radius of the drawn mapping dots.
+    :ivar int __draggedItemId: Holds the handle of the dragged item given by its controlling canvas.
+    """
     def __init__(self, drawManager):
+        """Initializes a dragAndDropManager.
+        :param drawManager drawManager: The drawManager object that initialized the dragAndDropManager.
+        """
         self.__mDrawManager = drawManager
         self.__mCanvas = drawManager.getCanvas()
         self.__mApiInstance = drawManager.getApiInstance()
@@ -503,12 +547,19 @@ class dragAndDropManager():
         self.__mouseX = None
         self.__mouseY = None
         self.__radius = None
-        self.__draggedItemID = None
+        self.__draggedItemId = None
     
     def setRadius(self, radius):
+        """Sets the ivar __radius.
+        :param int radius: The radius of the drawn mapping dots.
+        """
         self.__radius = radius
+        return
     
     def onPress(self, event):
+        """The method that handles the fired event if a mapping dot is pressed with the left mouse button.
+        :param Event event: The event that is fired.
+        """
         if self.__radius == None:
             return
         
@@ -526,7 +577,7 @@ class dragAndDropManager():
                 midY = coordinates[1] + (coordinates[3] - coordinates[1]) / 2
             
                 if (self.__mouseX - midX) ** 2 + (self.__mouseY - midY) ** 2 <= self.__radius ** 2:
-                    self.__draggedItemID = handle
+                    self.__draggedItemId = handle
                     self.__startX = midX
                     self.__startY = midY
                     found = True
@@ -534,34 +585,40 @@ class dragAndDropManager():
             if found:
                 break
         
-        if not self.__draggedItemID == None:
-            self.__mCanvas.tag_bind(self.__draggedItemID, "<Motion>", self.__onMove)
-            self.__mCanvas.tag_bind(self.__draggedItemID, "<ButtonRelease-1>", self.__onRelease, '+')
+        if not self.__draggedItemId == None:
+            self.__mCanvas.tag_bind(self.__draggedItemId, "<Motion>", self.__onMove)
+            self.__mCanvas.tag_bind(self.__draggedItemId, "<ButtonRelease-1>", self.__onRelease, '+')
   
     def __onMove(self, event):
+        """The method that handles the fired event if a mapping dot is dragged and the mouse moves.
+        :param Event event: The event that is fired.
+        """
         x = event.x
         y = event.y
         differenceX = x - self.__mouseX
         differenceY = y - self.__mouseY
         
         if differenceX >= 1 or differenceX <= -1:
-            self.__mCanvas.move(self.__draggedItemID, differenceX, 0)
+            self.__mCanvas.move(self.__draggedItemId, differenceX, 0)
             if self.__mDrawManager.getTaskNameStatus():
-                self.__mCanvas.move(self.__draggedItemID + 1, differenceX, 0)
+                self.__mCanvas.move(self.__draggedItemId + 1, differenceX, 0)
             self.__mouseX = x
         if differenceY >= 1 or differenceY <= -1:
-            self.__mCanvas.move(self.__draggedItemID, 0, differenceY)
+            self.__mCanvas.move(self.__draggedItemId, 0, differenceY)
             if self.__mDrawManager.getTaskNameStatus():
-                self.__mCanvas.move(self.__draggedItemID + 1, 0, differenceY)
+                self.__mCanvas.move(self.__draggedItemId + 1, 0, differenceY)
             self.__mouseY = y  
             
     def __onRelease(self, event):
-        mappingHandle = self.__draggedItemID
+        """The method that handles the fired event if a mapping dot is dragged and the left mouse button is released.
+        :param Event event: The event that is fired.
+        """
+        mappingHandle = self.__draggedItemId
         
-        self.__mCanvas.tag_unbind(self.__draggedItemID, "<Motion>")
-        self.__mCanvas.tag_unbind(self.__draggedItemID, "<ButtonRelease-1>")
-        self.__mCanvas.tag_bind(self.__draggedItemID, "<ButtonPress-1>", self.onPress)
-        self.__draggedItemID = None
+        self.__mCanvas.tag_unbind(self.__draggedItemId, "<Motion>")
+        self.__mCanvas.tag_unbind(self.__draggedItemId, "<ButtonRelease-1>")
+        self.__mCanvas.tag_bind(self.__draggedItemId, "<ButtonPress-1>", self.onPress)
+        self.__draggedItemId = None
         self.__draggedSomething = False
         
         coordinates = self.__mCanvas.coords(mappingHandle)

@@ -1,33 +1,19 @@
 #author Felix Teweleit
 class listOperations(object):
-    '''
-    contains the necessary operations to interpret and convert the input list in a matrix for the later animation
-    '''
-       
-    '''
-    checks if the list contains only items in range of 0 to 10
-    '''
-    @staticmethod
-    def checkList(self, givenList):
-        if not isinstance(givenList, list):
-            return False
-        for i in givenList:
-            if i not in range(10):
-                return False
-        if len(givenList) < 3:
-            return False
-        return True
+    """Class contains custom functions to operate on lists, that are needed to prepare platforms and mappings to be drawn.
+    """
     
-    
-    '''
-    takes a list as parameter and converts it to a square matrix, where the last row maybe will have fewer items 
-    '''
     @staticmethod
     def convertToMatrix(self, givenList):
-        i = 2 #holds the amount of rows and columns for the matrix, minimum is two
+        """Converts a list in a square matrix, represented by a list, that contains a list for each row with an entry for each element in that row.
+        :param list[] givenList: The list that should be converted. The type of elements does not matter.
+        :returns: The matrix represented by a list of lists.
+        :rtype list[list[]]:
+        """
+        i = 2 
         while(i*i < len(givenList)):
             i = i + 1
-        if(i*i == len(givenList)): #in case matrix is a square matrix 
+        if(i*i == len(givenList)): 
             animationMatrix = []
             actualRow = 0
             entryToAdd = 0
@@ -42,10 +28,9 @@ class listOperations(object):
                 animationMatrix.append(tmpList)
             return animationMatrix
         else:
-            #in case matrix is not a square matrix and the last row is not complete, j holds the elements in the last row
             j = 1
             while not ((len(givenList)-j)/i).is_integer():
-                j += 1  #calculate amount of elements in the last row 
+                j += 1
             k = (len(givenList)-j) / i
             animationMatrix = []
             actualRow = 0
@@ -66,13 +51,14 @@ class listOperations(object):
             animationMatrix.append(tmpList)
             return animationMatrix
     
-    
-    '''
-    returns the max dimension of the matrix to calculate the animation raster, j holds the actual dimension
-    for example: for a 3x4 Matrix getDimension would return 4 
-    '''
     @staticmethod
     def getDimension(self, givenMatrix):
+        """Returns the maximal dimension of a matrix.
+        :param list[list[]] givenMatrix: The matrix represented by a list containing a list for each row with an entry for each element in that row.
+                                         The type of the items does not matter.
+        :returns: The maximal dimension of that matrix.
+        :rtype int:
+        """
         j = 1
         for entry in givenMatrix:
             if isinstance(entry, list):
@@ -82,12 +68,14 @@ class listOperations(object):
                 continue
         return j
     
-    
-    '''
-    checks if a list contains somewhere the given item, even if the list contains other lists which may contain the searched item
-    '''
     @staticmethod
     def containsItem(self, givenList, element):
+        """Checks if the given list contains the given element. The element can be in sub-lists or tuples or lists in tuples contained by the given list.
+        :param list[list[], (,list[]), ] givenList: A list consisting of items, lists or tuples containing list. The type of the items does not matter.
+        :param element: The element searched for. The type of the element does not matter.
+        :returns: If the element is somewhere in the given list or not.
+        :rtype bool:
+        """
         if not isinstance(givenList, list) and not isinstance(givenList, tuple):
             if givenList == element:
                 return True
@@ -105,12 +93,13 @@ class listOperations(object):
                     return True
         return False        
             
-            
-    '''
-    calculates the maximal depth of a list that contain more lists
-    '''
     @staticmethod
     def getListDepth(self, givenList):
+        """Calculates the maximal depth of nested lists and tuples in the given list.
+        :param list[list[], ( ,list[]), ]: A list consisting of lists, tuples or items. The type of the items does not matter.
+        :returns: The  maximal depth of nested lists and tuples
+        :rtype int:
+        """
         listDepths=  []
         if not isinstance(givenList, list) and not isinstance(givenList, tuple):
             return 0
@@ -129,40 +118,16 @@ class listOperations(object):
     
     
 class platformOperations (object):
-    '''
-    contains the necessary operations to extract the information from am platform class needed
-    to draw it properly
-    '''
+    """Contains functions to operate on attributes of an pykpn Platform object or created platform descriptions. Necessary for platforms to be drawn.
+    """
     
-    
-    '''
-    takes the processor dictionary of an platform and converts it in tupel with a list for of class of processors and a list of the processors 
-    of each class      
-    '''
     @staticmethod
-    def getProcessorScheme(self, processorDict):
-        recognizedClasses = {}
-        
-        for processor in processorDict:
-            if not processor.type in recognizedClasses:
-                recognizedClasses[processor.type] = []
-                recognizedClasses[processor.type].append(processor.name) 
-            else:
-                recognizedClasses[processor.type].append(processor.name)
-        classes = []
-        processors = []
-        for key in recognizedClasses:
-            classes.append(key)
-            processors.append(recognizedClasses[key])
-        
-        return (classes, processors)
-    
-    
-    '''
-    takes a List of processing units and, if there name includes there index, give them back in an ordered List
-    '''
-    @staticmethod
-    def getSortedProcessorScheme(self, peList):     
+    def getSortedProcessorScheme(self, peList):
+        """Sorts a list of processing elements by there indices if they are contained in there names.
+        :param list[str] peList: List of names of processing elements.
+        :returns: A list containing the same processing elements but now in order if there indices.
+        :rtype list[str]:
+        """     
         processors = []
         for pe in peList:
             tmpList = list(pe)
@@ -192,39 +157,42 @@ class platformOperations (object):
             finalList.append(item[1])
         return finalList
     
-    '''
-    takes a list of processing Elements and returns a list only containing the names of the elements as strings
-    '''
     @staticmethod
     def peToString(self, peList):
+        """Returns a list of just the names of processing elements for a list of pykpn Processors.
+        :param list[Processor]: The list of pykpn Processor objects.
+        :returns: A list of just the names of the Processor objects.
+        :rtype list [str]:
+        """
         stringList = []
         for processor in peList:
             stringList.append(processor.name)
         return stringList
     
-    '''
-    takes a primitive and returns a list, containing all processing units that either consume or produce for this primitive. As an aspect for security you have to also pass a list of processing
-    elements that may can be used by the primitive, otherwise they will not be added to the list
-    '''
     @staticmethod
-    def getMembersOfPrimitive(self, peList, primitive):
+    def getMembersOfPrimitive(self, primitive):
+        """Returns a list of all consumers or producers for a primitive.
+        :param Primitive primitive: The primitive for which the consumers and producers should be found.
+        :returns: A list of processing elements that either produce or consume on this primitive.
+        :rtype list[Processor]:
+        """
         members = []
         for consumer in primitive.consumers:
-            if peList.count(consumer.name) > 0: 
-                if members.count(consumer.name) == 0:
-                    members.append(consumer.name)
+            if members.count(consumer.name) == 0:
+                members.append(consumer.name)
         for producer in primitive.producers:
-            if peList.count(producer.name) > 0:
-                if members.count(producer.name) == 0:
-                    members.append(producer.name)
+            if members.count(producer.name) == 0:
+                members.append(producer.name)
         return members
     
-    '''
-    takes a list of all processing units of the platform and a list of all primitives of the platform and returns a list of tuples, where each tuple consists of the name of the primitive and 
-    the list of included processing units, if a primitive includes all elements of an other primitive the tuple of the second primitive will be included in the list of the first one
-    '''
     @staticmethod
     def getPlatformDescription(self, peList, primitives):
+        """Returns a hierarchic list of tuples where each tuple contains the name of a primitive and a list of minor primitives or processing elements.
+        :param list[Processor] peList: The list of all processing elements of the platform.
+        :param list[Primitive] primitives: A list of all primitives of the platform.
+        :returns: A list of tuples containing primitive names and a list of their minor primitives or processing elements.
+        :rtype list[(str, [(str, [str])])]:  
+        """
         i = 1   
         primitiveStructure = []
         primitives = list(primitives)
@@ -232,7 +200,7 @@ class platformOperations (object):
         while(0 < len(primitives)):
             primitivesCopy = list(primitives)
             for primitive in primitivesCopy:
-                members = self.getMembersOfPrimitive(self, peList, primitive)
+                members = self.getMembersOfPrimitive(self, primitive)
                 if len(members) == i:
                     tempMemberSet = []
                     for member in members:
@@ -263,14 +231,14 @@ class platformOperations (object):
             
         return primitiveStructure
     
-    '''
-    method takes an platform an checks for each primitive if there is an other primitive which connects the same pe's. it returns a list containing lists containing 
-    all primitives that are equal to another
-    '''
     @staticmethod
     def findEqualPrimitives(self, platform):
+        """Find for a platform all primitives which connects exactly the same processing elements.
+        :param Platform platform: A pykpn Platform object.
+        :returns: A list containing lists containing all primitives which connect the same processing elements.
+        :rtype list[list[str]]:
+        """
         primitives = list(platform.primitives())
-        peList = self.peToString(self, platform.processors())
         primitiveList =  []
         for primitive in primitives:
             if primitiveList == []:
@@ -278,7 +246,7 @@ class platformOperations (object):
             else:
                 isInserted = False
                 for item in primitiveList:
-                    if self.getMembersOfPrimitive(self, peList, primitive) == self.getMembersOfPrimitive(self, peList, item[0]):
+                    if self.getMembersOfPrimitive(self, primitive) == self.getMembersOfPrimitive(self, item[0]):
                         item.append(primitive)
                         isInserted = True
                         break
@@ -295,13 +263,12 @@ class platformOperations (object):
                 primitiveNames.append(item.name)
         return primitiveNames
     
-    
-    '''
-    this method takes a platform description and a list generated by the findEqualPrimitives method and merges each primitives that contain the same pe's 
-    together in one primitive
-    '''
     @staticmethod
     def mergeEqualPrimitives(self, platformDescription, equalList):
+        """Merges all primitives that are equal in a platform description into one primitive.
+        :param list[(str, [(str, [str])])] platformDescription: A list of tuples containing primitive names and a list of their minor primitives or processing elements.
+        :param list[list[str]] equalList: A list containing a list which contains all primitives connecting exactly the same processing elements. 
+        """
         copy = platformDescription
         mergedDescription = []
         if isinstance(platformDescription, list):
@@ -338,13 +305,15 @@ class platformOperations (object):
             return mergedDescription        
         else:
             raise RuntimeError('you are trying to merge something, that is rather a list or an tuple. Please stop!')
-    
-    '''
-    this method is basically a wrapper for the organizePEs method, it just searches for the noc entry platform
-    description and then calls the organizePEs method on this entry
-    '''    
+       
     @staticmethod
     def createNocMatrix(self, platformDescription, platform):
+        """Searches for the network on chip component in a platform and organizes the processing elements on it.
+        :param list[(str, [(str, [str])])] platformDescription: A list of tuples containing primitive names and a list of their minor primitives or processing elements.
+        :param Platform platform: A pykpn Platform object.
+        :returns: A platform description that lists of processing elements are ready to be drawn.
+        :rtype list[(str, [(str, [str])])]:
+        """
         newDescription = []
         for element in platformDescription:
             if isinstance(element, tuple):
@@ -358,12 +327,15 @@ class platformOperations (object):
                 newDescription.append(element)
         return newDescription
     
-    '''
-    this method creates a list of PEs which can be later converted in to a Matrix via the convertToMatrix method in the list operation class. Each PE will be located next to the
-    PEs it has i physical link to
-    '''
     @staticmethod
     def organizePEs(self, peList, adjacencyDict):
+        """Organizes the processing elements in the given list in a way, that every processing element has a physical link to its neighbor.
+        :param list[str] peList: List of names of processing elements.
+        :param dict{str, (str, int)} adjacencyDict: Dictionary with names of processing elements as key and tuples of names of processing elements and there communications costs
+                                                    between each other.
+        :returns: A list of processing elements where every processing element has a physical link to its neighbor.
+        :rtype list[str]:
+        """
         peValues = []
         for entry in adjacencyDict:
             if listOperations.containsItem(listOperations, peList, entry):
@@ -437,11 +409,14 @@ class platformOperations (object):
                 continue
         return organizedPEs
 
-    '''
-    help function to determine which PE has the most physical links in to the existing noc structure
-    '''
     @staticmethod
     def lovedNeighbor(self, candidates, domicile):
+        """Calculates which of the processing elements have the most neighbors.
+        :param list[str] candidates: List of names of processing elements.
+        :param list[str] domicile: List of names of all processing elements of the platform.
+        :returns: Name of the processing element with the most neighbors.
+        :rtype str:
+        """
         amountOfNeighbors = []
         for candidate in candidates:
             i = 0
