@@ -2,6 +2,8 @@
 from pykpn.gui.utils import listOperations
 from pykpn.gui.utils import platformOperations
 import tkinter as tk
+from scipy.signal._arraytools import even_ext
+from tkinter import messagebox
 
 class drawManager():
     """Handle the user requests send via the drawAPI.
@@ -133,8 +135,8 @@ class drawManager():
                             currentX = startPointX + radius
                         circleHandle = self.__mCanvas.create_oval(currentX - radius, currentY - radius, currentX + radius, currentY + radius, fill = color)
                         self.__mApiInstance.getMappings()[innerKey].addCircleHandle(circleHandle)
-                        if self.__enableDragAndDrop:
-                            self.__mCanvas.tag_bind(circleHandle, "<ButtonPress-1>", self.__mDragAndDropManager.onPress)
+                        
+                        nameHandle = None
                         if self.__displayTaskNames:
                             if self.__fontSize != 'default' and isinstance(self.__fontSize, int):
                                 nameHandle = self.__mCanvas.create_text(currentX, currentY, font = ('Helvetica', self.__fontSize), text = entry)
@@ -147,6 +149,10 @@ class drawManager():
                             else:
                                 nameHandle = self.__mCanvas.create_text(currentX, currentY, text = entry, state = tk.HIDDEN)
                             self.__mApiInstance.getMappings()[innerKey].addNameHandle(nameHandle, entry)
+                            
+                        if self.__enableDragAndDrop and nameHandle != None:
+                            self.__mCanvas.tag_bind(circleHandle, "<ButtonPress-1>", self.__mDragAndDropManager.onPressDot)
+                            self.__mCanvas.tag_bind(nameHandle, "<ButtonPress-1>", self.__mDragAndDropManager.onPressName)
                         currentX += (2 * radius)
             
             else:
@@ -189,11 +195,17 @@ class drawManager():
             for key in mappingDict:
                 for handle in mappingDict[key].getCircleHandles():
                     self.__mCanvas.tag_unbind(handle, '<ButtonPress-1>')
+                    
+                for innerKey in mappingDict[key].getNameHandles():
+                    self.__mCanvas.tag_unbind(innerKey, '<ButtonPress-1>')
         else:
             self.__enableDragAndDrop = True
             for key in mappingDict:
                 for handle in mappingDict[key].getCircleHandles():
-                    self.__mCanvas.tag_bind(handle, '<ButtonPress-1>', self.__mDragAndDropManager.onPress)
+                    self.__mCanvas.tag_bind(handle, '<ButtonPress-1>', self.__mDragAndDropManager.onPressDot)
+                
+                for innerKey in mappingDict[key].getNameHandles():
+                    self.__mCanvas.tag_bind(innerKey, '<ButtonPress-1>', self.__mDragAndDropManager.onPressName)
         return
     
     def getApiInstance(self):
@@ -556,7 +568,7 @@ class dragAndDropManager():
         self.__radius = radius
         return
     
-    def onPress(self, event):
+    def onPressDot(self, event):
         """The method that handles the fired event if a mapping dot is pressed with the left mouse button.
         :param Event event: The event that is fired.
         """
@@ -588,7 +600,13 @@ class dragAndDropManager():
         if not self.__draggedItemId == None:
             self.__mCanvas.tag_bind(self.__draggedItemId, "<Motion>", self.__onMove)
             self.__mCanvas.tag_bind(self.__draggedItemId, "<ButtonRelease-1>", self.__onRelease, '+')
-  
+    
+    def onPressName(self, event):
+        self.onPressDot(event)
+        self.__mCanvas.tag_bind(self.__draggedItemId + 1, "<Motion>", self.__onMove)
+        self.__mCanvas.tag_bind(self.__draggedItemId + 1, "<ButtonRelease-1>", self.__onRelease, '+')
+
+    
     def __onMove(self, event):
         """The method that handles the fired event if a mapping dot is dragged and the mouse moves.
         :param Event event: The event that is fired.
@@ -617,7 +635,10 @@ class dragAndDropManager():
         
         self.__mCanvas.tag_unbind(self.__draggedItemId, "<Motion>")
         self.__mCanvas.tag_unbind(self.__draggedItemId, "<ButtonRelease-1>")
-        self.__mCanvas.tag_bind(self.__draggedItemId, "<ButtonPress-1>", self.onPress)
+        self.__mCanvas.tag_unbind(self.__draggedItemId + 1, "<Motion>")
+        self.__mCanvas.tag_unbind(self.__draggedItemId + 1, "<ButtonRelease-1>")
+        self.__mCanvas.tag_bind(self.__draggedItemId, "<ButtonPress-1>", self.onPressDot)
+        self.__mCanvas.tag_bind(self.__draggedItemId + 1, "<ButtonPress-1>", self.onPressName)
         self.__draggedItemId = None
         self.__draggedSomething = False
         
