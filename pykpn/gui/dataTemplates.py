@@ -112,10 +112,10 @@ class platformInformation():
         """
         description = platformOperations.getPlatformDescription(platformOperations, platformObject.processors(), platformObject.primitives())    
         
-        #check if this platform contains a network on chip
-        networkOnChip = False
         self.__mEqualList = platformOperations.findEqualPrimitives(platformOperations, platformObject)
         description = platformOperations.mergeEqualPrimitives(platformOperations, description, self.__mEqualList) 
+        
+        networkOnChip = False
         for equalSheet in self.__mEqualList:
             if len(equalSheet) > 2:
                     networkOnChip = True
