@@ -2,8 +2,6 @@
 from pykpn.gui.utils import listOperations
 from pykpn.gui.utils import platformOperations
 import tkinter as tk
-from scipy.signal._arraytools import even_ext
-from tkinter import messagebox
 
 class drawManager():
     """Handle the user requests send via the drawAPI.
@@ -46,6 +44,8 @@ class drawManager():
         self.__displayTaskNames = True
         self.__enableDragAndDrop = False
         
+        self.__drawnCrosses = []
+        
         self.setColorVectors()
     
     def setColorVectors(self, platformColors = ['default'], mappingColors = ['default'], peColors = ['default']):
@@ -76,25 +76,40 @@ class drawManager():
         self.__mappingColors.append(color)
         return
     
-    def drawPlatform(self):
+    def drawPlatform(self, drawOnlyPEs):
         """Draws the platform given to the api with the given canvas.
+        :param bool drawOnlyPEs: Defines if the hole platform or just the PEs should be drawn
         """
         toDraw = self.__mApiInstance.getPlatform().getPlatformDescription()
         drawWidth = self.__drawWidth / len(toDraw)
         drawHeight = self.__drawHeight
         
-        i = 0
-        for item in toDraw:
-            self.__drawInnerRessource(item, drawWidth, drawHeight, i, 0, 0)
-            i += 1
-
+        if not drawOnlyPEs:
+            i = 0
+            for item in toDraw:
+                self.__drawInnerRessource(item, drawWidth, drawHeight, i, 0, 0)
+                i += 1
+        else:
+            i = 0
+            for item in toDraw:
+                self.__skipInnerRessource(item, drawWidth, drawHeight, i, 0, 0)
+                i += 1
         return
     
     def drawMappings(self):
-        """Draw every applied mapping, with the given canvas, in the processing elements of the platform.
+        """Draw every applied mapping and marks used cores in the processing elements of the platform.
         """
         self.clearMappings()
         coreUsage = self.__createCoreUsage()
+        
+        for coreName in self.__mApiInstance.getUsedCores():
+            startPointX = self.__mApiInstance.getPlatform().getCoreDict()[coreName][0]
+            startPointY = self.__mApiInstance.getPlatform().getCoreDict()[coreName][2]
+            endPointX = self.__mApiInstance.getPlatform().getCoreDict()[coreName][1]
+            endPointY = self.__mApiInstance.getPlatform().getCoreDict()[coreName][3]
+            
+            self.__drawnCrosses.append(self.__mCanvas.create_line(startPointX, startPointY, endPointX, endPointY, width = 4, fill = 'red'))
+            self.__drawnCrosses.append(self.__mCanvas.create_line(startPointX, endPointY, endPointX, startPointY, width = 4, fill = 'red'))
         
         keyWithMostProcs = None
         mostProcs = 0
@@ -161,8 +176,10 @@ class drawManager():
         return    
     
     def clearMappings(self):
-        """Deletes all mappings drawn by the given canvas.
+        """Deletes all mappings and core marks drawn.
         """
+        for handle in self.__drawnCrosses:
+            self.__mCanvas.delete(handle)
         mappingDict = self.__mApiInstance.getMappings()
         for key in mappingDict:
             for handle in mappingDict[key].getCircleHandles():
@@ -378,9 +395,9 @@ class drawManager():
             else:
                 yIndent = 0
             if drawPEs and (toDraw[0] == 'network_on_chip'):
-                self.__drawPEs(toDraw[1], drawWidth, restSizeY, relativeXValue, nextColor, xIndent + relativeXValue * (length + border), yIndent, True)
+                self.__drawPEs(toDraw[1], drawWidth, restSizeY, relativeXValue, xIndent + relativeXValue * (length + border), yIndent, True)
             elif drawPEs:
-                self.__drawPEs(toDraw[1], drawWidth, restSizeY, relativeXValue, nextColor, xIndent + relativeXValue * (length + border), yIndent, False)
+                self.__drawPEs(toDraw[1], drawWidth, restSizeY, relativeXValue, xIndent + relativeXValue * (length + border), yIndent, False)
             elif drawPEsWithPrimitive:
                 self.__drawPEsWithPrimitive(toDraw[1], drawWidth, restSizeY, relativeXValue, nextColor, xIndent + relativeXValue * (length + border), yIndent, toDraw[0].split('_')[2])
             else:
@@ -390,6 +407,56 @@ class drawManager():
             i = 0
             for item in toDraw[1]:
                 self.__drawInnerRessource(item, restSizeX, restSizeY, i, relativeXValue * drawWidth, nextColor)
+                i += 1
+        return
+    
+    def __skipInnerRessource(self, toDraw, drawWidth, drawHeight, relativeXValue, xIndent, colorValue):
+        """ 
+        :param list[(str, [str])] toDraw: List that contains tuples with first the name of the primitive an second a list of primitives and or processing
+                                          elements that communicate via this primitive.
+        :param int drawWidth: The width of the canvas left to draw this primitive.
+        :param int drawHeight: The height of the canvas left to draw this primitive.
+        :param int relativeXValue: The amount of components on the same hierarchy level and the same parent primitive that are allready drawn.
+        :param int XIndent: The space taken by components on the same hierarchy level but different parent primitives that are allready drawn.
+        :param int colorValue: An integer used to resolve the color for the primtive if there is a primitive on the PE level. Each level of hierarchy resolves 
+                                in the same color.
+        """
+        border = self.__border
+        restSizeX = drawWidth / len(toDraw[1])
+        restSizeY = drawHeight
+        length = drawWidth - border
+        
+        drawPEs = True
+        for item in toDraw[1]:
+            if isinstance(item, tuple):
+                drawPEs = False
+                
+        drawPEsWithPrimitive = True
+        for item in toDraw[1]:
+            if not isinstance(item, tuple) or len(item[1]) > 1:
+                drawPEsWithPrimitive = False
+        
+        nextColor = colorValue + 1
+        
+        if drawPEs or drawPEsWithPrimitive:
+            if drawWidth < drawHeight:
+                yIndent = drawHeight - drawWidth
+                restSizeY = drawWidth
+            else:
+                yIndent = 0
+            if drawPEs and (toDraw[0] == 'network_on_chip'):
+                self.__drawPEs(toDraw[1], drawWidth, restSizeY, relativeXValue, xIndent + relativeXValue * (length + border), yIndent, True)
+            elif drawPEs:
+                self.__drawPEs(toDraw[1], drawWidth, restSizeY, relativeXValue, xIndent + relativeXValue * (length + border), yIndent, False)
+            elif drawPEsWithPrimitive:
+                self.__drawPEsWithPrimitive(toDraw[1], drawWidth, restSizeY, relativeXValue, nextColor, xIndent + relativeXValue * (length + border), yIndent, toDraw[0].split('_')[2])
+            else:
+                raise(RuntimeWarning('There is no known primitive Structure to draw'))
+        
+        elif not drawPEs and not drawPEsWithPrimitive:
+            i = 0
+            for item in toDraw[1]:
+                self.__skipInnerRessource(item, restSizeX, drawHeight, i, relativeXValue * drawWidth, nextColor)
                 i += 1
         return
  
@@ -463,7 +530,7 @@ class drawManager():
         
         return
     
-    def __drawPEs(self, toDraw, restSizeX, restSizeY, relativeXValue, colorValue, indentX, indentY, networkOnChip):
+    def __drawPEs(self, toDraw, restSizeX, restSizeY, relativeXValue, indentX, indentY, networkOnChip):
         """Draws the level of the hierarchy on which the processing elements are placed. This method is called if there are nor further primitives on 
            in the structure of processing elements.
         :param list[(str, [str])] toDraw: A list of tuples which contains first, the name of the primitive and second a list that contains only the name of the

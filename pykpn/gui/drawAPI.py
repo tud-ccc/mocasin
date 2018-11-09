@@ -7,8 +7,9 @@ class drawAPI():
     """"Main interface for the user to visualize platforms and mapped processes.
     
     :ivar platformInformation __mPlatform: The platform that should be visualized.
-    :ivar dict {int, mappingInformation} __mMappings: dict of processes mapped on the platform
-    :ivar drawManager __mDrawManager: does the actual visualization
+    :ivar dict {int, mappingInformation} __mMappings: Dict of processes mapped on the platform.
+    :ivar list [str] __usedCores: List of cores which are already in use by other processes. 
+    :ivar drawManager __mDrawManager: Does the actual visualization.
     """
     def __init__(self, canvas, border, scaling, width, height,textSpace = 10, fontSize = 'default'):
         """"Initialize the api.
@@ -22,6 +23,7 @@ class drawAPI():
         """
         self.__mPlatform = None
         self.__mMappings = {}
+        self.__usedCores = []
         self.__mDrawManager = drawManager(self, canvas, border, scaling, width, height,textSpace = 10, fontSize = 'default')
      
      
@@ -29,17 +31,18 @@ class drawAPI():
     Methods that can be called by the user.
     """
        
-    def setPlatform(self, platform):
+    def setPlatform(self, platform, drawOnlyPEs = False):
         """Analysis and draws the given platform.
         :param SlxPlatform platform: The pykpn platform object.
+        :param bool drawOnlyPEs: Defines if the drawManager should only draw the PEs of the platform
         """ 
         if self.__mPlatform == None:
             self.__mPlatform = platformInformation(platform)
-            self.__mDrawManager.drawPlatform()
         else:
             self.__mMappings.clear()
             self.__mPlatform = platformInformation(platform)
-            self.__mDrawManager.drawPlatform()
+        
+        self.__mDrawManager.drawPlatform(drawOnlyPEs)
         return
 
     def addMapping(self, mapping, mappingID, color = 'default'):
@@ -82,7 +85,23 @@ class drawAPI():
             self.__mDrawManager.addingAvailableColor(color)
             del self.__mMappings[mappingID]
             self.__mDrawManager.drawMappings()
-        return    
+        return
+    
+    def setUsedCores(self, coreList):
+        """Set the list of processing elements that are already used by a process.
+        :param list[str]: The names of processing elements which should be added. 
+        """
+        self.__usedCores = coreList
+        self.__mDrawManager.clearMappings()
+        self.__mDrawManager.drawMappings()
+        return
+    
+    def getUsedCores(self):
+        """Returns the list of processing elements already used by a process.
+        :returns: A list containing the names of the processing elements.
+        :rtype list[str]:
+        """
+        return self.__usedCores
     
     def setColorVectors(self, platformVector = ['default'], mappingVector = ['default'], peVector = ['default']):
         """Set custom default colors for platform components, mappings and processing elements.

@@ -200,6 +200,10 @@ class Mapping:
         return [self.affinity(s) for s in sinks]
 
     def change_affinity(self, processName, processorName):
+        """Changes the affinity of a process to a processing element
+        :param string processName: the name of the process for which the affinity should be changed
+        :param string processorName: the name of the processor to which the process should be applied 
+        """
         newProcessor = None
         for processor in self._platform.processors():
             if processor.name == processorName:
@@ -246,9 +250,9 @@ class Mapping:
         return s
     
     def to_coreDict(self):
-        """added by Felix Teweleit, just returns a dict where
-        processing elements are the keys and mapped procs are
-        the values
+        """Returns a dict where the Names of processing elements are the keys and 
+            mapped processes are the values
+        :rtype dict[string, string]:
         """
         procs_list = self._kpn.processes()
         pes_list = self._platform.processors()
