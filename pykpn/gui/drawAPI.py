@@ -7,6 +7,7 @@ class drawAPI():
     """"Main interface for the user to visualize platforms and mapped processes.
     
     :ivar platformInformation __mPlatform: The platform that should be visualized.
+    :ivar bool __drawOnlyPEs: States if the whole
     :ivar dict {int, mappingInformation} __mMappings: Dict of processes mapped on the platform.
     :ivar list [str] __usedCores: List of cores which are already in use by other processes. 
     :ivar drawManager __mDrawManager: Does the actual visualization.
@@ -22,6 +23,7 @@ class drawAPI():
         :param int fontSize: The size of the font all names are displayed in.
         """
         self.__mPlatform = None
+        self.__drawOnlyPEs = None
         self.__mMappings = {}
         self.__usedCores = []
         self.__mDrawManager = drawManager(self, canvas, border, scaling, width, height,textSpace = 10, fontSize = 'default')
@@ -43,6 +45,7 @@ class drawAPI():
             self.__mPlatform = platformInformation(platform)
         
         self.__mDrawManager.drawPlatform(drawOnlyPEs)
+        self.__drawOnlyPEs = drawOnlyPEs
         return
 
     def addMapping(self, mapping, mappingID, color = 'default'):
@@ -115,6 +118,19 @@ class drawAPI():
         """Hides or shows the names of the tasks of a applied mapping.
         """
         self.__mDrawManager.toggleTaskNames()
+    
+    def togglePENames(self):
+        """Hides or shows the names of the processing elements. Redraws everything on the canvas after call.
+        """
+        self.__mDrawManager.togglePENames()
+        
+        if self.__mPlatform != None:
+            self.__mPlatform.clearHandles()
+        
+        if self.__drawOnlyPEs != None:
+            self.__mDrawManager.drawPlatform(self.__drawOnlyPEs)
+            self.__mDrawManager.drawMappings()
+        
     
     def toggleDragAndDrop(self):
         """Enables or disables the editing of mappings via drag and drop.

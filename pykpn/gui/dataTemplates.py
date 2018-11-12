@@ -172,7 +172,11 @@ class platformInformation():
         :rtype dict{str, list[int]}
         """
         return self.__coreDictionary
-        
+    
+    def clearHandles(self):
+        """Clears the dictionary containing all information about the drawn cores in case the platform has to be redrawn
+        """
+        self.__coreDictionary.clear() 
         
         
         
