@@ -16,7 +16,9 @@ class drawManager():
     :ivar int __fontSize: The size of the font all names are displayed in.
     :ivar int __minimalPeSize: The minimal of the height or width of all processing elements.
     :ivar bool __displayTaskNames: States if whether names of task should be displayed or not. Is true by default.
+    :ivar bool __displayPENames: States if whether the names of the processing elements should be displayed or not. Is true by default.
     :ivar bool __enableDragAndDrop: State if whether drag and drop feature is enabled or not. Is false by default.
+    :ivar list [int] __drawnCrosses: Holds the handles of each cross drawn for a already used core. 
     """
     def __init__(self, apiInstance, canvas, border, scaling, width, height,textSpace = 10, fontSize = 'default'):
         """Initizalizes a drawManager.
@@ -42,6 +44,7 @@ class drawManager():
         self.__minimalPeSize = height
         
         self.__displayTaskNames = True
+        self.__displayPENames = True
         self.__enableDragAndDrop = False
         
         self.__drawnCrosses = []
@@ -202,6 +205,18 @@ class drawManager():
             self.__displayTaskNames = True
             self.drawMappings()
         return
+    
+    def togglePENames(self):
+        """Hides or shows the names of the processing elements. Clears the complete canvas because the platform has
+            to been redrawn after the call of this method.
+        """
+        if self.__displayPENames:
+            self.__displayPENames = False
+            self.clearMappings()
+        else:
+            self.__displayPENames = True
+            self.clearMappings()
+        self.__mCanvas.delete('all')
     
     def toggleDragAndDrop(self):
         """Enables or disables the editing of mappings via drag and drop.
@@ -514,16 +529,16 @@ class drawManager():
                 else:
                     peHandle = self.__mCanvas.create_rectangle(startPointX, startPointPEY, endPointX, endPointPEY, fill = 'antique white')
                                   
-                if self.__fontSize != 'default' and isinstance(self.__fontSize, int):
+                if self.__fontSize != 'default' and isinstance(self.__fontSize, int) and self.__displayPENames:
                     self.__mCanvas.create_text(textPointX, textPointPEY, font=('Helvetica', self.__fontSize), text = item[1][0], width = sizeX)
-                else:
+                elif self.__displayPENames:
                     self.__mCanvas.create_text(textPointX, textPointPEY, text = item[1][0], width = sizeX)
                 platform.updateCoreDict(item[1][0], [startPointX, endPointX, startPointPEY, endPointPEY, peHandle])
                 
                 self.__mCanvas.create_rectangle(startPointX, startPointPrimitiveY, endPointX, endPointPrimitiveY, fill = colorPrimitive)
-                if self.__fontSize != 'default' and isinstance(self.__fontSize, int):
+                if self.__fontSize != 'default' and isinstance(self.__fontSize, int) and self.__displayPENames:
                     self.__mCanvas.create_text(textPointX, textPointPrimitiveY, font=('Helvetica', self.__fontSize), text = item[0], width = sizeX)
-                else:
+                elif self.__displayPENames:
                     self.__mCanvas.create_text(textPointX, textPointPrimitiveY, text = item[0], width = sizeX)
                 j += 1
             i += 1
@@ -576,9 +591,9 @@ class drawManager():
                 
                 peHandle = self.__mCanvas.create_rectangle(startPointX, startPointY, endPointX, endPointY, fill = color)
                 
-                if self.__fontSize != 'default' and isinstance(self.__fontSize, int):
+                if self.__fontSize != 'default' and isinstance(self.__fontSize, int) and self.__displayPENames:
                     self.__mCanvas.create_text(textPointX, textPointY, font=('Helvetica', self.__fontSize), text = item, width = sizeX)
-                else:
+                elif self.__displayPENames:
                     self.__mCanvas.create_text(textPointX, textPointY, text = item, width = sizeX)
                 platform.updateCoreDict(item, [startPointX, endPointX, startPointY, endPointY, peHandle])
                 
@@ -725,7 +740,7 @@ class dragAndDropManager():
             else:
                 pass
         
-        if not peName == None:
+        if not peName == None and not peName in self.__mApiInstance.getUsedCores() :
             mappingToChange = None
             mappings = self.__mApiInstance.getMappings()
             for key in mappings:
