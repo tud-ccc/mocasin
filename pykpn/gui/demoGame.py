@@ -1,7 +1,6 @@
+import sys
 import tkinter as tk
 from pykpn.slx.platform import SlxPlatform
-from pykpn.slx.kpn import SlxKpnGraph
-from pykpn.mapper.random import RandomMapping
 from pykpn.gui.tetrisEngine import tetrisEngine
 from pykpn.gui.testSuite import dataProvider
 
@@ -9,10 +8,20 @@ class controlPanel(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
         self.parent = parent
-        self.__kpnInstance = SlxKpnGraph('SlxKpnGraph','/net/home/teweleit/eclipseWorkspace/pykpn/pykpn/apps/audio_filter.cpn.xml','2017.04')
         self.__platform = None      
         self.__mappingIDs = []
         self.__choices =  {'default', 'mainPanel', 'optionPanel'}
+        
+        gettrace = getattr(sys, 'gettrace', None)
+        self.__path = None
+        if gettrace is None:
+            self.__path = sys.path[1] + "/apps/audio_filter.cpn.xml"
+        elif gettrace():
+            """In case of an attached debugger the sys.path list will change
+            """
+            self.__path = sys.path[2] + "/apps"
+        else:
+            self.__path = sys.path[1] + "/apps"
         
         self.loadExButton = tk.Button(self, text='Load Exynos', command=self.__loadExynos)
         self.loadExButton.grid(sticky='EW', row = 0, column = 0, columnspan=2)
@@ -23,7 +32,7 @@ class controlPanel(tk.Frame):
         self.loadMdButton = tk.Button(self, text='Load MultiDSP', command=self.__loadMultiDSP)
         self.loadMdButton.grid(sticky='EW',row = 2, column = 0, columnspan=2) 
         
-        self.provideButton = tk.Button(self, text='Provide options', command=self.__provideOptions, state='disabled')
+        self.provideButton = tk.Button(self, text='Provide options', command=self.provideOptions, state='disabled')
         self.provideButton.grid(sticky='EW', row=3, column=0, columnspan=2)
         
         self.__tnTarget = tk.StringVar(self)
@@ -51,10 +60,10 @@ class controlPanel(tk.Frame):
         self.ExitButton.grid(sticky='EW',row = 7, column = 0, columnspan=2)
         
     def __loadExynos(self):
-        platform =  SlxPlatform('SlxPlatform', '/net/home/teweleit/eclipseWorkspace/pykpn/pykpn/apps/audio_filter/exynos/exynos.platform', '2017.04')
-        self.parent.initialMapping = RandomMapping(self.__kpnInstance, platform)
-        self.parent.engineInstance.setPlatform(platform, self.parent.initialMapping)
+        platform =  SlxPlatform('SlxPlatform', self.__path + '/audio_filter/exynos/exynos.platform', '2017.04')
         self.parent.mDataProvider = dataProvider(platform)
+        self.parent.initialMapping = self.parent.mDataProvider.generateRandomMapping()
+        self.parent.engineInstance.setPlatform(platform, self.parent.initialMapping)
         for key in self.parent.initialMapping.to_coreDict():
             if self.parent.initialMapping.to_coreDict()[key] != []:
                 self.parent.usedCores.append(key)
@@ -67,10 +76,10 @@ class controlPanel(tk.Frame):
         self.toggleTNButton['state'] = 'normal'
                   
     def __loadParallella(self):
-        platform =  SlxPlatform('SlxPlatform', '/net/home/teweleit/eclipseWorkspace/pykpn/pykpn/apps/audio_filter/parallella/parallella.platform', '2017.04')
-        self.parent.initialMapping = RandomMapping(self.__kpnInstance, platform)
-        self.parent.engineInstance.setPlatform(platform, self.parent.initialMapping)
+        platform =  SlxPlatform('SlxPlatform', self.__path + '/audio_filter/parallella/parallella.platform', '2017.04')
         self.parent.mDataProvider = dataProvider(platform)
+        self.parent.initialMapping = self.parent.mDataProvider.generateRandomMapping()
+        self.parent.engineInstance.setPlatform(platform, self.parent.initialMapping)
         for key in self.parent.initialMapping.to_coreDict():
             if self.parent.initialMapping.to_coreDict()[key] != []:
                 self.parent.usedCores.append(key)
@@ -83,10 +92,10 @@ class controlPanel(tk.Frame):
         self.toggleTNButton['state'] = 'normal'
     
     def __loadMultiDSP(self):
-        platform =  SlxPlatform('SlxPlatform', '/net/home/teweleit/eclipseWorkspace/pykpn/pykpn/apps/audio_filter/multidsp/multidsp.platform', '2017.04')
-        self.parent.initialMapping = RandomMapping(self.__kpnInstance, platform)
-        self.parent.engineInstance.setPlatform(platform, self.parent.initialMapping)
+        platform =  SlxPlatform('SlxPlatform', self.__path + '/audio_filter/multidsp/multidsp.platform', '2017.04')
         self.parent.mDataProvider = dataProvider(platform)
+        self.parent.initialMapping = self.parent.mDataProvider.generateRandomMapping()
+        self.parent.engineInstance.setPlatform(platform, self.parent.initialMapping)
         for key in self.parent.initialMapping.to_coreDict():
             if self.parent.initialMapping.to_coreDict()[key] != []:
                 self.parent.usedCores.append(key)
@@ -98,11 +107,11 @@ class controlPanel(tk.Frame):
         self.togglePENButton['state'] = 'normal'
         self.toggleTNButton['state'] = 'normal'
         
-    def __provideOptions(self):
+    def provideOptions(self):
         options = []
         i = 0
         while i < self.parent.possibleOptions:
-            options.append(self.parent.mDataProvider.generatePossibleMapping(self.parent.engineInstance.getUsedCores()))
+            options.append(self.parent.mDataProvider.generateRandomMapping())
             i += 1
         self.parent.engineInstance.setMappingOption(options)
     
@@ -127,12 +136,14 @@ class mainWindow(tk.Frame):
         self.mControlPanel = controlPanel(self) 
         self.mControlPanel.grid(row = 0, column = 0, sticky = 'NSEW')
         self.gameFrame = tk.Frame(self, width = 1200, height = 800)
-        self.engineInstance = tetrisEngine(self.gameFrame, 1200, 800, self.possibleOptions)
+        self.engineInstance = tetrisEngine(self.gameFrame, 1200, 800, self.possibleOptions, self.myCallback)
         self.engineInstance.toggleTaskNames('optionPanel')
         self.engineInstance.togglePENames('optionPanel')
         self.engineInstance.toggleDragAndDrop('mainPanel')
         self.gameFrame.grid(row = 0, column = 1)
         
+    def myCallback(self):
+        self.mControlPanel.provideOptions()
     
 
 if __name__ == '__main__':

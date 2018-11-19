@@ -10,12 +10,13 @@ class tetrisEngine():
     :ivar tetrisPanel __mTetrisPanel: The main panel which draws the whole platform and all applied mappings.
     :ivar int __optionAmount: Saves the given amount of possible options.
     """
-    def __init__(self, tkFrame, width, height, optionAmount):
+    def __init__(self, tkFrame, width, height, optionAmount, callback = None):
         """Initializes the engine.
         :param tkinter.Frame tkFrame: The frame of the Tkinter Window in which the game will be played.
         :param int width: The width of the frame.
         :param int height: The height of the frame.
         :param int optionAmount: The amount of different mappings that will be available at  one time.
+        :param func callback: A callback function from outside the application that will be called after a mapping is finalized.
         """
         self.__panelMatrix = None
         dimension = self.__createOptionPanel(optionAmount, tkFrame, height, width)
@@ -23,6 +24,7 @@ class tetrisEngine():
         tkFrame.bind("<Key>", self.__keyPressed)
         self.__mTetrisPanel = tetrisPanel(tkFrame, width, height, dimension)
         self.__optionAmount = optionAmount
+        self.__callbackFunc = callback
     
     def setPlatform(self, platform, mapping = None):
         """Sets the platform for all initialized panels.
@@ -171,6 +173,8 @@ class tetrisEngine():
                         for row in self.__panelMatrix:
                             for panel in row:
                                 panel.clearMappingOption()
+                        if not self.__callbackFunc == None:
+                            self.__callbackFunc()
     
 class tetrisPanel():
     """The panel of the engine where the whole platform and all applied mappings will be drawn.
@@ -296,7 +300,7 @@ class optionPanel():
         self.__width = pWidth
         self.__mCanvas.create_rectangle(0, 0, self.__width/15, self.__height/15, width=3)
         self.__mCanvas.create_text(pWidth/30, pHeight/30, text=self.__id)
-        self.__mApiInstance = drawAPI.drawAPI(self.__mCanvas, 5, 10, self.__width, self.__height)
+        self.__mApiInstance = drawAPI.drawAPI(self.__mCanvas, 5, 10, self.__width, self.__height, test = 1, test2 = 4)
         return
     
     def setPlatform(self, platform):

@@ -20,7 +20,7 @@ class drawManager():
     :ivar bool __enableDragAndDrop: State if whether drag and drop feature is enabled or not. Is false by default.
     :ivar list [int] __drawnCrosses: Holds the handles of each cross drawn for a already used core. 
     """
-    def __init__(self, apiInstance, canvas, border, scaling, width, height,textSpace = 10, fontSize = 'default'):
+    def __init__(self, apiInstance, canvas, border, scaling, width, height, **kwargs):
         """Initizalizes a drawManager.
         :param drawAPI apiInstance: Holds the instance of the api that initialized the manager.
         :param Canvas canvas: A Tkinter canvas from the GUI of the user. Everything will be drawn in this canvas.
@@ -28,8 +28,9 @@ class drawManager():
         :param int scaling: Should be less than one. Defines which percentage of remaining Space components will use.
         :param int width: The width of the canvas.
         :param int height: The height of the canvas.
-        :param int textSpace: The space on the bottom of processing elements that is reserved for their names.
-        :param int fontSize: The size of the font all names are displayed in.
+        :param kwargs: Is valid for parameters:
+                        :int textSpace: The space on the bottom of processing elements that is reserved for their names.
+                        :int fontSize: The size of the font all names are displayed in.
         """
         self.__mApiInstance = apiInstance
         self.__mCanvas = canvas
@@ -39,8 +40,6 @@ class drawManager():
         self.__scaling = scaling
         self.__drawWidth  = width
         self.__drawHeight = height
-        self.__textSpace = textSpace
-        self.__fontSize = fontSize
         self.__minimalPeSize = height
         
         self.__displayTaskNames = True
@@ -48,6 +47,14 @@ class drawManager():
         self.__enableDragAndDrop = False
         
         self.__drawnCrosses = []
+        
+        self.__textSpace = 10
+        self.__fontSize = 'default'
+        for key in kwargs:
+            if key == 'fontSize':
+                self.__fontSize = kwargs[key]
+            if key == 'textSpace':
+                self.__textSpace = kwargs[key]
         
         self.setColorVectors()
     
@@ -104,8 +111,10 @@ class drawManager():
         """
         self.clearMappings()
         coreUsage = self.__createCoreUsage()
+        coreDict = self.__mApiInstance.getPlatform().getCoreDict()
+        usedCores = self.__mApiInstance.getUsedCores()
         
-        for coreName in self.__mApiInstance.getUsedCores():
+        for coreName in usedCores:
             startPointX = self.__mApiInstance.getPlatform().getCoreDict()[coreName][0]
             startPointY = self.__mApiInstance.getPlatform().getCoreDict()[coreName][2]
             endPointX = self.__mApiInstance.getPlatform().getCoreDict()[coreName][1]
@@ -127,8 +136,7 @@ class drawManager():
         if mostProcs == 0:
             self.__givenMappingColors = 0
             return
-        #creating a tempList containing all mapping elements of the PE with most mapping elements on it, its not really needed
-        #and just for the purpose of calculating the draw size of the mapping dots
+        
         tmpList = []
         for key in coreUsage[keyWithMostProcs]:
                 for element in coreUsage[keyWithMostProcs][key]:
@@ -140,9 +148,11 @@ class drawManager():
         
         for key in coreUsage:
             if bool(coreUsage[key]):
-                startPointX = self.__mApiInstance.getPlatform().getCoreDict()[key][0]
-                endPointX = self.__mApiInstance.getPlatform().getCoreDict()[key][1]
-                startPointY = self.__mApiInstance.getPlatform().getCoreDict()[key][2]
+                if key in usedCores:
+                    self.__mCanvas.itemconfig(coreDict[key][4], fill = 'red')
+                startPointX = coreDict[key][0]
+                endPointX = coreDict[key][1]
+                startPointY = coreDict[key][2]
                 currentX = startPointX + radius
                 currentY = startPointY + radius
                 for innerKey in coreUsage[key]:
@@ -183,6 +193,13 @@ class drawManager():
         """
         for handle in self.__drawnCrosses:
             self.__mCanvas.delete(handle)
+        try:
+            coreDict = self.__mApiInstance.getPlatform().getCoreDict()
+            if not coreDict == None:
+                for key in coreDict:
+                    self.__mCanvas.itemconfig(coreDict[key][4], fill = coreDict[key][5])
+        except:
+            pass
         mappingDict = self.__mApiInstance.getMappings()
         for key in mappingDict:
             for handle in mappingDict[key].getCircleHandles():
@@ -523,17 +540,17 @@ class drawManager():
                 endPointX = startPointX + sizeX
                 textPointX = endPointX - (endPointX - startPointX)/2
                 
-                peHandle = None
+                color = None
                 if coreName == 'A15':
-                    peHandle = self.__mCanvas.create_rectangle(startPointX, startPointPEY, endPointX, endPointPEY, fill = 'snow')
+                    color = 'snow'
                 else:
-                    peHandle = self.__mCanvas.create_rectangle(startPointX, startPointPEY, endPointX, endPointPEY, fill = 'antique white')
-                                  
+                    color = 'antique white'
+                peHandle = self.__mCanvas.create_rectangle(startPointX, startPointPEY, endPointX, endPointPEY, fill = color)
                 if self.__fontSize != 'default' and isinstance(self.__fontSize, int) and self.__displayPENames:
                     self.__mCanvas.create_text(textPointX, textPointPEY, font=('Helvetica', self.__fontSize), text = item[1][0], width = sizeX)
                 elif self.__displayPENames:
                     self.__mCanvas.create_text(textPointX, textPointPEY, text = item[1][0], width = sizeX)
-                platform.updateCoreDict(item[1][0], [startPointX, endPointX, startPointPEY, endPointPEY, peHandle])
+                platform.updateCoreDict(item[1][0], [startPointX, endPointX, startPointPEY, endPointPEY, peHandle, color])
                 
                 self.__mCanvas.create_rectangle(startPointX, startPointPrimitiveY, endPointX, endPointPrimitiveY, fill = colorPrimitive)
                 if self.__fontSize != 'default' and isinstance(self.__fontSize, int) and self.__displayPENames:
@@ -595,7 +612,7 @@ class drawManager():
                     self.__mCanvas.create_text(textPointX, textPointY, font=('Helvetica', self.__fontSize), text = item, width = sizeX)
                 elif self.__displayPENames:
                     self.__mCanvas.create_text(textPointX, textPointY, text = item, width = sizeX)
-                platform.updateCoreDict(item, [startPointX, endPointX, startPointY, endPointY, peHandle])
+                platform.updateCoreDict(item, [startPointX, endPointX, startPointY, endPointY, peHandle, color])
                 
                 if networkOnChip:
                     linkRightStartX = endPointX
