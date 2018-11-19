@@ -162,7 +162,7 @@ class platformInformation():
     def updateCoreDict(self, key, value):
         """Adds an entry to the coreDictionary.
         :param str key: The name of the processing element.
-        :param list[int] value: A list of integers containing start x and y value, end x and y value and the handle of the processing element in this order.
+        :param list[int] value: A list of integers containing start x and y value, end x and y value, the handle and the color of the processing element in this order.
         """
         self.__coreDictionary.update({key : value})
         

@@ -11,7 +11,18 @@ class controlPanel(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
         self.parent = parent
-        self.__kpnInstance = SlxKpnGraph('SlxKpnGraph','/net/home/teweleit/eclipseWorkspace/pykpn/pykpn/apps/audio_filter.cpn.xml','2017.04')
+        
+        gettrace = getattr(sys, 'gettrace', None)
+        self.__path = None
+        if gettrace is None:
+            self.__path = sys.path[1] + "/apps/audio_filter.cpn.xml"
+        elif gettrace():
+            """In case of an attached debugger the sys.path list will change
+            """
+            self.__path = sys.path[2] + "/apps"
+        else:
+            self.__path = sys.path[1] + "/apps"
+        self.__kpnInstance = SlxKpnGraph('SlxKpnGraph', self.__path + "/audio_filter.cpn.xml",'2017.04')
         self.__platform = None      
         self.__mappingIDs = []
         
@@ -35,7 +46,7 @@ class controlPanel(tk.Frame):
         self.exitButton.grid(sticky='EW',row = 8)
     
     def __loadExynos(self):
-        platform =  SlxPlatform('SlxPlatform', '/net/home/teweleit/eclipseWorkspace/pykpn/pykpn/apps/audio_filter/exynos/exynos.platform', '2017.04')
+        platform =  SlxPlatform('SlxPlatform', self.__path + '/audio_filter/exynos/exynos.platform', '2017.04')
         self.__platform = platform
         self.parent.drawPanel.drawDevice.setPlatform(platform)
         self.loadPaButton['state'] = 'disabled'
@@ -43,7 +54,7 @@ class controlPanel(tk.Frame):
         self.addMappingButton['state'] = 'normal'
                   
     def __loadParallella(self):
-        platform =  SlxPlatform('SlxPlatform', '/net/home/teweleit/eclipseWorkspace/pykpn/pykpn/apps/audio_filter/parallella/parallella.platform', '2017.04')
+        platform =  SlxPlatform('SlxPlatform', self.__path + '/audio_filter/parallella/parallella.platform', '2017.04')
         self.__platform = platform
         self.parent.drawPanel.drawDevice.setPlatform(platform)
         self.loadExButton['state'] = 'disabled'
@@ -51,7 +62,7 @@ class controlPanel(tk.Frame):
         self.addMappingButton['state'] = 'normal'
     
     def __loadMultiDSP(self):
-        platform =  SlxPlatform('SlxPlatform', '/net/home/teweleit/eclipseWorkspace/pykpn/pykpn/apps/audio_filter/multidsp/multidsp.platform', '2017.04')
+        platform =  SlxPlatform('SlxPlatform', self.__path + '/audio_filter/multidsp/multidsp.platform', '2017.04')
         self.__platform = platform
         self.parent.drawPanel.drawDevice.setPlatform(platform)
         self.loadExButton['state'] = 'disabled'

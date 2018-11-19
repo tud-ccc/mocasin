@@ -12,21 +12,23 @@ class drawAPI():
     :ivar list [str] __usedCores: List of cores which are already in use by other processes. 
     :ivar drawManager __mDrawManager: Does the actual visualization.
     """
-    def __init__(self, canvas, border, scaling, width, height,textSpace = 10, fontSize = 'default'):
+    def __init__(self, canvas, border, scaling, width, height, **kwargs):
         """"Initialize the api.
         :param Canvas canvas: A Tkinter canvas from the GUI of the user. Everything will be drawn in this canvas.
         :param int border: Defines the space between components of the platform and the canvas edge and between components themselves.
         :param int scaling: Should be less than one. Defines which percentage of remaining Space components will use.
         :param int width: The width of the canvas.
         :param int height: The height of the canvas.
-        :param int textSpace: The space on the bottom of processing elements that is reserved for their names.
-        :param int fontSize: The size of the font all names are displayed in.
+        :param kwargs: Is valid for parameters:
+                        :int textSpace: The space on the bottom of processing elements that is reserved for their names.
+                        :int fontSize: The size of the font all names are displayed in.
         """
         self.__mPlatform = None
         self.__drawOnlyPEs = None
         self.__mMappings = {}
         self.__usedCores = []
-        self.__mDrawManager = drawManager(self, canvas, border, scaling, width, height,textSpace = 10, fontSize = 'default')
+        self.__mDrawManager = drawManager(self, canvas, border, scaling, width, height, **kwargs)
+        
      
      
     """
