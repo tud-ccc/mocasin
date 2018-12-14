@@ -9,6 +9,7 @@ class drawAPI():
     :ivar platformInformation __mPlatform: The platform that should be visualized.
     :ivar bool __drawOnlyPEs: States if the whole
     :ivar dict {int, mappingInformation} __mMappings: Dict of processes mapped on the platform.
+    :ivar int c__currentMappingID: Keeps track of the IDs given out for mappings.
     :ivar list [str] __usedCores: List of cores which are already in use by other processes. 
     :ivar drawManager __mDrawManager: Does the actual visualization.
     """
@@ -26,6 +27,7 @@ class drawAPI():
         self.__mPlatform = None
         self.__drawOnlyPEs = None
         self.__mMappings = {}
+        self.__currentMappingID = 0
         self.__usedCores = []
         self.__mDrawManager = drawManager(self, canvas, border, scaling, width, height, **kwargs)
         
@@ -50,33 +52,30 @@ class drawAPI():
         self.__drawOnlyPEs = drawOnlyPEs
         return
 
-    def addMapping(self, mapping, mappingID, color = 'default'):
+    def addMapping(self, mapping, color = 'default'):
         """Applies the mapping for a given application to the platform.
         :param Mapping mapping: The pykpn mapping object that should be applied.
         :param int mappingID: The ID for the mapping so the api can identify it.
         :param str color: A Tkinter color value. The dots of the mapping will be drawn in this color.
                         If not given, a default color will be applied.
         """
+        key = -1
         if self.__mPlatform == None:
             raise RuntimeWarning('Can not add a mapping if no platform is specified')
-            return
-        
-        if not mappingID in self.__mMappings and isinstance(mappingID, int):
-            key = mappingID
+        else:
             if not color == 'default':
                 mappingColor = color
             else:
                 mappingColor = self.__mDrawManager.getColorForMapping()
             if mappingColor != None:
-                value = mappingInformation(mapping, mappingID, mappingColor)
+                key = self.__currentMappingID
+                self.__currentMappingID += 1
+                value = mappingInformation(mapping, key, mappingColor)
                 self.__mMappings.update({key : value})
                 self.__mDrawManager.drawMappings()
             else:
                 raise RuntimeWarning('Could not add mapping  because no color was available!')
-        else:
-            raise RuntimeWarning('Mapping ID already exists or is not valid!')
-        
-        return
+        return key
     
     def removeMapping(self, mappingID):
         """Removes the mapping with the given ID.

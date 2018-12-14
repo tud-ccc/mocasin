@@ -1,4 +1,3 @@
-import sys
 import tkinter as tk
 from pykpn.slx.platform import SlxPlatform
 from pykpn.gui.tetrisEngine import tetrisEngine
@@ -11,17 +10,6 @@ class controlPanel(tk.Frame):
         self.__platform = None      
         self.__mappingIDs = []
         self.__choices =  {'default', 'mainPanel', 'optionPanel'}
-        
-        gettrace = getattr(sys, 'gettrace', None)
-        self.__path = None
-        if gettrace is None:
-            self.__path = sys.path[1] + "/apps/audio_filter.cpn.xml"
-        elif gettrace():
-            """In case of an attached debugger the sys.path list will change
-            """
-            self.__path = sys.path[2] + "/apps"
-        else:
-            self.__path = sys.path[1] + "/apps"
         
         self.loadExButton = tk.Button(self, text='Load Exynos', command=self.__loadExynos)
         self.loadExButton.grid(sticky='EW', row = 0, column = 0, columnspan=2)
@@ -60,7 +48,7 @@ class controlPanel(tk.Frame):
         self.ExitButton.grid(sticky='EW',row = 7, column = 0, columnspan=2)
         
     def __loadExynos(self):
-        platform =  SlxPlatform('SlxPlatform', self.__path + '/audio_filter/exynos/exynos.platform', '2017.04')
+        platform =  SlxPlatform('SlxPlatform', '/home/felix/eclipse-workspace/pykpn/pykpn/apps/audio_filter/exynos/exynos.platform', '2017.04')
         self.parent.mDataProvider = dataProvider(platform)
         self.parent.initialMapping = self.parent.mDataProvider.generateRandomMapping()
         self.parent.engineInstance.setPlatform(platform, self.parent.initialMapping)
@@ -76,7 +64,7 @@ class controlPanel(tk.Frame):
         self.toggleTNButton['state'] = 'normal'
                   
     def __loadParallella(self):
-        platform =  SlxPlatform('SlxPlatform', self.__path + '/audio_filter/parallella/parallella.platform', '2017.04')
+        platform =  SlxPlatform('SlxPlatform', '/home/felix/eclipse-workspace/pykpn/pykpn/apps/audio_filter/parallella/parallella.platform', '2017.04')
         self.parent.mDataProvider = dataProvider(platform)
         self.parent.initialMapping = self.parent.mDataProvider.generateRandomMapping()
         self.parent.engineInstance.setPlatform(platform, self.parent.initialMapping)
@@ -92,7 +80,7 @@ class controlPanel(tk.Frame):
         self.toggleTNButton['state'] = 'normal'
     
     def __loadMultiDSP(self):
-        platform =  SlxPlatform('SlxPlatform', self.__path + '/audio_filter/multidsp/multidsp.platform', '2017.04')
+        platform =  SlxPlatform('SlxPlatform', '/home/felix/eclipse-workspace/pykpn/pykpn/apps/audio_filter/multidsp/multidsp.platform', '2017.04')
         self.parent.mDataProvider = dataProvider(platform)
         self.parent.initialMapping = self.parent.mDataProvider.generateRandomMapping()
         self.parent.engineInstance.setPlatform(platform, self.parent.initialMapping)
