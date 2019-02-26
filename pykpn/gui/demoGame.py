@@ -48,13 +48,14 @@ class controlPanel(tk.Frame):
         self.ExitButton.grid(sticky='EW',row = 7, column = 0, columnspan=2)
         
     def __loadExynos(self):
-        platform =  SlxPlatform('SlxPlatform', '/home/felix/eclipse-workspace/pykpn/pykpn/apps/audio_filter/exynos/exynos.platform', '2017.04')
+        platform =  SlxPlatform('SlxPlatform', '/net/home/teweleit/eclipse-workspace/pykpn/pykpn/apps/audio_filter/exynos/exynos.platform', '2017.04')
         self.parent.mDataProvider = dataProvider(platform)
         self.parent.initialMapping = self.parent.mDataProvider.generateRandomMapping()
         self.parent.engineInstance.setPlatform(platform, self.parent.initialMapping)
-        for key in self.parent.initialMapping.to_coreDict():
-            if self.parent.initialMapping.to_coreDict()[key] != []:
-                self.parent.usedCores.append(key)
+        if self.parent.initialMapping != None:
+            for key in self.parent.initialMapping.to_coreDict():
+                if self.parent.initialMapping.to_coreDict()[key] != []:
+                    self.parent.usedCores.append(key)
         self.loadExButton['state'] = 'disabled'
         self.loadPaButton['state'] = 'disabled'
         self.loadMdButton['state'] = 'disabled'
@@ -64,7 +65,7 @@ class controlPanel(tk.Frame):
         self.toggleTNButton['state'] = 'normal'
                   
     def __loadParallella(self):
-        platform =  SlxPlatform('SlxPlatform', '/home/felix/eclipse-workspace/pykpn/pykpn/apps/audio_filter/parallella/parallella.platform', '2017.04')
+        platform =  SlxPlatform('SlxPlatform', '/net/home/teweleit/eclipse-workspace/pykpn/pykpn/apps/audio_filter/parallella/parallella.platform', '2017.04')
         self.parent.mDataProvider = dataProvider(platform)
         self.parent.initialMapping = self.parent.mDataProvider.generateRandomMapping()
         self.parent.engineInstance.setPlatform(platform, self.parent.initialMapping)
@@ -80,7 +81,7 @@ class controlPanel(tk.Frame):
         self.toggleTNButton['state'] = 'normal'
     
     def __loadMultiDSP(self):
-        platform =  SlxPlatform('SlxPlatform', '/home/felix/eclipse-workspace/pykpn/pykpn/apps/audio_filter/multidsp/multidsp.platform', '2017.04')
+        platform =  SlxPlatform('SlxPlatform', '/net/home/teweleit/eclipse-workspace/pykpn/pykpn/apps/audio_filter/multidsp/multidsp.platform', '2017.04')
         self.parent.mDataProvider = dataProvider(platform)
         self.parent.initialMapping = self.parent.mDataProvider.generateRandomMapping()
         self.parent.engineInstance.setPlatform(platform, self.parent.initialMapping)

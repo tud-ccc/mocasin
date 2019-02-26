@@ -225,11 +225,11 @@ class tetrisPanel():
         :param Mapping mapping: The new mapping that should be applied.
         """
         if self.__appliedMapping == None:
-            self.__mApiInstance.addMapping(mapping, 0)
+            self.__current_mapping_id = self.__mApiInstance.addMapping(mapping)
             self.__appliedMapping = mapping
         else:
-            self.__mApiInstance.removeMapping(0)
-            self.__mApiInstance.addMapping(mapping, 0)
+            self.__mApiInstance.removeMapping(self.__current_mapping_id)
+            self.__current_mapping_id = self.__mApiInstance.addMapping(mapping)
             self.__appliedMapping = mapping
         return
     
@@ -242,7 +242,7 @@ class tetrisPanel():
         for key in coreDict:
             if not key in self.__usedCores and coreDict[key] != []:
                 self.__usedCores.append(key)
-        self.__mApiInstance.removeMapping(0)
+        self.__mApiInstance.removeMapping(self.__current_mapping_id)
         self.__appliedMapping = None
         self.__mApiInstance.setUsedCores(self.__usedCores)
         return True
@@ -316,7 +316,7 @@ class optionPanel():
         """
         self.clearMappingOption()
         self.__mActualMapping = mapping
-        self.__mApiInstance.addMapping(mapping, 0)
+        self.__current_id = self.__mApiInstance.addMapping(mapping)
     
     def getMappingOption(self):
         """Returns the actual, as option, applied mapping.
@@ -337,7 +337,7 @@ class optionPanel():
         """
         if self.__mActualMapping != None:
             self.__mActualMapping = None
-            self.__mApiInstance.removeMapping(0)
+            self.__mApiInstance.removeMapping(self.__current_id)
             
     def toggleTaskNames(self):
         """Toggle if the names of the different tasks of the mappings should be shown or not.
