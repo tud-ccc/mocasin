@@ -8,7 +8,7 @@ class dataProvider():
     def __init__(self, platform):
         self.__mPlatform = platform
         
-        self.__mKpnInstance = self.__kpnInstance = SlxKpnGraph('SlxKpnGraph','/home/felix/eclipse-workspace/pykpn/pykpn/apps/audio_filter/audio_filter.cpn.xml','2017.04')
+        self.__mKpnInstance = self.__kpnInstance = SlxKpnGraph('SlxKpnGraph','/net/home/teweleit/eclipse-workspace/pykpn/pykpn/apps/audio_filter/audio_filter.cpn.xml','2017.04')
         self.__mGenerator = Random()
     
     def generateRandomMapping(self):
