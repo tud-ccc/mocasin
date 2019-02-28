@@ -347,7 +347,8 @@ class drawManager():
         :param list[str] colorList: The list of used Tkinter color values.
         """
         if colorList[0] == 'default':
-            self.__mappingColors = ['red2','orangered3','tomato2', 'coral2', 'salmon2','darkorange2','orange3']
+            self.__mappingColors = ['red2','orangered3','tomato2', 'coral2', 'salmon2','darkorange2','orange3', 'cornflower blue','pale goldenrod',
+                                    'deep pink', 'RoyalBlue1','PaleTurquoise2', 'sienna3', 'magenta4', 'IndianRed3', 'aquamarine2', 'seashell2']
         else:
             self.__mappingColors = colorList
         return
