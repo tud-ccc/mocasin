@@ -249,8 +249,7 @@ class ProductGroup(PermutationGroup):
             extra_n = g.n
             for gen in g:
                 new_gen = []
-                for cycle in gen.get_cycles():
-                   new_gen.append( list(map(lambda x : x + current_n , cycle)))
+                for cycle in gen.get_cycles():new_gen.append( list(map(lambda x : x + current_n , cycle)))
                 #print("gen: " + str(new_gen) + " (" + str(sum_n) +")")
                 generators.append(Permutation(new_gen,sum_n,action=gen.action))
             current_n += extra_n
