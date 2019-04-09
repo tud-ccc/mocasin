@@ -8,11 +8,12 @@ class Embeddings_Test(unittest.TestCase):
     
     def setUp(self):
         self.helpvar = 5
+        distortion = 1.05
         
         np.set_printoptions(threshold=np.nan)
         self.M = exampleClusterArch 
         self.E = MetricSpaceEmbeddingBase(self.M)
-        self.Evec = MetricSpaceEmbedding(M,self.helpvar)
+        self.Evec = MetricSpaceEmbedding(self.M,self.helpvar)
         
         self.Par = MetricSpaceEmbedding(exampleParallella16,self.helpvar,distortion=1.5)
         
@@ -57,11 +58,11 @@ class Embeddings_Test(unittest.TestCase):
         self.assertEqual(result, None, "Test case needs to be implemented")
         
     def test_Evec_invapprox(self):
-        result = self.Evec.invapprox(list(np.random.random((self.helpvar,E.k))))
+        result = self.Evec.invapprox(list(np.random.random((self.helpvar,self.E.k))))
         self.assertEqual(result, None, "Test case needs to be implemented")
     
     def test_Par_invapprox(self):
-        result = self.Par.invapprox(list(10*np.random.random((self.helpvar,Par.k))))
+        result = self.Par.invapprox(list(10*np.random.random((self.helpvar,self.Par.k))))
         self.assertEqual(result, None, "Test case needs to be implemented")
     
     def test_L(self):
@@ -79,6 +80,7 @@ class Embeddings_Test(unittest.TestCase):
         
         self.assertListEqual(dists, None, "Test case needs to be implemented")
 
+'''
     
 np.set_printoptions(threshold=np.nan)
 
@@ -132,3 +134,4 @@ print(Par.invapprox(list(10*np.random.random((d,Par.k)))))
 
 
 #print(L)
+'''
