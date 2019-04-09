@@ -14,9 +14,18 @@ class Permutation_Test(unittest.TestCase):
         self.s4xs8 = ProductGroup([SymmetricGroupTranspositions(8), SymmetricGroupTranspositions(4)])
         self.s4xs8_double = DuplicateGroup(self.s4xs8)
         self.arch_group = ProductGroup( [self.s4xs8_double, TrivialGroup(3)])
+        self.app_group = DuplicateGroup(ProductGroup( [TrivialGroup(1,action=1), SymmetricGroupTranspositions(4,action=1)]),times=4)
+        self.full_group = PermutationGroupFromGens(list(self.app_group) + list(self.arch_group))
+        self.mandelbrot_group = DuplicateGroup(SymmetricGroupTranspositions(16,action=1),times=3,trivials=[16,17])
+        self.mandelbrot_full_group = PermutationGroupFromGens(list(self.arch_group) + list(self.mandelbrot_group))
+        
+        mjpeg_gens_func = (lambda l : [(i,j) for i in l for j in l[l.index(i):] ])
+        mjpeg_procs_gens = mjpeg_gens_func([6,8,10,1]) + mjpeg_gens_func([5,7,9,11])
+        mjpeg_chans_gens = mjpeg_gens_func([16,17,18,19]) + mjpeg_gens_func([20,22,24,26]) + mjpeg_gens_func([21,23,25,14])
+        self.mjpeg_group = PermutationGroupFromGens(list(map( lambda trans : Permutation([list(trans)],action=1,n=27), (mjpeg_chans_gens + mjpeg_procs_gens))))
+        self.mjpeg_full_group = PermutationGroupFromGens(list(self.arch_group) + list(self.mjpeg_group))
         
         self.maxDiff = None
-        pass
     
     def tearDown(self):
         pass
@@ -78,7 +87,71 @@ class Permutation_Test(unittest.TestCase):
                                         [0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 10, 9, 12, 13, 14, 15, 16, 17, 18, 19, 20, 23, 22, 21, 24, 25, 26], 
                                         [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 10, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 23, 22, 24, 25, 26]],
                                         'Error in ProductGroup()')
+    def test_tuple_orbit_2(self):
+        self.assertEqual(len(self.arch_group.tuple_orbit([1, 10, 1, 9, 7, 1, 1, 1, 22, 25, 24])), 672, 'Error in tuple_orbit()')
+    
+    def test_tuple_normalize(self):
+        self.assertListEqual(self.arch_group.tuple_normalize([1, 10, 1, 9, 7, 1, 1, 1, 22, 25, 24]),
+                              [0, 8, 0, 9, 1, 0, 0, 0, 20, 25, 24], 'Error in tuple_normalize()')
+    
+    def test_tuple_normalize_2(self):
+        self.assertListEqual(self.arch_group.tuple_normalize([0, 8, 0, 0, 0, 0, 0, 0, 0, 25, 25, 24, 25, 24, 25, 0, 0, 24, 0, 0], verbose=True),
+                              [0, 8, 0, 0, 0, 0, 0, 0, 0, 25, 25, 24, 25, 24, 25, 0, 0, 24, 0, 0],
+                              'Error in tuple_normalize() with arch_group')
+    
+    def test_duplicate_group(self):
+        self.assertListEqual(self.app_group, [[0, 2, 1, 3, 4, 5, 7, 6, 8, 9, 10, 12, 11, 13, 14, 15, 17, 16, 18, 19],
+                                            [0, 3, 2, 1, 4, 5, 8, 7, 6, 9, 10, 13, 12, 11, 14, 15, 18, 17, 16, 19],
+                                            [0, 4, 2, 3, 1, 5, 9, 7, 8, 6, 10, 14, 12, 13, 11, 15, 19, 17, 18, 16],
+                                            [0, 1, 3, 2, 4, 5, 6, 8, 7, 9, 10, 11, 13, 12, 14, 15, 16, 18, 17, 19], 
+                                            [0, 1, 4, 3, 2, 5, 6, 9, 8, 7, 10, 11, 14, 13, 12, 15, 16, 19, 18, 17],
+                                            [0, 1, 2, 4, 3, 5, 6, 7, 9, 8, 10, 11, 12, 14, 13, 15, 16, 17, 19, 18]],
+                                            'Error in Duplicate_Group()')
+    
+    def test_tuple_normalize_3(self):
+        self.assertListEqual(self.app_group.tuple_normalize([0, 8, 0, 0, 0, 0, 0, 0, 0, 25, 25, 24, 25, 24, 25, 0, 0, 24, 0, 0]),
+                            [0, 0, 0, 0, 8, 0, 0, 0, 25, 0, 25, 24, 25, 25, 24, 0, 0, 24, 0, 0],
+                            'Error in tuple_normalize() with app_group')
+        
+    def test_tuple_normalize_4(self):
+        self.assertListEqual(self.full_group.tuple_normalize([2, 2, 8, 2, 2, 2, 2, 2, 2, 25, 25, 24, 25, 24, 25, 2, 2, 24, 2, 2]),
+                            [0, 0, 0, 0, 8, 0, 0, 0, 25, 0, 25, 24, 24, 25, 25, 0, 0, 0, 0, 24],
+                            'Error in tuple_normalize() with full_group')
+    
+    def test_tuple_normalize_5(self):
+        self.assertListEqual(self.mandelbrot_full_group.tuple_normalize([6, 6, 1, 2, 7, 6, 9, 10, 6, 11, 9, 0, 1, 0, 4, 3, 5, 0, 18, 24, 25, 14, 24,
+                            24, 25, 24, 24, 24, 25, 12, 13, 25, 25, 15, 25, 24, 25, 25, 24, 12, 25, 25, 25, 24, 12, 0, 24, 0, 24, 12]),
+                            [0, 0, 0, 0, 1, 1, 2, 3, 4, 5, 5, 6, 8, 8, 9, 10, 7, 5, 12, 24, 24, 24, 13, 25, 14, 15, 25, 17, 25, 24, 25, 25, 24, 24, 
+                            25, 17, 24, 25, 24, 25, 25, 17, 24, 5, 5, 24, 17, 25, 24, 25],
+                            'Error in tuple_normalize() with mandelbrot_full_group')
+    
+    def test_tuple_normalize_6(self):
+        self.assertListEqual(self.mjpeg_full_group.tuple_normalize([11, 6, 10, 7, 10, 10, 5, 8, 10, 8, 11, 2, 24, 24, 18, 24, 10, 22, 24, 22, 22, 24,
+                            20, 10, 20, 24, 24], verbose=True),
+                            [8, 0, 9, 1, 9, 2, 3, 9, 8, 10, 9, 10, 24, 24, 9, 24, 9, 21, 21, 24, 21, 12, 22, 24, 22, 24, 24],
+                            'Error in normalize_tuple() with mjpeg_full_group')
+    
+    def test_tuple_normalize_7(self):
+        self.assertListEqual(self.arch_group.tuple_normalize([11, 6, 10, 7, 10, 10, 5, 8, 10, 8, 11, 2, 24, 24, 18, 24, 10, 22, 24, 22, 22, 24, 20, 10, 20, 24, 24],
+                            verbose=True),
+                            [8, 0, 9, 1, 9, 9, 2, 10, 9, 10, 8, 3, 24, 24, 12, 24, 9, 21, 24, 21, 21, 24, 22, 9, 22, 24, 24],
+                            'Error in tuple_normalize() with arch_group')
+        
+    def test_tuple_normalize_8(self):
+        self.assertListEqual(self.mjpeg_group.tuple_normalize([8, 0, 9, 1, 9, 9, 2, 10, 9, 10, 8, 3, 24, 24, 12, 24, 9, 21, 24, 21, 21, 24, 22, 9, 22, 24, 24],
+                            verbose=True),
+                            [8, 0, 9, 1, 9, 3, 2, 9, 8, 10, 9, 10, 24, 24, 9, 24, 9, 21, 21, 24, 21, 12, 22, 24, 22, 24, 24],
+                            'Error in tuple_normalize() with mjpeg_group')
+    
+    def test_DuplicateGroup(self):
+        self.assertListEqual(DuplicateGroup(SymmetricGroupTranspositions(2,action=1),times=7,trivials=[6,7]),
+                            [[1, 0, 3, 2, 5, 4, 6, 7, 9, 8, 11, 10, 13, 12, 15, 14]],
+                            'Error in DuplicateGroup()')
+    
 if __name__ == "__main__":
     unittest.main()
+    
+    
+    
     
     

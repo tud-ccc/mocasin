@@ -2,7 +2,7 @@ from pykpn.representations.metric_spaces import *
 from pykpn.representations.permutations import *
 import numpy as np
 
-exampleClusterArch = finiteMetricSpace( [ [0,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2],
+exampleClusterArch = FiniteMetricSpace( [ [0,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2],
                                           [1,0,1,1,2,2,2,2,2,2,2,2,2,2,2,2],
                                           [1,1,0,1,2,2,2,2,2,2,2,2,2,2,2,2],
                                           [1,1,1,0,2,2,2,2,2,2,2,2,2,2,2,2],
@@ -37,7 +37,7 @@ def generateExampleParallella(n,num_arm,dist_mem):
             mat[i,j] = 1
             mat[j,i] = 1
     #print(mat)
-    return finiteMetricSpace(mat)
+    return FiniteMetricSpace(mat)
 
 
         
@@ -46,7 +46,7 @@ exampleParallella16 = generateExampleParallella(4,2,20)
 
 S4 = perm.SymmetricGroupTranspositions(4)
 autExampleClusterArch = perm.ProductGroup([S4,S4,S4,S4]) # this should actually be a wreath product...
-exampleClusterArchSymmetries = finiteMetricSpaceSym(exampleClusterArch,autExampleClusterArch)
+exampleClusterArchSymmetries = FiniteMetricSpaceSym(exampleClusterArch,autExampleClusterArch)
 
 # from: https://people.sc.fsu.edu/~jburkardt/m_src/dijkstra/dijkstra.html
 #   N0--15--N2-100--N3
