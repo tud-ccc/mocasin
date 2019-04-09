@@ -12,6 +12,9 @@ class Metric_Spaces_Test(unittest.TestCase):
         self.uniformFromFourBall = self.testProdSpace.uniformFromBall([3,2,7],4,10)
         self.oneBall = self.testProdSpace.ball([3,2,7],1)
         self.testSymSpace = FiniteMetricSpaceLPSym(exampleClusterArchSymmetries,d=3)
+        
+        #self.testLargeProdSpace = FiniteMetricSpaceLP(self.testSpace,d=13)
+        #self.uniformFromLargeBall = self.testLargeProdSpace.uniformFromBall([1,3,15,10,9,0,0,3,2,7,1,0,12],3,10)
     
     def tearDown(self):
         pass
@@ -80,6 +83,14 @@ class Metric_Spaces_Test(unittest.TestCase):
     def test_dist_5(self):
         result = self.testSymSpace.dist([3,4,3],[5,11,4])
         self.assertEqual(result, 6.0, 'Error in dist() with SymSpace')
+        
+    def test_tuple_orbit(self):
+        result = autExampleClusterArch.tuple_orbit([3,4,3])
+        self.assertEqual(result, None, "Test case not implemented")
+    
+    def test_something(self):
+        result = list(map(self.testProdSpace.int2Tuple,self.uniformFromLargeBall))
+        self.assertEqual(result, None, "Test case not implemented")
 """
 print("using dijkstra everywhere:" + str(arch_graph_to_distance_metric(exampleDiijkstra)))
 N = 10000
