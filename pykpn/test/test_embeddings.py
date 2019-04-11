@@ -1,3 +1,9 @@
+'''
+Created on Nov 20, 2017
+
+@author: goens, teweleit
+'''
+
 import unittest
 from pykpn.representations.embeddings import *
 import pykpn.representations.metric_spaces as metric
@@ -10,7 +16,7 @@ class Embeddings_Test(unittest.TestCase):
         self.helpvar = 5
         distortion = 1.05
         
-        np.set_printoptions(threshold=np.nan)
+        #np.set_printoptions(threshold=np.nan)
         self.M = exampleClusterArch 
         self.E = MetricSpaceEmbeddingBase(self.M)
         self.Evec = MetricSpaceEmbedding(self.M,self.helpvar)
