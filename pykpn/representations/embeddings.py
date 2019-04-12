@@ -9,8 +9,8 @@ import cvxpy as cvx
 import random
 import logging
 #import fjlt.fjlt as fjlt #TODO: use fjlt to (automatically) lower the dimension of embedding
-from . import permutations as perm
-from . import metric_spaces as metric
+from pykpn.representations import permutations as perm
+from pykpn.representations import metric_spaces as metric
 
 DEFAULT_DISTORTION = 1.05
 

@@ -9,21 +9,91 @@ from pykpn.representations.embeddings import *
 import pykpn.representations.metric_spaces as metric
 from pykpn.representations.examples import *
 
-
 class Embeddings_Test(unittest.TestCase):
     
     def setUp(self):
         self.helpvar = 5
-        distortion = 1.05
+        self.distortion = 1.05
         
-        #np.set_printoptions(threshold=np.nan)
-        self.M = exampleClusterArch 
-        self.E = MetricSpaceEmbeddingBase(self.M)
-        self.Evec = MetricSpaceEmbedding(self.M,self.helpvar)
+    def tearDown(self):
+        pass
+
+    
+    def test_approx(self):
+        M = exampleClusterArch 
+        E = MetricSpaceEmbeddingBase(M)
         
-        self.Par = MetricSpaceEmbedding(exampleParallella16,self.helpvar,distortion=1.5)
+        result = E.approx(np.random.random(E.k))
         
-        self.D = np.matrix([[ 0.,  2.,  2.,  4.,  2.,  4.,  4.,  4.,  4.,  4.,  4.,  4.,  2.,  4.,  2.,  2.,  4.,  2., 4.,  2.],
+        for value in result:
+            self.assertTrue(value < 1.0 and value > -1.0, 'Error in approx()! Value out of range:' + str(value))
+        
+    def test_Evec(self):
+        M = exampleClusterArch
+        Evec = MetricSpaceEmbedding(M,self.helpvar)
+        
+        result = Evec.i([1,0,1,1,3])
+        self.assertEqual(result, [(0.8633706466147922, 0.9388001940469392, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+                                (1.2754429339561864, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+                                (0.8633706466147922, 0.9388001940469392, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+                                (0.8633706466147922, 0.9388001940469392, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+                                (0.8633706466147969, 0.37896361699745584, 0.2470070582420815, 0.8226298648319808, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                0.0, 0.0, 0.0, 0.0, 0.0, 0.0)],
+                        'Error in i()!')
+        
+    def test_Evec_inv(self):
+        M = exampleClusterArch
+        Evec = MetricSpaceEmbedding(M,self.helpvar)
+        
+        result = Evec.inv(Evec.i([1,0,1,1,3]))
+        self.assertListEqual(result, [1, 0, 1, 1, 3], 'Error in inv() or i()!')
+        
+    def test_Evec_invapprox(self):
+        M = exampleClusterArch
+        E = MetricSpaceEmbeddingBase(M)
+        Evec = MetricSpaceEmbedding(M,self.helpvar)
+        
+        result = Evec.invapprox(list(np.random.random((self.helpvar*E.k)).flat))
+        
+        for value in result:
+            self.assertTrue(value >= 0 and value < 16, 'Error in invapprox()! Value out of range:' + str(value))
+            
+    def test_Par_invapprox(self):
+        Par = MetricSpaceEmbedding(exampleParallella16,self.helpvar,distortion=1.5)
+        
+        result = Par.invapprox(list((10*np.random.random((self.helpvar,Par.k))).flat))
+        for value in result:
+            self.assertTrue(value >= 0 and value < 16, 'Error in invapprox()! Value out of range: ' + str(value))
+        
+    def test_L(self):
+        D = self.__give_matrix()
+        L = np.matrix(MetricSpaceEmbeddingBase.calculateEmbeddingMatrix(D,self.distortion))
+        
+        self.assertEqual(L, None, 'Error in algorithm! Please check!')
+        
+    def test_vecs(self):
+        D = self.__give_matrix()
+        L = np.matrix(MetricSpaceEmbeddingBase.calculateEmbeddingMatrix(D,self.distortion))
+        vecs = L.A
+        
+        self.assertEqual(vecs, None, 'Error in algorithm! Please check!')
+    
+    def test_dist(self):
+        D = self.__give_matrix()
+        L = np.matrix(MetricSpaceEmbeddingBase.calculateEmbeddingMatrix(D,self.distortion))
+        vecs = L.A
+        
+        dists = []
+        for i,v in enumerate(vecs):
+            for j,w in enumerate(vecs):
+                if D[i,j] != 0:
+                    dists.append(np.linalg.norm(v-w)/D[i,j])
+        
+        self.assertListEqual(dists, None, 'Error in algorithm! PLease check!')
+    
+    
+    def __give_matrix(self):
+        return np.matrix([[ 0.,  2.,  2.,  4.,  2.,  4.,  4.,  4.,  4.,  4.,  4.,  4.,  2.,  4.,  2.,  2.,  4.,  2., 4.,  2.],
                 [ 2.,  0.,  4.,  2.,  2.,  4.,  4.,  4.,  2.,  4.,  2.,  4.,  4.,  4.,  4.,  2.,  4.,  2., 2.,  4.],
                 [ 2.,  4.,  0.,  4.,  4.,  2.,  2.,  4.,  4.,  4.,  4.,  4.,  2.,  4.,  2.,  4.,  2.,  4., 2.,  2.],
                 [ 4.,  2.,  4.,  0.,  4.,  4.,  4.,  4.,  2.,  2.,  1.,  4.,  4.,  2.,  2.,  4.,  4.,  4., 2.,  4.],
@@ -43,69 +113,9 @@ class Embeddings_Test(unittest.TestCase):
                 [ 2.,  2.,  4.,  4.,  2.,  2.,  4.,  2.,  4.,  2.,  4.,  4.,  4.,  4.,  4.,  1.,  4.,  0., 4.,  4.],
                 [ 4.,  2.,  2.,  2.,  4.,  2.,  2.,  4.,  2.,  4.,  2.,  4.,  4.,  4.,  4.,  4.,  2.,  4., 0.,  4.],
                 [ 2.,  4.,  2.,  4.,  4.,  4.,  4.,  2.,  2.,  4.,  4.,  2.,  1.,  4.,  2.,  4.,  4.,  4., 4.,  0.]])
-        
-        self.L = np.matrix(MetricSpaceEmbeddingBase.calculateEmbeddingMatrix(self.D,distortion))
-        self.vecs = self.L.A
-        
-    def tearDown(self):
-        pass
-
-    
-    def test_approx(self):
-        result = self.E.approx(np.random.random(self.E.k))
-        self.assertEqual(result, None, "Test case needs to be implemented")
-        
-    def test_Evec(self):
-        result = self.Evec.i([1,0,1,1,3])
-        self.assertEqual(result, None, "Test case needs to be implemented")
-        
-    def test_Evec_inv(self):
-        result = self.Evec.inv(self.Evec.i([1,0,1,1,3]))
-        self.assertEqual(result, None, "Test case needs to be implemented")
-        
-    def test_Evec_invapprox(self):
-        result = self.Evec.invapprox(list(np.random.random((self.helpvar,self.E.k))))
-        self.assertEqual(result, None, "Test case needs to be implemented")
-    
-    def test_Par_invapprox(self):
-        result = self.Par.invapprox(list(10*np.random.random((self.helpvar,self.Par.k))))
-        self.assertEqual(result, None, "Test case needs to be implemented")
-    
-    def test_L(self):
-        self.assertEqual(self.L, None, "Test case needs to be implemented")
-    
-    def test_vecs(self):
-        self.assertEqual(self.vecs, None, "Test case needs to be implemented")
-    
-    def test_dist(self):
-        dists = []
-        for i,v in enumerate(self.vecs):
-            for j,w in enumerate(self.vecs):
-                if self.fD[i,j] != 0:
-                    dists.append(np.linalg.norm(v-w)/self.D[i,j])
-        
-        self.assertListEqual(dists, None, "Test case needs to be implemented")
-
-'''
-    
-np.set_printoptions(threshold=np.nan)
 
 
-distortion = 1.05
-M = exampleClusterArch 
-E = MetricSpaceEmbeddingBase(M)
-print(E.approx(np.random.random(E.k)))
-d=5
-Evec = MetricSpaceEmbedding(M,d)
-print(Evec.i([1,0,1,1,3]))
-print(Evec.inv(Evec.i([1,0,1,1,3])))
-print(Evec.invapprox(list(np.random.random((d,E.k)))))
-
-Par = MetricSpaceEmbedding(exampleParallella16,d,distortion=1.5)
-print(Par.invapprox(list(10*np.random.random((d,Par.k)))))
-
-
-
+#Remaining original code from goens. Need to be checked!
 # D = np.matrix([[ 0.,  2.,  2.,  4.,  2.,  4.,  4.,  4.,  4.,  4.,  4.,  4.,  2.,  4.,  2.,  2.,  4.,  2., 4.,  2.],
 #                [ 2.,  0.,  4.,  2.,  2.,  4.,  4.,  4.,  2.,  4.,  2.,  4.,  4.,  4.,  4.,  2.,  4.,  2., 2.,  4.],
 #                [ 2.,  4.,  0.,  4.,  4.,  2.,  2.,  4.,  4.,  4.,  4.,  4.,  2.,  4.,  2.,  4.,  2.,  4., 2.,  2.],
@@ -140,4 +150,3 @@ print(Par.invapprox(list(10*np.random.random((d,Par.k)))))
 
 
 #print(L)
-'''
