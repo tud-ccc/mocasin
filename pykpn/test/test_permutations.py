@@ -9,8 +9,6 @@ from pykpn.representations.permutations import *
 class Permutation_Test(unittest.TestCase):
     
     def setUp(self):
-        
-        
         self.maxDiff = None
     
     def tearDown(self):
@@ -193,6 +191,7 @@ class Permutation_Test(unittest.TestCase):
     
 if __name__ == "__main__":
     unittest.main()
+
     
     
     
