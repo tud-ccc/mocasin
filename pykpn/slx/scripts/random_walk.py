@@ -13,11 +13,13 @@ import timeit
 
 import simpy
 
-from ..config import SlxSimulationConfig
-from ..kpn import SlxKpnGraph
-from ..mapping import export_slx_mapping
-from ..platform import SlxPlatform
-from ..trace import SlxTraceReader
+
+from pykpn.slx.config import SlxSimulationConfig
+from pykpn.slx.kpn import SlxKpnGraph
+from pykpn.slx.mapping import export_slx_mapping
+from pykpn.slx.platform import SlxPlatform
+from pykpn.slx.trace import SlxTraceReader
+
 from pykpn import slx
 from pykpn.common import logging
 from pykpn.mapper.random import RandomMapping
