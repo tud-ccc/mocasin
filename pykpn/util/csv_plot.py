@@ -1,5 +1,7 @@
 import csv
 import argparse
+import zipfile
+import os
 from pykpn.slx.platform import SlxPlatform
 from pykpn.slx.kpn import SlxKpnGraph
 from _collections import OrderedDict
@@ -50,29 +52,34 @@ class DataReader():
         else:
             self._suffix = processSuffix
         
-        with open(filePath) as csvFile:
-            reader = csv.DictReader(csvFile)
-            i = 0
-            for row in reader:
-                toUpdate = {i : {}}
-                for name in self._mProcessNames:
-                    toUpdate[i].update({ name : row[self._prefix + name + self._suffix]})
-                toUpdate[i].update({self._desiredProperty : row[self._desiredProperty]})
-                self._mDataDict.update(toUpdate)  
-                i += 1
-        
-                
-    def printDataDict(self):
-        for entry in self._mDataDict:
-            print(self._mDataDict[entry])
-            
-    def printMappingDict(self):
-        for entry in self._mMappingDict:
-            print(self._mMappingDict[entry][0].to_string())
-            print('wall_clock_time : ' + self._mMappingDict[entry][1])
-    
-    def getMappings(self):
-        return
+        pathAsList = filePath.split('/')
+        lastElement = pathAsList[len(pathAsList)-1]
+        if lastElement.split('.')[len(lastElement.split('.'))-1] == 'zip':
+            with zipfile.ZipFile(filePath, 'r') as zipFile:
+                i = 0
+                for file in zipFile.namelist():
+                    extractet = zipFile.extract(file)
+                    with open(extractet) as csvFile:
+                        reader = csv.DictReader(csvFile)
+                        for row in reader:
+                            toUpdate = {i : {}}
+                            for name in self._mProcessNames:
+                                toUpdate[i].update({ name : row[self._prefix + name + self._suffix]})
+                            toUpdate[i].update({self._desiredProperty : row[self._desiredProperty]})
+                            self._mDataDict.update(toUpdate)  
+                            i += 1
+                    os.remove(extractet)
+        else:
+            with open(filePath) as csvFile:
+                reader = csv.DictReader(csvFile)
+                i = 0
+                for row in reader:
+                    toUpdate = {i : {}}
+                    for name in self._mProcessNames:
+                        toUpdate[i].update({ name : row[self._prefix + name + self._suffix]})
+                    toUpdate[i].update({self._desiredProperty : row[self._desiredProperty]})
+                    self._mDataDict.update(toUpdate)  
+                    i += 1
     
     def formMappings(self):
         for entry in self._mDataDict:
@@ -161,4 +168,3 @@ if __name__ == "__main__":
         compareProperty.append(float(mappings[key][1]))
         
     plot.visualize_mapping_space(mappingList, compareProperty)
-    
