@@ -1,4 +1,8 @@
-#author Felix Teweleit
+# Copyright (C) 2018 TU Dresden
+# All Rights Reserved
+#
+# Authors: Felix Teweleit
+
 from pykpn.gui.dataTemplates import mappingInformation
 from pykpn.gui.dataTemplates import platformInformation
 from pykpn.gui.managers import drawManager

@@ -1,3 +1,8 @@
+# Copyright (C) 2019 TU Dresden
+# All Rights Reserved
+#
+# Authors: Felix Teweleit
+
 import tkinter as tk
 from tkinter import messagebox
 import random as rnd
