@@ -1,4 +1,8 @@
-#author Felix Teweleit
+# Copyright (C) 2018 TU Dresden
+# All Rights Reserved
+#
+# Authors: Felix Teweleit
+
 import sys
 sys.path.append('../..')
 import tkinter as tk

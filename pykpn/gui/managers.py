@@ -1,4 +1,7 @@
-#author Felix Teweleit
+# Copyright (C) 2018 TU Dresden
+# All Rights Reserved
+#
+# Authors: Felix Teweleit
 from pykpn.gui.utils import listOperations
 from pykpn.gui.utils import platformOperations
 import tkinter as tk
