@@ -8,3 +8,6 @@ pykpn.egg-info
 build
 *.o
 third_party_dependencies/pynauty-0.6/nauty/config.*
+.project
+.pydevproject
+.settings
