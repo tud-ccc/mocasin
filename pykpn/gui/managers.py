@@ -93,6 +93,9 @@ class drawManager():
         """Draws the platform given to the api with the given canvas.
         :param bool drawOnlyPEs: Defines if the hole platform or just the PEs should be drawn
         """
+        for handle in self.__mCanvas.find_all():
+            self.__mCanvas.delete(handle)
+            
         toDraw = self.__mApiInstance.getPlatform().getPlatformDescription()
         drawWidth = self.__drawWidth / len(toDraw)
         drawHeight = self.__drawHeight
@@ -435,7 +438,7 @@ class drawManager():
             elif drawPEs:
                 self.__drawPEs(toDraw[1], drawWidth, restSizeY, relativeXValue, xIndent + relativeXValue * (length + border), yIndent, False)
             elif drawPEsWithPrimitive:
-                self.__drawPEsWithPrimitive(toDraw[1], drawWidth, restSizeY, relativeXValue, nextColor, xIndent + relativeXValue * (length + border), yIndent, toDraw[0].split('_')[2])
+                self.__drawPEsWithPrimitive(toDraw[1], drawWidth, restSizeY, relativeXValue, nextColor, xIndent + relativeXValue * (length + border), yIndent, toDraw[0].split('_')[len(toDraw[0].split('_'))-1])
             else:
                 raise(RuntimeWarning('There is no known primitive Structure to draw'))
         

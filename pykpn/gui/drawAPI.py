@@ -42,7 +42,7 @@ class drawAPI():
     """
        
     def setPlatform(self, platform, drawOnlyPEs = False):
-        """Analysis and draws the given platform.
+        """Analyzes and draws the given platform.
         :param SlxPlatform platform: The pykpn platform object.
         :param bool drawOnlyPEs: Defines if the drawManager should only draw the PEs of the platform
         """ 
