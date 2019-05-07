@@ -137,19 +137,9 @@ class platformInformation():
         """
         i = 0
         isInserted = False
-        if self.__coreClasses == []:
-                self.__coreClasses.append(length)
-                return
-        for entry in self.__coreClasses:
-            if entry == length:
-                return
-            elif entry < length:
-                i += 1
-            else:
-                self.__coreClasses.insert(i, length)
-                isInserted = True
-        if not isInserted:
-            self.__coreClasses.insert(i, length)
+        
+        if not length in self.__coreClasses:
+            self.__coreClasses.append(length)
         return
 
     def getCoreClasses(self):
