@@ -4,11 +4,11 @@
 # Authors: Felix Teweleit
 
 from pykpn.common.platform import FrequencyDomain, Platform, Processor, \
-    SchedulingPolicy, Scheduler, Storage, CommunicationPhase, Primitive
+    SchedulingPolicy, Scheduler, Storage, CommunicationPhase, Primitive, \
+    CommunicationResource, CommunicationResourceType
 from collections import OrderedDict
+from pykpn.platforms.utils import simpleDijkstra
 import sys
-from _operator import indexOf
-
 
 
 class platformDesigner():
@@ -64,6 +64,8 @@ class platformDesigner():
         """
         if self.__schedulingPolicy == None:
             return
+        if self.__activeScope == None:
+            return
         
         fd = FrequencyDomain('fd_' + name, frequency)
         
@@ -80,9 +82,6 @@ class platformDesigner():
                 self.__platform.add_scheduler(Scheduler('sched%02d' % i, [processor], [self.__schedulingPolicy]))
                 processors.append((processor,[]))
                 self.__peAmount += 1
-            if self.__activeScope == None:
-                self.__clusterDict.update({identifier : processors})
-            else:
                 self.__elementDict[self.__activeScope].update({identifier : processors})
         except:
             print(sys.exc_info()[0])
@@ -100,26 +99,18 @@ class platformDesigner():
         """
         if self.__schedulingPolicy == None:
             return False
+        if self.__activeScope == None:
+            return
         
         nameToGive = None
-        peList = None
-        if not self.__activeScope == None:
-            if not identifier in self.__elementDict[self.__activeScope]:
-                return
-            if name != 'default':
-                nameToGive = str(self.__activeScope) + '_' + name
-            else:
-                nameToGive = str(self.__activeScope) + '_L1_'
-                
-            peList = self.__elementDict[self.__activeScope][identifier]
+        
+        if not identifier in self.__clusterDict:
+            return False
+        if name != 'default':
+            nameToGive = name
         else:
-            if not identifier in self.__clusterDict:
-                return False
-            if name != 'default':
-                nameToGive = name
-            else:
-                nameToGive = 'L1_'
-            peList = self.__clusterDict[identifier]
+            nameToGive = 'L1_'
+        peList = self.__clusterDict[identifier]
         
         try:
             for pe in peList:
@@ -157,23 +148,17 @@ class platformDesigner():
         :returns: Whether the storage had been added successfully or not
         :rtype: bool
         """
-        clusterDict = None
-        nameToGive = None
+
         if self.__schedulingPolicy == None:
             return
+        if self.__activeScope == None:
+            return
         
-        if not self.__activeScope == None:
-            for clusterId in clusterIds:
-                if not clusterId in self.__elementDict[self.__activeScope]:
-                    return
-            clusterDict = self.__elementDict[self.__activeScope]
-            nameToGive = str(self.__activeScope) + '_' + name
-        else:
-            for clusterId in clusterIds:
-                if not clusterId in self.__clusterDict:
-                    return
-            clusterDict = self.__clusterDict
-            nameToGive = name
+        for clusterId in clusterIds:
+            if not clusterId in self.__clusterDict:
+                return
+        clusterDict = self.__clusterDict
+        nameToGive = name
         
         try:
             communicationRessource = Storage(nameToGive,
@@ -199,7 +184,9 @@ class platformDesigner():
         
         return
     
-    def connectElements(self, adjacencyList, readLatency, writeLatency, readThroughput, writeThroughput):
+    def createNetwork(self,adjacencyList, netRessource, 
+                      frequencyDomain, readLatency, writeLatency, readThroughput, writeThroughput,
+                      netName=''):
         if self.__clusterDict == {}:
             return
         if isinstance(adjacencyList, list):
@@ -209,11 +196,14 @@ class platformDesigner():
         else:
             return
         
+        
+        
         for element in adjacencyList:
             for identifier in element:
-                name = 'pl_' + str(adjacencyList.index(element)) + "_" + str(identifier)
-                communicationRessource = Storage(name,
-                                        self.__schedulingPolicy,
+                name = netName + 'pl_' + str(adjacencyList.index(element)) + "_" + str(identifier)
+                communicationRessource = CommunicationResource(name,
+                                        frequencyDomain,
+                                        CommunicationResourceType.PhysicalLink,
                                         read_latency=readLatency,
                                         write_latency=writeLatency,
                                         read_throughput=readThroughput, 
