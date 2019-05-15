@@ -135,12 +135,8 @@ class platformInformation():
         """Adds a size of processing elements to the list of existing sizes of processing elements.
         :param int length: The size of the processing element that should be appended.
         """
-        i = 0
-        isInserted = False
-        
         if not length in self.__coreClasses:
             self.__coreClasses.append(length)
-        return
 
     def getCoreClasses(self):
         """Returns the list of existing sizes of processing elements.

@@ -5,7 +5,10 @@
 
 from pykpn.common.platform import FrequencyDomain, Platform, Processor, \
     SchedulingPolicy, Scheduler, Storage, CommunicationPhase, Primitive
+from collections import OrderedDict
 import sys
+from _operator import indexOf
+
 
 
 class platformDesigner():
@@ -23,15 +26,18 @@ class platformDesigner():
     :ivar Platform __platform: The platform object, that is created and manipulated.
     """
     
-    def __init__(self, name):
+    def __init__(self, platform):
         """Initialize a new instance of the platformDesigner.
         :param String name: The name of the platform that will be created.
+        :param Platform platform: The platform object which will be modified.
         """
         self.__peAmount = 0
-        self.__clusters = 0
-        self.__clusterDict = {}
+        self.__elementDict = {}
+        self.__activeScope = None
+        self.__clusterDict = OrderedDict()
+        
         self.__schedulingPolicy = None
-        self.__platform = Platform(name)
+        self.__platform = platform
     
     def setSchedulingPolicy(self, policy, cycles):
         """Sets a new scheduling policy, which will be applied to all schedulers of new PE Clusters.
@@ -47,7 +53,7 @@ class platformDesigner():
             print(sys.exc_info()[0])
             return False
     
-    def addPeCluster(self, name, amount, frequency, noc=False):
+    def addPeCluster(self, identifier, name, amount, frequency, noc=False):
         """Adds a new cluster of PEs to the platform.
         :param String name: The name of the processor type
         :param int amount: The amount of PEs in the cluster
@@ -57,7 +63,7 @@ class platformDesigner():
         :rtype: int
         """
         if self.__schedulingPolicy == None:
-            return -1
+            return
         
         fd = FrequencyDomain('fd_' + name, frequency)
         
@@ -74,15 +80,14 @@ class platformDesigner():
                 self.__platform.add_scheduler(Scheduler('sched%02d' % i, [processor], [self.__schedulingPolicy]))
                 processors.append((processor,[]))
                 self.__peAmount += 1
-            self.__clusterDict.update({self.__clusters : processors})
-            self.__clusters += 1
+            if self.__activeScope == None:
+                self.__clusterDict.update({identifier : processors})
+            else:
+                self.__elementDict[self.__activeScope].update({identifier : processors})
         except:
             print(sys.exc_info()[0])
-            return -1
         
-        return self.__clusters-1
-    
-    def addCacheForPEs(self, clusterId, readLatency, writeLatency, readThroughput, writeThroughput, name='default'):
+    def addCacheForPEs(self, identifier, readLatency, writeLatency, readThroughput, writeThroughput, name='default'):
         """Adds a level 1 cache for each PE of the given cluster.
         :param int clusterId: The ID of the cluster.
         :param int readLatency: The read latency of the cache.
@@ -93,43 +98,54 @@ class platformDesigner():
         :returns: Whether the caches had been added successfully or not.
         :rtype: bool
         """
-        if not clusterId in self.__clusterDict:
-            return False
-        
         if self.__schedulingPolicy == None:
             return False
         
-        toName = None
-        if name != 'default':
-            toName = name
+        nameToGive = None
+        peList = None
+        if not self.__activeScope == None:
+            if not identifier in self.__elementDict[self.__activeScope]:
+                return
+            if name != 'default':
+                nameToGive = str(self.__activeScope) + '_' + name
+            else:
+                nameToGive = str(self.__activeScope) + '_L1_'
+                
+            peList = self.__elementDict[self.__activeScope][identifier]
         else:
-            toName = 'L1_'
+            if not identifier in self.__clusterDict:
+                return False
+            if name != 'default':
+                nameToGive = name
+            else:
+                nameToGive = 'L1_'
+            peList = self.__clusterDict[identifier]
         
         try:
-            for pe in self.__clusterDict[clusterId]:
-                communicationRessource = Storage(toName + pe[0].name,
+            for pe in peList:
+                communicationRessource = Storage(nameToGive + pe[0].name,
                                                  self.__schedulingPolicy,
                                                  read_latency = readLatency,
                                                  write_latency = writeLatency,
                                                  read_throughput = readThroughput,
                                                  write_throughput = writeThroughput)
                 self.__platform.add_communication_resource(communicationRessource)
-                produce = CommunicationPhase('produce', [communicationRessource], 'write')
-                consume = CommunicationPhase('consume', [communicationRessource], 'read')
-
-                prim = Primitive('prim_' + toName + pe[0].name)
+                pe[1].append(communicationRessource)
+                
+                prim = Primitive('prim_' + nameToGive + pe[0].name)
+                produce = CommunicationPhase('produce', pe[1], 'write')
+                consume = CommunicationPhase('consume', pe[1], 'read')
                 prim.add_producer(pe[0], [produce])
                 prim.add_consumer(pe[0], [consume])
                 self.__platform.add_primitive(prim)
                 
-                pe[1].append(communicationRessource)
         except:
             print(sys.exc_info()[0])
             return False
         
         return True
             
-    def connectClusters(self, name, clusterIds, readLatency, writeLatency, readThroughput, writeThroughput):
+    def connectCluster(self, name, clusterIds, readLatency, writeLatency, readThroughput, writeThroughput):
         """Connects all the given clusters with a storage. For example RAM. Also you can add a L2 cache for a cluster
         if you just give one cluster.
         :param String name: The name of the storage
@@ -141,28 +157,39 @@ class platformDesigner():
         :returns: Whether the storage had been added successfully or not
         :rtype: bool
         """
-        
+        clusterDict = None
+        nameToGive = None
         if self.__schedulingPolicy == None:
-            return False 
+            return
         
-        for clusterId in clusterIds:
-            if not clusterId in self.__clusterDict:
-                return False
+        if not self.__activeScope == None:
+            for clusterId in clusterIds:
+                if not clusterId in self.__elementDict[self.__activeScope]:
+                    return
+            clusterDict = self.__elementDict[self.__activeScope]
+            nameToGive = str(self.__activeScope) + '_' + name
+        else:
+            for clusterId in clusterIds:
+                if not clusterId in self.__clusterDict:
+                    return
+            clusterDict = self.__clusterDict
+            nameToGive = name
         
         try:
-            communicationRessource = Storage(name,
+            communicationRessource = Storage(nameToGive,
                                         self.__schedulingPolicy,
                                         read_latency=readLatency,
                                         write_latency=writeLatency,
                                         read_throughput=readThroughput, 
                                         write_throughput=writeThroughput)
             self.__platform.add_communication_resource(communicationRessource)
-            prim = Primitive('prim_' + name)
+            prim = Primitive('prim_' + nameToGive)
 
             for clusterId in clusterIds:
-                for pe in self.__clusterDict[clusterId]:
-                    produce = CommunicationPhase('produce', pe[1] + [communicationRessource], 'write')
-                    consume = CommunicationPhase('consume', pe[1] + [communicationRessource], 'read')
+                for pe in clusterDict[clusterId]:
+                    pe[1].append(communicationRessource)
+                    produce = CommunicationPhase('produce', pe[1], 'write')
+                    consume = CommunicationPhase('consume', pe[1], 'read')
                     prim.add_producer(pe[0], [produce])
                     prim.add_consumer(pe[0], [consume])        
             self.__platform.add_primitive(prim)
@@ -170,20 +197,39 @@ class platformDesigner():
             print(sys.exc_info()[0])
             return False
         
-        return True
+        return
     
+    def connectElements(self, adjacencyList, readLatency, writeLatency, readThroughput, writeThroughput):
+        if self.__clusterDict == {}:
+            return
+        if isinstance(adjacencyList, list):
+            for element in adjacencyList:
+                if not isinstance(element, list):
+                    return
+        else:
+            return
+        
+        for element in adjacencyList:
+            for identifier in element:
+                name = 'pl_' + str(adjacencyList.index(element)) + "_" + str(identifier)
+                communicationRessource = Storage(name,
+                                        self.__schedulingPolicy,
+                                        read_latency=readLatency,
+                                        write_latency=writeLatency,
+                                        read_throughput=readThroughput, 
+                                        write_throughput=writeThroughput)
+                self.__platform.add_communication_resource(communicationRessource)
+        
+        
+        
+        
     
-    def getPlatform(self):
-        return self.__platform
+    def newElement(self, identifier):
+        self.__elementDict.update({identifier : {}})
+        self.__activeScope = identifier
     
-    def reset(self, name='newPlatform'):
-        self.__peAmount = 0
-        self.__clusters = 0
-        self.__clusterDict = {}
-        self.__schedulingPolicy = None
-        self.__platform = Platform(name)
-    
-    
+    def finishElement(self):
+        self.__activeScope = None
     
     
     
