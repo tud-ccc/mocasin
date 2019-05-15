@@ -1,7 +1,6 @@
 import tkinter as tk
 from pykpn.gui import drawAPI
-from pykpn.platforms import platformDesigner
-from pykpn.platforms import exynos_2chips
+from pykpn.platforms import platformDesigner, exynos_2chips, kalray_mppa
 
 class visualisationPanel(tk.Frame):
     def __init__(self, parent, pHeight, pWidth, *args, **kwargs):
@@ -12,7 +11,8 @@ class visualisationPanel(tk.Frame):
         self.__mCanvas.grid(row=0, column=0)
         self.__drawDevice = drawAPI.drawAPI(self.__mCanvas, 5, 10, 800, 600)
     
-    def draw(self, platform):
+    def draw(self):
+        platform = kalray_mppa.KalrayMppa()
         self.__drawDevice.setPlatform(platform)
         
     def reset(self):
@@ -171,7 +171,7 @@ class mainWindow(tk.Frame):
         self.mDesigner = platformDesigner.platformDesigner('test')
     
     def draw(self):
-        self.visPanel.draw(self.mDesigner.getPlatform())
+        self.visPanel.draw()
     
     def reset(self):
         self.visPanel.reset()
