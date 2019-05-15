@@ -89,7 +89,7 @@ class MetricSpaceEmbeddingBase():
                 L = np.linalg.cholesky(Q_new)
 
                       
-        #print(L)
+        print(L.shape)
         #lowerdim = fjlt.fjlt(L,10,1)
         #print(lowerdim)
         return L,n

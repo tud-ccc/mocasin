@@ -71,7 +71,7 @@ class Sample(list):
         return "Sample: {}".format(tuple(self.sample))
 
 
-class SampleGenerator():
+class SampleGeneratorBase():
     def gen_samples_in_ball(self,vol,distr,nsamples=1):
         res = []
         for _ in range(nsamples):
@@ -86,7 +86,7 @@ class GeometricSample(Sample):
         # use Manhattan metric
         return np.linalg.norm(self.sample - s.sample, 2)
 
-class SampleGeometricGen(SampleGenerator):
+class SampleGeometricGen(SampleGeneratorBase):
 
     def gen_samples_in_ball(self,vol,distr,nsamples=1):
         res = []
@@ -130,7 +130,7 @@ class SampleGeometricGen(SampleGenerator):
             val = np.random.binomial(conf.max_pe-1, 0.5, 1)
         return val[0]
 
-class MetricSpaceSampleGen(SampleGenerator):
+class MetricSpaceSampleGen(SampleGeneratorBase):
     def __init__(self,M):
         self.M = M
 
@@ -190,3 +190,14 @@ class SampleSet(object):
             if (not _s.feasible):
                 infeasible_sample.append(_s)
         return infeasible_samples
+
+def SampleGen(representation):
+    #TODO: the first argument should be redundant. Fix this
+    if representation == "GeomDummy":
+        return SampleGeometricGen()
+    elif representation._M != None:
+        return MetricSpaceSampleGen(representation._M)
+    else:
+        log.error(f"Sample generator type not found:{generator_type}")
+        exit(1)
+    

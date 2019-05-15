@@ -63,12 +63,13 @@ class ThingPlotter(object):
 
 class DesignCentering(object):
 
-    def __init__(self, init_vol, distr, oracle):
+    def __init__(self, init_vol, distr, oracle, representation):
         np.random.seed(conf.random_seed)
         type(self).distr = distr
         type(self).vol = init_vol
         type(self).oracle = oracle
         type(self).samples = {}
+        type(self).representation = representation
         type(self).p_value = self.__adapt_poly(conf.hitting_propability, conf.deg_p_polynomial)
         type(self).s_value = self.__adapt_poly(conf.step_width, conf.deg_s_polynomial)
 
@@ -95,10 +96,9 @@ class DesignCentering(object):
 
         s_set = dc_sample.SampleSet()
         for i in range(0, conf.max_samples, conf.adapt_samples):
-            s = dc_sample.SampleGeometricGen()
-            #M = finiteMetricSpaceLP(exampleClusterArch,d=2)
-            #M = reps.finiteMetricSpaceLPSym(reps.exampleClusterArchSymmetries,d=2)
-            #s = dc_sample.MetricSpaceSampleGen(M)
+            s = dc_sample.SampleGen(self.representation)
+            
+            #Metric (repr). until here. TODO: continue.
             log.debug("dc: Current iteration {}".format(i))
             # TODO: may genrate identical samples which makes things ineffective 
             samples = s.gen_samples_in_ball(type(self).vol, type(self).distr, conf.adapt_samples)

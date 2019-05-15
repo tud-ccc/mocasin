@@ -81,7 +81,7 @@ class Simulation(object):
         type(self).sim_config = config
 
     def get_platform(self):
-        conf = SlxSimulationConfig(self.sim_config)
+        conf = SlxSimulationConfig(self.sim_config) #TODO: this is not generic...It will only run with SLX stuff (see Issue #3)
         platform_name = os.path.splitext(os.path.basename(conf.platform_xml))[0]
         return  SlxPlatform(platform_name, conf.platform_xml, conf.slx_version)
 
@@ -187,6 +187,7 @@ class Simulation(object):
         exec_times = []
         for r in results:
             exec_times.append(float(r.exec_time / 1000000000.0))
+            #why do you divide by this huge number? seems pretty arbitrary
         
         feasible = []
         for s in samples:
