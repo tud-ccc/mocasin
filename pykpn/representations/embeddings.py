@@ -6,6 +6,7 @@
 from __future__ import print_function
 import numpy as np
 import cvxpy as cvx
+import itertools
 import random
 #import fjlt.fjlt as fjlt #TODO: use fjlt to (automatically) lower the dimension of embedding
 from . import permutations as perm
@@ -55,8 +56,10 @@ class MetricSpaceEmbeddingBase():
         size = D.shape
         assert(size[0] == size[1])
         n = size[0]
-        #Q = cvx.Semidef(n) #for cvxpy < 1.0
-        Q = cvx.Variable((n, n), PSD=True)
+        if int(cvx.__version__[0]) < 1:
+            Q = cvx.Semidef(n) #for cvxpy < 1.0
+        else:
+            Q = cvx.Variable((n, n), PSD=True)
         #print(D)
         
         #c = matrix(([1]*n))
@@ -151,21 +154,24 @@ class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
         return res
 
     def invapprox(self,vec):
-        return self.inv(self.approx(vec))
+        flat_vec = [item for sublist in vec for item in sublist]
+        return self.inv(self.approx(flat_vec))
 
     def uniformVector(self):
         k = len(self.iota)
         res = []
         for i in range(0,self._d):
             idx = random.randint(0,k-1)
-            res = res + list(self.iota[idx])
+            res.append(list(self.iota[idx]))
         return res
 
     def uniformFromBall(self,p,r,npoints=1):
         vecs = []
-        for _ in range(npionts):
+        for _ in range(npoints):
             #currently fixed at l1 norm (Manhattan)
-            v = p + r*lp.uniform_from_p_ball(p=1,n=self._d)
+            p_flat = [item for sublist in map(list,p) for item in sublist]
+            #print(f"k : {self._k}, shape p: {np.array(p).shape},\n p: {p} \n p_flat: {p_flat}")
+            v = (np.array(p_flat)+ np.array(r*lp.uniform_from_p_ball(p=1,n=self._k*self._d))).tolist()
             vecs.append(self.approx(v))
             
         return vecs 

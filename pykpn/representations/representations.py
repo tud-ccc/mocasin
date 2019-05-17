@@ -100,7 +100,7 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         #else:
         
       for _ in range(npoints):
-        v = list(map(_round,np.array(p[:len(Procs)]) + np.array(r*lp.uniform_from_p_ball(p=1,n=len(Procs)))))
+        v = list(map(_round,(np.array(p[:len(Procs)]) + np.array(r*lp.uniform_from_p_ball(p=1,n=len(Procs)))).tolist()))
         res.append(self.randomPrimitives(v))
       log.debug(f"unfiorm from ball: {res}")
       return res
@@ -206,7 +206,12 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
         return self.invapprox(x)
 
     def uniform(self):
-        return self.uniformVector()
+        return self.elem2SimpleVec(self.uniformVector())
+
+    def uniformFromBall(self,p,r,npoints=1):
+      log.debug(f"Uniform from ball with radius r={r} around point p={p}")
+      point = self.simpleVec2Elem(p)
+      return MetricSpaceEmbedding.uniformFromBall(self,point,r,npoints)
     
 class SymmetryEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepresentation):
     def __init__(self,kpn, platform, distortion=DEFAULT_DISTORTION):

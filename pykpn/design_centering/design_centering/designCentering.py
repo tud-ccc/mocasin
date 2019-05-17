@@ -98,7 +98,6 @@ class DesignCentering(object):
         for i in range(0, conf.max_samples, conf.adapt_samples):
             s = dc_sample.SampleGen(self.representation)
             
-            #Metric (repr). until here. TODO: continue.
             log.debug("dc: Current iteration {}".format(i))
             # TODO: may genrate identical samples which makes things ineffective 
             samples = s.gen_samples_in_ball(type(self).vol, type(self).distr, nsamples=conf.adapt_samples)

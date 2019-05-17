@@ -45,7 +45,7 @@ class Cube(Volume):
             return self.center
         # take mean of feasible points as new center
         m = np.mean(fs_set, axis=0)
-        self.center = np.around(m)
+        self.center = np.around(m).tolist()
         return self.center
     
     def correct_center(self, s_set, center, old_center):

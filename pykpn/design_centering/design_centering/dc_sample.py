@@ -172,7 +172,6 @@ class MetricSpaceSampleGen(SampleGeneratorBase):
             exit(1)
         sample_ints =  self.representation.uniformFromBall(ball.center,ball.radius,nsamples)
         sample_list = list(map(lambda s: MetricSpaceSample(self.representation,s), sample_ints))
-        print(f"Sample ints: {sample_ints}")
         return sample_list
 
 
@@ -183,7 +182,7 @@ class MetricSpaceSample(Sample):
         #assert isinstance(rep,FiniteMetricSpace) or log.error(f"Sampling from metric space with representation: {rep}")
         self.rep = rep 
         Sample.__init__(self,None)
-        self.sample = sample
+        self.sample = rep.elem2SimpleVec(sample)
 
     def sample2tuple(self):
         #print("M.n = " + str(self.M.n))

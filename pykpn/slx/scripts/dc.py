@@ -15,6 +15,10 @@ import json
 import logging
 import argparse
 
+from pykpn.design_centering.design_centering import dc_settings as conf
+import random
+random.seed(conf.random_seed)
+
 from ..config import SlxSimulationConfig
 from ..kpn import SlxKpnGraph
 from ..mapping import export_slx_mapping
@@ -25,14 +29,12 @@ from pykpn.design_centering.design_centering import dc_oracle
 from pykpn.design_centering.design_centering import dc_sample
 from pykpn.design_centering.design_centering import dc_volume
 from pykpn.design_centering.design_centering import designCentering
-from pykpn.design_centering.design_centering import dc_settings as conf
 from pykpn.design_centering.design_centering import perturbationManager as p
 from pykpn.common import logging
 from pykpn.util import plot # t-SNE plotting stuff
 import numpy as np
 import matplotlib.pyplot as plt
 from pykpn.representations import representations as reps
-import random
 
 log = logging.getLogger(__name__)
 
@@ -62,7 +64,6 @@ def main():
     log.info("==== Run Design Centering ====")
     #logging.basicConfig(filename="dc.log", filemode = 'w', level=logging.DEBUG)
     
-    random.seed(conf.random_seed)
     log.info(f" Initialized random number generator. Seed: {conf.random_seed}")
     
     tp = designCentering.ThingPlotter()
