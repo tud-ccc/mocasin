@@ -4,7 +4,7 @@ import random
 #Calafiore, G., Dabbene, F. & Tempo, R. Uniform sample generation in l p balls for probabilistic robustness analysis.
 #def uniformFromLPBall():
 def p_norm(x,p):
-    res = sum(map(lambda t : t**p,x))
+    res = sum(map(lambda t : abs(t)**p,x))
     return res**(1/p)
         
 def uniform_from_p_ball(p=1,n=2):
@@ -22,13 +22,22 @@ def uniform_from_p_ball(p=1,n=2):
 
 x = []
 y = []
-for i in range(1000):
-    vec = uniform_from_p_ball(p=1,n=2)
+z = []
+for i in range(10000):
+    vec = uniform_from_p_ball(p=900,n=2)
     x.append(vec[0])
     y.append(vec[1])
+    if(len(vec) > 2):
+        z.append(vec[2])
     
 
 import matplotlib.pyplot as plt
 
-plt.scatter(x,y)
+if len(z) == 0:
+    plt.scatter(x,y)
+else:
+    from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(x,y,z)
 plt.show()
