@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2018 TU Dresden
+# Copyright (C) 2017-2019 TU Dresden
 # All Rights Reserved
 #
 # Author: Andres Goens

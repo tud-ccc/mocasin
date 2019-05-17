@@ -6,7 +6,7 @@ from . import dc_oracle
 from . import dc_settings as conf
 from pykpn.representations.metric_spaces import FiniteMetricSpace
 from pykpn.common.mapping import Mapping
-from pykpn.representations.representations import RepresentationType
+from pykpn.representations.representations import RepresentationType, MetricSpaceRepresentation, MetricEmbeddingRepresentation, SimpleVectorRepresentation
 
 from sys import exit
 
@@ -150,7 +150,7 @@ class VectorSpaceSample(Sample):
     # This class overrides the self.sample type from tuple to int
     # and uses the representation to convert to a tuple again
     def __init__(self,rep,sample=None):
-        assert isinstance(rep,finiteMetricSpace)
+        #assert isinstance(rep,FiniteMetricSpace) or log.error(f"Sampling from metric space with representation: {rep}")
         self.rep = rep 
         Sample.__init__(self,None)
         self.sample = sample
@@ -172,6 +172,7 @@ class MetricSpaceSampleGen(SampleGeneratorBase):
             exit(1)
         sample_ints =  self.representation.uniformFromBall(ball.center,ball.radius,nsamples)
         sample_list = list(map(lambda s: MetricSpaceSample(self.representation,s), sample_ints))
+        print(f"Sample ints: {sample_ints}")
         return sample_list
 
 
@@ -179,7 +180,7 @@ class MetricSpaceSample(Sample):
     # This class overrides the self.sample type from tuple to int
     # and uses the representation to convert to a tuple again
     def __init__(self,rep,sample=None):
-        assert isinstance(rep,finiteMetricSpace)
+        #assert isinstance(rep,FiniteMetricSpace) or log.error(f"Sampling from metric space with representation: {rep}")
         self.rep = rep 
         Sample.__init__(self,None)
         self.sample = sample
@@ -223,7 +224,11 @@ class SampleSet(object):
 def SampleGen(representation):
     if representation == "GeomDummy":
         return SampleGeometricGen()
-    elif representation.M != None:
+    elif isinstance(representation,MetricSpaceRepresentation):
+        return MetricSpaceSampleGen(representation)
+    elif isinstance(representation,MetricEmbeddingRepresentation):
+        return MetricSpaceSampleGen(representation)
+    elif isinstance(representation,SimpleVectorRepresentation):
         return MetricSpaceSampleGen(representation)
     else:
         log.error(f"Sample generator type not found:{generator_type}")

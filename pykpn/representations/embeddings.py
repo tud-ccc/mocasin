@@ -11,6 +11,7 @@ import random
 from . import permutations as perm
 from . import metric_spaces as metric
 from pykpn.common import logging
+import pykpn.util.random_distributions.lp as lp
 
 log = logging.getLogger(__name__)
 
@@ -161,4 +162,10 @@ class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
         return res
 
     def uniformFromBall(self,p,r,npoints=1):
-        return [] #FIXME: implement
+        vecs = []
+        for _ in range(npionts):
+            #currently fixed at l1 norm (Manhattan)
+            v = p + r*lp.uniform_from_p_ball(p=1,n=self._d)
+            vecs.append(self.approx(v))
+            
+        return vecs 

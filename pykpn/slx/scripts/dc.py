@@ -32,6 +32,7 @@ from pykpn.util import plot # t-SNE plotting stuff
 import numpy as np
 import matplotlib.pyplot as plt
 from pykpn.representations import representations as reps
+import random
 
 log = logging.getLogger(__name__)
 
@@ -61,20 +62,20 @@ def main():
     log.info("==== Run Design Centering ====")
     #logging.basicConfig(filename="dc.log", filemode = 'w', level=logging.DEBUG)
     
+    random.seed(conf.random_seed)
+    log.info(f" Initialized random number generator. Seed: {conf.random_seed}")
     
     tp = designCentering.ThingPlotter()
 
     if (len(argv) > 1):
         # read cmd-line and settings
-        try:
-            center = [1,2,3,4,5,6,7,8]
-            #json.loads(argv[1])
-        except ValueError:
-            log.warning(" {:s} is not a vector \n".format(argv[1]))
-            sys.stderr.write("JSON decoding failed (in function main) \n")
+        #try:
+        #    center = [1,2,3,4,5,6,7,8]
+        #    #json.loads(argv[1])
+        #except ValueError:
+        #    log.warning(" {:s} is not a vector \n".format(argv[1]))
+        #    sys.stderr.write("JSON decoding failed (in function main) \n")
 
-        if (conf.shape == "cube"):
-            v = dc_volume.Cube(center, len(center))
 
         config = SlxSimulationConfig(args.configFile)
         slx_version = config.slx_version
@@ -105,6 +106,14 @@ def main():
             representation = representation_type.getClassType()(kpn,platform)
 
         # run DC algorithm
+        # starting volume (init): 
+        if representation == "GeomDummy":
+            center = [1,2,3,4,5,6,7,8]
+        else:
+            center = representation.uniform()
+        if (conf.shape == "cube"):
+            v = dc_volume.Cube(center, len(center))
+        
         config = args.configFile
         oracle = dc_oracle.Oracle(args.configFile) #the oracle could get the kpn and platform (now, pykpn objects, SLX independent) passed as files (see Issue #3)
         dc = designCentering.DesignCentering(v, conf.distr, oracle,representation)

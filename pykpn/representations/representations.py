@@ -1,10 +1,11 @@
-# Copyright (C) 2018 TU Dresden
+# Copyright (C) 2018-2019 TU Dresden
 # All Rights Reserved
 #
 # Author: Andres Goens
 
 from enum import Enum
 from numpy.random import random_integers
+import numpy as np
 
 try:
   import pynauty as pynauty
@@ -15,6 +16,9 @@ from .metric_spaces import FiniteMetricSpace, FiniteMetricSpaceSym, FiniteMetric
 from .embeddings import MetricSpaceEmbedding, DEFAULT_DISTORTION
 import pykpn.representations.automorphisms as aut
 import pykpn.representations.permutations as perm
+import pykpn.util.random_distributions.lp as lp
+from pykpn.common import logging
+log = logging.getLogger(__name__)
 
 class MappingRepresentation(type):
     """Metaclass managing the representation of mappings. 
@@ -56,6 +60,7 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
       Procs = list(self.kpn._processes.keys())
       PEs = list(self.platform._processors.keys())
       CPs = list(self.platform._primitives.keys())
+      res = pe_mapping[:len(Procs)]
       for c in self.kpn.channels():
         suitable_primitives = []
         for p in self.platform.primitives():
@@ -64,7 +69,10 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
           src_pe_name = PEs[res[src_proc_idx]]
           src = self.platform.find_processor(src_pe_name)
           sink_procs_idxs = [i for i,x in enumerate(Procs) if x in [snk.name for snk in c.sinks]]
-          sink_pe_names = [PEs[res[s]] for s in sink_procs_idxs]
+          try:
+            sink_pe_names = [PEs[res[s]] for s in sink_procs_idxs]
+          except:
+            log.error(f"Invalid mapping: {res} \n PEs: {PEs},\n sink_procs_idxs: {sink_procs_idxs}\n")
           sinks = [self.platform.find_processor(snk) for snk in sink_pe_names]
           if p.is_suitable(src,sinks):
             suitable_primitives.append(p)
@@ -80,8 +88,22 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
     def uniformFromBall(self,p,r,npoints=1):
       Procs = list(self.kpn._processes.keys())
       PEs = list(self.platform._processors.keys())
-      pe_mapping = list(random_integers(0,len(PEs)-1,size=len(Procs)))#fixme
-      return self.randomPrimitives(pe_mapping)
+      P = len(PEs)
+      res = []
+      def _round(point):
+        #perodic boundary conditions
+        return int(round(point) % P)
+        #if point > P-1:
+        #  return P-1
+        #elif point < 0:
+        #  return 0
+        #else:
+        
+      for _ in range(npoints):
+        v = list(map(_round,np.array(p[:len(Procs)]) + np.array(r*lp.uniform_from_p_ball(p=1,n=len(Procs)))))
+        res.append(self.randomPrimitives(v))
+      log.debug(f"unfiorm from ball: {res}")
+      return res
       
 class MetricSpaceRepresentation(FiniteMetricSpaceLP, metaclass=MappingRepresentation):
     def __init__(self,kpn, platform, p=1):
