@@ -101,6 +101,7 @@ def main():
             raise RuntimeError('Unrecognized representation.')
         else:
             representation_type = reps.RepresentationType[rep_type_str]
+            log.info(f"initializing representation ({rep_type_str})")
             representation = representation_type.getClassType()(kpn,platform)
 
         # run DC algorithm

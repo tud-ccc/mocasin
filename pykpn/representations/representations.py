@@ -48,40 +48,51 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         self.kpn = kpn
         self.platform = platform
     def uniform(self):
-            Procs = list(self.kpn._processes.keys())
-            PEs = list(self.platform._processors.keys())
-            CPs = list(self.platform._primitives.keys())
-            res = list(random_integers(0,len(PEs)-1,size=len(Procs)))
-            for c in self.kpn.channels():
-                suitable_primitives = []
-                for p in self.platform.primitives():
+      Procs = list(self.kpn._processes.keys())
+      PEs = list(self.platform._processors.keys())
+      pe_mapping = list(random_integers(0,len(PEs)-1,size=len(Procs)))
+      return self.randomPrimitives(pe_mapping)
+    def randomPrimitives(self,pe_mapping):
+      Procs = list(self.kpn._processes.keys())
+      PEs = list(self.platform._processors.keys())
+      CPs = list(self.platform._primitives.keys())
+      for c in self.kpn.channels():
+        suitable_primitives = []
+        for p in self.platform.primitives():
                     #assert: len([..]) list in next line == 1
-                    src_proc_idx = [i for i,x in enumerate(Procs) if x == c.source.name][0]
-                    src_pe_name = PEs[res[src_proc_idx]]
-                    src = self.platform.find_processor(src_pe_name)
-                    sink_procs_idxs = [i for i,x in enumerate(Procs) if x in [snk.name for snk in c.sinks]]
-                    sink_pe_names = [PEs[res[s]] for s in sink_procs_idxs]
-                    sinks = [self.platform.find_processor(snk) for snk in sink_pe_names]
-                    if p.is_suitable(src,sinks):
-                        suitable_primitives.append(p)
-                primitive = suitable_primitives[random_integers(0,len(suitable_primitives)-1)].name
-                primitive_idx = [i for i,x in enumerate(CPs) if x == primitive][0]
-                res.append(primitive_idx)
-            return res
+          src_proc_idx = [i for i,x in enumerate(Procs) if x == c.source.name][0]
+          src_pe_name = PEs[res[src_proc_idx]]
+          src = self.platform.find_processor(src_pe_name)
+          sink_procs_idxs = [i for i,x in enumerate(Procs) if x in [snk.name for snk in c.sinks]]
+          sink_pe_names = [PEs[res[s]] for s in sink_procs_idxs]
+          sinks = [self.platform.find_processor(snk) for snk in sink_pe_names]
+          if p.is_suitable(src,sinks):
+            suitable_primitives.append(p)
+        primitive = suitable_primitives[random_integers(0,len(suitable_primitives)-1)].name
+        primitive_idx = [i for i,x in enumerate(CPs) if x == primitive][0]
+        res.append(primitive_idx)
+      return res
 
     def simpleVec2Elem(self,x):
         return x
     def elem2SimpleVec(self,x):
         return x
-
+    def uniformFromBall(self,p,r,npoints=1):
+      Procs = list(self.kpn._processes.keys())
+      PEs = list(self.platform._processors.keys())
+      pe_mapping = list(random_integers(0,len(PEs)-1,size=len(Procs)))#fixme
+      return self.randomPrimitives(pe_mapping)
+      
 class MetricSpaceRepresentation(FiniteMetricSpaceLP, metaclass=MappingRepresentation):
-    def __init__(self,kpn, platform):
+    def __init__(self,kpn, platform, p=1):
         self._topologyGraph = platform.to_adjacency_dict()
-        M, self._arch_nc, self._arch_nc_inv = arch_graph_to_distance_metric(self._topologyGraph)
+        M_list, self._arch_nc, self._arch_nc_inv = arch_graph_to_distance_metric(self._topologyGraph)
+        M = FiniteMetricSpace(M_list)
         self.kpn = kpn
         self.platform = platform
+        d = len(kpn.processes())
         init_app_ncs(self,kpn)
-        super.__init__(M,d)
+        super().__init__(M,d)
         
     def simpleVec2Elem(self,x): 
         return x

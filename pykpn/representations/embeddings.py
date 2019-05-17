@@ -10,6 +10,9 @@ import random
 #import fjlt.fjlt as fjlt #TODO: use fjlt to (automatically) lower the dimension of embedding
 from . import permutations as perm
 from . import metric_spaces as metric
+from pykpn.common import logging
+
+log = logging.getLogger(__name__)
 
 DEFAULT_DISTORTION = 1.05
 
@@ -64,7 +67,8 @@ class MetricSpaceEmbeddingBase():
         obj = cvx.Minimize(1)
         prob = cvx.Problem(obj,constraints)
         prob.solve()
-        assert(prob.status == cvx.OPTIMAL or print("status:" + str(prob.status))) 
+        if prob.status != cvx.OPTIMAL:
+            log.warning("embedding optimization status non-optimal: " + str(prob.status)) 
         #print(Q.value)
         #print(np.linalg.eigvals(np.matrix(Q.value)))
         #print(np.linalg.eigh(np.matrix(Q.value)))
@@ -76,7 +80,7 @@ class MetricSpaceEmbeddingBase():
             eigenvals, eigenvecs = np.linalg.eigh(np.matrix(Q.value))
             min_eigenv = min(eigenvals)
             if min_eigenv < 0:
-                print("Warning, matrix not positive semidefinite."
+                log.warning("Warning, matrix not positive semidefinite."
                       + "Trying to correct for numerical errors with minimal eigenvalue: "
                       + str(min_eigenv) + " (max. eigenvalue:" + str(max(eigenvals)) + ").")
                       
@@ -89,7 +93,7 @@ class MetricSpaceEmbeddingBase():
                 L = np.linalg.cholesky(Q_new)
 
                       
-        print(L.shape)
+        log.debug(f"Shape of lower-triangular matrix L: {L.shape}")
         #lowerdim = fjlt.fjlt(L,10,1)
         #print(lowerdim)
         return L,n
@@ -154,4 +158,6 @@ class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
             idx = random.randint(0,k-1)
             res = res + list(self.iota[idx])
         return res
-            
+
+    def uniformFromBall(self,p,r,npoints=1):
+        return [] #FIXME: implement
