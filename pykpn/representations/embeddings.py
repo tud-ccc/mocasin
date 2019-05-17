@@ -6,10 +6,15 @@
 from __future__ import print_function
 import numpy as np
 import cvxpy as cvx
+import itertools
 import random
 #import fjlt.fjlt as fjlt #TODO: use fjlt to (automatically) lower the dimension of embedding
 from . import permutations as perm
 from . import metric_spaces as metric
+from pykpn.common import logging
+import pykpn.util.random_distributions.lp as lp
+
+log = logging.getLogger(__name__)
 
 DEFAULT_DISTORTION = 1.05
 
@@ -51,7 +56,10 @@ class MetricSpaceEmbeddingBase():
         size = D.shape
         assert(size[0] == size[1])
         n = size[0]
-        Q = cvx.Semidef(n)
+        if int(cvx.__version__[0]) < 1:
+            Q = cvx.Semidef(n) #for cvxpy < 1.0
+        else:
+            Q = cvx.Variable((n, n), PSD=True)
         #print(D)
         
         #c = matrix(([1]*n))
@@ -64,7 +72,8 @@ class MetricSpaceEmbeddingBase():
         obj = cvx.Minimize(1)
         prob = cvx.Problem(obj,constraints)
         prob.solve()
-        assert(prob.status == cvx.OPTIMAL or print("status:" + str(prob.status))) 
+        if prob.status != cvx.OPTIMAL:
+            log.warning("embedding optimization status non-optimal: " + str(prob.status)) 
         #print(Q.value)
         #print(np.linalg.eigvals(np.matrix(Q.value)))
         #print(np.linalg.eigh(np.matrix(Q.value)))
@@ -76,7 +85,7 @@ class MetricSpaceEmbeddingBase():
             eigenvals, eigenvecs = np.linalg.eigh(np.matrix(Q.value))
             min_eigenv = min(eigenvals)
             if min_eigenv < 0:
-                print("Warning, matrix not positive semidefinite."
+                log.warning("Warning, matrix not positive semidefinite."
                       + "Trying to correct for numerical errors with minimal eigenvalue: "
                       + str(min_eigenv) + " (max. eigenvalue:" + str(max(eigenvals)) + ").")
                       
@@ -89,7 +98,7 @@ class MetricSpaceEmbeddingBase():
                 L = np.linalg.cholesky(Q_new)
 
                       
-        #print(L)
+        log.debug(f"Shape of lower-triangular matrix L: {L.shape}")
         #lowerdim = fjlt.fjlt(L,10,1)
         #print(lowerdim)
         return L,n
@@ -145,13 +154,24 @@ class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
         return res
 
     def invapprox(self,vec):
-        return self.inv(self.approx(vec))
+        flat_vec = [item for sublist in vec for item in sublist]
+        return self.inv(self.approx(flat_vec))
 
     def uniformVector(self):
         k = len(self.iota)
         res = []
         for i in range(0,self._d):
             idx = random.randint(0,k-1)
-            res = res + list(self.iota[idx])
+            res.append(list(self.iota[idx]))
         return res
+
+    def uniformFromBall(self,p,r,npoints=1):
+        vecs = []
+        for _ in range(npoints):
+            #currently fixed at l1 norm (Manhattan)
+            p_flat = [item for sublist in map(list,p) for item in sublist]
+            #print(f"k : {self._k}, shape p: {np.array(p).shape},\n p: {p} \n p_flat: {p_flat}")
+            v = (np.array(p_flat)+ np.array(r*lp.uniform_from_p_ball(p=1,n=self._k*self._d))).tolist()
+            vecs.append(self.approx(v))
             
+        return vecs 

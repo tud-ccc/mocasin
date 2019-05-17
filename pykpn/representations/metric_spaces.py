@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2018 TU Dresden
+# Copyright (C) 2017-2019 TU Dresden
 # All Rights Reserved
 #
 # Author: Andres Goens
@@ -334,4 +334,3 @@ def arch_graph_to_distance_metric(graph):
         res.append(line)
     return res,nodes_correspondence,nc_inv
         
-

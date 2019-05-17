@@ -6,7 +6,7 @@ from . import dc_oracle
 from . import dc_settings as conf
 from pykpn.representations.metric_spaces import FiniteMetricSpace
 from pykpn.common.mapping import Mapping
-from pykpn.representations.representations import RepresentationType
+from pykpn.representations.representations import RepresentationType, MetricSpaceRepresentation, MetricEmbeddingRepresentation, SimpleVectorRepresentation
 
 from sys import exit
 
@@ -71,7 +71,7 @@ class Sample(list):
         return "Sample: {}".format(tuple(self.sample))
 
 
-class SampleGenerator():
+class SampleGeneratorBase():
     def gen_samples_in_ball(self,vol,distr,nsamples=1):
         res = []
         for _ in range(nsamples):
@@ -86,7 +86,7 @@ class GeometricSample(Sample):
         # use Manhattan metric
         return np.linalg.norm(self.sample - s.sample, 2)
 
-class SampleGeometricGen(SampleGenerator):
+class SampleGeometricGen(SampleGeneratorBase):
 
     def gen_samples_in_ball(self,vol,distr,nsamples=1):
         res = []
@@ -130,9 +130,9 @@ class SampleGeometricGen(SampleGenerator):
             val = np.random.binomial(conf.max_pe-1, 0.5, 1)
         return val[0]
 
-class MetricSpaceSampleGen(SampleGenerator):
-    def __init__(self,M):
-        self.M = M
+class VectorSampleGen(SampleGeneratorBase):
+    def __init__(self,representation):
+        self.representation = representation
 
     def gen_sample_in_vol(self,vol,distr):
         return self.gen_samples_in_ball(vol,distr,nsamples=1)
@@ -141,23 +141,52 @@ class MetricSpaceSampleGen(SampleGenerator):
         if distr != "uniform":
             log.error("Error!, distribution '" + str(distr) + "' not supported (yet).")
             exit(1)
-        sample_ints =  self.M.uniformFromBall(ball.center,ball.radius,nsamples)
-        sample_list = list(map(lambda s: MetricSpaceSample(self.M,s), sample_ints))
+        sample_ints =  self.representation.uniformFromBall(ball.center,ball.radius,nsamples)
+        sample_list = list(map(lambda s: MetricSpaceSample(self.representation,s), sample_ints))
+        return sample_list
+
+
+class VectorSpaceSample(Sample):
+    # This class overrides the self.sample type from tuple to int
+    # and uses the representation to convert to a tuple again
+    def __init__(self,rep,sample=None):
+        #assert isinstance(rep,FiniteMetricSpace) or log.error(f"Sampling from metric space with representation: {rep}")
+        self.rep = rep 
+        Sample.__init__(self,None)
+        self.sample = sample
+
+    def sample2tuple(self):
+        #print("M.n = " + str(self.M.n))
+        return tuple(self.rep.int2Tuple(int(self.sample)))
+
+class MetricSpaceSampleGen(SampleGeneratorBase):
+    def __init__(self,representation):
+        self.representation = representation
+
+    def gen_sample_in_vol(self,vol,distr):
+        return self.gen_samples_in_ball(vol,distr,nsamples=1)
+
+    def gen_samples_in_ball(self,ball,distr,nsamples=1):
+        if distr != "uniform":
+            log.error("Error!, distribution '" + str(distr) + "' not supported (yet).")
+            exit(1)
+        sample_ints =  self.representation.uniformFromBall(ball.center,ball.radius,nsamples)
+        sample_list = list(map(lambda s: MetricSpaceSample(self.representation,s), sample_ints))
         return sample_list
 
 
 class MetricSpaceSample(Sample):
     # This class overrides the self.sample type from tuple to int
     # and uses the representation to convert to a tuple again
-    def __init__(self,M,sample=None):
-        assert isinstance(M,finiteMetricSpace)
-        self.M = M
+    def __init__(self,rep,sample=None):
+        #assert isinstance(rep,FiniteMetricSpace) or log.error(f"Sampling from metric space with representation: {rep}")
+        self.rep = rep 
         Sample.__init__(self,None)
-        self.sample = sample
+        self.sample = rep.elem2SimpleVec(sample)
 
     def sample2tuple(self):
         #print("M.n = " + str(self.M.n))
-        return tuple(self.M.int2Tuple(int(self.sample)))
+        return tuple(self.rep.int2Tuple(int(self.sample)))
 
 
 class SampleSet(object):
@@ -190,3 +219,17 @@ class SampleSet(object):
             if (not _s.feasible):
                 infeasible_sample.append(_s)
         return infeasible_samples
+
+def SampleGen(representation):
+    if representation == "GeomDummy":
+        return SampleGeometricGen()
+    elif isinstance(representation,MetricSpaceRepresentation):
+        return MetricSpaceSampleGen(representation)
+    elif isinstance(representation,MetricEmbeddingRepresentation):
+        return MetricSpaceSampleGen(representation)
+    elif isinstance(representation,SimpleVectorRepresentation):
+        return MetricSpaceSampleGen(representation)
+    else:
+        log.error(f"Sample generator type not found:{generator_type}")
+        exit(1)
+    

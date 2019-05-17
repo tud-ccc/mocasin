@@ -17,6 +17,7 @@ max_pe = 16                        # number of processors (for presentation only
 distr =  "uniform"                 # distribution of samples (uniform, binomial)
 shape =  "cube"                    # shape of the used hypervolume (cube)
 oracle = "simulation"              # test set to use
+#space_type = "geom"                # Type of design space (geom, metric) #deprecated!
 
 random_seed  = 42                  # Initialization for the RNG (None means random init)
 threshold    = 280                 # Threshold for feasibility
