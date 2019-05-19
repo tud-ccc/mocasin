@@ -45,7 +45,7 @@ class Sample(list):
     def getMapping(self, idx):
         return self.simContext.app_contexts[idx].mapping
 
-    def getFeasibility(self,feasibility):
+    def getFeasibility(self):
         return self.feasible
 
     def sample2tuple(self):

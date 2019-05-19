@@ -98,5 +98,12 @@ class PerturbationManager(object):
         log.debug("exec. Times: {} Feasible: {} History: {}".format(exec_times, feasible, history))
         # generate gridpoint from history by wighting feasible and infeasible
         simple_res = 100 * len([i for i in feasible if i is True]) / len(feasible)
-        return simple_res
+        complex_res = {}
+        for i in range(0, self.num_perturbations):
+            complex_res['p' + str(i)] = {}
+            complex_res['p' + str(i)]['mapping'] = history[i].to_list()
+            complex_res['p' + str(i)]['runtime'] = exec_times[i]
+            complex_res['p' + str(i)]['feasible'] = feasible[i]
+
+        return simple_res,complex_res
 

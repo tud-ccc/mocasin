@@ -126,6 +126,12 @@ def main():
         log.info("center: {} radius: {:f}".format(dc.vol.center, dc.vol.radius))
         log.info("==== Design Centering done ====")
 
+        json_dc_dump = {}
+        json_dc_dump['center'] = {}
+        json_dc_dump['center']['mapping'] = center.getMapping(0).to_list()
+        json_dc_dump['center']['feasible'] = center.getFeasibility()
+        json_dc_dump['center']['runtime'] = center.getSimContext().exec_time / 1000000000.0
+
         # run perturbation test
         if conf.run_perturbation:
             log.info("==== Run Perturbation Test ====")
@@ -135,13 +141,25 @@ def main():
             map_set = pm.create_randomMappings()
 
             pert_res = []
-            pert_res.append(pm.run_perturbation(center.getMapping(0), pm.apply_singlePerturbation))
+            s,c = pm.run_perturbation(center.getMapping(0), pm.apply_singlePerturbation)
+            pert_res.append(s)
 
-            for m in map_set:
-                pert_res.append(pm.run_perturbation(m, pm.apply_singlePerturbation))
+            json_dc_dump['center']['pert'] = c
+            json_dc_dump['center']['passed'] = s
+
+            for i,m in enumerate(map_set):
+                s,c = pm.run_perturbation(m, pm.apply_singlePerturbation)
+                pert_res.append(s)
+                json_dc_dump['rand mapping' + str(i)] = {}
+                json_dc_dump['rand mapping' + str(i)]['mapping'] = m.to_list()
+                json_dc_dump['rand mapping' + str(i)]['pert'] = c
+                json_dc_dump['rand mapping' + str(i)]['passed'] = s
 
             tp.plot_perturbations(pert_res)
             log.info("==== Perturbation Test done ====")
+
+        with open('dump.json', 'w') as dump:
+            json.dump(json_dc_dump, dump, indent=4)
 
     else:
         log.info("usage: python designCentering [x1,x2,...,xn]\n")
