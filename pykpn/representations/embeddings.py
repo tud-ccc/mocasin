@@ -71,7 +71,16 @@ class MetricSpaceEmbeddingBase():
         
         obj = cvx.Minimize(1)
         prob = cvx.Problem(obj,constraints)
-        prob.solve()
+        solvers = cvx.installed_solvers()
+        if 'MOSEK' in solvers:
+            log.info("Solvig problem with MOSEK solver")
+            prob.solve(solver=cvx.MOSEK)
+        elif 'CVXOPT' in solvers:
+            prob.solve(solver=cvx.CVXOPT,verbose=True)
+            log.info("Solvig problem with CVXOPT solver")
+        else:
+            prob.solve(solver=cvx.CVXOPT,verbose=True)
+            log.warning("CVXOPT not installed. Solvig problem with default solver.")
         if prob.status != cvx.OPTIMAL:
             log.warning("embedding optimization status non-optimal: " + str(prob.status)) 
         #print(Q.value)
