@@ -15,6 +15,7 @@ class CommunicationResourceType(Enum):
     LogicalLink = 2
     DMAController = 3
     Storage = 4
+    Router = 5
     
 
 class FrequencyDomain:
