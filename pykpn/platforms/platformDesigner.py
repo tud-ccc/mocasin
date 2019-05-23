@@ -86,7 +86,13 @@ class platformDesigner():
         except:
             print(sys.exc_info()[0])
         
-    def addCacheForPEs(self, identifier, readLatency, writeLatency, readThroughput, writeThroughput, name='default'):
+    def addCacheForPEs(self, 
+                       identifier, 
+                       readLatency, 
+                       writeLatency, 
+                       readThroughput, 
+                       writeThroughput, 
+                       name='default'):
         """Adds a level 1 cache for each PE of the given cluster.
         :param int clusterId: The ID of the cluster.
         :param int readLatency: The read latency of the cache.
@@ -136,9 +142,17 @@ class platformDesigner():
         
         return True
             
-    def connectCluster(self, name, clusterIds, readLatency, writeLatency, readThroughput, writeThroughput):
-        """Connects all the given clusters with a storage. For example RAM. Also you can add a L2 cache for a cluster
-        if you just give one cluster.
+    def addCommunicationResource(self, 
+                                  name,
+                                  clusterIds, 
+                                  readLatency, 
+                                  writeLatency, 
+                                  readThroughput, 
+                                  writeThroughput, 
+                                  resourceType = CommunicationResourceType.Storage, 
+                                  frequencyDomain=0):
+        """Adds a communication resource to the platform. All cores of the given cluster ID's can communicate
+        via this resource.
         :param String name: The name of the storage
         :param list[int] clusterIds: A list containing all cluster IDs of clusters which will be connected
         :param int readLatency: The read latency of the storage
@@ -155,21 +169,32 @@ class platformDesigner():
             return
         
         for clusterId in clusterIds:
-            if not clusterId in self.__clusterDict:
+            if not clusterId in self.__elementDict[self.__activeScope]:
                 return
-        clusterDict = self.__clusterDict
-        nameToGive = name
+        clusterDict = self.__elementDict[self.__activeScope]
+        nameToGive = str(self.__activeScope) + '_' + name
         
         try:
-            communicationRessource = Storage(nameToGive,
-                                        self.__schedulingPolicy,
-                                        read_latency=readLatency,
-                                        write_latency=writeLatency,
-                                        read_throughput=readThroughput, 
-                                        write_throughput=writeThroughput)
+            if resourceType == CommunicationResourceType.Storage:
+                communicationRessource = Storage(nameToGive, 
+                                                 self.__schedulingPolicy,
+                                                 readLatency,
+                                                 writeLatency,
+                                                 readThroughput, 
+                                                 writeThroughput)
+                
+            
+            else:
+                communicationRessource = CommunicationResource(nameToGive,
+                                                               resourceType,
+                                                               frequencyDomain,
+                                                               readLatency,
+                                                               writeLatency,
+                                                               readThroughput,
+                                                               writeThroughput)
+
             self.__platform.add_communication_resource(communicationRessource)
             prim = Primitive('prim_' + nameToGive)
-
             for clusterId in clusterIds:
                 for pe in clusterDict[clusterId]:
                     pe[1].append(communicationRessource)
@@ -184,31 +209,100 @@ class platformDesigner():
         
         return
     
-    def createNetwork(self,adjacencyList, netRessource, 
-                      frequencyDomain, readLatency, writeLatency, readThroughput, writeThroughput,
-                      netName=''):
-        if self.__clusterDict == {}:
-            return
-        if isinstance(adjacencyList, list):
+    def createNetwork(self, 
+                      networkName, 
+                      adjacencyList,
+                      routingFunction, 
+                      frequencyDomain,
+                      readLatency,
+                      writeLatency,
+                      readThroughput,
+                      writeThroughput):
+        
+        if self.__activeScope == None:
+            '''Creating a network between independent chips
+            '''
+            if self.__elementDict == {}:
+                return
+            i = 0
             for element in adjacencyList:
-                if not isinstance(element, list):
-                    return
-        else:
-            return
-        
-        
-        
-        for element in adjacencyList:
-            for identifier in element:
-                name = netName + 'pl_' + str(adjacencyList.index(element)) + "_" + str(identifier)
+                if element == []:
+                    i += 1
+                    continue
+                '''workaround with i, because different elements can have the same 
+                adjacency entry
+                '''
+                source = i
+                name = networkName + "_" + "router_" + str(source)
                 communicationRessource = CommunicationResource(name,
-                                        frequencyDomain,
-                                        CommunicationResourceType.PhysicalLink,
-                                        read_latency=readLatency,
-                                        write_latency=writeLatency,
-                                        read_throughput=readThroughput, 
-                                        write_throughput=writeThroughput)
+                                                               CommunicationResourceType.Router,
+                                                               frequencyDomain,
+                                                               readLatency,
+                                                               writeLatency,
+                                                               readThroughput,
+                                                               writeThroughput)
                 self.__platform.add_communication_resource(communicationRessource)
+                
+                for target in element:
+                    name = networkName + "_pl_" + str(target) + "_" + str(source)
+                    communicationRessource = CommunicationResource(name,
+                                                               CommunicationResourceType.PhysicalLink,
+                                                               frequencyDomain,
+                                                               readLatency,
+                                                               writeLatency,
+                                                               readThroughput,
+                                                               writeThroughput)
+                    self.__platform.add_communication_resource(communicationRessource)
+                i += 1
+            
+            for key in self.__elementDict:
+                if adjacencyList[key] == []:
+                    continue
+                for clusterId in self.__elementDict[key]:
+                    for pe in self.__elementDict[key][clusterId]:
+                        '''Adding a primitive for each pe in the network
+                        '''
+                        prim = Primitive('prim_' + networkName + '_' + pe[0].name)
+                        
+                        for innerKey in self.__elementDict:
+                            if adjacencyList[innerKey] == []:
+                                continue
+                            
+                            routerName = networkName + "_" + "router_" + str(innerKey)
+                            router = self.__platform.find_communication_resource(routerName)
+                            resourceList = [router]
+                            
+                            if innerKey != key:
+                                path = routingFunction(adjacencyList, key, innerKey)
+                                lastPoint = None
+                                
+                                for point in path:
+                                    if lastPoint != None:
+                                        name = networkName + "_pl_" + lastPoint + "_" + point
+                                        resource = self.__platform.find_communication_resource(name)
+                                        resourceList.append(resource)
+                                    lastPoint = point
+                                
+                            for innerCluster in self.__elementDict[innerKey]:
+                                for innerPe in innerCluster:
+                                    '''Iterating again over all pe's in the network to 
+                                    create their consumer and producer phases etc. for 
+                                    the primitive.
+                                    '''
+                                    produce = CommunicationPhase('produce', resourceList, 'write')
+                                    consume = CommunicationPhase('consume', resourceList, 'read')
+                                        
+                                    prim.add_producer(innerPe[0].name, [produce])
+                                    prim.add_consumer(innerPe[0].name, [consume])
+                                        
+                                        
+            
+        
+        else:
+            '''Creating a network between clusters on the same chip
+            '''
+            if self.__clusterDict == {}:
+                return
         
         
         

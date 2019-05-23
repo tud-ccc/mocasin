@@ -10,6 +10,7 @@ from pykpn.slx.platform import SlxPlatform
 from pykpn.slx.kpn import SlxKpnGraph
 from pykpn.mapper.random import RandomMapping
 from pykpn.gui import drawAPI
+from pykpn.platforms import kalray_mppa
 
 class controlPanel(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
@@ -59,7 +60,7 @@ class controlPanel(tk.Frame):
         self.addMappingButton['state'] = 'normal'
                   
     def __loadParallella(self):
-        platform =  SlxPlatform('SlxPlatform', '/net/home/teweleit/eclipse-workspace/pykpn/pykpn/apps/audio_filter/parallella/parallella.platform', '2017.04')
+        platform = kalray_mppa.KalrayMppa()
         self.__platform = platform
         self.parent.drawPanel.drawDevice.setPlatform(platform)
         self.loadExButton['state'] = 'disabled'
