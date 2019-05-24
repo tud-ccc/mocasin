@@ -12,6 +12,8 @@ class KalrayMppa(Platform):
         super(KalrayMppa, self).__init__("KalrayMppa")
         designer = platformDesigner.platformDesigner(self)
         designer.setSchedulingPolicy('FIFO', 1000)
+        
+        '''
         for i in range(0,4):
             designer.newElement(i)
             designer.addPeCluster(0, 'TypeD', 4, 40000)
@@ -21,7 +23,11 @@ class KalrayMppa(Platform):
             designer.addCommunicationResource('SharedMemory', [0,1], 1000, 1000, 1000, 1000)
             designer.finishElement()
         designer.createNetwork('testnet', [[1,2],[0,3],[0,3],[1,2]], utils.simpleDijkstra, 0,0,0,0,0)
+        '''
+        for i in range(0,4):
+            designer.nNewElement(i)
+            designer.nAddPeCluster(0, 'TypeD', 4, 40000)
+            designer.nAddPeCluster(1, 'TypeC', 4, 40000)
+            designer.nFinishElement()
+        designer.finishElement()
         print('Statement')
-        
-    def test(self):
-        print('test')

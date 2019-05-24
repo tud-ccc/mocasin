@@ -26,18 +26,60 @@ class platformDesigner():
     :ivar Platform __platform: The platform object, that is created and manipulated.
     """
     
-    def __init__(self, platform):
+    def __init__(self, platform, name='base'):
         """Initialize a new instance of the platformDesigner.
         :param String name: The name of the platform that will be created.
         :param Platform platform: The platform object which will be modified.
         """
         self.__peAmount = 0
         self.__elementDict = {}
-        self.__activeScope = None
+        
         self.__clusterDict = OrderedDict()
         
         self.__schedulingPolicy = None
         self.__platform = platform
+        
+        self.__activeScope = None
+        
+        
+        self.__nActiveScope = name
+        self.__nScopeStack = []
+        self.__nElementDict = { name : {} }
+    
+    def nNewElement(self, identifier):
+        self.__nScopeStack.append(self.__nActiveScope)
+        self.__nActiveScope = identifier
+        
+        self.__nElementDict.update({ identifier : {}})
+    
+    def nFinishElement(self):
+        if len(self.__nScopeStack) == 0:
+            print("base scope can't be closed")
+            return
+        
+        tmpScope = self.__nActiveScope
+        self.__nActiveScope = self.__nScopeStack.pop()
+        
+        for element in self.__nElementDict[tmpScope]:
+            self.__nElementDict[self.__nActiveScope].update({element : self.__nElementDict[tmpScope][element]})
+        self.__nElementDict.pop(tmpScope, None)
+        
+    def nAddPeCluster(self, identifier, name, amount, frequency):
+        try:
+            fd = FrequencyDomain('fd_' + name, frequency)
+            start = self.__peAmount
+            end = self.__peAmount + amount
+            processors = []
+            for i in range (start, end):
+                processor = Processor('PE%02d' % i, name, fd)
+                self.__platform.add_processor(processor)
+                self.__platform.add_scheduler(Scheduler('sched%02d' % i, [processor], [self.__schedulingPolicy]))
+                processors.append((processor,[]))
+                self.__peAmount += 1
+                
+                self.__nElementDict[self.__nActiveScope].update({identifier : processors})
+        except:
+            print(sys.exc_info()[0])
     
     def setSchedulingPolicy(self, policy, cycles):
         """Sets a new scheduling policy, which will be applied to all schedulers of new PE Clusters.
@@ -264,12 +306,13 @@ class platformDesigner():
                         '''
                         prim = Primitive('prim_' + networkName + '_' + pe[0].name)
                         
+                        routerName = networkName + "_" + "router_" + str(key)
+                        router = self.__platform.find_communication_resource(routerName)
+                        
                         for innerKey in self.__elementDict:
                             if adjacencyList[innerKey] == []:
                                 continue
                             
-                            routerName = networkName + "_" + "router_" + str(innerKey)
-                            router = self.__platform.find_communication_resource(routerName)
                             resourceList = [router]
                             
                             if innerKey != key:
@@ -278,13 +321,13 @@ class platformDesigner():
                                 
                                 for point in path:
                                     if lastPoint != None:
-                                        name = networkName + "_pl_" + lastPoint + "_" + point
+                                        name = networkName + "_pl_" + str(lastPoint) + "_" + str(point)
                                         resource = self.__platform.find_communication_resource(name)
                                         resourceList.append(resource)
                                     lastPoint = point
                                 
                             for innerCluster in self.__elementDict[innerKey]:
-                                for innerPe in innerCluster:
+                                for innerPe in self.__elementDict[innerKey][innerCluster]:
                                     '''Iterating again over all pe's in the network to 
                                     create their consumer and producer phases etc. for 
                                     the primitive.
@@ -292,9 +335,10 @@ class platformDesigner():
                                     produce = CommunicationPhase('produce', resourceList, 'write')
                                     consume = CommunicationPhase('consume', resourceList, 'read')
                                         
-                                    prim.add_producer(innerPe[0].name, [produce])
-                                    prim.add_consumer(innerPe[0].name, [consume])
-                                        
+                                    prim.add_producer(innerPe[0], [produce])
+                                    prim.add_consumer(innerPe[0], [consume])
+                    
+                        self.__platform.add_primitive(prim)                    
                                         
             
         
@@ -304,10 +348,6 @@ class platformDesigner():
             if self.__clusterDict == {}:
                 return
         
-        
-        
-        
-    
     def newElement(self, identifier):
         self.__elementDict.update({identifier : {}})
         self.__activeScope = identifier
