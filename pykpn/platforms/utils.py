@@ -32,12 +32,17 @@ def simpleDijkstra(adjacencyList, source, target):
     
     distances = {}
     
+    '''workaround with i, because nodes with different indexes can have the
+    same adjacency
+    '''
+    i = 0
     for node in adjacencyList:
-        if not adjacencyList.index(node) == source:
-            distances.update({adjacencyList.index(node) : None})
+        if not i == source:
+            distances.update({i : None})
         else:
-            distances.update({adjacencyList.index(node) : (0,[source])})
-    
+            distances.update({i : (0,[source])})
+        i += 1    
+        
     visitedNodes = [source]
     currentPath = [source]
     currentNode = source
