@@ -5,22 +5,23 @@ stdenv.mkDerivation {
   name = "pykpn";
   buildInputs = [ 
     python3Full
-    python36Packages.virtualenvwrapper
+    python37Packages.virtualenvwrapper
     freetype
     libpng
     libxml2
     libxslt
-    python36Packages.numpy
+    python37Packages.numpy
     cmake
     gcc
     gfortran
     readline
-    python36Packages.pip
-    python36Packages.pkgconfig
+    python37Packages.pip
+    python37Packages.pkgconfig
     liblapack
     openblas
     tk
-    python36Packages.tkinter
+    python37Packages.tkinter
+    python37Packages.cvxopt
  ];
 
   src = null;
@@ -32,6 +33,6 @@ stdenv.mkDerivation {
 
   #alias pip="PIP_PREFIX='$(pwd)/_build/pip_packages' \pip"
 
-  #export PYTHONPATH="$(pwd)/_build/pip_packages/lib/python3.6/site-packages:$PYTHONPATH"
+  #export PYTHONPATH="$(pwd)/_build/pip_packages/lib/python3.7/site-packages:$PYTHONPATH"
   '';
 }
