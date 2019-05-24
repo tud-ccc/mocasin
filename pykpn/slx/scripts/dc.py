@@ -15,9 +15,10 @@ import json
 import logging
 import argparse
 
+from pykpn.slx.global_config import GlobalConfig
+
 from pykpn.design_centering.design_centering import dc_settings as conf
 import random
-random.seed(conf.random_seed)
 
 from ..config import SlxSimulationConfig
 from ..kpn import SlxKpnGraph
@@ -42,30 +43,39 @@ log = logging.getLogger(__name__)
 def main():
     parser = argparse.ArgumentParser()
 
+
     logging.add_cli_args(parser)
 
     parser.add_argument('configFile', nargs=1,
                         help="input configuration file", type=str)
-    
+
     parser.add_argument(
         '-R',
         '--representation',
         type=str,
         help='Select the representation type for the mapping space.\nAvailable:'
-        + ", ".join(dir(reps.RepresentationType)),
+             + ", ".join(dir(reps.RepresentationType)),
         dest='rep_type_str',
         default='GeomDummy')
-    
+
     args = parser.parse_args()
     logging.setup_from_args(args)
 
+
+    gconf = GlobalConfig('settings.ini')
+    random.seed(gconf.system[list(gconf.system.keys())[0]].random_seed)
+    log.info(" Initialized random number generator. Seed: {" + str(gconf.system[list(gconf.system.keys())[0]].random_seed) + "}")
+
+    log.info("==== Found system combinations ====")
+    for cn in gconf.system.keys():
+        log.info(cn)
+
     argv = sys.argv
-    
+
     log.info("==== Run Design Centering ====")
     #logging.basicConfig(filename="dc.log", filemode = 'w', level=logging.DEBUG)
-    
-    log.info(f" Initialized random number generator. Seed: {conf.random_seed}")
-    
+
+
     tp = designCentering.ThingPlotter()
 
     if (len(argv) > 1):
@@ -78,88 +88,94 @@ def main():
         #    sys.stderr.write("JSON decoding failed (in function main) \n")
 
 
-        config = SlxSimulationConfig(args.configFile)
-        slx_version = config.slx_version
-        if config.platform_class is not None:
-            platform = config.platform_class()
-            platform_name = platform.name
-        else:
-            platform_name = os.path.splitext(
-                os.path.basename(config.platform_xml))[0]
-            platform = SlxPlatform(platform_name, config.platform_xml, slx_version)
+        # config = SlxSimulationConfig(args.configFile)
 
-        # create all graphs
-        kpns = {}
-        if len(config.applications) > 1:
-            log.warn("DC Flow just supports one appilcation. The rest will be ignored")
-        app_config = config.applications[0]
-        app_name = app_config.name
-        kpn = SlxKpnGraph(app_name, app_config.cpn_xml, slx_version) 
-        rep_type_str = args.rep_type_str
-        if rep_type_str == "GeomDummy":
-            representation = "GeomDummy"
-        elif rep_type_str not in dir(reps.RepresentationType):
-            log.exception("Representation " + rep_type_str + " not recognized. Available: " + ", ".join(dir(reps.RepresentationType)))
-            raise RuntimeError('Unrecognized representation.')
-        else:
-            representation_type = reps.RepresentationType[rep_type_str]
-            log.info(f"initializing representation ({rep_type_str})")
-            representation = representation_type.getClassType()(kpn,platform)
+        # use multiprocessing?
+        for run in gconf.system.keys():
+            log.info("==== Running " + run + " ====")
+            slx_version = gconf.system[run].slx_version
+            # if config.platform_class is not None:
+            #     platform = config.platform_class()
+            #     platform_name = platform.name
+            # else:
+            #     platform_name = os.path.splitext(
+            #         os.path.basename(config.platform_xml))[0]
+            #     platform = SlxPlatform(platform_name, config.platform_xml, slx_version)
+            # create all graphs
+            kpns = {}
+            # if len(config.applications) > 1:
+            #     log.warn("DC Flow just supports one appilcation. The rest will be ignored")
+            app_config = gconf.system[run]
+            platform = SlxPlatform(app_config.platform_name, app_config.platform_xml, app_config.slx_version)
+            app_name = app_config.app_name
+            kpn = SlxKpnGraph(app_name, app_config.cpn_xml, slx_version)
+            rep_type_str = app_config.representation
+            if rep_type_str == "GeomDummy":
+                representation = "GeomDummy"
+            elif rep_type_str not in dir(reps.RepresentationType):
+                log.exception("Representation " + rep_type_str + " not recognized. Available: " + ", ".join(dir(reps.RepresentationType)))
+                raise RuntimeError('Unrecognized representation.')
+            else:
+                representation_type = reps.RepresentationType[rep_type_str]
+                log.info(f"initializing representation ({rep_type_str})")
+                representation = representation_type.getClassType()(kpn,platform)
 
-        # run DC algorithm
-        # starting volume (init): 
-        if representation == "GeomDummy":
-            center = [1,2,3,4,5,6,7,8]
-        else:
-            center = representation.uniform()
-        if (conf.shape == "cube"):
-            v = dc_volume.Cube(center, len(center))
-        
-        config = args.configFile
-        oracle = dc_oracle.Oracle(args.configFile) #the oracle could get the kpn and platform (now, pykpn objects, SLX independent) passed as files (see Issue #3)
-        dc = designCentering.DesignCentering(v, conf.distr, oracle,representation)
-        center = dc.ds_explore()
+            # run DC algorithm
+            # starting volume (init):
+            if representation == "GeomDummy":
+                center = [1,2,3,4,5,6,7,8]
+            else:
+                center = representation.uniform()
+            if (app_config.shape == "cube"):
+                v = dc_volume.Cube(center, len(center))
 
-        # plot explored design space (in 2D)
-        #if True:
-        #    tp.plot_samples(dc.samples)
-        log.info("center: {} radius: {:f}".format(dc.vol.center, dc.vol.radius))
-        log.info("==== Design Centering done ====")
+            # config = args.configFile
+            oracle = dc_oracle.Oracle(app_config) #the oracle could get the kpn and platform (now, pykpn objects, SLX independent) passed as files (see Issue #3)
+            dc = designCentering.DesignCentering(v, app_config.distr, oracle,representation)
+            center = dc.ds_explore()
 
-        json_dc_dump = {}
-        json_dc_dump['center'] = {}
-        json_dc_dump['center']['mapping'] = center.getMapping(0).to_list()
-        json_dc_dump['center']['feasible'] = center.getFeasibility()
-        json_dc_dump['center']['runtime'] = center.getSimContext().exec_time / 1000000000.0
+            # plot explored design space (in 2D)
+            #if True:
+            #    tp.plot_samples(dc.samples)
+            log.info("center: {} radius: {:f}".format(dc.vol.center, dc.vol.radius))
+            log.info("==== Design Centering done ====")
 
-        # run perturbation test
-        if conf.run_perturbation:
-            log.info("==== Run Perturbation Test ====")
-            num_pert = conf.num_perturbations
-            num_mappings = conf.num_mappings
-            pm = p.PerturbationManager( config, num_mappings, num_pert)
-            map_set = pm.create_randomMappings()
+            json_dc_dump = {}
+            json_dc_dump['center'] = {}
+            json_dc_dump['center']['mapping'] = center.getMapping(0).to_list()
+            json_dc_dump['center']['feasible'] = center.getFeasibility()
+            json_dc_dump['center']['runtime'] = center.getSimContext().exec_time / 1000000000.0
 
-            pert_res = []
-            s,c = pm.run_perturbation(center.getMapping(0), pm.apply_singlePerturbation)
-            pert_res.append(s)
+            # run perturbation test
+            if app_config.run_perturbation:
+                log.info("==== Run Perturbation Test ====")
+                num_pert = app_config.num_perturbations
+                num_mappings = app_config.num_mappings
+                pm = p.PerturbationManager( app_config, num_mappings, num_pert)
+                map_set = pm.create_randomMappings()
 
-            json_dc_dump['center']['pert'] = c
-            json_dc_dump['center']['passed'] = s
-
-            for i,m in enumerate(map_set):
-                s,c = pm.run_perturbation(m, pm.apply_singlePerturbation)
+                pert_res = []
+                s,c = pm.run_perturbation(center.getMapping(0), pm.apply_singlePerturbation)
                 pert_res.append(s)
-                json_dc_dump['rand mapping' + str(i)] = {}
-                json_dc_dump['rand mapping' + str(i)]['mapping'] = m.to_list()
-                json_dc_dump['rand mapping' + str(i)]['pert'] = c
-                json_dc_dump['rand mapping' + str(i)]['passed'] = s
 
-            tp.plot_perturbations(pert_res)
-            log.info("==== Perturbation Test done ====")
+                json_dc_dump['center']['pert'] = c
+                json_dc_dump['center']['passed'] = s
 
-        with open('dump.json', 'w') as dump:
-            json.dump(json_dc_dump, dump, indent=4)
+                for i,m in enumerate(map_set):
+                    s,c = pm.run_perturbation(m, pm.apply_singlePerturbation)
+                    pert_res.append(s)
+                    json_dc_dump['rand mapping' + str(i)] = {}
+                    json_dc_dump['rand mapping' + str(i)]['mapping'] = m.to_list()
+                    json_dc_dump['rand mapping' + str(i)]['pert'] = c
+                    json_dc_dump['rand mapping' + str(i)]['passed'] = s
+
+                tp.plot_perturbations(pert_res)
+                log.info("==== Perturbation Test done ====")
+
+            if not os.path.exists(app_config.out_dir):
+                os.mkdir(app_config.out_dir)
+            with open(app_config.out_dir + '/dump.json', 'w+') as dump:
+                json.dump(json_dc_dump, dump, indent=4)
 
     else:
         log.info("usage: python designCentering [x1,x2,...,xn]\n")

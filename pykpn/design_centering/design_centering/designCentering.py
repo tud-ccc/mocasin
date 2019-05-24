@@ -21,23 +21,23 @@ from pykpn.common import logging
 log = logging.getLogger(__name__)
 
 class ThingPlotter(object):
-    def plot_samples(self,samples):
+    def plot_samples(self,samples, config):
         """ Plot sample points of the from [(x1,x2,...,xn), Boolean] """
         for _sample in samples:
             if samples[_sample]:
                 plt.plot(_sample[0], _sample[1],"o", color='b')
             else:
                 plt.plot(_sample[0], _sample[1],"o", color='r')
-        plt.xticks(range(0, conf.max_pe, 1))
-        plt.yticks(range(0, conf.max_pe, 1))
+        plt.xticks(range(0, config.max_pe, 1))
+        plt.yticks(range(0, config.max_pe, 1))
         center_x = sorted(pert_res_list)
         plt.show()
 
-    def plot_curve(self, data):
-        interval = int(conf.max_samples/10)
-        for _j in range(0, conf.max_samples, 1):
+    def plot_curve(self, data, config):
+        interval = int(config.max_samples/10)
+        for _j in range(0, config.max_samples, 1):
             plt.plot(_j, data[_j],"o", color='b')
-        plt.xticks(range(0, conf.max_samples, interval))
+        plt.xticks(range(0, config.max_samples, interval))
         plt.yticks(np.arange(0, 1, 0.1))
         plt.show()
 
@@ -64,19 +64,19 @@ class ThingPlotter(object):
 class DesignCentering(object):
 
     def __init__(self, init_vol, distr, oracle, representation):
-        np.random.seed(conf.random_seed)
+        np.random.seed(oracle.config.random_seed)
         type(self).distr = distr
         type(self).vol = init_vol
         type(self).oracle = oracle
         type(self).samples = {}
         type(self).representation = representation
-        type(self).p_value = self.__adapt_poly(conf.hitting_propability, conf.deg_p_polynomial)
-        type(self).s_value = self.__adapt_poly(conf.step_width, conf.deg_s_polynomial)
+        type(self).p_value = self.__adapt_poly(oracle.config.hitting_propability, oracle.config.deg_p_polynomial)
+        type(self).s_value = self.__adapt_poly(oracle.config.step_width, oracle.config.deg_s_polynomial)
 
     def __adapt_poly(self, support_values, deg):
         tp = ThingPlotter()
         num = len(support_values)
-        x_interval = (conf.max_samples/(num - 1))
+        x_interval = (type(self).oracle.config.max_samples/(num - 1))
         x = []
         y = []
         ret = []
@@ -85,22 +85,22 @@ class DesignCentering(object):
             y.append(support_values[_i])
         coeff = np.polyfit(x, y, deg)
         poly = np.poly1d(coeff)
-        for _j in range(0, conf.max_samples, 1):
+        for _j in range(0, type(self).oracle.config.max_samples, 1):
             ret.append(poly(_j))
-        if (conf.show_polynomials):
-            tp.plot_curve(ret)
+        if (type(self).oracle.config.show_polynomials):
+            tp.plot_curve(ret, type(self).oracle.config)
         return ret
 
     def ds_explore(self):
         """ explore design space (main loop of the DC algorithm) """
 
         s_set = dc_sample.SampleSet()
-        for i in range(0, conf.max_samples, conf.adapt_samples):
+        for i in range(0, type(self).oracle.config.max_samples, type(self).oracle.config.adapt_samples):
             s = dc_sample.SampleGen(self.representation)
             
             log.debug("dc: Current iteration {}".format(i))
             # TODO: may genrate identical samples which makes things ineffective 
-            samples = s.gen_samples_in_ball(type(self).vol, type(self).distr, nsamples=conf.adapt_samples)
+            samples = s.gen_samples_in_ball(type(self).vol, type(self).distr, nsamples=type(self).oracle.config.adapt_samples)
             #print(samples)
             #print(str([s.sample for s in samples]))
 

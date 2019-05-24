@@ -6,6 +6,7 @@ import traceback
 
 
 import multiprocessing as mp
+from pykpn.slx.global_config import SingleConfig
 from pykpn.slx.config import SlxSimulationConfig
 from pykpn.slx.kpn import SlxKpnGraph
 from pykpn.slx.mapping import export_slx_mapping
@@ -48,15 +49,16 @@ class SimulationContext(object):
         self.exec_time = None
 
 class Oracle(object):
-    def __init__(self, config=None):
-        if conf.oracle == "TestSet":
+    def __init__(self, config):
+        self.config = config
+        if config.oracle == "TestSet":
              type(self).oracle = TestSet()
-        elif conf.oracle == "TestTwoPrKPN":
+        elif config.oracle == "TestTwoPrKPN":
              type(self).oracle = TestTwoPrKPN()
-        elif conf.oracle == "simulation":
+        elif config.oracle == "simulation":
              type(self).oracle = Simulation(config)
         else:
-             log.error("Error, unknown oracle:" + conf.oracle)
+             log.error("Error, unknown oracle:" + config.oracle)
              exit(1)
 
     def validate(self, sample):
@@ -67,7 +69,7 @@ class Oracle(object):
         """ check whether a set of samples is feasible """
         # extra switch for evaluation of static sets vs. simulation
         res = []
-        if conf.oracle != "simulation":
+        if self.config.oracle != "simulation":
             for s in samples:
                 res.append(type(self).oracle.is_feasible(s.sample2simpleTuple()))
         else:
@@ -77,32 +79,33 @@ class Oracle(object):
 
 class Simulation(object):
     """ simulation code """
-    def __init__(self, config=None):
+    def __init__(self, config):
         type(self).sim_config = config
 
     def get_platform(self):
-        conf = SlxSimulationConfig(self.sim_config) #TODO: this is not generic...It will only run with SLX stuff (see Issue #3)
-        platform_name = os.path.splitext(os.path.basename(conf.platform_xml))[0]
-        return  SlxPlatform(platform_name, conf.platform_xml, conf.slx_version)
+        # conf = SlxSimulationConfig(self.sim_config) #TODO: this is not generic...It will only run with SLX stuff (see Issue #3)
+        # platform_name = os.path.splitext(os.path.basename(conf.platform_xml))[0]
+        return  SlxPlatform(type(self).sim_config.platform_name, type(self).sim_config.platform_xml, type(self).sim_config.slx_version)
 
     def get_kpns(self):
-        conf = SlxSimulationConfig(type(self).sim_config)
+        # conf = SlxSimulationConfig(type(self).sim_config)
         kpns = []
-        for app_config in conf.applications:
-            name = app_config.name
-            kpns.append(SlxKpnGraph(name, app_config.cpn_xml, conf.slx_version))
-        return kpns        
+        # for app_config in conf.applications:
+        #     name = app_config.name
+        #     kpns.append(SlxKpnGraph(name, app_config.cpn_xml, conf.slx_version))
+        kpns.append(SlxKpnGraph(type(self).sim_config.app_name, type(self).sim_config.cpn_xml, type(self).sim_config.slx_version))
+        return kpns
 
     def prepare_sim_contexts_for_samples(self, samples):
         """ Prepare simualtion/application context and mapping for a each element in `samples`. """
         # parse the config file
 
-        config = SlxSimulationConfig(type(self).sim_config)
+        # config = SlxSimulationConfig(type(self).sim_config)
 
         #slx.set_version(config.slx_version)
         #create platform
-        platform_name = os.path.splitext(os.path.basename(config.platform_xml))[0]
-        platform = SlxPlatform(platform_name, config.platform_xml, config.slx_version)
+        platform_name = type(self).sim_config.platform_name
+        platform = SlxPlatform(platform_name, type(self).sim_config.platform_xml, type(self).sim_config.slx_version)
 
         # Create a list of 'simulations'. 
         # These are later executed by multiple worker processes.
@@ -114,12 +117,12 @@ class Simulation(object):
             
             # create the application contexts
             # assume there runs _one_ application only on the given platform
-            assert len(config.applications) == 1
-            app_config = config.applications[0]
-            app_name = app_config.name
-            kpn = SlxKpnGraph(app_name, app_config.cpn_xml, config.slx_version)
+            # assert len(config.applications) == 1
+            app_config = type(self).sim_config
+            app_name = app_config.app_name
+            kpn = SlxKpnGraph(app_name, app_config.cpn_xml, app_config.slx_version)
             app_context = ApplicationContext(app_name, kpn)
-            app_context.start_time = app_config.start_at_tick
+            app_context.start_time = app_config.start_time
             
             # generate a mapping for the given sample
             log.debug("using simcontext no.: {} {}".format(i,samples[i]))
@@ -134,7 +137,7 @@ class Simulation(object):
             
             # create the trace reader
             app_context.trace_reader = SlxTraceReader.factory(
-                app_config.trace_dir, '%s.' % (app_name), config.slx_version)
+                app_config.trace_dir, '%s.' % (app_name), app_config.slx_version)
             
             sim_context.app_contexts.append(app_context)
             samples[i].setSimContext(sim_context)
@@ -143,21 +146,21 @@ class Simulation(object):
 
     def prepare_sim_context(self, platform, kpn, mapping):
         # parse the config file
-        config = SlxSimulationConfig(type(self).sim_config)
+        # config = SlxSimulationConfig(type(self).sim_config)
 
         # create a simulation context
         sim_context = SimulationContext(platform)
 
         # create the application contexts (normally it is just one)
-        app_config = config.applications[0]
-        app_name = app_config.name
+        app_config = type(self).sim_config
+        app_name = app_config.app_name
         app_context = ApplicationContext(app_name, kpn)
-        app_context.start_time = app_config.start_at_tick
+        app_context.start_time = app_config.start_time
         app_context.mapping = mapping
             
         # create the trace reader
         app_context.trace_reader = SlxTraceReader.factory(
-            app_config.trace_dir, '%s.' % (app_name), config.slx_version)
+            app_config.trace_dir, '%s.' % (app_name), app_config.slx_version)
             
         sim_context.app_contexts.append(app_context)
         return sim_context
@@ -191,7 +194,7 @@ class Simulation(object):
         
         feasible = []
         for s in samples:
-            if (s.getSimContext().exec_time / 1000000000.0 > conf.threshold):
+            if (s.getSimContext().exec_time / 1000000000.0 > type(self).sim_config.threshold):
                 s.setFeasibility(False)
                 feasible.append(False)
             else:

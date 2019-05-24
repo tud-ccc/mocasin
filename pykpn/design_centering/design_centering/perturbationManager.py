@@ -17,6 +17,7 @@ log = logging.getLogger(__name__)
 class PerturbationManager(object):
 
     def __init__(self, config ,num_mappings=0, num_tests=0):
+        self.config = config
         self.num_mappings = num_mappings
         self.num_perturbations = num_tests
         self.sim = dc_oracle.Simulation(config)
@@ -90,7 +91,7 @@ class PerturbationManager(object):
         
         feasible = []
         for e in exec_times:
-            if (e > conf.threshold):
+            if (e > self.config.threshold):
                 feasible.append(False)
             else:
                 feasible.append(True)
