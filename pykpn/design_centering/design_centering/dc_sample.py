@@ -3,7 +3,7 @@ import random as rand
 
 from . import dc_volume
 from . import dc_oracle
-from . import dc_settings as conf
+#from . import dc_settings as conf
 from pykpn.representations.metric_spaces import FiniteMetricSpace
 from pykpn.common.mapping import Mapping
 from pykpn.representations.representations import RepresentationType, MetricSpaceRepresentation, MetricEmbeddingRepresentation, SimpleVectorRepresentation
@@ -72,6 +72,9 @@ class Sample(list):
 
 
 class SampleGeneratorBase():
+    def __init__(self, conf):
+        self.conf = conf
+
     def gen_samples_in_ball(self,vol,distr,nsamples=1):
         res = []
         for _ in range(nsamples):
@@ -88,6 +91,9 @@ class GeometricSample(Sample):
 
 class SampleGeometricGen(SampleGeneratorBase):
 
+    def __init__(self, conf):
+        super().__init__(conf)
+
     def gen_samples_in_ball(self,vol,distr,nsamples=1):
         res = []
         for _ in range(nsamples):
@@ -98,7 +104,7 @@ class SampleGeometricGen(SampleGeneratorBase):
 
     def gen_random_sample(self):
         for _d in vol.center:
-            rand_val = self.uniform_distribution(0, conf.max_pe)
+            rand_val = self.uniform_distribution(0, self.conf[1].max_pe)
             self.sample.append(rand_val)
 
 
@@ -121,17 +127,18 @@ class SampleGeometricGen(SampleGeneratorBase):
     def binomial_distribution(self, c, r):
         upper = c + r
         lower = c - r
-        if (upper > conf.max_pe):
-            upper = conf.max_pe
+        if (upper > self.conf[1].max_pe):
+            upper = self.conf[1].max_pe
         if (lower < 0):
             lower = 0
         val = -1
         while ( val < lower or val > upper):
-            val = np.random.binomial(conf.max_pe-1, 0.5, 1)
+            val = np.random.binomial(self.conf[1].max_pe-1, 0.5, 1)
         return val[0]
 
 class VectorSampleGen(SampleGeneratorBase):
-    def __init__(self,representation):
+    def __init__(self,representation, conf):
+        super().__init__(conf)
         self.representation = representation
 
     def gen_sample_in_vol(self,vol,distr):
@@ -160,7 +167,8 @@ class VectorSpaceSample(Sample):
         return tuple(self.rep.int2Tuple(int(self.sample)))
 
 class MetricSpaceSampleGen(SampleGeneratorBase):
-    def __init__(self,representation):
+    def __init__(self,representation, conf):
+        super().__init__(conf)
         self.representation = representation
 
     def gen_sample_in_vol(self,vol,distr):
@@ -220,15 +228,15 @@ class SampleSet(object):
                 infeasible_sample.append(_s)
         return infeasible_samples
 
-def SampleGen(representation):
+def SampleGen(representation, conf):
     if representation == "GeomDummy":
-        return SampleGeometricGen()
+        return SampleGeometricGen(conf)
     elif isinstance(representation,MetricSpaceRepresentation):
-        return MetricSpaceSampleGen(representation)
+        return MetricSpaceSampleGen(representation, conf)
     elif isinstance(representation,MetricEmbeddingRepresentation):
-        return MetricSpaceSampleGen(representation)
+        return MetricSpaceSampleGen(representation, conf)
     elif isinstance(representation,SimpleVectorRepresentation):
-        return MetricSpaceSampleGen(representation)
+        return MetricSpaceSampleGen(representation, conf)
     else:
         log.error(f"Sample generator type not found:{generator_type}")
         exit(1)

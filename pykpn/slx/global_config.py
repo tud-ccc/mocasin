@@ -5,7 +5,7 @@ import pint
 
 import pykpn.platforms
 from pykpn.common import logging
-
+from itertools import product
 
 log = logging.getLogger(__name__)
 
@@ -20,26 +20,45 @@ class SingleConfig:
         self.trace_dir = 'apps/' + app + '/' + platform + '/traces'
         self.out_dir = 'apps/' + app + '/' + platform + '/results'
 
+class Setting:
+    # container for a setting
+    # attributes get later
+    def __init__(self, idx):
+        self.idx = idx
 
-def to_int(str):
-    return int(str)
-
-def to_str(str):
-    return str
-
-def to_float_list(str):
+def to_int(s):
     res = []
-    for f in str.split(','):
-        res.append(float(f))
+    for f in s.split(','):
+        res.append(int(f))
     return res
 
-def to_bool(str):
-    return str == "True"
+def to_str(s):
+    res = []
+    for f in s.split(','):
+        res.append(f)
+    return res
 
-def to_time(str):
+def to_float_list(s):
+    res = []
+    for f in s.split(','):
+        part_res = []
+        for g in s.split(' '):
+            part_res.append(float(g))
+        res.append(part_res)
+    return res
+
+def to_bool(s):
+    res = []
+    for f in s.split(','):
+        res.append(f == 'True')
+    return res
+
+def to_time(s):
     ureg = pint.UnitRegistry()
-    return ureg(str).to(ureg.ps).magnitude
-
+    res = []
+    for f in s.split(','):
+        res.append(ureg(f).to(ureg.ps).magnitude)
+    return res
 
 class GlobalConfig:
     # parser for the new settings.ini
@@ -71,24 +90,52 @@ class GlobalConfig:
                      'threshold' : to_int,
                      'run_perturbation' : to_bool,
                      'num_perturbations' : to_int,
-                     'representation' : to_str
+                     'representation' : to_str,
+                     'keep_metrics' : to_bool
                      }
 
         if not 'default' in conf:
             raise ValueError('Settings.ini must contain a \'default\' section')
 
+        names = []
         for pl in conf['default']['platforms'].split(','):
             for app in conf['default']['apps'].split(','):
                 combined_name = app+'/'+pl
                 if (combined_name in conf) and (not conf[combined_name].getboolean('blacklist', False)):
-                    self.system[combined_name] = SingleConfig(app, pl)
+                    names.append(combined_name)
+                    self.system[combined_name] = {}
+                    self.system[combined_name]['sconf'] = SingleConfig(app,pl)
+                    self.system[combined_name]['settings'] = []
+
                 elif not (combined_name in conf):
-                    self.system[combined_name] = SingleConfig(app, pl)
+                    names.append(combined_name)
+                    self.system[combined_name] = {}
+                    self.system[combined_name]['sconf'] = SingleConfig(app,pl)
+                    self.system[combined_name]['settings'] = []
 
-        for cname in self.system.keys():
+        for cname in names:
+            setting = {}
             for k in self.keys.keys():
-                if cname in conf and k in conf[cname]:
-                    setattr(self.system[cname], k, self.keys[k](conf[cname].get(k)) )
-                else:
-                    setattr(self.system[cname], k, self.keys[k](conf['default'].get(k)))
 
+                if cname in conf and k in conf[cname]:
+                    setting[k] = self.keys[k](conf[cname].get(k))
+                else:
+                    setting[k] = self.keys[k](conf['default'].get(k))
+
+            # print("Setting:")
+            # print(setting)
+            # print("\n")
+
+            c_prod_dict = []
+            c_prod_dict = (dict(zip(setting, x)) for x in product(*setting.values()))
+            #for values in product(setting.values()):
+            #    c_prod_dict.append(dict(zip(setting.keys(), values)))
+
+            # print("product:")
+            # print(c_prod_dict)
+            # print("\n")
+
+            for i,d in enumerate(c_prod_dict):
+                self.system[cname]['settings'].append(Setting(i))
+                for attr in self.keys.keys():
+                    setattr(self.system[cname]['settings'][i], attr, d[attr])

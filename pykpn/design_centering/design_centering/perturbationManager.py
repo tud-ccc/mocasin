@@ -91,7 +91,7 @@ class PerturbationManager(object):
         
         feasible = []
         for e in exec_times:
-            if (e > self.config.threshold):
+            if (e > self.config[1].threshold):
                 feasible.append(False)
             else:
                 feasible.append(True)

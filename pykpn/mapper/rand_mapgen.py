@@ -15,7 +15,7 @@ class RandomMappingGenerator(object):
     platform and KPN application. 
     """
 
-    def __init__(self, kpn, platform):
+    def __init__(self, kpn, platform, seed):
         """Generates a random mapping for a given platform and KPN application. 
 
         :param kpn: a KPN graph
@@ -23,12 +23,13 @@ class RandomMappingGenerator(object):
         :param platform: a platform
         :type platform: Platform
         """
+        self.seed = seed
         self.full_mapper = True
         self.platform = platform
         self.kpn = kpn
         self.mapping = Mapping(kpn, platform)
 
-    def generate_mapping(self, seed = 42, part_mapping = None):
+    def generate_mapping(self, seed = None, part_mapping = None):
         """ Generates a random mapping
 
         The generated mapping takes a partial mapping (that may also be empty)
@@ -40,8 +41,10 @@ class RandomMappingGenerator(object):
         :param part_mapping: partial mapping to start from
         :type part_mapping: Mapping
         """
-
-        random.seed = seed
+        if seed is not None:
+            random.seed = seed
+        else:
+            random.seed = self.seed
 
         if not part_mapping:
             part_mapping = self.mapping

@@ -11,12 +11,16 @@ from matplotlib import cm as cm
 from pykpn.util import annotate
 from pykpn.representations.representations import RepresentationType, toRepresentation
 
+import matplotlib.animation as animation
+from matplotlib import colors as colors
+from matplotlib import collections as coll
+
 #used for pydot -> networkx support
 #import networkx.drawing.nx_pydot as nx
 #import networkx as nwx
 
 
-def visualize_mapping_space(mappings, exec_times, dest=None,representation_type=RepresentationType['SimpleVector']):
+def visualize_mapping_space(mappings, exec_times, dest=None,representation_type=RepresentationType['SimpleVector'], tick=0):
     """Visualize a multi-dimensional mapping space using t-SNE
 
     Args:
@@ -31,7 +35,7 @@ def visualize_mapping_space(mappings, exec_times, dest=None,representation_type=
     assert len(mappings) == len(exec_times)
 
     mapping_tuples = np.array(list(map(lambda o: o.to_list(), mappings)))
-    
+
     #Code to derive mapping from dot graph:
     #Unfortunately with embarrising results :( 
 
@@ -58,8 +62,8 @@ def visualize_mapping_space(mappings, exec_times, dest=None,representation_type=
     ax = fig.add_subplot(111)
 
     #plt.hexbin(X[:, 0], X[:, 1], C=exec_times, cmap=cm.viridis_r, bins=None, alpha=1)
-    plt.scatter(X[:, 0], X[:, 1], c=exec_times, cmap=cm.viridis_r)
-    
+    scatt = plt.scatter(X[:, 0], X[:, 1], c=exec_times, cmap=cm.viridis_r)
+
     #some magic adjustments to make room for legend and mapping string
     plt.subplots_adjust(right=0.6)
     plt.subplots_adjust(left=0.18)
@@ -69,6 +73,19 @@ def visualize_mapping_space(mappings, exec_times, dest=None,representation_type=
     fig.canvas.mpl_connect('button_press_event', af)
     cbaxes = fig.add_axes([0.012, 0.1, 0.03, 0.8])
     plt.colorbar(cax=cbaxes)
+
+    if tick is not 0:
+        frames = int(len(X)/tick)
+
+        def update(frame):
+            mask = []
+            mask += (['none'] * int(frame * tick))
+            mask += (['r'] * int(tick))
+            mask += (['none'] * int((frames - frame - 1) * tick))
+            scatt.set_edgecolor(mask)
+
+        ani = animation.FuncAnimation(fig, update, frames+1, interval=2000)
+
     if dest == None:
         plt.show()
     else:
