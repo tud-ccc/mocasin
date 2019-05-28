@@ -5,7 +5,8 @@ Welcome to pykpn's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-
+   getting_started
+   api/modules
 
 Indices and tables
 ==================
