@@ -11,12 +11,6 @@ A framework for modeling KPN applications and their execution on MPSoC platforms
    source ~/virtualenvs/pykpn/bin/activate
    #+END_SRC
 
-   Due to a bug in cvxpy, we need to install numpy first:
-
-   #+BEGIN_SRC bash
-   pip install numpy
-   #+END_SRC
-
    Then we can either install pykpn or make it available for development:
 
    #+BEGIN_SRC bash
