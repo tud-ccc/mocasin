@@ -1,8 +1,11 @@
 from setuptools import setup, find_packages
 
+project_name="pykpn"
+version="0.1"
+
 setup(
-    name="pykpn",
-    version="0.1",
+    name=project_name,
+    version=version,
     packages=find_packages(),
     entry_points={
         'console_scripts': [
@@ -27,6 +30,13 @@ setup(
         'termcolor',
         'tqdm',
     ],
-    setup_requires=['pytest-runner'],
+    setup_requires=['pytest-runner', 'sphinx'],
     tests_require=['pytest'],
+    command_options={
+        'build_sphinx': {
+            'project': ('setup.py', project_name),
+            'version': ('setup.py', version),
+            'release': ('setup.py', version),
+            'source_dir': ('setup.py', 'doc'),
+            'build_dir': ('setup.py', 'doc/build'),}},
 )
