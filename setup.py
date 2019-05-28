@@ -1,7 +1,8 @@
 from setuptools import setup, find_packages
+from doc.build_doc import BuildDocCommand
 
-project_name="pykpn"
-version="0.1"
+project_name = "pykpn"
+version = "0.1"
 
 setup(
     name=project_name,
@@ -39,4 +40,7 @@ setup(
             'release': ('setup.py', version),
             'source_dir': ('setup.py', 'doc'),
             'build_dir': ('setup.py', 'doc/build'),}},
+    cmdclass = {
+        'doc': BuildDocCommand
+    }
 )
