@@ -6,6 +6,7 @@ Welcome to pykpn's documentation!
    :caption: Contents:
 
    getting_started
+   documentation
    api/modules
 
 Indices and tables
