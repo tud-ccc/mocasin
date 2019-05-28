@@ -5,10 +5,11 @@ Documenting Code
 ----------------
 
 Code should always be documented in place using pythons doc strings. Please use
-the `Google Style`_ as it works well with sphinx. A good example of well
-documented class within pykpn is :class:`RuntimeChannel`. Note how it is
-possible to reference other methods or classes within pykpn and even within
-other projects (as it is done for the Environment class).
+the `Google Style`_ as it works well with sphinx and produces readable doc
+strings. A good example of a well documented class within pykpn is
+:class:`RuntimeChannel`. Note how it is possible to reference other methods or
+classes within pykpn and even within other projects (as it is done for the
+Environment class).
 
 .. _Google Style: https://www.sphinx-doc.org/en/1.5/ext/example_google.html
 
@@ -28,3 +29,13 @@ The way sphinx generates our documentation can be configured in multiple
 places, most notably in ``doc/conf.py``. For instance the dictionary
 ``intersphinx_mapping`` can be use to configure sources for external
 documentation that can be referenced.
+
+Updating Online Documentation
+-----------------------------
+
+Given root access to factor, the online documentation can be updated with the
+following command:
+
+.. code-block:: sh
+
+   scp -r <path/to/pykpn>/doc/build/html/* root@factor:/var/www/pykpn
