@@ -6,7 +6,7 @@
 
 from simpy.resources.resource import Resource
 
-from pykpn.common import logging
+from pykpn.util import logging
 from pykpn.simulate.process import ProcessState
 from pykpn.simulate.scheduler import create_scheduler
 

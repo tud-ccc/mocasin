@@ -6,7 +6,7 @@
 
 import glob
 
-from pykpn.common import logging
+from pykpn.util import logging
 from pykpn.common.trace import TraceGenerator, TraceSegment
 
 

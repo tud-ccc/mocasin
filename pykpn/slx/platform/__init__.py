@@ -6,7 +6,7 @@
 
 from .convert_2017_04 import convert as convert_2017_04
 from .parse_2017_04 import parse as parse_2017_04
-from pykpn.common import logging
+from pykpn.util import logging
 from pykpn.common.platform import Platform
 
 
