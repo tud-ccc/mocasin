@@ -6,6 +6,14 @@
 # Authors: Christian Menard
 
 
+"""Generate a dot graph from a SLX cpn xml
+
+This script expects two positional arguments: a cpn xml file such as
+apps/audio_filter.cpn.xml and an output file. The script parses the xml file
+and produces a dot graph that visualizes the given KPN application.
+"""
+
+
 import argparse
 import sys
 
@@ -17,7 +25,8 @@ log = logging.getLogger(__name__)
 
 
 def main(argv):
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description="Generate a dot graph visualizing a KPN application")
 
     logging.add_cli_args(parser)
 
