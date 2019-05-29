@@ -7,6 +7,7 @@
 
 
 import argparse
+import sys
 import timeit
 
 import simpy
@@ -19,7 +20,7 @@ from pykpn.slx.system import SlxRuntimeSystem
 log = logging.getLogger(__name__)
 
 
-def main():
+def main(argv):
     parser = argparse.ArgumentParser()
 
     logging.add_cli_args(parser)
@@ -27,7 +28,7 @@ def main():
     parser.add_argument('configFile', nargs=1,
                         help="input configuration file", type=str)
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     logging.setup_from_args(args)
 
@@ -56,4 +57,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])
