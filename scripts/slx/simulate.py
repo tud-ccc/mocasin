@@ -20,8 +20,19 @@ from pykpn.slx.system import SlxRuntimeSystem
 log = logging.getLogger(__name__)
 
 
+"""Run simulation based on a config file.
+
+This script expects a configuration file as the first positional argument.
+It constructs a system according to this configuration and simulates
+it. Finally, the script reports the simulated execution time.
+
+See apps/audio_filter/exynos/config.ini for an example configuration.
+"""
+
+
 def main(argv):
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description="Run simulation based on a config file")
 
     logging.add_cli_args(parser)
 
