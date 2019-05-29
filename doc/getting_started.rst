@@ -27,6 +27,9 @@ or
    cd <path/to/pykpn>
    python setup.py develop
 
+
+.. _run tests:
+
 Run Tests
 ---------
 
