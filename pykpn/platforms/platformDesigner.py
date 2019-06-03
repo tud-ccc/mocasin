@@ -26,45 +26,62 @@ class platformDesigner():
     :ivar Platform __platform: The platform object, that is created and manipulated.
     """
     
-    def __init__(self, platform, name='base'):
+    def __init__(self, platform):
         """Initialize a new instance of the platformDesigner.
         :param String name: The name of the platform that will be created.
         :param Platform platform: The platform object which will be modified.
         """
         self.__peAmount = 0
-        self.__elementDict = {}
+        self.__namingSuffix = 0
         
         self.__clusterDict = OrderedDict()
         
         self.__schedulingPolicy = None
         self.__platform = platform
         
-        self.__activeScope = None
-        
-        
-        self.__nActiveScope = name
-        self.__nScopeStack = []
-        self.__nElementDict = { name : {} }
+        self.__activeScope = 'base'
+        self.__scopeStack = []
+        self.__elementDict = { 'base' : {} }
     
-    def nNewElement(self, identifier):
-        self.__nScopeStack.append(self.__nActiveScope)
-        self.__nActiveScope = identifier
+    def newElement(self, identifier):
+        self.__scopeStack.append(self.__activeScope)
+        self.__activeScope = identifier
         
-        self.__nElementDict.update({ identifier : {}})
+        self.__namingSuffix += 1
+        
+        self.__elementDict.update({ identifier : {}})
     
-    def nFinishElement(self):
-        if len(self.__nScopeStack) == 0:
+    def finishElement(self):
+        if len(self.__scopeStack) == 0:
             print("base scope can't be closed")
             return
         
-        tmpScope = self.__nActiveScope
-        self.__nActiveScope = self.__nScopeStack.pop()
+        tmpScope = self.__activeScope
+        self.__activeScope = self.__scopeStack.pop()
         
-        for element in self.__nElementDict[tmpScope]:
-            self.__nElementDict[self.__nActiveScope].update({element : self.__nElementDict[tmpScope][element]})
-        self.__nElementDict.pop(tmpScope, None)
+        tmpPElist = []
         
-    def nAddPeCluster(self, identifier, name, amount, frequency):
+        for element in self.__elementDict[tmpScope]: 
+            if isinstance(self.__elementDict[tmpScope][element], list):
+                for entry in self.__elementDict[tmpScope][element]:
+                    tmpPElist.append(entry)
+            
+            elif isinstance(self.__elementDict[tmpScope][element], dict):
+                for innerElement in self.__elementDict[tmpScope][element]:
+                    for entry in innerElement:
+                        tmpPElist.append(entry)
+            else:
+                raise RuntimeWarning("Expected an element of type list or dict!")
+        
+        self.__elementDict[self.__activeScope].update({tmpScope : tmpPElist})
+        
+        self.__elementDict.pop(tmpScope, None)
+        
+    def addPeCluster(self, 
+                    identifier, 
+                    name, 
+                    amount, 
+                    frequency):
         try:
             fd = FrequencyDomain('fd_' + name, frequency)
             start = self.__peAmount
@@ -77,11 +94,13 @@ class platformDesigner():
                 processors.append((processor,[]))
                 self.__peAmount += 1
                 
-                self.__nElementDict[self.__nActiveScope].update({identifier : processors})
+                self.__elementDict[self.__activeScope].update({identifier : processors})
         except:
             print(sys.exc_info()[0])
     
-    def setSchedulingPolicy(self, policy, cycles):
+    def setSchedulingPolicy(self, 
+                            policy, 
+                            cycles):
         """Sets a new scheduling policy, which will be applied to all schedulers of new PE Clusters.
         :param String policy: The kind of policy.
         :param int cycles: The cycles of the policy.
@@ -94,40 +113,7 @@ class platformDesigner():
         except:
             print(sys.exc_info()[0])
             return False
-    
-    def addPeCluster(self, identifier, name, amount, frequency, noc=False):
-        """Adds a new cluster of PEs to the platform.
-        :param String name: The name of the processor type
-        :param int amount: The amount of PEs in the cluster
-        :param int frequency: The frequency of the PEs
-        :param bool noc: Whether the PEs are connected via network on chip or not
-        :returns: The intern id of the cluster or -1 of the cluster cant be created
-        :rtype: int
-        """
-        if self.__schedulingPolicy == None:
-            return
-        if self.__activeScope == None:
-            return
-        
-        fd = FrequencyDomain('fd_' + name, frequency)
-        
-        if noc:
-            #TODO: implement a network on chip cluster
-            return
-        try:
-            start = self.__peAmount
-            end = self.__peAmount + amount
-            processors = []
-            for i in range (start, end):
-                processor = Processor('PE%02d' % i, name, fd)
-                self.__platform.add_processor(processor)
-                self.__platform.add_scheduler(Scheduler('sched%02d' % i, [processor], [self.__schedulingPolicy]))
-                processors.append((processor,[]))
-                self.__peAmount += 1
-                self.__elementDict[self.__activeScope].update({identifier : processors})
-        except:
-            print(sys.exc_info()[0])
-        
+          
     def addCacheForPEs(self, 
                        identifier, 
                        readLatency, 
@@ -152,13 +138,13 @@ class platformDesigner():
         
         nameToGive = None
         
-        if not identifier in self.__clusterDict:
-            return False
+        if not identifier in self.__elementDict[self.__activeScope]:
+            raise RuntimeWarning("Identifier does not exist in active scope.")
         if name != 'default':
             nameToGive = name
         else:
             nameToGive = 'L1_'
-        peList = self.__clusterDict[identifier]
+        peList = self.__elementDict[self.__activeScope][identifier]
         
         try:
             for pe in peList:
@@ -181,9 +167,7 @@ class platformDesigner():
         except:
             print(sys.exc_info()[0])
             return False
-        
-        return True
-            
+         
     def addCommunicationResource(self, 
                                   name,
                                   clusterIds, 
@@ -214,7 +198,7 @@ class platformDesigner():
             if not clusterId in self.__elementDict[self.__activeScope]:
                 return
         clusterDict = self.__elementDict[self.__activeScope]
-        nameToGive = str(self.__activeScope) + '_' + name
+        nameToGive = str(self.__activeScope) + '_' + name + "_" + str(self.__namingSuffix)
         
         try:
             if resourceType == CommunicationResourceType.Storage:
@@ -261,21 +245,16 @@ class platformDesigner():
                       readThroughput,
                       writeThroughput):
         
-        if self.__activeScope == None:
+        if self.__activeScope != None:
             '''Creating a network between independent chips
             '''
             if self.__elementDict == {}:
                 return
-            i = 0
-            for element in adjacencyList:
-                if element == []:
-                    i += 1
-                    continue
+            for key in adjacencyList:
                 '''workaround with i, because different elements can have the same 
                 adjacency entry
                 '''
-                source = i
-                name = networkName + "_" + "router_" + str(source)
+                name = networkName + "_" + "router_" + key
                 communicationRessource = CommunicationResource(name,
                                                                CommunicationResourceType.Router,
                                                                frequencyDomain,
@@ -285,8 +264,8 @@ class platformDesigner():
                                                                writeThroughput)
                 self.__platform.add_communication_resource(communicationRessource)
                 
-                for target in element:
-                    name = networkName + "_pl_" + str(target) + "_" + str(source)
+                for target in adjacencyList[key]:
+                    name = networkName + "_pl_" + str(target) + "_" + key
                     communicationRessource = CommunicationResource(name,
                                                                CommunicationResourceType.PhysicalLink,
                                                                frequencyDomain,
@@ -295,67 +274,50 @@ class platformDesigner():
                                                                readThroughput,
                                                                writeThroughput)
                     self.__platform.add_communication_resource(communicationRessource)
-                i += 1
             
-            for key in self.__elementDict:
+            for key in self.__elementDict[self.__activeScope]:
                 if adjacencyList[key] == []:
                     continue
-                for clusterId in self.__elementDict[key]:
-                    for pe in self.__elementDict[key][clusterId]:
-                        '''Adding a primitive for each pe in the network
-                        '''
-                        prim = Primitive('prim_' + networkName + '_' + pe[0].name)
-                        
-                        routerName = networkName + "_" + "router_" + str(key)
-                        router = self.__platform.find_communication_resource(routerName)
-                        
-                        for innerKey in self.__elementDict:
-                            if adjacencyList[innerKey] == []:
-                                continue
-                            
-                            resourceList = [router]
-                            
-                            if innerKey != key:
-                                path = routingFunction(adjacencyList, key, innerKey)
-                                lastPoint = None
-                                
-                                for point in path:
-                                    if lastPoint != None:
-                                        name = networkName + "_pl_" + str(lastPoint) + "_" + str(point)
-                                        resource = self.__platform.find_communication_resource(name)
-                                        resourceList.append(resource)
-                                    lastPoint = point
-                                
-                            for innerCluster in self.__elementDict[innerKey]:
-                                for innerPe in self.__elementDict[innerKey][innerCluster]:
-                                    '''Iterating again over all pe's in the network to 
-                                    create their consumer and producer phases etc. for 
-                                    the primitive.
-                                    '''
-                                    produce = CommunicationPhase('produce', resourceList, 'write')
-                                    consume = CommunicationPhase('consume', resourceList, 'read')
-                                        
-                                    prim.add_producer(innerPe[0], [produce])
-                                    prim.add_consumer(innerPe[0], [consume])
+                for pe in self.__elementDict[self.__activeScope][key]:
+                    '''Adding a primitive for each pe in the network
+                    '''
+                    prim = Primitive('prim_' + networkName + '_' + pe[0].name)
                     
-                        self.__platform.add_primitive(prim)                    
+                    routerName = networkName + "_" + "router_" + str(key)
+                    router = self.__platform.find_communication_resource(routerName)
+                        
+                    for innerKey in self.__elementDict[self.__activeScope]:
+                        if adjacencyList[innerKey] == []:
+                            continue
+                            
+                        resourceList = [router]
+                            
+                        if innerKey != key:
+                            path = routingFunction(adjacencyList, key, innerKey)
+                            lastPoint = None
+                                
+                            for point in path:
+                                if lastPoint != None:
+                                    name = networkName + "_pl_" + str(lastPoint) + "_" + str(point)
+                                    resource = self.__platform.find_communication_resource(name)
+                                    resourceList.append(resource)
+                                lastPoint = point
+                            
+                        for innerPe in self.__elementDict[self.__activeScope][innerKey]:
+                            '''Iterating again over all pe's in the network to 
+                            create their consumer and producer phases etc. for 
+                            the primitive.
+                                    '''
+                            produce = CommunicationPhase('produce', resourceList, 'write')
+                            consume = CommunicationPhase('consume', resourceList, 'read')
+                                        
+                            prim.add_producer(innerPe[0], [produce])
+                            prim.add_consumer(innerPe[0], [consume])
+                    
+                    self.__platform.add_primitive(prim)                    
                                         
             
         
         else:
-            '''Creating a network between clusters on the same chip
-            '''
-            if self.__clusterDict == {}:
-                return
-        
-    def newElement(self, identifier):
-        self.__elementDict.update({identifier : {}})
-        self.__activeScope = identifier
-    
-    def finishElement(self):
-        self.__activeScope = None
-    
-    
-    
-    
+            return
     
