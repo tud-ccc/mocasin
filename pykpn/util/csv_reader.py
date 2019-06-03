@@ -1,39 +1,32 @@
 import csv
-import argparse
 import zipfile
 import os
-from pykpn.slx.platform import SlxPlatform
-from pykpn.slx.kpn import SlxKpnGraph
-from _collections import OrderedDict
 
-from pykpn.util import plot
+from _collections import OrderedDict
 from pykpn.common.mapping import Mapping
+from pykpn.common.platform import Platform
+from pykpn.common.kpn import KpnGraph
 
 class DataReader():
     def __init__(self, platform,
-                    application,
                     filePath,
-                    platformPath='default',
-                    kpnPath='default',
+                    kpnGraph,
                     attribute='default',
                     processPrefix='default',
                     processSuffix='default'):
         
+        if not isinstance(platform, Platform):
+            raise RuntimeError("Platform object is not valid")
+        
+        if not isinstance(kpnGraph, KpnGraph):
+            raise RuntimeError("KpnGraph object is not valid")
+        
         self._mProcessNames = []
         self._mDataDict = {}
         self._mMappingDict  = OrderedDict()
+        self._mPlatform = platform
+        self._mKpnInstance = kpnGraph
         
-        if platformPath != 'default':
-            self._mPlatform = SlxPlatform('SlxPlatform', platformPath, '2017.04')
-        else:
-            path = '../../apps/' + application + '/' + platform + '/' + platform + '.platform'
-            self._mPlatform = SlxPlatform('SlxPlatform', path, '2017.04')
-        
-        if kpnPath != 'default':
-            self._mKpnInstance = SlxKpnGraph('SlxKpnGraph', kpnPath, '2017.04')
-        else:
-            path = '../../apps/' + application + '.cpn.xml'
-            self._mKpnInstance = SlxKpnGraph('SlxKpnGraph', path,'2017.04')
         for process in self._mKpnInstance.processes():
             self._mProcessNames.append(process.name)
         
@@ -108,63 +101,3 @@ class DataReader():
             self._mMappingDict.update({entry : (mapping, self._mDataDict[entry][self._desiredProperty])})
         return self._mMappingDict
     
-
-parser = argparse.ArgumentParser(description='Converts CSV file to mapping objects and plots them.')
-
-parser.add_argument('platform', metavar='T', type=str, help='The platform the application was running on')
-
-parser.add_argument('application', metavar='A', type=str, help='The application that was running')
-
-parser.add_argument('filePath', metavar='F', type=str, help='Path to the CSV file')
-
-parser.add_argument('--platformPath', 
-                    metavar='P', 
-                    type=str, 
-                    default= 'default',
-                    help='path to the XML description of the platform')
-
-parser.add_argument('--kpnPath', 
-                    metavar='K', 
-                    type=str, 
-                    default= 'default',
-                    help='path to the XML description of the applications KPN graph')
-
-parser.add_argument('--property', 
-                    metavar='O', 
-                    type=str, 
-                    default= 'wall_clock_time',
-                    help='the measured property, mappings will be compared by')
-
-parser.add_argument('--prefix', 
-                    metavar='PR', 
-                    type=str, 
-                    default= 'default',
-                    help='affix for process names in the CSV file, in case they are not exactly the same as in the application description')
-
-parser.add_argument('--suffix', 
-                    metavar='SU', 
-                    type=str, 
-                    default= 'default',
-                    help='suffix for process names in the CSV file, in case they are not exactly the same as in the application description')
-
-if __name__ == "__main__":
-    args = parser.parse_args()
-    dataReader = DataReader(args.platform,
-                            args.application,
-                            args.filePath,
-                            args.platformPath,
-                            args.kpnPath,
-                            args.property,
-                            args.prefix,
-                            args.suffix)
-    
-    mappings = dataReader.formMappings()
-    
-    compareProperty = []
-    mappingList = []
-
-    for key in mappings:
-        mappingList.append(mappings[key][0])
-        compareProperty.append(float(mappings[key][1]))
-        
-    plot.visualize_mapping_space(mappingList, compareProperty)
