@@ -10,6 +10,7 @@ import pytest
 from scripts.slx.kpn_to_dot import main as kpn_to_dot
 from scripts.slx.mapping_to_dot import main as mapping_to_dot
 from scripts.slx.platform_to_dot import main as platform_to_dot
+from scripts.slx.random_walk import main as random_walk
 from scripts.slx.simulate import main as simulate
 
 
@@ -63,3 +64,15 @@ def test_mapping_to_dot(datadir, platform):
                     str(dot),
                     "--slx-version=2017.10"])
     assert filecmp.cmp(dot, expected)
+
+
+@pytest.mark.parametrize("platform", ["exynos", "multidsp"])
+@pytest.mark.parametrize("option", [None, "-d", "-V", "-p", "--export-all"])
+def test_random_walk(mocker, datadir, platform, option):
+    mocker.patch("matplotlib.pyplot.show")  # suppress plots
+    os.chdir(datadir)
+    out_dir = datadir.join("out")
+    cmd = [str("%s.ini" % platform), str(out_dir), "-n 100"]
+    if option is not None:
+        cmd.append(option)
+    random_walk(cmd)
