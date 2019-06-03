@@ -7,8 +7,9 @@ import filecmp
 import os
 import pytest
 
-from scripts.slx.platform_to_dot import main as platform_to_dot
 from scripts.slx.kpn_to_dot import main as kpn_to_dot
+from scripts.slx.mapping_to_dot import main as mapping_to_dot
+from scripts.slx.platform_to_dot import main as platform_to_dot
 from scripts.slx.simulate import main as simulate
 
 
@@ -34,9 +35,10 @@ def test_kpn_to_dot(datadir, version):
     assert filecmp.cmp(dot, expected)
 
 
-# XXX This Test can currently not be run for parallella as it imports another
-#     version of the SLX bindings then exynos and multidsp. As this leads to a
-#     conflict the test would alway fail...
+# XXX The tests below can currently not be run for parallella as it imports
+#     another version of the SLX bindings then exynos and multidsp. As this
+#     leads to a conflict the test would alway fail...
+
 @pytest.mark.parametrize("platform, expected", [
     ("exynos", "19.841971309 ms"),
     ("multidsp", "95.811217897 ms"),
@@ -46,3 +48,18 @@ def test_simulate(capfd, datadir, platform, expected):
     simulate([str("%s.ini" % platform)])
     out, err = capfd.readouterr()
     assert out.split('\n')[-3] == "Total simulated time: %s" % expected
+
+
+@pytest.mark.parametrize("platform", ["exynos", "multidsp"])
+def test_mapping_to_dot(datadir, platform):
+    kpn_xml = datadir.join("audio_filter.cpn.xml")
+    platform_xml = datadir.join("%s.platform" % platform)
+    mapping_xml = datadir.join("%s.mapping" % platform)
+    dot = datadir.join("%s-mapping.dot" % platform)
+    expected = datadir.join("%s-mapping.dot.expected" % platform)
+    mapping_to_dot([str(kpn_xml),
+                    str(platform_xml),
+                    str(mapping_xml),
+                    str(dot),
+                    "--slx-version=2017.10"])
+    assert filecmp.cmp(dot, expected)
