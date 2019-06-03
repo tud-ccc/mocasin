@@ -58,9 +58,9 @@ class RuntimeSystem:
                     for p in app.mapping.scheduler_processes(sched):
                         scheduler.add_process(app.find_process(p.name))
             else:
-                log.warn('True multi-processor scheduling is not supported '
-                         'yet! -> split the %s scheduler into multiple '
-                         'single-processor schedulers', sched.name)
+                log.warning('True multi-processor scheduling is not supported '
+                            'yet! -> split the %s scheduler into multiple '
+                            'single-processor schedulers', sched.name)
                 for proc in sched.processors:
                     name = '%s_%s' % (sched.name, proc.name)
                     scheduler = create_scheduler(name, proc, policy,
@@ -138,7 +138,7 @@ class RuntimeSystem:
                     log.error('The process %s is blocked', p.name)
                     some_blocked = True
                 elif not p.check_state(ProcessState.FINISHED):
-                    log.warn('The process %s did not finish its execution!',
-                             p.name)
+                    log.warning('The process %s did not finish its execution!',
+                                p.name)
             if some_blocked:
                 log.error('The application %s is deadlocked!', app.name)

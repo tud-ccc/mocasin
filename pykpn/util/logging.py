@@ -34,7 +34,7 @@ logger. See the code below for an example of usage.
 
        log.info("Info Test")
        log.debug("Debug Test")
-       log.warn("Warning Test")
+       log.warning("Warning Test")
        log.error("Error Test")
 
        # do something useful ...

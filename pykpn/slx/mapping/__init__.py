@@ -46,10 +46,10 @@ class SlxMapping(Mapping):
             if (version == '2017.10'):
                 policy = scheduler.policies[0]
                 param = None
-                log.warn('2017.10 mapping descriptors do not specify the '
-                         'scheduling policy. -> Set the policy for %s to the '
-                         'first policy specified by the platform (%s)' %
-                         (name, policy.name))
+                log.warning('2017.10 mapping descriptors do not specify the '
+                            'scheduling policy. -> Set the policy for %s to the '
+                            'first policy specified by the platform (%s)' %
+                            (name, policy.name))
             elif (version == '2017.04'):
                 if xs.timeSliceValue is not None:
                     time_slice = _ur(str(xs.timeSliceValue) + xs.timeSliceUnit)
@@ -175,8 +175,8 @@ def export_slx_mapping(mapping, file_name, version):
             xml_scheduler.ProcessRef.append(xml_process_ref)
 
         if version == '2017.10':
-            log.warn('slx 2017.10 mapping descriptors do not support '
-                     'scheduling policies -> truncate while exporting')
+            log.warning('slx 2017.10 mapping descriptors do not support '
+                        'scheduling policies -> truncate while exporting')
         elif version == '2017.04':
             xml_scheduler.policy = info.policy.name
             # has param?
@@ -186,8 +186,8 @@ def export_slx_mapping(mapping, file_name, version):
                     xml_scheduler.timeSliceValue = info.param
                     xml_scheduler.timeSliceUnit = 'ps'
                 else:
-                    log.warn('found a unknown scheduler parameter '
-                             '-> ignore it during export')
+                    log.warning('found a unknown scheduler parameter '
+                                '-> ignore it during export')
 
         xml_mapping.Scheduler.append(xml_scheduler)
 
