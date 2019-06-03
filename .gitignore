@@ -13,3 +13,5 @@ third_party_dependencies/pynauty-0.6/nauty/config.*
 .pydevproject
 .settings/
 .coverage
+
+*.csv
