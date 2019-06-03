@@ -20,9 +20,9 @@ def simpleDijkstra(adjacencyList, source, target):
     :returns: The list of nodes we need to visit to reach target from source.
     :rtype list[int]:
     """
-    if isinstance(adjacencyList, list):
+    if isinstance(adjacencyList, dict):
             for element in adjacencyList:
-                if not isinstance(element, list):
+                if not isinstance(adjacencyList[element], list):
                     return None
     else:
         return None
@@ -32,16 +32,11 @@ def simpleDijkstra(adjacencyList, source, target):
     
     distances = {}
     
-    '''workaround with i, because nodes with different indexes can have the
-    same adjacency
-    '''
-    i = 0
     for node in adjacencyList:
-        if not i == source:
-            distances.update({i : None})
+        if not node == source:
+            distances.update({node : None})
         else:
-            distances.update({i : (0,[source])})
-        i += 1    
+            distances.update({node : (0,[source])})    
         
     visitedNodes = [source]
     currentPath = [source]
