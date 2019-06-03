@@ -6,6 +6,13 @@
 # Authors: Christian Menard
 
 
+"""Generate a dot graph representing the mapping of a KPN application to a platform
+
+This script expects four positional arguments: a KPN graph xml file, a platform
+xml, a mapping xml file and the output file.
+"""
+
+
 import argparse
 import sys
 
