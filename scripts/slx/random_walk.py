@@ -6,6 +6,30 @@
 # Authors: Christian Menard, Andres Goens
 
 
+"""A Random Walk Mapper
+
+Produces multiple random mappings and simulates each mapping in order to find
+the 'best' mapping. The script expects two positional arguments: a
+configuration file such as apps/audio_filter/exynos/config.ini and the output
+directory. There are multiple useful options:
+
+    * ``-j`` or ``--jobs``: set the number of parallel jobs
+    * ``-n`` or ``--num-iterations``: set the total number of mappings to be 
+      generated
+    * ``-d`` or ``--plot_distribution``: plot the distribution of simulated
+      execution times over all mappings
+    * ``-p`` or ``--progess``: show a progress bar and ETA
+    * ``-V`` or ``--visualize``: use t-SNE to visualize the mapping space
+    * ``-R`` or ``--representation``, Select the representation type for the
+      mapping space
+    * ``--export-all``: export all mappings (on default only the best mapping
+      is exported)
+
+It is recommended to use the silent cli flag (``-s``) to suppress all logging
+output from the individual simulations.
+"""
+
+
 import argparse
 import multiprocessing as mp
 import os
