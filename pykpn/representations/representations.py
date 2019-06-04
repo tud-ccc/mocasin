@@ -12,6 +12,8 @@ try:
 except:
     pass
 
+from pykpn.common.mapping import Mapping
+
 from .metric_spaces import FiniteMetricSpace, FiniteMetricSpaceSym, FiniteMetricSpaceLP, FiniteMetricSpaceLPSym, arch_graph_to_distance_metric
 from .embeddings import MetricSpaceEmbedding, DEFAULT_DISTORTION
 import pykpn.representations.automorphisms as aut
@@ -154,8 +156,9 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         orbit = self._G.tuple_orbit(x[:self._d])
         res = []
         for elem in orbit:
-            mapping = Mapping(self._kpn, self._platform)
+            mapping = Mapping(self.kpn, self.platform)
             mapping.from_list(list(elem))
+            res.append(mapping)
         return res
 
 

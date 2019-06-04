@@ -7,7 +7,6 @@
 import pydot
 import random
 from pykpn.common import logging
-from pykpn.representations.representations import RepresentationType #MappingRepresentation, MetricSpaceRepresentation, SymmetryRepresentation, MetricSymmetryRepresentation, MetricEmbeddingRepresentation
 
 
 log = logging.getLogger(__name__)
@@ -63,7 +62,7 @@ class Mapping:
         dict of scheduler mapping infos
     """
 
-    def __init__(self, kpn, platform, representation_type=RepresentationType['SimpleVector']):
+    def __init__(self, kpn, platform):
         """Initialize a Mapping
 
         :param KpnGraph kpn: the kpn graph
@@ -74,8 +73,6 @@ class Mapping:
 
         self.kpn = kpn
         self.platform = platform
-        self._representation_type = representation_type
-        self._representation = self._representation_type.getClassType()(self.kpn,self.platform)
 
         self._channel_info = {}
         self._process_info = {}

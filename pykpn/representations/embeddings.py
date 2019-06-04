@@ -95,9 +95,9 @@ class MetricSpaceEmbeddingBase():
             eigenvals, eigenvecs = np.linalg.eigh(np.matrix(Q.value))
             min_eigenv = min(eigenvals)
             if min_eigenv < 0:
-                log.warning("Warning, matrix not positive semidefinite.")
-                      + "Trying to correct for numerical errors with minimal eigenvalue: "
-                      + str(min_eigenv) + " (max. eigenvalue:" + str(max(eigenvals)) + ").")
+                log.warning("Warning, matrix not positive semidefinite." +
+                "Trying to correct for numerical errors with minimal eigenvalue: " +
+                str(min_eigenv) + " (max. eigenvalue:" + str(max(eigenvals)) + ").")
                 
                 Q_new_t = np.transpose(eigenvecs) * np.matrix(Q.value) * eigenvecs
                 #print(eigenvals)
