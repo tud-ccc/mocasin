@@ -48,7 +48,7 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
             Procs = list(self._kpn._processes.keys())
             PEs = list(self._platform._processors.keys())
             CPs = list(self._platform._primitives.keys())
-            res = list(randint(0,len(PEs)-1,size=len(Procs)))
+            res = list(randint(0,len(PEs),size=len(Procs)))
             for c in self._kpn.channels():
                 suitable_primitives = []
                 for p in self._platform.primitives():
@@ -61,7 +61,7 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
                     sinks = [self._platform.find_processor(snk) for snk in sink_pe_names]
                     if p.is_suitable(src,sinks):
                         suitable_primitives.append(p)
-                primitive = suitable_primitives[randint(0,len(suitable_primitives)-1)].name
+                primitive = suitable_primitives[randint(0,len(suitable_primitives))].name
                 primitive_idx = [i for i,x in enumerate(CPs) if x == primitive][0]
                 res.append(primitive_idx)
             return res
