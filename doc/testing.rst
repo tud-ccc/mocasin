@@ -24,3 +24,19 @@ for an example test module.
 
 .. _documentation: https://docs.pytest.org/en/latest/
 .. _fixtures: https://docs.pytest.org/en/latest/fixture.html
+
+Configuration
+-------------
+
+Pytest can be configured by creating a file name ``pytest.ini`` in the pykpn
+root directory (where ``setup.py`` lives). See
+https://docs.pytest.org/en/latest/reference.html#ini-options-ref for a list of
+all configuration options. One important option is ``testpaths`` that can be
+used to configure which tests should be run. pytest can be set to verbose by
+adding ``addopts=-vv``. See the example below:
+
+.. code-block:: ini
+
+   [pytest]
+   testpaths="scripts"
+   addopts=-vv
