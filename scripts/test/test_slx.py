@@ -84,7 +84,7 @@ def test_random_walk(mocker, datadir, platform, option):
     mocker.patch("matplotlib.pyplot.show")  # suppress plots
     os.chdir(datadir)
     out_dir = datadir.join("out")
-    cmd = [str("%s.ini" % platform), str(out_dir), "-n 100"]
+    cmd = [str("%s.ini" % platform), str(out_dir), "-n 10"]
     if option is not None:
         cmd.append(option)
     random_walk(cmd)
