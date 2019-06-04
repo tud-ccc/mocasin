@@ -8,7 +8,7 @@
 
 import argparse
 
-from pykpn.common import logging
+from pykpn.util import logging
 from pykpn.slx.kpn import SlxKpnGraph
 
 

@@ -10,7 +10,7 @@ import argparse
 
 import pynauty as pynauty
 
-from pykpn.common import logging
+from pykpn.util import logging
 from pykpn.slx.platform import SlxPlatform
 import pykpn.representations.automorphisms as aut
 import pykpn.representations.permutations as perm

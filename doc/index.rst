@@ -8,6 +8,7 @@ Welcome to pykpn's documentation!
    getting_started
    documentation
    testing
+   logging
    api/modules
 
 Indices and tables

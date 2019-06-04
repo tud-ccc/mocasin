@@ -11,7 +11,7 @@ import timeit
 
 import simpy
 
-from pykpn.common import logging
+from pykpn.util import logging
 from pykpn.slx.config import SlxSimulationConfig
 from pykpn.slx.system import SlxRuntimeSystem
 
