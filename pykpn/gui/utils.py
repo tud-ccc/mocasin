@@ -2,6 +2,7 @@
 # All Rights Reserved
 #
 # Authors: Felix Teweleit
+
 class listOperations(object):
     """Class contains custom functions to operate on lists, that are needed to prepare platforms and mappings to be drawn.
     """
