@@ -5,6 +5,7 @@ test-python3.7:
   stage: test
   image: python:3.7
   script:
+  - rm -rf pykpn/test
   - cd third_party_dependencies/pynauty-0.6
   - make pynauty
   - python setup.py install
@@ -16,6 +17,7 @@ test-python3.6:
   stage: test
   image: python:3.6
   script:
+  - rm -rf pykpn/test
   - cd third_party_dependencies/pynauty-0.6
   - make pynauty
   - python setup.py install
