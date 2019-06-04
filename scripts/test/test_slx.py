@@ -9,15 +9,17 @@ import pytest
 
 from scripts.slx.kpn_to_dot import main as kpn_to_dot
 from scripts.slx.mapping_to_dot import main as mapping_to_dot
+from scripts.slx.platform_to_autgrp import main as platform_to_autgrp
 from scripts.slx.platform_to_dot import main as platform_to_dot
 from scripts.slx.random_walk import main as random_walk
 from scripts.slx.simulate import main as simulate
 
 
+platforms = ["exynos", "multidsp", "parallella"]
 slx_versions = ["2017.04", "2017.10"]
 
 
-@pytest.mark.parametrize("platform", ["exynos", "multidsp", "parallella"])
+@pytest.mark.parametrize("platform", platforms)
 @pytest.mark.parametrize("version", slx_versions)
 def test_platform_to_dot(datadir, platform, version):
     xml = datadir.join("%s.platform" % platform)
@@ -25,6 +27,16 @@ def test_platform_to_dot(datadir, platform, version):
     expected = datadir.join("%s.dot.expected" % platform)
     platform_to_dot([str(xml), str(dot), "--slx-version=%s" % version])
     assert filecmp.cmp(dot, expected)
+
+
+@pytest.mark.parametrize("platform", platforms)
+@pytest.mark.parametrize("version", slx_versions)
+def test_platform_to_autgrp(datadir, platform, version):
+    xml = datadir.join("%s.platform" % platform)
+    autgrp = datadir.join("%s.autgrp" % platform)
+    expected = datadir.join("%s.autgrp.expected" % platform)
+    platform_to_autgrp([str(xml), str(autgrp), "--slx-version=%s" % version])
+    assert filecmp.cmp(autgrp, expected)
 
 
 @pytest.mark.parametrize("version", slx_versions)
