@@ -114,6 +114,14 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
     def uniform(self):
         procs_only = SimpleVectorRepresentation.uniform(self)[:self._d]
         return self._G.tuple_normalize(procs_only)
+    def allEquivalent(self,x):
+        orbit = self._G.tuple_orbit(x[:self._d])
+        res = []
+        for elem in orbit:
+            mapping = Mapping(self._kpn, self._platform)
+            mapping.from_list(list(elem))
+        return res
+
 
 #FIXME: UNTESTED!!
 class MetricSymmetryRepresentation(FiniteMetricSpaceLPSym, metaclass=MappingRepresentation):
