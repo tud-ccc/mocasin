@@ -1,15 +1,15 @@
-'''
-Created on Nov 20, 2017
+# Copyright (C) 2017 TU Dresden
+# All Rights Reserved
+#
+# Authors: Andrès Goens, Felix Teweleit
 
-@author: goens, teweleit
-'''
 
 import unittest
 from pykpn.representations.embeddings import *
 import pykpn.representations.metric_spaces as metric
 from pykpn.representations.examples import *
 
-class Embeddings_Test(unittest.TestCase):
+class test_Embeddings(unittest.TestCase):
     
     def setUp(self):
         self.helpvar = 5

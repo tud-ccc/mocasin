@@ -1,12 +1,12 @@
-'''
-Created on Apr 4, 2019
+# Copyright (C) 2017 TU Dresden
+# All Rights Reserved
+#
+# Authors: Andrès Goens, Felix Teweleit
 
-@author: goens, teweleit
-'''
 import unittest
 from pykpn.representations.permutations import *
 
-class Permutation_Test(unittest.TestCase):
+class test_Permutation(unittest.TestCase):
     
     def setUp(self):
         self.maxDiff = None

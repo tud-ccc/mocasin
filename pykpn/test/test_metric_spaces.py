@@ -1,14 +1,13 @@
-'''
-Created on Nov 20, 2017
-
-@author: goens, teweleit
-'''
+# Copyright (C) 2017 TU Dresden
+# All Rights Reserved
+#
+# Authors: Andrès Goens, Felix Teweleit
 
 import unittest
 from pykpn.representations.metric_spaces import *
 from pykpn.representations.examples import *
 
-class MetricSpaces_Test(unittest.TestCase):
+class test_MetricSpaces(unittest.TestCase):
     
     def setUp(self):
         self.N = 10000

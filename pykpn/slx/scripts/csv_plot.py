@@ -1,3 +1,9 @@
+# Copyright (C) 2019 TU Dresden
+# All Rights Reserved
+#
+# Authors: Felix Teweleit
+
+
 import argparse
 import os
 from pykpn.slx.config import SlxSimulationConfig
