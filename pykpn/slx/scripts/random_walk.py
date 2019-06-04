@@ -233,7 +233,7 @@ def main():
         if args.plot_distribution:
             import matplotlib.pyplot as plt
             # exec time in milliseconds
-            plt.hist(exec_times, bins=int(num_iterations/20), normed=True)
+            plt.hist(exec_times, bins=int(num_iterations/20), density=True)
             plt.yscale('log', nonposy='clip')
             plt.title("Mapping Distribution")
             plt.xlabel("Execution Time [ms]")
