@@ -5,6 +5,7 @@
 
 
 import os
+import unittest
 
 from pykpn.slx.config import SlxSimulationConfig
 from pykpn.slx.platform import SlxPlatform
@@ -12,11 +13,11 @@ from pykpn.slx.kpn import SlxKpnGraph
 from pykpn.util import plot
 from pykpn.util.csv_reader import DataReader
 
-class test_CSVReader():
+class test_CSVReader(unittest.TestCase):
     
     def test_plot(self):
         configFilePath = "apps/audio_filter/exynos/config.ini"
-        csvFilePath = "pykpn/test/first200.csv"
+        csvFilePath = "pykpn/test/testValues.csv"
         applicationString = "audio_filter"
         
         platform = None
