@@ -4,6 +4,13 @@
 # All Rights Reserved
 #
 # Authors: Christian Menard, Andres Goens
+"""Calculate the Automorphism Group of a Platform Graph
+
+This script takes expects to positional arguments: an xml file describing a
+platform in the SLX format, e.g. apps/audio_filter/exynos/exynos.platform
+and an output file, where the automorphism group of the platform graph will be
+placed. 
+"""
 
 
 import argparse
