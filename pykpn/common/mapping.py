@@ -259,6 +259,24 @@ class Mapping:
         """
         return len(self.platform.processors()) - 1
 
+    
+    def change_affinity(self, processName, processorName):
+        """Changes the affinity of a process to a processing element
+        :param string processName: the name of the process for which the affinity should be changed
+        :param string processorName: the name of the processor to which the process should be applied 
+        """
+        newProcessor = None
+        for processor in self._platform.processors():
+            if processor.name == processorName:
+                newProcessor = processor
+                break
+        if newProcessor != None:
+            priority = self._process_info[processName].priority
+            scheduler = self._process_info[processName].scheduler
+            del self._process_info[processName]
+            self._process_info.update({processName : ProcessMappingInfo(scheduler, newProcessor, priority)})
+        return True
+    
     def to_string(self):
         """Convert mapping to a simple readable string 
         :rtype: string 
