@@ -147,8 +147,8 @@ class drawManager():
         for key in coreUsage[keyWithMostProcs]:
                 for element in coreUsage[keyWithMostProcs][key]:
                     tmpList.append(element)
-        matrix = listOperations.convertToMatrix(listOperations, tmpList)
-        maxLength = listOperations.getDimension(listOperations, matrix)
+        matrix = listOperations.convertToMatrix(tmpList)
+        maxLength = listOperations.getDimension(matrix)
         radius = self.__minimalPeSize / (2 * maxLength)
         self.__mDragAndDropManager.setRadius(radius)
         
@@ -512,8 +512,8 @@ class drawManager():
         """
         platform = self.__mApiInstance.getPlatform()
         
-        matrix = listOperations.convertToMatrix(listOperations, toDraw)
-        dimension = listOperations.getDimension(listOperations, matrix)
+        matrix = listOperations.convertToMatrix(toDraw)
+        dimension = listOperations.getDimension(matrix)
         
         sizeX = (restSizeX - dimension * self.__border) / dimension
         sizeY = (restSizeY - (dimension - 1) * self.__border ) / dimension
@@ -584,11 +584,11 @@ class drawManager():
         platform = self.__mApiInstance.getPlatform()
         if not networkOnChip:
             try:
-                toDraw = platformOperations.getSortedProcessorScheme(platformOperations, toDraw)
+                toDraw = platformOperations.getSortedProcessorScheme(toDraw)
             except:
                 pass
-        matrix = listOperations.convertToMatrix(listOperations, toDraw)
-        dimension = listOperations.getDimension(listOperations, matrix)
+        matrix = listOperations.convertToMatrix(toDraw)
+        dimension = listOperations.getDimension(matrix)
     
         sizeX = (restSizeX - dimension * self.__border) / dimension
         sizeY = (restSizeY - (dimension - 1) * self.__border ) / dimension

@@ -97,7 +97,7 @@ class platformInformation():
     """Data object that holds all necessary information to draw a platform.
     :ivar Platform platformObject: The platform object which should be drawn.
     :ivar list[(str, list[str])] __platformDescription: The description of the platform that can be interpreted by the drawManager class.
-    :ivar dict{str, list[int]} __coreDictionary: A dictionary with the name of the core as key and the start x and y value and the end x and y value and 
+    :ivar dict{str, list[int]} __coreDictionary: A dictionary with the name o    f the core as key and the start x and y value and the end x and y value and 
                                                  the handle given by the Canvas as values.
     :ivar list[int] __coreClasses: A list that has an entry for every core size that appears in the platform structure.
     """
@@ -114,17 +114,17 @@ class platformInformation():
         """Creates the hierarchic platform description that can be interpreted by the drawManager.
         :param Platform platformObject: The pykpn Platform object for which the description should be created.
         """
-        description = platformOperations.getPlatformDescription(platformOperations, platformObject.processors(), platformObject.primitives())    
+        description = platformOperations.getPlatformDescription(platformObject.processors(), platformObject.primitives())    
         
-        self.__mEqualList = platformOperations.findEqualPrimitives(platformOperations, platformObject)
-        description = platformOperations.mergeEqualPrimitives(platformOperations, description, self.__mEqualList) 
+        self.__mEqualList = platformOperations.findEqualPrimitives(platformObject)
+        description = platformOperations.mergeEqualPrimitives(description, self.__mEqualList) 
         
         networkOnChip = False
         for equalSheet in self.__mEqualList:
             if len(equalSheet) > 2:
                     networkOnChip = True
         if networkOnChip:         
-            description = platformOperations.createNocMatrix(platformOperations, description, platformObject)
+            description = platformOperations.createNocMatrix(description, platformObject)
             
         self.__platformDescription = description
         

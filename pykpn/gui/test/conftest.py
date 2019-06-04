@@ -4,31 +4,17 @@
 # Authors: Felix Teweleit
 
 import pytest
-import random as rnd
 
-from pykpn.gui import dataTemplates
-
+from pykpn.slx.platform import SlxPlatform
 
 @pytest.fixture
-def simpleList(length):
-    result = []
-    for i in range(0, length):
-        result.append(rnd.randint(0, 1000))
-    return result
+def exynos():
+    return SlxPlatform('SlxPlatform', 'apps/audio_filter/exynos/exynos.platform', '2017.04')
 
 @pytest.fixture
-def nestedList(depth):
-    length = rnd.randint(0, 100)
-    
-    result = []
-    
-    for i in range(0, length):
-        result.append(rnd.randint(0, 1000))
-    
-    for i in range(0, depth):
-        tmpList = []
-        for j in range(0, length):
-                tmpList.append(result)
-        result = tmpList
-        
-    return result
+def parallella():
+    return  SlxPlatform('SlxPlatform', 'apps/audio_filter/parallella/parallella.platform', '2017.04')
+
+@pytest.fixture
+def multiDSP():
+    return SlxPlatform('SlxPlatform', 'apps/audio_filter/multidsp/multidsp.platform', '2017.04')
