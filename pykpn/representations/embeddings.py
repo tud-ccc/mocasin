@@ -12,7 +12,7 @@ import logging
 #import fjlt.fjlt as fjlt #TODO: use fjlt to (automatically) lower the dimension of embedding
 from pykpn.representations import permutations as perm
 from pykpn.representations import metric_spaces as metric
-from pykpn.common import logging
+from pykpn.util import logging
 import pykpn.util.random_distributions.lp as lp
 
 log = logging.getLogger(__name__)

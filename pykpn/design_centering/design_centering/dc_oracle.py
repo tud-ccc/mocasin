@@ -24,7 +24,7 @@ from . import dc_settings as conf
 
 from sys import exit
 
-from pykpn.common import logging
+from pykpn.util import logging
 
 log = logging.getLogger(__name__)
 

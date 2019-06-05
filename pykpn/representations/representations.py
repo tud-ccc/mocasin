@@ -19,7 +19,7 @@ from .embeddings import MetricSpaceEmbedding, DEFAULT_DISTORTION
 import pykpn.representations.automorphisms as aut
 import pykpn.representations.permutations as perm
 import pykpn.util.random_distributions.lp as lp
-from pykpn.common import logging
+from pykpn.util import logging
 log = logging.getLogger(__name__)
 
 class MappingRepresentation(type):

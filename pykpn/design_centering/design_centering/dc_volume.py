@@ -9,7 +9,7 @@ import numpy as np
 from . import dc_settings as conf
 from pykpn.representations.representations import RepresentationType, toRepresentation
 
-from pykpn.common import logging
+from pykpn.util import logging
 
 log = logging.getLogger(__name__)
 

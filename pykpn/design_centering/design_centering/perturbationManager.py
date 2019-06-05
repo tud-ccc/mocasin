@@ -10,7 +10,7 @@ from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.mapper.rand_mapgen import RandomMappingGenerator
 from pykpn.mapper.dc_mapgen import DC_MappingGenerator
 
-from pykpn.common import logging
+from pykpn.util import logging
 
 log = logging.getLogger(__name__)
 

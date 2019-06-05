@@ -30,7 +30,7 @@ from pykpn.design_centering.design_centering import dc_sample
 from pykpn.design_centering.design_centering import dc_volume
 from pykpn.design_centering.design_centering import designCentering
 from pykpn.design_centering.design_centering import perturbationManager as p
-from pykpn.common import logging
+from pykpn.util import logging
 from pykpn.util import plot # t-SNE plotting stuff
 import numpy as np
 import matplotlib.pyplot as plt
