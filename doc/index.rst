@@ -11,6 +11,7 @@ Welcome to pykpn's documentation!
    logging
    ci
    api/modules
+   scripts/modules
 
 Indices and tables
 ==================
