@@ -34,7 +34,7 @@ directory:
 .. code-block:: sh
 
    cd <path/to/pykpn/third_party_dependencies/pynauty-0.6
-   make
+   make pynauty
    python setup.py install
 
 .. _run tests:
