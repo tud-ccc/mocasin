@@ -6,7 +6,7 @@
 
 import glob
 
-from pykpn.common import logging
+from pykpn.util import logging
 from pykpn.common.trace import TraceGenerator, TraceSegment
 
 
@@ -139,8 +139,8 @@ class SlxTraceReader_2017_10(SlxTraceReader_2017_04):
                 'No trace file for process %s on processor type %s found' % (
                     process_name, processor_type))
         elif len(trace_files) > 1:
-            log.warn('More than one trace file found for process %s on '
-                     'processor type %s. -> Choose %s' % (
-                         process_name, processor_type, trace_files[0]))
+            log.warning('More than one trace file found for process %s on '
+                        'processor type %s. -> Choose %s' % (
+                            process_name, processor_type, trace_files[0]))
 
         return open(trace_files[0])

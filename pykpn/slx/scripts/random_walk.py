@@ -21,7 +21,7 @@ from pykpn.slx.platform import SlxPlatform
 from pykpn.slx.trace import SlxTraceReader
 
 from pykpn import slx
-from pykpn.common import logging
+from pykpn.util import logging
 from pykpn.mapper.random import RandomMapping
 from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.simulate.system import RuntimeSystem

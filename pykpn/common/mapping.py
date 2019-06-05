@@ -7,6 +7,7 @@
 import pydot
 import random
 from pykpn.common import logging
+from pykpn.representations.representations import RepresentationType #MappingRepresentation, MetricSpaceRepresentation, SymmetryRepresentation, MetricSymmetryRepresentation, MetricEmbeddingRepresentation
 
 
 log = logging.getLogger(__name__)
