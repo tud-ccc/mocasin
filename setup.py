@@ -17,6 +17,7 @@ setup(
     install_requires=[
         'argparse',
         'cvxpy',
+        'cvxopt',
         'lxml',
         'numpy',
         'matplotlib',
