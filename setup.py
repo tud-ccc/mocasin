@@ -22,7 +22,7 @@ setup(
         'tqdm',
     ],
     setup_requires=['pytest-runner', 'sphinx'],
-    tests_require=['pytest'],
+    tests_require=['pytest', 'pytest_mock'],
     command_options={
         'build_sphinx': {
             'project': ('setup.py', project_name),
