@@ -6,6 +6,13 @@
 # Authors: Christian Menard
 
 
+"""Generate a dot graph from a SLX platform xml
+
+This script expects two positional arguments: a platform xml file such as
+apps/audio_filter/exynos/exynos.platform and an output file. The script parses
+the xml file and produces a dot graph that visualizes the given platform.
+"""
+
 import argparse
 import sys
 
