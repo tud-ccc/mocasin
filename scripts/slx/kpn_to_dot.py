@@ -7,6 +7,7 @@
 
 
 import argparse
+import sys
 
 from pykpn.util import logging
 from pykpn.slx.kpn import SlxKpnGraph
@@ -15,7 +16,7 @@ from pykpn.slx.kpn import SlxKpnGraph
 log = logging.getLogger(__name__)
 
 
-def main():
+def main(argv):
     parser = argparse.ArgumentParser()
 
     logging.add_cli_args(parser)
@@ -25,7 +26,7 @@ def main():
     parser.add_argument('--slx-version', help="dot output file", type=str,
                         default='2017.04')
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     logging.setup_from_args(args)
 
@@ -35,4 +36,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])

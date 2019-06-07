@@ -22,4 +22,6 @@ class BuildDocCommand(distutils.cmd.Command):
         """Run command."""
         subprocess.run(['sphinx-apidoc', '-f', '-o', './doc/api', './pykpn',
                         '**/test', 'test_*'])
+        subprocess.run(['sphinx-apidoc', '-f', '-o', './doc/scripts', './scripts',
+                        '**/test', 'test_*'])
         self.run_command('build_sphinx')

@@ -7,19 +7,19 @@
 
 
 import argparse
+import sys
 
 import pynauty as pynauty
 
 from pykpn.util import logging
 from pykpn.slx.platform import SlxPlatform
 import pykpn.representations.automorphisms as aut
-import pykpn.representations.permutations as perm
 
 
 log = logging.getLogger(__name__)
 
 
-def main():
+def main(argv):
     parser = argparse.ArgumentParser()
 
     logging.add_cli_args(parser)
@@ -29,7 +29,7 @@ def main():
     parser.add_argument('--slx-version', help="silexica version", type=str,
                         default='2017.04')
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     logging.setup_from_args(args)
 
@@ -66,5 +66,7 @@ def main():
         f.write("\nCorrespondence:")
         f.write(str(new_nodes_correspondence))
     log.info("done writing to file.")
+
+
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])

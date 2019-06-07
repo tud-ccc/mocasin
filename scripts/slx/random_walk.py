@@ -9,16 +9,15 @@
 import argparse
 import multiprocessing as mp
 import os
+import simpy
+import sys
 import timeit
 
-import simpy
-
-from ..config import SlxSimulationConfig
-from ..kpn import SlxKpnGraph
-from ..mapping import export_slx_mapping
-from ..platform import SlxPlatform
-from ..trace import SlxTraceReader
-from pykpn import slx
+from pykpn.slx.config import SlxSimulationConfig
+from pykpn.slx.kpn import SlxKpnGraph
+from pykpn.slx.mapping import export_slx_mapping
+from pykpn.slx.platform import SlxPlatform
+from pykpn.slx.trace import SlxTraceReader
 from pykpn.util import logging
 from pykpn.mapper.random import RandomMapping
 from pykpn.simulate.application import RuntimeKpnApplication
@@ -52,7 +51,7 @@ class SimulationContext(object):
         self.exec_time = None
 
 
-def main():
+def main(argv):
     parser = argparse.ArgumentParser()
 
     logging.add_cli_args(parser)
@@ -117,7 +116,7 @@ def main():
         help='export all random mappings to <outdir>',
         dest='export_all')
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     logging.setup_from_args(args)
 
@@ -283,4 +282,4 @@ def run_simualtion(sim_context):
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])
