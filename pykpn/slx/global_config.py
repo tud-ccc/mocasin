@@ -1,10 +1,9 @@
 import configparser
 import os
-
+import logging
 import pint
 
 import pykpn.platforms
-from pykpn.common import logging
 from itertools import product
 
 log = logging.getLogger(__name__)
