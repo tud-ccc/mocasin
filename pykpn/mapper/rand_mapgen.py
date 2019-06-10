@@ -42,9 +42,9 @@ class RandomMappingGenerator(object):
         :type part_mapping: Mapping
         """
         if seed is not None:
-            random.seed = seed
+            random.seed(seed)
         else:
-            random.seed = self.seed
+            random.seed(self.seed)
 
         if not part_mapping:
             part_mapping = self.mapping

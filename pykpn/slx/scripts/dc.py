@@ -98,6 +98,9 @@ def main():
             json_dc_dump['runs'] = {}
 
             for setting in gconf.system[app_pl]['settings']:
+                print(f"{type(random.seed)} ,value: {random.seed}")
+                random.seed(setting.random_seed)
+                log.info(" Initialized random number generator. Seed: {" + str(setting.random_seed) + "}")
                 slx_version = setting.slx_version
                 # if config.platform_class is not None:
                 #     platform = config.platform_class()
