@@ -1,7 +1,7 @@
 # Authors: Gerald Hempel
 import random
 
-from pykpn.common import logging
+from pykpn.util import logging
 from pykpn.common.mapping import (ChannelMappingInfo, Mapping,
     ProcessMappingInfo, SchedulerMappingInfo)
 

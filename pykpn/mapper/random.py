@@ -7,7 +7,7 @@
 import random
 from pykpn.representations.representations import RepresentationType
 
-from pykpn.common import logging
+from pykpn.util import logging
 from pykpn.common.mapping import (ChannelMappingInfo, Mapping,
     ProcessMappingInfo, SchedulerMappingInfo)
 

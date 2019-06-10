@@ -10,7 +10,7 @@ from pykpn.representations.representations import RepresentationType, MetricSpac
 
 from sys import exit
 
-from pykpn.common import logging
+from pykpn.util import logging
 
 log = logging.getLogger(__name__)
 

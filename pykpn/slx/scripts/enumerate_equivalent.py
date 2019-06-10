@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 
-# Copyright (C) 2017 TU Dresden
+# Copyright (C) 2017-2019 TU Dresden
 # All Rights Reserved
 #
-# Authors: Christian Menard
+# Authors: Christian Menard, Andres Goens
 
 
 import argparse
 
 from pykpn.util import logging
+from pykpn.representations.representations import RepresentationType
 from pykpn.slx.kpn import SlxKpnGraph
 from pykpn.slx.mapping import SlxMapping
 from pykpn.slx.platform import SlxPlatform
@@ -28,19 +29,26 @@ def main():
                         type=str)
     parser.add_argument('mapping', help="xml description of the mapping",
                         type=str)
-    parser.add_argument('dot', help="dot output file", type=str)
-    parser.add_argument('--slx-version', help="dot output file", type=str,
+    parser.add_argument('out', help="output file",
+                        type=str)
+    parser.add_argument('--slx-version', help="SLX Version", type=str,
                         default='2017.04')
 
     args = parser.parse_args()
 
     logging.setup_from_args(args)
 
-    graph = SlxKpnGraph('app', args.graph, args.slx_version)
+    kpn = SlxKpnGraph('app', args.graph, args.slx_version)
     platform = SlxPlatform('platform', args.platform, args.slx_version)
-    mapping = SlxMapping(graph, platform, args.mapping, args.slx_version)
-    dot = mapping.to_pydot()
-    dot.write_raw(args.dot)
+    mapping = SlxMapping(kpn, platform, args.mapping, args.slx_version)
+    representation = RepresentationType['Symmetries'].getClassType()(kpn,platform)
+    log.info(("calculating orbit for mapping:" + str(mapping.to_list())))
+    orbit = representation.allEquivalent(mapping.to_list())
+    log.info("orbit of size: " + str(len(orbit)))
+    with open(args.out,'w') as output_file:
+        for i,elem in enumerate(orbit):
+            output_file.write(f"\n mapping {i}:\n")
+            output_file.write(mapping.to_string())
 
 
 if __name__ == '__main__':

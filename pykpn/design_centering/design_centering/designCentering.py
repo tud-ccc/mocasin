@@ -10,14 +10,14 @@ from . import dc_sample
 from . import dc_volume
 from . import dc_settings as conf
 from . import perturbationManager as p
-from pykpn.common import logging
+from pykpn.util import logging
 from pykpn.util import plot # t-SNE plotting stuff
 import numpy as np
 import matplotlib.pyplot as plt
 from ... import representations as reps
 from pykpn.representations.representations import RepresentationType
 
-from pykpn.common import logging
+from pykpn.util import logging
 
 log = logging.getLogger(__name__)
 

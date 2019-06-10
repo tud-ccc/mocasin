@@ -10,7 +10,7 @@ import os
 import pint
 
 import pykpn.platforms
-from pykpn.common import logging
+from pykpn.util import logging
 
 
 log = logging.getLogger(__name__)

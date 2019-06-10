@@ -90,8 +90,8 @@ def convert(platform, xml_platform):
         frequency_domains[name] = FrequencyDomain(name, max_frequency)
         log.debug('Found frequency domain %s (%d Hz)', name, frequency)
         if len(fd.get_Frequency()) > 1:
-            log.warn('The xml defines multiple frequencies for the domain %s.'
-                     ' -> Select Maximum', name)
+            log.warning('The xml defines multiple frequencies for the domain '
+                        '%s. -> Select Maximum', name)
 
     # Initialize all Processors
     for xp in xml_platform.get_Processor():
@@ -187,8 +187,8 @@ def convert(platform, xml_platform):
 
             # TODO implement passive producing costs
             if xp.get_Passive() is not None:
-                log.warn('Passive producing costs are not supported'
-                         ' -> ignore passive phase of primitive %s', name)
+                log.warning('Passive producing costs are not supported'
+                            ' -> ignore passive phase of primitive %s', name)
 
             # We create a single phase for each producer
             active = CommunicationPhase(
@@ -203,8 +203,8 @@ def convert(platform, xml_platform):
 
             # TODO implement passive producing costs
             if xc.get_Passive() is not None:
-                log.warn('Passive consuming costs are not supported'
-                         ' -> ignore passive phase of primitive %s', name)
+                log.warning('Passive consuming costs are not supported'
+                            ' -> ignore passive phase of primitive %s', name)
 
             # We create a single phase for each producer
             active = CommunicationPhase(

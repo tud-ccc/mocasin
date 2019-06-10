@@ -8,16 +8,18 @@ from numpy.random import random_integers
 import numpy as np
 
 try:
-  import pynauty as pynauty
+    import pynauty as pynauty
 except:
-   pass
+    pass
+
+from pykpn.common.mapping import Mapping
 
 from .metric_spaces import FiniteMetricSpace, FiniteMetricSpaceSym, FiniteMetricSpaceLP, FiniteMetricSpaceLPSym, arch_graph_to_distance_metric
 from .embeddings import MetricSpaceEmbedding, DEFAULT_DISTORTION
 import pykpn.representations.automorphisms as aut
 import pykpn.representations.permutations as perm
 import pykpn.util.random_distributions.lp as lp
-from pykpn.common import logging
+from pykpn.util import logging
 log = logging.getLogger(__name__)
 
 class MappingRepresentation(type):
@@ -150,6 +152,15 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
     def uniform(self):
         procs_only = SimpleVectorRepresentation.uniform(self)[:self._d]
         return self._G.tuple_normalize(procs_only)
+    def allEquivalent(self,x):
+        orbit = self._G.tuple_orbit(x[:self._d])
+        res = []
+        for elem in orbit:
+            mapping = Mapping(self.kpn, self.platform)
+            mapping.from_list(list(elem))
+            res.append(mapping)
+        return res
+
 
 #FIXME: UNTESTED!!
 class MetricSymmetryRepresentation(FiniteMetricSpaceLPSym, metaclass=MappingRepresentation):
