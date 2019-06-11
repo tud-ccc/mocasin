@@ -6,21 +6,42 @@
 # Authors: Christian Menard, Andres Goens
 
 
+"""A Random Walk Mapper
+
+Produces multiple random mappings and simulates each mapping in order to find
+the 'best' mapping. The script expects two positional arguments: a
+configuration file such as apps/audio_filter/exynos/config.ini and the output
+directory. There are multiple useful options:
+
+    * ``-j`` or ``--jobs``: set the number of parallel jobs
+    * ``-n`` or ``--num-iterations``: set the total number of mappings to be 
+      generated
+    * ``-d`` or ``--plot_distribution``: plot the distribution of simulated
+      execution times over all mappings
+    * ``-p`` or ``--progess``: show a progress bar and ETA
+    * ``-V`` or ``--visualize``: use t-SNE to visualize the mapping space
+    * ``-R`` or ``--representation``, Select the representation type for the
+      mapping space
+    * ``--export-all``: export all mappings (on default only the best mapping
+      is exported)
+
+It is recommended to use the silent cli flag (``-s``) to suppress all logging
+output from the individual simulations.
+"""
+
+
 import argparse
 import multiprocessing as mp
 import os
-import timeit
-
 import simpy
-
+import sys
+import timeit
 
 from pykpn.slx.config import SlxSimulationConfig
 from pykpn.slx.kpn import SlxKpnGraph
 from pykpn.slx.mapping import export_slx_mapping
 from pykpn.slx.platform import SlxPlatform
 from pykpn.slx.trace import SlxTraceReader
-
-from pykpn import slx
 from pykpn.util import logging
 from pykpn.mapper.random import RandomMapping
 from pykpn.simulate.application import RuntimeKpnApplication
@@ -54,7 +75,7 @@ class SimulationContext(object):
         self.exec_time = None
 
 
-def main():
+def main(argv):
     parser = argparse.ArgumentParser()
 
     logging.add_cli_args(parser)
@@ -119,7 +140,7 @@ def main():
         help='export all random mappings to <outdir>',
         dest='export_all')
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     logging.setup_from_args(args)
 
@@ -236,7 +257,7 @@ def main():
         if args.plot_distribution:
             import matplotlib.pyplot as plt
             # exec time in milliseconds
-            plt.hist(exec_times, bins=int(num_iterations/20), normed=True)
+            plt.hist(exec_times, bins=int(num_iterations/20), density=True)
             plt.yscale('log', nonposy='clip')
             plt.title("Mapping Distribution")
             plt.xlabel("Execution Time [ms]")
@@ -286,4 +307,4 @@ def run_simualtion(sim_context):
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])

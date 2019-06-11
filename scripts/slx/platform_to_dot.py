@@ -6,7 +6,15 @@
 # Authors: Christian Menard
 
 
+"""Generate a dot graph from a SLX platform xml
+
+This script expects two positional arguments: a platform xml file such as
+apps/audio_filter/exynos/exynos.platform and an output file. The script parses
+the xml file and produces a dot graph that visualizes the given platform.
+"""
+
 import argparse
+import sys
 
 from pykpn.util import logging
 from pykpn.slx.platform import SlxPlatform
@@ -15,7 +23,7 @@ from pykpn.slx.platform import SlxPlatform
 log = logging.getLogger(__name__)
 
 
-def main():
+def main(argv):
     parser = argparse.ArgumentParser()
 
     logging.add_cli_args(parser)
@@ -25,7 +33,7 @@ def main():
     parser.add_argument('--slx-version', help="silexica version", type=str,
                         default='2017.04')
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     logging.setup_from_args(args)
 
@@ -35,4 +43,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])

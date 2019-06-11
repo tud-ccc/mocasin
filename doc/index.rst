@@ -9,7 +9,9 @@ Welcome to pykpn's documentation!
    documentation
    testing
    logging
+   ci
    api/modules
+   scripts/modules
 
 Indices and tables
 ==================
