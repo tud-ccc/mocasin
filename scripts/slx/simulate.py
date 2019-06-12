@@ -7,11 +7,12 @@
 
 
 import argparse
+import sys
 import timeit
 
 import simpy
 
-from pykpn.common import logging
+from pykpn.util import logging
 from pykpn.slx.config import SlxSimulationConfig
 from pykpn.slx.system import SlxRuntimeSystem
 
@@ -19,15 +20,26 @@ from pykpn.slx.system import SlxRuntimeSystem
 log = logging.getLogger(__name__)
 
 
-def main():
-    parser = argparse.ArgumentParser()
+"""Run simulation based on a config file.
+
+This script expects a configuration file as the first positional argument.
+It constructs a system according to this configuration and simulates
+it. Finally, the script reports the simulated execution time.
+
+See apps/audio_filter/exynos/config.ini for an example configuration.
+"""
+
+
+def main(argv):
+    parser = argparse.ArgumentParser(
+        description="Run simulation based on a config file")
 
     logging.add_cli_args(parser)
 
     parser.add_argument('configFile', nargs=1,
                         help="input configuration file", type=str)
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     logging.setup_from_args(args)
 
@@ -56,4 +68,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])

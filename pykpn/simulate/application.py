@@ -4,7 +4,7 @@
 # Authors: Christian Menard
 
 
-from pykpn.common import logging
+from pykpn.util import logging
 from pykpn.simulate.channel import RuntimeChannel
 from pykpn.simulate.process import RuntimeKpnProcess
 

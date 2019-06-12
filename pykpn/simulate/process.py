@@ -15,7 +15,7 @@
 
 from enum import Enum
 
-from pykpn.common import logging
+from pykpn.util import logging
 from pykpn.simulate.adapter import SimulateLoggerAdapter
 
 
