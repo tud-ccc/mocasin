@@ -48,23 +48,20 @@ def main():
     parser.add_argument('configFile', nargs=1,
                         help="input configuration file", type=str)
 
-    parser.add_argument(
-        '-R',
-        '--representation',
-        type=str,
-        help='Select the representation type for the mapping space.\nAvailable:'
-             + ", ".join(dir(reps.RepresentationType)),
-        dest='rep_type_str',
-        default='GeomDummy')
+    #parser.add_argument(
+    #    '-R',
+    #    '--representation',
+    #    type=str,
+    #    help='Select the representation type for the mapping space.\nAvailable:'
+    #         + ", ".join(dir(reps.RepresentationType)),
+    #    dest='rep_type_str',
+    #    default='GeomDummy')
 
     args = parser.parse_args()
     logging.setup_from_args(args)
 
 
-    gconf = GlobalConfig('settings.ini')
-    # TODO: read from config
-    random.seed(42)
-    log.info(" Initialized random number generator. Seed: {42}")
+    gconf = GlobalConfig(args.configFile)
 
     log.info("==== Found system combinations ====")
     for cn in gconf.system.keys():
@@ -98,9 +95,8 @@ def main():
             json_dc_dump['runs'] = {}
 
             for setting in gconf.system[app_pl]['settings']:
-                print(f"{type(random.seed)} ,value: {random.seed}")
                 random.seed(setting.random_seed)
-                log.info(" Initialized random number generator. Seed: {" + str(setting.random_seed) + "}")
+                log.info("Initialized random number generator. Seed: {" + str(setting.random_seed) + "}")
                 slx_version = setting.slx_version
                 # if config.platform_class is not None:
                 #     platform = config.platform_class()
@@ -126,8 +122,11 @@ def main():
                 else:
                     representation_type = reps.RepresentationType[rep_type_str]
                     log.info(f"initializing representation ({rep_type_str})")
-                    representation = representation_type.getClassType()(kpn,platform)
+                    #import pdb
+                    #pdb.set_trace()
 
+                    representation = (representation_type.getClassType())(kpn,platform)
+                representation.platform = platform
                 # run DC algorithm
                 # starting volume (init):
                 if representation == "GeomDummy":
