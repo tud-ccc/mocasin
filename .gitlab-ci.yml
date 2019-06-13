@@ -8,7 +8,7 @@ test-python3.7:
     - python3.7
   script:
   - apt-get update
-  - apt-get install libblas-dev liblapack-dev
+  - apt-get -y install libblas-dev liblapack-dev
   - rm -rf pykpn/test
   - cd third_party_dependencies/pynauty-0.6
   - make pynauty
@@ -24,7 +24,7 @@ test-python3.6:
     - python3.6
   script:
   - apt-get update
-  - apt-get install libblas-dev liblapack-dev
+  - apt-get -y install libblas-dev liblapack-dev
   - rm -rf pykpn/test
   - cd third_party_dependencies/pynauty-0.6
   - make pynauty
