@@ -6,7 +6,7 @@
 
 import xml.etree.ElementTree as ET
 
-from pykpn.common import logging
+from pykpn.util import logging
 from pykpn.common.kpn import KpnChannel, KpnGraph, KpnProcess
 
 

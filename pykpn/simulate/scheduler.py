@@ -6,7 +6,7 @@
 
 from enum import Enum
 
-from pykpn.common import logging
+from pykpn.util import logging
 from pykpn.simulate.adapter import SimulateLoggerAdapter
 from pykpn.simulate.process import ProcessState, RuntimeProcess
 
@@ -280,8 +280,8 @@ def create_scheduler(name, processor, policy, param, env):
                           policy.scheduling_cycles, env)
     elif policy.name == 'RoundRobin':
         # TODO Actually implement RoundRobin
-        log.warn('RoundRobin scheduler is not yet implemented -> Fall back to '
-                 'FIFO')
+        log.warning('RoundRobin scheduler is not yet implemented -> Fall back '
+                    'to FIFO')
         s = FifoScheduler(name, processor, ContextSwitchMode.AFTER_SCHEDULING,
                           policy.scheduling_cycles, env)
     else:

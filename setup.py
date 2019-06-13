@@ -1,26 +1,20 @@
 from setuptools import setup, find_packages
+from doc.build_doc import BuildDocCommand
+
+project_name = "pykpn"
+version = "0.1"
 
 setup(
-    name="pykpn",
-    version="0.1",
+    name=project_name,
+    version=version,
     packages=find_packages(),
-    entry_points={
-        'console_scripts': [
-            'slx_kpn_to_dot=pykpn.slx.scripts.kpn_to_dot:main',
-            'slx_platform_to_dot=pykpn.slx.scripts.platform_to_dot:main',
-            'slx_mapping_to_dot=pykpn.slx.scripts.mapping_to_dot:main',
-            'slx_mapping_to_autgrp=pykpn.slx.scripts.mapping_to_autgrp:main',
-            'slx_random_walk=pykpn.slx.scripts.random_walk:main',
-            'slx_simulate=pykpn.slx.scripts.simulate:main',
-        ],
-    },
     install_requires=[
         'argparse',
         'cvxpy',
         'cvxopt',
         'lxml',
-        'numpy',
-        'matplotlib',
+        'numpy<1.16',
+        'matplotlib<3.0',
         'pint',
         'pydot',
         'pyxb',
@@ -28,6 +22,16 @@ setup(
         'termcolor',
         'tqdm',
     ],
-    setup_requires=['pytest-runner'],
-    tests_require=['pytest'],
+    setup_requires=['pytest-runner', 'sphinx'],
+    tests_require=['pytest', 'pytest_mock'],
+    command_options={
+        'build_sphinx': {
+            'project': ('setup.py', project_name),
+            'version': ('setup.py', version),
+            'release': ('setup.py', version),
+            'source_dir': ('setup.py', 'doc'),
+            'build_dir': ('setup.py', 'doc/build'),}},
+    cmdclass = {
+        'doc': BuildDocCommand
+    }
 )
