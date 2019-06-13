@@ -4,8 +4,8 @@
 # Author: Andres Goens
 
 from enum import Enum
-from numpy.random import random_integers
 import numpy as np
+from numpy.random import randint
 
 try:
     import pynauty as pynauty
@@ -56,7 +56,7 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
     def uniform(self):
       Procs = list(self.kpn._processes.keys())
       PEs = list(self.platform._processors.keys())
-      pe_mapping = list(random_integers(0,len(PEs)-1,size=len(Procs)))
+      pe_mapping = list(randint(0,len(PEs),size=len(Procs)))
       return self.randomPrimitives(pe_mapping)
     def randomPrimitives(self,pe_mapping):
       Procs = list(self.kpn._processes.keys())
@@ -78,7 +78,7 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
           sinks = [self.platform.find_processor(snk) for snk in sink_pe_names]
           if p.is_suitable(src,sinks):
             suitable_primitives.append(p)
-        primitive = suitable_primitives[random_integers(0,len(suitable_primitives)-1)].name
+        primitive = suitable_primitives[randint(0,len(suitable_primitives))].name
         primitive_idx = [i for i,x in enumerate(CPs) if x == primitive][0]
         res.append(primitive_idx)
       return res
