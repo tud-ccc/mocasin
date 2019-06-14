@@ -10,7 +10,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         'argparse',
-        'cvxpy',
+        'cvxpy<=1.0.0',
         'cvxopt',
         'lxml',
         'numpy<1.16',
