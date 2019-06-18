@@ -96,6 +96,7 @@ class DesignCentering(object):
         """ explore design space (main loop of the DC algorithm) """
 
         s_set = dc_sample.SampleSet()
+        center_history = []
         for i in range(0, type(self).oracle.config[1].max_samples, type(self).oracle.config[1].adapt_samples):
             s = dc_sample.SampleGen(self.representation, type(self).oracle.config)
             
@@ -139,6 +140,7 @@ class DesignCentering(object):
             log.debug("dc: Output fesaible samples:\n {}".format(s_set.get_feasible()))
             old_center = type(self).vol.center
             center = type(self).vol.adapt_center(s_set)
+            center_history.append(dc_sample.Sample(sample = center))
            # if not type(self).oracle.validate(dc_sample.GeometricSample(center)): #this breaks the rest!
            #     c_cur = dc_sample.GeometricSample(center)
            #     c_old = dc_sample.GeometricSample(old_center)
@@ -154,16 +156,23 @@ class DesignCentering(object):
         center_sample_list.append(center_sample)
         center_res_sample = type(self).oracle.validate_set(center_sample_list)
         if(self.oracle.config[1].keep_metrics):
-            self.visualize_mappings(s_set.sample_groups, type(self).oracle.config[1].max_samples/type(self).oracle.config[1].adapt_samples)
+
+            self.visualize_mappings(s_set.sample_groups, type(self).oracle.config[1].adapt_samples, center_history)
         else:
             self.visualize_mappings(s_set.sample_groups)
         log.debug("dc: center sample: {} {} {}".format(str(center_res_sample), str(center_sample), str(center)))
         return center_res_sample[0]
     
-    def visualize_mappings(self, sample_groups, tick=0):
+    def visualize_mappings(self, sample_groups, tick=0, center_history=[]):
         # put all evaluated samples in a big array
         mappings = []
         exec_times = []
+
+        history = type(self).oracle.validate_set(center_history)
+        for h in history:
+            mappings.append(h.getSimContext().app_contexts[0].mapping)
+            exec_times.append(0)
+
         log.debug("dc: samples to visualize: {}".format(str(sample_groups)))
         c = 0
         for g in sample_groups:
@@ -209,7 +218,7 @@ class DesignCentering(object):
                 thresholds.append(0)
         thresholds[-1] = 0.5
         #print("thresholds: {}".format(thresholds))
-        plot.visualize_mapping_space(mappings, exec_times, None, RepresentationType[self.oracle.config[1].representation], tick)
+        plot.visualize_mapping_space(mappings, exec_times, None, RepresentationType[self.oracle.config[1].representation], tick, len(center_history))
 
 
 # Of course, the existing DFG already provides a valid schedule derived from the order of GIMPLE statements, 

@@ -20,7 +20,7 @@ from matplotlib import collections as coll
 #import networkx as nwx
 
 
-def visualize_mapping_space(mappings, exec_times, dest=None,representation_type=RepresentationType['SimpleVector'], tick=0):
+def visualize_mapping_space(mappings, exec_times, dest=None,representation_type=RepresentationType['SimpleVector'], tick=0, history=0):
     """Visualize a multi-dimensional mapping space using t-SNE
 
     Args:
@@ -75,16 +75,20 @@ def visualize_mapping_space(mappings, exec_times, dest=None,representation_type=
     plt.colorbar(cax=cbaxes)
 
     if tick is not 0:
-        frames = int(len(X)/tick)
+        frames = int((len(X)-history)/tick)
 
         def update(frame):
             mask = []
+            mask += (['none'] * frame)
+            mask += (['b'] * int(frame is not (frames+1)))
+            mask += (['none'] * int((frames - frame - 1)))
+
             mask += (['none'] * int(frame * tick))
             mask += (['r'] * int(tick))
             mask += (['none'] * int((frames - frame - 1) * tick))
             scatt.set_edgecolor(mask)
 
-        ani = animation.FuncAnimation(fig, update, frames+1, interval=2000)
+        ani = animation.FuncAnimation(fig, update, frames+1, interval=1000)
 
     if dest == None:
         plt.show()
