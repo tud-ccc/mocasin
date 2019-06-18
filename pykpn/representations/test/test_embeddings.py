@@ -10,7 +10,6 @@ import pykpn.representations.metric_spaces as metric
 from pykpn.representations.examples import *
 import numpy as np
 
-
 class test_Embeddings(unittest.TestCase):
     
     def setUp(self):
@@ -76,14 +75,14 @@ class test_Embeddings(unittest.TestCase):
         for value in result:
             self.assertTrue(value >= 0 and value < 16, 'Error in invapprox()! Value out of range: ' + str(value))
     
-    @unittest.expectedFailure
+    @unittest.skip("Test can't succeed")
     def test_L(self):
         D = self.__give_matrix()
         L = np.matrix(MetricSpaceEmbeddingBase.calculateEmbeddingMatrix(D,self.distortion))
         
         self.assertEqual(L, None, 'Error in algorithm! Please check!')
     
-    @unittest.expectedFailure
+    @unittest.skip("Test can't succeed")
     def test_vecs(self):
         D = self.__give_matrix()
         L = np.matrix(MetricSpaceEmbeddingBase.calculateEmbeddingMatrix(D,self.distortion))
@@ -91,7 +90,7 @@ class test_Embeddings(unittest.TestCase):
         
         self.assertEqual(vecs, None, 'Error in algorithm! Please check!')
     
-    @unittest.expectedFailure
+    @unittest.skip("Test can't succeed")
     def test_dist(self):
         D = self.__give_matrix()
         L = np.matrix(MetricSpaceEmbeddingBase.calculateEmbeddingMatrix(D,self.distortion))

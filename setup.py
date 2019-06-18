@@ -11,6 +11,7 @@ setup(
     install_requires=[
         'argparse',
         'cvxpy',
+        'cvxopt',
         'lxml',
         'numpy<1.16',
         'matplotlib<3.0',
