@@ -53,9 +53,8 @@ class controlPanel(tk.Frame):
     def __loadExynos(self):
         print("test")
         platform =  SlxPlatform('SlxPlatform', 'apps/audio_filter/exynos/exynos.platform', '2017.04')
-        self.__platform = kalray_mppa()
-
-        self.parent.drawPanel.drawDevice.setPlatform(platform)
+        self.__platform = platform
+        self.parent.drawPanel.drawDevice.setPlatform(self.__platform)
         self.loadPaButton['state'] = 'disabled'
         self.loadMdButton['state'] = 'disabled'
         self.addMappingButton['state'] = 'normal'
