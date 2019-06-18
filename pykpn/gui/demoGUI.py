@@ -10,7 +10,7 @@ from pykpn.slx.platform import SlxPlatform
 from pykpn.slx.kpn import SlxKpnGraph
 from pykpn.mapper.random import RandomMapping
 from pykpn.gui import drawAPI
-from pykpn.platforms import kalray_mppa
+from pykpn.platforms.kalray_4 import KalrayMppa as kalray_mppa
 
 class controlPanel(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
@@ -53,7 +53,8 @@ class controlPanel(tk.Frame):
     def __loadExynos(self):
         print("test")
         platform =  SlxPlatform('SlxPlatform', 'apps/audio_filter/exynos/exynos.platform', '2017.04')
-        self.__platform = platform
+        self.__platform = kalray_mppa()
+
         self.parent.drawPanel.drawDevice.setPlatform(platform)
         self.loadPaButton['state'] = 'disabled'
         self.loadMdButton['state'] = 'disabled'

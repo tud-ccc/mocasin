@@ -7,8 +7,8 @@ from pykpn.common.platform import FrequencyDomain, Platform, Processor, \
     SchedulingPolicy, Scheduler, Storage, CommunicationPhase, Primitive, \
     CommunicationResource, CommunicationResourceType
 from collections import OrderedDict
-from pykpn.platforms.utils import simpleDijkstra
 import sys
+from simulate.test.test_process import process
 
 
 class platformDesigner():
@@ -235,7 +235,87 @@ class platformDesigner():
         
         return
     
-    def createNetwork(self, 
+    def createNetworkForCluster(self,
+                    clusterIdentifier,
+                    networkName,
+                    adjacencyList,
+                    routingFunction, 
+                    frequencyDomain,
+                    readLatency,
+                    writeLatency,
+                    readThroughput,
+                    writeThroughput):
+        
+        if self.__activeScope != None:
+            processorList = self.__elementDict[self.__activeScope][clusterIdentifier]
+            
+            '''Adding physical links and NOC memories according to the adjacency list
+            '''
+            for key in adjacencyList:
+                name = str(clusterIdentifier) + "_noc_mem_" + str(key)
+                communicationResource = CommunicationResource(name,
+                                                            CommunicationResourceType.Storage,
+                                                            frequencyDomain,
+                                                            readLatency,
+                                                            writeLatency,
+                                                            readThroughput,
+                                                            writeThroughput)
+                self.__platform.add_communication_resource(communicationResource)
+                
+                for target in adjacencyList[key]:
+                    name = str(clusterIdentifier) + "_pl_" + str(target) + "_" + key
+                    communicationResource = CommunicationResource(name,
+                                                               CommunicationResourceType.PhysicalLink,
+                                                               frequencyDomain,
+                                                               readLatency,
+                                                               writeLatency,
+                                                               readThroughput,
+                                                               writeThroughput)
+                    self.__platform.add_communication_resource(communicationResource)
+                    
+            for processor in processorList:
+                if  adjacencyList[processor[0].name] == []:
+                    continue
+                else:
+                    prim = Primitive(networkName + "_" + processor[0].name)
+                    memoryName = str(clusterIdentifier) + "_noc_mem_" + str(processor[0].name)
+                    memory = self.__platform.find_communication_resource(memoryName)
+                    
+                    for innerProcessor in processorList:
+                        if adjacencyList[innerProcessor[0].name] == []:
+                            continue
+                            
+                        resourceList = [memory]
+                            
+                        if innerProcessor != processor:
+                            path = routingFunction(adjacencyList, processor[0].name, innerProcessor[0].name)
+                            lastPoint = None
+                                
+                            for point in path:
+                                if lastPoint != None:
+                                    name = str(clusterIdentifier) + "_pl_" + str(lastPoint) + "_" + str(point)
+                                    resource = self.__platform.find_communication_resource(name)
+                                    resourceList.append(resource)
+                                lastPoint = point
+                            
+                            produce = CommunicationPhase('produce', resourceList, 'write')
+                            consume = CommunicationPhase('consume', resourceList, 'read')
+                                        
+                            prim.add_producer(innerProcessor[0], [produce])
+                            prim.add_consumer(innerProcessor[0], [consume])
+                        
+                        else:
+                            produce = CommunicationPhase('produce', resourceList, 'write')
+                            consume = CommunicationPhase('consume', resourceList, 'read')
+                                        
+                            prim.add_producer(innerProcessor[0], [produce])
+                            prim.add_consumer(innerProcessor[0], [consume])
+                    
+                    self.__platform.add_primitive(prim)
+        else:
+            return
+    
+    def createNetworkForChips(self, 
                       networkName, 
                       adjacencyList,
                       routingFunction, 
@@ -255,25 +335,25 @@ class platformDesigner():
                 adjacency entry
                 '''
                 name = networkName + "_" + "router_" + key
-                communicationRessource = CommunicationResource(name,
+                communicationResource = CommunicationResource(name,
                                                                CommunicationResourceType.Router,
                                                                frequencyDomain,
                                                                readLatency,
                                                                writeLatency,
                                                                readThroughput,
                                                                writeThroughput)
-                self.__platform.add_communication_resource(communicationRessource)
+                self.__platform.add_communication_resource(communicationResource)
                 
                 for target in adjacencyList[key]:
                     name = networkName + "_pl_" + str(target) + "_" + key
-                    communicationRessource = CommunicationResource(name,
+                    communicationResource = CommunicationResource(name,
                                                                CommunicationResourceType.PhysicalLink,
                                                                frequencyDomain,
                                                                readLatency,
                                                                writeLatency,
                                                                readThroughput,
                                                                writeThroughput)
-                    self.__platform.add_communication_resource(communicationRessource)
+                    self.__platform.add_communication_resource(communicationResource)
             
             for key in self.__elementDict[self.__activeScope]:
                 if adjacencyList[key] == []:
@@ -320,4 +400,9 @@ class platformDesigner():
         
         else:
             return
+        
+    
+    def getPlatform(self):
+        return self.__platform
+    
     
