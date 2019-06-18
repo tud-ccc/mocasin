@@ -4,7 +4,7 @@
 # Authors: Felix Teweleit
 
 import pytest
-#from pykpn.platforms.platformDesigner import platformDesigner
+from pykpn.platforms.platformDesigner import PlatformDesigner
 from pykpn.common.platform import Platform
 
 @pytest.fixture
@@ -35,13 +35,10 @@ def cyclicGraph():
     
 @pytest.fixture
 def designer():
-    return None
-    '''
     platformObject = Platform('test')
-    designer = platformDesigner(platformObject)
+    designer = PlatformDesigner(platformObject)
     designer.setSchedulingPolicy('TestPolicy', 1000)
     return designer
-    '''
 
 
 
