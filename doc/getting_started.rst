@@ -27,15 +27,8 @@ or
    cd <path/to/pykpn>
    python setup.py develop
 
-
-Finally, we need to install pynauty from the ``third_party_dependencies``
-directory:
-
-.. code-block:: sh
-
-   cd <path/to/pykpn/third_party_dependencies/pynauty-0.6
-   make pynauty
-   python setup.py install
+Please note that this also installs pynauty from the
+``third_party_dependencies`` directory.
 
 .. _run tests:
 
