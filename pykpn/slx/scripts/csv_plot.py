@@ -39,6 +39,9 @@ parser.add_argument('--suffix',
                     help='suffix for process names in the CSV file, in case they are not exactly the same as in the application description')
 
 if __name__ == "__main__":
+    """This script takes a csv file and an SLX config file as input and generates an graph where the mapping space is shown with reduced
+    dimensions, while maintaining the distances between mappings.
+    """
     args = parser.parse_args()
     
     platform = None
