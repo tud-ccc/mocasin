@@ -8,10 +8,9 @@ from pykpn.common.platform import FrequencyDomain, Platform, Processor, \
     CommunicationResource, CommunicationResourceType
 from collections import OrderedDict
 import sys
-from simulate.test.test_process import process
 
 
-class platformDesigner():
+class PlatformDesigner():
     """"One instance of the platform designer is meant to create exactly one platform.
     It provides the necessary methods to create PE clusters and connect PEs in clusters
     or clusters themselves with communication resources.
