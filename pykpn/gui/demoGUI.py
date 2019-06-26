@@ -6,6 +6,7 @@
 import sys
 sys.path.append('../..')
 import tkinter as tk
+
 from pykpn.slx.platform import SlxPlatform
 from pykpn.slx.kpn import SlxKpnGraph
 from pykpn.mapper.random import RandomMapping
@@ -51,7 +52,6 @@ class controlPanel(tk.Frame):
         self.exitButton.grid(sticky='EW',row = 8)
     
     def __loadExynos(self):
-        print("test")
         platform =  SlxPlatform('SlxPlatform', 'apps/audio_filter/exynos/exynos.platform', '2017.04')
         self.__platform = platform
         self.parent.drawPanel.drawDevice.setPlatform(self.__platform)

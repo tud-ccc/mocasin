@@ -15,19 +15,21 @@ class PlatformDesigner():
     It provides the necessary methods to create PE clusters and connect PEs in clusters
     or clusters themselves with communication resources.
     
-    :ivar int __peAmount: Holds the amount of currently initialized PEs.
-    :ivar int __clusters: Holds the amount of currently initialized PE clusters.
-    :ivar dict {int : tupel(Processors, [communicationRessources])} __clusterDict: 
-            A dict which holds for every initialized cluster the PEs and their communication
-            resources.
-    :ivar SchedulingPolicy __schedulingPolicy: Holds the currently applied scheduling policy. This policy will 
-    be applied to all PE clusters initialized afterwards.
+    :ivar int __peAmount: Holds the amount of the platforms PEs.
+    :ivar int __namingSuffix: Increases every time a new element is pushed on the stack. Will be added to the
+                            name of every communication resource added to this element.
+    :ivar SchedulingPolicy __schedulingPolicy: Holds the currently set scheduling policy. This policy will 
+                            be applied to all PE clusters initialized afterwards.
     :ivar Platform __platform: The platform object, that is created and manipulated.
+    :ivar string __activeScope: The identifier of the scope, the designer is currently working on.
+    :ivar list[string] __scopeStack: A stack for the identifiers of the scopes that are currently opened.
+    :ivar dict{string : {int : [processors]}} __elementDict: For each scope it maps the cluster identifiers to 
+                            the list of processing elements of the cluster. 
     """
     
     def __init__(self, platform):
-        """Initialize a new instance of the platformDesigner.
-        :param String name: The name of the platform that will be created.
+        """Initialize a new instance of the platformDesigner. Should be called by the constructor of a class inheriting
+        from Platform.
         :param Platform platform: The platform object which will be modified.
         """
         self.__peAmount = 0
@@ -43,6 +45,9 @@ class PlatformDesigner():
         self.__elementDict = { 'base' : {} }
     
     def newElement(self, identifier):
+        """A new scope is opened and pushed on the stack.
+        :param int identifier: The identifier, the element can be addressed with.
+        """
         self.__scopeStack.append(self.__activeScope)
         self.__activeScope = identifier
         
@@ -51,6 +56,9 @@ class PlatformDesigner():
         self.__elementDict.update({ identifier : {}})
     
     def finishElement(self):
+        """The first scope on the stack is closed. The element is still addressable with
+        the scopes identifier.
+        """
         if len(self.__scopeStack) == 0:
             print("base scope can't be closed")
             return
@@ -81,6 +89,12 @@ class PlatformDesigner():
                     name, 
                     amount, 
                     frequency):
+        """Creates a new cluster of processing elements on the platform.
+        :param int identifier: The identifier the cluster can be addressed within the currently active scope.
+        :param string name: The name of the processing elements.
+        :param int amount: The amount of processing elements in the cluster.
+        :param int frequency: The frequency of the processing elements.
+        """
         try:
             fd = FrequencyDomain('fd_' + name, frequency)
             start = self.__peAmount
@@ -101,7 +115,7 @@ class PlatformDesigner():
                             policy, 
                             cycles):
         """Sets a new scheduling policy, which will be applied to all schedulers of new PE Clusters.
-        :param String policy: The kind of policy.
+        :param String policy: The name of the policy.
         :param int cycles: The cycles of the policy.
         :returns: Whether the policy set successfully or not.
         :rtype: bool
@@ -120,18 +134,16 @@ class PlatformDesigner():
                        readThroughput, 
                        writeThroughput, 
                        name='default'):
-        """Adds a level 1 cache for each PE of the given cluster.
-        :param int clusterId: The ID of the cluster.
+        """Adds a level 1 cache to each PE of the given cluster.
+        :param int identifier: The identifier of the cluster to which the cache will be added. 
         :param int readLatency: The read latency of the cache.
         :param int writeLatency: The write latency of the cache.
         :param int readThroughput: The read throughput of the cache.
         :param int writeThroughput: The write throughput of the cache.
-        :param String name: The cache name, in case it differs from L1.
-        :returns: Whether the caches had been added successfully or not.
-        :rtype: bool
+        :param string name: The cache name, in case it differs from L1.
         """
         if self.__schedulingPolicy == None:
-            return False
+            return
         if self.__activeScope == None:
             return
         
@@ -165,7 +177,6 @@ class PlatformDesigner():
                 
         except:
             print(sys.exc_info()[0])
-            return False
          
     def addCommunicationResource(self, 
                                   name,
@@ -176,16 +187,14 @@ class PlatformDesigner():
                                   writeThroughput, 
                                   resourceType = CommunicationResourceType.Storage, 
                                   frequencyDomain=0):
-        """Adds a communication resource to the platform. All cores of the given cluster ID's can communicate
-        via this resource.
-        :param String name: The name of the storage
-        :param list[int] clusterIds: A list containing all cluster IDs of clusters which will be connected
-        :param int readLatency: The read latency of the storage
-        :param int writeLatency: The write latency of the storage
-        :param int readThroughput: The read throughput of the storage
-        :param int writeThroughput: The write throughput of the storage
-        :returns: Whether the storage had been added successfully or not
-        :rtype: bool
+        """Adds a communication resource to the platform. All cores of the given cluster identifiers can communicate
+        via this resource. 
+        :param string name: The name of the storage
+        :param list[int] clusterIds: A list of identifiers for all clusters which will be connected.
+        :param int readLatency: The read latency of the communication resource.
+        :param int writeLatency: The write latency of the communication resource.
+        :param int readThroughput: The read throughput of the communication resource.
+        :param int writeThroughput: The write throughput of the communication resource.
         """
 
         if self.__schedulingPolicy == None:
@@ -198,7 +207,7 @@ class PlatformDesigner():
                 return
         clusterDict = self.__elementDict[self.__activeScope]
         nameToGive = str(self.__activeScope) + '_' + name + "_" + str(self.__namingSuffix)
-        
+        fd = FrequencyDomain('fd_' + name, frequencyDomain)
         try:
             if resourceType == CommunicationResourceType.Storage:
                 communicationRessource = Storage(nameToGive, 
@@ -212,7 +221,7 @@ class PlatformDesigner():
             else:
                 communicationRessource = CommunicationResource(nameToGive,
                                                                resourceType,
-                                                               frequencyDomain,
+                                                               fd,
                                                                readLatency,
                                                                writeLatency,
                                                                readThroughput,
@@ -230,7 +239,7 @@ class PlatformDesigner():
             self.__platform.add_primitive(prim)
         except :
             print(sys.exc_info()[0])
-            return False
+            return
         
         return
     
@@ -244,6 +253,24 @@ class PlatformDesigner():
                     writeLatency,
                     readThroughput,
                     writeThroughput):
+        """Creates a network on chip topology for the given cluster.
+        :param int clusterIdentifier: The identifier of the cluster the network will be created for.
+        :param string networkName: The name of the network. (primitives belonging to the network will be named
+                                like this.
+        :param dict {string : list[string]} adjacencyList: The adjacency list of the processing elements within
+                                the network. The key is the name of a processing element and the list contains
+                                the names of processing elements the key has a physical link to.
+        :param function routingFunction: A function, that takes the name of a source processing element, a target 
+                                processing element and the adjacency list. Should return the path, taken to communicate
+                                between source and target, in case there is no direct physical link between them.
+        :param int frequencyDomain: The frequency of the physical links an network routers.
+        :param int readLatency: The read latency of the physical links an network routers.
+        :param int writeLatency: The write latency of the physical links an network routers.
+        :param int readThroughput: The read throughput of the physical links an network routers.
+        :param int writeThroughput: The write throughput of the physical links and network routers.
+        """
+        
+        fd = FrequencyDomain('fd_' + networkName, frequencyDomain)
         
         if self.__activeScope != None:
             processorList = self.__elementDict[self.__activeScope][clusterIdentifier]
@@ -252,20 +279,19 @@ class PlatformDesigner():
             '''
             for key in adjacencyList:
                 name = str(clusterIdentifier) + "_noc_mem_" + str(key)
-                communicationResource = CommunicationResource(name,
-                                                            CommunicationResourceType.Storage,
-                                                            frequencyDomain,
-                                                            readLatency,
-                                                            writeLatency,
-                                                            readThroughput,
-                                                            writeThroughput)
+                communicationResource = Storage(name,
+                                                fd,
+                                                readLatency,
+                                                writeLatency,
+                                                readThroughput,
+                                                writeThroughput)
                 self.__platform.add_communication_resource(communicationResource)
                 
                 for target in adjacencyList[key]:
                     name = str(clusterIdentifier) + "_pl_" + str(target) + "_" + key
                     communicationResource = CommunicationResource(name,
                                                                CommunicationResourceType.PhysicalLink,
-                                                               frequencyDomain,
+                                                               fd,
                                                                readLatency,
                                                                writeLatency,
                                                                readThroughput,
@@ -323,6 +349,23 @@ class PlatformDesigner():
                       writeLatency,
                       readThroughput,
                       writeThroughput):
+        """Creates a network between the given elements.
+        :param string networkName: The name of the network. (primitives belonging to the network will be named
+                                like this.
+        :param dict {string : list[string]} adjacencyList: The adjacency list of the elements within the network. 
+                                The key is the name of an element and the list contains the names of elements the
+                                key has a physical link to.
+        :param function routingFunction: A function, that takes the name of a source element, a target element and
+                                the adjacency list. Should return the path, taken to communicate between source and
+                                target, in case there is no direct physical link between them.
+        :param int frequencyDomain: The frequency of the physical links an network routers.
+        :param int readLatency: The read latency of the physical links an network routers.
+        :param int writeLatency: The write latency of the physical links an network routers.
+        :param int readThroughput: The read throughput of the physical links an network routers.
+        :param int writeThroughput: The write throughput of the physical links and network routers.
+        """
+        
+        fd = FrequencyDomain('fd_' + networkName, frequencyDomain)
         
         if self.__activeScope != None:
             '''Creating a network between independent chips
@@ -336,7 +379,7 @@ class PlatformDesigner():
                 name = networkName + "_" + "router_" + key
                 communicationResource = CommunicationResource(name,
                                                                CommunicationResourceType.Router,
-                                                               frequencyDomain,
+                                                               fd,
                                                                readLatency,
                                                                writeLatency,
                                                                readThroughput,
@@ -347,7 +390,7 @@ class PlatformDesigner():
                     name = networkName + "_pl_" + str(target) + "_" + key
                     communicationResource = CommunicationResource(name,
                                                                CommunicationResourceType.PhysicalLink,
-                                                               frequencyDomain,
+                                                               fd,
                                                                readLatency,
                                                                writeLatency,
                                                                readThroughput,
@@ -399,9 +442,12 @@ class PlatformDesigner():
         
         else:
             return
-        
-    
+           
     def getPlatform(self):
+        """Returns the platform, created with the designer. (Only needed for test issues.
+        :returns: The platform object the designer is working on.
+        :rtype Platform:
+        """
         return self.__platform
     
     
