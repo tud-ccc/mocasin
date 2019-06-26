@@ -9,7 +9,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import cm as cm
 from pykpn.util import annotate
-from pykpn.representations.representations import RepresentationType, toRepresentation
+from pykpn.representations.representations import RepresentationType 
 
 import matplotlib.animation as animation
 from matplotlib import colors as colors
@@ -55,7 +55,7 @@ def visualize_mapping_space(mappings, exec_times, dest=None,representation_type=
     print("MAPPING TUPLES: {}".format(mapping_tuples[0]))
     X = tsne.tsne(mapping_tuples,
                   no_dims=2,
-                  initial_dims=len(toRepresentation(representation,mappings[0])),
+                  initial_dims=len(representation.toRepresentation(mappings[0])),
                   perplexity=20.0)
 
     fig = plt.figure(figsize=(14,8))

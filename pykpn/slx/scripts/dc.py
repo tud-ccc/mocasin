@@ -134,7 +134,7 @@ def main():
                 else:
                     center = representation.uniform()
                 if (app_config[1].shape == "cube"):
-                    v = dc_volume.Cube(center, len(center))
+                    v = dc_volume.Cube(center, center.get_numProcs())
 
                 # config = args.configFile
                 oracle = dc_oracle.Oracle(app_config) #the oracle could get the kpn and platform (now, pykpn objects, SLX independent) passed as files (see Issue #3)

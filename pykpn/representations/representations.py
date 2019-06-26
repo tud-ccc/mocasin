@@ -130,7 +130,7 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
 
     def fromRepresentation(self,mapping):
         mapping_obj = Mapping(self.kpn,self.platform)
-        mapping_obj = from_list(mapping)
+        mapping_obj.from_list(mapping)
         return mapping_obj
 
     def _simpleVec2Elem(self,x):
@@ -264,7 +264,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
     def fromRepresentation(self,mapping):
         #Does not check if canonical. This is deliberate.
         mapping_obj = Mapping(self.kpn,self.platform)
-        mapping_obj = from_list(mapping)
+        mapping_obj.from_list(mapping)
         return mapping_obj
 
 #FIXME: UNTESTED!!
@@ -347,7 +347,7 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
 
     def _uniformFromBall(self,p,r,npoints=1):
       log.debug(f"Uniform from ball with radius r={r} around point p={p}")
-      point = self.simpleVec2Elem(p)
+      point = self._simpleVec2Elem(p)
       return MetricSpaceEmbedding.uniformFromBall(self,point,r,npoints)
 
     def uniformFromBall(self,p,r,npoints=1):
@@ -359,11 +359,11 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
   
 
     def toRepresentation(self,mapping):
-        return self._simpleVec2Elem(mapping.to_list(mapping))
+        return self._simpleVec2Elem(mapping.to_list())
 
     def fromRepresentation(self,mapping):
         mapping_obj = Mapping(self.kpn,self.platform)
-        mapping_obj = from_list(self._elem2SimpleVec(mapping))
+        mapping_obj.from_list(self._elem2SimpleVec(mapping))
         return mapping_obj
 
 

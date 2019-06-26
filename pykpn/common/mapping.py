@@ -256,6 +256,10 @@ class Mapping:
         """
         return len(self.platform.processors()) - 1
 
+    def get_numProcs(self):
+        """Returns the number of processes in the mapping
+        """
+        return len(self.kpn.processes())
     
     def change_affinity(self, processName, processorName):
         """Changes the affinity of a process to a processing element
@@ -307,7 +311,7 @@ class Mapping:
 
         return s
 
-    def to_list(self):
+    def to_list(self,channels=False):
         """Convert to a list (tuple), the simple vector representation.
         It is a list with processes as entries and PEs labeled
         from 0 to NUM_PES"""
@@ -327,18 +331,20 @@ class Mapping:
         for proc in procs_list:
             res.append(pes[self.affinity(proc).name])
 
+        #if flag set,
         # add one result entry for each KPN channel (multiple in case of
         # multiple reader channels)
-        for chan in chans_list:
-            src = self.channel_source(chan)
-            sinks = self.channel_sinks(chan)
-            prim = self.primitive(chan)
-            for snk in sinks:
-                primitive_costs = prim.static_costs(
-                    src, snk, token_size=chan.token_size)
-                primitive_costs *= 1e-7  # scale down
-                # TODO Probably it is better to normalize the values
-                res.append(primitive_costs)
+        if channels:
+            for chan in chans_list:
+                src = self.channel_source(chan)
+                sinks = self.channel_sinks(chan)
+                prim = self.primitive(chan)
+                for snk in sinks:
+                    primitive_costs = prim.static_costs(
+                        src, snk, token_size=chan.token_size)
+                    primitive_costs *= 1e-7  # scale down
+                    # TODO Probably it is better to normalize the values
+                    res.append(primitive_costs)
 
         return res
 
@@ -408,6 +414,14 @@ class Mapping:
             self.add_channel_info(c, info)
             log.debug('map channel %s to the primitive %s and bound to %d '
                       'tokens' % (c.name, primitive.name, capacity))
+
+    def from_mapping(self,mapping):
+        """
+        Copy mapping
+
+        TODO: implement this the proper way
+        """
+        self.from_list(mapping.to_list())
     
 
     def to_pydot(self):
@@ -464,5 +478,3 @@ class Mapping:
 
         return dot
 
-    def fromRepresentation(self,elem,representation):
-        self.from_list(representation.elem2SimpleVec(elem))

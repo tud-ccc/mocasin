@@ -56,8 +56,8 @@ class Sample(list):
             log.warning("sample2tuple(): kpn and platform not set - return simple tuple for sample")
             return tuple(self.sample)
         representation = self.representation_type.getClassType()(kpn,platform)
-        #print ("Tuple::::: {}".format(tuple(representation.elem2SimpleVec(self.sample))))
-        return tuple(representation.elem2SimpleVec(self.sample))
+        #print ("Tuple::::: {}".format(tuple(representation._elem2SimpleVec(self.sample))))
+        return tuple(representation._elem2SimpleVec(self.sample))
 
     def dist(self,s):
         return None
@@ -148,7 +148,7 @@ class VectorSampleGen(SampleGeneratorBase):
         if distr != "uniform":
             log.error("Error!, distribution '" + str(distr) + "' not supported (yet).")
             exit(1)
-        sample_ints =  self.representation.uniformFromBall(ball.center,ball.radius,nsamples)
+        sample_ints =  self.representation._uniformFromBall(ball.center,ball.radius,nsamples)
         sample_list = list(map(lambda s: MetricSpaceSample(self.representation,s), sample_ints))
         return sample_list
 
@@ -178,7 +178,7 @@ class MetricSpaceSampleGen(SampleGeneratorBase):
         if distr != "uniform":
             log.error("Error!, distribution '" + str(distr) + "' not supported (yet).")
             exit(1)
-        sample_ints =  self.representation.uniformFromBall(ball.center,ball.radius,nsamples)
+        sample_ints =  self.representation._uniformFromBall(ball.center,ball.radius,nsamples)
         sample_list = list(map(lambda s: MetricSpaceSample(self.representation,s), sample_ints))
         return sample_list
 
@@ -190,7 +190,7 @@ class MetricSpaceSample(Sample):
         #assert isinstance(rep,FiniteMetricSpace) or log.error(f"Sampling from metric space with representation: {rep}")
         self.rep = rep 
         Sample.__init__(self,None)
-        self.sample = rep.elem2SimpleVec(sample)
+        self.sample = rep._elem2SimpleVec(sample)
 
     def sample2tuple(self):
         #print("M.n = " + str(self.M.n))

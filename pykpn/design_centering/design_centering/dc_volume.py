@@ -7,7 +7,7 @@ import sys
 import logging
 import numpy as np
 from . import dc_settings as conf
-from pykpn.representations.representations import RepresentationType, toRepresentation
+from pykpn.representations.representations import RepresentationType 
 
 from pykpn.util import logging
 
@@ -32,10 +32,10 @@ class Cube(Volume):
 
     def __init__(self, center, dim):
         # define initial cube with radius 1 at the given center
-        if (len(center) != dim):
+        self.center = center.to_list()
+        if (len(self.center) != dim):
             log.error("Dimensions do not match to the given center. (-1)")
             sys.exit(-1)
-        self.center = list(center)
         self.radius = DEFAULT_RADIUS
         self.dim = dim
 
@@ -108,7 +108,7 @@ class VectorSpaceVolume(Volume):
         self.kpn = kpn
         self.platform = platform
         mapping_center = Mapping(kpn,platform,list(center)) #TODO: check to do this right
-        self.center = toRepresentation(self.representation,center)
+        self.center = self.representation.toRepresentation(center)
         self.radius = DEFAULT_RADIUS
         self.dim = dim
         self.p = p #TODO: check, can I propagate this to the representations?

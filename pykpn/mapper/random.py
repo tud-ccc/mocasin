@@ -69,6 +69,7 @@ class RandomMapping(Mapping):
         if(radius == float("inf")): #uniform
             elem = representation.uniform()
         else:
-            self._representation.uniformFromBall(representation.inRepresentation(),radius)
-            elem = self.representation.uniform()
-        self.fromRepresentation(elem,representation)
+            elem = self._representation.uniformFromBall(mapping,radius)[0]
+        print(elem.to_list())
+        self.from_mapping(elem)
+        
