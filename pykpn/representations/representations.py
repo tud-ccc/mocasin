@@ -29,17 +29,35 @@ class MappingRepresentation(type):
        Currently, only a single space will be allowed for all
        mappings of a single representation, so this metaclass essentially
        defines a Singleton for every representation type.
+    
+       This applies on a per kpn/platform combination basis.
+       It means that if you have a different combination of kpn/platform,
+       a new representation object will be initialized even if
+       a representation of that type already exists.
+    
+       In general, representations work with mapping objects
+       and can return something which corresponds to the
+       type of the representation. However, it is also possible
+       to work directly with simple vectors, if that is more efficient.
     """
     _instances = {}
     def __call__(cls, *args, **kwargs):
         #print(str(cls) + " is being called")
         if cls not in cls._instances:
-            cls._instances[cls] = super(MappingRepresentation,cls).__call__(*args, **kwargs)
-            cls._instances[cls]._representationType = cls
-        return cls._instances[cls]
+            #make hashables of these two
+            kpn = ";".join(map(lambda x : x.name, args[0].channels()))
+            platform = args[1].name
+            cls._instances[(cls,kpn,platform)] = super(MappingRepresentation,cls).__call__(*args, **kwargs)
+            log.info(f"Initalizing representation {cls} of kpn with processes: {kpn} on platform {platform}")
+            cls._instances[(cls,kpn,platform)]._representationType = cls
+        return cls._instances[(cls,kpn,platform)]
 
-def toRepresentation(representation,mapping): #this could also be in some base class?
-  return representation.simpleVec2Elem(mapping.to_list())
+    def toRepresentation(self,mapping): 
+        return self.simpleVec2Elem(mapping.to_list())
+
+    def fromRepresentation(self,mapping): 
+        log.error(f"Trying to transform to an unknown representation")
+        return None
 
 def init_app_ncs(self,kpn):
     n = 0
@@ -50,10 +68,31 @@ def init_app_ncs(self,kpn):
         self._app_nc_inv[proc] = n
 
 class SimpleVectorRepresentation(metaclass=MappingRepresentation):
+    """Simple Vector Representation:
+    This representation treats mappings as vectors. The first dimensions (or components)
+    of this vector represent the processes, and the values represent the PE where
+    said processes are mapped. After the mapping of processes to PEs, the same
+    method is applied to encode the channel to communication primitive mapping.
+    
+    A visualization of the encoding:
+    [ P_1, P_2, ... , P_k, C_1, ..., C_l]
+       ^ PE where           ^ Comm. prim.
+         process 1            where chan. 1
+         is mapped.           is mapped.
+    
+
+    Methods generally work with objects of the `pykpn.common.mapping.Mapping`
+    class. Exceptions are the fromRepresentation method, which takes a vector
+    and returns a Mapping object, and methods prefixed with an "_".
+    Methods prefixed with "_", like _uniformFromBall generally work directly
+    with the representation. Its usage is discouraged for having a standard
+    interface, but they are provided in case they prove useful, when you know
+    what you are doing.
+    """
     def __init__(self, kpn, platform):
         self.kpn = kpn
         self.platform = platform
-    def uniform(self):
+    def _uniform(self):
       Procs = list(self.kpn._processes.keys())
       PEs = list(self.platform._processors.keys())
       pe_mapping = list(randint(0,len(PEs),size=len(Procs)))
@@ -83,11 +122,22 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         res.append(primitive_idx)
       return res
 
-    def simpleVec2Elem(self,x):
+    def uniform(self):
+        return self.fromRepresentation(self._uniform())
+
+    def toRepresentation(self,mapping):
+        return mapping.to_list(mapping)
+
+    def fromRepresentation(self,mapping):
+        mapping_obj = Mapping(self.kpn,self.platform)
+        mapping_obj = from_list(mapping)
+        return mapping_obj
+
+    def _simpleVec2Elem(self,x):
         return x
-    def elem2SimpleVec(self,x):
+    def _elem2SimpleVec(self,x):
         return x
-    def uniformFromBall(self,p,r,npoints=1):
+    def _uniformFromBall(self,p,r,npoints=1):
       Procs = list(self.kpn._processes.keys())
       PEs = list(self.platform._processors.keys())
       P = len(PEs)
@@ -107,7 +157,17 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
       log.debug(f"unfiorm from ball: {res}")
       return res
       
+    def uniformFromBall(self,p,r,npoints=1):
+        return self.fromRepresentation(self._uniformFRomBall(p,r,npoints=npoints))
+
+#FIXME: UNTESTED!!
 class MetricSpaceRepresentation(FiniteMetricSpaceLP, metaclass=MappingRepresentation):
+    """Metric Space Representation
+    A representation for a generic metric space. Currently still untested and undocumented.
+    It is recommended to use the Metri Space Embedding Representation instead, as it is more efficient,
+    (slightly better) tested and documented.
+    """
+
     def __init__(self,kpn, platform, p=1):
         self._topologyGraph = platform.to_adjacency_dict()
         M_list, self._arch_nc, self._arch_nc_inv = arch_graph_to_distance_metric(self._topologyGraph)
@@ -118,13 +178,47 @@ class MetricSpaceRepresentation(FiniteMetricSpaceLP, metaclass=MappingRepresenta
         init_app_ncs(self,kpn)
         super().__init__(M,d)
         
-    def simpleVec2Elem(self,x): 
+    def _simpleVec2Elem(self,x): 
         return x
 
-    def elem2SimpleVec(self,x):
+    def _elem2SimpleVec(self,x):
         return x
 
 class SymmetryRepresentation(metaclass=MappingRepresentation):
+    """Symmetry Representation
+    This representation considers the *archtiecture* symmetries for mappings.
+    Application symmetries are still WIP. Mappings in this representation are
+    vectors, too, just like in the Simple Vector Representation. The difference
+    is that the vectors don't correspond to a single mapping, but to an equivalence
+    class of mappings. Thus, two mappings that are equivalent through symmetries
+    will yield the same vector in this representation. This unique vectors
+    for each equivalent class are called "canonical mappings", because they 
+    are canonical representatives of their orbit. Canonical mappings are the
+    lexicographical lowest elements of the equivalence class.
+
+    For example, if the PEs 0-3 are all equivalent, and PEs 4-7
+    are also equivalent independently (as would be the case on
+    an Exynos ARM big.LITTLE), these two mappings of 5 Processes
+    are equivalent:
+       [1,1,3,4,6] and [1,1,0,5,4]
+    This representation would yield neither of them, as the
+    following mapping is smaller lexicographically than both:
+       [0,0,1,4,5]
+    This is the canonical mapping of this orbit and what this representation would
+    use to represent the class.
+
+    This representation currently just supports global symmetries,
+    partial symmetries are WIP.
+
+    Methods generally work with objects of the `pykpn.common.mapping.Mapping`
+    class. Exceptions are the fromRepresentation method, which takes a vector
+    and returns a Mapping object, and methods prefixed with an "_".
+    Methods prefixed with "_", like _allEquivalent generally work directly
+    with the representation. 
+    
+    In order to work with other mappings in the same class, the methods
+    allEquivalent/_allEquivalent returns for a mapping, all mappings in that class.
+    """
     def __init__(self,kpn, platform):
         self._topologyGraph = platform.to_adjacency_dict()
         self.kpn = kpn
@@ -145,15 +239,18 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         permutations = [perm.Permutation(p,n= n) for p in permutations_lists]
         self._G = perm.PermutationGroup(permutations)
         
-    def simpleVec2Elem(self,x): 
+    def _simpleVec2Elem(self,x): 
         return self._G.tuple_normalize(x[:self._d])
-    def elem2SimpleVec(self,x):
+    def _elem2SimpleVec(self,x):
         return x
-    def uniform(self):
+    def _uniform(self):
         procs_only = SimpleVectorRepresentation.uniform(self)[:self._d]
         return self._G.tuple_normalize(procs_only)
+
+    def _allEquivalent(self,x):
+        return self._G.tuple_orbit(x[:self._d])
     def allEquivalent(self,x):
-        orbit = self._G.tuple_orbit(x[:self._d])
+        orbit = self._allEquivalent(x)
         res = []
         for elem in orbit:
             mapping = Mapping(self.kpn, self.platform)
@@ -161,9 +258,21 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
             res.append(mapping)
         return res
 
+    def toRepresentation(self,mapping):
+        return self._simpleVec2Elem(mapping.to_list(mapping))
+
+    def fromRepresentation(self,mapping):
+        #Does not check if canonical. This is deliberate.
+        mapping_obj = Mapping(self.kpn,self.platform)
+        mapping_obj = from_list(mapping)
+        return mapping_obj
 
 #FIXME: UNTESTED!!
 class MetricSymmetryRepresentation(FiniteMetricSpaceLPSym, metaclass=MappingRepresentation):
+    """Metric Symmetry Representation
+    A representation combining symmetries and a metric space. Currently still untested and undocumented.
+    It is recommended to use the Symmetry Embedding Representation instead, as it is more efficient.
+    """
     def __init__(self,kpn, platform):
         self._topologyGraph = platform.to_adjacency_dict()
         self.kpn = kpn
@@ -189,15 +298,29 @@ class MetricSymmetryRepresentation(FiniteMetricSpaceLPSym, metaclass=MappingRepr
         self.p = 1
         
         
-    def simpleVec2Elem(self,x): 
+    def _simpleVec2Elem(self,x): 
         return x
-    def elem2SimpleVec(self,x):
+    def _elem2SimpleVec(self,x):
         return x
       
 
 
 
 class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepresentation):
+    """Metric Space Representation
+    A representation for a metric space that uses an efficient embedding into a real space.
+    Upon initialization, this representation calculates an embedding into a real space such
+    that the distances in the metric space differ from the embedded distances by a factor of 
+    at most `distortion`. 
+
+    Elements in this representation are real vectors, the meaning of the components
+    does not have a concrete interpretation. However, they do have a particular
+    structure. For multiple processes, a single embedding for the archticeture is
+    calculated. The multi-process vector space is the orthogonal sum of copies of a vector
+    space emebedding for the single-process case. This provably preserves the distortion
+    and makes calculations much more efficient.
+
+    """
     def __init__(self,kpn, platform, distortion=DEFAULT_DISTORTION):
         self._topologyGraph = platform.to_adjacency_dict()
         M_matrix, self._arch_nc, self._arch_nc_inv = arch_graph_to_distance_metric(self._topologyGraph)
@@ -209,22 +332,46 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
         init_app_ncs(self,kpn)
         MetricSpaceEmbedding.__init__(self,self._M,self._d,distortion)
         
-    def simpleVec2Elem(self,x): 
+    def _simpleVec2Elem(self,x): 
         proc_vec = x[:self._d]
         return self.i(proc_vec)# [value for comp in self.i(x) for value in comp]
 
-    def elem2SimpleVec(self,x):
+    def _elem2SimpleVec(self,x):
         return self.invapprox(x)
 
-    def uniform(self):
+    def _uniform(self):
         return self.elem2SimpleVec(self.uniformVector())
+    
+    def uniform(self):
+        return self.fromRepresentation(self.uniformVector())
 
-    def uniformFromBall(self,p,r,npoints=1):
+    def _uniformFromBall(self,p,r,npoints=1):
       log.debug(f"Uniform from ball with radius r={r} around point p={p}")
       point = self.simpleVec2Elem(p)
       return MetricSpaceEmbedding.uniformFromBall(self,point,r,npoints)
-    
+
+    def uniformFromBall(self,p,r,npoints=1):
+      log.debug(f"Uniform from ball with radius r={r} around point p={p}")
+      point = self.toRepresentation(p)
+      uniformpoints = MetricSpaceEmbedding.uniformFromBall(self,point,r,npoints)
+      elements = map(self.fromRepresentation,uniformpoints)
+      return list(elements) #Returns a list not map object. Do we want to change this?
+  
+
+    def toRepresentation(self,mapping):
+        return self._simpleVec2Elem(mapping.to_list(mapping))
+
+    def fromRepresentation(self,mapping):
+        mapping_obj = Mapping(self.kpn,self.platform)
+        mapping_obj = from_list(self._elem2SimpleVec(mapping))
+        return mapping_obj
+
+
 class SymmetryEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepresentation):
+    """Symmetry Embedding Representation
+    A representation combining symmetries with an embedding of a metric space. Currently still work in progress
+    and not ready for using.
+    """
     def __init__(self,kpn, platform, distortion=DEFAULT_DISTORTION):
         self.kpn = kpn
         self.platform = platform
