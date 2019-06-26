@@ -12,6 +12,7 @@ setup(
         'argparse',
         'cvxpy<=1.0.0',
         'cvxopt',
+        'scipy<=1.1.0',
         'lxml',
         'numpy<1.16',
         'matplotlib<3.0',
