@@ -442,9 +442,20 @@ class PlatformDesigner():
         
         else:
             return
+    
+    def getClusterList(self, identifier):
+        """Returns a list of all processing elements contained in specified cluster.
+        :param int identifier: The identifier of the target cluster.
+        :returns: A list of names of processing elements
+        :rtype list[string]:
+        """
+        if not identifier in self.__elementDict[self.__activeScope]:
+            return None
+        else:
+            return self.__elementDict[self.__activeScope][identifier]
            
     def getPlatform(self):
-        """Returns the platform, created with the designer. (Only needed for test issues.
+        """Returns the platform, created with the designer. (Only needed for test issues.)
         :returns: The platform object the designer is working on.
         :rtype Platform:
         """

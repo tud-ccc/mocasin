@@ -11,7 +11,6 @@ from pykpn.slx.platform import SlxPlatform
 from pykpn.slx.kpn import SlxKpnGraph
 from pykpn.mapper.random import RandomMapping
 from pykpn.gui import drawAPI
-from pykpn.platforms.kalray_4 import KalrayMppa as kalray_mppa
 
 class controlPanel(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
