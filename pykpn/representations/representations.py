@@ -160,6 +160,11 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
     def uniformFromBall(self,p,r,npoints=1):
         return self.fromRepresentation(self._uniformFRomBall(p,r,npoints=npoints))
 
+    def distance(self,x,y):
+        a = np.array(x)
+        b = np.array(y)
+        return numpy.linalg.norm(a-b)
+
 #FIXME: UNTESTED!!
 class MetricSpaceRepresentation(FiniteMetricSpaceLP, metaclass=MappingRepresentation):
     """Metric Space Representation
@@ -183,6 +188,8 @@ class MetricSpaceRepresentation(FiniteMetricSpaceLP, metaclass=MappingRepresenta
 
     def _elem2SimpleVec(self,x):
         return x
+
+
 
 class SymmetryRepresentation(metaclass=MappingRepresentation):
     """Symmetry Representation
@@ -365,6 +372,14 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
         mapping_obj = Mapping(self.kpn,self.platform)
         mapping_obj.from_list(self._elem2SimpleVec(mapping))
         return mapping_obj
+
+    def _distance(self,x,y):
+        x_np = np.array(np.array(self._simpleVec2Elem(x)).flat
+        y_np = np.array(np.array(self._simpleVec2Elem(y)).flat
+        return np.linalg.norm(x_np - y_np)
+
+    def distance(self,x,y):
+        return self._distance(x.to_list(),y.to_list())
 
 
 class SymmetryEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepresentation):
