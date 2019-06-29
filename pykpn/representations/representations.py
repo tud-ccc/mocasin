@@ -165,6 +165,13 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         b = np.array(y)
         return numpy.linalg.norm(a-b)
 
+    def approximate(self,x):
+        approx = np.around(x)
+        P = len(list(self.platform._processors.keys()))
+        corr_boundaries = list(map(lambda t : t % P,approx))
+        return corr_boundaries
+
+
 #FIXME: UNTESTED!!
 class MetricSpaceRepresentation(FiniteMetricSpaceLP, metaclass=MappingRepresentation):
     """Metric Space Representation
@@ -381,6 +388,8 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
     def distance(self,x,y):
         return self._distance(x.to_list(),y.to_list())
 
+    def approximate(self,x):
+        return self.approx(x)
 
 class SymmetryEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepresentation):
     """Symmetry Embedding Representation
