@@ -190,11 +190,11 @@ class MetricSpaceSample(Sample):
         #assert isinstance(rep,FiniteMetricSpace) or log.error(f"Sampling from metric space with representation: {rep}")
         self.rep = rep 
         Sample.__init__(self,None)
-        self.sample = rep._elem2SimpleVec(sample)
+        self.sample = sample 
 
     def sample2tuple(self):
         #print("M.n = " + str(self.M.n))
-        return tuple(self.rep.int2Tuple(int(self.sample)))
+        return tuple(self.sample)
 
 
 class SampleSet(object):

@@ -155,7 +155,7 @@ class LPVolume(Volume):
         # adjust radius
         num_feasible = len(s_set.get_feasible())
         num_samples = len(s_set.sample_set)
-        assert(num_samples <= conf.adapt_samples)
+        assert(num_samples <= conf.adapt_samples or log.error(f"number of samples produced ({num_samples}) exceeds configuration ({conf.adapt_samples})"))
         self.update_factors(target_p,num_samples)
         p_emp =  num_feasible / num_samples
         log.debug("---------- adapt_volume() -----------")
@@ -165,7 +165,6 @@ class LPVolume(Volume):
 
     def adapt_radius(self,num_feasible,num_samples):
         factor = self.expansion_factor**num_feasible * self.contraction_factor**(num_samples - num_feasible)
-        print(f"factor: {factor}")
         if (factor > 1):
             log.debug(f"extend radius {self.radius} by factor: {factor}")
         else:

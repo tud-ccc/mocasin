@@ -320,6 +320,7 @@ class Mapping:
         procs_list = self.kpn.processes()
         chans_list = self.kpn.channels()
         pes_list = self.platform.processors()
+        prim_list = self.platform.primitives()
 
         # map PEs to an integer
         pes = {}
@@ -335,16 +336,24 @@ class Mapping:
         # add one result entry for each KPN channel (multiple in case of
         # multiple reader channels)
         if channels:
+            # map chans to an integer
+            prims = {}
+            for j, prim in enumerate(prim_list):
+                prims[prim.name] = j+i
             for chan in chans_list:
-                src = self.channel_source(chan)
-                sinks = self.channel_sinks(chan)
                 prim = self.primitive(chan)
-                for snk in sinks:
-                    primitive_costs = prim.static_costs(
-                        src, snk, token_size=chan.token_size)
-                    primitive_costs *= 1e-7  # scale down
-                    # TODO Probably it is better to normalize the values
-                    res.append(primitive_costs)
+                res.append(prims[prim.name])
+
+                # I have no idea why this alternative way was useful. 
+                #src = self.channel_source(chan)
+                #sinks = self.channel_sinks(chan)
+                #prim = self.primitive(chan)
+                #for snk in sinks:
+                #    primitive_costs = prim.static_costs(
+                #        src, snk, token_size=chan.token_size)
+                #    primitive_costs *= 1e-7  # scale down
+                #    # TODO Probably it is better to normalize the values
+                #    res.append(primitive_costs)
 
         return res
 

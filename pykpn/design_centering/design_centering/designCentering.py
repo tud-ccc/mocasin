@@ -95,13 +95,13 @@ class DesignCentering(object):
     def ds_explore(self):
         """ explore design space (main loop of the DC algorithm) """
 
-        s_set = dc_sample.SampleSet()
         center_history = []
         for i in range(0, type(self).oracle.config[1].max_samples, type(self).oracle.config[1].adapt_samples):
             s = dc_sample.SampleGen(self.representation, type(self).oracle.config)
             
             log.debug("dc: Current iteration {}".format(i))
             # TODO: may genrate identical samples which makes things ineffective 
+            s_set = dc_sample.SampleSet()
             samples = s.gen_samples_in_ball(type(self).vol, type(self).distr, nsamples=type(self).oracle.config[1].adapt_samples)
             #print(samples)
             #print(str([s.sample for s in samples]))

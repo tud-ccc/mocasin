@@ -126,7 +126,7 @@ def main():
                     #pdb.set_trace()
 
                     representation = (representation_type.getClassType())(kpn,platform)
-                representation.platform = platform
+
                 # run DC algorithm
                 # starting volume (init):
                 if representation == "GeomDummy":
@@ -135,6 +135,9 @@ def main():
                     center = representation.uniform()
                 if (app_config[1].shape == "cube"):
                     v = dc_volume.Cube(center, center.get_numProcs())
+                elif (app_config[1].shape == "lpvol"): 
+                    v = dc_volume.LPVolume(center, center.get_numProcs(),kpn,platform,representation_type)
+
 
                 # config = args.configFile
                 oracle = dc_oracle.Oracle(app_config) #the oracle could get the kpn and platform (now, pykpn objects, SLX independent) passed as files (see Issue #3)

@@ -73,6 +73,8 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
     of this vector represent the processes, and the values represent the PE where
     said processes are mapped. After the mapping of processes to PEs, the same
     method is applied to encode the channel to communication primitive mapping.
+    This is only done if the channels variable is set when intializing the
+    repreresentation object.
     
     A visualization of the encoding:
     [ P_1, P_2, ... , P_k, C_1, ..., C_l]
@@ -89,9 +91,11 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
     interface, but they are provided in case they prove useful, when you know
     what you are doing.
     """
-    def __init__(self, kpn, platform):
+    def __init__(self, kpn, platform,channels=False):
         self.kpn = kpn
         self.platform = platform
+        self.channels=channels
+        self.num_procs = len(list(self.kpn._processes.keys()))
     def _uniform(self):
       Procs = list(self.kpn._processes.keys())
       PEs = list(self.platform._processors.keys())
@@ -126,7 +130,7 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         return self.fromRepresentation(self._uniform())
 
     def toRepresentation(self,mapping):
-        return mapping.to_list()
+        return mapping.to_list(channels=self.channels)
 
     def fromRepresentation(self,mapping):
         mapping_obj = Mapping(self.kpn,self.platform)
@@ -134,9 +138,19 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         return mapping_obj
 
     def _simpleVec2Elem(self,x):
-        return x
+        if not self.channels:
+            return x
+        else:
+            m = Mapping(self.kpn,self.platform)
+            m.from_list(x)
+            return m.to_list(channels=True)
+        
     def _elem2SimpleVec(self,x):
-        return x
+        if self.channels:
+            return x
+        else:
+            return x[:self.num_procs]
+
     def _uniformFromBall(self,p,r,npoints=1):
       Procs = list(self.kpn._processes.keys())
       PEs = list(self.platform._processors.keys())
@@ -153,8 +167,11 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         
       for _ in range(npoints):
         v = list(map(_round,(np.array(p[:len(Procs)]) + np.array(r*lp.uniform_from_p_ball(p=1,n=len(Procs)))).tolist()))
-        res.append(self.randomPrimitives(v))
-      log.debug(f"unfiorm from ball: {res}")
+        if self.channels:
+            res.append(self.randomPrimitives(v))
+        else:
+            res.append(v)
+        log.debug(f"unfiorm from ball: {res}")
       return res
       
     def uniformFromBall(self,p,r,npoints=1):
