@@ -225,7 +225,7 @@ class SampleSet(object):
         infeasible_samples = []
         for _s in type(self).sample_set:
             if (not _s.feasible):
-                infeasible_sample.append(_s)
+                infeasible_samples.append(_s)
         return infeasible_samples
 
 def SampleGen(representation, conf):

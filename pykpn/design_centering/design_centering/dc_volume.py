@@ -117,6 +117,7 @@ class LPVolume(Volume):
         self.rk1_learning_constant = 1/np.sqrt(self.dim)
         self.rk1_vec = np.zeros(self.dim)
         self.transformation = np.identity(self.dim) * self.radius**2
+        self.adapt_covariance()
         
 
     def update_factors(self,p,num_samples):
@@ -181,9 +182,9 @@ class LPVolume(Volume):
 
         centers = self.center - self.old_center
         centers_factor = np.sqrt(self.rk1_learning_constant * (2 - self.rk1_learning_constant))
-        centers_alpha = 1/np.sqrt(np.dot(centers,centers))
         self.rk1_vec = (1-self.rk1_learning_constant) * self.rk1_vec
         if np.dot(centers,centers) != 0:
+            centers_alpha = 1/np.sqrt(np.dot(centers,centers))
             self.rk1_vec += centers_factor * centers_alpha * centers
         rank_one_update = np.matrix(self.rk1_vec).transpose() * np.matrix(self.rk1_vec)
 
