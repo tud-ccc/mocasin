@@ -126,7 +126,7 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         return self.fromRepresentation(self._uniform())
 
     def toRepresentation(self,mapping):
-        return mapping.to_list(mapping)
+        return mapping.to_list()
 
     def fromRepresentation(self,mapping):
         mapping_obj = Mapping(self.kpn,self.platform)
@@ -381,8 +381,8 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
         return mapping_obj
 
     def _distance(self,x,y):
-        x_np = np.array(np.array(self._simpleVec2Elem(x)).flat
-        y_np = np.array(np.array(self._simpleVec2Elem(y)).flat
+        x_np = np.array(np.array(self._simpleVec2Elem(x)).flat)
+        y_np = np.array(np.array(self._simpleVec2Elem(y)).flat)
         return np.linalg.norm(x_np - y_np)
 
     def distance(self,x,y):

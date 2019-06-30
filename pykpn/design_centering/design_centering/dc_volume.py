@@ -8,6 +8,7 @@ import logging
 import numpy as np
 from . import dc_settings as conf
 from pykpn.representations.representations import RepresentationType 
+from pykpn.common.mapping import Mapping
 
 from pykpn.util import logging
 
@@ -91,10 +92,6 @@ class Cube(Volume):
 class LPVolume(Volume):
 
     def __init__(self, center, dim, kpn, platform, representation_type=RepresentationType['SimpleVector'],p=2):
-        if (len(center) != dim):
-            log = logging.getLogger(__name__)
-            log.exception("Dimensions do not match to the given center. (-1)")
-            sys.exit(-1)
         if representation_type not in [RepresentationType['SimpleVector'],
                                        RepresentationType['FiniteMetricSpaceLP'],
                                        RepresentationType['FiniteMetricSpaceLPSym'],
@@ -107,15 +104,18 @@ class LPVolume(Volume):
         self.representation = representation_type.getClassType()(kpn,platform)
         self.kpn = kpn
         self.platform = platform
-        mapping_center = Mapping(kpn,platform,list(center)) #TODO: check to do this right
-        self.center = self.representation.toRepresentation(center)
+        self.center = np.array(self.representation.toRepresentation(center))
+        if (len(self.center) != dim):
+            log = logging.getLogger(__name__)
+            log.exception("Dimensions do not match to the given center. (-1)")
+            sys.exit(-1)
         self.radius = DEFAULT_RADIUS
         self.dim = dim
         self.p = p #TODO: check, can I propagate this to the representations?
         self.weight_center = 1/(np.exp(1)*self.dim)
-        self.rk1_learning_constant = 1/sqrt(self.dim)
+        self.rk1_learning_constant = 1/np.sqrt(self.dim)
         self.rk1_vec = np.zeros(self.dim)
-        self.transformation = np.identity(self.dim) * radius**2
+        self.transformation = np.identity(self.dim) * self.radius**2
         
 
     def update_factors(self,p):
@@ -141,7 +141,7 @@ class LPVolume(Volume):
         #approximate center
         new_center = self.representation.approximate(new_center_vec)
         self.old_center = self.center
-        self.center = new_center
+        self.center = np.array(new_center)
         return self.center
     
     def correct_center(self, s_set, center, old_center):
@@ -209,3 +209,9 @@ class LPVolume(Volume):
         #Q * Q.transpose() is approx. self.transformation
         norm = np.abs(np.linalg.det(Q) )
         self.covariance = norm**(1/self.dim) * Q
+
+    #def draw_volume_projection(self,coordinates):
+    #    assert(len(coordinates) == 2)
+
+
+

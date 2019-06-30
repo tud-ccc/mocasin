@@ -1,0 +1,164 @@
+# Copyright: Andres Goens, 2017
+
+import types
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.linalg import sqrtm
+#from scipy.stats import multinomial
+from mpl_toolkits.mplot3d import Axes3D
+import itertools
+
+
+def _discrete_random(dims, mu, r, Q, func):
+    #r is in the euclidean norm now
+    assert(type(dims) == types.ListType)
+    for dim in dims:
+        assert(type(dim) == types.IntType)
+    assert(type(mu) == types.ListType)
+    assert(len(mu) == len(dims))
+    for comp in mu:
+        assert(type(comp) == types.IntType)
+    assert(type(Q) == np.matrix)
+    n = sum( dims)
+    Sigma = float(r**2) * Q*np.transpose(Q)
+    #T eigenvectors as transformation matrix
+    eigenvals,T = np.linalg.eig(Sigma)
+        
+    transformed,median_vec = func(dims,eigenvals) #func should not be exposed outside (values might change)
+
+    centered = []
+    for i,dim in enumerate(dims):
+        centered.append([transformed[i] - median_vec[i]])
+    retransformed = (np.transpose(T)*np.matrix(centered)).A1
+
+    res = []
+    for i,dim in enumerate(dims):
+        moved = int(mu[i] + retransformed[i]) % dim
+        res.append(moved)
+
+    # transform back to the original basis
+
+    return res
+    
+def _discrete_gauss_plain(dims,eigenvals):
+    i = 0
+    ps = []
+    median_vec = []
+    for _, sigmasq in np.ndenumerate(eigenvals):
+        sigma = np.sqrt(sigmasq)
+        if (1- 4 * sigma/dims[i]) > 0:
+            p = (1 + np.sqrt(1- 4 * sigma/dims[i]))/2
+        else:
+            print("Warning: r and Q incompatible with space, yield sigma(" + str(sigma) + ")too large for dimension (" + str(dims[i]) + ")! ")
+            p = 1/2
+        ps.append(p)
+        i += 1
+    result = []
+    for i,dim in enumerate(dims):
+        result.append(np.random.binomial(dim,ps[i]))
+        median_vec.append( ps[i] * dim)
+
+    return result,median_vec
+
+def _discrete_uniform_plain(dims,eigenvals):
+    result = []
+    median_vec = []
+    for i,ev in enumerate(eigenvals):
+        result.append(np.random.randint(int(ev+0.5)))
+        median_vec.append((int(ev+0.5) - 1) / 2. )
+    return result,median_vec
+
+def discrete_gauss(dims,mu,r,Q):
+    return _discrete_random(dims,mu,r,Q,_discrete_gauss_plain)
+
+def discrete_uniform(dims,mu,r,Q):
+    return _discrete_random(dims,mu,r,Q,_discrete_uniform_plain)
+
+def plot_distribution(ns,mu,Q,r,distribution,num_points=1000):
+    print("")
+    print("Testing plot distribution")
+    print("-------------------------")
+    raws = []
+    res = dict()
+    for i in range(0,ns[0]+1):    
+        for j in range(0,ns[1]+1):    
+            res[(i,j)] = 0
+    
+    for _ in range(0,num_points):
+        rand = distribution(ns,mu,r,Q)
+        raws.append(rand)
+        i,j = rand[0], rand[1]
+        res[(i,j)] += 1
+        
+    X,Y,Z = [],[],[]
+    
+    for i in range(0,ns[0]):    
+        for j in range(0,ns[1]):    
+            if res[(i,j)] != 0:
+                X.append(i)
+                Y.append(j)
+                Z.append(res[(i,j)])
+    
+    fig  = plt.figure() #projection='3d')
+    ax = fig.add_subplot(111, projection='3d')
+    plt.xlim((0,ns[0]))
+    plt.ylim((0,ns[1]))
+    ax.set_zlim((0,max(Z)+1))
+    
+    ax.scatter(X,Y,Z)
+    print("Mean: " + str(np.mean(raws,axis=0)))
+    print("Std deviation estimate: "  + str(np.std(raws,axis=0,ddof=1)))
+    support = []
+    for i in range(len(ns)):
+        support.append((min( map(lambda x : x[i], [key for key in res.keys() if res[key] != 0])),max( map(lambda x : x[i], [key for key in res.keys() if res[key] != 0]))))
+    print("Support: "  + str(support))
+    plt.show()
+    
+def test_plain_distribution(distribution_func,dims,eigens,num_executions=1000):
+    print("")
+    print("Testing plain distribution")
+    print("--------------------------")
+    randoms =[]
+    for i in range(num_executions):
+        randoms.append(distribution_func(dims,eigens)[0])
+
+    median = distribution_func(dims,eigens)[1]
+
+    for i in range(len(dims)):    
+        empty_dict = dict()
+        for j in range(dims[i]):
+            empty_dict[j] = 0
+        print( "Frequencies for component " + str(i) +": "  + str( reduce(lambda res, x : res.update({x[i] : res[x[i]]+1}) or res,randoms, empty_dict)))
+
+    empty_dict = dict()
+    for i in itertools.product(*map(lambda dim: range(dim),dims)):
+                empty_dict[tuple(i)] = 0
+    reduce(lambda res, x : res.update({tuple(x) : res[tuple(x)]+1}) or res,randoms, empty_dict)
+    non_zero_freqs = [ x for x in empty_dict.values() if x != 0]
+    print("Non-zero frequencies: " + str( non_zero_freqs))
+    print("Mean non-zero frequency: " + str( np.mean(non_zero_freqs)))
+    print("Std. dev: " + str(np.std(non_zero_freqs,ddof=1)))
+    print("Mean value (general): " + str( np.mean(randoms,axis=0)) + ", normed: " +  str( np.mean(randoms,axis=0)- median))
+    print("Deviations (general): " + str( np.std(randoms,axis=0,ddof=1)))
+
+if __name__ == "__main__":
+    np.random.seed(0)
+    ns = [50,80]
+    mu = [15,35]
+    #Q = np.matrix(sqrtm(np.matrix([[ 2., 0.], [0., 1/2.]]))) 
+    Q = np.matrix(sqrtm(np.matrix([[ 3., 0.], [0., 1/3.]]))) 
+    #Q = np.matrix(sqrtm(np.matrix([[ 1.66666667,  1.33333333], [ 1.33333333,  1.66666667]]))) # same as above, rotated 45^\circ
+    r = 3
+
+    # print np.linalg.det(Q)
+    # print np.linalg.eig(Q)
+    eigenv,_ = np.linalg.eig(r**2 * Q*np.transpose(Q))
+    print("Eigenvalues of Cov: " + str(eigenv))
+
+    #test discrete uniform plain
+    test_plain_distribution(_discrete_uniform_plain,ns,eigenv,10000)
+
+    np.random.seed(0)
+    plot_distribution(ns,mu,Q,r,discrete_uniform,num_points=1000)
+    #plot_distribution(ns,mu,Q,r,discrete_gauss,num_points=10000)
+
