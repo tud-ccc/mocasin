@@ -11,13 +11,13 @@ import itertools
 
 def _discrete_random(dims, mu, r, Q, func):
     #r is in the euclidean norm now
-    assert(type(dims) == types.ListType)
+    assert(type(dims) == list)
     for dim in dims:
-        assert(type(dim) == types.IntType)
-    assert(type(mu) == types.ListType)
+        assert(type(dim) == int)
+    assert(type(mu) == list)
     assert(len(mu) == len(dims))
     for comp in mu:
-        assert(type(comp) == types.IntType)
+        assert(type(comp) == int)
     assert(type(Q) == np.matrix)
     n = sum( dims)
     Sigma = float(r**2) * Q*np.transpose(Q)

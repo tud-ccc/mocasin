@@ -105,6 +105,7 @@ class LPVolume(Volume):
         self.kpn = kpn
         self.platform = platform
         self.center = np.array(self.representation.toRepresentation(center))
+        self.old_center = self.center
         if (len(self.center) != dim):
             log = logging.getLogger(__name__)
             log.exception("Dimensions do not match to the given center. (-1)")
@@ -118,7 +119,7 @@ class LPVolume(Volume):
         self.transformation = np.identity(self.dim) * self.radius**2
         
 
-    def update_factors(self,p):
+    def update_factors(self,p,num_samples):
         self.learning_rate = 0.6/((self.dim+1.3)**2 + p*num_samples) #Beta
         self.expansion_factor = 1 + (self.learning_rate *(1-p)) #f_e
         self.contraction_factor = 1 - (self.learning_rate * p) #f_c
@@ -163,6 +164,7 @@ class LPVolume(Volume):
 
     def adapt_radius(self,num_feasible,num_samples):
         factor = self.expansion_factor**num_feasible * self.contraction_factor**(num_samples - num_feasible)
+        print(f"factor: {factor}")
         if (factor > 1):
             log.debug(f"extend radius {self.radius} by factor: {factor}")
         else:
@@ -178,16 +180,23 @@ class LPVolume(Volume):
         num_feasible = len(feasible)
 
         centers = self.center - self.old_center
-        centers_factor = sqrt(self.rk1_learning_constant * (2 - self.rk1_learning_constant))
-        centers_alpha = 1/sqrt(np.dot(centers,centers))
-        self.rk1_vec = (1-self.rk1_learning_constant) * self.rk1_vec + centers_factor * centers_alpha * centers
+        centers_factor = np.sqrt(self.rk1_learning_constant * (2 - self.rk1_learning_constant))
+        centers_alpha = 1/np.sqrt(np.dot(centers,centers))
+        self.rk1_vec = (1-self.rk1_learning_constant) * self.rk1_vec
+        if np.dot(centers,centers) != 0:
+            self.rk1_vec += centers_factor * centers_alpha * centers
         rank_one_update = np.matrix(self.rk1_vec).transpose() * np.matrix(self.rk1_vec)
 
         rank_mu_update = np.zeros([self.dim,self.dim])
         for j,X in enumerate(feasible):
-            V = (X - self.old_center)
+            V = (np.array(X.sample2tuple()) - self.old_center)
             #TODO: look up the alphas in original implementation, as not described in paper
-            alpha_sq =  1/np.dot(V,V)
+            alpha_sq_inv =  np.dot(V,V)
+            if alpha_sq_inv != 0:
+                alpha_sq = 1/alpha_sq_inv 
+            else:
+                alpha_sq = 0
+                
             rank_1_matrix = np.matrix(V).transpose() * np.matrix(V)
             rank_mu_update += 1/num_feasible * alpha_sq * rank_1_matrix
 
@@ -195,8 +204,8 @@ class LPVolume(Volume):
         rk_mu_weight = 0.04 * (num_feasible - 2 + (1/num_feasible))/((self.dim + 2)**2 + 0.2*num_feasible)
 
         self.transformation = (1-rk_1_weight - rk_mu_weight) * self.transformation
-        self.transformation += self.rk_1_weight * rank_one_update
-        self.transformation += self.rk_mu_weight * rank_mu_update
+        self.transformation += rk_1_weight * rank_one_update
+        self.transformation += rk_mu_weight * rank_mu_update
         self.adapt_covariance()
 
     def adapt_covariance(self):
