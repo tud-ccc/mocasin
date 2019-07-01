@@ -1,20 +1,38 @@
 from setuptools import setup, find_packages
+from doc.build_doc import BuildDocCommand
+
+project_name = "pykpn"
+version = "0.1"
 
 setup(
-    name="pykpn",
-    version="0.1",
+    name=project_name,
+    version=version,
     packages=find_packages(),
-    entry_points={
-        'console_scripts': ['simulate_slx=pykpn.simulate.simulate_slx:main',
-                            'dc_run=pykpn.design_centering.design_centering.designCentering:main']
-    },
     install_requires=[
-          'argparse',
-          'matplotlib',
-          'numpy',
-          'pydot',
-          'simpy',
-          'pyvcd',
-          'pint',
-      ],
+        'argparse',
+        'cvxpy<=1.0.0',
+        'cvxopt',
+        'scipy<=1.1.0',
+        'lxml',
+        'numpy<1.16',
+        'matplotlib<3.0',
+        'pint',
+        'pydot',
+        'pyxb',
+        'simpy',
+        'termcolor',
+        'tqdm',
+    ],
+    setup_requires=['pytest-runner', 'sphinx'],
+    tests_require=['pytest', 'pytest_mock'],
+    command_options={
+        'build_sphinx': {
+            'project': ('setup.py', project_name),
+            'version': ('setup.py', version),
+            'release': ('setup.py', version),
+            'source_dir': ('setup.py', 'doc'),
+            'build_dir': ('setup.py', 'doc/build'),}},
+    cmdclass = {
+        'doc': BuildDocCommand
+    }
 )

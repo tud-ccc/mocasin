@@ -1,10 +1,26 @@
 __pycache__
 *.pyc
 *.swp
+*.eggs
+dist
 pykpn.egg-info
 .#*
+dist
+doc/api
 
 # pynauty
 build
 *.o
 third_party_dependencies/pynauty-0.6/nauty/config.*
+
+.project
+.pydevproject
+.settings/
+.coverage
+.eggs
+ontologies/
+# pycharm
+*.idea
+
+# default json dump
+dump.json
