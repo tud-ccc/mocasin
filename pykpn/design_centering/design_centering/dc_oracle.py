@@ -131,7 +131,7 @@ class Simulation(object):
             comMapGen = ComMappingGenerator(kpn, platform, randMapGen)
             dcMapGen = DC_MappingGenerator(kpn, platform, comMapGen)
             #app_context.mapping = RandomMapping(kpn, platform)
-            app_context.mapping = dcMapGen.generate_mapping(samples[i].sample2simpleTuple(kpn, platform))
+            app_context.mapping = dcMapGen.generate_mapping(samples[i].sample2simpleTuple())
             #app_context.mapping = randMapGen.generate_mapping(42, randMapGen.mapping)
             log.debug("####### Mapping i={} toList: {}".format(i, app_context.mapping.to_list()))
             

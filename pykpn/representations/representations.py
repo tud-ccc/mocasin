@@ -365,21 +365,30 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
         
     def _simpleVec2Elem(self,x): 
         proc_vec = x[:self._d]
-        return self.i(proc_vec)# [value for comp in self.i(x) for value in comp]
+        print(list(np.array(self.i(proc_vec)).flat)) 
+        return list(np.array(self.i(proc_vec)).flat)# [value for comp in self.i(x) for value in comp]
 
     def _elem2SimpleVec(self,x):
-        return self.invapprox(x)
+        return self.inv(self.approx(x))
 
     def _uniform(self):
-        return self.elem2SimpleVec(self.uniformVector())
+        return list(np.array(self.uniformVector()).flat)
     
     def uniform(self):
-        return self.fromRepresentation(self.uniformVector())
+        return self.fromRepresentation(list(np.array(self.uniformVector()).flat))
 
     def _uniformFromBall(self,p,r,npoints=1):
       log.debug(f"Uniform from ball with radius r={r} around point p={p}")
-      point = self._simpleVec2Elem(p)
-      return MetricSpaceEmbedding.uniformFromBall(self,point,r,npoints)
+      #print(f"point of type {type(p)} and shape {p.shape}")
+      point = []
+      for i in range(self._d):
+          val = []
+          point.append(list(p[range(self._k*i,self._k*(i+1))]))
+      print(point)
+      results_raw = MetricSpaceEmbedding.uniformFromBall(self,point,r,npoints)
+      results = list(map(lambda x : list(np.array(x).flat),results_raw))
+      #print(f"results uniform from ball: {results}")
+      return results
 
     def uniformFromBall(self,p,r,npoints=1):
       log.debug(f"Uniform from ball with radius r={r} around point p={p}")

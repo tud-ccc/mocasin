@@ -149,11 +149,19 @@ class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
 
 
 
-    def approx(self,vec):
+    def approx(self,i_vec):
         #since the subspaces for every component are orthogonal
         #we can find the minimal vectors componentwise
-        assert( type(vec) is list)
-        assert( len(vec) == self._k * self._d)
+        if type(i_vec) is np.ndarray:
+            #is this the right way or k <-> d?
+            assert(i_vec.shape == (self._k,self._d))
+            vec = list(i_vec.flat)
+        if type(i_vec) is list: 
+            vec = i_vec
+        else:
+            assert("approx: Type error")
+        assert( len(vec) == self._k * self._d or log.error(f"length of vector ({len(vec)}) does not fit to dimensions ({self._k} * {self._d})"))
+
         res = []
         for i in range(0,self._d):
             comp = []
@@ -161,6 +169,7 @@ class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
                 comp.append(vec[self._k*i +j])
 
             res.append(MetricSpaceEmbeddingBase.approx(self,tuple(comp)))
+
         return res
 
     def invapprox(self,vec):

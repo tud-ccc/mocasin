@@ -91,7 +91,7 @@ class Cube(Volume):
 
 class LPVolume(Volume):
 
-    def __init__(self, center, dim, kpn, platform, representation_type=RepresentationType['SimpleVector'],p=2):
+    def __init__(self, center, num_procs, kpn, platform, representation_type=RepresentationType['SimpleVector'],p=2):
         if representation_type not in [RepresentationType['SimpleVector'],
                                        RepresentationType['FiniteMetricSpaceLP'],
                                        RepresentationType['FiniteMetricSpaceLPSym'],
@@ -106,12 +106,9 @@ class LPVolume(Volume):
         self.platform = platform
         self.center = np.array(self.representation.toRepresentation(center))
         self.old_center = self.center
-        if (len(self.center) != dim):
-            log = logging.getLogger(__name__)
-            log.exception("Dimensions do not match to the given center. (-1)")
-            sys.exit(-1)
         self.radius = DEFAULT_RADIUS
-        self.dim = dim
+        self.dim = len(self.center)
+        self.num_procs = num_procs
         self.p = p #TODO: check, can I propagate this to the representations?
         self.weight_center = 1/(np.exp(1)*self.dim)
         self.rk1_learning_constant = 1/np.sqrt(self.dim)
@@ -182,7 +179,8 @@ class LPVolume(Volume):
         centers = self.center - self.old_center
         centers_factor = np.sqrt(self.rk1_learning_constant * (2 - self.rk1_learning_constant))
         self.rk1_vec = (1-self.rk1_learning_constant) * self.rk1_vec
-        if np.dot(centers,centers) != 0:
+        print(centers)
+        if np.dot(centers,centers.transpose()) != 0:
             centers_alpha = 1/np.sqrt(np.dot(centers,centers))
             self.rk1_vec += centers_factor * centers_alpha * centers
         rank_one_update = np.matrix(self.rk1_vec).transpose() * np.matrix(self.rk1_vec)

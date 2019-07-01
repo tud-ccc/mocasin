@@ -15,7 +15,7 @@ from pykpn.util import logging
 log = logging.getLogger(__name__)
 
 class Sample(list):
-    def __init__(self,sample=None,simContext=None, representation_type=RepresentationType['SimpleVector']):
+    def __init__(self,sample=None,simContext=None, representation=None):
         """Describes a sample from a volume for a given representation. 
 
         :param sample: a vector describing the sample
@@ -30,7 +30,7 @@ class Sample(list):
             sample = []
         self.sample = sample
         self.simContext = simContext
-        self.representation_type = representation_type
+        self.representation = representation
 
     def setFeasibility(self,feasibility):
         assert type(feasibility) is bool
@@ -51,13 +51,12 @@ class Sample(list):
     def sample2tuple(self):
         return tuple(self.sample)
 
-    def sample2simpleTuple(self, kpn=None, platform=None):
-        if not kpn or not platform:
-            log.warning("sample2tuple(): kpn and platform not set - return simple tuple for sample")
+    def sample2simpleTuple(self):
+        if self.representation == None:
+            log.warning("sample2tuple(): no representation set - return simple tuple for sample")
             return tuple(self.sample)
-        representation = self.representation_type.getClassType()(kpn,platform)
         #print ("Tuple::::: {}".format(tuple(representation._elem2SimpleVec(self.sample))))
-        return tuple(representation._elem2SimpleVec(self.sample))
+        return tuple(self.representation._elem2SimpleVec(self.sample))
 
     def dist(self,s):
         return None
@@ -158,13 +157,13 @@ class VectorSpaceSample(Sample):
     # and uses the representation to convert to a tuple again
     def __init__(self,rep,sample=None):
         #assert isinstance(rep,FiniteMetricSpace) or log.error(f"Sampling from metric space with representation: {rep}")
-        self.rep = rep 
+        self.representation = rep 
         Sample.__init__(self,None)
         self.sample = sample
 
     def sample2tuple(self):
         #print("M.n = " + str(self.M.n))
-        return tuple(self.rep.int2Tuple(int(self.sample)))
+        return tuple(self.representation.int2Tuple(int(self.sample)))
 
 class MetricSpaceSampleGen(SampleGeneratorBase):
     def __init__(self,representation, conf):
@@ -188,9 +187,9 @@ class MetricSpaceSample(Sample):
     # and uses the representation to convert to a tuple again
     def __init__(self,rep,sample=None):
         #assert isinstance(rep,FiniteMetricSpace) or log.error(f"Sampling from metric space with representation: {rep}")
-        self.rep = rep 
         Sample.__init__(self,None)
         self.sample = sample 
+        self.representation = rep 
 
     def sample2tuple(self):
         #print("M.n = " + str(self.M.n))
@@ -213,6 +212,9 @@ class SampleSet(object):
     
     def add_sample_group(self, samples):
         type(self).sample_groups.append(samples)
+
+    def get_samples(self):
+        return type(self).sample_set
 
     def get_feasible(self):
         feasible_samples = []

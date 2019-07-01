@@ -103,6 +103,7 @@ class DesignCentering(object):
             # TODO: may genrate identical samples which makes things ineffective 
             s_set = dc_sample.SampleSet()
             samples = s.gen_samples_in_ball(type(self).vol, type(self).distr, nsamples=type(self).oracle.config[1].adapt_samples)
+
             #print(samples)
             #print(str([s.sample for s in samples]))
 
