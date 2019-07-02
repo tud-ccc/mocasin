@@ -10,10 +10,6 @@ test-python3.7:
   - apt-get update
   - apt-get -y install libblas-dev liblapack-dev
   - rm -rf pykpn/test
-  - cd third_party_dependencies/pynauty-0.6
-  - make pynauty
-  - python setup.py install
-  - cd ../..
   - python setup.py develop
   - python setup.py test
 
@@ -26,9 +22,5 @@ test-python3.6:
   - apt-get update
   - apt-get -y install libblas-dev liblapack-dev
   - rm -rf pykpn/test
-  - cd third_party_dependencies/pynauty-0.6
-  - make pynauty
-  - python setup.py install
-  - cd ../..
   - python setup.py develop
   - python setup.py test
