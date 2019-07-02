@@ -26,7 +26,7 @@ class TestMetricSpaces(object):
         result = list(zip(range(4),map(lambda x : len(x)/float(N), [ [run for run in runs if run == i] for i in range(4)])))
         
         for probabilitie in result:
-            assert((probabilitie[1] == 0.0 or probabilitie[1] >= 0.3) and probabilitie[1] <= 0.35)
+            assert((probabilitie[1] == 0.0 or probabilitie[1] >= 0.3) and probabilitie[1] <= 0.37)
         
     def test_finiteMetricSpaceLP_ball1(self, exampleClusterArch):
         testSpace = exampleClusterArch

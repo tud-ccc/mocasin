@@ -18,6 +18,7 @@ class test_CSVReader(unittest.TestCase):
     def test_plot(self):
         configFilePath = "apps/audio_filter/exynos/config.ini"
         csvFilePath = "scripts/test/testValues.csv"
+        destination = "scripts/test/testplot"
         applicationString = "audio_filter"
         
         platform = None
@@ -63,7 +64,9 @@ class test_CSVReader(unittest.TestCase):
             mappingList.append(mappings[key][0])
             compareProperty.append(float(mappings[key][1]))
         
-        plot.visualize_mapping_space(mappingList, compareProperty)
-
-if __name__ == "__main__":
-	unittest.main()
+        plot.visualize_mapping_space(mappingList, compareProperty, destination)
+        fileExists = os.path.isfile(destination + ".pdf")
+        assert(fileExists == True)
+        
+        if fileExists:
+            os.remove(destination + ".pdf")
