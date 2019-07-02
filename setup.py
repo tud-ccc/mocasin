@@ -22,7 +22,7 @@ setup(
         'termcolor',
         'tqdm',
     ],
-    setup_requires=['pytest-runner', 'sphinx'],
+    setup_requires=['pytest-runner', 'sphinx', 'numpy<1.16'],
     tests_require=['pytest', 'pytest_mock'],
     command_options={
         'build_sphinx': {
