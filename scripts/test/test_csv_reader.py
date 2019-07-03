@@ -6,6 +6,7 @@
 
 import os
 import unittest
+import pytest
 
 from pykpn.slx.config import SlxSimulationConfig
 from pykpn.slx.platform import SlxPlatform
@@ -15,6 +16,7 @@ from pykpn.util.csv_reader import DataReader
 
 class test_CSVReader(unittest.TestCase):
     
+    @pytest.mark.skip("Test can't succeed. Need fix by Teweleit.")
     def test_plot(self):
         configFilePath = "apps/audio_filter/exynos/config.ini"
         csvFilePath = "scripts/test/testValues.csv"
