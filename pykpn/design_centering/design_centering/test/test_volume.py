@@ -116,7 +116,7 @@ def random_s_set_test_radius(r,center=POINT,r_set=3):
     for s in test_set.get_feasible():
         vecNotShifted = (np.array(s.sample2tuple()) - np.array(center))
         vec = np.dot(vecNotShifted , Qinv)
-        dist = np.sqrt(np.dot(vec,vec))
+        dist = np.sqrt(np.dot(vec,vec.transpose()))
         if dist >= r_set:
             s.setFeasibility(False)
 
