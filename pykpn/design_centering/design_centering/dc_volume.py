@@ -104,7 +104,7 @@ class LPVolume(Volume):
         self.representation = representation_type.getClassType()(kpn,platform)
         self.kpn = kpn
         self.platform = platform
-        self.center = np.array(self.representation.toRepresentation(center))
+        self.center = self.representation.toRepresentation(center)
         self.old_center = self.center
         self.radius = DEFAULT_RADIUS
         self.dim = len(self.center)
@@ -179,7 +179,6 @@ class LPVolume(Volume):
         centers = self.center - self.old_center
         centers_factor = np.sqrt(self.rk1_learning_constant * (2 - self.rk1_learning_constant))
         self.rk1_vec = (1-self.rk1_learning_constant) * self.rk1_vec
-        print(centers)
         if np.dot(centers,centers.transpose()) != 0:
             centers_alpha = 1/np.sqrt(np.dot(centers,centers))
             self.rk1_vec += centers_factor * centers_alpha * centers

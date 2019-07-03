@@ -365,17 +365,18 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
         
     def _simpleVec2Elem(self,x): 
         proc_vec = x[:self._d]
-        print(list(np.array(self.i(proc_vec)).flat)) 
-        return list(np.array(self.i(proc_vec)).flat)# [value for comp in self.i(x) for value in comp]
+        as_array = np.array(self.i(proc_vec)).flatten()# [value for comp in self.i(x) for value in comp]
+        return as_array
 
     def _elem2SimpleVec(self,x):
         return self.inv(self.approx(x))
 
     def _uniform(self):
-        return list(np.array(self.uniformVector()).flat)
+        res = np.array(self.uniformVector()).flatten()
+        return res
     
     def uniform(self):
-        return self.fromRepresentation(list(np.array(self.uniformVector()).flat))
+        return self.fromRepresentation(np.array(self.uniformVector()).flatten())
 
     def _uniformFromBall(self,p,r,npoints=1):
       log.debug(f"Uniform from ball with radius r={r} around point p={p}")
@@ -383,10 +384,9 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
       point = []
       for i in range(self._d):
           val = []
-          point.append(list(p[range(self._k*i,self._k*(i+1))]))
-      print(point)
+          point.append(list(p)[self._k*i:self._k*(i+1)])
       results_raw = MetricSpaceEmbedding.uniformFromBall(self,point,r,npoints)
-      results = list(map(lambda x : list(np.array(x).flat),results_raw))
+      results = list(map(lambda x : np.array(list(np.array(x).flat)),results_raw))
       #print(f"results uniform from ball: {results}")
       return results
 
@@ -415,7 +415,7 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
         return self._distance(x.to_list(),y.to_list())
 
     def approximate(self,x):
-        return self.approx(x)
+        return np.array(self.approx(x)).flatten()
 
 class SymmetryEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepresentation):
     """Symmetry Embedding Representation
@@ -475,4 +475,4 @@ class RepresentationType(Enum):
         if self is RepresentationType['MetricSpaceEmbedding']:
             return MetricEmbeddingRepresentation
         if self is RepresentationType['SymmetryEmbedding']:
-            return SymmetryEmbeddingRepresentation
+            return SymmetryEmbeddingRepr

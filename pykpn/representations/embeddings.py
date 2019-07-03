@@ -153,13 +153,12 @@ class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
         #since the subspaces for every component are orthogonal
         #we can find the minimal vectors componentwise
         if type(i_vec) is np.ndarray:
-            #is this the right way or k <-> d?
-            assert(i_vec.shape == (self._k,self._d))
             vec = list(i_vec.flat)
-        if type(i_vec) is list: 
+        elif type(i_vec) is list: 
             vec = i_vec
         else:
-            assert("approx: Type error")
+            log.error(f"approx: Type error, unrecognized type ({type(i_vec)})")
+            exit(-1)
         assert( len(vec) == self._k * self._d or log.error(f"length of vector ({len(vec)}) does not fit to dimensions ({self._k} * {self._d})"))
 
         res = []
