@@ -407,8 +407,8 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
         return mapping_obj
 
     def _distance(self,x,y):
-        x_np = np.array(np.array(self._simpleVec2Elem(x)).flat)
-        y_np = np.array(np.array(self._simpleVec2Elem(y)).flat)
+        x_np = self._simpleVec2Elem(x)
+        y_np = self._simpleVec2Elem(y)
         return np.linalg.norm(x_np - y_np)
 
     def distance(self,x,y):
@@ -475,4 +475,4 @@ class RepresentationType(Enum):
         if self is RepresentationType['MetricSpaceEmbedding']:
             return MetricEmbeddingRepresentation
         if self is RepresentationType['SymmetryEmbedding']:
-            return SymmetryEmbeddingRepr
+            return SymmetryEmbeddingRepresentation
