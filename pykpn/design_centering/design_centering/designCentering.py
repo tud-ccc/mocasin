@@ -155,11 +155,12 @@ class DesignCentering(object):
         center_sample_list = []
         center_sample_list.append(center_sample)
         center_res_sample = type(self).oracle.validate_set(center_sample_list)
-        if(self.oracle.config[1].keep_metrics):
+        if self.oracle.config[1].visualize_mappings:
+            if(self.oracle.config[1].keep_metrics):
 
-            self.visualize_mappings(s_set.sample_groups, type(self).oracle.config[1].adapt_samples, center_history)
-        else:
-            self.visualize_mappings(s_set.sample_groups)
+                self.visualize_mappings(s_set.sample_groups, type(self).oracle.config[1].adapt_samples, center_history)
+            else:
+                self.visualize_mappings(s_set.sample_groups)
         log.debug("dc: center sample: {} {} {}".format(str(center_res_sample), str(center_sample), str(center)))
         return center_res_sample[0]
     

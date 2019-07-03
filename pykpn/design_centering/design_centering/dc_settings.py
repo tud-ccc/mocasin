@@ -12,6 +12,7 @@ max_step              = 10             # maximum step size
 
 show_polynomials      = False          # show approximation polynomials
 show_points           = True           # show hit and miss points
+visualize_mappings    = False
 
 
 max_pe                = 16             # number of processors (for presentation only)

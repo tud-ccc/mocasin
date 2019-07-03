@@ -90,7 +90,8 @@ class GlobalConfig:
                      'run_perturbation' : to_bool,
                      'num_perturbations' : to_int,
                      'representation' : to_str,
-                     'keep_metrics' : to_bool
+                     'keep_metrics' : to_bool,
+                     'visualize_mappings' : to_bool
                      }
 
         if not 'default' in conf:

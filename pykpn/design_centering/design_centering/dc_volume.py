@@ -104,7 +104,7 @@ class LPVolume(Volume):
         self.representation = representation_type.getClassType()(kpn,platform)
         self.kpn = kpn
         self.platform = platform
-        self.center = self.representation.toRepresentation(center)
+        self.center = np.array(self.representation.toRepresentation(center))
         self.old_center = self.center
         self.radius = DEFAULT_RADIUS
         self.dim = len(self.center)
