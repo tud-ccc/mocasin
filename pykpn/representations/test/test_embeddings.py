@@ -39,8 +39,8 @@ class TestEmbeddings(object):
         evec2 = Evec.i(in2)
         assert(len(evec1) == dimension)
         assert(len(evec1[0]) == M.n)
-        dist_embedded = np.linalg.norm(np.array(np.array(evec1).flat)
-                                       - np.array(np.array(evec2).flat))
+        dist_embedded = np.linalg.norm(np.array(evec1).flatten()
+                                       - np.array(evec2).flatten())
         assert(dist / distortion < dist_embedded and dist_embedded < dist * distortion)
 
         
@@ -49,14 +49,14 @@ class TestEmbeddings(object):
         Evec = MetricSpaceEmbedding(M, dimension)
         
         result = Evec.inv(Evec.i([1,0,1,1,3]))
-        assert(result == [1, 0, 1, 1, 3])
+        assert(list(np.around(result).astype(int)) == [1, 0, 1, 1, 3])
         
     def test_Evec_invapprox(self, exampleClusterArch, dimension):
         M = exampleClusterArch
         E = MetricSpaceEmbeddingBase(M)
         Evec = MetricSpaceEmbedding(M, dimension)
         
-        result = Evec.invapprox(list(np.random.random((dimension*E.k)).flat))
+        result = Evec.invapprox(np.random.random((dimension*E.k)).flatten())
         
         for value in result:
             assert(value >= 0 and value < 16)
@@ -64,7 +64,7 @@ class TestEmbeddings(object):
     def test_Par_invapprox(self, exampleParallella16, dimension):
         Par = MetricSpaceEmbedding(exampleParallella16, dimension,distortion=1.5)
         
-        result = Par.invapprox(list((10*np.random.random((dimension,Par.k))).flat))
+        result = Par.invapprox((10*np.random.random((dimension,Par.k))).flatten())
         for value in result:
             assert(value >= 0 and value < 16)
     

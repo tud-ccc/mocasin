@@ -172,7 +172,10 @@ class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
         return res
 
     def invapprox(self,vec):
-        flat_vec = [item for sublist in vec for item in sublist]
+        if type(vec) is list:
+            flat_vec = [item for sublist in vec for item in sublist]
+        else:
+            flat_vec = vec.flatten()
         return self.inv(self.approx(flat_vec))
 
     def uniformVector(self):
