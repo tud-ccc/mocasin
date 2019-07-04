@@ -33,7 +33,7 @@ class MetricSpaceEmbeddingBase():
         self.k = M.n
 
         #First: calculate a good embedding by solving an optimization problem
-        E,self._k = self.calculateEmbeddingMatrix(np.matrix(M.D),distortion)
+        E,self._k = self.calculateEmbeddingMatrix(np.array(M.D),distortion)
         #print(E)
 
         #Populate look-up table
@@ -41,8 +41,8 @@ class MetricSpaceEmbeddingBase():
         self.iotainv = dict() #Poor-man's bidirectional map
 
         for i in range(M.n):
-            self.iota[i] = tuple(E.A[i])
-            self.iotainv[tuple(E.A[i])] = i
+            self.iota[i] = tuple(E[i])
+            self.iotainv[tuple(E[i])] = i
 
     def i(self,i):
         assert(0 <= i and i <= self.M.n)
@@ -57,10 +57,10 @@ class MetricSpaceEmbeddingBase():
         size = D.shape
         assert(size[0] == size[1])
         n = size[0]
-        if int(cvx.__version__[0]) < 1:
-            Q = cvx.Semidef(n) #for cvxpy < 1.0
+        if int(cvx.__version__.split('.')[0]) == 0:
+            Q = cvx.Semidef(n)
         else:
-            Q = cvx.Variable((n, n), PSD=True)
+            Q = cvx.Variable(shape=(n,n), PSD=True)
         #print(D)
         
         #c = matrix(([1]*n))
@@ -90,21 +90,21 @@ class MetricSpaceEmbeddingBase():
         #print(type(np.matrix(Q.value)))
         #print(np.matrix(Q.value))
         try:
-            L = np.linalg.cholesky(np.matrix(Q.value))
+            L = np.linalg.cholesky(np.array(Q.value))
         except np.linalg.LinAlgError:
-            eigenvals, eigenvecs = np.linalg.eigh(np.matrix(Q.value))
+            eigenvals, eigenvecs = np.linalg.eigh(np.array(Q.value))
             min_eigenv = min(eigenvals)
             if min_eigenv < 0:
                 log.warning("Warning, matrix not positive semidefinite." +
                 "Trying to correct for numerical errors with minimal eigenvalue: " +
                 str(min_eigenv) + " (max. eigenvalue:" + str(max(eigenvals)) + ").")
                 
-                Q_new_t = np.transpose(eigenvecs) * np.matrix(Q.value) * eigenvecs
+                Q_new_t = np.transpose(eigenvecs) @ np.array(Q.value) @ eigenvecs
                 #print(eigenvals)
                 #print(Q_new_t) # should be = diagonal(eigenvalues)
                 # print(np.transpose(eigenvecs) * eigenvecs) # should be = Identity matrix
                 Q_new_t += np.diag( [-min_eigenv]*len(eigenvals))
-                Q_new = eigenvecs * Q_new_t * np.transpose(eigenvecs)
+                Q_new = eigenvecs @ Q_new_t @ np.transpose(eigenvecs)
                 L = np.linalg.cholesky(Q_new)
 
                       
