@@ -1,6 +1,6 @@
-import types
 import functools
 import time
+import logging
 from itertools import product
 
 total_time = 0
@@ -24,9 +24,13 @@ class Permutation(list):
         if n == -1:
             self.n = m+1
         else:
-            assert(n >= m), "Error: trying to initialize " + str(ls) + "( max " + str(m) + ") with n = " + str(n)
+            if not (n >= m):
+                logging.error("Trying to initialize " + str(ls) + "( max " + str(m) + ") with n = " + str(n))
+                return None
             self.n = n
-        assert(action == 0 or action == 1), "Error: unrecognized action: " + str(action)
+        if not(action == 0 or action == 1):
+            logging.error("Unrecognized action: " + str(action))
+            return None
         self.action = action
         list.__init__(self,range(0,self.n), *args)
         for l in ls:
@@ -41,18 +45,26 @@ class Permutation(list):
 
     def act(self,obj):
         if self.action == 0:
-            assert isinstance(obj,list) or isinstance(obj,tuple), (str(obj) + " not of list/tuple type (" + str(type(obj)) + ")")
+            if not (isinstance(obj,list) or isinstance(obj,tuple)):
+                logging.debug(str(obj) + " not of list/tuple type (" + str(type(obj)) + ")")
+                return None
             for elem in obj:
-                assert(elem < self.n), "error on permutation " + str(self) + ": trying to act on invalid point " + str(elem) + " in object: " + str(obj)
+                if not(elem < self.n):
+                    logging.error("Permutation " + str(self) + ": trying to act on invalid point " + str(elem) + " in object: " + str(obj))
+                    return None
             return self.act_point(obj)
         elif self.action == 1:
-            assert(len(obj) == self.n), "error on permutation " + str(self) + ": trying to act on invalid point " + str(obj)
+            if not (len(obj) == self.n):
+                logging.error("Permutation " + str(self) + ": trying to act on invalid point " + str(obj))
+                return None
             return self.act_tuple(obj)
         else:
             return None
 
     def act_point(self,l):
-        assert type(l) == list or type(l) == tuple, (str(l) + " not of list/tuple type")
+        if not (type(l) == list or type(l) == tuple):
+            logging.error((str(l) + " not of list/tuple type"))
+            return None
         res = list()
         for i in l:
             res.append(self[i])
@@ -90,7 +102,9 @@ class PermutationGroup(list):
         assert(action == 0 or action == 1)
         assert(len(perms) > 0 or n > -1)
         if(len(perms) > 0):
-            assert(type(perms[0]) == Permutation), str(perms[0]) + " is not a permutation (" + str(type(perms[0]))
+            if not(type(perms[0]) == Permutation):
+                logging.error(str(perms[0]) + " is not a permutation (" + str(type(perms[0])))
+                return None
             n = perms[0].n
         for g in perms:
             assert(type(g) == Permutation)
@@ -99,10 +113,10 @@ class PermutationGroup(list):
         m = max([g.n for g in perms] + [-1])
         self.action=action
         if n == -1:
-           self.n = m
+            self.n = m
         else:
-           #assert(n >= m)
-           self.n = n
+            #assert(n >= m)
+            self.n = n
 
         list.__init__(self,perms,*args)
 
@@ -114,12 +128,12 @@ class PermutationGroup(list):
         stack = [point]
         orbit = [point]
         while stack:
-           p = stack.pop()
-           for perm in self:
-               im = function(perm,p)
-               if im not in orbit:
-                   stack.append(im)
-                   orbit.append(im)
+            p = stack.pop()
+            for perm in self:
+                im = function(perm,p)
+                if im not in orbit:
+                    stack.append(im)
+                    orbit.append(im)
 
         return orbit
 
@@ -160,7 +174,7 @@ class PermutationGroup(list):
     @timeit
     def tuple_normalize(self,tup,verbose=False,quick=True):
         if verbose:
-            print("normalizing: " + str(tup))
+            logging.debug(("normalizing: " + str(tup)))
         S_x0lt = [] #{ g.act(tup) for g in self if g.act(tup) < tup}
         for g in self:
             im = g.act(tup)
@@ -181,15 +195,15 @@ class PermutationGroup(list):
                     if im not in Snext_x0lt and im < t:
                         Snext_x0lt.append(im)
             if verbose and Snext_x0lt:
-                print("|(S^{" + str(iterator) + "}x_0)_<| = " + str(len(Snext_x0lt)) + ", min: " + str(min(Snext_x0lt)))
+                logging.debug("|(S^{" + str(iterator) + "}x_0)_<| = " + str(len(Snext_x0lt)) + ", min: " + str(min(Snext_x0lt)))
                 iterator = iterator + 1
             if quick == True and Snext_x0lt:
                 Snext_x0lt = [min(Snext_x0lt)]
         minimal = Scur_x0lt[0]
         if verbose:
-            print("finished normalizing: " + str(minimal))
+            logging.debug("finished normalizing: " + str(minimal))
             global total_time
-            print("total time elapsed normalizing: " + str(total_time ))
+            logging.debug("total time elapsed normalizing: " + str(total_time ))
         return minimal
 
 class TrivialGroup(PermutationGroup):
@@ -249,8 +263,7 @@ class ProductGroup(PermutationGroup):
             extra_n = g.n
             for gen in g:
                 new_gen = []
-                for cycle in gen.get_cycles():
-                   new_gen.append( list(map(lambda x : x + current_n , cycle)))
+                for cycle in gen.get_cycles():new_gen.append( list(map(lambda x : x + current_n , cycle)))
                 #print("gen: " + str(new_gen) + " (" + str(sum_n) +")")
                 generators.append(Permutation(new_gen,sum_n,action=gen.action))
             current_n += extra_n

@@ -58,7 +58,9 @@ setup(
     packages=find_packages(),
     install_requires=[
         'argparse',
-        'cvxpy',
+        'cvxpy<=1.0.0',
+        'cvxopt',
+        'scipy<=1.1.0',
         'lxml',
         'numpy<1.16',
         'matplotlib<3.0',
@@ -69,7 +71,7 @@ setup(
         'termcolor',
         'tqdm',
     ],
-    setup_requires=['pytest-runner', 'sphinx'],
+    setup_requires=['pytest-runner', 'sphinx', 'numpy<1.16'],
     tests_require=['pytest', 'pytest_mock'],
     command_options={
         'build_sphinx': {

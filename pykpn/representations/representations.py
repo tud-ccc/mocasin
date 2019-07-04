@@ -7,9 +7,9 @@ from enum import Enum
 from numpy.random import randint
 
 try:
-  import pynauty as pynauty
+    import pynauty as pynauty
 except:
-   pass
+    pass
 
 from .metric_spaces import FiniteMetricSpace, FiniteMetricSpaceSym, FiniteMetricSpaceLP, FiniteMetricSpaceLPSym, arch_graph_to_distance_metric
 from .embeddings import MetricSpaceEmbedding, DEFAULT_DISTORTION

@@ -7,9 +7,10 @@ from __future__ import print_function
 import numpy as np
 import cvxpy as cvx
 import random
+import logging
 #import fjlt.fjlt as fjlt #TODO: use fjlt to (automatically) lower the dimension of embedding
-from . import permutations as perm
-from . import metric_spaces as metric
+from pykpn.representations import permutations as perm
+from pykpn.representations import metric_spaces as metric
 
 DEFAULT_DISTORTION = 1.05
 
@@ -27,7 +28,7 @@ class MetricSpaceEmbeddingBase():
         self.k = M.n
 
         #First: calculate a good embedding by solving an optimization problem
-        E,self._k = self.calculateEmbeddingMatrix(np.matrix(M.D),distortion)
+        E,self._k = self.calculateEmbeddingMatrix(np.array(M.D),distortion)
         #print(E)
 
         #Populate look-up table
@@ -35,8 +36,8 @@ class MetricSpaceEmbeddingBase():
         self.iotainv = dict() #Poor-man's bidirectional map
 
         for i in range(M.n):
-            self.iota[i] = tuple(E.A[i])
-            self.iotainv[tuple(E.A[i])] = i
+            self.iota[i] = tuple(E[i])
+            self.iotainv[tuple(E[i])] = i
 
     def i(self,i):
         assert(0 <= i and i <= self.M.n)
@@ -51,41 +52,45 @@ class MetricSpaceEmbeddingBase():
         size = D.shape
         assert(size[0] == size[1])
         n = size[0]
-        Q = cvx.Semidef(n)
+        if int(cvx.__version__.split('.')[0]) == 0:
+            Q = cvx.Semidef(n)
+        else:
+            Q = cvx.Variable(shape=(n,n), PSD=True)
         #print(D)
         
         #c = matrix(([1]*n))
         constraints = []
         for i in range(n):
             for j in range(i,n):
-               constraints += [D[i,j]**2 <= Q[i,i] + Q[j,j] - 2*Q[i,j]]
-               constraints += [Q[i,i] + Q[j,j] - 2*Q[i,j] <= distortion**2 * D[i,j]**2 ]
+                constraints += [D[i,j]**2 <= Q[i,i] + Q[j,j] - 2*Q[i,j]]
+                constraints += [Q[i,i] + Q[j,j] - 2*Q[i,j] <= distortion**2 * D[i,j]**2 ]
         
         obj = cvx.Minimize(1)
         prob = cvx.Problem(obj,constraints)
         prob.solve()
-        assert(prob.status == cvx.OPTIMAL or print("status:" + str(prob.status))) 
+        if not prob.status == cvx.OPTIMAL:
+            logging.debug("status:" + str(prob.status)) 
         #print(Q.value)
         #print(np.linalg.eigvals(np.matrix(Q.value)))
         #print(np.linalg.eigh(np.matrix(Q.value)))
         #print(type(np.matrix(Q.value)))
         #print(np.matrix(Q.value))
         try:
-            L = np.linalg.cholesky(np.matrix(Q.value))
+            L = np.linalg.cholesky(np.array(Q.value))
         except np.linalg.LinAlgError:
-            eigenvals, eigenvecs = np.linalg.eigh(np.matrix(Q.value))
+            eigenvals, eigenvecs = np.linalg.eigh(np.array(Q.value))
             min_eigenv = min(eigenvals)
             if min_eigenv < 0:
-                print("Warning, matrix not positive semidefinite."
+                logging.warning("Warning, matrix not positive semidefinite."
                       + "Trying to correct for numerical errors with minimal eigenvalue: "
                       + str(min_eigenv) + " (max. eigenvalue:" + str(max(eigenvals)) + ").")
-                      
-                Q_new_t = np.transpose(eigenvecs) * np.matrix(Q.value) * eigenvecs
+                
+                Q_new_t = np.transpose(eigenvecs) @ np.array(Q.value) @ eigenvecs
                 #print(eigenvals)
                 #print(Q_new_t) # should be = diagonal(eigenvalues)
                 # print(np.transpose(eigenvecs) * eigenvecs) # should be = Identity matrix
                 Q_new_t += np.diag( [-min_eigenv]*len(eigenvals))
-                Q_new = eigenvecs * Q_new_t * np.transpose(eigenvecs)
+                Q_new = eigenvecs @ Q_new_t @ np.transpose(eigenvecs)
                 L = np.linalg.cholesky(Q_new)
 
                       
@@ -117,7 +122,7 @@ class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
         assert( type(vec) is list)
         res = []
         for i in vec:
-           res.append(self.iota[i])
+            res.append(self.iota[i])
         return res
 
     def inv(self,vec):
@@ -125,7 +130,7 @@ class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
         assert( type(vec) is list)
         res = []
         for i in vec:
-           res.append(self.iotainv[i])
+            res.append(self.iotainv[i])
         return res
 
 
