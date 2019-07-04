@@ -52,7 +52,10 @@ class MetricSpaceEmbeddingBase():
         size = D.shape
         assert(size[0] == size[1])
         n = size[0]
-        Q = cvx.Variable(shape=(n,n), PSD=True)
+        if int(cvx.__version__.split('.')[0]) == 0:
+            Q = cvx.Semidef(n)
+        else:
+            Q = cvx.Variable(shape=(n,n), PSD=True)
         #print(D)
         
         #c = matrix(([1]*n))
