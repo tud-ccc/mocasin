@@ -71,22 +71,22 @@ class TestEmbeddings(object):
     @pytest.mark.skip("Test can't succeed. Need fix by Goens.")
     def test_L(self, distortion):
         D = self.__give_matrix()
-        L = np.matrix(MetricSpaceEmbeddingBase.calculateEmbeddingMatrix(D, distortion))
+        L = np.array(MetricSpaceEmbeddingBase.calculateEmbeddingMatrix(D, distortion))
         
         assert(L ==  None)
     
     @pytest.mark.skip("Test can't succeed. Need fix by Goens.")
     def test_vecs(self, distortion):
         D = self.__give_matrix()
-        L = np.matrix(MetricSpaceEmbeddingBase.calculateEmbeddingMatrix(D, distortion))
-        vecs = L.A
+        L = np.array(MetricSpaceEmbeddingBase.calculateEmbeddingMatrix(D, distortion))
+        vecs = np.ndarray(A)
         
         assert(vecs == None)
     
     @pytest.mark.skip("Test can't succeed. Need fix by Goens.")
     def test_dist(self, distortion):
         D = self.__give_matrix()
-        L = np.matrix(MetricSpaceEmbeddingBase.calculateEmbeddingMatrix(D, distortion))
+        L = np.array(MetricSpaceEmbeddingBase.calculateEmbeddingMatrix(D, distortion))
         vecs = L.A
         
         dists = []
@@ -99,7 +99,7 @@ class TestEmbeddings(object):
     
     
     def __give_matrix(self):
-        return np.matrix([[ 0.,  2.,  2.,  4.,  2.,  4.,  4.,  4.,  4.,  4.,  4.,  4.,  2.,  4.,  2.,  2.,  4.,  2., 4.,  2.],
+        return np.array([[ 0.,  2.,  2.,  4.,  2.,  4.,  4.,  4.,  4.,  4.,  4.,  4.,  2.,  4.,  2.,  2.,  4.,  2., 4.,  2.],
                 [ 2.,  0.,  4.,  2.,  2.,  4.,  4.,  4.,  2.,  4.,  2.,  4.,  4.,  4.,  4.,  2.,  4.,  2., 2.,  4.],
                 [ 2.,  4.,  0.,  4.,  4.,  2.,  2.,  4.,  4.,  4.,  4.,  4.,  2.,  4.,  2.,  4.,  2.,  4., 2.,  2.],
                 [ 4.,  2.,  4.,  0.,  4.,  4.,  4.,  4.,  2.,  2.,  1.,  4.,  4.,  2.,  2.,  4.,  4.,  4., 2.,  4.],
