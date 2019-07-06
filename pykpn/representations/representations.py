@@ -43,12 +43,12 @@ class MappingRepresentation(type):
     _instances = {}
     def __call__(cls, *args, **kwargs):
         #print(str(cls) + " is being called")
-        if cls not in cls._instances:
+        kpn = ";".join(map(lambda x : x.name, args[0].channels()))
+        platform = args[1].name
+        if (cls,kpn,platform) not in cls._instances:
             #make hashables of these two
-            kpn = ";".join(map(lambda x : x.name, args[0].channels()))
-            platform = args[1].name
             cls._instances[(cls,kpn,platform)] = super(MappingRepresentation,cls).__call__(*args, **kwargs)
-            log.info(f"Initalizing representation {cls} of kpn with processes: {kpn} on platform {platform}")
+            log.info(f"Initializing representation {cls} of kpn with processes: {kpn} on platform {platform}")
             cls._instances[(cls,kpn,platform)]._representationType = cls
         return cls._instances[(cls,kpn,platform)]
 
