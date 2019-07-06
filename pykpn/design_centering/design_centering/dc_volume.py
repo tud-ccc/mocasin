@@ -93,12 +93,10 @@ class LPVolume(Volume):
 
     def __init__(self, center, num_procs, kpn, platform, conf, representation_type=RepresentationType['SimpleVector'],p=2):
         if representation_type not in [RepresentationType['SimpleVector'],
-                                       RepresentationType['FiniteMetricSpaceLP'],
-                                       RepresentationType['FiniteMetricSpaceLPSym'],
                                        RepresentationType['MetricSpaceEmbedding'],
-                                       RepresentationType['SymmetryEmbedding']]:
+                                       RepresentationType['Symmetries']]:
             log = logging.getLogger(__name__)
-            log.exception("Representation not supported for VectorSpaceVolumes")
+            log.exception("Representation currently not supported for VectorSpaceVolumes")
             sys.exit(-1)
 
         self.conf = conf
