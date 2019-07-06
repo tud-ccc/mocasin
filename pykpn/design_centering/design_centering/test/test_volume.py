@@ -207,6 +207,13 @@ def test_covariance_adaptation():
 
     #visualize_s_sets(points)
 
+def test_all_infeasible():
+    vol = lp_vol(transf=np.identity(2))
+    points = []
+    sample_set = sample.SampleSet()
+    conf.adapt_samples=NUM_SAMPLES
+    vol.adapt_volume(sample_set,0.65,Mock())
+    print(vol.covariance)
 
 
 def visualize_s_sets(points,coordinates=[0,1],ns=[NUM_PROCS,NUM_PROCS]):

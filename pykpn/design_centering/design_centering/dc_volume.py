@@ -155,7 +155,10 @@ class LPVolume(Volume):
         num_samples = len(s_set.sample_set)
         assert(num_samples <= self.conf.adapt_samples or log.error(f"number of samples produced ({num_samples}) exceeds self.configuration ({self.conf.adapt_samples})"))
         self.update_factors(target_p,num_samples)
-        p_emp =  num_feasible / num_samples
+        if num_feasible != 0:
+            p_emp =  num_feasible / num_samples
+        else:
+            p_emp = 0
         log.debug("---------- adapt_volume() -----------")
         self.adapt_radius(num_feasible,num_samples)
         self.adapt_transformation(s_set)
@@ -176,6 +179,10 @@ class LPVolume(Volume):
         """
         feasible = s_set.get_feasible()
         num_feasible = len(feasible)
+
+        if num_feasible == 0:
+            return 
+
 
         centers = self.center - self.old_center
         centers_factor = np.sqrt(self.rk1_learning_constant * (2 - self.rk1_learning_constant))
