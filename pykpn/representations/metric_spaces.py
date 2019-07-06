@@ -306,13 +306,28 @@ def dijkstra(graph,node_from):
         current = next_node
     return distances
 
+def make_graph_symmetric(graph):
+    graph_dict = {}
+    for node_from in graph:
+        graph_dict[node_from] = {}
+        for (node_to,cost) in graph[node_from]:
+            graph_dict[node_from][node_to] = cost
 
-def arch_graph_to_distance_metric(graph):
+    symmetric_graph = {}
+    for node_from in graph_dict:
+        symmetric_graph[node_from] = []
+        for node_to in graph_dict[node_from]:
+            avg = (graph_dict[node_from][node_to] + graph_dict[node_to][node_from])/2.
+            symmetric_graph[node_from].append((node_to,round(avg)))
+    return symmetric_graph
+
+def arch_graph_to_distance_metric(arch_graph):
     inf = float('inf')
     n = 0
     nodes_correspondence = {}
     nc_inv = {}
     dist_metric_named = {}
+    graph = make_graph_symmetric(arch_graph)
     for node in graph:
         nodes_correspondence[n] = node
         nc_inv[node] = n

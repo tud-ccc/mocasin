@@ -114,7 +114,7 @@ class GlobalConfig:
                 #    self.system[combined_name]['sconf'] = SingleConfig(app,pl)
                 #    self.system[combined_name]['settings'] = []
 
-        print(f"names: {names}")
+        log.info(f"Execution on combinations: {names}")
         for cname in names:
             setting = {}
             for k in self.keys.keys():
