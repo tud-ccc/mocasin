@@ -2,12 +2,12 @@
 import sys
 import random as rand
 from . import dc_oracle
-from pykpn.mapper import rand_mapgen as rand_mg
+from pykpn.mapper import rand_partialmapper as rand_pm
 from pykpn.slx.config import SlxSimulationConfig
 from pykpn.slx.kpn import SlxKpnGraph
 from pykpn.simulate.application import RuntimeKpnApplication
-from pykpn.mapper.rand_mapgen import RandomMappingGenerator
-from pykpn.mapper.dc_mapgen import DC_MappingGenerator
+from pykpn.mapper.proc_partialmapper import ProcPartialMapper
+from pykpn.mapper.rand_partialmapper import RandomPartialMapper
 
 from pykpn.util import logging
 
@@ -27,7 +27,7 @@ class PerturbationManager(object):
         """ Creates a defined number of unique random mappings """
         mapping_set = set([])
         while len(mapping_set) < self.num_mappings:
-            mg = rand_mg.RandomMappingGenerator(self.kpns[0], self.platform)
+            mg = rand_pm.RandomPartialMapper(self.kpns[0], self.platform)
             mapping_set.add(mg.generate_mapping())
         return mapping_set
 
@@ -38,8 +38,8 @@ class PerturbationManager(object):
         """
 
         # check for single application
-        randMapGen = RandomMappingGenerator(self.kpns[0], self.platform)
-        dcMapGen = DC_MappingGenerator(self.kpns[0], self.platform, randMapGen)
+        rand_part_mapper = RandomPartialMapper(self.kpns[0], self.platform)
+        proc_part_mapper = ProcPartialMapper(self.kpns[0], self.platform, rand_part_mapper)
 
         rand.seed = seed
         pe = rand.randint(0, len(list(self.platform.processors()))-1)
@@ -47,7 +47,7 @@ class PerturbationManager(object):
         
         vec = []
         #assign cores to vector
-        pe_mapping = dcMapGen.get_pe_name_mapping()
+        pe_mapping = proc_part_mapper.get_pe_name_mapping()
         log.debug(str(pe_mapping))
         for p in self.kpns[0].processes():
             log.debug(mapping.affinity(p).name) 
@@ -59,7 +59,7 @@ class PerturbationManager(object):
         vec[process] = pe
 
         while True:
-            pert_mapping = dcMapGen.generate_mapping(vec, history)
+            pert_mapping = proc_part_mapper.generate_mapping(vec, history)
             if pert_mapping:
                 break;
 

@@ -11,7 +11,7 @@ import re
 
 def cache_read(file_name):
     infile = open(file_name, "r")
-    mapgen = mu.MappingGenerator(conf.default_path)
+    mapgen = mu.PartialMapper(conf.default_path)
     mapping = []
     log_cache = {}
     result = False
@@ -37,7 +37,7 @@ def cache_read(file_name):
     return log_cache
 
 def cache_lookup(mapping, log_cache):
-    mapgen = mu.MappingGenerator(conf.default_path)
+    mapgen = mu.PartialMapper(conf.default_path)
     if (len(mapping) > conf.num_pr):
 	mapping = mapgen.extmap2map(mapping)
     if log_cache:
@@ -48,7 +48,7 @@ def cache_lookup(mapping, log_cache):
     return None
 
 def run_oracle(mapping):
-    mapgen = mu.MappingGenerator(conf.default_path)
+    mapgen = mu.PartialMapper(conf.default_path)
     # read log file into cache
     cache = cache_read(conf.log_path)
     
@@ -87,7 +87,7 @@ def run_oracle_parallel(mappings, num_threads):
     for mapping in mappings:
         logging.debug("Input:  {:s}".format(mapping))
 	i = i + 1
-	mapgen = mu.MappingGenerator(conf.default_path)
+	mapgen = mu.PartialMapper(conf.default_path)
         if (len(mapping) <= conf.num_pr):
 	    mapping = mapgen.map2extmap(mapping)
 	pr2pe_map = mapgen.generatePr2PeMap(mapping)
