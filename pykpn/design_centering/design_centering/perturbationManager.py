@@ -1,7 +1,6 @@
 #!/usr/bin/python
 import sys
 import random as rand
-from . import dc_settings as conf
 from . import dc_oracle
 from pykpn.mapper import rand_mapgen as rand_mg
 from pykpn.slx.config import SlxSimulationConfig

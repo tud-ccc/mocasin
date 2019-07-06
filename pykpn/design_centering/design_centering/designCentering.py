@@ -8,7 +8,6 @@ import argparse
 from . import dc_oracle
 from . import dc_sample
 from . import dc_volume
-from . import dc_settings as conf
 from . import perturbationManager as p
 from pykpn.util import logging
 from pykpn.util import plot # t-SNE plotting stuff

@@ -21,7 +21,6 @@ from pykpn.mapper.rand_mapgen import RandomMappingGenerator
 from pykpn.mapper.com_mapgen import ComMappingGenerator
 from pykpn.mapper.random import RandomMapping
 from . import dc_sample
-from . import dc_settings as conf
 
 from sys import exit
 
