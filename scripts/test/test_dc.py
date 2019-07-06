@@ -1,3 +1,8 @@
+# Copyright (C) 2019 TU Dresden
+# All Rights Reserved
+#
+# Authors: Andres Goens
+
 from scripts.slx.dc import *
 import sys
 
