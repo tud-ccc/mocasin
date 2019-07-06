@@ -19,6 +19,7 @@ from .embeddings import MetricSpaceEmbedding, DEFAULT_DISTORTION
 import pykpn.representations.automorphisms as aut
 import pykpn.representations.permutations as perm
 import pykpn.util.random_distributions.lp as lp
+import pykpn.mapper.mapgen as mapgen
 from pykpn.util import logging
 log = logging.getLogger(__name__)
 
@@ -286,13 +287,19 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
     def _allEquivalent(self,x):
         return self._G.tuple_orbit(x[:self._d])
     def allEquivalent(self,x):
-        orbit = self._allEquivalent(x)
+        orbit = self._allEquivalent(self.toRepresentation(x))
         res = []
         for elem in orbit:
             mapping = Mapping(self.kpn, self.platform)
             mapping.from_list(list(elem))
             res.append(mapping)
         return res
+
+    def _allEquivalentGen(self,x):
+        return self._G.tuple_orbit_generator(x[:self._d])
+
+    def allEquivalentGen(self,x):
+        return mapgen.MappingGeneratorOrbit(self,x)
 
     def toRepresentation(self,mapping):
         return self._simpleVec2Elem(mapping.to_list(mapping))
