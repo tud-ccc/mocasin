@@ -6,6 +6,7 @@
 
 import os
 import unittest
+import pytest
 
 from pykpn.slx.config import SlxSimulationConfig
 from pykpn.slx.platform import SlxPlatform

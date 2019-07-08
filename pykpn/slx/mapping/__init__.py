@@ -107,8 +107,8 @@ def export_slx_mapping(mapping, file_name, version):
 
     xml_mapping = slxmapping.MappingType()
     xml_mapping.version = '1.0'
-    xml_mapping.platformName = mapping._kpn.name
-    xml_mapping.applicationName = mapping._platform.name
+    xml_mapping.platformName = mapping.kpn.name
+    xml_mapping.applicationName = mapping.platform.name
 
     used_processors = []
     used_primitives = []
@@ -132,7 +132,7 @@ def export_slx_mapping(mapping, file_name, version):
         xml_channel.id = name
         xml_channel.bound = info.capacity
         xml_channel.commPrimitive = info.primitive.name
-        channel = mapping._kpn.find_channel(name)
+        channel = mapping.kpn.find_channel(name)
         xml_channel.processWriter = channel.source.name
         used_primitives.append(info.primitive)
 
@@ -163,7 +163,7 @@ def export_slx_mapping(mapping, file_name, version):
         xml_scheduler = slxmapping.SchedulerType()
         xml_scheduler.id = name
 
-        scheduler = mapping._platform.find_scheduler(name)
+        scheduler = mapping.platform.find_scheduler(name)
         for p in scheduler.processors:
             xml_processor_ref = slxmapping.ProcessorRefType()
             xml_processor_ref.processor = p.name
