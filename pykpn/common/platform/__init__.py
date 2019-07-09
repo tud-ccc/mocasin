@@ -51,6 +51,9 @@ class Processor:
     def __str__(self):
         return self.name
 
+    def __lt__(self, other_pe):
+        return self.name.lower() < other_pe.name.lower()
+    
     def __repr__(self):
         return self.__str__()
 
@@ -287,6 +290,13 @@ class Scheduler:
         self.name = name
         self.processors = processors
         self.policies = policies
+    
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return self.__str__()
+
 
     def find_policy(self, name, throw=False):
         """Lookup a policy by its name.
@@ -337,6 +347,27 @@ class Platform(object):
 
     def communication_resources(self):
         return self._communication_resources.values()
+
+    def find_scheduler_for_processor(self, processor):
+        """Find all schedulers associated to a given processor.
+           
+           :param processor: a processer of the underlying platform
+           :type processor: Processor
+           :raises RuntimeError: if the processor was not found
+           :returns: A set of possible schedulers for the processor.
+        """
+        if processor.name not in self._processors:
+            raise RuntimeError('The processor {} is not defined for this '
+                               'platform!'.format(processor.name))
+        used_schedulers = set()
+
+        for s in self._schedulers:
+            if processor in self._schedulers[s].processors:
+                used_schedulers.add( self._schedulers[s])
+        
+        #print("Found schedulers: {} for {}".format(used_schedulers, processor.name))
+        return used_schedulers
+
 
     def find_scheduler(self, name):
         """Search for a scheduler object by its name."""

@@ -1,9 +1,10 @@
 __pycache__
 *.pyc
 *.swp
+*.eggs
+dist
 pykpn.egg-info
 .#*
-.eggs
 dist
 doc/api
 
@@ -19,3 +20,8 @@ testBench.py
 *.png
 .eggs
 .coverage
+ontologies/
+*.idea
+
+# default json dump
+dump.json

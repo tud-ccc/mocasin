@@ -4,7 +4,7 @@ import re
 import config as conf
 
 # provides methods to generate a new mapping from a given DC-vector
-class MappingGenerator(object):
+class PartialMapper(object):
     pe2process_map = {}
     max_pe = conf.max_pe
     

@@ -1,9 +1,10 @@
-# Copyright (C) 2017-2018 TU Dresden
+# Copyright (C) 2017-2019 TU Dresden
 # All Rights Reserved
 #
 # Author: Andres Goens
 
 from __future__ import print_function
+import logging
 import numpy as np
 from sys import exit,stdout
 from numpy.random import randint
@@ -16,13 +17,16 @@ class FiniteMetricSpace():
         try:
             self.D = np.matrix(matrix)
         except Exception as ex:
-            print("An error ocurred while initializing a finite metric space with a distance matrix.")
-            print(str(ex))
+            logging.error("An error ocurred while initializing a finite metric space with a distance matrix.\n" + str(ex))
             exit(1)
 
         dims = self.D.shape
-        assert len(dims) == 2, "Distances must be given as a matrix"
-        assert dims[1] == dims[0], "Distances must be given as a square matrix"
+        if not len(dims) == 2:
+            logging.error("Distances must be given as a matrix")
+            return None
+        if not dims[1] == dims[0]: 
+            logging.error("Distances must be given as a square matrix")
+            return None
         self.n = dims[0]
 
 
@@ -49,7 +53,7 @@ class FiniteMetricSpace():
         return points
 
     def uniform(self):
-       return randint(0,self.n-1)
+        return randint(0,self.n-1)
 
 class FiniteMetricSpaceLP(FiniteMetricSpace):
     def __init__(self,M,d=2,p=1):
@@ -74,9 +78,7 @@ class FiniteMetricSpaceLP(FiniteMetricSpace):
             else:
                 return FiniteMetricSpaceLP._distCalc(self,x,y)
         else:
-            print( "An error ocurred while trying to calculate the distance of two points (wrong types?)")
-            print( str(x))
-            print( str(y))
+            logging.error("An error occurred while trying to calculate the distance of two points (wrong types?)\n" + str(x) + "\n" + str(y))
             exit(1)
 
     def tuple2Int(self,x):
@@ -104,14 +106,14 @@ class FiniteMetricSpaceLP(FiniteMetricSpace):
             return np.power(sum( map( lambda x : np.power(x,self.p), dist_tuple)),1/float(self.p))
 
     def _populateD(self):
-        print("Populating D...",end='')
+        logging.debug("Populating D...")
         stdout.flush()
         self.D = np.zeros((self.n,self.n))
         for (x,y) in product(product(range(self.M.n),repeat=self.d),product(range(self.M.n),repeat=self.d)):
             x_l = self.tuple2Int(x)
             y_l = self.tuple2Int(y)
             self.D[x_l,y_l] = self._distCalc(x,y)
-        print("done.")
+        logging.debug("done.")
 
     def ball(self, p, r):
         if type(p) is list:
@@ -121,8 +123,7 @@ class FiniteMetricSpaceLP(FiniteMetricSpace):
         elif type(p) is float:
             point = int(p)
         else:
-            print("An error ocurred while calculating the ball, unknown point")
-            print(str(p))
+            logging.error("An error occurred while calculating the ball, unknown point\n" + str(p))
             exit(1)
         return FiniteMetricSpace.ball(self,point,r)
 
@@ -165,9 +166,7 @@ class FiniteMetricSpaceSym(FiniteMetricSpace):
                 y_orb = self.elem2orb[self.orb2elem[y[0]]]
                 return self._distCalc(list(x_orb),list(y_orb))
         else:
-            print( "An error ocurred while trying to calculate the distance of two points (wrong types?)")
-            print( str(x))
-            print( str(y))
+            logging.error("An error occurred while trying to calculate the distance of two points (wrong types?)\n" + str(x) + "\n" + str(y))
             exit(1)
 
 
@@ -201,9 +200,7 @@ class FiniteMetricSpaceSym(FiniteMetricSpace):
         elif type(p) is float or np.float64:
             point = int(p)
         else:
-            print("An error ocurred while calculating the ball, unknown point")
-            print(str(p))
-            print(type(p))
+            logging.error("An error occurred while calculating the ball, unknown point\n" + str(p) + "\n" + type(p))
             exit(1)
         return FiniteMetricSpace.ball(self,point,r)
 
@@ -263,14 +260,13 @@ class FiniteMetricSpaceLPSym(FiniteMetricSpaceLP,FiniteMetricSpaceSym):
                     return self._distCalc([x],[y])
 
         else:
-            print( "An error ocurred while trying to calculate the distance of two points (wrong types?)")
-            print( str(x))
-            print( str(y))
+            logging.error("An error occurred while trying to calculate the distance of two points (wrong types?)\n" + str(x) + "\n" + str(y))
             exit(1)
 
     def _distCalc(self,x,y):
         # we need to iterate over the orbits of *tuples*
         # again one is enough
+        print(x)
         orb = list(self.elem2orb[self.orb2elem[tuple(x[0])]])
         dists = map( lambda xs : FiniteMetricSpaceLP.dist(self,list(xs),list(y[0])), orb)
         #print(list(map( lambda xs : (FiniteMetricSpaceLP.dist(self,list(xs),y[0]),(xs,tuple(y[0]))), self.elem2orb[self.orb2elem[tuple(x[0])]])))
@@ -286,7 +282,6 @@ class FiniteMetricSpaceLPSym(FiniteMetricSpaceLP,FiniteMetricSpaceSym):
 def dijkstra(graph,node_from):
     inf = float('inf')
     unvisited = set(graph.keys())
-    tentative_distances = {}
     distances = {}
     for node in graph:
         distances[node] = inf
@@ -311,13 +306,28 @@ def dijkstra(graph,node_from):
         current = next_node
     return distances
 
+def make_graph_symmetric(graph):
+    graph_dict = {}
+    for node_from in graph:
+        graph_dict[node_from] = {}
+        for (node_to,cost) in graph[node_from]:
+            graph_dict[node_from][node_to] = cost
 
-def arch_graph_to_distance_metric(graph):
+    symmetric_graph = {}
+    for node_from in graph_dict:
+        symmetric_graph[node_from] = []
+        for node_to in graph_dict[node_from]:
+            avg = (graph_dict[node_from][node_to] + graph_dict[node_to][node_from])/2.
+            symmetric_graph[node_from].append((node_to,round(avg)))
+    return symmetric_graph
+
+def arch_graph_to_distance_metric(arch_graph):
     inf = float('inf')
     n = 0
     nodes_correspondence = {}
     nc_inv = {}
     dist_metric_named = {}
+    graph = make_graph_symmetric(arch_graph)
     for node in graph:
         nodes_correspondence[n] = node
         nc_inv[node] = n
@@ -333,4 +343,3 @@ def arch_graph_to_distance_metric(graph):
         res.append(line)
     return res,nodes_correspondence,nc_inv
         
-
