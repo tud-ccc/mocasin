@@ -8,6 +8,9 @@ from pykpn.platforms import platformDesigner
 from pykpn.platforms import utils
 
 class KalrayMppa(Platform):
+    """This class should describe a KalrayMppa chip as pykpn platform. It is also meant as a how to use example
+    for the platform designer class.
+    """
     def __init__(self):
         super(KalrayMppa, self).__init__("KalrayMppa")
         designer = platformDesigner.platformDesigner(self)
@@ -44,4 +47,3 @@ class KalrayMppa(Platform):
                                            "chip_14":["chip_10","chip_13", "chip_15"],
                                            "chip_15":["chip_11","chip_14"]}, 
                                 utils.simpleDijkstra, 0, 0, 0, 0, 0)
-        print('Statement')

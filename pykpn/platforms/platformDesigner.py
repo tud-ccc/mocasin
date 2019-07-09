@@ -7,7 +7,10 @@ from pykpn.common.platform import FrequencyDomain, Platform, Processor, \
     SchedulingPolicy, Scheduler, Storage, CommunicationPhase, Primitive, \
     CommunicationResource, CommunicationResourceType
 from collections import OrderedDict
+from pykpn.util import logging
 import sys
+
+log = logging.getLogger(__name__)
 
 
 class PlatformDesigner():
@@ -60,7 +63,6 @@ class PlatformDesigner():
         the scopes identifier.
         """
         if len(self.__scopeStack) == 0:
-            print("base scope can't be closed")
             return
         
         tmpScope = self.__activeScope
@@ -109,7 +111,7 @@ class PlatformDesigner():
                 
                 self.__elementDict[self.__activeScope].update({identifier : processors})
         except:
-            print(sys.exc_info()[0])
+            log.error("Exception caught: " + sys.exc_info()[0])
     
     def setSchedulingPolicy(self, 
                             policy, 
@@ -124,7 +126,7 @@ class PlatformDesigner():
             self.__schedulingPolicy = SchedulingPolicy(policy, cycles)
             return True
         except:
-            print(sys.exc_info()[0])
+            log.error("Exception caught: " + sys.exc_info()[0])
             return False
           
     def addCacheForPEs(self, 
@@ -176,7 +178,7 @@ class PlatformDesigner():
                 self.__platform.add_primitive(prim)
                 
         except:
-            print(sys.exc_info()[0])
+            log.error("Exception caught: " + sys.exc_info()[0])
          
     def addCommunicationResource(self, 
                                   name,
@@ -238,7 +240,7 @@ class PlatformDesigner():
                     prim.add_consumer(pe[0], [consume])        
             self.__platform.add_primitive(prim)
         except :
-            print(sys.exc_info()[0])
+            log.error("Exception caught: " + sys.exc_info()[0])
             return
         
         return

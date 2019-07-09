@@ -204,7 +204,6 @@ class TestPlatformOperations(object):
                     'E11', 'E12', 'E13', 'E14', 'E15'])]
         adjacencyDict = parallella.to_adjacency_dict()
         result = po.organizePEs(peList, adjacencyDict)
-        print(result)
         assert(result == ['E00', 'E01', 'E02', 'E03', 'E04', 'E05', 'E06', 'E07', 'E08', 'E09', 'E10', 'E11', 'E12',
                           'E13', 'E14', 'E15'])
 
