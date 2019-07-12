@@ -151,7 +151,7 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         else:
             return x[:self.num_procs]
 
-    def _uniformFromBall(self,p,r,npoints=1):
+    def _uniformFromBall(self,p,r,npoints=1,simple=False):
         Procs = list(self.kpn._processes.keys())
         PEs = list(self.platform._processors.keys())
         P = len(PEs)
@@ -167,10 +167,14 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
           
         center = p[:len(Procs)]
         for _ in range(npoints):
-            radius = _round(r/2)
-            offset = []
-            for _ in range(len(Procs)):
-                offset.append(randint(-radius,radius))
+            if simple:
+                radius = _round(r/2)
+                offset = []
+                for _ in range(len(Procs)):
+                    offset.append(randint(-radius,radius))
+
+            else:
+                offset = r * lp.uniform_from_p_ball(p=1,n=len(Procs))
             real_point = (np.array(center) + np.array(offset)).tolist() 
             v = list(map(_round,real_point))
 
@@ -179,6 +183,7 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         else:
             res.append(v)
         log.debug(f"uniform from ball: {res}")
+        print(f"uniform from ball: {res}")
         return res
       
     def uniformFromBall(self,p,r,npoints=1):
