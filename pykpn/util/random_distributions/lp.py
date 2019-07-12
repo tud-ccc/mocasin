@@ -29,10 +29,13 @@ if __name__ == "__main__":
     x = []
     y = []
     z = []
-    for i in range(10000):
-        vec = uniform_from_p_ball(p=900,n=2)
+    total_nontrivial = 0
+    for i in range(1000):
+        vec = uniform_from_p_ball(p=1,n=2)
         x.append(vec[0])
         y.append(vec[1])
+        if vec[0] > 0.5 or vec[1] > 0.5:
+            total_nontrivial += 1
         if(len(vec) > 2):
             z.append(vec[2])
         
