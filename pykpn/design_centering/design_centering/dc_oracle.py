@@ -3,9 +3,8 @@ import timeit
 import simpy
 import traceback
 
-
-
 import multiprocessing as mp
+from pathos.multiprocessing import ProcessPool
 from pykpn.slx.global_config import SingleConfig
 from pykpn.slx.config import SlxSimulationConfig
 from pykpn.slx.kpn import SlxKpnGraph
@@ -13,16 +12,19 @@ from pykpn.slx.mapping import export_slx_mapping
 from pykpn.slx.platform import SlxPlatform
 from pykpn.slx.trace import SlxTraceReader
 from pykpn import slx
+
 from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.simulate.system import RuntimeSystem
-#from pykpn.mapper.random import RandomMapping
 from pykpn.mapper.proc_partialmapper import ProcPartialMapper
 from pykpn.mapper.rand_partialmapper import RandomPartialMapper
 from pykpn.mapper.com_partialmapper import ComPartialMapper
 from pykpn.mapper.random import RandomMapping
 from . import dc_sample
+#from . import dc_settings as conf #Deprecated
 
 from sys import exit
+
+import pickle as pk #TODO remove later
 
 from pykpn.util import logging
 
@@ -48,14 +50,19 @@ class SimulationContext(object):
         self.exec_time = None
 
 class Oracle(object):
-    def __init__(self, config):
+    def __init__(self, config, app_name=None, kpn=None, platform=None, trace_reader_gen=None):
         self.config = config
         if config[1].oracle == "TestSet":
              type(self).oracle = TestSet()
         elif config[1].oracle == "TestTwoPrKPN":
              type(self).oracle = TestTwoPrKPN()
         elif config[1].oracle == "simulation":
-             type(self).oracle = Simulation(config)
+             if app_name is not None and kpn is not None and platform is not None and trace_reader_gen is not None:
+                type(self).oracle = Simulation(config, app_name, kpn, platform, trace_reader_gen)
+             else:
+                 log.error("Missing parameter for simulation: App: {}, kpn: {}, Platform: {}, trace_reader: {}"
+                 .format(app_name, kpn, platform, trace_reader))
+                 raise RuntimeError('Missing Simulation Parameter')
         else:
              log.error("Error, unknown oracle:" + config[1].oracle)
              exit(1)
@@ -78,69 +85,75 @@ class Oracle(object):
 
 class Simulation(object):
     """ simulation code """
-    def __init__(self, config):
-        type(self).sim_config = config
-
-    def get_platform(self):
-        # conf = SlxSimulationConfig(self.sim_config) #TODO: this is not generic...It will only run with SLX stuff (see Issue #3)
-        # platform_name = os.path.splitext(os.path.basename(conf.platform_xml))[0]
-        return  SlxPlatform(type(self).sim_config[0].platform_name, type(self).sim_config[0].platform_xml, type(self).sim_config[1].slx_version)
-
-    def get_kpns(self):
-        # conf = SlxSimulationConfig(type(self).sim_config)
-        kpns = []
-        # for app_config in conf.applications:
-        #     name = app_config.name
-        #     kpns.append(SlxKpnGraph(name, app_config.cpn_xml, conf.slx_version))
-        kpns.append(SlxKpnGraph(type(self).sim_config[0].app_name, type(self).sim_config[0].cpn_xml, type(self).sim_config[0].slx_version))
-        return kpns
+    def __init__(self, config, app_name = None, kpn = None, platform = None, trace_reader_gen = None):
+        self.sim_config = config
+        self.app_name = app_name
+        self.kpn = kpn
+        self.platform = platform
+        self.trace_reader_gen = trace_reader_gen
 
     def prepare_sim_contexts_for_samples(self, samples):
         """ Prepare simualtion/application context and mapping for a each element in `samples`. """
+        #if self.app_name is not None and self.kpn is not None and self.platform is not None and self.trace_reader is not None:
+            #print("app name:{} kpn: {} pf: {} trace_r: {}".format(self.app_name,self.kpn, self.platform,self.trace_reader))
+
         # parse the config file
 
         # config = SlxSimulationConfig(type(self).sim_config)
 
         #slx.set_version(config.slx_version)
         #create platform
-        platform_name = type(self).sim_config[0].platform_name
-        platform = SlxPlatform(platform_name, type(self).sim_config[0].platform_xml, type(self).sim_config[1].slx_version)
+        
+        #platform_name = type(self).sim_config[0].platform_name
+        #platform = SlxPlatform(platform_name, type(self).sim_config[0].platform_xml, type(self).sim_config[1].slx_version)
 
         # Create a list of 'simulations'. 
         # These are later executed by multiple worker processes.
         simulation_contexts = []
         
+        
+        # create a simulation context
+            
+        # assume there runs _one_ application only on the given platform
+        # assert len(config.applications) == 1
+        #app_config = type(self).sim_config
+        #app_name = app_config[0].app_name
+        #kpn = SlxKpnGraph(app_name, app_config[0].cpn_xml, app_config[1].slx_version)
+        #app_context.start_time = app_config[1].start_time
+        
+        #app_context.trace_reader = SlxTraceReader.factory(
+        #    app_config[0].trace_dir, '%s.' % (app_name), app_config[1].slx_version)
+        # generate a mapping for the given sample
+        # log.debug("using simcontext no.: {} {}".format(i,samples[i]))
+        # pipeline of mapping gnererators
+        #TODO: do this mapping stuff somewere else in oracle, but not in Simulation
+        randMapGen = RandomPartialMapper(self.kpn, self.platform, self.sim_config[1].random_seed)
+        comMapGen = ComPartialMapper(self.kpn, self.platform, randMapGen)
+        dcMapGen = ProcPartialMapper(self.kpn, self.platform, comMapGen)
+        #-----------
         for i in range(0, len(samples)):
+        #for i in range(0, 3):
             # create a simulation context
-            sim_context = SimulationContext(platform)
+            sim_context = SimulationContext(self.platform)
             
-            # create the application contexts
-            # assume there runs _one_ application only on the given platform
-            # assert len(config.applications) == 1
-            app_config = type(self).sim_config
-            app_name = app_config[0].app_name
-            kpn = SlxKpnGraph(app_name, app_config[0].cpn_xml, app_config[1].slx_version)
-            app_context = ApplicationContext(app_name, kpn)
-            app_context.start_time = app_config[1].start_time
-            
-            # generate a mapping for the given sample
             log.debug("using simcontext no.: {} {}".format(i,samples[i]))
-            # pipeline of mapping gnererators
-            randMapGen = RandomPartialMapper(kpn, platform, type(self).sim_config[1].random_seed)
-            comMapGen = ComPartialMapper(kpn, platform, randMapGen)
-            dcMapGen = ProcPartialMapper(kpn, platform, comMapGen)
             #app_context.mapping = RandomMapping(kpn, platform)
+            # create the application contexts
+            app_context = ApplicationContext(self.app_name, self.kpn)
+            app_context.start_time = 0
+            # generate a mapping for the given sample
             app_context.mapping = dcMapGen.generate_mapping(samples[i].sample2simpleTuple())
+            # generate trace reader
+            app_context.trace_reader = self.trace_reader_gen()
             #app_context.mapping = randMapGen.generate_mapping(42, randMapGen.mapping)
             log.debug("####### Mapping i={} toList: {}".format(i, app_context.mapping.to_list()))
             
-            # create the trace reader
-            app_context.trace_reader = SlxTraceReader.factory(
-                app_config[0].trace_dir, '%s.' % (app_name), app_config[1].slx_version)
             
             sim_context.app_contexts.append(app_context)
             samples[i].setSimContext(sim_context)
             simulation_contexts.append(sim_context)
+            #f= open("test1.txt","w+")
+            #pk.dump(sim_context, f)
         return simulation_contexts
 
     def prepare_sim_context(self, platform, kpn, mapping):
@@ -177,8 +190,10 @@ class Simulation(object):
         # run the simulations and search for the best mapping
         # execute the simulations in parallel
         # TODO: this is somehow broken
-        # pool = mp.Pool(processes=4)
-        # results = list(pool.map(self.run_simulation, simulations, chunksize=4))
+        # pool = ProcessPool(processes=4)
+        
+        # results = list(pool.map(self.run_simulation, simulation_contexts, chunksize=4))
+        
         # TODO read mapping from sim_contexts
         # this must be in simulation_contexts
 
@@ -189,11 +204,12 @@ class Simulation(object):
         exec_times = []
         for r in results:
             exec_times.append(float(r.exec_time / 1000000000.0))
+            #TODO: remove this
             #why do you divide by this huge number? seems pretty arbitrary
         
         feasible = []
         for s in samples:
-            if (s.getSimContext().exec_time / 1000000000.0 > type(self).sim_config[1].threshold):
+            if (s.getSimContext().exec_time / 1000000000.0 > self.sim_config[1].threshold):
                 s.setFeasibility(False)
                 feasible.append(False)
             else:
@@ -201,7 +217,7 @@ class Simulation(object):
                 feasible.append(True)
 
         log.debug("exec. Times: {} Feasible: {}".format(exec_times, feasible))
-        # return smaples with the according sim context 
+        # return samples with the according sim context 
         return samples
 
     
@@ -214,6 +230,7 @@ class Simulation(object):
             # create the applications
             applications = []
             mappings = {}
+            assert sim_context is not None
             for ac in sim_context.app_contexts:
                 app = RuntimeKpnApplication(ac.name, ac.kpn, ac.mapping,
                                             ac.trace_reader, env, ac.start_time)

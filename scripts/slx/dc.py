@@ -7,24 +7,22 @@
 
 import argparse
 import timeit
-
 import re
 import sys
 import os
 import json
 import logging
 import argparse
-
-from pykpn.slx.global_config import GlobalConfig
-#from pykpn.design_centering.design_centering import dc_settings as conf
 import random
 
-#from ..config import SlxSimulationConfig
+#SLX specific imports
+from pykpn.slx.global_config import GlobalConfig
 from pykpn.slx.kpn import SlxKpnGraph
 from pykpn.slx.mapping import export_slx_mapping
 from pykpn.slx.platform import SlxPlatform
 from pykpn.slx.trace import SlxTraceReader
 
+#Design Centering
 from pykpn.design_centering.design_centering import dc_oracle
 from pykpn.design_centering.design_centering import dc_sample
 from pykpn.design_centering.design_centering import dc_volume
@@ -109,11 +107,15 @@ def main():
                 kpns = {}
                 # if len(config.applications) > 1:
                 #     log.warn("DC Flow just supports one appilcation. The rest will be ignored")
-                app_config = (gconf.system[app_pl]['sconf'], setting) #TODO: where is this being read?
+                app_config = (gconf.system[app_pl]['sconf'], setting)
                 platform = SlxPlatform(app_config[0].platform_name, app_config[0].platform_xml, slx_version)
-                print(f"config arch{app_config[0].platform_xml}")
+                #print(f"config arch{app_config[0].platform_xml}")
                 app_name = app_config[0].app_name
+                #TODO: check if there is only on kpn in config
                 kpn = SlxKpnGraph(app_name, app_config[0].cpn_xml, slx_version)
+                #trace_reader = SlxTraceReader.factory(app_config[0].trace_dir, '%s.' % (app_name), slx_version)
+                trace_reader_gen = lambda : SlxTraceReader.factory(app_config[0].trace_dir, '%s.' % (app_name), slx_version)
+
                 rep_type_str = app_config[1].representation
                 if rep_type_str == "GeomDummy":
                     representation = "GeomDummy"
@@ -141,7 +143,7 @@ def main():
 
 
                 # config = args.configFile
-                oracle = dc_oracle.Oracle(app_config) #the oracle could get the kpn and platform (now, pykpn objects, SLX independent) passed as files (see Issue #3)
+                oracle = dc_oracle.Oracle(app_config, app_name, kpn, platform, trace_reader_gen)
                 dc = designCentering.DesignCentering(v, app_config[1].distr, oracle,representation)
                 center = dc.ds_explore()
 
