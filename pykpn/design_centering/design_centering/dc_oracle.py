@@ -92,7 +92,7 @@ class Simulation(object):
         # for app_config in conf.applications:
         #     name = app_config.name
         #     kpns.append(SlxKpnGraph(name, app_config.cpn_xml, conf.slx_version))
-        kpns.append(SlxKpnGraph(type(self).sim_config[0].app_name, type(self).sim_config[0].cpn_xml, type(self).sim_config[0].slx_version))
+        kpns.append(SlxKpnGraph(type(self).sim_config[0].app_name, type(self).sim_config[0].cpn_xml, type(self).sim_config[1].slx_version))
         return kpns
 
     def prepare_sim_contexts_for_samples(self, samples):
