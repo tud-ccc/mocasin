@@ -163,7 +163,7 @@ def main():
                 if app_config[1].run_perturbation:
                     log.info("==== Run Perturbation Test ====")
                     num_pert = app_config[1].num_perturbations
-                    num_mappings = app_config[1].num_mappings
+                    num_mappings = app_config[1].num_reference_mappings
                     pm = p.PerturbationManager( app_config, num_mappings, num_pert)
                     map_set = pm.create_randomMappings()
 

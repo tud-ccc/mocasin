@@ -96,6 +96,7 @@ class GlobalConfig:
                      'threshold' : to_int,
                      'run_perturbation' : to_bool,
                      'num_perturbations' : to_int,
+                     'num_reference_mappings' : to_int,
                      'representation' : to_str,
                      'keep_metrics' : to_bool,
                      'adaptable_center_weights' : to_bool,
