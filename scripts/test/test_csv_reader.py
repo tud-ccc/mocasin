@@ -6,6 +6,7 @@
 
 import os
 import unittest
+import pytest
 
 from pykpn.slx.config import SlxSimulationConfig
 from pykpn.slx.platform import SlxPlatform
@@ -18,6 +19,7 @@ class test_CSVReader(unittest.TestCase):
     def test_plot(self):
         configFilePath = "apps/audio_filter/exynos/config.ini"
         csvFilePath = "scripts/test/testValues.csv"
+        destination = "scripts/test/testplot"
         applicationString = "audio_filter"
         
         platform = None
@@ -63,7 +65,17 @@ class test_CSVReader(unittest.TestCase):
             mappingList.append(mappings[key][0])
             compareProperty.append(float(mappings[key][1]))
         
-        plot.visualize_mapping_space(mappingList, compareProperty)
-
-if __name__ == "__main__":
-	unittest.main()
+        if not os.environ.get('DISPLAY', '') == '':
+            plot.visualize_mapping_space(mappingList, compareProperty, destination)
+            fileExists = os.path.isfile(destination + ".pdf")
+            assert(fileExists == True)
+            os.remove(destination + ".pdf")
+        
+        else:
+            assert(len(mappingList) > 0)
+            assert(len(compareProperty) > 0)
+            assert(len(mappingList) == len(compareProperty))
+            
+        
+        
+        

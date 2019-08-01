@@ -8,7 +8,6 @@ import argparse
 from . import dc_oracle
 from . import dc_sample
 from . import dc_volume
-from . import dc_settings as conf
 from . import perturbationManager as p
 from pykpn.util import logging
 from pykpn.util import plot # t-SNE plotting stuff
@@ -103,7 +102,6 @@ class DesignCentering(object):
             # TODO: may genrate identical samples which makes things ineffective 
             s_set = dc_sample.SampleSet()
             samples = s.gen_samples_in_ball(type(self).vol, type(self).distr, nsamples=type(self).oracle.config[1].adapt_samples)
-
             #print(samples)
             #print(str([s.sample for s in samples]))
 
@@ -141,7 +139,7 @@ class DesignCentering(object):
             log.debug("dc: Output fesaible samples:\n {}".format(s_set.get_feasible()))
             old_center = type(self).vol.center
             center = type(self).vol.adapt_center(s_set)
-            center_history.append(dc_sample.Sample(sample = center))
+            center_history.append(dc_sample.Sample(sample = center,representation=self.representation))
            # if not type(self).oracle.validate(dc_sample.GeometricSample(center)): #this breaks the rest!
            #     c_cur = dc_sample.GeometricSample(center)
            #     c_old = dc_sample.GeometricSample(old_center)
@@ -152,15 +150,16 @@ class DesignCentering(object):
 
         #modify last sample
         #TODO build mapping from center 
-        center_sample = dc_sample.Sample(sample=center)
+        center_sample = dc_sample.Sample(sample=center,representation=self.representation)
         center_sample_list = []
         center_sample_list.append(center_sample)
         center_res_sample = type(self).oracle.validate_set(center_sample_list)
-        if(self.oracle.config[1].keep_metrics):
+        if self.oracle.config[1].visualize_mappings:
+            if(self.oracle.config[1].keep_metrics):
 
-            self.visualize_mappings(s_set.sample_groups, type(self).oracle.config[1].adapt_samples, center_history)
-        else:
-            self.visualize_mappings(s_set.sample_groups)
+                self.visualize_mappings(s_set.sample_groups, type(self).oracle.config[1].adapt_samples, center_history)
+            else:
+                self.visualize_mappings(s_set.sample_groups)
         log.debug("dc: center sample: {} {} {}".format(str(center_res_sample), str(center_sample), str(center)))
         return center_res_sample[0]
     

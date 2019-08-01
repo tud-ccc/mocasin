@@ -20,10 +20,10 @@ from pykpn.slx.global_config import GlobalConfig
 import random
 
 #from ..config import SlxSimulationConfig
-from ..kpn import SlxKpnGraph
-from ..mapping import export_slx_mapping
-from ..platform import SlxPlatform
-from ..trace import SlxTraceReader
+from pykpn.slx.kpn import SlxKpnGraph
+from pykpn.slx.mapping import export_slx_mapping
+from pykpn.slx.platform import SlxPlatform
+from pykpn.slx.trace import SlxTraceReader
 
 from pykpn.design_centering.design_centering import dc_oracle
 from pykpn.design_centering.design_centering import dc_sample
@@ -109,8 +109,9 @@ def main():
                 kpns = {}
                 # if len(config.applications) > 1:
                 #     log.warn("DC Flow just supports one appilcation. The rest will be ignored")
-                app_config = (gconf.system[app_pl]['sconf'], setting)
+                app_config = (gconf.system[app_pl]['sconf'], setting) #TODO: where is this being read?
                 platform = SlxPlatform(app_config[0].platform_name, app_config[0].platform_xml, slx_version)
+                print(f"config arch{app_config[0].platform_xml}")
                 app_name = app_config[0].app_name
                 kpn = SlxKpnGraph(app_name, app_config[0].cpn_xml, slx_version)
                 rep_type_str = app_config[1].representation
@@ -134,9 +135,9 @@ def main():
                 else:
                     center = representation.uniform()
                 if (app_config[1].shape == "cube"):
-                    v = dc_volume.Cube(center, center.get_numProcs())
+                    v = dc_volume.Cube(center, center.get_numProcs(),app_config[1])
                 elif (app_config[1].shape == "lpvol"): 
-                    v = dc_volume.LPVolume(center, center.get_numProcs(),kpn,platform,representation_type)
+                    v = dc_volume.LPVolume(center, center.get_numProcs(),kpn,platform,app_config[1],representation_type)
 
 
                 # config = args.configFile

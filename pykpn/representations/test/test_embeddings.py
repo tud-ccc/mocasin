@@ -4,96 +4,89 @@
 # Authors: Andrés Goens, Felix Teweleit
 
 
-import unittest
-from pykpn.representations.embeddings import *
-import pykpn.representations.metric_spaces as metric
-from pykpn.representations.examples import *
+from pykpn.representations.embeddings import MetricSpaceEmbeddingBase, MetricSpaceEmbedding
+from pykpn.representations.metric_spaces import FiniteMetricSpaceLP
 import numpy as np
+import pytest
 
-class test_Embeddings(unittest.TestCase):
+class TestEmbeddings(object):
     
     def setUp(self):
-        self.dimension = 5
-        self.distortion = 1.05
+        pass
         
     def tearDown(self):
         pass
 
     
-    def test_approx(self):
+    def test_approx(self, exampleClusterArch):
         M = exampleClusterArch
         E = MetricSpaceEmbeddingBase(M)
         
         result = E.approx(np.random.random(E.k))
         
         for value in result:
-            self.assertTrue(value < 1.0 and value > -1.0, 'Error in approx()! Value out of range:' + str(value))
+            assert(value < 1.0 and value > -1.0)
         
-    def test_Evec(self):
+    def test_Evec(self, exampleClusterArch, dimension, distortion):
         M = exampleClusterArch
-        MLP = FiniteMetricSpaceLP(M,self.dimension,p=2)
-        Evec = MetricSpaceEmbedding(M,self.dimension)
+        MLP = FiniteMetricSpaceLP(M, dimension,p=2)
+        Evec = MetricSpaceEmbedding(M, dimension)
         in1 = [1,0,1,1,3]
         in2 = [0,0,2,1,0]
         dist = MLP.dist(in1,in2)
 
         evec1 = Evec.i(in1)
         evec2 = Evec.i(in2)
-        self.assertEqual(len(evec1), self.dimension,
-                        'Error in i()!')
-        self.assertEqual(len(evec1[0]), M.n,
-                        'Error in i()!')
-        dist_embedded = np.linalg.norm(np.array(np.array(evec1).flat)
-                                       - np.array(np.array(evec2).flat))
-        self.assertTrue(dist / self.distortion < dist_embedded and
-                        dist_embedded < dist * self.distortion,
-                        f"Error in embedding distance! {dist}/{self.distortion}"+
-                        f"< {dist_embedded} !< {dist} * {self.distortion}")
+        assert(len(evec1) == dimension)
+        assert(len(evec1[0]) == M.n)
+        dist_embedded = np.linalg.norm(np.array(evec1).flatten()
+                                       - np.array(evec2).flatten())
+        assert(dist / distortion < dist_embedded and dist_embedded < dist * distortion)
 
         
-    def test_Evec_inv(self):
+    def test_Evec_inv(self, exampleClusterArch, dimension):
         M = exampleClusterArch
-        Evec = MetricSpaceEmbedding(M,self.dimension)
+        Evec = MetricSpaceEmbedding(M, dimension)
         
         result = Evec.inv(Evec.i([1,0,1,1,3]))
-        self.assertListEqual(result, [1, 0, 1, 1, 3], 'Error in inv() or i()!')
+        assert(list(np.around(result).astype(int)) == [1, 0, 1, 1, 3])
         
-    def test_Evec_invapprox(self):
+    def test_Evec_invapprox(self, exampleClusterArch, dimension):
         M = exampleClusterArch
         E = MetricSpaceEmbeddingBase(M)
-        Evec = MetricSpaceEmbedding(M,self.dimension)
+        Evec = MetricSpaceEmbedding(M, dimension)
         
-        result = Evec.invapprox(list(np.random.random((self.dimension*E.k)).flat))
+        result = Evec.invapprox(np.random.random((dimension*E.k)).flatten())
         
         for value in result:
-            self.assertTrue(value >= 0 and value < 16, 'Error in invapprox()! Value out of range:' + str(value))
+            assert(value >= 0 and value < 16)
             
-    def test_Par_invapprox(self):
-        Par = MetricSpaceEmbedding(exampleParallella16,self.dimension,distortion=1.5)
+    def test_Par_invapprox(self, exampleParallella16, dimension):
+        Par = MetricSpaceEmbedding(exampleParallella16, dimension,distortion=1.5)
         
-        result = Par.invapprox(list((10*np.random.random((self.dimension,Par.k))).flat))
+        result = Par.invapprox((10*np.random.random((dimension,Par.k))).flatten())
         for value in result:
-            self.assertTrue(value >= 0 and value < 16, 'Error in invapprox()! Value out of range: ' + str(value))
+            assert(value >= 0 and value < 16)
     
-    @unittest.skip("Test can't succeed")
-    def test_L(self):
+    @pytest.mark.skip("Test can't succeed. Need fix by Goens.")
+    def test_L(self, distortion):
         D = self.__give_matrix()
-        L = np.matrix(MetricSpaceEmbeddingBase.calculateEmbeddingMatrix(D,self.distortion))
+        L = np.array(MetricSpaceEmbeddingBase.calculateEmbeddingMatrix(D, distortion))
         
-        self.assertEqual(L, None, 'Error in algorithm! Please check!')
+        assert(L ==  None)
     
-    @unittest.skip("Test can't succeed")
-    def test_vecs(self):
+    @pytest.mark.skip("Test can't succeed. Need fix by Goens.")
+    def test_vecs(self, distortion):
         D = self.__give_matrix()
-        L = np.matrix(MetricSpaceEmbeddingBase.calculateEmbeddingMatrix(D,self.distortion))
-        vecs = L.A
+        L = np.array(MetricSpaceEmbeddingBase.calculateEmbeddingMatrix(D, distortion))
+        vecs = np.ndarray(A)
         
-        self.assertEqual(vecs, None, 'Error in algorithm! Please check!')
+        assert(vecs == None)
     
-    @unittest.skip("Test can't succeed")
-    def test_dist(self):
+    @pytest.mark.skip("Test can't succeed. Need fix by Goens.")
+    def test_dist(self, distortion):
         D = self.__give_matrix()
-        L = np.matrix(MetricSpaceEmbeddingBase.calculateEmbeddingMatrix(D,self.distortion))
+        L = np.array(MetricSpaceEmbeddingBase.calculateEmbeddingMatrix(D, distortion))
         vecs = L.A
         
         dists = []
@@ -102,11 +95,11 @@ class test_Embeddings(unittest.TestCase):
                 if D[i,j] != 0:
                     dists.append(np.linalg.norm(v-w)/D[i,j])
         
-        self.assertListEqual(dists, None, 'Error in algorithm! PLease check!')
+        assert(dists == None)
     
     
     def __give_matrix(self):
-        return np.matrix([[ 0.,  2.,  2.,  4.,  2.,  4.,  4.,  4.,  4.,  4.,  4.,  4.,  2.,  4.,  2.,  2.,  4.,  2., 4.,  2.],
+        return np.array([[ 0.,  2.,  2.,  4.,  2.,  4.,  4.,  4.,  4.,  4.,  4.,  4.,  2.,  4.,  2.,  2.,  4.,  2., 4.,  2.],
                 [ 2.,  0.,  4.,  2.,  2.,  4.,  4.,  4.,  2.,  4.,  2.,  4.,  4.,  4.,  4.,  2.,  4.,  2., 2.,  4.],
                 [ 2.,  4.,  0.,  4.,  4.,  2.,  2.,  4.,  4.,  4.,  4.,  4.,  2.,  4.,  2.,  4.,  2.,  4., 2.,  2.],
                 [ 4.,  2.,  4.,  0.,  4.,  4.,  4.,  4.,  2.,  2.,  1.,  4.,  4.,  2.,  2.,  4.,  4.,  4., 2.,  4.],

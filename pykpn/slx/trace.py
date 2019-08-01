@@ -129,7 +129,7 @@ class SlxTraceReader_2017_10(SlxTraceReader_2017_04):
 
     def _open_trace_file(self, process_name, processor_type):
         assert process_name.startswith(self._prefix)
-        trace_files = glob.glob('%s/%s.%s.*.cpntrace' % (
+        trace_files = glob.glob('%s/%s.%s.*cpntrace' % (
             self._trace_dir,
             process_name[len(self._prefix):],
             processor_type))

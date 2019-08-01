@@ -297,7 +297,7 @@ def main(argv):
 	   mapping = json.loads(sys.argv[2])
        except ValueError:
            sys.stderr.write("JSON decoding failed (in convert) ")
-       mapgen = mu.MappingGenerator(conf.default_path)
+       mapgen = mu.PartialMapper(conf.default_path)
 
        if (len(mapping) > conf.num_pr):
 	   print mapgen.extmap2map(mapping)

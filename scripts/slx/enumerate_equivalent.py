@@ -43,12 +43,12 @@ def main():
     mapping = SlxMapping(kpn, platform, args.mapping, args.slx_version)
     representation = RepresentationType['Symmetries'].getClassType()(kpn,platform)
     log.info(("calculating orbit for mapping:" + str(mapping.to_list())))
-    orbit = representation.allEquivalent(mapping.to_list())
-    log.info("orbit of size: " + str(len(orbit)))
+    orbit = representation.allEquivalentGen(mapping)
     with open(args.out,'w') as output_file:
         for i,elem in enumerate(orbit):
             output_file.write(f"\n mapping {i}:\n")
             output_file.write(mapping.to_string())
+    log.info("orbit of size: " + str(i))
 
 
 if __name__ == '__main__':

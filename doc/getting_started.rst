@@ -3,6 +3,17 @@ Getting Started
 
 Pykpn sources are available from https://cc.inf.tu-dresden.de/gitlab/pykpn/pykpn
 
+Dependencies
+------------
+
+The pykpn package depends on python and virtualenv. We support python 3.6 and python 3.7. To use some of the numerical libraries included you also need BLAS+LAPACK.
+
+In a Debian-based system (e.g. Ubuntu), you can install these as follows:
+
+.. code-block:: sh
+
+   sudo apt-get install python3.7 python3-virtualenv libblas-dev liblapack-dev 
+
 Installation
 ------------
 
@@ -27,15 +38,8 @@ or
    cd <path/to/pykpn>
    python setup.py develop
 
-
-Finally, we need to install pynauty from the ``third_party_dependencies``
-directory:
-
-.. code-block:: sh
-
-   cd <path/to/pykpn/third_party_dependencies/pynauty-0.6
-   make pynauty
-   python setup.py install
+Please note that this also installs pynauty from the
+``third_party_dependencies`` directory.
 
 .. _run tests:
 

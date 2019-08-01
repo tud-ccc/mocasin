@@ -5,4 +5,4 @@ script_dir=$(dirname $0)
 cd "$script_dir"
 cd ..
 
-python3 -m pykpn.slx.scripts.dc $@
+python3 -m scripts.slx.dc $@

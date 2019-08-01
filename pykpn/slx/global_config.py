@@ -90,7 +90,9 @@ class GlobalConfig:
                      'run_perturbation' : to_bool,
                      'num_perturbations' : to_int,
                      'representation' : to_str,
-                     'keep_metrics' : to_bool
+                     'keep_metrics' : to_bool,
+                     'adaptable_center_weights' : to_bool,
+                     'visualize_mappings' : to_bool
                      }
 
         if not 'default' in conf:
@@ -106,12 +108,13 @@ class GlobalConfig:
                     self.system[combined_name]['sconf'] = SingleConfig(app,pl)
                     self.system[combined_name]['settings'] = []
 
-                elif not (combined_name in conf):
-                    names.append(combined_name)
-                    self.system[combined_name] = {}
-                    self.system[combined_name]['sconf'] = SingleConfig(app,pl)
-                    self.system[combined_name]['settings'] = []
+                #elif not (combined_name in conf):
+                #    names.append(combined_name)
+                #    self.system[combined_name] = {}
+                #    self.system[combined_name]['sconf'] = SingleConfig(app,pl)
+                #    self.system[combined_name]['settings'] = []
 
+        log.info(f"Execution on combinations: {names}")
         for cname in names:
             setting = {}
             for k in self.keys.keys():

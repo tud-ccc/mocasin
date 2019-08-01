@@ -6,7 +6,6 @@
 import sys
 import logging
 import numpy as np
-from . import dc_settings as conf
 from pykpn.representations.representations import RepresentationType 
 from pykpn.common.mapping import Mapping
 
@@ -31,7 +30,7 @@ class Volume(object):
 
 class Cube(Volume):
 
-    def __init__(self, center, dim):
+    def __init__(self, center, dim, conf):
         # define initial cube with radius 1 at the given center
         self.center = center.to_list()
         if (len(self.center) != dim):
@@ -39,6 +38,7 @@ class Cube(Volume):
             sys.exit(-1)
         self.radius = DEFAULT_RADIUS
         self.dim = dim
+        self.conf = conf
 
     def adapt_center(self, s_set):
         fs_set = list(map(lambda s: s.sample,  s_set.get_feasible()))
@@ -86,21 +86,20 @@ class Cube(Volume):
 
     def extend(self, step):
         # extend volume by one on each border
-        self.radius = self.radius + step*conf.max_step if (self.radius + step*conf.max_step < conf.max_pe) else self.radius
+        self.radius = self.radius + step*self.conf.max_step if (self.radius + step*self.conf.max_step < self.conf.max_pe) else self.radius
 
 
 class LPVolume(Volume):
 
-    def __init__(self, center, num_procs, kpn, platform, representation_type=RepresentationType['SimpleVector'],p=2):
+    def __init__(self, center, num_procs, kpn, platform, conf, representation_type=RepresentationType['SimpleVector'],p=2):
         if representation_type not in [RepresentationType['SimpleVector'],
-                                       RepresentationType['FiniteMetricSpaceLP'],
-                                       RepresentationType['FiniteMetricSpaceLPSym'],
                                        RepresentationType['MetricSpaceEmbedding'],
-                                       RepresentationType['SymmetryEmbedding']]:
+                                       RepresentationType['Symmetries']]:
             log = logging.getLogger(__name__)
-            log.exception("Representation not supported for VectorSpaceVolumes")
+            log.exception("Representation currently not supported for VectorSpaceVolumes")
             sys.exit(-1)
 
+        self.conf = conf
         self.representation = representation_type.getClassType()(kpn,platform)
         self.kpn = kpn
         self.platform = platform
@@ -130,7 +129,7 @@ class LPVolume(Volume):
             return self.center
         # take mean of feasible points to add weighted to the old center
         num_feasible = len(fs_set) # mu
-        if conf.adaptable_center_weights:
+        if self.conf.adaptable_center_weights:
             self.weight_center = min(0.5,num_feasible/(np.exp(1)*self.dim))
 
         mean_center = np.mean(fs_set, axis=0)
@@ -152,9 +151,12 @@ class LPVolume(Volume):
         # adjust radius
         num_feasible = len(s_set.get_feasible())
         num_samples = len(s_set.sample_set)
-        assert(num_samples <= conf.adapt_samples or log.error(f"number of samples produced ({num_samples}) exceeds configuration ({conf.adapt_samples})"))
+        assert(num_samples <= self.conf.adapt_samples or log.error(f"number of samples produced ({num_samples}) exceeds self.configuration ({self.conf.adapt_samples})"))
         self.update_factors(target_p,num_samples)
-        p_emp =  num_feasible / num_samples
+        if num_feasible != 0:
+            p_emp =  num_feasible / num_samples
+        else:
+            p_emp = 0
         log.debug("---------- adapt_volume() -----------")
         self.adapt_radius(num_feasible,num_samples)
         self.adapt_transformation(s_set)
@@ -176,10 +178,13 @@ class LPVolume(Volume):
         feasible = s_set.get_feasible()
         num_feasible = len(feasible)
 
+        if num_feasible == 0:
+            return 
+
+
         centers = self.center - self.old_center
         centers_factor = np.sqrt(self.rk1_learning_constant * (2 - self.rk1_learning_constant))
         self.rk1_vec = (1-self.rk1_learning_constant) * self.rk1_vec
-        print(centers)
         if np.dot(centers,centers.transpose()) != 0:
             centers_alpha = 1/np.sqrt(np.dot(centers,centers))
             self.rk1_vec += centers_factor * centers_alpha * centers
