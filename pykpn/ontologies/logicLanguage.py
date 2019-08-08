@@ -10,13 +10,16 @@ from abc import ABC, abstractmethod
 
 class Grammar():
     @staticmethod
-    def __identifier(): return  _(r'([ab-z]|[AB-Z])(([ab-z]|[AB-z]|[0-9]|\_)*)')
+    def __peIdentifier(): return _(r'([ab-z]|[AB-Z])(([ab-z]|[AB-z]|[0-9]|\_)*)')
     
     @staticmethod
-    def __processingOp(): return (Grammar.__identifier, ("PROCESSING"))
+    def __taskIdentifier(): return _(r'([ab-z]|[AB-Z])(([ab-z]|[AB-z]|[0-9]|\_)*)')
     
     @staticmethod
-    def __mappingOp(): return (Grammar.__identifier, ("MAPPED"), Grammar.__identifier)
+    def __processingOp(): return (Grammar.__peIdentifier, ("PROCESSING"))
+    
+    @staticmethod
+    def __mappingOp(): return (Grammar.__taskIdentifier, ("MAPPED"), Grammar.__peIdentifier)
     
     @staticmethod
     def __operation(): return OrderedChoice([
@@ -42,9 +45,33 @@ class Grammar():
     @staticmethod
     def logicLanguage(): return ("EXISTS "), Grammar.__expression, EOF
     
-class SemanticAnalysis(PTNodeVisitor):
+class SemanticAnalysis(PTNodeVisitor): 
+    def __init__(self, kpnGraph, platform, defaults=True, **kwargs):
+        '''Map processors and processes to integer values
+        '''
+        self.__processors = {}
+        for i, pe in enumerate(platform.processors()):
+            self.__processors[pe.name] = i
+        self.__processes = {}
+        for i, process in enumerate(kpnGraph.processes()):
+            self.__processes[process.name] = i
+        super(SemanticAnalysis, self).__init__(defaults, **kwargs)
+        
     def visit_logicLanguage(self, node, children):
-        return children[0]
+        '''Check for single constraints, that may not be packed in a list
+        '''
+        result = []
+        if isinstance(children[0], list):
+            for element in children[0]:
+                if isinstance(element, list):
+                    result.append(element)
+                else:
+                    result.append([element])
+            return result
+        else:
+            '''In case there is just a single constraint it must be double packed
+            '''
+            return [[children[0]]]
     
     def visit___expression(self, node, children):
         result = []
@@ -66,16 +93,15 @@ class SemanticAnalysis(PTNodeVisitor):
                         constraintSetL.append(children[2])
                         result.append(constraintSetL)
             else:
-                result.append([children[0]])
                 if isinstance(children[2], list):
                     for constraintSetR in children[2]:
                         if isinstance(constraintSetR, list):
-                            for constraint in constraintSetR:
-                                result[0].append(constraint)
+                            constraintSetR.append(children[0])
+                            result.append(constraintSetR)
                         else:
-                            result[0].append(constraintSetR)
+                            result.append([children[0], constraintSetR])
                 else:
-                    result[0].append(children[2])
+                    result.append([children[0], children[2]])
         elif children[1] == 'OR':
             if isinstance(children[0], list):
                 for element in children[0]:
@@ -106,8 +132,17 @@ class SemanticAnalysis(PTNodeVisitor):
     def visit___processingOp(self, node, children):
         return ProcessingConstraint(children[0])
     
-    def visit___identifier(self, node, children):
-        return str(node)
+    def visit___taskIdentifier(self, node, children):
+        name = str(node)
+        if name in self.__processes:
+            return self.__processes[name]
+        raise RuntimeError(name + " is no valid task identifier")
+    
+    def visit___peIdentifier(self, node, children):
+        name = str(node)
+        if name in self.__processors:
+            return self.__processors[name]
+        raise RuntimeError(name + " is no valid pe identifier")
     
 class Constraint(ABC):
     @abstractmethod
@@ -115,23 +150,41 @@ class Constraint(ABC):
         pass
     
 class MappingContstraint(Constraint):
-    def __init__(self, processName, peName):
-        self.__processName = processName
-        self.__peName = peName
+    def __init__(self, process, processor):
+        self.__process = process
+        self.__pe = processor
     
     def isFulFilled(self, mapping):
         #TODO:
         # -> Check if Mapping is in simple vector representation
         # -> Check if process is mapped on core
-        pass
+        if not isinstance(mapping, list):
+            raise RuntimeWarning("SimpleVector representation is needed to evaluate constraint!")
+        else:
+            for pe in mapping:
+                if pe == self.__pe and mapping.index(pe) == self.__process:
+                    return True
+        return False
     
 class ProcessingConstraint(Constraint):
-    def __init__(self, peName):
-        self.__peName = peName
+    def __init__(self, processor):
+        self.__pe = processor
     
     def isFulFilled(self, mapping):
         #TODO:
         #-> Check if mapping is in simple vector representation
         #-> Check if core is processing using this mapping
-        pass
+        if not isinstance(mapping, list):
+            raise RuntimeWarning("SimpleVector representation is needed to evaluate constraint!")
+        else:
+            if self.__pe in mapping:
+                return True
+        return False
+            
+
+
+
+
+
+
     
