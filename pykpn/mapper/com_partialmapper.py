@@ -95,7 +95,7 @@ class ComPartialMapper(object):
         costs = []
         if len(sinks) == 1:
             for p in primitives:
-               costs.append(p.static_costs(src,sinks[0],channel.token_size))
+                costs.append(p.static_costs(src,sinks[0],channel.token_size))
             return primitives[costs.index(min(costs))]
 
         if len(sinks) > 1:

@@ -7,6 +7,7 @@ from builtins import staticmethod
 from arpeggio import OrderedChoice, EOF, PTNodeVisitor
 from arpeggio import RegExMatch as _
 from abc import ABC, abstractmethod
+from pykpn.common.mapping import ProcessMappingInfo
 
 class Grammar():
     @staticmethod
@@ -127,48 +128,61 @@ class SemanticAnalysis(PTNodeVisitor):
         return children[0]
     
     def visit___mappingOp(self, node, children):
-        return MappingContstraint(children[0], children[1])
+        processName = children[0]
+        if not processName in self.__processes:
+            raise RuntimeError(processName + " is no valid process identifier!")
+        processId = self.__processes[processName]
+        
+        processorName = children[1]
+        if not processorName in self.__processors:
+            raise RuntimeError(processorName + " is no valid processor identifier!")
+        processorId = self.__processors[processorName]
+        
+        return MappingConstraint(processName, processId, processorName, processorId)
     
     def visit___processingOp(self, node, children):
-        return ProcessingConstraint(children[0])
+        processorName = children[0]
+        if not processorName in self.__processors:
+            raise RuntimeError(processorName + " is no valid processor identifier!")
+        processorId = self.__processors[processorName]
+        
+        return ProcessingConstraint(processorName, processorId)
     
     def visit___taskIdentifier(self, node, children):
         name = str(node)
-        if name in self.__processes:
-            return self.__processes[name]
-        raise RuntimeError(name + " is no valid task identifier")
+        return name
     
     def visit___peIdentifier(self, node, children):
         name = str(node)
-        if name in self.__processors:
-            return self.__processors[name]
-        raise RuntimeError(name + " is no valid pe identifier")
+        return name
     
 class Constraint(ABC):
     @abstractmethod
     def isFulFilled(self, mapping):
         pass
     
-class MappingContstraint(Constraint):
-    def __init__(self, process, processor):
-        self.__process = process
-        self.__pe = processor
+class MappingConstraint(Constraint):
+    def __init__(self, processName, processId, processorName, processorId):
+        self.__processName = processName
+        self.__processId = processId
+        self.__processorName = processorName
+        self.__processorId = processorId
     
     def isFulFilled(self, mapping):
-        #TODO:
-        # -> Check if Mapping is in simple vector representation
-        # -> Check if process is mapped on core
         if not isinstance(mapping, list):
             raise RuntimeWarning("SimpleVector representation is needed to evaluate constraint!")
         else:
-            for pe in mapping:
-                if pe == self.__pe and mapping.index(pe) == self.__process:
-                    return True
+            if mapping[self.__processId] == self.__processorId:
+                return True
         return False
     
+    def setEntry(self, partialMapping):
+        partialMapping[self.__processId] = self.__processorId
+        
 class ProcessingConstraint(Constraint):
-    def __init__(self, processor):
-        self.__pe = processor
+    def __init__(self, processorName, processorId):
+        self.__processorName = processorName
+        self.__processorId = processorId
     
     def isFulFilled(self, mapping):
         #TODO:
@@ -177,9 +191,10 @@ class ProcessingConstraint(Constraint):
         if not isinstance(mapping, list):
             raise RuntimeWarning("SimpleVector representation is needed to evaluate constraint!")
         else:
-            if self.__pe in mapping:
+            if self.__processorId in mapping:
                 return True
         return False
+    
             
 
 

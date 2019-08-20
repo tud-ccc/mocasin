@@ -3,24 +3,45 @@
 #
 #Authors: Felix Teweleit
 
-from pykpn.mapper.random import RandomMapping
+from pykpn.mapper.simvec_mapper import SimpleVectorMapper
+from logicLanguage import MappingConstraint, ProcessingConstraint
+from pykpn.common.mapping import Mapping
 
-class RandomSolver():
+class Solver():
     def __init__(self, kpnGraph, platform):
         self.__kpn = kpnGraph
         self.__platform = platform
-        self.__mapping = RandomMapping(self.__kpn, self.__platform).to_list()
     
-    def generateNewMapping(self):
-        self.__mapping = RandomMapping(self.__kpn, self.__platform).to_list()
-      
-    def solveQuery(self, query):
+          
+    def getMappingGenerator(self, query):
+        """Method decides, which kind of Generator suits the best for a given constraint set
+        """
         for constraintSet in query:
-            setFulfilled = True
+            mappingConstraints = []
+            processingConstraints = []
+            remaining = []
             for constraint in constraintSet:
-                if not constraint.isFulFilled(self.__mapping):
-                    setFulfilled = False
-            if setFulfilled:
-                return True
-        return False
+                if isinstance(constraint, MappingConstraint):
+                    mappingConstraints.append(constraint)
+                
+                elif isinstance(constraint, ProcessingConstraint):
+                    processingConstraints.append(constraint)
+                
+                else:
+                    remaining.append(constraint)
+            
+            return SimpleVectorMapper(self.__kpn, self.__platform, mappingConstraints, processingConstraints, remaining)
+            #TODO: start thread for each possible frame_mapping?
+                
+    def simpleVectorGenerator(self, constraintSet):
+        """Method creates a Generator for SimpleVector constraints
+        """
+        solution = Mapping(self.__kpn, self.__platform)
         
+        for constraint in constraintSet:
+            if isinstance(constraint, MappingConstraint):
+                constraint.applyToMapping(solution, self.__kpn, self.__platform)
+        
+        
+            
+            
