@@ -2,6 +2,10 @@
 # All Rights Reserved
 #
 # Authors: Felix Teweleit
+
+from collections import Sequence
+from itertools import chain, count
+
 class listOperations(object):
     """Class contains custom functions to operate on lists, that are needed to prepare platforms and mappings to be drawn.
     """
@@ -98,6 +102,15 @@ class listOperations(object):
                     return True
         return False        
 
+    @staticmethod
+    def depth(seq):
+        seq = iter(seq)
+        try:
+            for level in count():
+                seq = chain([next(seq)], seq)
+                seq = chain.from_iterable(s for s in seq if isinstance(s, Sequence))
+        except StopIteration:
+            return level
     
 class platformOperations (object):
     """Contains functions to operate on attributes of an pykpn Platform object or created platform descriptions. Necessary for platforms to be drawn.
