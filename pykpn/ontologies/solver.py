@@ -30,7 +30,7 @@ class Solver():
                 else:
                     remaining.append(constraint)
             
-            return SimpleVectorMapper(self.__kpn, self.__platform, mappingConstraints, processingConstraints, remaining)
+            return SimpleVectorMapper(self.__kpn, self.__platform, mappingConstraints, processingConstraints)
             #TODO: start thread for each possible frame_mapping?
                 
     def simpleVectorGenerator(self, constraintSet):

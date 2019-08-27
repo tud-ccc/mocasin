@@ -7,7 +7,6 @@ from builtins import staticmethod
 from arpeggio import OrderedChoice, EOF, PTNodeVisitor
 from arpeggio import RegExMatch as _
 from abc import ABC, abstractmethod
-from pykpn.common.mapping import ProcessMappingInfo
 
 class Grammar():
     @staticmethod
@@ -195,7 +194,8 @@ class ProcessingConstraint(Constraint):
                 return True
         return False
     
-            
+    def getProcessorId(self):
+        return self.__processorId
 
 
 
