@@ -4,44 +4,81 @@
 #Authors: Felix Teweleit
 
 from pykpn.mapper.simvec_mapper import SimpleVectorMapper
-from logicLanguage import MappingConstraint, ProcessingConstraint
 from pykpn.common.mapping import Mapping
+from arpeggio import ParserPython, visit_parse_tree
+from logicLanguage import Grammar, SemanticAnalysis, MappingConstraint, ProcessingConstraint
+from threading import Thread
+
+import queue
+
 
 class Solver():
-    def __init__(self, kpnGraph, platform):
+    def __init__(self, kpnGraph, platform, debug=False):
         self.__kpn = kpnGraph
         self.__platform = platform
+        self.__debug = debug
+        self.__parser = ParserPython(Grammar.logicLanguage, reduce_tree=True, debug=debug)
     
-          
-    def getMappingGenerator(self, query):
-        """Method decides, which kind of Generator suits the best for a given constraint set
-        """
-        for constraintSet in query:
-            mappingConstraints = []
-            processingConstraints = []
-            remaining = []
-            for constraint in constraintSet:
-                if isinstance(constraint, MappingConstraint):
-                    mappingConstraints.append(constraint)
-                
-                elif isinstance(constraint, ProcessingConstraint):
-                    processingConstraints.append(constraint)
-                
-                else:
-                    remaining.append(constraint)
+    def setKpnGraph(self, kpnGraph):
+        self.__kpn = kpnGraph
+        
+    def setPlatform(self, platform):
+        self.__platform = platform
+        
+    def request(self, queryString, vec=None):
+        parse_tree = self.__parser.parse(queryString)
+        constraints = visit_parse_tree(parse_tree, SemanticAnalysis(self.__kpn, self.__platform, debug=self.__debug))
+        
+        resultQueue = queue.Queue()
+        
+        threadCounter = 0
+        for constraintSet in constraints:
+            threadCounter += 1
+            thread = Thread(target=self.searchMapping, args=(constraintSet, resultQueue, vec))
+            thread.daemon = True
+            thread.start()
+        
+        while threadCounter > 0:
+            threadResult = resultQueue.get()
+            threadCounter -= 1
             
-            return SimpleVectorMapper(self.__kpn, self.__platform, mappingConstraints, processingConstraints)
-            #TODO: start thread for each possible frame_mapping?
-                
-    def simpleVectorGenerator(self, constraintSet):
-        """Method creates a Generator for SimpleVector constraints
-        """
-        solution = Mapping(self.__kpn, self.__platform)
+            if isinstance(threadResult, Mapping):
+                return threadResult
+        
+        #In case neither of the threads returned a valid mapping
+        return False
+        
+    def searchMapping(self, constraintSet, resultQueue, vec):
+        mappingConstraints = []
+        processingConstraints =[]
+        remaining = []
         
         for constraint in constraintSet:
+            #Sort Constraints
             if isinstance(constraint, MappingConstraint):
-                constraint.applyToMapping(solution, self.__kpn, self.__platform)
+                mappingConstraints.append(constraint)
+            elif isinstance(constraint, ProcessingConstraint):
+                processingConstraints.append(constraint)
+            else:
+                remaining.append(constraint)
+        
+        #TODO: Decide which mapper is the most efficient to use, not using SimpleVec by default
+        mapper = SimpleVectorMapper(self.__kpn, self.__platform, mappingConstraints, processingConstraints)
+        
+        if vec:
+            mapper.setMapperState(vec)
         
         
+        
+        for mapping in mapper.nextMapping():
+            mappingValid = True
+            for constraint in remaining:
+                if not constraint.isFulFilled(mapping):
+                    mappingValid = False
             
+            if mappingValid:
+                resultQueue.put(mapping)
+                return
             
+        resultQueue.put(False)
+        

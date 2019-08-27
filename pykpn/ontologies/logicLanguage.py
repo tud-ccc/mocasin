@@ -3,8 +3,9 @@
 #
 #Authors: Felix Teweleit
 
+from pykpn.common.mapping import Mapping
 from builtins import staticmethod
-from arpeggio import OrderedChoice, EOF, PTNodeVisitor
+from arpeggio import OrderedChoice, EOF, PTNodeVisitor, OneOrMore
 from arpeggio import RegExMatch as _
 from abc import ABC, abstractmethod
 
@@ -13,7 +14,13 @@ class Grammar():
     def __peIdentifier(): return _(r'([ab-z]|[AB-Z])(([ab-z]|[AB-z]|[0-9]|\_)*)')
     
     @staticmethod
+    def __taskIdentifierSeparated(): return ((Grammar.__taskIdentifier), (','))
+    
+    @staticmethod
     def __taskIdentifier(): return _(r'([ab-z]|[AB-Z])(([ab-z]|[AB-z]|[0-9]|\_)*)')
+    
+    @staticmethod
+    def __sharedCoreOp(): return (("RUNNING TOGETHER ["), OneOrMore(Grammar.__taskIdentifierSeparated), Grammar.__taskIdentifier, (']'))
     
     @staticmethod
     def __processingOp(): return (Grammar.__peIdentifier, ("PROCESSING"))
@@ -24,7 +31,8 @@ class Grammar():
     @staticmethod
     def __operation(): return OrderedChoice([
                                     (Grammar.__mappingOp),
-                                    (Grammar.__processingOp)
+                                    (Grammar.__processingOp),
+                                    (Grammar.__sharedCoreOp)
                                     ])
     
     @staticmethod
@@ -147,9 +155,22 @@ class SemanticAnalysis(PTNodeVisitor):
         
         return ProcessingConstraint(processorName, processorId)
     
+    def visit___sharedCoreOp(self, node, children):
+        idVec = []
+        for i in range(0, len(children)):
+            taskName = children[i]
+            if not taskName in self.__processes:
+                raise RuntimeError(taskName + " is no valid process identifier!")
+            idVec.append(self.__processes[taskName])
+            
+        return SharedCoreUsageConstraint(idVec)
+    
     def visit___taskIdentifier(self, node, children):
         name = str(node)
         return name
+    
+    def visit___taskIdentifierSeparated(self, node, children):
+        return children[0]
     
     def visit___peIdentifier(self, node, children):
         name = str(node)
@@ -196,7 +217,22 @@ class ProcessingConstraint(Constraint):
     
     def getProcessorId(self):
         return self.__processorId
-
+    
+class SharedCoreUsageConstraint(Constraint):
+    def __init__(self, idVec):
+        self.__idVector = idVec
+        
+    def isFulFilled(self, mapping):
+        if isinstance(mapping, Mapping):
+            simVec = mapping.to_list()
+            executingPe = simVec[self.__idVector[0]]
+            for key in self.__idVector:
+                if not simVec[key] == executingPe:
+                    return False
+            return True
+        else:
+            #TODO: implement case that mapping is given in symmetry representation
+            return False
 
 
 
