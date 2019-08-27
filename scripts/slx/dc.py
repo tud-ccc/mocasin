@@ -40,7 +40,6 @@ log = logging.getLogger(__name__)
 def main():
     parser = argparse.ArgumentParser()
 
-
     logging.add_cli_args(parser)
 
     parser.add_argument('configFile', nargs=1,
@@ -58,7 +57,6 @@ def main():
     args = parser.parse_args()
     logging.setup_from_args(args)
 
-
     gconf = GlobalConfig(args.configFile)
 
     log.info("==== Found system combinations ====")
@@ -66,6 +64,9 @@ def main():
         log.info(cn)
 
     argv = sys.argv
+    
+    #print(gconf.keys)
+    #exit(1)
 
     log.info("==== Run Design Centering ====")
     #logging.basicConfig(filename="dc.log", filemode = 'w', level=logging.DEBUG)
@@ -144,7 +145,7 @@ def main():
 
                 # config = args.configFile
                 oracle = dc_oracle.Oracle(app_config, app_name, kpn, platform, trace_reader_gen)
-                dc = designCentering.DesignCentering(v, app_config[1].distr, oracle,representation)
+                dc = designCentering.DesignCentering(v, app_config[1].distr, oracle, representation)
                 center = dc.ds_explore()
 
                 # plot explored design space (in 2D)

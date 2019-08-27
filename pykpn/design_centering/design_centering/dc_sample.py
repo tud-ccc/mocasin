@@ -14,12 +14,12 @@ from pykpn.util import logging
 log = logging.getLogger(__name__)
 
 class Sample(list):
-    def __init__(self,sample=None,simContext=None, representation=None):
+    def __init__(self,sample=None,sim_context=None, representation=None):
         """Describes a sample from a volume for a given representation. 
 
         :param sample: a vector describing the sample
         :type sample: Sample
-        :simContext: the context (platform, kpn etc.) set after simulation of the sample
+        :sim_context: the context (platform, kpn etc.) set after simulation of the sample
         :type: SimulationContext
         :param representation_type: a representation type
         :type platform: RepresentationType
@@ -28,21 +28,21 @@ class Sample(list):
         if sample is None:
             sample = []
         self.sample = sample
-        self.simContext = simContext
+        self.sim_context = sim_context
         self.representation = representation
 
     def setFeasibility(self,feasibility):
         assert type(feasibility) is bool
         self.feasible = feasibility
 
-    def setSimContext(self,simContext):
-        self.simContext = simContext
-    
     def getSimContext(self):
-        return self.simContext
+        return self.sim_context
 
+    def setSimContext(self,sim_context):
+        self.sim_context = sim_context
+    
     def getMapping(self, idx):
-        return self.simContext.app_contexts[idx].mapping
+        return self.sim_context.app_contexts[idx].mapping
 
     def getFeasibility(self):
         return self.feasible
@@ -146,7 +146,7 @@ class VectorSampleGen(SampleGeneratorBase):
         if distr != "uniform":
             log.error("Error!, distribution '" + str(distr) + "' not supported (yet).")
             exit(1)
-        sample_ints =  self.representation._uniformFromBall(ball.center,ball.radius,nsamples)
+        sample_ints = self.representation._uniformFromBall(ball.center,ball.radius,nsamples)
         sample_list = list(map(lambda s: MetricSpaceSample(self.representation,s), sample_ints))
         return sample_list
 

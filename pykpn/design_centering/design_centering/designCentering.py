@@ -116,9 +116,13 @@ class DesignCentering(object):
             #    mappings.append(m)
 
             #put samples as paramater in simulation
-            log.debug("dc: Input samples:\n {}".format(samples))
+            log.info("dc: Input samples:\n {} ".format(samples))
+            
+
+            #samples = [s.sample2simpleTuple() for s in samples]
+            #samples = list(map(sample2simpleTuple, samples))
             samples = type(self).oracle.validate_set(samples) # validate multiple samples
-            log.debug("dc: Output samples:\n {}".format(samples))
+            log.info("dc: Output samples:\n {}".format(samples))
 
 
 
@@ -139,6 +143,7 @@ class DesignCentering(object):
             log.debug("dc: Output fesaible samples:\n {}".format(s_set.get_feasible()))
             old_center = type(self).vol.center
             center = type(self).vol.adapt_center(s_set)
+            center = list(map(int, center))
             center_history.append(dc_sample.Sample(sample = center,representation=self.representation))
            # if not type(self).oracle.validate(dc_sample.GeometricSample(center)): #this breaks the rest!
            #     c_cur = dc_sample.GeometricSample(center)
@@ -149,19 +154,16 @@ class DesignCentering(object):
             log.debug("dc: center: {} radius: {:f} p: {}".format(type(self).vol.center, type(self).vol.radius, cur_p))
 
         #modify last sample
-        #TODO build mapping from center 
+        #TODO build mapping from center (this destroys parallel execution)
         center_sample = dc_sample.Sample(sample=center,representation=self.representation)
-        center_sample_list = []
-        center_sample_list.append(center_sample)
-        center_res_sample = type(self).oracle.validate_set(center_sample_list)
+        center_sample_result = type(self).oracle.validate_set([center_sample])
         if self.oracle.config[1].visualize_mappings:
             if(self.oracle.config[1].keep_metrics):
-
                 self.visualize_mappings(s_set.sample_groups, type(self).oracle.config[1].adapt_samples, center_history)
             else:
                 self.visualize_mappings(s_set.sample_groups)
-        log.debug("dc: center sample: {} {} {}".format(str(center_res_sample), str(center_sample), str(center)))
-        return center_res_sample[0]
+        log.debug("dc: center sample: {} {} {}".format(str(center_sample_result), str(center_sample), str(center)))
+        return center_sample_result[0]
     
     def visualize_mappings(self, sample_groups, tick=0, center_history=[]):
         # put all evaluated samples in a big array

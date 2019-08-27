@@ -86,7 +86,7 @@ class GlobalConfig:
                      'shape' : to_str,
                      'oracle' : to_str,
                      'random_seed' : to_int,
-                     'threshold' : to_int,
+                     'threshold' : to_time,
                      'run_perturbation' : to_bool,
                      'num_perturbations' : to_int,
                      'representation' : to_str,

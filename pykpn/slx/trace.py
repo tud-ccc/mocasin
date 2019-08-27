@@ -57,6 +57,9 @@ class SlxTraceReader_2017_04(TraceGenerator):
         self._processor_types = {}
         self._prefix = prefix
 
+        #reset file handle read-pointer
+        # seek(0)
+
     def _open_trace_file(self, process_name, processor_type):
         assert process_name.startswith(self._prefix)
         return open('%s/%s.%s.cpntrace' % (self._trace_dir,
@@ -113,7 +116,6 @@ class SlxTraceReader_2017_04(TraceGenerator):
             raise RuntimeError('Unexpected trace entry ' + traceline[0])
 
         return segment
-
 
 class SlxTraceReader_2017_10(SlxTraceReader_2017_04):
     """A TraceGenerator that reads SLX 2017.10 trace files"""
