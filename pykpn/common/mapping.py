@@ -276,7 +276,7 @@ class Mapping:
             scheduler = self._process_info[processName].scheduler
             del self._process_info[processName]
             self._process_info.update({processName : ProcessMappingInfo(scheduler, newProcessor, priority)})
-        return True
+        return
     
     def to_string(self):
         """Convert mapping to a simple readable string 
@@ -310,6 +310,20 @@ class Mapping:
                                                      chan2prim[key][1],max_width))
 
         return s
+    
+    def to_coreDict(self):
+        """Returns a dict where the Names of processing elements are the keys and 
+            mapped processes are the values
+        :rtype dict[string, string]:
+        """
+        procs_list = self._kpn.processes()
+        pes_list = self._platform.processors()
+        pes2procs = {}
+        for pe in pes_list:
+            pes2procs.update({pe.name:[]})
+        for proc in procs_list:
+            pes2procs[self.affinity(proc).name].append(proc.name)
+        return pes2procs
 
     def to_list(self,channels=False):
         """Convert to a list (tuple), the simple vector representation.

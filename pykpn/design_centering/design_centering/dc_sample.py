@@ -6,6 +6,7 @@ from . import dc_oracle
 from pykpn.representations.metric_spaces import FiniteMetricSpace
 from pykpn.common.mapping import Mapping
 from pykpn.representations.representations import RepresentationType, MetricSpaceRepresentation, MetricEmbeddingRepresentation, SimpleVectorRepresentation, SymmetryRepresentation
+import pykpn.util.random_distributions.lp as lp
 
 from sys import exit
 
@@ -172,12 +173,20 @@ class MetricSpaceSampleGen(SampleGeneratorBase):
     def gen_sample_in_vol(self,vol,distr):
         return self.gen_samples_in_ball(vol,distr,nsamples=1)
 
-    def gen_samples_in_ball(self,ball,distr,nsamples=1):
+    #TODO: this seems it would be better housed in dc_volume than here.
+    def gen_samples_in_ball(self,vol,distr,nsamples=1):
         if distr != "uniform":
             log.error("Error!, distribution '" + str(distr) + "' not supported (yet).")
             exit(1)
-        sample_ints =  self.representation._uniformFromBall(ball.center,ball.radius,nsamples)
-        sample_list = list(map(lambda s: MetricSpaceSample(self.representation,s), sample_ints))
+        sample_list = []
+        for _ in range(nsamples):
+            lp_random_vector = lp.uniform_from_p_ball(p=1,n=vol.dim)
+            transformed_vector = vol.covariance @ vol.center
+            scaled_vector = vol.radius * transformed_vector
+            new_sample_vector = vol.center + scaled_vector
+            sample_ints = self.representation.approximate(new_sample_vector)
+            new_sample = MetricSpaceSample(self.representation,sample_ints)
+            sample_list.append(new_sample)
         return sample_list
 
 

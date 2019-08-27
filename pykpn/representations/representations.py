@@ -151,28 +151,40 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         else:
             return x[:self.num_procs]
 
-    def _uniformFromBall(self,p,r,npoints=1):
-      Procs = list(self.kpn._processes.keys())
-      PEs = list(self.platform._processors.keys())
-      P = len(PEs)
-      res = []
-      def _round(point):
-        #perodic boundary conditions
-        return int(round(point) % P)
-        #if point > P-1:
-        #  return P-1
-        #elif point < 0:
-        #  return 0
-        #else:
-        
-      for _ in range(npoints):
-        v = list(map(_round,(np.array(p[:len(Procs)]) + np.array(r*lp.uniform_from_p_ball(p=1,n=len(Procs)))).tolist()))
+    def _uniformFromBall(self,p,r,npoints=1,simple=False):
+        Procs = list(self.kpn._processes.keys())
+        PEs = list(self.platform._processors.keys())
+        P = len(PEs)
+        res = []
+        def _round(point):
+            #perodic boundary conditions
+            return int(round(point) % P)
+            #if point > P-1:
+            #  return P-1
+            #elif point < 0:
+            #  return 0
+            #else:
+          
+        center = p[:len(Procs)]
+        for _ in range(npoints):
+            if simple:
+                radius = _round(r/2)
+                offset = []
+                for _ in range(len(Procs)):
+                    offset.append(randint(-radius,radius))
+
+            else:
+                offset = r * lp.uniform_from_p_ball(p=1,n=len(Procs))
+            real_point = (np.array(center) + np.array(offset)).tolist() 
+            v = list(map(_round,real_point))
+
         if self.channels:
             res.append(self.randomPrimitives(v))
         else:
             res.append(v)
-        log.debug(f"unfiorm from ball: {res}")
-      return res
+        log.debug(f"uniform from ball: {res}")
+        print(f"uniform from ball: {res}")
+        return res
       
     def uniformFromBall(self,p,r,npoints=1):
         return self.fromRepresentation(self._uniformFRomBall(p,r,npoints=npoints))

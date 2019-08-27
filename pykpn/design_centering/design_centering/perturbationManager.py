@@ -27,7 +27,7 @@ class PerturbationManager(object):
         """ Creates a defined number of unique random mappings """
         mapping_set = set([])
         while len(mapping_set) < self.num_mappings:
-            mg = rand_pm.RandomPartialMapper(self.kpns[0], self.platform)
+            mg = rand_pm.RandomPartialMapper(self.kpns[0], self.platform, self.config[1].random_seed)
             mapping_set.add(mg.generate_mapping())
         return mapping_set
 
@@ -38,10 +38,12 @@ class PerturbationManager(object):
         """
 
         # check for single application
-        rand_part_mapper = RandomPartialMapper(self.kpns[0], self.platform)
+        rand_part_mapper = RandomPartialMapper(self.kpns[0], self.platform, self.config[1].random_seed)
         proc_part_mapper = ProcPartialMapper(self.kpns[0], self.platform, rand_part_mapper)
 
-        rand.seed = seed
+        #TODO: why does this reset the seed? I'm commenting this out until a good explanation given.
+        #rand.seed(seed)
+
         pe = rand.randint(0, len(list(self.platform.processors()))-1)
         process = rand.randint(0, len(list(self.kpns[0].processes()))-1)
         
