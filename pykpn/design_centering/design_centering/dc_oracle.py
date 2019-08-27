@@ -121,14 +121,12 @@ class Simulation(object):
         results = []
         self.prepare_sim_contexts_for_samples(samples)
         
-        # run the simulations and search for the best mapping
+        # run simulations and search for the best mapping
+
         # execute the simulations in parallel
         # TODO: this is somehow broken, since non-python objects cannot be pickled
         #pool = ProcessPool(processes=4)
         #results = list(pool.map(self.run_simulation, samples, chunksize=4))
-        
-        # TODO read mapping from sim_contexts
-        # this must be in simulation_contexts
 
         # results list of simulation contexts
         results = list(map(self.run_simulation, samples))

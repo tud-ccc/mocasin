@@ -102,41 +102,12 @@ class DesignCentering(object):
             # TODO: may genrate identical samples which makes things ineffective 
             s_set = dc_sample.SampleSet()
             samples = s.gen_samples_in_ball(type(self).vol, type(self).distr, nsamples=type(self).oracle.config[1].adapt_samples)
-            #print(samples)
-            #print(str([s.sample for s in samples]))
-
-            #serial
-            #for s in samples:
-            #    s.feasible = type(self).oracle.validate(s) #validate one sample
-            #parallel
-
-            #generate mapping from sample
-            #for s in samples:
-            #    m = genenrate_mapping(s)
-            #    mappings.append(m)
-
+            
             #put samples as paramater in simulation
             log.info("dc: Input samples:\n {} ".format(samples))
-            
-
-            #samples = [s.sample2simpleTuple() for s in samples]
-            #samples = list(map(sample2simpleTuple, samples))
             samples = type(self).oracle.validate_set(samples) # validate multiple samples
             log.info("dc: Output samples:\n {}".format(samples))
 
-
-
-            #print("list {}".format(feasible_list))
-            #for s in samples:
-            #    print("Feasible: {}".format(s.feasible))
-            #print(s)
-
-
-
-            #for s in samples:
-                # add to internal overall sample set
-            #    type(self).samples.update({s.sample2tuple():s.feasible})
-            
             s_set.add_sample_list(samples)
             s_set.add_sample_group(samples)
 
