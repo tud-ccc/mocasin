@@ -4,6 +4,9 @@
 #Authors: Felix Teweleit
 
 from pykpn.common.mapping import Mapping
+from pykpn.mapper.com_partialmapper import ComPartialMapper
+from pykpn.mapper.rand_partialmapper import RandomPartialMapper
+from pykpn.mapper.proc_partialmapper import ProcPartialMapper
 
 class SimpleVectorMapper():
     def __init__(self, kpn, platform, mappingConstraints, processingConstraints):
@@ -24,89 +27,62 @@ class SimpleVectorMapper():
                 self.__unmappedProcesses.append(i)
                 self.__innerState.append(0)
             i += 1
-                
-        self.__processingConstraintsMapping = []
-        self.__processingConstraintsState = []
-        i = 0
-        for constraint in self.__processingConstraints:
-            self.__processingConstraintsMapping.append(self.__unmappedProcesses[i])
-            self.__processingConstraintsState.append(i)
-            i += 1
+        
         self.__oldMapping = []
         self.__iterate = True
                 
     def nextMapping(self):        
         while self.__iterate:
             self.__oldMapping = list(self.__frameMapping)
-            for processMapping in self.__processingConstraintsMapping:
-                idx = self.__processingConstraintsMapping.index(processMapping)
-                self.__frameMapping[processMapping] = self.__processingConstraints[idx].getProcessorId()
             idx = 0
-            for processMapping in self.__innerState:
-                if not self.__unmappedProcesses[idx] in self.__processingConstraintsMapping:
-                    self.__frameMapping[self.__unmappedProcesses[idx]] = self.__innerState[idx]
+            for idx in range(0, len(self.__innerState)):
+                self.__frameMapping[self.__unmappedProcesses[idx]] = self.__innerState[idx]
                 idx += 1
             
             if not self.__oldMapping == self.__frameMapping:
-                self.__increaseInnerState(0)
-                yield self.__fullMapper.completeMappingAtRandom(self.__frameMapping)
+                mapping = self.__fullMapper.completeMappingBestEffort(self.__frameMapping)
+                valid = True
+                for constraint in self.__processingConstraints:
+                    if not constraint.isFulFilled(mapping):
+                        valid = False
+                if valid:
+                    self.__increaseInnerState(0)
+                    yield mapping
+                else:
+                    self.__increaseInnerState(0)
+                    self.nextMapping()
             else:
                 self.__increaseInnerState(0)
                 self.nextMapping()
     
     def __increaseInnerState(self, currentIndex):
         #Check if the possible mapping space is fully explored
-        if self.reachedLastIteration():
+        if self.__reachedLastIteration():
             return
         
         self.__innerState[currentIndex] += 1
         
-        if currentIndex == len(self.__innerState) - 1 and self.__innerState[currentIndex] == self.__processors:
-            self.__innerState[currentIndex] = 0
-            self.__increaseConstraintState(len(self.__processingConstraintsState) - 1)
-        elif self.__innerState[currentIndex] == self.__processors:
+        if self.__innerState[currentIndex] == self.__processors:
             self.__innerState[currentIndex] = 0
             self.__increaseInnerState(currentIndex + 1)
-            
-    def __increaseConstraintState(self, currentIndex, update=True):
-        self.__processingConstraintsState[currentIndex] += 1
-        if currentIndex >= 1 and self.__processingConstraintsState[currentIndex] == self.__processingConstraintsState[currentIndex - 1]:
-            self.__processingConstraintsState[currentIndex] += 1
-        elif currentIndex >= 1 and self.__processingConstraintsState[currentIndex] == len(self.__unmappedProcesses):
-            self.__processingConstraintsState[currentIndex] = 0
-            self.__increaseConstraintState(currentIndex - 1, update=False)
-        
-        if update:
-            i = 0
-            for idx in self.__processingConstraintsState:
-                self.__processingConstraintsMapping[i] = self.__unmappedProcesses[idx]
-                i += 1 
     
-    def reachedLastIteration(self):
-        if self.__processingConstraintsState == []:
-            if self.__innerState[0] >= self.__processors - 1 and self.__innerState[-1] >= self.__processors - 1:
-                self.__iterate = False
-                return True
-        '''
-        else:
-            if self.__processingConstraintsState[0] >=  and self.__processingConstraintsState[-1] == 0:
-                self.__iterate = False
-                return True
-        return False
-        '''
-            #TODO: Redo increment of the constraint state and get this one to a working state
+    def __reachedLastIteration(self):
+        if self.__innerState.count(self.__processors - 1) == len(self.__innerState):
+            self.__iterate = False
+            return True            
     
     def getMapperState(self):
-        return (self.__innerState, self.__processingConstraintsState)
+        return self.__innerState
     
     def setMapperState(self, stateVector):
         self.__innerState = stateVector
         
-    def setConstraintsState(self, stateVector):
-        self.__processingConstraintsState = stateVector
+    def setKpn(self, kpn):
+        pass
     
-    def getProcessMapping(self):
-        return self.__frameMapping
+    def setPlatform(self, platform):
+        pass
+        
     
 class FrameMapper():
     """Takes a set of constraints which must be fulfilled for a specific query. Returns a Vector
@@ -130,6 +106,10 @@ class FullMapper():
     def __init__(self, kpn, platform):
         self.__kpn = kpn
         self.__platform = platform
+        
+        self.__fullMapper = RandomPartialMapper(kpn, platform, None)
+        self.__communicationMapper = ComPartialMapper(kpn, platform, self)
+        self.__processMapper = ProcPartialMapper(kpn, platform, self)
             
     def completeMappingAtRandom(self, processMappingVector):
         #Create empty mapping
@@ -143,5 +123,25 @@ class FullMapper():
             print("Unmapped channels: " + mapping.get_unmapped_channels())
         
         return mapping
-
-
+    
+    def completeMappingBestEffort(self, processMappingVector):
+        mapping = self.__processMapper.generate_mapping(processMappingVector)
+        mapping = self.__fullMapper.generate_mapping(seed=None, part_mapping=mapping)
+        self.__processMapper.reset()
+        return mapping
+        
+    def generate_mapping(self, mapping):
+        return mapping
+    
+    def setKpn(self, kpn):
+        self.__kpn = kpn
+        self.__fullMapper = RandomPartialMapper(kpn, self.__platform)
+        self.__comMapper = ComPartialMapper(kpn, self.__platform, self.__fullMapper)
+        self.__processMapper = ProcPartialMapper(kpn, self.__platform, self.__comMapper)
+        
+    def setPlatform(self, platform):
+        self.__platform = platform
+        self.__fullMapper = RandomPartialMapper(self.__kpn, platform)
+        self.__comMapper = ComPartialMapper(self.__kpn, platform, self.__fullMapper)
+        self.__processMapper = ProcPartialMapper(self.__kpn, platform, self.__comMapper)
+        

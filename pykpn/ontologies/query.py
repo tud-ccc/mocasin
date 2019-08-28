@@ -12,18 +12,21 @@ except:
 from pykpn.slx.platform import SlxPlatform
 from pykpn.slx.kpn import SlxKpnGraph
 from pykpn.common.mapping import Mapping
+from pykpn.mapper.random import RandomMapping
 
 from solver import Solver
 
 def main():
     kpn = SlxKpnGraph('SlxKpnGraph',  "apps/audio_filter/audio_filter.cpn.xml",'2017.04')
     platform = SlxPlatform('SlxPlatform', 'apps/audio_filter/exynos/exynos.platform', '2017.04')
-    mSolver = Solver(kpn, platform, debug=True)
+    mappingDict = {"mapping_one" : RandomMapping(kpn, platform), "otherMapping" : RandomMapping(kpn, platform)}
+    mSolver = Solver(kpn, platform, mappingDict, debug=False)
     
-    #inputString = "EXISTS src MAPPED ARM07 AND sink MAPPED ARM07"
-    inputString = "EXISTS sink MAPPED ARM03 AND src MAPPED ARM02 AND ARM02 PROCESSING AND RUNNING TOGETHER [sink, src ]"
+    #inputString = "EXISTS ARM00 PROCESSING AND ARM01 PROCESSING AND ARM02 PROCESSING AND src MAPPED ARM07 AND RUNNING TOGETHER [sink, src ]"
+    inputString = "EXISTS EQUALS mapping_one OR EQUALS otherMapping"
     
     answer = mSolver.request(inputString)
+    
     
     if isinstance(answer, Mapping):
         print(answer.to_list(channels=False))

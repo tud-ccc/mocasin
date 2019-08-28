@@ -74,11 +74,13 @@ class ProcPartialMapper(object):
             log.debug('dc_map: map process %s to scheduler %s and processor %s '
                       '(priority: %d)', p.name, scheduler.name, affinity.name,
                       priority)
-            if self.mapping in map_history:
-                return None
-            else:
-                return self.fullGenerator.generate_mapping(self.mapping)
+        if self.mapping in map_history:
+            return None
+        else:
+            return self.fullGenerator.generate_mapping(self.mapping)
 
+    def reset(self):
+        self.mapping = Mapping(self.kpn, self.platform)
         
 
 

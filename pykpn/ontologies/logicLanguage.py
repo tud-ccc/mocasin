@@ -11,16 +11,22 @@ from abc import ABC, abstractmethod
 
 class Grammar():
     @staticmethod
-    def __peIdentifier(): return _(r'([ab-z]|[AB-Z])(([ab-z]|[AB-z]|[0-9]|\_)*)')
+    def __mappingIdentifier(): return _(r'([ab-z]|[AB-Z])(([ab-z]|[AB-z]|[0-9]|\_)*)')
     
     @staticmethod
-    def __taskIdentifierSeparated(): return ((Grammar.__taskIdentifier), (','))
+    def __peIdentifier(): return _(r'([ab-z]|[AB-Z])(([ab-z]|[AB-z]|[0-9]|\_)*)')
     
     @staticmethod
     def __taskIdentifier(): return _(r'([ab-z]|[AB-Z])(([ab-z]|[AB-z]|[0-9]|\_)*)')
     
     @staticmethod
-    def __sharedCoreOp(): return (("RUNNING TOGETHER ["), OneOrMore(Grammar.__taskIdentifierSeparated), Grammar.__taskIdentifier, (']'))
+    def __taskIdentifierSeparated(): return ((Grammar.__taskIdentifier), (','))
+    
+    @staticmethod
+    def __isEqualOp(): return (("EQUALS"), Grammar.__mappingIdentifier)
+    
+    @staticmethod
+    def __sharedCoreOp(): return (("RUNNING TOGETHER ["), OneOrMore(Grammar.__taskIdentifierSeparated), Grammar.__taskIdentifier, ("]"))
     
     @staticmethod
     def __processingOp(): return (Grammar.__peIdentifier, ("PROCESSING"))
@@ -32,7 +38,8 @@ class Grammar():
     def __operation(): return OrderedChoice([
                                     (Grammar.__mappingOp),
                                     (Grammar.__processingOp),
-                                    (Grammar.__sharedCoreOp)
+                                    (Grammar.__sharedCoreOp),
+                                    (Grammar.__isEqualOp)
                                     ])
     
     @staticmethod
@@ -54,7 +61,7 @@ class Grammar():
     def logicLanguage(): return ("EXISTS "), Grammar.__expression, EOF
     
 class SemanticAnalysis(PTNodeVisitor): 
-    def __init__(self, kpnGraph, platform, defaults=True, **kwargs):
+    def __init__(self, kpnGraph, platform, mappingDict={}, defaults=True, **kwargs):
         '''Map processors and processes to integer values
         '''
         self.__processors = {}
@@ -63,6 +70,7 @@ class SemanticAnalysis(PTNodeVisitor):
         self.__processes = {}
         for i, process in enumerate(kpnGraph.processes()):
             self.__processes[process.name] = i
+        self.__mappingDict = mappingDict
         super(SemanticAnalysis, self).__init__(defaults, **kwargs)
         
     def visit_logicLanguage(self, node, children):
@@ -165,6 +173,16 @@ class SemanticAnalysis(PTNodeVisitor):
             
         return SharedCoreUsageConstraint(idVec)
     
+    def visit___isEqualOp(self, node, children):
+        mappingName = children[0]
+        if not mappingName in self.__mappingDict:
+            raise RuntimeError(mappingName + " is no valid mapping identifier!")
+        return EqualsConstraint(self.__mappingDict[mappingName])
+    
+    def visit___mappingIdentifier(self, node, children):
+        name = str(node)
+        return name
+    
     def visit___taskIdentifier(self, node, children):
         name = str(node)
         return name
@@ -208,10 +226,11 @@ class ProcessingConstraint(Constraint):
         #TODO:
         #-> Check if mapping is in simple vector representation
         #-> Check if core is processing using this mapping
-        if not isinstance(mapping, list):
-            raise RuntimeWarning("SimpleVector representation is needed to evaluate constraint!")
+        if not isinstance(mapping, Mapping):
+            raise RuntimeWarning("Mapping object is needed to evaluate constraint!")
         else:
-            if self.__processorId in mapping:
+            processList = mapping.to_list()
+            if self.__processorId in processList:
                 return True
         return False
     
@@ -233,6 +252,13 @@ class SharedCoreUsageConstraint(Constraint):
         else:
             #TODO: implement case that mapping is given in symmetry representation
             return False
+        
+class EqualsConstraint(Constraint):
+    def __init__(self, mappingObject):
+        self.__mapping = mappingObject
+        
+    def isFulFilled(self, mapping):
+        return False
 
 
 

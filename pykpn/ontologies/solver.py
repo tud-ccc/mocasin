@@ -13,9 +13,10 @@ import queue
 
 
 class Solver():
-    def __init__(self, kpnGraph, platform, debug=False):
+    def __init__(self, kpnGraph, platform, mappingDict={},  debug=False):
         self.__kpn = kpnGraph
         self.__platform = platform
+        self.__mappingDict = mappingDict
         self.__debug = debug
         self.__parser = ParserPython(Grammar.logicLanguage, reduce_tree=True, debug=debug)
     
@@ -27,14 +28,16 @@ class Solver():
         
     def request(self, queryString, vec=None):
         parse_tree = self.__parser.parse(queryString)
-        constraints = visit_parse_tree(parse_tree, SemanticAnalysis(self.__kpn, self.__platform, debug=self.__debug))
+        constraints = visit_parse_tree(parse_tree, SemanticAnalysis(self.__kpn, self.__platform, self.__mappingDict, debug=self.__debug))
         
         resultQueue = queue.Queue()
         
+        #start a different thread for each constraint set, so each thread can work
+        #with an individual generator
         threadCounter = 0
         for constraintSet in constraints:
             threadCounter += 1
-            thread = Thread(target=self.searchMapping, args=(constraintSet, resultQueue, vec))
+            thread = Thread(target=self.searchMapping, args=(constraintSet, resultQueue, vec, threadCounter))
             thread.daemon = True
             thread.start()
         
@@ -42,13 +45,14 @@ class Solver():
             threadResult = resultQueue.get()
             threadCounter -= 1
             
-            if isinstance(threadResult, Mapping):
-                return threadResult
+            if isinstance(threadResult[1], Mapping):
+                print(threadResult[0])
+                return threadResult[1]
         
         #In case neither of the threads returned a valid mapping
         return False
         
-    def searchMapping(self, constraintSet, resultQueue, vec):
+    def searchMapping(self, constraintSet, resultQueue, vec, id):
         mappingConstraints = []
         processingConstraints =[]
         remaining = []
@@ -67,18 +71,18 @@ class Solver():
         
         if vec:
             mapper.setMapperState(vec)
-        
-        
-        
+       
         for mapping in mapper.nextMapping():
+            if self.__debug:
+                print(mapper.getMapperState())
             mappingValid = True
             for constraint in remaining:
                 if not constraint.isFulFilled(mapping):
                     mappingValid = False
             
             if mappingValid:
-                resultQueue.put(mapping)
+                resultQueue.put((id, mapping))
                 return
             
-        resultQueue.put(False)
+        resultQueue.put((id, False))
         
