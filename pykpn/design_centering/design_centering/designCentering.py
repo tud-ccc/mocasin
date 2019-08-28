@@ -91,6 +91,16 @@ class DesignCentering(object):
             tp.plot_curve(ret, type(self).oracle.config)
         return ret
 
+    def __has_duplicate(self, samples):
+        seen = set()
+        uniq_samples = []
+        for s in samples:
+            s = s.sample2simpleTuple()
+            if s not in seen:
+                seen.add(s)
+                uniq_samples.append(s)
+        return len(uniq_samples)
+
     def ds_explore(self):
         """ explore design space (main loop of the DC algorithm) """
 
@@ -99,9 +109,11 @@ class DesignCentering(object):
             s = dc_sample.SampleGen(self.representation, type(self).oracle.config)
             
             log.debug("dc: Current iteration {}".format(i))
-            # TODO: may genrate identical samples which makes things ineffective 
             s_set = dc_sample.SampleSet()
             samples = s.gen_samples_in_ball(type(self).vol, type(self).distr, nsamples=type(self).oracle.config[1].adapt_samples)
+            dup = type(self).oracle.config[1].adapt_samples - self.__has_duplicate(samples)
+            if dup > 0:
+                log.warning("DC: Sample-list of {} elements has {} duplicates.".format(type(self).oracle.config[1].adapt_samples, dup))
             
             #put samples as paramater in simulation
             log.info("dc: Input samples:\n {} ".format(samples))
@@ -192,74 +204,6 @@ class DesignCentering(object):
         thresholds[-1] = 0.5
         #print("thresholds: {}".format(thresholds))
         plot.visualize_mapping_space(mappings, exec_times, None, RepresentationType[self.oracle.config[1].representation], tick, len(center_history))
-
-
-# Of course, the existing DFG already provides a valid schedule derived from the order of GIMPLE statements, 
-# but this neither exploits parallel execution or consider any resource contraints. 
-
-##def main():
-##    parser = argparse.ArgumentParser()
-##
-##    logging.add_cli_args(parser)
-##    parser.add_argument('configFile', nargs=1,
-##                        help="input configuration file", type=str)
-##    args = parser.parse_args()
-##
-##
-##    argv = sys.argv
-##    print("===== run DC =====")
-##    #logging.basicConfig(filename="dc.log", filemode = 'w', level=logging.DEBUG)
-##    tp = ThingPlotter()
-##
-##    if (len(argv) > 1):
-##        # read cmd-line and settings
-##        try:
-##            center = [1,2,3,4,5,6,7,8]
-##            #json.loads(argv[1])
-##        except ValueError:
-##            print(" {:s} is not a vector \n".format(argv[1]))
-##            sys.stderr.write("JSON decoding failed (in function main) \n")
-##
-##        if (conf.shape == "cube"):
-##            v = dc_volume.Cube(center, len(center))
-##
-##        # run DC algorithm
-##        config = args.configFile
-##        oracle = dc_oracle.Oracle(args.configFile)
-##        dc = DesignCentering(v, conf.distr, oracle)
-##        center = dc.ds_explore()
-##
-##        # plot explored design space (in 2D)
-##        #if True:
-##        #    tp.plot_samples(dc.samples)
-##        #logging.info(" >>> center: {} radius: {:f}".format(dc.vol.center, dc.vol.radius))
-##        print(">>> center: {} radius: {:f}".format(dc.vol.center, dc.vol.radius))
-##        print("===== DC done =====")
-##
-##        # run perturbation test
-##        if conf.run_perturbation:
-##            num_pert = conf.num_perturbations
-##            num_mappings = conf.num_mappings
-##            pm = p.PerturbationManager( config, num_mappings, num_pert)
-##            map_set = pm.create_randomMappings()
-##
-##            pert_res = []
-##            pert_res.append(pm.run_perturbation(center.getMapping(0), pm.apply_singlePerturbation))
-##
-##            for m in map_set:
-##                pert_res.append(pm.run_perturbation(m, pm.apply_singlePerturbation))
-##
-##            tp.plot_perturbations(pert_res)
-##        
-##
-##    else:
-##        print("usage: python designCentering [x1,x2,...,xn]\n")
-##
-##
-##    return 0
-##
-##if __name__ == "__main__":
-##    main()
 
 # run script with config file:
 # ./dc_run ~/misc_code/kpn-apps/audio_filter/parallella/config.ini
