@@ -4,6 +4,7 @@
 #Authors: Felix Teweleit
 
 from pykpn.common.mapping import Mapping
+from pykpn.representations.representations import RepresentationType
 from builtins import staticmethod
 from arpeggio import OrderedChoice, EOF, PTNodeVisitor, OneOrMore
 from arpeggio import RegExMatch as _
@@ -70,7 +71,10 @@ class SemanticAnalysis(PTNodeVisitor):
         self.__processes = {}
         for i, process in enumerate(kpnGraph.processes()):
             self.__processes[process.name] = i
+        
         self.__mappingDict = mappingDict
+        self.__kpn = kpnGraph
+        self.__platform = platform
         super(SemanticAnalysis, self).__init__(defaults, **kwargs)
         
     def visit_logicLanguage(self, node, children):
@@ -177,7 +181,7 @@ class SemanticAnalysis(PTNodeVisitor):
         mappingName = children[0]
         if not mappingName in self.__mappingDict:
             raise RuntimeError(mappingName + " is no valid mapping identifier!")
-        return EqualsConstraint(self.__mappingDict[mappingName])
+        return EqualsConstraint(self.__mappingDict[mappingName], self.__kpn, self.__platform)
     
     def visit___mappingIdentifier(self, node, children):
         name = str(node)
@@ -207,12 +211,12 @@ class MappingConstraint(Constraint):
         self.__processorId = processorId
     
     def isFulFilled(self, mapping):
-        if not isinstance(mapping, list):
-            raise RuntimeWarning("SimpleVector representation is needed to evaluate constraint!")
-        else:
-            if mapping[self.__processId] == self.__processorId:
+        if isinstance(mapping, Mapping):
+            procVec = mapping.to_list()
+            if procVec[self.__processId] == self.__processorId:
                 return True
-        return False
+        else:
+            return False
     
     def setEntry(self, partialMapping):
         partialMapping[self.__processId] = self.__processorId
@@ -250,15 +254,25 @@ class SharedCoreUsageConstraint(Constraint):
                     return False
             return True
         else:
-            #TODO: implement case that mapping is given in symmetry representation
             return False
         
 class EqualsConstraint(Constraint):
-    def __init__(self, mappingObject):
+    def __init__(self, mappingObject, kpn, platform):
         self.__mapping = mappingObject
+        self.__lense = RepresentationType['Symmetries'].getClassType()(kpn, platform)
         
     def isFulFilled(self, mapping):
-        return False
+        if isinstance(mapping, Mapping):
+            allEquivalent = self.__lense.allEquivalentGen(mapping)
+            for equivalent in allEquivalent:
+                if equivalent.to_list() == mapping.to_list():
+                    return True
+            return False
+        else:
+            return False
+        
+    def getMapping(self):
+        return self.__mapping
 
 
 

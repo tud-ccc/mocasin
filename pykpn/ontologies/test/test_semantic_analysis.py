@@ -98,8 +98,41 @@ class TestSemanticAnalysis(object):
         assert(lenTwo == 4)
         assert(lenDefault == 0)
         
+    def test_query_7(self, parser, kpnGraph, platform):
+        inputQuery = "EXISTS ARM04 PROCESSING AND RUNNING TOGETHER [src, sink, fft_l ]"
+        parse_tree = parser.parse(inputQuery)
+        result = visit_parse_tree(parse_tree, SemanticAnalysis(kpnGraph, platform, debug=False))
+        
+        assert(len(result) == 1)
+        assert(len(result[0]) == 2)
+        
+    def test_query_8(self, parser, kpnGraph, platform):
+        inputQuery = "EXISTS RUNNING TOGETHER [src, sink, ifft_r ] AND ARM02 PROCESSING AND ARM03 PROCESSING AND src MAPPED ARM07"
+        parse_tree = parser.parse(inputQuery)
+        result = visit_parse_tree(parse_tree, SemanticAnalysis(kpnGraph, platform, debug=False))
+        
+        assert(len(result) == 1)
+        assert(len(result[0]) == 4)
 
-    
+    def test_query_9(self, parser, kpnGraph, platform):
+        mapDict = {"map_one" : None}
+        inputQuery = "EXISTS ARM04 PROCESSING AND src MAPPED ARM03 AND EQUALS map_one"
+        parse_tree = parser.parse(inputQuery)
+        result = visit_parse_tree(parse_tree, SemanticAnalysis(kpnGraph, platform, mapDict, debug=False))
+        
+        assert(len(result) == 1)
+        assert(len(result[0]) == 3)
+        
+    def test_query_10(self, parser, kpnGraph, platform):
+        mapDict = {"map_one" : None, "map_two" : None}
+        inputQuery = "EXISTS (ARM04 PROCESSING AND EQUALS map_one) OR (src MAPPED ARM03 AND EQUALS map_two)"
+        parse_tree = parser.parse(inputQuery)
+        result = visit_parse_tree(parse_tree, SemanticAnalysis(kpnGraph, platform, mapDict, debug=False))
+        
+        assert(len(result) == 2)
+        assert(len(result[0]) == 2)
+        assert(len(result[1]) == 2)
+        
     
     
     
