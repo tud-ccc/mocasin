@@ -14,11 +14,12 @@ def task_graph():
     return re.compile(expr)
 
 def task():
-    expr = r'TASK\s+(?P<name>([ab-z]|[0-9])+)\s+TYPE\s+(?P<type>\d+)\n'
+    expr = r'TASK\s+(?P<name>([ab-z]|[0-9])+)\s+TYPE\s+(?P<type>\d+)\s+((HOST|host)\s+(?P<host>\d+))?\n'
     return re.compile(expr)
 
 def channel():
-    expr = r'ARC(\s+)(?P<name>([AB-Z]|[ab-z]|[0-9]|\_)+)\s+FROM\s+(?P<source>([ab-z]|[0-9])+)\s+TO\s+(?P<destination>([ab-z]|[0-9])+)\s+TYPE\s+(?P<type>\d+)\n'
+    expr = (r'ARC(\s+)(?P<name>([AB-Z]|[ab-z]|[0-9]|\_)+)\s+(FROM|from)\s+(?P<source>([ab-z]|[0-9])+)\s+(TO|to)\s+'
+            '(?P<destination>([ab-z]|[0-9])+)\s+TYPE\s+(?P<type>\d+)\n')
     return re.compile(expr)
 
 def commun_quant():
@@ -34,7 +35,8 @@ def link():
     return re.compile(expr)
 
 def link_type():
-    expr = r'(\s*)(?P<identifier>\d+)\s+(\d+((\.|\d+)*))\s+(?P<size>\d+).*\n'
+    expr = (r'(\s*)(?P<use_price>\d+)\s+(?P<contact_price>\d+(\.\d+)?)\s+(?P<packet_size>\d+)\s+(?P<bit_time>\d+(\.\d+)?(e|E)-\d+)'
+            '\s+(?P<power>\d+(\.\d+)?((e|E)-\d+)?)\s+(?P<contacts>\d+)\n')
     return re.compile(expr)
 
 def scope_limiter():
@@ -45,16 +47,37 @@ def new_line():
     expr = r'\n'
     return re.compile(expr)
 
-def process():
-    expr = r'@PROC\s+(?P<identifier>\d+)\s+{\n'
+def processor():
+    expr = r'\s*@(?P<name>([AB-Z]|[ab-z]|[0-9]|\_)+)\s+(?P<identifier>\d+)\s+{\n'
     return re.compile(expr)
 
-def propertys():
-    expr = r'\s+(?P<price>\d+)\s+(?P<buffered>\d+)\s+(?P<preempt_power>\d+\.\d+)\s+(?P<commun_energ_bit>\d+)\s+(?P<io_energ_bit>\s+)\s+(?P<idle_power>\d+\.\d+)\s+\n'
+def properties():
+    expr = (r'\s+(?P<price>\d+(\.\d+)?)\s+(?P<buffered>\d+)\s+(?P<preempt_power>\d+(\.\d+)?)((e|E)-\d+)?\s+(?P<commun_energ_bit>\d+)\s+(?P<io_energ_bit>\d+)\s+'
+            '(?P<idle_power>\d+(\.\d+)?)\s*\n')
     return re.compile(expr)
 
 def operation():
-    expr_head = r'\s+(?P<type>\d+)\s+(?P<version>\d+)\s+(?P<valid>\d+)\s+(?P<task_time>\((d+(\.\d+){0,1}(e|E)-\d+)|(\d+\.\d+)))'
-    expr_tail = r'\s+(?P<preempt_time>\d+E-\d+)\s+(?P<code_bits>)\s+(?P<task_power>)\s+\n'
-    return re.compile(expr_head + expr_tail)
+    expr = (r'\s*(?P<type>\d+)\s+(?P<version>\d+)\s+(?P<valid>\d+)\s+(?P<task_time>\d+(\.\d+)?((e|E)-\d+)?)\s+(?P<preempt_time>\d+E-\d+)\s+'
+            '(?P<code_bits>\d+(\.\d+)?((e|E)\+\d+)?)\s+(?P<task_power>\d+(\.\d+)?)\s*\n')
+    return re.compile(expr)
+
+def hyperperiod():
+    expr = r'\s*@HYPERPERIOD\s+(?P<value>\d+\.\d+)\n'
+    return re.compile(expr)
+
+def hard_deadline():
+    expr = r'\s*HARD\_DEADLINE\s+(?P<identifier>([ab-z]|[0-9]|\_)+)\s+(ON|on)\s+(?P<target>([ab-z]|[0-9]|\_)+)\s+(AT|at)\s+(?P<value>\d+(\.\d+)?)\n'
+    return re.compile(expr)
+
+def soft_deadline():
+    expr = r'\s*SOFT\_DEADLINE\s+(?P<identifier>([ab-z]|[0-9]|\_)+)\s+(ON|on)\s+(?P<target>([ab-z]|[0-9]|\_)+)\s+(AT|at)\s+(?P<value>\d+(\.\d+)?)\n'
+    return re.compile(expr)
+
+def period():
+    expr = r'\s*PERIOD\s+\d+(\.\d+)?\n'
+    return re.compile(expr)
+
+def memory():
+    expr = r'\s*@MEMORY\s+(?P<size>\d+)\s+\d+\n'
+    return re.compile(expr)
 
