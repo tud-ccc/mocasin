@@ -5,10 +5,10 @@
 
 from pykpn.common.mapping import Mapping
 from pykpn.representations.representations import RepresentationType
-from builtins import staticmethod
-from arpeggio import OrderedChoice, EOF, PTNodeVisitor, OneOrMore
+from arpeggio import OrderedChoice, EOF, PTNodeVisitor, OneOrMore, Optional
 from arpeggio import RegExMatch as _
 from abc import ABC, abstractmethod
+from arpeggio.peg import OPTIONAL
 
 class Grammar():
     @staticmethod
@@ -24,16 +24,16 @@ class Grammar():
     def __taskIdentifierSeparated(): return ((Grammar.__taskIdentifier), (','))
     
     @staticmethod
-    def __isEqualOp(): return (("EQUALS"), Grammar.__mappingIdentifier)
+    def __isEqualOp(): return (Optional("NOT"), ("EQUALS"), Grammar.__mappingIdentifier)
     
     @staticmethod
-    def __sharedCoreOp(): return (("RUNNING TOGETHER ["), OneOrMore(Grammar.__taskIdentifierSeparated), Grammar.__taskIdentifier, ("]"))
+    def __sharedCoreOp(): return (Optional("NOT"), ("RUNNING TOGETHER ["), OneOrMore(Grammar.__taskIdentifierSeparated), Grammar.__taskIdentifier, ("]"))
     
     @staticmethod
-    def __processingOp(): return (Grammar.__peIdentifier, ("PROCESSING"))
+    def __processingOp(): return (Optional("NOT"), Grammar.__peIdentifier, ("PROCESSING"))
     
     @staticmethod
-    def __mappingOp(): return (Grammar.__taskIdentifier, ("MAPPED"), Grammar.__peIdentifier)
+    def __mappingOp(): return (Optional("NOT"), Grammar.__taskIdentifier, ("MAPPED"), Grammar.__peIdentifier)
     
     @staticmethod
     def __operation(): return OrderedChoice([
@@ -147,41 +147,63 @@ class SemanticAnalysis(PTNodeVisitor):
         return children[0]
     
     def visit___mappingOp(self, node, children):
-        processName = children[0]
+        if len(children) == 2:
+            negate = False
+            processName = children[0]
+            processorName = children[1]
+        else:
+            negate = True
+            processName = children[1]
+            processorName = children[2]
+        
         if not processName in self.__processes:
             raise RuntimeError(processName + " is no valid process identifier!")
         processId = self.__processes[processName]
         
-        processorName = children[1]
         if not processorName in self.__processors:
             raise RuntimeError(processorName + " is no valid processor identifier!")
         processorId = self.__processors[processorName]
         
-        return MappingConstraint(processName, processId, processorName, processorId)
+        return MappingConstraint(negate, processName, processId, processorName, processorId)
     
     def visit___processingOp(self, node, children):
-        processorName = children[0]
+        if len(children) == 1:
+            negate = False
+            processorName = children[0]
+        else:
+            negate = True
+            processorName = children[1]
         if not processorName in self.__processors:
             raise RuntimeError(processorName + " is no valid processor identifier!")
         processorId = self.__processors[processorName]
         
-        return ProcessingConstraint(processorName, processorId)
+        return ProcessingConstraint(negate, processorName, processorId)
     
     def visit___sharedCoreOp(self, node, children):
         idVec = []
-        for i in range(0, len(children)):
+        offset = 0
+        negate = False
+        if children[0] == "NOT":
+            offset = 1
+            negate = True
+        for i in range(offset, len(children)):
             taskName = children[i]
             if not taskName in self.__processes:
                 raise RuntimeError(taskName + " is no valid process identifier!")
             idVec.append(self.__processes[taskName])
             
-        return SharedCoreUsageConstraint(idVec)
+        return SharedCoreUsageConstraint(negate, idVec)
     
     def visit___isEqualOp(self, node, children):
-        mappingName = children[0]
+        if len(children) == 1:
+            negate = False
+            mappingName = children[0]
+        else:
+            negate = True
+            mappingName = children[1]
         if not mappingName in self.__mappingDict:
             raise RuntimeError(mappingName + " is no valid mapping identifier!")
-        return EqualsConstraint(self.__mappingDict[mappingName], self.__kpn, self.__platform)
+        return EqualsConstraint(negate, self.__mappingDict[mappingName], self.__kpn, self.__platform)
     
     def visit___mappingIdentifier(self, node, children):
         name = str(node)
@@ -200,33 +222,44 @@ class SemanticAnalysis(PTNodeVisitor):
     
 class Constraint(ABC):
     @abstractmethod
-    def isFulFilled(self, mapping):
+    def isFulfilled(self, mapping):
         pass
     
 class MappingConstraint(Constraint):
-    def __init__(self, processName, processId, processorName, processorId):
+    def __init__(self, negate, processName, processId, processorName, processorId):
+        self.__negate = negate
         self.__processName = processName
         self.__processId = processId
         self.__processorName = processorName
         self.__processorId = processorId
     
-    def isFulFilled(self, mapping):
+    def isFulfilled(self, mapping):
         if isinstance(mapping, Mapping):
             procVec = mapping.to_list()
             if procVec[self.__processId] == self.__processorId:
+                if self.__negate:
+                    return False
                 return True
+            else:
+                if self.__negate:
+                    return True
+                return False
         else:
             return False
     
     def setEntry(self, partialMapping):
         partialMapping[self.__processId] = self.__processorId
         
+    def isNegated(self):
+        return self.__negate
+        
 class ProcessingConstraint(Constraint):
-    def __init__(self, processorName, processorId):
+    def __init__(self, negate, processorName, processorId):
+        self.__negate = negate
         self.__processorName = processorName
         self.__processorId = processorId
     
-    def isFulFilled(self, mapping):
+    def isFulfilled(self, mapping):
         #TODO:
         #-> Check if mapping is in simple vector representation
         #-> Check if core is processing using this mapping
@@ -235,44 +268,67 @@ class ProcessingConstraint(Constraint):
         else:
             processList = mapping.to_list()
             if self.__processorId in processList:
+                if self.__negate:
+                    return False
                 return True
-        return False
+            else:
+                if self.__negate:
+                    return True
+                return False
     
     def getProcessorId(self):
         return self.__processorId
     
 class SharedCoreUsageConstraint(Constraint):
-    def __init__(self, idVec):
+    def __init__(self, negate, idVec):
+        self.__negate = negate
         self.__idVector = idVec
         
-    def isFulFilled(self, mapping):
+    def isFulfilled(self, mapping):
         if isinstance(mapping, Mapping):
             simVec = mapping.to_list()
-            executingPe = simVec[self.__idVector[0]]
-            for key in self.__idVector:
-                if not simVec[key] == executingPe:
-                    return False
-            return True
+            if self.__negate:
+                taskPool = []
+                for key in self.__idVector:
+                    if simVec[key] in taskPool:
+                        return False
+                    else:
+                        taskPool.append(simVec[key])
+                return True
+            else:
+                executingPe = simVec[self.__idVector[0]]
+                for key in self.__idVector:
+                    if not simVec[key] == executingPe:
+                        return False
+                return True            
         else:
             return False
         
 class EqualsConstraint(Constraint):
-    def __init__(self, mappingObject, kpn, platform):
+    def __init__(self, negate, mappingObject, kpn, platform):
+        self.__negate = negate
         self.__mapping = mappingObject
         self.__lense = RepresentationType['Symmetries'].getClassType()(kpn, platform)
         
-    def isFulFilled(self, mapping):
+    def isFulfilled(self, mapping):
         if isinstance(mapping, Mapping):
             allEquivalent = self.__lense.allEquivalentGen(mapping)
             for equivalent in allEquivalent:
                 if equivalent.to_list() == mapping.to_list():
+                    if self.__negate:
+                        return False
                     return True
+            if self.__negate:
+                return True
             return False
         else:
             return False
         
     def getMapping(self):
         return self.__mapping
+    
+    def isNegated(self):
+        return self.__negate
 
 
 

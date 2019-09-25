@@ -54,7 +54,10 @@ class Solver():
         for constraint in constraintSet:
             #Sort Constraints
             if isinstance(constraint, MappingConstraint):
-                mappingConstraints.append(constraint)
+                if constraint.isNegated():
+                    remaining.append(constraint)
+                else:
+                    mappingConstraints.append(constraint)
             elif isinstance(constraint, EqualsConstraint):
                 equalsConstraints.append(constraint)
             else:
@@ -69,7 +72,7 @@ class Solver():
             #check if all given mappings in the constrains are equal
             if len(equalsConstraints) > 1:
                 for i in range(1, len(equalsConstraints)):
-                    if not equalsConstraints[i].isFulFilled(genMapping):
+                    if not equalsConstraints[i].isFulfilled(genMapping):
                         returnBuffer.put((threadIdentifier, False))
             
             #if so, generate a generator for later use
@@ -86,7 +89,7 @@ class Solver():
             for mapping in generator:
                 mappingValid = True
                 for constraint in remaining:
-                    if not constraint.isFulFilled(mapping):
+                    if not constraint.isFulfilled(mapping):
                         mappingValid = False
             
                 if mappingValid:

@@ -19,7 +19,7 @@ from datetime import datetime
 from solver import Solver
 
 def main():
-    kpn = SlxKpnGraph('SlxKpnGraph',  "apps/audio_filter/audio_filter.cpn.xml",'2017.04')
+    kpn = SlxKpnGraph('SlxKpnGraph',  "apps/hog/hog.cpn.xml",'2017.04')
     platform = SlxPlatform('SlxPlatform', 'apps/audio_filter/exynos/exynos.platform', '2017.04')
     mappingDict = {"mapping_one" : RandomMapping(kpn, platform), "otherMapping" : RandomMapping(kpn, platform)}
     mSolver = Solver(kpn, platform, mappingDict, debug=False)
