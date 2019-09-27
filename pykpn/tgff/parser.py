@@ -10,36 +10,52 @@ class Parser():
         self._debug = debug
         
         self.quantityDict = {}
-        self.linkDict = {}
+        self.stdLinkDict = {}
+        self.primLinkDict = {}
         self.taskGraphDict = {}
         self.processorDict= {}
         
-        self.regexDict = { 'comment' : expr.comment(),
-                          'task_graph' : expr.task_graph(),
-                          'period' : expr.period(),
-                          'task' : expr.task(),
-                          'channel' : expr.channel(),
-                          'hard_deadline' : expr.hard_deadline(),
-                          'soft_deadline' : expr.soft_deadline(),
-                          'commun_quant' : expr.commun_quant(),
-                          'commun_value' : expr.commun_value(),
-                          'link' : expr.link(),
-                          'link_type' : expr.link_type(),
-                          'scope_limiter' : expr.scope_limiter(),
-                          'new_line' : expr.new_line(),
-                          'processor' : expr.processor(),
-                          'properties' : expr.properties(),
-                          'hyperperiod' : expr.hyperperiod(),
-                          'memory' : expr.memory(),
-                          'operation' : expr.operation()}
+        self.commonComponents = { 
+            'comment' : expr.comment(),
+            'new_line' : expr.new_line(),
+            'scope_limiter' : expr.scope_limiter(),
+            }
         
+        self.dataComponents = {
+            'task_graph' : expr.task_graph(),
+            'commun_quant' : expr.commun_quant(),
+            'hw_component' : expr.hw_component(),
+            'hyperperiod' : expr.hyperperiod(),
+            'memory' : expr.memory(),
+            }
+        
+        self.taskGraphComponents = {
+            'period' : expr.period(),
+            'task' : expr.task(),
+            'channel' : expr.channel(),
+            'hard_deadline' : expr.hard_deadline(),
+            'soft_deadline' : expr.soft_deadline(),
+            }
+        
+        self.hwComponents = {
+            'properties' : expr.properties(),
+            'operation' : expr.operation(),
+            'std_link_value' : expr.std_link_value(),
+            'prim_link_value': expr.prim_link_value()
+            }
+        
+        self.communQuantComponents = {
+            'commun_value' : expr.commun_value(),
+            }
+        
+
     
     def parseFile(self, filePath):
         with open(filePath, 'r') as file:
             currentLine  = file.readline()
+            
             while currentLine:
-                key, match = self._parseLine(currentLine)
-                
+                key, match = self._parseLine(currentLine, self.dataComponents)
                 if key == 'task_graph':
                     if self._debug:
                         print('Parsing task graph')
@@ -48,17 +64,12 @@ class Parser():
                     if self._debug:
                         print('Parsing communication quant')
                     self._parseCommunQuant(file, match)
-                elif key == 'link':
+                elif key == 'hw_component':
                     if self._debug:
-                        print('Parsing link')
-                    self._parseLink(file, match)
-                elif key == 'processor':
-                    if self._debug:
-                        print('Parse processor')
-                    self._parseProcessor(file, match)
+                        print('Parse HW component')
+                    self._parseHardwareComponent(file, match)
                 else:
                     self._keyMissmatch(key, file.tell())
-                
                 currentLine = file.readline()
         
         print(ioColors.SUCCESS + 'Finished parsing' + ioColors.ENDC)
@@ -73,8 +84,7 @@ class Parser():
         currentLine = file.readline()
         
         while currentLine:
-            key, match = self._parseLine(currentLine)
-            
+            key, match = self._parseLine(currentLine, self.taskGraphComponents)
             if key == 'task':
                 if self._debug:
                     print('Added task: ' + match.group('name') + ' ' + match.group('type'))
@@ -97,7 +107,6 @@ class Parser():
                 break
             else:
                 self._keyMissmatch(key, file.tell())
-            
             currentLine = file.readline()
         
         print('Added to graph dict: ' + str(identifier))
@@ -109,8 +118,7 @@ class Parser():
         currentLine = file.readline()
         
         while currentLine:
-            key, match = self._parseLine(currentLine)
-            
+            key, match = self._parseLine(currentLine, self.communQuantComponents)
             if key == 'commun_value':
                 if self._debug:
                     print('Added commun_value ' + match.group('identifier') + ' ' + match.group('value'))
@@ -122,80 +130,158 @@ class Parser():
                 break
             else:
                 self._keyMissmatch(key, file.tell())
-            
             currentLine = file.readline()
+
         print('Added to commun_quant dict: ' + identifier)
         self.quantityDict.update( {identifier : communValues} )
+    
+    def _parseHardwareComponent(self, file, match):
+
+        identifier = match.group('name') + '_' + match.group('identifier')
+        currentLine = file.readline()
         
-    def _parseLink(self, file, match):
-        identifier = match.group('identifier')
-        linkTypes = {}
+        """Loop is needed to deal with comment and empty lines
+        """
+        while currentLine:
+            key, match = self._parseLine(currentLine, self.hwComponents)
+            if key == 'std_link_value':
+                self._parseStdLink(identifier, file, match)
+                return
+            elif key == 'prim_link_value':
+                self._parsePrimLink(identifier, file, match)
+                return
+            elif key == 'properties' or key == 'operation':
+                self._parseProcessor(identifier, file, key, match)
+                return
+            elif key == 'scope_limiter':
+                print(ioColors.FAIL + "Reached end of scope. Can't recognize HW component!" + ioColors.ENDC)
+                return
+            else:
+                self._keyMissmatch(key, file.tell())
+            currentLine = file.readline()
+        
+    def _parseStdLink(self, identifier, file, match):
+        if self._debug:
+            print("Recognized component as standard link!")
+        stdLinkValues = []
+        self._addStdLinkValue(stdLinkValues, match)
         
         currentLine = file.readline()
         
         while currentLine:
-            key, match = self._parseLine(currentLine)
-            
-            if key == 'link_type':
-                if self._debug:
-                    print('Added link type: ' + match.group('use_price') + ' ' + match.group('packet_size'))
-                linkTypes.update( {match.group('use_price') : match.group('packet_size')} )
+            key, match = self._parseLine(currentLine, self.hwComponents)
+            if key == 'std_link_value':
+                self._addStdLinkValue(stdLinkValues, match)
             elif key == 'scope_limiter':
                 if self._debug:
-                    print('Reached end of link')
+                    print("Reached end of stdLink")
                 break
             else:
                 self._keyMissmatch(key, file.tell())
-            
             currentLine = file.readline()
-        
+            
         print('Added to link dict: ' + str(identifier))
-        self.linkDict.update( {identifier : linkTypes} )
+        self.stdLinkDict.update( {identifier : stdLinkValues } )
         
-    def _parseProcessor(self, file, match):
-        identifier = match.group('name') + '_' + match.group('identifier')
-        properties = []
-        operations = {}
+    def _addStdLinkValue(self, dataStruct, match):
+        dataStruct.append(match.group('use_price'))
+        dataStruct.append(match.group('contact_price'))
+        dataStruct.append(match.group('packet_size'))
+        dataStruct.append(match.group('bit_time'))
+        dataStruct.append(match.group('power'))
+        dataStruct.append(match.group('contacts'))
+    
+    def _parsePrimLink(self, identifier, file, match):
+        if self._debug:
+            print("Recognized component as primitive link!")
+        primLinkValues = []
+        self._addPrimLinkValue(primLinkValues, match)
         
         currentLine = file.readline()
         
         while currentLine:
-            key, match = self._parseLine(currentLine)
+            key, match = self._parseLine(currentLine, self.hwComponents)
+            if key == 'prim_link_value':
+                self._addPrimLinkValue(primLinkValues, match)
+            elif key == 'scope_limiter':
+                if self._debug:
+                    print("Reached end of primLink")
+                break
+            else:
+                self._keyMissmatch(key, file.tell())
+            currentLine = file.readline()
             
+        print('Added to link dict: ' + str(identifier))
+        self.primLinkDict.update( {identifier : primLinkValues } )
+    
+    def _addPrimLinkValue(self, dataStruct, match):
+        dataStruct.append(match.group('c_use_prc'))
+        dataStruct.append(match.group('c_cont_prc'))
+        dataStruct.append(match.group('s_use_prc'))
+        dataStruct.append(match.group('s_cont_prc'))
+        dataStruct.append(match.group('packet_size'))
+        dataStruct.append(match.group('bit_time'))
+        dataStruct.append(match.group('power'))
+        
+    def _parseProcessor(self, identifier, file, key, match):
+        if self._debug:
+            print("Recognized component as processing element")
+        properties = []
+        operations = {}
+        
+        if key == 'properties':
+            self._addProperties(properties, match)
+        elif key == 'operation':
+            self._addOperation(operations, match)
+        
+        currentLine = file.readline()
+        
+        while currentLine:
+            key, match = self._parseLine(currentLine, self.hwComponents)
             if key == 'properties':
-                if self._debug:
-                    print('Parsed processor properties')
-                properties.append(match.group('price'))
-                properties.append(match.group('buffered'))
-                properties.append(match.group('preempt_power'))
-                properties.append(match.group('commun_energ_bit'))
-                properties.append(match.group('io_energ_bit'))
-                properties.append(match.group('idle_power'))
+                self._addProperties(properties, match)
             elif key == 'operation':
-                if self._debug:
-                    print('Parsed processor operation')
-                tmpList = list()
-                tmpList.append(match.group('version'))
-                tmpList.append(match.group('valid'))
-                tmpList.append(match.group('task_time'))
-                tmpList.append(match.group('preempt_time'))
-                tmpList.append(match.group('code_bits'))
-                tmpList.append(match.group('task_power'))
-                operations.update( { int(match.group('type')) : tmpList} )
+                self._addOperation(operations, match)
             elif key == 'scope_limiter':
                 if self._debug:
                     print('Reached end of processor')
                 break
             else:
                 self._keyMissmatch(key, file.tell())
-                
             currentLine = file.readline()
             
         print('Added to processor dict: ' + str(identifier))
         self.processorDict.update( {identifier : (properties, operations)} )
     
-    def _parseLine(self, line):
-        for key, rx in self.regexDict.items():
+    def _addProperties(self, properties, match):
+        if self._debug:
+            print('Parsed processor properties')
+        properties.append(match.group('price'))
+        properties.append(match.group('buffered'))
+        properties.append(match.group('preempt_power'))
+        properties.append(match.group('commun_energ_bit'))
+        properties.append(match.group('io_energ_bit'))
+        properties.append(match.group('idle_power'))
+    
+    def _addOperation(self, operations, match):
+        if self._debug:
+            print('Parsed processor operation')
+        tmpList = list()
+        tmpList.append(match.group('version'))
+        tmpList.append(match.group('valid'))
+        tmpList.append(match.group('task_time'))
+        tmpList.append(match.group('preempt_time'))
+        tmpList.append(match.group('code_bits'))
+        tmpList.append(match.group('task_power'))
+        operations.update( { int(match.group('type')) : tmpList} )
+    
+    def _parseLine(self, line, additionalComponents=None):
+        for key, rx in self.commonComponents.items():
+            match = rx.fullmatch(line)
+            if match:
+                return key, match
+            
+        for key, rx in additionalComponents.items():
             match = rx.fullmatch(line)
             if match:
                 return key, match
@@ -221,7 +307,7 @@ class ioColors():
     ENDC = '\033[0m'
     
 def main():
-    mParser = Parser(debug=False)
+    mParser = Parser(debug=True)
     mParser.parseFile('graphs/auto-indust-cowls.tgff')
 
 if __name__ == "__main__":

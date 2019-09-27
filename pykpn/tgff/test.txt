@@ -1,7 +1,0 @@
-#this is a comment
-TASK src TYPE 1
-TASK sink TYPE 2
-TASK fftl TYPE 3
-TASK fftr TYPE 4
-#sdfsd9234__123 sda \23b \n asd §$#''*
-loe asd gwfsdf
