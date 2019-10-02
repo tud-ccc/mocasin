@@ -9,6 +9,7 @@ from arpeggio import OrderedChoice, EOF, PTNodeVisitor, OneOrMore, Optional
 from arpeggio import RegExMatch as _
 from abc import ABC, abstractmethod
 from arpeggio.peg import OPTIONAL
+from builtins import staticmethod
 
 class Grammar():
     @staticmethod
@@ -42,7 +43,7 @@ class Grammar():
                                     (Grammar.__sharedCoreOp),
                                     (Grammar.__isEqualOp)
                                     ])
-    
+    """
     @staticmethod
     def __relation(): return OrderedChoice([
                                     ("AND"),
@@ -57,6 +58,32 @@ class Grammar():
                                         (Grammar.__operation, Grammar.__relation, Grammar.__expression),
                                         (Grammar.__operation)
                                         ])
+    """
+    @staticmethod
+    def __relation(): return OrderedChoice([
+                                    ("AND"),
+                                    ("OR")
+                                    ])
+    
+    @staticmethod
+    def __andExpression(): return OrderedChoice([
+                                    (Grammar.__operation, ("AND"), Grammar.__andExpression),
+                                    (Grammar.__operation, ("AND"), Grammar.__operation)
+                                    ])
+    
+    @staticmethod
+    def __orExpression(): return OrderedChoice([
+                                    (Grammar.__operation, ("OR"), Grammar.__orExpression),
+                                    (Grammar.__operation, ("OR"), Grammar.__operation)
+                                    ])
+    
+    @staticmethod
+    def __expression(): return OrderedChoice([
+                                    (("("), Grammar.__expression, (")"), Grammar.__relation, ("("), Grammar.__expression, (")")),
+                                    Grammar.__andExpression,
+                                    Grammar.__orExpression,
+                                    Grammar.__operation
+                                    ])
     
     @staticmethod
     def logicLanguage(): return ("EXISTS "), Grammar.__expression, EOF
@@ -96,49 +123,36 @@ class SemanticAnalysis(PTNodeVisitor):
     def visit___expression(self, node, children):
         result = []
 
-        if children[1] == 'AND':
-            if isinstance(children[0], list):
-                for constraintSetL in children[0]:
-                    if isinstance(children[2], list):
-                        for constraintSetR in children[2]:
-                            tmpSet = list(constraintSetL)
-                            if isinstance(constraintSetR, list):
-                                for constraint in constraintSetR:
-                                    tmpSet.append(constraint)
-                                result.append(tmpSet)
-                            else:
-                                tmpSet.append(constraintSetR)
-                                result.append(tmpSet)
-                    else:
-                        constraintSetL.append(children[2])
-                        result.append(constraintSetL)
-            else:
-                if isinstance(children[2], list):
-                    for constraintSetR in children[2]:
-                        if isinstance(constraintSetR, list):
-                            constraintSetR.append(children[0])
-                            result.append(constraintSetR)
-                        else:
-                            result.append([children[0], constraintSetR])
-                else:
-                    result.append([children[0], children[2]])
-        elif children[1] == 'OR':
-            if isinstance(children[0], list):
-                for element in children[0]:
-                    result.append(element)
-            else:
-                result.append([children[0]])
-            if isinstance(children[2], list):
-                for element in children[2]:
-                    result.append(element)
-            else:
-                result.append([children[2]])
+        if len(children) == 1:
+            result = children
         else:
-            if self.debug:
-                print("Unexpected keyword for an expression of length 3!")
+            if children[1] == "AND":
+                for leftHandSet in children[0]:
+                    for rightHandSet in children[2]:
+                        tmpSet = list(leftHandSet)
+                        for constraint in rightHandSet:
+                            tmpSet.append(constraint)
+                        result.append(tmpSet)
+
+            elif children[1] == "OR":
+                for constraintSet in children[0]:
+                    result.append(constraintSet)
+                for constraintSet in children[2]:
+                    result.append(constraintSet)
             else:
-                raise RuntimeError("Unexpected keyword in an expression!")
+                raise RuntimeError("Unexpected relation operator!")
+        
         return result
+    
+    def visit___andExpression(self, node, children):
+        for constraint in children[1][0]:
+            children[0][0].append(constraint)
+        return children[0]
+    
+    def visit___orExpression(self, node, children):
+        for constraintSet in children[1]:
+            children[0].append(constraintSet)
+        return children[0]
     
     def visit___relation(self, node, children):
         return str(node)
@@ -155,16 +169,9 @@ class SemanticAnalysis(PTNodeVisitor):
             negate = True
             processName = children[1]
             processorName = children[2]
-        
-        if not processName in self.__processes:
-            raise RuntimeError(processName + " is no valid process identifier!")
         processId = self.__processes[processName]
-        
-        if not processorName in self.__processors:
-            raise RuntimeError(processorName + " is no valid processor identifier!")
         processorId = self.__processors[processorName]
-        
-        return MappingConstraint(negate, processName, processId, processorName, processorId)
+        return [[MappingConstraint(negate, processName, processId, processorName, processorId)]]
     
     def visit___processingOp(self, node, children):
         if len(children) == 1:
@@ -173,11 +180,8 @@ class SemanticAnalysis(PTNodeVisitor):
         else:
             negate = True
             processorName = children[1]
-        if not processorName in self.__processors:
-            raise RuntimeError(processorName + " is no valid processor identifier!")
         processorId = self.__processors[processorName]
-        
-        return ProcessingConstraint(negate, processorName, processorId)
+        return [[ProcessingConstraint(negate, processorName, processorId)]]
     
     def visit___sharedCoreOp(self, node, children):
         idVec = []
@@ -188,11 +192,8 @@ class SemanticAnalysis(PTNodeVisitor):
             negate = True
         for i in range(offset, len(children)):
             taskName = children[i]
-            if not taskName in self.__processes:
-                raise RuntimeError(taskName + " is no valid process identifier!")
             idVec.append(self.__processes[taskName])
-            
-        return SharedCoreUsageConstraint(negate, idVec)
+        return [[SharedCoreUsageConstraint(negate, idVec)]]
     
     def visit___isEqualOp(self, node, children):
         if len(children) == 1:
@@ -201,16 +202,18 @@ class SemanticAnalysis(PTNodeVisitor):
         else:
             negate = True
             mappingName = children[1]
-        if not mappingName in self.__mappingDict:
-            raise RuntimeError(mappingName + " is no valid mapping identifier!")
-        return EqualsConstraint(negate, self.__mappingDict[mappingName], self.__kpn, self.__platform)
+        return [[EqualsConstraint(negate, self.__mappingDict[mappingName], self.__kpn, self.__platform)]]
     
     def visit___mappingIdentifier(self, node, children):
         name = str(node)
+        if not name in self.__mappingDict:
+            raise RuntimeError(name + " is no valid mapping identifier!")
         return name
     
     def visit___taskIdentifier(self, node, children):
         name = str(node)
+        if not name in self.__processes:
+            raise RuntimeError(name + " is no valid process identifier!")
         return name
     
     def visit___taskIdentifierSeparated(self, node, children):
@@ -218,6 +221,8 @@ class SemanticAnalysis(PTNodeVisitor):
     
     def visit___peIdentifier(self, node, children):
         name = str(node)
+        if not name in self.__processors:
+            raise RuntimeError(name + " is no valid processor identifier!")
         return name
     
 class Constraint(ABC):
