@@ -43,22 +43,7 @@ class Grammar():
                                     (Grammar.__sharedCoreOp),
                                     (Grammar.__isEqualOp)
                                     ])
-    """
-    @staticmethod
-    def __relation(): return OrderedChoice([
-                                    ("AND"),
-                                    ("OR")
-                                    ])
     
-    @staticmethod
-    def __expression(): return OrderedChoice([
-                                        (("("), Grammar.__expression, (")"), Grammar.__relation, ("("), Grammar.__expression, (")")),
-                                        (Grammar.__operation, Grammar.__relation, ("("), Grammar.__expression, (")")),
-                                        (("("), Grammar.__expression, (")"), Grammar.__relation, Grammar.__operation),
-                                        (Grammar.__operation, Grammar.__relation, Grammar.__expression),
-                                        (Grammar.__operation)
-                                        ])
-    """
     @staticmethod
     def __relation(): return OrderedChoice([
                                     ("AND"),
@@ -67,14 +52,12 @@ class Grammar():
     
     @staticmethod
     def __andExpression(): return OrderedChoice([
-                                    (Grammar.__operation, ("AND"), Grammar.__andExpression),
-                                    (Grammar.__operation, ("AND"), Grammar.__operation)
+                                    (Grammar.__operation, OneOrMore(("AND"), Grammar.__operation))
                                     ])
     
     @staticmethod
     def __orExpression(): return OrderedChoice([
-                                    (Grammar.__operation, ("OR"), Grammar.__orExpression),
-                                    (Grammar.__operation, ("OR"), Grammar.__operation)
+                                    (Grammar.__operation, OneOrMore(("OR"), Grammar.__operation))
                                     ])
     
     @staticmethod
@@ -145,14 +128,18 @@ class SemanticAnalysis(PTNodeVisitor):
         return result
     
     def visit___andExpression(self, node, children):
-        for constraint in children[1][0]:
-            children[0][0].append(constraint)
-        return children[0]
+        result = [[]]
+        for child in children:
+            if isinstance(child, list):
+                result[0].append(child[0][0])
+        return result
     
     def visit___orExpression(self, node, children):
-        for constraintSet in children[1]:
-            children[0].append(constraintSet)
-        return children[0]
+        result = []
+        for child in children:
+            if isinstance(child, list):
+                result.append(child[0])
+        return result
     
     def visit___relation(self, node, children):
         return str(node)
