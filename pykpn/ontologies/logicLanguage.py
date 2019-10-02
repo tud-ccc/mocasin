@@ -8,7 +8,6 @@ from pykpn.representations.representations import RepresentationType
 from arpeggio import OrderedChoice, EOF, PTNodeVisitor, OneOrMore, Optional
 from arpeggio import RegExMatch as _
 from abc import ABC, abstractmethod
-from arpeggio.peg import OPTIONAL
 from builtins import staticmethod
 
 class Grammar():
@@ -22,13 +21,10 @@ class Grammar():
     def __taskIdentifier(): return _(r'([ab-z]|[AB-Z])(([ab-z]|[AB-z]|[0-9]|\_)*)')
     
     @staticmethod
-    def __taskIdentifierSeparated(): return ((Grammar.__taskIdentifier), (','))
-    
-    @staticmethod
     def __isEqualOp(): return (Optional("NOT"), ("EQUALS"), Grammar.__mappingIdentifier)
     
     @staticmethod
-    def __sharedCoreOp(): return (Optional("NOT"), ("RUNNING TOGETHER ["), OneOrMore(Grammar.__taskIdentifierSeparated), Grammar.__taskIdentifier, ("]"))
+    def __sharedCoreOp(): return (Optional("NOT"), ("RUNNING TOGETHER ["), OneOrMore(Grammar.__taskIdentifier, (",")), Grammar.__taskIdentifier, ("]"))
     
     @staticmethod
     def __processingOp(): return (Optional("NOT"), Grammar.__peIdentifier, ("PROCESSING"))
@@ -203,9 +199,6 @@ class SemanticAnalysis(PTNodeVisitor):
             raise RuntimeError(name + " is no valid process identifier!")
         return name
     
-    def visit___taskIdentifierSeparated(self, node, children):
-        return children[0]
-    
     def visit___peIdentifier(self, node, children):
         name = str(node)
         if not name in self.__processors:
@@ -279,20 +272,16 @@ class SharedCoreUsageConstraint(Constraint):
     def isFulfilled(self, mapping):
         if isinstance(mapping, Mapping):
             simVec = mapping.to_list()
+            
+            executingPe = simVec[self.__idVector[0]]
+            for key in self.__idVector:
+                if not simVec[key] == executingPe:
+                    if self.__negate:
+                        return True
+                    return False
             if self.__negate:
-                taskPool = []
-                for key in self.__idVector:
-                    if simVec[key] in taskPool:
-                        return False
-                    else:
-                        taskPool.append(simVec[key])
-                return True
-            else:
-                executingPe = simVec[self.__idVector[0]]
-                for key in self.__idVector:
-                    if not simVec[key] == executingPe:
-                        return False
-                return True            
+                return False
+            return True
         else:
             return False
         
