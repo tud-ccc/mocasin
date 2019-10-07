@@ -6,7 +6,7 @@
 from pykpn.mapper.mapgen import MappingGeneratorOrbit, MappingGeneratorSimvec
 from pykpn.common.mapping import Mapping
 from pykpn.representations.representations import RepresentationType
-from pykpn.ontologies.logicLanguage import Grammar, SemanticAnalysis, MappingConstraint, EqualsConstraint
+from pykpn.ontologies.logicLanguage import Grammar, SemanticAnalysis, MappingConstraint, EqualsConstraint, SharedCoreUsageConstraint
 from arpeggio import ParserPython, visit_parse_tree
 from threading import Thread
 
@@ -44,24 +44,30 @@ class Solver():
         
         #In case neither of the threads returned a valid mapping
         return False
+    
+    def parseString(self, queryString):
+        parse_tree = self.__parser.parse(queryString)
+        return visit_parse_tree(parse_tree, SemanticAnalysis(self.__kpn, self.__platform, self.__mappingDict, debug=self.__debug))
         
     def exploreMappingSpace(self, constraintSet, returnBuffer, vec, threadIdentifier):
         mappingConstraints = []
-        processingConstraints = []
         equalsConstraints = []
+        sharedCoreConstraints = []
         remaining = []
         
         for constraint in constraintSet:
             #Sort Constraints
-            if isinstance(constraint, MappingConstraint):
-                if constraint.isNegated():
-                    remaining.append(constraint)
-                else:
-                    mappingConstraints.append(constraint)
-            elif isinstance(constraint, EqualsConstraint):
-                equalsConstraints.append(constraint)
-            else:
+            if constraint.isNegated():
                 remaining.append(constraint)
+            else:
+                if isinstance(constraint, MappingConstraint):
+                    mappingConstraints.append(constraint)
+                elif isinstance(constraint, EqualsConstraint):
+                    equalsConstraints.append(constraint)
+                elif isinstance(constraint, SharedCoreUsageConstraint):
+                    sharedCoreConstraints.append(constraint)
+                else:
+                    remaining.append(constraint)
         
         generator = None
         
@@ -76,14 +82,13 @@ class Solver():
                         returnBuffer.put((threadIdentifier, False))
             
             #if so, generate a generator for later use
-            remaining = remaining + mappingConstraints + processingConstraints
+            remaining = remaining + mappingConstraints + sharedCoreConstraints
             symmetryLense = RepresentationType['Symmetries'].getClassType()(self.__kpn, self.__platform)
             generator = MappingGeneratorOrbit(symmetryLense, genMapping)
         
         #otherwise the simpleVectorMapper is used a generator
         else:
-            generator = MappingGeneratorSimvec(self.__kpn, self.__platform, mappingConstraints, vec)
-        
+            generator = MappingGeneratorSimvec(self.__kpn, self.__platform, mappingConstraints, sharedCoreConstraints, vec)
         
         if generator:
             for mapping in generator:
@@ -91,6 +96,7 @@ class Solver():
                 for constraint in remaining:
                     if not constraint.isFulfilled(mapping):
                         mappingValid = False
+                        break
             
                 if mappingValid:
                     returnBuffer.put((threadIdentifier, mapping))

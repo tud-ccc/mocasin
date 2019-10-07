@@ -10,25 +10,43 @@ from pykpn.mapper.proc_partialmapper import ProcPartialMapper
 from builtins import StopIteration
 
 class SimpleVectorMapper():
-    def __init__(self, kpn, platform, constraints, vec, debug=False):
+    def __init__(self, kpn, platform, mappingConstraints, sharedCoreConstraints, vec, debug=False):
         self.__fullMapper = MappingCompletionWrapper(kpn, platform)
         self.__processors = len(platform.processors())
         self.__processes = len(kpn.processes())
         self.__unmappedProcesses = []
         self.__stateVector = []
         self.__frameMapping = []
+        self.__resolveDict = {}
         self.__debug = debug
         
         #generate a frame mapping, which fulfills exactly the constraints
         #all other processes remain unmapped
         for i in range(0, self.__processes):
             self.__frameMapping.append(-1)
-        for constraint in constraints:
+        for constraint in mappingConstraints:
             constraint.setEntry(self.__frameMapping)
+        
+        for constraint in sharedCoreConstraints:
+            vector = constraint.getIdVector()
+            idx = 0
+            for value in vector:
+                if not self.__frameMapping[value] == -1:
+                    idx = vector.index(value)
+                    break
+            key = vector.pop(idx)
+            self.__resolveDict.update({key : vector})
+        
         #check which process in the frame mapping is unmapped
         #they're the degrees of freedom for the generation mapping generation
         for i in range(0, self.__processes):
             if self.__frameMapping[i] == -1:
+                skip = False
+                for key in self.__resolveDict:
+                    if i in self.__resolveDict[key]:
+                        skip = True
+                if skip:
+                    continue
                 self.__unmappedProcesses.append(i)
                 self.__stateVector.append(0)
                 
@@ -47,6 +65,10 @@ class SimpleVectorMapper():
             for idx in range(0, len(self.__stateVector)):
                 self.__frameMapping[self.__unmappedProcesses[idx]] = self.__stateVector[idx]
                 idx += 1
+            
+            for key in self.__resolveDict:
+                for idx in self.__resolveDict[key]:
+                    self.__frameMapping[idx] = self.__frameMapping[key]
             
             mapping = self.__fullMapper.completeMappingBestEffort(self.__frameMapping)
             self.__stateIncrement(0)

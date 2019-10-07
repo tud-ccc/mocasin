@@ -36,8 +36,8 @@ class MappingGeneratorOrbit(MappingGenerator):
         return self.representation.fromRepresentation(next_mapping)
 
 class MappingGeneratorSimvec(MappingGenerator):
-    def __init__(self, kpn, platform, constraints, vec):
-        self.mapper = SimpleVectorMapper(kpn, platform, constraints, vec)
+    def __init__(self, kpn, platform, mappingConstraints, sharedCoreConstraints, vec):
+        self.mapper = SimpleVectorMapper(kpn, platform, mappingConstraints, sharedCoreConstraints, vec)
     
     def __next__(self):
         next_mapping = next(self.mapper)

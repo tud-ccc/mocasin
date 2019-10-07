@@ -209,6 +209,9 @@ class Constraint(ABC):
     @abstractmethod
     def isFulfilled(self, mapping):
         pass
+    @abstractmethod
+    def isNegated(self):
+        pass
     
 class MappingConstraint(Constraint):
     def __init__(self, negate, processName, processId, processorName, processorId):
@@ -264,6 +267,9 @@ class ProcessingConstraint(Constraint):
     def getProcessorId(self):
         return self.__processorId
     
+    def isNegated(self):
+        return self.__negate
+    
 class SharedCoreUsageConstraint(Constraint):
     def __init__(self, negate, idVec):
         self.__negate = negate
@@ -284,6 +290,12 @@ class SharedCoreUsageConstraint(Constraint):
             return True
         else:
             return False
+        
+    def getIdVector(self):
+        return self.__idVector
+    
+    def isNegated(self):
+        return self.__negate
         
 class EqualsConstraint(Constraint):
     def __init__(self, negate, mappingObject, kpn, platform):
