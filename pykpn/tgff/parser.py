@@ -4,10 +4,15 @@
 # Authors: Felix Teweleit
 
 import regEx as expr
+import argparse
+
+from logger import Logger
+from pykpn.common.kpn import KpnProcess, KpnGraph, KpnChannel
 
 class Parser():
-    def __init__(self, debug=False):
+    def __init__(self, debug=False, silent=False):
         self._debug = debug
+        self.logger = Logger(debug, silent)
         
         self.quantityDict = {}
         self.stdLinkDict = {}
@@ -26,7 +31,6 @@ class Parser():
             'commun_quant' : expr.commun_quant(),
             'hw_component' : expr.hw_component(),
             'hyperperiod' : expr.hyperperiod(),
-            'memory' : expr.memory(),
             }
         
         self.taskGraphComponents = {
@@ -48,6 +52,10 @@ class Parser():
             'commun_value' : expr.commun_value(),
             }
         
+        self.unusedComponents = {
+            'unused_statement' : expr.unused_statement(),
+            'unused_scope' : expr.unused_scope(),
+            }
 
     
     def parseFile(self, filePath):
@@ -57,22 +65,22 @@ class Parser():
             while currentLine:
                 key, match = self._parseLine(currentLine, self.dataComponents)
                 if key == 'task_graph':
-                    if self._debug:
-                        print('Parsing task graph')
+                    self.logger.logDebug('Parsing task graph')
                     self._parseTaskGraph(file, match)
                 elif key == 'commun_quant':
-                    if self._debug:
-                        print('Parsing communication quant')
+                    self.logger.logDebug('Parsing communication quant')
                     self._parseCommunQuant(file, match)
                 elif key == 'hw_component':
-                    if self._debug:
-                        print('Parse HW component')
+                    self.logger.logDebug('Parse HW component')
                     self._parseHardwareComponent(file, match)
+                elif key == 'unused_scope':
+                    self.logger.logDebug('Parse unused group')
+                    self._parse_unused_scope(file)
                 else:
                     self._keyMissmatch(key, file.tell())
                 currentLine = file.readline()
         
-        print(ioColors.SUCCESS + 'Finished parsing' + ioColors.ENDC)
+        self.logger.logSuccess('Finished parsing')
     
     def _parseTaskGraph(self, file, match):
         identifier = int(match.group('identifier'))
@@ -86,30 +94,27 @@ class Parser():
         while currentLine:
             key, match = self._parseLine(currentLine, self.taskGraphComponents)
             if key == 'task':
-                if self._debug:
-                    print('Added task: ' + match.group('name') + ' ' + match.group('type'))
+                self.logger.logDebug('Added task: ' + match.group('name') + ' ' + match.group('type'))
                 if not match.group('name') in tasks:
                     tasks.update( {match.group('name') : match.group('type')} )
                 else:
                     tasks.update( {match.group('name') + '_' + str(taskIndexExtension) : match.group('type')} )
                     taskIndexExtension += 1
             elif key == 'channel':
-                if self._debug:
-                    print('Added channel: ' + match.group('name') + ' ' + match.group('type'))
+                self.logger.log('Added channel: ' + match.group('name') + ' ' + match.group('type'))
                 if not match.group('name') in channels:
                     channels.update( {match.group('name') : [match.group('source'), match.group('destination'), match.group('type')]} ) 
                 else:
                     channels.update( {match.group('name') + '_' + str(channelIndexExtension): [match.group('source'), match.group('destination'), match.group('type')]} )
                     channelIndexExtension += 1
             elif key == 'scope_limiter':
-                if self._debug:
-                    print('Reached end of task graph')
+                self.logger.logDebug('Reached end of task graph')
                 break
             else:
                 self._keyMissmatch(key, file.tell())
             currentLine = file.readline()
         
-        print('Added to graph dict: ' + str(identifier))
+        self.logger.log('Added to graph dict: ' + str(identifier))
         self.taskGraphDict.update( {identifier : [tasks, channels]} )
     
     def _parseCommunQuant(self, file, match):
@@ -120,28 +125,22 @@ class Parser():
         while currentLine:
             key, match = self._parseLine(currentLine, self.communQuantComponents)
             if key == 'commun_value':
-                if self._debug:
-                    print('Added commun_value ' + match.group('identifier') + ' ' + match.group('value'))
-                #TODO: resolve somehow this exponential expression
-                communValues.update( {match.group('identifier') : [match.group('value'), match.group('exponent')]} )
+                self.logger.logDebug('Added commun_value ' + match.group('identifier') + ' ' + match.group('value'))
+                communValues.update( {int(match.group('identifier')) : [int(match.group('value')), int(match.group('exponent'))]} )
             elif key == 'scope_limiter':
-                if self._debug:
-                    print('Reached end of commun_quant')
+                self.logger.logDebug('Reached end of commun_quant')
                 break
             else:
                 self._keyMissmatch(key, file.tell())
             currentLine = file.readline()
-
-        print('Added to commun_quant dict: ' + identifier)
-        self.quantityDict.update( {identifier : communValues} )
+        
+        self.logger.log('Added to commun_quant dict: ' + identifier)
+        self.quantityDict.update( {int(identifier) : communValues} )
     
     def _parseHardwareComponent(self, file, match):
-
         identifier = match.group('name') + '_' + match.group('identifier')
         currentLine = file.readline()
         
-        """Loop is needed to deal with comment and empty lines
-        """
         while currentLine:
             key, match = self._parseLine(currentLine, self.hwComponents)
             if key == 'std_link_value':
@@ -154,15 +153,13 @@ class Parser():
                 self._parseProcessor(identifier, file, key, match)
                 return
             elif key == 'scope_limiter':
-                print(ioColors.FAIL + "Reached end of scope. Can't recognize HW component!" + ioColors.ENDC)
-                return
+                self.logger.logError('Reached end of scope. Unable to recognize HW component!')
             else:
                 self._keyMissmatch(key, file.tell())
             currentLine = file.readline()
         
     def _parseStdLink(self, identifier, file, match):
-        if self._debug:
-            print("Recognized component as standard link!")
+        self.logger.logDebug('Recognized component as standard link!')
         stdLinkValues = []
         self._addStdLinkValue(stdLinkValues, match)
         
@@ -173,14 +170,13 @@ class Parser():
             if key == 'std_link_value':
                 self._addStdLinkValue(stdLinkValues, match)
             elif key == 'scope_limiter':
-                if self._debug:
-                    print("Reached end of stdLink")
+                self.logger.logDebug('Reached end of stdLink')
                 break
             else:
                 self._keyMissmatch(key, file.tell())
             currentLine = file.readline()
             
-        print('Added to link dict: ' + str(identifier))
+        self.logger.log('Added to link dict: ' + str(identifier))
         self.stdLinkDict.update( {identifier : stdLinkValues } )
         
     def _addStdLinkValue(self, dataStruct, match):
@@ -192,8 +188,7 @@ class Parser():
         dataStruct.append(match.group('contacts'))
     
     def _parsePrimLink(self, identifier, file, match):
-        if self._debug:
-            print("Recognized component as primitive link!")
+        self.logger.log("Recognized component as primitive link!")
         primLinkValues = []
         self._addPrimLinkValue(primLinkValues, match)
         
@@ -204,14 +199,13 @@ class Parser():
             if key == 'prim_link_value':
                 self._addPrimLinkValue(primLinkValues, match)
             elif key == 'scope_limiter':
-                if self._debug:
-                    print("Reached end of primLink")
+                self.logger.logDebug("Reached end of primLink")
                 break
             else:
                 self._keyMissmatch(key, file.tell())
             currentLine = file.readline()
             
-        print('Added to link dict: ' + str(identifier))
+        self.logger.log('Added to link dict: ' + str(identifier))
         self.primLinkDict.update( {identifier : primLinkValues } )
     
     def _addPrimLinkValue(self, dataStruct, match):
@@ -224,8 +218,7 @@ class Parser():
         dataStruct.append(match.group('power'))
         
     def _parseProcessor(self, identifier, file, key, match):
-        if self._debug:
-            print("Recognized component as processing element")
+        self.logger.logDebug("Recognized component as processing element")
         properties = []
         operations = {}
         
@@ -243,19 +236,17 @@ class Parser():
             elif key == 'operation':
                 self._addOperation(operations, match)
             elif key == 'scope_limiter':
-                if self._debug:
-                    print('Reached end of processor')
+                self.logger.logDebug('Reached end of processor')
                 break
             else:
                 self._keyMissmatch(key, file.tell())
             currentLine = file.readline()
             
-        print('Added to processor dict: ' + str(identifier))
+        self.logger.log('Added to processor dict: ' + str(identifier))
         self.processorDict.update( {identifier : (properties, operations)} )
     
     def _addProperties(self, properties, match):
-        if self._debug:
-            print('Parsed processor properties')
+        self.logger.logDebug('Parsed processor properties')
         properties.append(match.group('price'))
         properties.append(match.group('buffered'))
         properties.append(match.group('preempt_power'))
@@ -264,8 +255,7 @@ class Parser():
         properties.append(match.group('idle_power'))
     
     def _addOperation(self, operations, match):
-        if self._debug:
-            print('Parsed processor operation')
+        self.logger.logDebug('Parsed processor operation')
         tmpList = list()
         tmpList.append(match.group('version'))
         tmpList.append(match.group('valid'))
@@ -274,14 +264,34 @@ class Parser():
         tmpList.append(match.group('code_bits'))
         tmpList.append(match.group('task_power'))
         operations.update( { int(match.group('type')) : tmpList} )
+        
+    def _parse_unused_scope(self, file):
+        currentLine = file.readline()
+        
+        while currentLine:
+            key, match = self._parseLine(currentLine)
+            if key == 'unused_statement':
+                self.logger.log("Ignored statement")
+            elif key == 'scope_limiter':
+                self.logger.log("Parsed block which will be ignored")
+                break
+            else:
+                self._keyMissmatch(key, file.tell())
+            currentLine = file.readline()
     
     def _parseLine(self, line, additionalComponents=None):
         for key, rx in self.commonComponents.items():
             match = rx.fullmatch(line)
             if match:
                 return key, match
+        
+        if not additionalComponents == None:
+            for key, rx in additionalComponents.items():
+                match = rx.fullmatch(line)
+                if match:
+                    return key, match
             
-        for key, rx in additionalComponents.items():
+        for key, rx in self.unusedComponents.items():
             match = rx.fullmatch(line)
             if match:
                 return key, match
@@ -293,23 +303,67 @@ class Parser():
             if self._debug:
                 print('Skip empty or comment line')
         elif not key == None:
-            print(ioColors.WARNING + 'Parsed unhandled group: <' + key + '> at position: ' + str(position) + ioColors.ENDC)
+            self.logger.logWarning('Parsed unhandled group: <' + key + '> at position: ' + str(position))
         else:
-            if self._debug:
-                print(ioColors.WARNING + 'No valid regex for position: ' + str(position) + ioColors.ENDC)
-            else:
-                print(ioColors.FAIL + 'Parse error on position: ' + str(position) + ioColors.ENDC)
+            self.logger.logError('Parse error on position: ' + str(position))
     
-class ioColors():
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    SUCCESS = '\033[92m'
-    ENDC = '\033[0m'
+    def generateKPNs(self):
+        KPNdict = {}
+        
+        
+        for graphKey in self.taskGraphDict:
+            kpnGraph = KpnGraph()
+            tasks = []
+            channels = []
+            
+            '''Generate tasks
+            '''
+            for taskKey in self.taskGraphDict[graphKey][0]:
+                task = KpnProcess(taskKey)
+                tasks.append(task)
+                
+            for key in self.taskGraphDict[graphKey][1]:
+                value = self.taskGraphDict[graphKey][1][key]
+                name = key
+                tokenSize = self.quantityDict[0][int(value[2])]
+                tokenSize = tokenSize[0] * (10 ** tokenSize[1])
+                channel = KpnChannel(name, tokenSize)
+                for task in tasks:
+                    if task.name == value[0]:
+                        task.connect_to_outgoing_channel(channel)
+                    if task.name == value[1]:
+                        task.connect_to_incomming_channel(channel)
+                channels.append(channel)
+            
+            for task in tasks:
+                kpnGraph.add_process(task)
+            for channel in channels:
+                kpnGraph.add_channel(channel)
+            KPNdict.update({graphKey : kpnGraph})
+        
+        return KPNdict
+            
+    def generatePEs(self, frequencyDomain):
+        pass
     
+    def generateCommunicationRessources(self, frequencyDomain):
+        pass
+    
+    def generateTraces(self, amount=1):
+        pass
+        
 def main():
-    mParser = Parser(debug=True)
-    mParser.parseFile('graphs/auto-indust-cowls.tgff')
+    argumentParser = argparse.ArgumentParser()
+    argumentParser.add_argument('path',metavar='P', type=str)
+    argumentParser.add_argument('--debug', metavar='D', const=True, nargs='?')
+    args = argumentParser.parse_args()
 
+    mParser = Parser(debug=args.debug)
+    mParser.parseFile(args.path)
+    
+    test = mParser.generateKPN()
+    print("Stop")
+    
 if __name__ == "__main__":
     main()
     
