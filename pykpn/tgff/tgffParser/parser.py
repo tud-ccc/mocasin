@@ -3,10 +3,11 @@
 #
 # Authors: Felix Teweleit
 
-import regEx as expr
+from tgffParser import regEx as expr
 import argparse
 
-from logger import Logger
+from tgffParser.logger import Logger
+from tgffParser.dataStructures import TgffProcessor, TgffGraph
 from pykpn.common.kpn import KpnProcess, KpnGraph, KpnChannel
 
 class Parser():
@@ -81,6 +82,7 @@ class Parser():
                 currentLine = file.readline()
         
         self.logger.logSuccess('Finished parsing')
+        return [self.taskGraphDict, self.quantityDict, self.processorDict]
     
     def _parseTaskGraph(self, file, match):
         identifier = int(match.group('identifier'))
@@ -115,7 +117,7 @@ class Parser():
             currentLine = file.readline()
         
         self.logger.log('Added to graph dict: ' + str(identifier))
-        self.taskGraphDict.update( {identifier : [tasks, channels]} )
+        self.taskGraphDict.update( {identifier : TgffGraph(identifier, tasks, channels, self.quantityDict)} )
     
     def _parseCommunQuant(self, file, match):
         identifier = match.group('identifier')
@@ -126,7 +128,7 @@ class Parser():
             key, match = self._parseLine(currentLine, self.communQuantComponents)
             if key == 'commun_value':
                 self.logger.logDebug('Added commun_value ' + match.group('identifier') + ' ' + match.group('value'))
-                communValues.update( {int(match.group('identifier')) : [int(match.group('value')), int(match.group('exponent'))]} )
+                communValues.update( {int(match.group('identifier')) : float(match.group('value'))} )
             elif key == 'scope_limiter':
                 self.logger.logDebug('Reached end of commun_quant')
                 break
@@ -243,7 +245,7 @@ class Parser():
             currentLine = file.readline()
             
         self.logger.log('Added to processor dict: ' + str(identifier))
-        self.processorDict.update( {identifier : (properties, operations)} )
+        self.processorDict.update( {identifier : TgffProcessor(identifier, operations)} )
     
     def _addProperties(self, properties, match):
         self.logger.logDebug('Parsed processor properties')
@@ -259,8 +261,8 @@ class Parser():
         tmpList = list()
         tmpList.append(match.group('version'))
         tmpList.append(match.group('valid'))
-        tmpList.append(match.group('task_time'))
-        tmpList.append(match.group('preempt_time'))
+        tmpList.append(float(match.group('task_time')))
+        tmpList.append(float(match.group('preempt_time')))
         tmpList.append(match.group('code_bits'))
         tmpList.append(match.group('task_power'))
         operations.update( { int(match.group('type')) : tmpList} )
@@ -306,52 +308,7 @@ class Parser():
             self.logger.logWarning('Parsed unhandled group: <' + key + '> at position: ' + str(position))
         else:
             self.logger.logError('Parse error on position: ' + str(position))
-    
-    def generateKPNs(self):
-        KPNdict = {}
-        
-        
-        for graphKey in self.taskGraphDict:
-            kpnGraph = KpnGraph()
-            tasks = []
-            channels = []
-            
-            '''Generate tasks
-            '''
-            for taskKey in self.taskGraphDict[graphKey][0]:
-                task = KpnProcess(taskKey)
-                tasks.append(task)
                 
-            for key in self.taskGraphDict[graphKey][1]:
-                value = self.taskGraphDict[graphKey][1][key]
-                name = key
-                tokenSize = self.quantityDict[0][int(value[2])]
-                tokenSize = tokenSize[0] * (10 ** tokenSize[1])
-                channel = KpnChannel(name, tokenSize)
-                for task in tasks:
-                    if task.name == value[0]:
-                        task.connect_to_outgoing_channel(channel)
-                    if task.name == value[1]:
-                        task.connect_to_incomming_channel(channel)
-                channels.append(channel)
-            
-            for task in tasks:
-                kpnGraph.add_process(task)
-            for channel in channels:
-                kpnGraph.add_channel(channel)
-            KPNdict.update({graphKey : kpnGraph})
-        
-        return KPNdict
-            
-    def generatePEs(self, frequencyDomain):
-        pass
-    
-    def generateCommunicationRessources(self, frequencyDomain):
-        pass
-    
-    def generateTraces(self, amount=1):
-        pass
-        
 def main():
     argumentParser = argparse.ArgumentParser()
     argumentParser.add_argument('path',metavar='P', type=str)
@@ -361,8 +318,6 @@ def main():
     mParser = Parser(debug=args.debug)
     mParser.parseFile(args.path)
     
-    test = mParser.generateKPN()
-    print("Stop")
     
 if __name__ == "__main__":
     main()

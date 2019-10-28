@@ -29,7 +29,7 @@ def commun_quant():
     return re.compile(expr)
 
 def commun_value():
-    expr = r'(?P<identifier>\d+)\s+(?P<value>\d+)E(?P<exponent>\d+)\n'
+    expr = r'(?P<identifier>\d+)\s+(?P<value>(\d|E|e|\.)+)\n'
     return re.compile(expr)
 
 def std_link_value():
