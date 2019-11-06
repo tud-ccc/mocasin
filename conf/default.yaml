@@ -1,0 +1,7 @@
+defaults:
+  - simulate: pytrm
+  - app : audio_filter
+  - platform: exynos
+  - task: random_walk_mapping
+  - logging: default
+

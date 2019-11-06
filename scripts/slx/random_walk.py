@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright (C) 2017 TU Dresden
+# Copyright (C) 2017-2019 TU Dresden
 # All Rights Reserved
 #
 # Authors: Christian Menard, Andres Goens
@@ -143,17 +143,40 @@ def main(argv):
     args = parser.parse_args(argv)
 
     logging.setup_from_args(args)
-
     num_iterations = args.num_iterations
     rep_type_str = args.rep_type_str
+
+    config_dict = {
+        'num_iterations' : args.num_iterations,
+        'jobs' : args.jobs,
+        'progress' :  args.progress,
+        'export_all' : args.export_all,
+        'outdir' : args.outdir,
+        'plot_distribution': args.plot_distribution,
+        'visualize' :  args.visualize,
+        'rep_type_str' : args.rep_type_str,
+        'slx_cfg_file' : args.config,
+    }
+    random_walk(config_dict)
+
+def random_walk(cfg):
+    rep_type_str = cfg['rep_type_str']
+    num_iterations = cfg['num_iterations']
+
     if rep_type_str not in dir(RepresentationType):
         log.exception("Representation " + rep_type_str + " not recognized. Available: " + ", ".join(dir(RepresentationType)))
         raise RuntimeError('Unrecognized representation.')
 
     try:
-        # parse the config file
-        config = SlxSimulationConfig(args.config)
-        slx_version = config.slx_version
+        # parse the config file (backwards compatible)
+        if 'slx_cfg_file' in cfg:
+            config = SlxSimulationConfig(cfg['slx_cfg_file'])
+            slx_version = config.slx_version
+        else:
+            config = SlxSimulationConfig(config_dict = cfg)
+            slx_version = cfg['slx_version']
+
+
 
         # create the platform
         if config.platform_class is not None:
@@ -204,10 +227,10 @@ def main(argv):
             simulations.append(sim_context)
 
         # run the simulations and search for the best mapping
-        pool = mp.Pool(processes=args.jobs)
+        pool = mp.Pool(processes=cfg['jobs'])
 
         # execute the simulations in parallel
-        if args.progress:
+        if cfg['progress']:
             import tqdm
             results = list(tqdm.tqdm(pool.imap(run_simualtion, simulations,
                                                chunksize=10),
@@ -233,7 +256,7 @@ def main(argv):
         print('Best simulated execution time: %0.1fms' % (exec_time))
 
         # export the best mapping
-        outdir = args.outdir
+        outdir = cfg['outdir']
         if not os.path.exists(outdir):
             os.makedirs(outdir)
         for ac in best_result.app_contexts:
@@ -244,7 +267,7 @@ def main(argv):
 
         # export all mappings if requested
         idx = 1
-        if args.export_all:
+        if cfg['export_all']:
             for r in results:
                 for ac in r.app_contexts:
                     mapping_name = '%s.rnd_%08d.mapping' % (ac.name, idx)
@@ -254,7 +277,7 @@ def main(argv):
                 idx += 1
 
         # plot result distribution
-        if args.plot_distribution:
+        if cfg['plot_distribution']:
             import matplotlib.pyplot as plt
             # exec time in milliseconds
             plt.hist(exec_times, bins=int(num_iterations/20), density=True)
@@ -265,15 +288,16 @@ def main(argv):
             plt.show()
 
         # visualize searched space
-        if args.visualize != None:
+        visualize = cfg['visualize']
+        if visualize != None:
             if len(results[0].app_contexts) > 1:
                 raise RuntimeError('Search space visualization only works '
                                    'for single application mappings')
             mappings = [r.app_contexts[0].mapping for r in results]
-            if len(args.visualize) == 0:
+            if len(visualize) == 0:
                 plot.visualize_mapping_space(mappings, exec_times,representation_type=RepresentationType[rep_type_str])
             else:
-                plot.visualize_mapping_space(mappings, exec_times,representation_type=RepresentationType[rep_type_str],dest=args.visualize)
+                plot.visualize_mapping_space(mappings, exec_times,representation_type=RepresentationType[rep_type_str],dest=visualize)
 
     except Exception as e:
         log.exception(str(e))

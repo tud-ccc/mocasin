@@ -289,6 +289,25 @@ def add_cli_args(parser):
         dest='color')
     parser.set_defaults(color=True)
 
+def setup_from_cfg_dict(config):
+    """Setup the default logger as configured by the hydra config.
+
+    Args:
+        config: configuration dictionary
+    """
+
+    if config['verbosity'] == -1:
+        log_level = l.ERROR
+    elif config['verbosity'] >= 2:
+            log_level = l.DEBUG
+    elif config['verbosity'] == 1:
+            log_level = l.INFO
+    else:
+        log_level = l.WARNING
+
+
+    setup(log_level, config['whitelist'], config['blacklist'], config['regexp'], config['color'])
+
 
 def setup_from_args(args):
     """Setup the default logger as configured by the cli arguments.

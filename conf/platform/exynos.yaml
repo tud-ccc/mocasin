@@ -1,0 +1,6 @@
+platform_name:
+  exynos
+platform_xml:
+  ../../../apps/${app_name}/exynos/exynos.platform
+slx_version:
+  '2017.10'

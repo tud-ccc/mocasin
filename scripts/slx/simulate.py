@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
-# Copyright (C) 2017 TU Dresden
+# Copyright (C) 2017-2019 TU Dresden
 # All Rights Reserved
 #
-# Authors: Christian Menard
+# Authors: Christian Menard, Andres Goens
 
 
 import argparse
@@ -31,6 +31,7 @@ See apps/audio_filter/exynos/config.ini for an example configuration.
 
 
 def main(argv):
+
     parser = argparse.ArgumentParser(
         description="Run simulation based on a config file")
 
@@ -42,10 +43,12 @@ def main(argv):
     args = parser.parse_args(argv)
 
     logging.setup_from_args(args)
+    simulate(args.configFile)
 
+def simulate(config_file=None,config_dict=None):
     try:
         # parse the config file
-        config = SlxSimulationConfig(args.configFile)
+        config = SlxSimulationConfig(config_file,config_dict)
 
         # Create the system
         env = simpy.Environment()

@@ -1,0 +1,5 @@
+verbosity: 0
+color: true
+whitelist: null
+blacklist: null
+regexp: null
