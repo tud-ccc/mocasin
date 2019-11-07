@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright (C) 2017 TU Dresden
+# Copyright (C) 2017-2019 TU Dresden
 # All Rights Reserved
 #
 # Authors: Gerald Hempel, Andres Goens

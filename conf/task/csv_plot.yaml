@@ -1,0 +1,5 @@
+task : csv_plot
+filePath : ../../../apps/${app_name}/exhaustive_${platform_name}.csv
+property : wall_clock_time
+prefix: 't_'
+suffix :  ''

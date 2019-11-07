@@ -1,0 +1,2 @@
+task : enumerate_equivalent
+out : equivalent_mappings.txt

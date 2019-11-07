@@ -143,8 +143,6 @@ def main(argv):
     args = parser.parse_args(argv)
 
     logging.setup_from_args(args)
-    num_iterations = args.num_iterations
-    rep_type_str = args.rep_type_str
 
     config_dict = {
         'num_iterations' : args.num_iterations,
@@ -157,6 +155,7 @@ def main(argv):
         'rep_type_str' : args.rep_type_str,
         'slx_cfg_file' : args.config,
     }
+    log.warn('Using this script is deprecated. Use the pykpn_manager instead.')
     random_walk(config_dict)
 
 def random_walk(cfg):

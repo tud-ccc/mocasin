@@ -37,9 +37,19 @@ def main(argv):
 
     logging.setup_from_args(args)
 
-    platform = SlxPlatform('SlxPlatform', args.platform, args.slx_version)
+    cfg = {
+        'platform_xml'  : args.platform,
+        'slx_version'  : args.slx_version,
+        'dot' : args.dot
+    }
+    log.warn('Using this script is deprecated. Use the pykpn_manager instead.')
+    platform_to_dot(cfg)
+
+def platform_to_dot(cfg):
+
+    platform = SlxPlatform('SlxPlatform', cfg['platform_xml'], cfg['slx_version'])
     dot = platform.to_pydot()
-    dot.write_raw(args.dot)
+    dot.write_raw(cfg['dot'])
 
 
 if __name__ == '__main__':

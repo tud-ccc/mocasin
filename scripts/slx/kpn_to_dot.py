@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
-# Copyright (C) 2017 TU Dresden
+# Copyright (C) 2017-2019 TU Dresden
 # All Rights Reserved
 #
-# Authors: Christian Menard
+# Authors: Christian Menard, Andres Goens
 
 
 """Generate a dot graph from a SLX cpn xml
@@ -38,10 +38,18 @@ def main(argv):
     args = parser.parse_args(argv)
 
     logging.setup_from_args(args)
+    log.warn('Using this script is deprecated. Use the pykpn_manager instead.')
+    cfg = {
+        'cpn_xml'  : args.kpn,
+        'slx_version': args.slx_version,
+        'dot': args.dot
+    }
+    kpn_to_dot(cfg)
 
-    kpn = SlxKpnGraph('app', args.kpn, args.slx_version)
+def kpn_to_dot(cfg):
+    kpn = SlxKpnGraph('app', cfg['cpn_xml'], cfg['slx_version'])
     dot = kpn.to_pydot()
-    dot.write_raw(args.dot)
+    dot.write_raw(cfg['dot'])
 
 
 if __name__ == '__main__':

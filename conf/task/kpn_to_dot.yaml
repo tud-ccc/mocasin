@@ -1,0 +1,2 @@
+task : kpn_to_dot
+dot : ${app_name}.dot

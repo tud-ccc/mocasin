@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright (C) 2017-2018 TU Dresden
+# Copyright (C) 2017-2019 TU Dresden
 # All Rights Reserved
 #
 # Authors: Christian Menard, Andres Goens
@@ -39,8 +39,16 @@ def main(argv):
     args = parser.parse_args(argv)
 
     logging.setup_from_args(args)
+    cfg = {
+        'platform_xml': args.platform,
+        'slx_version' : args.slx_version,
+        'out' : args.out
+    }
+    log.warn('Using this script is deprecated. Use the pykpn_manager instead.')
+    platform_to_autgrp(cfg)
 
-    platform = SlxPlatform('SlxPlatform', args.platform, args.slx_version)
+def platform_to_autgrp(cfg):
+    platform = SlxPlatform('SlxPlatform', cfg['platform_xml'], cfg['slx_version'])
     log.info("start converting platform to edge graph for automorphisms.")
     plat_graph = platform.to_adjacency_dict()
 
@@ -64,7 +72,7 @@ def main(argv):
     log.info("done coverting automorhpism of edges to nodes.")
 
     log.info("start writing to file.")
-    with open(args.out, 'w') as f:
+    with open(cfg['out'], 'w') as f:
         f.write("Platform Graph:")
         f.write(str(plat_graph))
         #f.write("Edge Group with ~" + str(autgrp_edges[1]) + " * 10^" + str(autgrp_edges[2]) + " elements.\n")
