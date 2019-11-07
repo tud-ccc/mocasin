@@ -82,9 +82,25 @@ the simulation of KPN applications running an a virtual platform. A simple
 .. code-block:: sh
 
   cd <path/to/pykpn>
-  slx_simulate apps/audio_filter/exynos/config.ini
+  scripts/pykpn_manager.py task=simulate app_name=audio_filter platform_name=exynos
 
 This simulates the execution of the *Audio Filter* application executing on a
-model of the *Exynos* platform.
+model of the *Exynos* platform. Here we are using the pykpn_manager, which is
+a general manager script that has all tasks available. In fact, since the default
+application and platform are *Audio Filter* and *Exynos*, we could run the command as:
 
-You can make the output more verbose using ``-v`` or ``-vv``.
+.. code-block:: sh
+
+  cd <path/to/pykpn>
+  scripts/pykpn_manager.py task=simulate
+
+You can make the output more verbose by changing the verbosity, e.g. ``verbosity=1``
+or ``verbosity=2``. The default is ``verbosity=0``, by setting it to ``-1`` you can also
+suppress warnings.
+
+To see the available options, like tasks, applications or architectures, use
+
+.. code-block:: sh
+
+  cd <path/to/pykpn>
+  scripts/pykpn_manager.py --help

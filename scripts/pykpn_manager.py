@@ -20,7 +20,26 @@ import hydra
 
 @hydra.main(config_path='../conf/default.yaml')
 def pykpn(cfg):
+    """
+    This is script is the universal pykpn launcher, which replaces
+    individual scripts for different tasks.
+
+    The idea is for this script to manage different tasks that are
+    available to do with the pykpn framework, using the different
+    configuration capabilities allowed by the hydra framework.
+
+    To add a new task, write a function in a script that executes
+    that task and call it from here with the corresponding task
+    descriptor, as done in the other examples. No direct
+    functionality should be implemented here.
+
+    :param cfg: Omniconf object created by hydra decorator
+    :return:
+    """
     logging.setup_from_cfg_dict(cfg)
+    #TODO: add check if app/platform combination works
+    # (can we do this with hydra confs directly?)
+
     task = cfg['task']
     if task == 'simulate':
         simulate(config_dict=cfg)
