@@ -37,7 +37,7 @@ class TgffTraceGenerator(TraceGenerator):
                     segment.n_tokens = 1
                     segment.read_from_channel = trace_parameter[1]
                 elif trace_parameter[0] == 'e':
-                    segment.processing_cycles = processor.getOperation(trace_parameter[1])
+                    segment.processing_cycles = processor.get_operation(trace_parameter[1])
                 elif trace_parameter[0] == 'w':
                     segment.n_tokens = 1
                     segment.write_to_channel = trace_parameter[1]
@@ -48,7 +48,7 @@ class TgffTraceGenerator(TraceGenerator):
     
     def _initialize_trace_dict(self, tgff_graph):
         for task in tgff_graph.tasks:
-            self._trace_dict.update({task : [self._repetition, 0, tgff_graph.getExecutionOrder(task)]})
+            self._trace_dict.update({task : [self._repetition, 0, tgff_graph.get_execution_order(task)]})
             
     
     

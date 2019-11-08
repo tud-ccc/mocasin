@@ -3,64 +3,64 @@
 #
 # Authors: Felix Teweleit
 
-from pykpn.common.platform import Processor, FrequencyDomain
+from pykpn.common.platform import Processor, FrequencyDomain, CommunicationResource
 from pykpn.common.kpn import KpnProcess, KpnChannel, KpnGraph
 
 class TgffProcessor():
-    def __init__(self, identifier, operations, processorType=None):
+    def __init__(self, identifier, operations, processor_type=None):
         self.identifier = identifier
-        self.type = processorType
+        self.type = processor_type
         self.operations = {}
-        self.cycleTime = self._getCycleTime(operations)
-        self._transformOperations(operations)
+        self.cycle_time = self._get_cycle_time(operations)
+        self._transform_operations(operations)
             
-    def getOperation(self, idx):
+    def get_operation(self, idx):
         return self.operations[idx]
     
-    def toPykpnProcessor(self):
-        frequencyDomain = FrequencyDomain('fd{0}'.format(self.identifier), 1/self.cycleTime)
-        pykpnProcessor = None
+    def to_pykpn_processor(self):
+        frequency_domain = FrequencyDomain('fd{0}'.format(self.identifier), 1/self.cycle_time)
+        pykpn_processor = None
         
         if not self.type is None:
-            pykpnProcessor = Processor(self.identifier, self.type, frequencyDomain)
+            pykpn_processor = Processor(self.identifier, self.type, frequency_domain)
         else:
-            pykpnProcessor = Processor(self.identifier, self.identifier, frequencyDomain)
+            pykpn_processor = Processor(self.identifier, self.identifier, frequency_domain)
         
-        return pykpnProcessor
+        return pykpn_processor
     
-    def _getCycleTime(self, operations):
-        taskTime = 1
+    def _get_cycle_time(self, operations):
+        task_time = 1
         
         for properties in operations.values():
-            if properties[2] < taskTime and not properties[2] == 0:
-                taskTime = properties[2]
+            if properties[2] < task_time and not properties[2] == 0:
+                task_time = properties[2]
         
-        tmpString =list("{0:1.12f}".format(taskTime))
-        i = len(tmpString) - 1
+        tmp_string =list("{0:1.12f}".format(task_time))
+        i = len(tmp_string) - 1
         
         while i > 1:
-            if not tmpString[i]  == '0':
+            if not tmp_string[i]  == '0':
                 return 1 * (10 ** -(i-1))
             else:
                 i -= 1
         return i
     
-    def _transformOperations(self, operations):
+    def _transform_operations(self, operations):
         for key, properties in operations.items():
-            cycles = int(properties[2] / self.cycleTime)
+            cycles = int(properties[2] / self.cycle_time)
             self.operations.update({key : cycles})
             
 class TgffGraph():
-    def __init__(self, identifier, taskSet, channelSet, quantities):
+    def __init__(self, identifier, task_set, channel_set, quantities):
         self.identifier = identifier
-        self.tasks = taskSet
-        self.channels = channelSet
+        self.tasks = task_set
+        self.channels = channel_set
         self._quantities = quantities
         
-    def getTaskType(self, identifier):
+    def get_task_type(self, identifier):
         return self.tasks[identifier]
     
-    def getExecutionOrder(self, task_name):
+    def get_execution_order(self, task_name):
         execution_order = []
         read_from = []
         write_to = []
@@ -83,8 +83,8 @@ class TgffGraph():
             
         return execution_order
                     
-    def toPykpnGraph(self):
-        kpnGraph = KpnGraph()
+    def to_pykpn_graph(self):
+        kpn_graph = KpnGraph()
         tasks = []
         channels = []
             
@@ -100,8 +100,8 @@ class TgffGraph():
         '''
         for key, properties in self.channels.items():
             name = key
-            tokenSize = int(self._quantities[0][int(properties[2])])
-            channel = KpnChannel(name, tokenSize)
+            token_size = int(self._quantities[0][int(properties[2])])
+            channel = KpnChannel(name, token_size)
                 
             for task in tasks:
                 if task.name == properties[0]:
@@ -115,10 +115,21 @@ class TgffGraph():
             kpnGraph
             '''
         for task in tasks:
-            kpnGraph.add_process(task)
+            kpn_graph.add_process(task)
             
         for channel in channels:
-            kpnGraph.add_channel(channel)
+            kpn_graph.add_channel(channel)
         
-        return kpnGraph    
+        return kpn_graph
+    
+class TgffLink():
+    def __init__(self, name, throughput):
+        self.name = name
+        self.throughput = throughput
+    
+    def to_pykpn_communication_resource(self):
+        raise RuntimeWarning("The transformation into pykpn is not sufficient due to a lack of necessary properties!")
+        return CommunicationResource(self.name, None, None, None, self.throughput, self.throughput, False, False)
+    
+     
     

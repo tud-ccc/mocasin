@@ -12,39 +12,48 @@ tgff parser and the corresponding generators.
 def main():
     '''Instantiate a parser object
     '''
-    tgffParser = Parser()
+    tgff_parser = Parser()
     
     '''Parse a specified file. Result is a list containing following items in specified order:
     [0] tgff graph dict
     [1] tgff communication quantities
     [2] processor dict
+    [3] link dict
     '''
-    tgffComponents = tgffParser.parseFile('graphs/auto-indust-cords.tgff')
+    tgff_components = tgff_parser.parse_file('graphs/auto-indust-cords.tgff')
     
     '''Transfer tgff graphs into kpn graphs
     '''
     kpnGraphes = []
-    for tgffGraph in tgffComponents[0].values():
-        kpnGraphes.append(tgffGraph.toPykpnGraph())
+    for tgffGraph in tgff_components[0].values():
+        kpnGraphes.append(tgffGraph.to_pykpn_graph())
     
     '''Transfer tgff processors into kpn processors
     '''
     kpnProcessors = []
-    for processor in tgffComponents[2].values():
-        kpnProcessors.append(processor.toPykpnProcessor())
+    for processor in tgff_components[2].values():
+        kpnProcessors.append(processor.to_pykpn_processor())
         
     '''Create a traceGenerator based on the tgff components
     '''
     generators =[]
-    for tgffGraph in tgffComponents[0].values():
-        generators.append(TgffTraceGenerator(tgffComponents[2], tgffGraph, repetition=2))
+    for tgff_graph in tgff_components[0].values():
+        generators.append(TgffTraceGenerator(tgff_components[2], tgff_graph, repetition=2))
     
     segments = []
     for i in range(0,30):
         segment = generators[0].next_segment('src','PROC_0')
         segments.append(segment)
+        
+    '''Transfer tgff links into pykpn communication ressources
+    WARNING: communication ressources are not complete due to a lack of information in
+    the tgff representation
+    '''
+    comm_resources = []
+    for link in tgff_components[3].values():
+        comm_resources.append(link.to_pykpn_communication_resource())
+        
     
-    print('Stop')
 
 if __name__ == '__main__':
     main()
