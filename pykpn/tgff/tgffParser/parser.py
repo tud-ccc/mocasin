@@ -7,13 +7,14 @@ from tgffParser import regEx as expr
 import argparse
 
 from tgffParser.logger import Logger
+from pykpn.util import logging
 from tgffParser.dataStructures import TgffProcessor, TgffGraph
 from pykpn.common.kpn import KpnProcess, KpnGraph, KpnChannel
 
 class Parser():
     def __init__(self, debug=False, silent=False):
         self._debug = debug
-        self.logger = Logger(debug, silent)
+        self.logger = logging.getLogger('tgff_parser')
         
         self.quantityDict = {}
         self.stdLinkDict = {}
@@ -61,31 +62,34 @@ class Parser():
     
     def parseFile(self, filePath):
         with open(filePath, 'r') as file:
-            currentLine  = file.readline()
+            lastMissmatch = None
             
+            currentLine  = file.readline()
             while currentLine:
                 key, match = self._parseLine(currentLine, self.dataComponents)
                 if key == 'task_graph':
-                    self.logger.logDebug('Parsing task graph')
+                    self.logger.debug('Parsing task graph')
                     self._parseTaskGraph(file, match)
                 elif key == 'commun_quant':
-                    self.logger.logDebug('Parsing communication quant')
+                    self.logger.debug('Parsing communication quant')
                     self._parseCommunQuant(file, match)
                 elif key == 'hw_component':
-                    self.logger.logDebug('Parse HW component')
-                    self._parseHardwareComponent(file, match)
+                    self.logger.debug('Parse HW component')
+                    self._parseHardwareComponent(file, match, lastMissmatch)
                 elif key == 'unused_scope':
-                    self.logger.logDebug('Parse unused group')
+                    self.logger.debug('Parse unused group')
                     self._parse_unused_scope(file)
                 else:
+                    if not key is None:
+                        lastMissmatch = (key, match)
                     self._keyMissmatch(key, file.tell())
                 currentLine = file.readline()
         
-        self.logger.logSuccess('Finished parsing')
+        self.logger.info('Finished parsing')
         return [self.taskGraphDict, self.quantityDict, self.processorDict]
     
     def _parseTaskGraph(self, file, match):
-        identifier = int(match.group('identifier'))
+        identifier = 'TASK_GRAPH_' + (match.group('identifier'))
         tasks = {}
         channels = {}
         taskIndexExtension = 0
@@ -96,29 +100,28 @@ class Parser():
         while currentLine:
             key, match = self._parseLine(currentLine, self.taskGraphComponents)
             if key == 'task':
-                self.logger.logDebug('Added task: ' + match.group('name') + ' ' + match.group('type'))
+                self.logger.debug('Added task: ' + match.group('name') + ' ' + match.group('type'))
                 if not match.group('name') in tasks:
-                    tasks.update( {match.group('name') : match.group('type')} )
+                    tasks.update( {match.group('name') : int(match.group('type'))} )
                 else:
                     tasks.update( {match.group('name') + '_' + str(taskIndexExtension) : match.group('type')} )
                     taskIndexExtension += 1
             elif key == 'channel':
-                self.logger.log('Added channel: ' + match.group('name') + ' ' + match.group('type'))
+                self.logger.info('Added channel: ' + match.group('name') + ' ' + match.group('type'))
                 if not match.group('name') in channels:
                     channels.update( {match.group('name') : [match.group('source'), match.group('destination'), match.group('type')]} ) 
                 else:
                     channels.update( {match.group('name') + '_' + str(channelIndexExtension): [match.group('source'), match.group('destination'), match.group('type')]} )
                     channelIndexExtension += 1
             elif key == 'scope_limiter':
-                self.logger.logDebug('Reached end of task graph')
+                self.logger.debug('Reached end of task graph')
                 break
             else:
                 self._keyMissmatch(key, file.tell())
             currentLine = file.readline()
         
-        self.logger.log('Added to graph dict: ' + str(identifier))
         self.taskGraphDict.update( {identifier : TgffGraph(identifier, tasks, channels, self.quantityDict)} )
-    
+        
     def _parseCommunQuant(self, file, match):
         identifier = match.group('identifier')
         communValues = {}
@@ -127,19 +130,19 @@ class Parser():
         while currentLine:
             key, match = self._parseLine(currentLine, self.communQuantComponents)
             if key == 'commun_value':
-                self.logger.logDebug('Added commun_value ' + match.group('identifier') + ' ' + match.group('value'))
+                self.logger.debug('Added commun_value ' + match.group('identifier') + ' ' + match.group('value'))
                 communValues.update( {int(match.group('identifier')) : float(match.group('value'))} )
             elif key == 'scope_limiter':
-                self.logger.logDebug('Reached end of commun_quant')
+                self.logger.debug('Reached end of commun_quant')
                 break
             else:
                 self._keyMissmatch(key, file.tell())
             currentLine = file.readline()
         
-        self.logger.log('Added to commun_quant dict: ' + identifier)
+        self.logger.info('Added to commun_quant dict: ' + identifier)
         self.quantityDict.update( {int(identifier) : communValues} )
     
-    def _parseHardwareComponent(self, file, match):
+    def _parseHardwareComponent(self, file, match, lastMissmatch):
         identifier = match.group('name') + '_' + match.group('identifier')
         currentLine = file.readline()
         
@@ -152,16 +155,16 @@ class Parser():
                 self._parsePrimLink(identifier, file, match)
                 return
             elif key == 'properties' or key == 'operation':
-                self._parseProcessor(identifier, file, key, match)
+                self._parseProcessor(identifier, file, key, match, lastMissmatch)
                 return
             elif key == 'scope_limiter':
-                self.logger.logError('Reached end of scope. Unable to recognize HW component!')
+                self.logger.error('Reached end of scope. Unable to recognize HW component!')
             else:
                 self._keyMissmatch(key, file.tell())
             currentLine = file.readline()
         
     def _parseStdLink(self, identifier, file, match):
-        self.logger.logDebug('Recognized component as standard link!')
+        self.logger.debug('Recognized component as standard link!')
         stdLinkValues = []
         self._addStdLinkValue(stdLinkValues, match)
         
@@ -172,13 +175,13 @@ class Parser():
             if key == 'std_link_value':
                 self._addStdLinkValue(stdLinkValues, match)
             elif key == 'scope_limiter':
-                self.logger.logDebug('Reached end of stdLink')
+                self.logger.debug('Reached end of stdLink')
                 break
             else:
                 self._keyMissmatch(key, file.tell())
             currentLine = file.readline()
             
-        self.logger.log('Added to link dict: ' + str(identifier))
+        self.logger.info('Added to link dict: ' + str(identifier))
         self.stdLinkDict.update( {identifier : stdLinkValues } )
         
     def _addStdLinkValue(self, dataStruct, match):
@@ -190,7 +193,7 @@ class Parser():
         dataStruct.append(match.group('contacts'))
     
     def _parsePrimLink(self, identifier, file, match):
-        self.logger.log("Recognized component as primitive link!")
+        self.logger.info("Recognized component as primitive link!")
         primLinkValues = []
         self._addPrimLinkValue(primLinkValues, match)
         
@@ -201,13 +204,13 @@ class Parser():
             if key == 'prim_link_value':
                 self._addPrimLinkValue(primLinkValues, match)
             elif key == 'scope_limiter':
-                self.logger.logDebug("Reached end of primLink")
+                self.logger.debug("Reached end of primLink")
                 break
             else:
                 self._keyMissmatch(key, file.tell())
             currentLine = file.readline()
             
-        self.logger.log('Added to link dict: ' + str(identifier))
+        self.logger.info('Added to link dict: ' + str(identifier))
         self.primLinkDict.update( {identifier : primLinkValues } )
     
     def _addPrimLinkValue(self, dataStruct, match):
@@ -219,8 +222,8 @@ class Parser():
         dataStruct.append(match.group('bit_time'))
         dataStruct.append(match.group('power'))
         
-    def _parseProcessor(self, identifier, file, key, match):
-        self.logger.logDebug("Recognized component as processing element")
+    def _parseProcessor(self, identifier, file, key, match, lastMissmatch):
+        self.logger.debug("Recognized component as processing element")
         properties = []
         operations = {}
         
@@ -238,17 +241,28 @@ class Parser():
             elif key == 'operation':
                 self._addOperation(operations, match)
             elif key == 'scope_limiter':
-                self.logger.logDebug('Reached end of processor')
+                self.logger.debug('Reached end of processor')
                 break
             else:
                 self._keyMissmatch(key, file.tell())
             currentLine = file.readline()
             
-        self.logger.log('Added to processor dict: ' + str(identifier))
-        self.processorDict.update( {identifier : TgffProcessor(identifier, operations)} )
+        self.logger.info('Added to processor dict: ' + str(identifier))
+        
+        self.logger.info('Added to graph dict: ' + identifier)
+        if lastMissmatch[0] != 'comment':
+            self.processorDict.update( {identifier : TgffProcessor(identifier, operations)} )
+        else:
+            comment = lastMissmatch[1].group('comment').split()
+            processorType = comment[0]
+            
+            if len(comment) > 1:
+                for i in range(1, len(comment)):
+                    processorType += '_' + comment[i]
+            self.processorDict.update( {identifier : TgffProcessor(identifier, operations, processorType=processorType)} )
     
     def _addProperties(self, properties, match):
-        self.logger.logDebug('Parsed processor properties')
+        self.logger.debug('Parsed processor properties')
         properties.append(match.group('price'))
         properties.append(match.group('buffered'))
         properties.append(match.group('preempt_power'))
@@ -257,7 +271,7 @@ class Parser():
         properties.append(match.group('idle_power'))
     
     def _addOperation(self, operations, match):
-        self.logger.logDebug('Parsed processor operation')
+        self.logger.debug('Parsed processor operation')
         tmpList = list()
         tmpList.append(match.group('version'))
         tmpList.append(match.group('valid'))
@@ -273,9 +287,9 @@ class Parser():
         while currentLine:
             key, match = self._parseLine(currentLine)
             if key == 'unused_statement':
-                self.logger.log("Ignored statement")
+                self.logger.info.log("Ignored statement")
             elif key == 'scope_limiter':
-                self.logger.log("Parsed block which will be ignored")
+                self.logger.info("Parsed block which will be ignored")
                 break
             else:
                 self._keyMissmatch(key, file.tell())
@@ -305,9 +319,9 @@ class Parser():
             if self._debug:
                 print('Skip empty or comment line')
         elif not key == None:
-            self.logger.logWarning('Parsed unhandled group: <' + key + '> at position: ' + str(position))
+            self.logger.warning('Parsed unhandled group: <' + key + '> at position: ' + str(position))
         else:
-            self.logger.logError('Parse error on position: ' + str(position))
+            self.logger.error('Parse error on position: ' + str(position))
                 
 def main():
     argumentParser = argparse.ArgumentParser()

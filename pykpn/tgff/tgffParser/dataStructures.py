@@ -7,13 +7,12 @@ from pykpn.common.platform import Processor, FrequencyDomain
 from pykpn.common.kpn import KpnProcess, KpnChannel, KpnGraph
 
 class TgffProcessor():
-    def __init__(self, identifier, operations, type=None):
+    def __init__(self, identifier, operations, processorType=None):
         self.identifier = identifier
-        self.type = type
+        self.type = processorType
         self.operations = {}
         self.cycleTime = self._getCycleTime(operations)
         self._transformOperations(operations)
-        
             
     def getOperation(self, idx):
         return self.operations[idx]
@@ -58,49 +57,32 @@ class TgffGraph():
         self.channels = channelSet
         self._quantities = quantities
         
-    def getExecutionOrder(self):
-        executionOrder = []
-        remaining = list(self.tasks)
+    def getTaskType(self, identifier):
+        return self.tasks[identifier]
+    
+    def getExecutionOrder(self, task_name):
+        execution_order = []
+        read_from = []
+        write_to = []
         
-        '''Determine the first task that can be executed
-        '''
-        for task in remaining:
-            isNoSink = True
-            
-            for channel in self.channels.values():
-                if task == channel[1]:
-                    isNoSink = False
-            
-            if isNoSink:
-                executionOrder.append(task)
-                remaining.remove(task)
-                break
-        
-        if executionOrder == []:
-            raise RuntimeError("No independent task found!")
-        
-        '''Add tasks to the execution order till all tasks are
-        scheduled
-        '''
-        while len(remaining) > 0:
-            tmpList = list(remaining)
-            
-            for task in tmpList:
-                canExecute = True
+        for name, properties in self.channels.items():
+            #source
+            if task_name == properties[0]:
+                write_to.append(name)
+            #sink
+            if task_name == properties[1]:
+                read_from.append(name)
                 
-                for channel in self.channels:
-                    if task == channel[1] and not channel[0] in executionOrder:
-                        canExecute = False
-                
-                if canExecute:
-                    executionOrder.append(task)
-                    remaining.remove(task)
-                    break
+        for channel_name in read_from:
+            execution_order.append(('r',channel_name))
         
-        return executionOrder
+        execution_order.append(('e', self.tasks[task_name]))
+        
+        for channel_name in write_to:
+            execution_order.append(('w', channel_name))
+            
+        return execution_order
                     
-        
-        
     def toPykpnGraph(self):
         kpnGraph = KpnGraph()
         tasks = []

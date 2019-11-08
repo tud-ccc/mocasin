@@ -5,8 +5,12 @@
 
 import re
 
+def new_line():
+    expr = r'\n'
+    return re.compile(expr)
+
 def comment():
-    expr = r'#.*\n'
+    expr = r'#(?P<comment>.*)\n'
     return re.compile(expr)
 
 def task_graph():
@@ -45,10 +49,6 @@ def prim_link_value():
 
 def scope_limiter():
     expr = r'\s*}\s*\n'
-    return re.compile(expr)
-
-def new_line():
-    expr = r'\n'
     return re.compile(expr)
 
 def hw_component():
