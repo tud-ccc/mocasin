@@ -53,7 +53,7 @@ def main():
         'prefix': args.prefix,
         'suffix' :  args.suffix
     }
-    log.warn('Using this script is deprecated. Use the pykpn_manager instead.')
+    log.warning('Using this script is deprecated. Use the pykpn_manager instead.')
     csv_plot(config_dict)
     # Prepare config
 

@@ -155,7 +155,7 @@ def main(argv):
         'rep_type_str' : args.rep_type_str,
         'slx_cfg_file' : args.config,
     }
-    log.warn('Using this script is deprecated. Use the pykpn_manager instead.')
+    log.warning('Using this script is deprecated. Use the pykpn_manager instead.')
     random_walk(config_dict)
 
 def random_walk(cfg):

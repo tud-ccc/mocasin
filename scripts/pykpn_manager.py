@@ -4,6 +4,7 @@
 # All Rights Reserved
 #
 # Authors: Andres Goens
+from scripts.slx.dc import dc_task
 from scripts.slx.enumerate_equivalent import enumerate_equivalent
 from scripts.slx.simulate import simulate
 from scripts.slx.random_walk import random_walk
@@ -58,7 +59,7 @@ def pykpn(cfg):
     if task == 'enumerate_equivalent':
         enumerate_equivalent(cfg)
     if task == 'design_centering':
-        log.error("design centering not ported to pykpn_manager yet, use script for now.")
+        dc_task(cfg)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,12 @@
+hydra:
+  sweep:
+    dir: multirun/${now:%Y-%m-%d-%H-%M-%S}
+    subdir: ${hydra.job.num}_${hydra.job.num}_${hydra.job.override_dirname}
+  
 defaults:
   - simulate: pytrm
   - app : audio_filter
+  - representation : simple_vector
   - platform: exynos
   - task: random_walk_mapping
   - logging: default

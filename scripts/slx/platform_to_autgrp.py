@@ -44,7 +44,7 @@ def main(argv):
         'slx_version' : args.slx_version,
         'out' : args.out
     }
-    log.warn('Using this script is deprecated. Use the pykpn_manager instead.')
+    log.warning('Using this script is deprecated. Use the pykpn_manager instead.')
     platform_to_autgrp(cfg)
 
 def platform_to_autgrp(cfg):

@@ -61,11 +61,8 @@ def main():
     logging.setup_from_args(args)
 
 
-    gconf = GlobalConfig(args.configFile)
+    log.warning('Using this script is deprecated. Use the pykpn_manager instead.')
 
-    log.info("==== Found system combinations ====")
-    for cn in gconf.system.keys():
-        log.info(cn)
 
     argv = sys.argv
 
@@ -73,128 +70,180 @@ def main():
     #logging.basicConfig(filename="dc.log", filemode = 'w', level=logging.DEBUG)
 
 
-    tp = designCentering.ThingPlotter()
-
     if (len(argv) > 1):
-        # read cmd-line and settings
-        #try:
-        #    center = [1,2,3,4,5,6,7,8]
-        #    #json.loads(argv[1])
-        #except ValueError:
-        #    log.warning(" {:s} is not a vector \n".format(argv[1]))
-        #    sys.stderr.write("JSON decoding failed (in function main) \n")
-
-
-        # config = SlxSimulationConfig(args.configFile)
+        #legacy "global config"  > replaced by hydra
+        gconf = GlobalConfig(args.configFile)
+        log.info("==== Found system combinations ====")
+        for cn in gconf.system.keys():
+            log.info(cn)
 
         # use multiprocessing?
         for app_pl in gconf.system.keys():
             log.info("==== Running " + app_pl + " ====")
-            json_dc_dump = {}
-            json_dc_dump['common settings'] = gconf.system[app_pl]['sconf'].__dict__
-            json_dc_dump['runs'] = {}
-
             for setting in gconf.system[app_pl]['settings']:
-                random.seed(setting.random_seed)
-                log.info("Initialized random number generator. Seed: {" + str(setting.random_seed) + "}")
-                slx_version = setting.slx_version
-                # if config.platform_class is not None:
-                #     platform = config.platform_class()
-                #     platform_name = platform.name
-                # else:
-                #     platform_name = os.path.splitext(
-                #         os.path.basename(config.platform_xml))[0]
-                #     platform = SlxPlatform(platform_name, config.platform_xml, slx_version)
-                # create all graphs
-                kpns = {}
-                # if len(config.applications) > 1:
-                #     log.warn("DC Flow just supports one appilcation. The rest will be ignored")
-                app_config = (gconf.system[app_pl]['sconf'], setting) #TODO: where is this being read?
-                platform = SlxPlatform(app_config[0].platform_name, app_config[0].platform_xml, slx_version)
-                print(f"config arch{app_config[0].platform_xml}")
-                app_name = app_config[0].app_name
-                kpn = SlxKpnGraph(app_name, app_config[0].cpn_xml, slx_version)
-                rep_type_str = app_config[1].representation
-                if rep_type_str == "GeomDummy":
-                    representation = "GeomDummy"
-                elif rep_type_str not in dir(reps.RepresentationType):
-                    log.exception("Representation " + rep_type_str + " not recognized. Available: " + ", ".join(dir(reps.RepresentationType)))
-                    raise RuntimeError('Unrecognized representation.')
-                else:
-                    representation_type = reps.RepresentationType[rep_type_str]
-                    log.info(f"initializing representation ({rep_type_str})")
-                    #import pdb
-                    #pdb.set_trace()
-
-                    representation = (representation_type.getClassType())(kpn,platform)
-
-                # run DC algorithm
-                # starting volume (init):
-                if representation == "GeomDummy":
-                    center = [1,2,3,4,5,6,7,8]
-                else:
-                    center = representation.uniform()
-                if (app_config[1].shape == "cube"):
-                    v = dc_volume.Cube(center, center.get_numProcs(),app_config[1])
-                elif (app_config[1].shape == "lpvol"): 
-                    v = dc_volume.LPVolume(center, center.get_numProcs(),kpn,platform,app_config[1],representation_type)
-
-
-                # config = args.configFile
-                oracle = dc_oracle.Oracle(app_config) #the oracle could get the kpn and platform (now, pykpn objects, SLX independent) passed as files (see Issue #3)
-                dc = designCentering.DesignCentering(v, app_config[1].distr, oracle,representation)
-                center = dc.ds_explore()
-
-                # plot explored design space (in 2D)
-                #if True:
-                #    tp.plot_samples(dc.samples)
-                log.info("center: {} radius: {:f}".format(dc.vol.center, dc.vol.radius))
-                log.info("==== Design Centering done ====")
-
-
-                json_dc_dump['runs'][app_config[1].idx] = {}
-                json_dc_dump['runs'][app_config[1].idx]['settings'] = app_config[1].__dict__
-                json_dc_dump['runs'][app_config[1].idx]['center'] = {}
-                json_dc_dump['runs'][app_config[1].idx]['center']['mapping'] = center.getMapping(0).to_list()
-                json_dc_dump['runs'][app_config[1].idx]['center']['feasible'] = center.getFeasibility()
-                json_dc_dump['runs'][app_config[1].idx]['center']['runtime'] = center.getSimContext().exec_time / 1000000000.0
-
-                # run perturbation test
-                if app_config[1].run_perturbation:
-                    log.info("==== Run Perturbation Test ====")
-                    num_pert = app_config[1].num_perturbations
-                    num_mappings = app_config[1].num_mappings
-                    pm = p.PerturbationManager( app_config, num_mappings, num_pert)
-                    map_set = pm.create_randomMappings()
-
-                    pert_res = []
-                    s,c = pm.run_perturbation(center.getMapping(0), pm.apply_singlePerturbation)
-                    pert_res.append(s)
-
-                    json_dc_dump['runs'][app_config[1].idx]['center']['pert'] = c
-                    json_dc_dump['runs'][app_config[1].idx]['center']['passed'] = s
-
-                    for i,m in enumerate(map_set):
-                        s,c = pm.run_perturbation(m, pm.apply_singlePerturbation)
-                        pert_res.append(s)
-                        json_dc_dump['runs'][app_config[1].idx]['rand mapping' + str(i)] = {}
-                        json_dc_dump['runs'][app_config[1].idx]['rand mapping' + str(i)]['mapping'] = m.to_list()
-                        json_dc_dump['runs'][app_config[1].idx]['rand mapping' + str(i)]['pert'] = c
-                        json_dc_dump['runs'][app_config[1].idx]['rand mapping' + str(i)]['passed'] = s
-
-                    tp.plot_perturbations(pert_res)
-                    log.info("==== Perturbation Test done ====")
-
-            if not os.path.exists(gconf.system[app_pl]['sconf'].out_dir):
-                os.mkdir(gconf.system[app_pl]['sconf'].out_dir)
-            with open(gconf.system[app_pl]['sconf'].out_dir + '/dump.json', 'w+') as dump:
-                json.dump(json_dc_dump, dump, indent=4)
+                cfg = {
+                    'max_samples': setting.max_samples,
+                    'adapt_samples': setting.adapt_samples,
+                    'hitting_probability': setting.hitting_probability,
+                    'deg_p_polynomial': setting.deg_p_polynomial,
+                    'step_width': setting.step_width,
+                    'deg_s_polynomial': setting.deg_s_polynomial,
+                    'adaptable_center_weights': setting.adaptable_center_weights,
+                    'max_step': setting.max_step,
+                    'show_polynomials': setting.show_polynomials,
+                    'show_points': setting.show_points,
+                    'max_pe': setting.max_pe,
+                    'distr': setting.distr,
+                    'shape': setting.shape,
+                    'oracle': setting.oracle,
+                    'random_seed': setting.random_seed,
+                    'threshold': setting.threshold,
+                    'run_perturbation': setting.run_perturbation,
+                    'num_perturbations': setting.num_perturbations,
+                    'representation': setting.representation,
+                    'keep_metrics': setting.keep_metrics,
+                    'visualize_mappings': setting.visualize_mappings,
+                    'slx_version' : setting.slx_version,
+                    'start_time' : setting.start_time,
+                    'cpn_xml' : gconf.system[app_pl]['sconf'].cpn_xml,
+                    'platform_xml': gconf.system[app_pl]['sconf'].platform_xml,
+                    'app_name': gconf.system[app_pl]['sconf'].app_name,
+                    'platform_name': gconf.system[app_pl]['sconf'].platform_name,
+                    'trace_dir': gconf.system[app_pl]['sconf'].trace_dir,
+                    'out_dir': gconf.system[app_pl]['sconf'].out_dir,
+                }
+                dc_task(cfg)
 
     else:
         log.info("usage: python designCentering [x1,x2,...,xn]\n")
 
     return 0
 
+def dc_task(cfg):
+    json_dc_dump = {
+        'config' : {
+            'max_samples': cfg['max_samples'],
+            'adapt_samples': cfg['adapt_samples'],
+            'hitting_probability': list(cfg['hitting_probability']),
+            'deg_p_polynomial': cfg['deg_p_polynomial'],
+            'step_width': list(cfg['step_width']),
+            'deg_s_polynomial': cfg['deg_s_polynomial'],
+            'adaptable_center_weights': cfg['adaptable_center_weights'],
+            'max_step': cfg['max_step'],
+            'show_polynomials': cfg['show_polynomials'],
+            'show_points': cfg['show_points'],
+            'max_pe': cfg['max_pe'],
+            'distr': cfg['distr'],
+            'shape': cfg['shape'],
+            'oracle': cfg['oracle'],
+            'random_seed': cfg['random_seed'],
+            'threshold': cfg['threshold'],
+            'run_perturbation': cfg['run_perturbation'],
+            'num_perturbations': cfg['num_perturbations'],
+            'representation': cfg['representation'],
+            'keep_metrics': cfg['keep_metrics'],
+            'visualize_mappings': cfg['visualize_mappings'],
+            'slx_version': cfg['slx_version'],
+            'start_time': cfg['start_time'],
+            'cpn_xml': cfg['cpn_xml'],
+            'platform_xml': cfg['platform_xml'],
+            'app_name': cfg['app_name'],
+            'platform_name': cfg['platform_name'],
+            'trace_dir': cfg['trace_dir'],
+        }}
+    tp = designCentering.ThingPlotter()
+    random.seed(cfg['random_seed'])
+    log.info("Initialized random number generator. Seed: {" + str(cfg['random_seed']) + "}")
+    slx_version = cfg['slx_version']
+    # if config.platform_class is not None:
+    #     platform = config.platform_class()
+    #     platform_name = platform.name
+    # else:
+    #     platform_name = os.path.splitext(
+    #         os.path.basename(config.platform_xml))[0]
+    #     platform = SlxPlatform(platform_name, config.platform_xml, slx_version)
+    # create all graphs
+    kpns = {}
+    # if len(config.applications) > 1:
+    #     log.warn("DC Flow just supports one appilcation. The rest will be ignored")
+    #app_config = (gconf.system[app_pl]['sconf'], setting) #TODO: where is this being read?
+    platform = SlxPlatform(cfg['platform_name'], cfg['platform_xml'], cfg['slx_version'])
+    print(f"config arch{cfg['platform_xml']}")
+    app_name = cfg['app_name']
+    kpn = SlxKpnGraph(app_name, cfg['cpn_xml'], slx_version)
+    rep_type_str = cfg['representation']
+    if rep_type_str == "GeomDummy":
+        representation = "GeomDummy"
+    elif rep_type_str not in dir(reps.RepresentationType):
+        log.exception("Representation " + rep_type_str + " not recognized. Available: " + ", ".join(dir(reps.RepresentationType)))
+        raise RuntimeError('Unrecognized representation.')
+    else:
+        representation_type = reps.RepresentationType[rep_type_str]
+        log.info(f"initializing representation ({rep_type_str})")
+        #import pdb
+        #pdb.set_trace()
+
+        representation = (representation_type.getClassType())(kpn,platform)
+
+    # run DC algorithm
+    # starting volume (init):
+    if representation == "GeomDummy":
+        center = [1,2,3,4,5,6,7,8]
+    else:
+        center = representation.uniform()
+    if (cfg['shape'] == "cube"):
+        v = dc_volume.Cube(center, center.get_numProcs(),cfg) #TODO: refactor, remove unnecessary arguments passed
+    elif (cfg['shape'] == "lpvol"):
+        v = dc_volume.LPVolume(center, center.get_numProcs(),kpn,platform,cfg,representation_type)#TODO: refactor, remove unnecessary arguments passed
+
+
+    # config = args.configFile
+    oracle = dc_oracle.Oracle(cfg) #TODO: propagate cfg change here
+    dc = designCentering.DesignCentering(v, cfg['distr'], oracle,representation)
+    center = dc.ds_explore()
+
+    # plot explored design space (in 2D)
+    #if True:
+    #    tp.plot_samples(dc.samples)
+    log.info("center: {} radius: {:f}".format(dc.vol.center, dc.vol.radius))
+    log.info("==== Design Centering done ====")
+
+
+    json_dc_dump['center'] = {}
+    json_dc_dump['center']['mapping'] = center.getMapping(0).to_list()
+    json_dc_dump['center']['feasible'] = center.getFeasibility()
+    json_dc_dump['center']['runtime'] = center.getSimContext().exec_time / 1000000000.0
+
+    # run perturbation test
+    if cfg['run_perturbation']:
+        log.info("==== Run Perturbation Test ====")
+        num_pert = cfg['num_perturbations']
+        num_mappings = cfg['num_mappings']
+        pm = p.PerturbationManager( cfg, num_mappings, num_pert) #TODO: propagate cfg
+        map_set = pm.create_randomMappings()
+
+        pert_res = []
+        s,c = pm.run_perturbation(center.getMapping(0), pm.apply_singlePerturbation)
+        pert_res.append(s)
+
+        json_dc_dump['center']['pert'] = c
+        json_dc_dump['center']['passed'] = s
+
+        for i,m in enumerate(map_set):
+            s,c = pm.run_perturbation(m, pm.apply_singlePerturbation)
+            pert_res.append(s)
+            json_dc_dump['rand mapping' + str(i)] = {}
+            json_dc_dump['rand mapping' + str(i)]['mapping'] = m.to_list()
+            json_dc_dump['rand mapping' + str(i)]['pert'] = c
+            json_dc_dump['rand mapping' + str(i)]['passed'] = s
+
+        tp.plot_perturbations(pert_res)
+        log.info("==== Perturbation Test done ====")
+
+    if not os.path.exists(cfg['out_dir']):
+        os.mkdir(cfg['out_dir'])
+    with open(cfg['out_dir'] + '/dc_out.json', 'w+') as dump:
+        json.dump(json_dc_dump, dump, indent=4)
 if __name__ == "__main__":
     main()
 

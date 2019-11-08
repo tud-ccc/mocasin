@@ -28,16 +28,16 @@ class ThingPlotter(object):
                 plt.plot(_sample[0], _sample[1],"o", color='b')
             else:
                 plt.plot(_sample[0], _sample[1],"o", color='r')
-        plt.xticks(range(0, config[1].max_pe, 1))
-        plt.yticks(range(0, config[1].max_pe, 1))
+        plt.xticks(range(0, config.max_pe, 1))
+        plt.yticks(range(0, config.max_pe, 1))
         center_x = sorted(pert_res_list)
         plt.show()
 
     def plot_curve(self, data, config):
-        interval = int(config[1].max_samples/10)
-        for _j in range(0, config[1].max_samples, 1):
+        interval = int(config.max_samples/10)
+        for _j in range(0, config.max_samples, 1):
             plt.plot(_j, data[_j],"o", color='b')
-        plt.xticks(range(0, config[1].max_samples, interval))
+        plt.xticks(range(0, config.max_samples, interval))
         plt.yticks(np.arange(0, 1, 0.1))
         plt.show()
 
@@ -64,19 +64,19 @@ class ThingPlotter(object):
 class DesignCentering(object):
 
     def __init__(self, init_vol, distr, oracle, representation):
-        np.random.seed(oracle.config[1].random_seed)
+        np.random.seed(oracle.config.random_seed)
         type(self).distr = distr
         type(self).vol = init_vol
         type(self).oracle = oracle
         type(self).samples = {}
         type(self).representation = representation
-        type(self).p_value = self.__adapt_poly(oracle.config[1].hitting_propability, oracle.config[1].deg_p_polynomial)
-        type(self).s_value = self.__adapt_poly(oracle.config[1].step_width, oracle.config[1].deg_s_polynomial)
+        type(self).p_value = self.__adapt_poly(oracle.config.hitting_probability, oracle.config.deg_p_polynomial)
+        type(self).s_value = self.__adapt_poly(oracle.config.step_width, oracle.config.deg_s_polynomial)
 
     def __adapt_poly(self, support_values, deg):
         tp = ThingPlotter()
         num = len(support_values)
-        x_interval = (type(self).oracle.config[1].max_samples/(num - 1))
+        x_interval = (type(self).oracle.config.max_samples/(num - 1))
         x = []
         y = []
         ret = []
@@ -85,9 +85,9 @@ class DesignCentering(object):
             y.append(support_values[_i])
         coeff = np.polyfit(x, y, deg)
         poly = np.poly1d(coeff)
-        for _j in range(0, type(self).oracle.config[1].max_samples, 1):
+        for _j in range(0, type(self).oracle.config.max_samples, 1):
             ret.append(poly(_j))
-        if (type(self).oracle.config[1].show_polynomials):
+        if (type(self).oracle.config.show_polynomials):
             tp.plot_curve(ret, type(self).oracle.config)
         return ret
 
@@ -95,13 +95,13 @@ class DesignCentering(object):
         """ explore design space (main loop of the DC algorithm) """
 
         center_history = []
-        for i in range(0, type(self).oracle.config[1].max_samples, type(self).oracle.config[1].adapt_samples):
+        for i in range(0, type(self).oracle.config.max_samples, type(self).oracle.config.adapt_samples):
             s = dc_sample.SampleGen(self.representation, type(self).oracle.config)
             
             log.debug("dc: Current iteration {}".format(i))
             # TODO: may genrate identical samples which makes things ineffective 
             s_set = dc_sample.SampleSet()
-            samples = s.gen_samples_in_ball(type(self).vol, type(self).distr, nsamples=type(self).oracle.config[1].adapt_samples)
+            samples = s.gen_samples_in_ball(type(self).vol, type(self).distr, nsamples=type(self).oracle.config.adapt_samples)
             #print(samples)
             #print(str([s.sample for s in samples]))
 
@@ -154,10 +154,10 @@ class DesignCentering(object):
         center_sample_list = []
         center_sample_list.append(center_sample)
         center_res_sample = type(self).oracle.validate_set(center_sample_list)
-        if self.oracle.config[1].visualize_mappings:
-            if(self.oracle.config[1].keep_metrics):
+        if self.oracle.config.visualize_mappings:
+            if(self.oracle.config.keep_metrics):
 
-                self.visualize_mappings(s_set.sample_groups, type(self).oracle.config[1].adapt_samples, center_history)
+                self.visualize_mappings(s_set.sample_groups, type(self).oracle.config.adapt_samples, center_history)
             else:
                 self.visualize_mappings(s_set.sample_groups)
         log.debug("dc: center sample: {} {} {}".format(str(center_res_sample), str(center_sample), str(center)))
@@ -218,7 +218,7 @@ class DesignCentering(object):
                 thresholds.append(0)
         thresholds[-1] = 0.5
         #print("thresholds: {}".format(thresholds))
-        plot.visualize_mapping_space(mappings, exec_times, None, RepresentationType[self.oracle.config[1].representation], tick, len(center_history))
+        plot.visualize_mapping_space(mappings, exec_times, None, RepresentationType[self.oracle.config.representation], tick, len(center_history))
 
 
 # Of course, the existing DFG already provides a valid schedule derived from the order of GIMPLE statements, 

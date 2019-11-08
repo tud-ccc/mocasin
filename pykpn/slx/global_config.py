@@ -74,7 +74,7 @@ class GlobalConfig:
                      'start_time' : to_time,
                      'max_samples' : to_int,
                      'adapt_samples' : to_int,
-                     'hitting_propability' : to_float_list,
+                     'hitting_probability' : to_float_list,
                      'deg_p_polynomial' : to_int,
                      'step_width' : to_float_list,
                      'deg_s_polynomial' : to_int,

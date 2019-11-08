@@ -37,7 +37,7 @@ def main():
     args = parser.parse_args()
 
     logging.setup_from_args(args)
-    log.warn('Using this script is deprecated. Use the pykpn_manager instead.')
+    log.warning('Using this script is deprecated. Use the pykpn_manager instead.')
     cfg = {
         'cpn_xml'  : args.graph,
         'platform_xml'  : args.platform,

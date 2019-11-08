@@ -30,7 +30,7 @@ class Volume(object):
 
 class Cube(Volume):
 
-    def __init__(self, center, dim, conf):
+    def __init__(self, center, dim, cfg):
         # define initial cube with radius 1 at the given center
         self.center = center.to_list()
         if (len(self.center) != dim):
@@ -38,7 +38,12 @@ class Cube(Volume):
             sys.exit(-1)
         self.radius = DEFAULT_RADIUS
         self.dim = dim
-        self.conf = conf
+        #https://stackoverflow.com/questions/4984647/accessing-dict-keys-like-an-attribute
+        class AttrDict(dict):
+            def __init__(self, *args, **kwargs):
+                super(AttrDict, self).__init__(*args, **kwargs)
+                self.__dict__ = self
+        self.conf = AttrDict(cfg)
 
     def adapt_center(self, s_set):
         fs_set = list(map(lambda s: s.sample,  s_set.get_feasible()))
@@ -99,7 +104,12 @@ class LPVolume(Volume):
             log.exception("Representation currently not supported for VectorSpaceVolumes")
             sys.exit(-1)
 
-        self.conf = conf
+        #https://stackoverflow.com/questions/4984647/accessing-dict-keys-like-an-attribute
+        class AttrDict(dict):
+            def __init__(self, *args, **kwargs):
+                super(AttrDict, self).__init__(*args, **kwargs)
+                self.__dict__ = self
+        self.conf = AttrDict(conf)
         self.representation = representation_type.getClassType()(kpn,platform)
         self.kpn = kpn
         self.platform = platform

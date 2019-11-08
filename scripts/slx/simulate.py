@@ -43,7 +43,7 @@ def main(argv):
     args = parser.parse_args(argv)
 
     logging.setup_from_args(args)
-    log.warn('Using this script is deprecated. Use the pykpn_manager instead.')
+    log.warning('Using this script is deprecated. Use the pykpn_manager instead.')
     simulate(args.configFile)
 
 def simulate(config_file=None,config_dict=None):
