@@ -31,7 +31,7 @@ class PerturbationManager(object):
             mapping_set.add(mg.generate_mapping())
         return mapping_set
 
-    def apply_singlePerturbation(self, mapping, seed, history):
+    def apply_singlePerturbation(self, mapping, history,seed=None):
         """ Creates a defined number of unique single core perturbations 
             Therefore, the mapping is interpreted as vector with the 
             processor cores assigned to the vector elements.
@@ -41,7 +41,8 @@ class PerturbationManager(object):
         rand_part_mapper = RandomPartialMapper(self.kpns[0], self.platform)
         proc_part_mapper = ProcPartialMapper(self.kpns[0], self.platform, rand_part_mapper)
 
-        rand.seed = seed
+        if seed is not None:
+            rand.seed(seed)
         pe = rand.randint(0, len(list(self.platform.processors()))-1)
         process = rand.randint(0, len(list(self.kpns[0].processes()))-1)
         
@@ -78,7 +79,7 @@ class PerturbationManager(object):
         results = []
         sim_contexts = []
         for i in range(0, self.num_perturbations):
-            mapping = pert_fun(mapping, rand.randint(0,sys.maxsize), history)
+            mapping = pert_fun(mapping, history)
             history.append(mapping)
             sim_contexts.append(self.sim.prepare_sim_context(self.platform, kpn, mapping))
 
@@ -90,7 +91,7 @@ class PerturbationManager(object):
         
         feasible = []
         for e in exec_times:
-            if (e > self.config[1].threshold):
+            if (e > self.config.threshold):
                 feasible.append(False)
             else:
                 feasible.append(True)

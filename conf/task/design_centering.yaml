@@ -4,6 +4,7 @@ adapt_samples : 10
 hitting_probability : [0.1, 0.5, 0.6, 0.7, 0.9]
 deg_p_polynomial : 2
 step_width : [0.9, 0.7, 0.6, 0.5, 0.1]
+radius : 12
 deg_s_polynomial : 2
 adaptable_center_weights : false
 max_step : 10
@@ -17,7 +18,7 @@ random_seed : 42
 threshold : 280 #TODO: this depends on the app/platform combination
 run_perturbation : false
 num_perturbations : 10
-#num_reference_mappings : 10 #needed??
+num_reference_mappings : 10 
 representation : SimpleVector
 keep_metrics : True
 visualize_mappings : False

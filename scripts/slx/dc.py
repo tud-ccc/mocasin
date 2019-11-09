@@ -218,7 +218,7 @@ def dc_task(cfg):
     if cfg['run_perturbation']:
         log.info("==== Run Perturbation Test ====")
         num_pert = cfg['num_perturbations']
-        num_mappings = cfg['num_mappings']
+        num_mappings = cfg['num_reference_mappings']
         pm = p.PerturbationManager( cfg, num_mappings, num_pert) #TODO: propagate cfg
         map_set = pm.create_randomMappings()
 

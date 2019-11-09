@@ -13,7 +13,6 @@ from pykpn.util import logging
 
 log = logging.getLogger(__name__)
 
-DEFAULT_RADIUS = 0.5
 
 class Volume(object):
 
@@ -36,7 +35,7 @@ class Cube(Volume):
         if (len(self.center) != dim):
             log.error("Dimensions do not match to the given center. (-1)")
             sys.exit(-1)
-        self.radius = DEFAULT_RADIUS
+        self.radius = cfg['radius']
         self.dim = dim
         #https://stackoverflow.com/questions/4984647/accessing-dict-keys-like-an-attribute
         class AttrDict(dict):
@@ -115,7 +114,7 @@ class LPVolume(Volume):
         self.platform = platform
         self.center = np.array(self.representation.toRepresentation(center))
         self.old_center = self.center
-        self.radius = DEFAULT_RADIUS
+        self.radius = self.conf.radius
         self.dim = len(self.center)
         self.num_procs = num_procs
         self.p = p #TODO: check, can I propagate this to the representations?
