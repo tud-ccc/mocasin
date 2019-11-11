@@ -94,9 +94,19 @@ application and platform are *Audio Filter* and *Exynos*, we could run the comma
   cd <path/to/pykpn>
   scripts/pykpn_manager.py task=simulate
 
-You can make the output more verbose by changing the verbosity, e.g. ``verbosity=1``
-or ``verbosity=2``. The default is ``verbosity=0``, by setting it to ``-1`` you can also
+You can make the output more verbose by changing the log level, e.g. ``log_level=INFO``
+or ``log_level=DEBUG``. The default is ``log_level=WARNING``, by setting it to ``log_level=ERROR`` you can also
 suppress warnings.
+
+Using the ``hydra.verbose`` option, you can also show the debug output of specfig
+packages or modules. For instance:
+
+.. code-block:: sh
+
+  cd <path/to/pykpn>
+  scripts/pykpn_manager.py task=simulate log_level=INFO hydra.verbose=pykpn.simulate.channel
+
+
 
 To see the available options, like tasks, applications or architectures, use
 
