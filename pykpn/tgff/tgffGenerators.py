@@ -4,15 +4,36 @@
 # Authors: Felix Teweleit
 
 from pykpn.common.trace import TraceGenerator, TraceSegment
-    
+ 
 class TgffTraceGenerator(TraceGenerator):
+    """A trace generator based on the tgff representation.
+    """
+    
     def __init__(self, processor_dict, tgff_graph, repetition=1):
+        """ Initializes the generator
+    
+        :param processor_dict: a dictionary over all processors a
+        trace is available for
+        :type processor_dict: dict {string : TgffProcessor}
+        :param tgff_graph: The specific tgff graph for which traces
+        should be generated
+        :type tgff_graph: TgffGraph
+        :param repetition: The amount of times the process is
+        executed before it terminates
+        """
         self._processor_dict = processor_dict
         self._repetition = repetition
         self._trace_dict = {}
         self._initialize_trace_dict(tgff_graph)
-        
+    
     def next_segment(self, process_name, processor_type):
+        """Returns the next trace segment
+        
+        :param process_name: the name of the specific process 
+        :type process_name: string
+        :param processor_type: the name of the executing processor
+        :type processor_type: string
+        """
         if not process_name in self._trace_dict:
             raise RuntimeError("Unknown specified process!")
         
@@ -47,6 +68,9 @@ class TgffTraceGenerator(TraceGenerator):
         return segment
     
     def _initialize_trace_dict(self, tgff_graph):
+        """Initializes an internal structure to keep track 
+        of the current status for each trace.
+        """
         for task in tgff_graph.tasks:
             self._trace_dict.update({task : [self._repetition, 0, tgff_graph.get_execution_order(task)]})
             

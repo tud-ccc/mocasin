@@ -11,6 +11,13 @@ from tgffParser.dataStructures import TgffProcessor, TgffGraph, TgffLink
 from pykpn.common.kpn import KpnProcess, KpnGraph, KpnChannel
 
 class Parser():
+    """A parser for .tgff files. The information parsed from a file are 
+    transfered into intermediate representations which can be found in 
+    dataStructures.py
+    
+    The parser recognizes the patterns inside a .tgff file via regular 
+    expressions. These can be found in regEx.py
+    """
     def __init__(self, debug=False):
         self._debug = debug
         self.logger = logging.getLogger('tgff_parser')
@@ -58,7 +65,23 @@ class Parser():
             'unused_scope' : expr.unused_scope(),
             }
 
+    """Parses the specified file. Creates and returns the corresponding 
+    intermediate tgff representations.
     
+    :param file_path: the path to the file relative to the script location.
+    :type file_path: string
+    :returns: A list containing all types of intermediate representations in
+    following order:
+    [0]:    dictionary of all TgffGraphs
+    [1]:    dictionary of identifiers mapped to possible channel sizes
+    [2]:    dictionary of all TgffProcessors
+    [3]:    dictionary of all Links
+    
+    :rtype: tuple(  dict{string : TgffGraph},
+                    dict{int : dict{int : float}},
+                    dict{string : TgffProcessor},
+                    dict{string : TgffLink} )
+    """
     def parse_file(self, file_path):
         with open(file_path, 'r') as file:
             last_missmatch = None
@@ -85,7 +108,7 @@ class Parser():
                 current_line = file.readline()
         
         self.logger.info('Finished parsing')
-        return [self.task_graph_dict, self.quantity_dict, self.processor_dict, self.std_link_dict]
+        return (self.task_graph_dict, self.quantity_dict, self.processor_dict, self.std_link_dict)
     
     def _parse_task_graph(self, file, match):
         identifier = 'TASK_GRAPH_' + (match.group('identifier'))
@@ -281,17 +304,26 @@ class Parser():
             current_line = file.readline()
     
     def _parse_line(self, line, additional_components=None):
+        """Try to match the line to the patterns with the 
+        most occurrence.
+        """
         for key, rx in self.common_components.items():
             match = rx.fullmatch(line)
             if match:
                 return key, match
         
+        """Try to match the line to the patterns that can
+        occur in the current context.
+        """
         if not additional_components == None:
             for key, rx in additional_components.items():
                 match = rx.fullmatch(line)
                 if match:
                     return key, match
             
+        """Try to match the line to patterns for information
+        that will not be extracted by the parser.
+        """
         for key, rx in self.unused_components.items():
             match = rx.fullmatch(line)
             if match:

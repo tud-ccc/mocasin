@@ -6,7 +6,12 @@
 from pykpn.common.platform import Processor, FrequencyDomain, CommunicationResource
 from pykpn.common.kpn import KpnProcess, KpnChannel, KpnGraph
 
+import math
+
 class TgffProcessor():
+    """Represents the relevant information about a processor, included in a .tgff file.
+    The processor can be transfered into the pykpn representation.
+    """
     def __init__(self, identifier, operations, processor_type=None):
         self.identifier = identifier
         self.type = processor_type
@@ -17,8 +22,12 @@ class TgffProcessor():
     def get_operation(self, idx):
         return self.operations[idx]
     
+    """Returns a pykpn Processor object, equivalent to the TgffProcessor object.
+    :returns: equivalent processor object
+    :rtype: Processor
+    """
     def to_pykpn_processor(self):
-        frequency_domain = FrequencyDomain('fd{0}'.format(self.identifier), 1/self.cycle_time)
+        frequency_domain = FrequencyDomain('fd{0}'.format(self.identifier), math.ceil(1/self.cycle_time))
         pykpn_processor = None
         
         if not self.type is None:
@@ -28,6 +37,14 @@ class TgffProcessor():
         
         return pykpn_processor
     
+    """Calculates the time needed for a single processor cycle, in a way that the 
+    execution time og all operations are an integer multiple of the cycle time.
+    
+    :param operations: maps the indentifier of an operation to its execution time
+    :type operations: dict{int : int}
+    :returns: largest possible time step for a single cylce
+    :rtype: float
+    """
     def _get_cycle_time(self, operations):
         task_time = 1
         
@@ -45,12 +62,21 @@ class TgffProcessor():
                 i -= 1
         return i
     
+    """Transforms the mapping of operation identifier to execution time 
+    to a mapping of operation identifier to execution cycles.
+    
+    :param operations: mapping of identifier to execution time
+    :type operations: dict {int : int}
+    """
     def _transform_operations(self, operations):
         for key, properties in operations.items():
             cycles = int(properties[2] / self.cycle_time)
             self.operations.update({key : cycles})
             
 class TgffGraph():
+    """Represents the relevant information about a task graph, parsed from
+    a .tgff file. The tgff graph can be transfered into a kpn graph.
+    """
     def __init__(self, identifier, task_set, channel_set, quantities):
         self.identifier = identifier
         self.tasks = task_set
@@ -60,6 +86,15 @@ class TgffGraph():
     def get_task_type(self, identifier):
         return self.tasks[identifier]
     
+    """Returns the order of actions for a single task (node) of the task
+    graph
+    
+    :param task_name: the name of the specific task
+    :type task_name: string
+    :returns the order and type of actions the task performs when executed
+    :rtype list[tuple(char, string)] a list of actions (read, write execute)
+    and their target operation/channel
+    """
     def get_execution_order(self, task_name):
         execution_order = []
         read_from = []
@@ -82,8 +117,12 @@ class TgffGraph():
             execution_order.append(('w', channel_name))
             
         return execution_order
-                    
-    def to_pykpn_graph(self):
+    
+    """Transfers the the tgff graph into a kpn graph
+    :returns: the equivalent kpn graph representation
+    :rtype: KpnGraph
+    """                   
+    def to_kpn_graph(self):
         kpn_graph = KpnGraph()
         tasks = []
         channels = []
@@ -123,12 +162,20 @@ class TgffGraph():
         return kpn_graph
     
 class TgffLink():
+    """Represents the information about a hardware link included in a .tgff file.
+    """
     def __init__(self, name, throughput):
         self.name = name
         self.throughput = throughput
     
+    """Transfers the tgff hardware representation into pykpn representation. 
+    ATTENTION: tgff does not include all necessary information. Pykpn link object 
+    will be incomplete!
+    :returns: An equivalent pykpn communication resource object
+    :rtype: CommunicationRessource
+    """
     def to_pykpn_communication_resource(self):
-        raise RuntimeWarning("The transformation into pykpn is not sufficient due to a lack of necessary properties!")
+        #raise RuntimeWarning("The transformation into pykpn is not sufficient due to a lack of necessary properties!")
         return CommunicationResource(self.name, None, None, None, self.throughput, self.throughput, False, False)
     
      

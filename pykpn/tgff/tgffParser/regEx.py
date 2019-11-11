@@ -5,6 +5,10 @@
 
 import re
 
+"""Including the regular expressions to recognize all patterns that can occur in a .tgff file. 
+For patterns which encode relevant information, a useful grouping is applied for parsing.
+"""
+
 def new_line():
     expr = r'\n'
     return re.compile(expr)

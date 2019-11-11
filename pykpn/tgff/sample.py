@@ -26,7 +26,7 @@ def main():
     '''
     kpnGraphes = []
     for tgffGraph in tgff_components[0].values():
-        kpnGraphes.append(tgffGraph.to_pykpn_graph())
+        kpnGraphes.append(tgffGraph.to_kpn_graph())
     
     '''Transfer tgff processors into kpn processors
     '''
@@ -52,6 +52,8 @@ def main():
     comm_resources = []
     for link in tgff_components[3].values():
         comm_resources.append(link.to_pykpn_communication_resource())
+        
+    print('Finished sample')
         
     
 
