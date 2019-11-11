@@ -8,7 +8,7 @@ from pykpn.common.mapping import (ChannelMappingInfo, Mapping,
 
 log = logging.getLogger(__name__)
 
-class RandomMappingGenerator(object):
+class RandomPartialMapper(object):
     """Generates a full random mapping
 
     This class is used to generate a random mapping for a given

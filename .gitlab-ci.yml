@@ -9,7 +9,6 @@ test-python3.7:
   script:
   - apt-get update
   - apt-get -y install libblas-dev liblapack-dev
-  - rm -rf pykpn/test
   - python setup.py develop
   - python setup.py test
 
@@ -21,6 +20,5 @@ test-python3.6:
   script:
   - apt-get update
   - apt-get -y install libblas-dev liblapack-dev
-  - rm -rf pykpn/test
   - python setup.py develop
   - python setup.py test

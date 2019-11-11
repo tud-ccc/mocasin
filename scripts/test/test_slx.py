@@ -1,7 +1,7 @@
 # Copyright (C) 2019 TU Dresden
 # All Rights Reserved
 #
-# Authors: Christian Menard
+# Authors: Christian Menard, Andres Goens
 
 import filecmp
 import os
@@ -13,6 +13,7 @@ from scripts.slx.platform_to_autgrp import main as platform_to_autgrp
 from scripts.slx.platform_to_dot import main as platform_to_dot
 from scripts.slx.random_walk import main as random_walk
 from scripts.slx.simulate import main as simulate
+from scripts.slx.enumerate_equivalent import main as enumerate_equivalent
 
 
 platforms = ["exynos", "multidsp", "parallella"]
@@ -77,6 +78,20 @@ def test_mapping_to_dot(datadir, platform):
                     "--slx-version=2017.10"])
     assert filecmp.cmp(dot, expected)
 
+@pytest.mark.xfail(reason="in my setup something seems to fail and I have to add the expected file for multidsp yet")
+@pytest.mark.parametrize("platform", ["exynos", "multidsp"])
+def test_enumerate_equivalent(datadir, platform):
+    kpn_xml = datadir.join("audio_filter.cpn.xml")
+    platform_xml = datadir.join("%s.platform" % platform)
+    mapping_xml = datadir.join("%s.mapping" % platform)
+    dot = datadir.join("%s-mapping.dot" % platform)
+    expected = datadir.join("%s-enumerate-equivalent.expected" % platform)
+    enumerate_equivalent([str(kpn_xml),
+                    str(platform_xml),
+                    str(mapping_xml),
+                    str(dot),
+                    "--slx-version=2017.10"])
+    assert filecmp.cmp(dot, expected)
 
 @pytest.mark.parametrize("platform", ["exynos", "multidsp"])
 @pytest.mark.parametrize("option", [None, "-d", "-V", "-p", "--export-all"])

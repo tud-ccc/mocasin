@@ -6,7 +6,6 @@ from pykpn.design_centering.design_centering.dc_volume import *
 import pykpn.design_centering.design_centering.dc_sample as sample
 import pykpn.design_centering.design_centering.dc_oracle as oracle
 import pykpn.design_centering.design_centering.designCentering as dc
-import pykpn.design_centering.design_centering.dc_settings as conf
 
 from pykpn.common.kpn import KpnGraph, KpnProcess
 from pykpn.common.platform import Platform, Processor, Scheduler
@@ -58,7 +57,7 @@ def lp_vol(point=[1,2],transf=None):
     p = platform()
     dim = 2
     c = center(point=point)
-    vol = LPVolume(c,dim,k,p)
+    vol = LPVolume(c,dim,k,p,conf())
     if transf is not None:
         vol.transformation = transf
     return vol
@@ -76,6 +75,16 @@ def s_set():
         s.setFeasibility(False)
         result.add_sample(s)
     return result
+
+#https://stackoverflow.com/questions/4984647/accessing-dict-keys-like-an-attribute
+class AttrDict(dict):
+    def __init__(self, *args, **kwargs):
+        super(AttrDict, self).__init__(*args, **kwargs)
+        self.__dict__ = self
+
+#@pytest.fixture
+def conf():
+    return AttrDict({'adapt_samples' : NUM_SAMPLES, 'max_step': 10, 'adaptable_center_weights' : False })
 
 def random_s_set_gen(n,procs,mu,Q,r,threshold=0.05,num_points=10):
     ns = [procs] * n
@@ -198,6 +207,13 @@ def test_covariance_adaptation():
 
     #visualize_s_sets(points)
 
+def test_all_infeasible():
+    vol = lp_vol(transf=np.identity(2))
+    points = []
+    sample_set = sample.SampleSet()
+    conf.adapt_samples=NUM_SAMPLES
+    vol.adapt_volume(sample_set,0.65,Mock())
+    print(vol.covariance)
 
 
 def visualize_s_sets(points,coordinates=[0,1],ns=[NUM_PROCS,NUM_PROCS]):

@@ -7,7 +7,7 @@ from pykpn.common.mapping import (ChannelMappingInfo, Mapping,
 
 log = logging.getLogger(__name__)
 
-class ComMappingGenerator(object):
+class ComPartialMapper(object):
     """Generates a partial mapping by placing communication primitives.
     This generator either requires a partial mapping as input that already
     provides a placement of processes or performs a random placement of processes 
@@ -26,7 +26,7 @@ class ComMappingGenerator(object):
         :param platform: a platform
         :type platform: Platform
         :param fullGenerator: the associated full mapping generator
-        :type fullGererator: MappingGenerator
+        :type fullGererator: FullMapper
         """
         self.full_mapper = False # flag indicating the mapper type
         self.platform = platform

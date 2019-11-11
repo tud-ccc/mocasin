@@ -9,6 +9,8 @@ import cvxpy as cvx
 import itertools
 import random
 import logging
+import sys
+
 #import fjlt.fjlt as fjlt #TODO: use fjlt to (automatically) lower the dimension of embedding
 from pykpn.representations import permutations as perm
 from pykpn.representations import metric_spaces as metric
@@ -18,6 +20,7 @@ import pykpn.util.random_distributions.lp as lp
 log = logging.getLogger(__name__)
 
 DEFAULT_DISTORTION = 1.05
+MAX_NUM_TRIES = 6
 
 #  An embedding \iota: M \hookrightarrow R^k
 #  will be calculated and realized as a lookup-table.
@@ -33,8 +36,18 @@ class MetricSpaceEmbeddingBase():
         self.k = M.n
 
         #First: calculate a good embedding by solving an optimization problem
-        E,self._k = self.calculateEmbeddingMatrix(np.array(M.D),distortion)
-        #print(E)
+        E,self._k = None, None
+        num_tries = 0
+        while(E is None):
+            E,self._k = self.calculateEmbeddingMatrix(np.array(M.D),self.distortion)
+            if E is None:
+                if num_tries < MAX_NUM_TRIES:
+                    log.warning(f"Incrementing distortion {self.distortion} to {self.distortion**2}")
+                    self.distortion = self.distortion**2
+                else:
+                    log.error(f"Could not find an embedding with distortion <= {self.distortion}")
+                    sys.exit(-1)
+            #print(E)
 
         #Populate look-up table
         self.iota = dict()
@@ -64,11 +77,15 @@ class MetricSpaceEmbeddingBase():
         #print(D)
         
         #c = matrix(([1]*n))
+        log.debug("Generating constraints for embedding:")
+        log.debug(f"Distance matrix: {D}")
         constraints = []
         for i in range(n):
             for j in range(i,n):
                 constraints += [D[i,j]**2 <= Q[i,i] + Q[j,j] - 2*Q[i,j]]
                 constraints += [Q[i,i] + Q[j,j] - 2*Q[i,j] <= distortion**2 * D[i,j]**2 ]
+                log.debug(f"adding constraint: {D[i,j]}**2 <= Q{[i,i]} + Q{[j,j]} - 2*Q{[i,j]}")
+                log.debug(f"adding constraint: Q{[i,i]} + Q{[j,j]} - 2*Q{[i,j]} <= {distortion}**2 * {D[i,j]}**2 ")
         
         obj = cvx.Minimize(1)
         prob = cvx.Problem(obj,constraints)
@@ -84,6 +101,7 @@ class MetricSpaceEmbeddingBase():
             log.warning("CVXOPT not installed. Solvig problem with default solver.")
         if prob.status != cvx.OPTIMAL:
             log.warning("embedding optimization status non-optimal: " + str(prob.status)) 
+            return None,None
         #print(Q.value)
         #print(np.linalg.eigvals(np.matrix(Q.value)))
         #print(np.linalg.eigh(np.matrix(Q.value)))

@@ -3,10 +3,9 @@ import random as rand
 
 from . import dc_volume
 from . import dc_oracle
-#from . import dc_settings as conf
 from pykpn.representations.metric_spaces import FiniteMetricSpace
 from pykpn.common.mapping import Mapping
-from pykpn.representations.representations import RepresentationType, MetricSpaceRepresentation, MetricEmbeddingRepresentation, SimpleVectorRepresentation
+from pykpn.representations.representations import RepresentationType, MetricSpaceRepresentation, MetricEmbeddingRepresentation, SimpleVectorRepresentation, SymmetryRepresentation
 
 from sys import exit
 
@@ -238,6 +237,8 @@ def SampleGen(representation, conf):
     elif isinstance(representation,MetricEmbeddingRepresentation):
         return MetricSpaceSampleGen(representation, conf)
     elif isinstance(representation,SimpleVectorRepresentation):
+        return MetricSpaceSampleGen(representation, conf)
+    elif isinstance(representation,SymmetryRepresentation):
         return MetricSpaceSampleGen(representation, conf)
     else:
         log.error(f"Sample generator type not found:{generator_type}")

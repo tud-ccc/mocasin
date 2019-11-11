@@ -272,7 +272,7 @@ def main():
     log_map = p.read_LogFile(conf.log_path, conf.threshold) # [([c1,c2,c3,...,cn],bool),...,(...)]
     pr_names = []
 
-    mapgen = mu.MappingGenerator(conf.default_path)
+    mapgen = mu.PartialMapper(conf.default_path)
 
     #p.multidim_line_chart(log_map)
     #p.simple_scatter(log_map)
@@ -280,7 +280,7 @@ def main():
     # gather data for scatter matrix
     for mapping, bool_res in log_map:
         # generate new mapping-XML similar to a given default mapping
-        mapgen = mu.MappingGenerator(conf.default_path)
+        mapgen = mu.PartialMapper(conf.default_path)
         pr2pe_map = mapgen.generatePr2PeMap(mapping)
         pr_names = sorted(pr2pe_map) #alphabetic list of keys
         #channel_list = mapgen.generateFromToList(pr2pe_map)

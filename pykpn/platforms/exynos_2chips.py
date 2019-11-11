@@ -11,7 +11,7 @@ from pykpn.common.platform import FrequencyDomain, Platform, Processor, \
 class Exynos2Chips(Platform):
 
     def __init__(self):
-        super().__init__("Exynos2Chips")
+        super(Exynos2Chips, self).__init__("Exynos2Chips")
 
         # Frequency domains
         fd_a7 = FrequencyDomain('fd_a7', 1400000000)

@@ -43,12 +43,12 @@ class MappingRepresentation(type):
     _instances = {}
     def __call__(cls, *args, **kwargs):
         #print(str(cls) + " is being called")
-        if cls not in cls._instances:
+        kpn = ";".join(map(lambda x : x.name, args[0].channels()))
+        platform = args[1].name
+        if (cls,kpn,platform) not in cls._instances:
             #make hashables of these two
-            kpn = ";".join(map(lambda x : x.name, args[0].channels()))
-            platform = args[1].name
             cls._instances[(cls,kpn,platform)] = super(MappingRepresentation,cls).__call__(*args, **kwargs)
-            log.info(f"Initalizing representation {cls} of kpn with processes: {kpn} on platform {platform}")
+            log.info(f"Initializing representation {cls} of kpn with processes: {kpn} on platform {platform}")
             cls._instances[(cls,kpn,platform)]._representationType = cls
         return cls._instances[(cls,kpn,platform)]
 
@@ -100,7 +100,7 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
       Procs = list(self.kpn._processes.keys())
       PEs = list(self.platform._processors.keys())
       pe_mapping = list(randint(0,len(PEs),size=len(Procs)))
-      return self.randomPrimitives(pe_mapping)
+      return SimpleVectorRepresentation.randomPrimitives(self,pe_mapping)
     def randomPrimitives(self,pe_mapping):
       Procs = list(self.kpn._processes.keys())
       PEs = list(self.platform._processors.keys())
@@ -258,6 +258,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         adjacency_dict, num_vertices, coloring, self._arch_nc = aut.to_labeled_edge_graph(self._topologyGraph)
         init_app_ncs(self,kpn)
         self._arch_nc_inv = {}
+        self.channels=False
         for node in self._arch_nc:
             self._arch_nc_inv[self._arch_nc[node]] = node
         #TODO: ensure that nodes_correspondence fits simpleVec
@@ -274,9 +275,13 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         return self._G.tuple_normalize(x[:self._d])
     def _elem2SimpleVec(self,x):
         return x
+
     def _uniform(self):
-        procs_only = SimpleVectorRepresentation.uniform(self)[:self._d]
+        procs_only = SimpleVectorRepresentation._uniform(self)[:self._d]
         return self._G.tuple_normalize(procs_only)
+
+    def uniform(self):
+        return self.fromRepresentation(self._uniform())
 
     def _allEquivalent(self,x):
         return self._G.tuple_orbit(x[:self._d])
@@ -297,6 +302,18 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         mapping_obj = Mapping(self.kpn,self.platform)
         mapping_obj.from_list(mapping)
         return mapping_obj
+
+    def _uniformFromBall(self,p,r,npoints=1):
+        return SimpleVectorRepresentation._uniformFromBall(self,p,r,npoints=npoints)
+
+    def uniformFromBall(self,p,r,npoints=1):
+        return self.fromRepresentation(self._uniformFRomBall(p,r,npoints=npoints))
+
+    def distance(self,x,y):
+        return SimpleVectorRepresentation.distance(self,x,y)
+
+    def approximate(self,x):
+        return SimpleVectorRepresentation.approximate(self,x)
 
 #FIXME: UNTESTED!!
 class MetricSymmetryRepresentation(FiniteMetricSpaceLPSym, metaclass=MappingRepresentation):
@@ -442,14 +459,14 @@ class SymmetryEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRep
         self._M._populateD()
         MetricSpaceEmbedding.__init__(self,self._M,1,distortion)
         
-    def simpleVec2Elem(self,x): 
+    def _simpleVec2Elem(self,x): 
         proc_vec = x[:self._d]
         return self.i(proc_vec)# [value for comp in self.i(x) for value in comp]
 
-    def elem2SimpleVec(self,x):
+    def _elem2SimpleVec(self,x):
         return self.invapprox(x)
 
-    def uniform(self):
+    def _uniform(self):
         return self.uniformVector()
     
 class RepresentationType(Enum):

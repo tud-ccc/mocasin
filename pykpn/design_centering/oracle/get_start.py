@@ -5,7 +5,7 @@ import config
 
 def main(argv):
     # generate new mapping-XML similar to a given default mapping
-    mapgen = mu.MappingGenerator(config.default_path)
+    mapgen = mu.PartialMapper(config.default_path)
     pr2pe_map =  mapgen.get_defaultPE2ProcessDict()
     print pr2pe_map
     return

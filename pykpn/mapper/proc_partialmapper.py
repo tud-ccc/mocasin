@@ -6,8 +6,8 @@ from pykpn.common.mapping import (ChannelMappingInfo, Mapping,
 
 log = logging.getLogger(__name__)
 
-class DC_MappingGenerator(object):
-    """Generates a partial mapping derived from a vector for a specific embedding
+class ProcPartialMapper(object):
+    """Generates a partial mapping derived from a vector(tuple) 
 
     This class is used to generate a partial mapping for a given
     platform and KPN application. 
@@ -21,7 +21,7 @@ class DC_MappingGenerator(object):
         :param platform: a platform
         :type platform: Platform
         :param fullGenerator: the associated full mapping generator
-        :type fullGererator: MappingGenerator
+        :type fullGererator: PartialMapper
         """
         self.full_mapper = False # flag indicating the mapper type
         self.platform = platform
@@ -43,11 +43,11 @@ class DC_MappingGenerator(object):
     def generate_mapping(self, vec, map_history = []):
         """ Generates an unique partial mapping for a numeric vector
 
-        The generated mapping is derived form a numeric vector 
-        that describes the mapping. Each value in the vector stand 
+        The generated mapping is derived from a numeric vector
+        that describes the mapping. Each value in the vector stands
         for a Process -> PE mapping.
 
-        :param reprVec: a vector describing the mapping in the initilized representation 
+        :param reprVec: a vector describing the mapping in the initilized representation
         :type reprVec: tuple describing the representation
         :param map_history: exclution list of already generated mappings
         :type map_history: list of mappings
