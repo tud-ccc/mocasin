@@ -1,0 +1,28 @@
+hydra:
+  # python logging configuration for tasks
+  job_logging:
+    version: 1
+    formatters:
+      pykpn_cli_log:
+        '()': 'pykpn.util.logging.PykpnFormatter'
+        fmt: '%(levelname)s %(message)s (%(name)s)'
+        use_color: true
+      pykpn_file_log:
+        '()': 'pykpn.util.logging.PykpnFormatter'
+        fmt: '%(levelname)s %(message)s (%(name)s)'
+        use_color: false
+    handlers:
+      console:
+        class: logging.StreamHandler
+        formatter: pykpn_cli_log
+        stream: ext://sys.stdout
+      file:
+        class: logging.FileHandler
+        formatter: pykpn_file_log
+        # relative to the job log directory
+        filename: ${hydra.job.name}.log
+    root:
+      level: ${log_level}
+      handlers: [file]
+
+    disable_existing_loggers: false
