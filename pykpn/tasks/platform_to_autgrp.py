@@ -4,51 +4,29 @@
 # All Rights Reserved
 #
 # Authors: Christian Menard, Andres Goens
-"""Calculate the Automorphism Group of a Platform Graph
 
-This script takes expects to positional arguments: an xml file describing a
-platform in the SLX format, e.g. apps/audio_filter/exynos/exynos.platform
-and an output file, where the automorphism group of the platform graph will be
-placed. 
-"""
+import hydra
+import logging
+import pynauty
 
-
-import argparse
-import sys
-
-import pynauty as pynauty
-
-from pykpn.util import logging
-from pykpn.slx.platform import SlxPlatform
 import pykpn.representations.automorphisms as aut
-
 
 log = logging.getLogger(__name__)
 
 
-def main(argv):
-    parser = argparse.ArgumentParser()
-
-    logging.add_cli_args(parser)
-
-    parser.add_argument('platform', help="xml platform description", type=str)
-    parser.add_argument('out', help="output file for automorphism group", type=str)
-    parser.add_argument('--slx-version', help="silexica version", type=str,
-                        default='2017.04')
-
-    args = parser.parse_args(argv)
-
-    logging.setup_from_args(args)
-    cfg = {
-        'platform_xml': args.platform,
-        'slx_version' : args.slx_version,
-        'out' : args.out
-    }
-    log.warning('Using this script is deprecated. Use the pykpn_manager instead.')
-    platform_to_autgrp(cfg)
-
 def platform_to_autgrp(cfg):
-    platform = SlxPlatform('SlxPlatform', cfg['platform_xml'], cfg['slx_version'])
+    """Calculate the Automorphism Group of a Platform Graph
+
+    This task expects two hydra parameters to be available.
+
+
+    **Hydra Parameters**:
+        * **platform:** the input platform. The task expects a configuration
+          dict that can be instantiated to a
+          :class:`~pykpn.common.platform.Platform` object.
+        * **out:** the output file
+    """
+    platform = hydra.utils.instantiate(cfg['platform'])
     log.info("start converting platform to edge graph for automorphisms.")
     plat_graph = platform.to_adjacency_dict()
 
@@ -81,7 +59,3 @@ def platform_to_autgrp(cfg):
         f.write("\nCorrespondence:")
         f.write(str(new_nodes_correspondence))
     log.info("done writing to file.")
-
-
-if __name__ == '__main__':
-    main(sys.argv[1:])

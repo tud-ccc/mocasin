@@ -16,6 +16,7 @@ import hydra
 import logging
 import sys
 
+from pykpn.tasks.platform_to_autgrp import platform_to_autgrp
 from pykpn.tasks.simulate import simulate
 from pykpn.tasks.to_dot import kpn_to_dot
 from pykpn.tasks.to_dot import mapping_to_dot
@@ -26,6 +27,7 @@ log = logging.getLogger(__name__)
 pykpn_tasks = {
     'kpn_to_dot': kpn_to_dot,
     'mapping_to_dot': mapping_to_dot,
+    'platform_to_autgrp': platform_to_autgrp,
     'platform_to_dot': platform_to_dot,
     'simulate': simulate,
 }
