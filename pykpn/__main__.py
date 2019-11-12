@@ -9,6 +9,7 @@
 import hydra
 import logging
 import sys
+import traceback
 
 from pykpn.tasks import kpn_to_dot
 from pykpn.tasks import mapping_to_dot
@@ -68,7 +69,11 @@ def pykpn(cfg):
 
     # execute the task
     function = pykpn_tasks[task]
-    function(cfg)
+    try:
+        function(cfg)
+    except Exception:
+        log.error(traceback.format_exc())
+        sys.exit(-1)
 
 
 def main():
