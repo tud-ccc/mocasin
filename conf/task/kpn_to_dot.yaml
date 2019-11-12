@@ -1,2 +1,2 @@
-task : kpn_to_dot
-dot : ${app_name}.dot
+task: kpn_to_dot
+dot: ${kpn.name}.dot

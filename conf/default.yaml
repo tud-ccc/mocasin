@@ -12,3 +12,4 @@ defaults:
   - platform: exynos
   - task: random_walk_mapping
   - hydra/job_logging: pykpn
+  - kpn: audio_filter
