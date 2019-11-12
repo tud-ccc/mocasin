@@ -26,3 +26,22 @@ def kpn_to_dot(cfg):
     """
     kpn = hydra.utils.instantiate(cfg['kpn'])
     kpn.to_pydot().write_raw(cfg['dot'])
+
+
+def platform_to_dot(cfg):
+    """Generate a dot graph from a Platform
+
+    This simple task produces a dot graph that visualizes a given Platform. It
+    expects two hydra parameters to be available.
+
+    Args:
+        cfg(~omegaconf.dictconfig.DictConfig): the hydra configuration object
+
+    **Hydra Parameters**:
+        * **platform:** the input platform. The task expects a configuration
+          dict that can be instantiated to a
+          :class:`~pykpn.common.platform.Platform` object.
+        * **dot:** the output file
+    """
+    platform = hydra.utils.instantiate(cfg['platform'])
+    platform.to_pydot().write_raw(cfg['dot'])

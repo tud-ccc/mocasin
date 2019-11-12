@@ -1,2 +1,2 @@
 task : platform_to_dot
-dot : ${platform_name}.dot
+dot : ${platform.name}.dot
