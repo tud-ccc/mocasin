@@ -45,3 +45,27 @@ def platform_to_dot(cfg):
     """
     platform = hydra.utils.instantiate(cfg['platform'])
     platform.to_pydot().write_raw(cfg['dot'])
+
+
+def mapping_to_dot(cfg):
+    """Generate a dot graph representing the mapping of a KPN application to a
+    platform
+
+    This task expects four hydra parameters to be available.
+
+    **Hydra Parameters**:
+        * **kpn:** the input kpn graph. The task expects a configuration dict
+          that can be instantiated to a :class:`~pykpn.common.kpn.KpnGraph`
+          object.
+        * **platform:** the input platform. The task expects a configuration
+          dict that can be instantiated to a
+          :class:`~pykpn.common.platform.Platform` object.
+        * **mapping:** the input mapping. The task expects a configuration dict
+          that can be instantiated to a :class:`~pykpn.common.mapping.Mapping`
+          object.
+        * **dot:** the output file
+    """
+    kpn = hydra.utils.instantiate(cfg['kpn'])
+    platform = hydra.utils.instantiate(cfg['platform'])
+    mapping = hydra.utils.instantiate(cfg['mapping'], kpn, platform)
+    mapping.to_pydot().write_raw(cfg['dot'])

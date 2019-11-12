@@ -4,4 +4,4 @@ kpn:
   params:
     name: ${kpn.name}
     cpngraph: ../../../apps/${kpn.name}/${kpn.name}.cpn.xml
-    slx_version: '2017.10'
+    slx_version: '2017.04'
