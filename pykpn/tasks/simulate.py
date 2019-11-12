@@ -24,6 +24,9 @@ def simulate(cfg):
 
     This task expects four hydra parameters to be available.
 
+    Args:
+        cfg(~omegaconf.dictconfig.DictConfig): the hydra configuration object
+
     **Hydra Parameters**:
         * **kpn:** the input kpn graph. The task expects a configuration dict
           that can be instantiated to a :class:`~pykpn.common.kpn.KpnGraph`

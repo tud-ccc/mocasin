@@ -20,7 +20,9 @@ from matplotlib import collections as coll
 #import networkx as nwx
 
 
-def visualize_mapping_space(mappings, exec_times, dest=None,representation_type=RepresentationType['SimpleVector'], tick=0, history=0):
+def visualize_mapping_space(mappings, exec_times, show_plot=False,
+                            representation_type=RepresentationType['SimpleVector'],
+                            tick=0, history=0):
     """Visualize a multi-dimensional mapping space using t-SNE
 
     Args:
@@ -52,7 +54,7 @@ def visualize_mapping_space(mappings, exec_times, dest=None,representation_type=
 
     representation = representation_type.getClassType()(mappings[0].kpn,mappings[0].platform)
     #print(mapping_tuples)
-    print("MAPPING TUPLES: {}".format(mapping_tuples[0]))
+    # print("MAPPING TUPLES: {}".format(mapping_tuples[0]))
     X = tsne.tsne(mapping_tuples,
                   no_dims=2,
                   initial_dims=len(representation.toRepresentation(mappings[0])),
@@ -90,7 +92,8 @@ def visualize_mapping_space(mappings, exec_times, dest=None,representation_type=
 
         ani = animation.FuncAnimation(fig, update, frames+1, interval=1000)
 
-    if dest == None:
+    if show_plot:
         plt.show()
-    else:
-        fig.savefig(dest + ".pdf")
+    fig.savefig("tsne.pdf")
+
+    return plt

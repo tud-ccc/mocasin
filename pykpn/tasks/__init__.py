@@ -17,6 +17,7 @@ import logging
 import sys
 
 from pykpn.tasks.platform_to_autgrp import platform_to_autgrp
+from pykpn.tasks.random_walk import random_walk
 from pykpn.tasks.simulate import simulate
 from pykpn.tasks.to_dot import kpn_to_dot
 from pykpn.tasks.to_dot import mapping_to_dot
@@ -29,6 +30,7 @@ pykpn_tasks = {
     'mapping_to_dot': mapping_to_dot,
     'platform_to_autgrp': platform_to_autgrp,
     'platform_to_dot': platform_to_dot,
+    'random_walk_mapping': random_walk,
     'simulate': simulate,
 }
 """A dictionary that maps task names to a callable function."""
