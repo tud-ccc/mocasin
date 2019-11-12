@@ -6,7 +6,6 @@ hydra:
 log_level : WARNING
 
 defaults:
-  - simulate: pytrm
   - app : audio_filter
   - representation : simple_vector
   - platform: exynos
