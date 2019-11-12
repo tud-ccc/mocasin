@@ -14,3 +14,4 @@ defaults:
   - hydra/job_logging: pykpn
   - kpn: audio_filter
   - mapping: default
+  - trace: default

@@ -14,10 +14,10 @@ import traceback
 from pykpn.tasks import kpn_to_dot
 from pykpn.tasks import mapping_to_dot
 from pykpn.tasks import platform_to_dot
+from pykpn.tasks import simulate
 
 from scripts.slx.dc import dc_task
 from scripts.slx.enumerate_equivalent import enumerate_equivalent
-from scripts.slx.simulate import simulate
 from scripts.slx.random_walk import random_walk
 from scripts.slx.csv_plot import csv_plot
 
