@@ -96,6 +96,7 @@ def main():
                     'distr': setting.distr,
                     'shape': setting.shape,
                     'oracle': setting.oracle,
+                    'radius': setting.radius,
                     'random_seed': setting.random_seed,
                     'threshold': setting.threshold,
                     'run_perturbation': setting.run_perturbation,
@@ -168,7 +169,6 @@ def dc_task(cfg):
     #     log.warn("DC Flow just supports one appilcation. The rest will be ignored")
     #app_config = (gconf.system[app_pl]['sconf'], setting) #TODO: where is this being read?
     platform = SlxPlatform(cfg['platform_name'], cfg['platform_xml'], cfg['slx_version'])
-    print(f"config arch{cfg['platform_xml']}")
     app_name = cfg['app_name']
     kpn = SlxKpnGraph(app_name, cfg['cpn_xml'], slx_version)
     rep_type_str = cfg['representation']

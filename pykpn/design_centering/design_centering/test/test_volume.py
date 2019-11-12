@@ -84,7 +84,7 @@ class AttrDict(dict):
 
 #@pytest.fixture
 def conf():
-    return AttrDict({'adapt_samples' : NUM_SAMPLES, 'max_step': 10, 'adaptable_center_weights' : False })
+    return AttrDict({'adapt_samples' : NUM_SAMPLES, 'max_step': 10, 'adaptable_center_weights' : False , 'radius' : 10})
 
 def random_s_set_gen(n,procs,mu,Q,r,threshold=0.05,num_points=10):
     ns = [procs] * n
