@@ -14,37 +14,9 @@ log = logging.getLogger(__name__)
 
 
 class SlxTraceReader(TraceGenerator):
-    """Base class for SLX trace generators"""
+    """A TraceGenerator that reads SLX trace files"""
 
-    def __init__(self):
-        super().__init__()
-
-    @staticmethod
-    def factory(trace_dir, prefix, version):
-        """Factory method.
-
-        Create a SlxTraceReader object according to version.
-
-        :param str trace_dir: path to the directory containing all trace files
-        :param str prefix: the prefix that is used for channel and process
-            names
-        :param str version: the version of SLX that was used to produce the
-            traces
-        """
-
-        if version == '2017.04':
-            return SlxTraceReader_2017_04(trace_dir, prefix)
-        elif version == '2017.10':
-            return SlxTraceReader_2017_10(trace_dir, prefix)
-        else:
-            raise NotImplementedError(
-                'The slx trace reader does not support version %s' % version)
-
-
-class SlxTraceReader_2017_04(TraceGenerator):
-    """A TraceGenerator that reads SLX 2017.04 trace files"""
-
-    def __init__(self, trace_dir, prefix):
+    def __init__(self, trace_dir, slx_version, prefix=None):
         """Initialize the trace reader
 
         :param str trace_dir: path to the directory containing all trace files
@@ -55,13 +27,41 @@ class SlxTraceReader_2017_04(TraceGenerator):
 
         self._trace_files = {}
         self._processor_types = {}
+
+        if prefix is None:
+            prefix = ""
         self._prefix = prefix
 
+        if slx_version not in ['2017.04', '2017.10']:
+            raise NotImplementedError(
+                'The slx trace reader does not support version %s' %
+                slx_version)
+
+        self._slx_version = slx_version
+
     def _open_trace_file(self, process_name, processor_type):
-        assert process_name.startswith(self._prefix)
-        return open('%s/%s.%s.cpntrace' % (self._trace_dir,
-                                           process_name[len(self._prefix):],
-                                           processor_type))
+        if self._slx_version == '2017.04':
+            assert process_name.startswith(self._prefix)
+            return open('%s/%s.%s.cpntrace' % (self._trace_dir,
+                                               process_name[len(self._prefix):],
+                                               processor_type))
+        else:
+            assert process_name.startswith(self._prefix)
+            trace_files = glob.glob('%s/%s.%s.*cpntrace' % (
+                self._trace_dir,
+                process_name[len(self._prefix):],
+                processor_type))
+
+            if len(trace_files) == 0:
+                raise RuntimeError(
+                    'No trace file for process %s on processor type %s found' % (
+                        process_name, processor_type))
+            elif len(trace_files) > 1:
+                log.warning('More than one trace file found for process %s on '
+                            'processor type %s. -> Choose %s' % (
+                                process_name, processor_type, trace_files[0]))
+
+            return open(trace_files[0])
 
     def next_segment(self, process_name, processor_type):
         """Return the next trace segment.
@@ -113,34 +113,3 @@ class SlxTraceReader_2017_04(TraceGenerator):
             raise RuntimeError('Unexpected trace entry ' + traceline[0])
 
         return segment
-
-
-class SlxTraceReader_2017_10(SlxTraceReader_2017_04):
-    """A TraceGenerator that reads SLX 2017.10 trace files"""
-
-    def __init__(self, trace_dir, prefix):
-        """Initialize the trace reader
-
-        :param str trace_dir: path to the directory containing all trace files
-        :param str prefix: the prefix that is used for channel and process
-            names
-        """
-        super().__init__(trace_dir, prefix)
-
-    def _open_trace_file(self, process_name, processor_type):
-        assert process_name.startswith(self._prefix)
-        trace_files = glob.glob('%s/%s.%s.*cpntrace' % (
-            self._trace_dir,
-            process_name[len(self._prefix):],
-            processor_type))
-
-        if len(trace_files) == 0:
-            raise RuntimeError(
-                'No trace file for process %s on processor type %s found' % (
-                    process_name, processor_type))
-        elif len(trace_files) > 1:
-            log.warning('More than one trace file found for process %s on '
-                        'processor type %s. -> Choose %s' % (
-                            process_name, processor_type, trace_files[0]))
-
-        return open(trace_files[0])
