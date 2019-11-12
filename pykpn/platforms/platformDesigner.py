@@ -3,7 +3,7 @@
 #
 # Authors: Felix Teweleit
 
-from pykpn.common.platform import FrequencyDomain, Platform, Processor, \
+from common.platform import FrequencyDomain, Platform, Processor, \
     SchedulingPolicy, Scheduler, Storage, CommunicationPhase, Primitive, \
     CommunicationResource, CommunicationResourceType
 from collections import OrderedDict
@@ -113,6 +113,38 @@ class PlatformDesigner():
         except:
             log.error("Exception caught: " + sys.exc_info()[0])
     
+    def addPeClusterTMP(self,
+                     identifier,
+                     processor,
+                     amount):
+        """Creates a new cluster of processing elements on the platform.
+        :param int identifier: The identifier the cluster can be addressed within the currently active scope.
+        :param string name: The name of the processing elements.
+        :param int amount: The amount of processing elements in the cluster.
+        :param int frequency: The frequency of the processing elements.
+        """
+        try:
+            start = self.__peAmount
+            end = self.__peAmount + amount
+            processors = []
+            for i in range (start, end):
+                #copy the input processor since a single processor can only be added once
+                name = "processor_" + str(self.__peAmount)
+                new_processor = Processor(name,
+                                          processor.type,
+                                          processor.frequency_domain,
+                                          processor.context_load_cycles,
+                                          processor.context_store_cycles)
+                
+                self.__platform.add_processor(new_processor)
+                self.__platform.add_scheduler(Scheduler('sched%02d' % i, [new_processor], [self.__schedulingPolicy]))
+                processors.append((new_processor,[]))
+                self.__peAmount += 1
+                
+                self.__elementDict[self.__activeScope].update({identifier : processors})
+        except:
+            log.error("Exception caught: " + str(sys.exc_info()[0]))
+    
     def setSchedulingPolicy(self, 
                             policy, 
                             cycles):
@@ -213,7 +245,7 @@ class PlatformDesigner():
         try:
             if resourceType == CommunicationResourceType.Storage:
                 communicationRessource = Storage(nameToGive, 
-                                                 self.__schedulingPolicy,
+                                                 fd,
                                                  readLatency,
                                                  writeLatency,
                                                  readThroughput, 
@@ -240,7 +272,7 @@ class PlatformDesigner():
                     prim.add_consumer(pe[0], [consume])        
             self.__platform.add_primitive(prim)
         except :
-            log.error("Exception caught: " + sys.exc_info()[0])
+            log.error("Exception caught: " + str(sys.exc_info()[0]))
             return
         
         return

@@ -7,7 +7,7 @@ from tgffParser import regEx as expr
 import argparse
 
 from pykpn.util import logging
-from tgffParser.dataStructures import TgffProcessor, TgffGraph, TgffLink
+from tgff.tgffParser.dataStructures import TgffProcessor, TgffGraph, TgffLink
 from pykpn.common.kpn import KpnProcess, KpnGraph, KpnChannel
 
 class Parser():
@@ -98,6 +98,8 @@ class Parser():
                 elif key == 'hw_component':
                     self.logger.debug('Parse HW component')
                     self._parse_hw_component(file, match, last_missmatch)
+                elif key == 'processor':
+                    pass
                 elif key == 'unused_scope':
                     self.logger.debug('Parse unused group')
                     self._parse_unused_scope(file)
@@ -108,7 +110,7 @@ class Parser():
                 current_line = file.readline()
         
         self.logger.info('Finished parsing')
-        return (self.task_graph_dict, self.quantity_dict, self.processor_dict, self.std_link_dict)
+        return (self.task_graph_dict, self.processor_dict, self.std_link_dict, self.quantity_dict)
     
     def _parse_task_graph(self, file, match):
         identifier = 'TASK_GRAPH_' + (match.group('identifier'))
@@ -178,13 +180,13 @@ class Parser():
                 self._parsePrimLink(identifier, file, match)
                 return
             elif key == 'properties' or key == 'operation':
-                self._parseProcessor(identifier, file, key, match, last_missmatch)
+                self._parse_processor(identifier, file, key, match, last_missmatch)
                 return
             elif key == 'scope_limiter':
                 self.logger.error('Reached end of scope. Unable to recognize HW component!')
             else:
                 self._key_missmatch(key, file.tell())
-                last_missmatch = (key, match)
+                #last_missmatch = (key, match)
             current_line = file.readline()
         
     def _parse_std_link(self, identifier, file, match, last_missmatch):
@@ -230,7 +232,7 @@ class Parser():
         data_struct.append(match.group('bit_time'))
         data_struct.append(match.group('power'))
         
-    def _parseProcessor(self, identifier, file, key, match, last_missmatch):
+    def _parse_processor(self, identifier, file, key, match, last_missmatch):
         self.logger.debug("Recognized component as processing element")
         properties = []
         operations = {}
@@ -256,8 +258,6 @@ class Parser():
             current_line = file.readline()
             
         self.logger.info('Added to processor dict: ' + str(identifier))
-        
-        self.logger.info('Added to graph dict: ' + identifier)
         if last_missmatch[0] != 'comment':
             self.processor_dict.update( {identifier : TgffProcessor(identifier, operations)} )
         else:

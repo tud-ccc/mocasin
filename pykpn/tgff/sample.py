@@ -3,8 +3,10 @@
 #
 # Authors: Felix Teweleit
 
-from tgffParser.parser import Parser
-from tgffGenerators import TgffTraceGenerator
+from tgff.tgffParser.parser import Parser
+from tgff.tgffGenerators import TgffTraceGenerator
+from tgff.tgffSimulation import TgffRuntimeSystem
+import simpy
 
 '''A simple example script to demonstrate the use of the 
 tgff parser and the corresponding generators.
@@ -16,11 +18,11 @@ def main():
     
     '''Parse a specified file. Result is a list containing following items in specified order:
     [0] tgff graph dict
-    [1] tgff communication quantities
-    [2] processor dict
-    [3] link dict
+    [1] processor dict
+    [2] link dict
+    [3] tgff communication quantities
     '''
-    tgff_components = tgff_parser.parse_file('graphs/auto-indust-cords.tgff')
+    tgff_components = tgff_parser.parse_file('tgff/graphs/auto-indust-cords.tgff')
     
     '''Transfer tgff graphs into kpn graphs
     '''
@@ -30,32 +32,33 @@ def main():
     
     '''Transfer tgff processors into kpn processors
     '''
-    kpnProcessors = []
-    for processor in tgff_components[2].values():
-        kpnProcessors.append(processor.to_pykpn_processor())
+    pykpnProcessors = []
+    for processor in tgff_components[1].values():
+        pykpnProcessors.append(processor.to_pykpn_processor())
         
     '''Create a traceGenerator based on the tgff components
     '''
-    generators =[]
-    for tgff_graph in tgff_components[0].values():
-        generators.append(TgffTraceGenerator(tgff_components[2], tgff_graph, repetition=2))
-    
-    segments = []
-    for i in range(0,30):
-        segment = generators[0].next_segment('src','PROC_0')
-        segments.append(segment)
-        
+    generator = TgffTraceGenerator(tgff_components[1], tgff_components[0], repetition=2)
+     
     '''Transfer tgff links into pykpn communication ressources
     WARNING: communication ressources are not complete due to a lack of information in
     the tgff representation
     '''
     comm_resources = []
-    for link in tgff_components[3].values():
+    for link in tgff_components[2].values():
         comm_resources.append(link.to_pykpn_communication_resource())
-        
+    
+    '''Simulating the execution of the parsed tgff graphs on the specified processor,
+    PROC_0 in the example
+    '''
+    env = simpy.Environment()
+    system = TgffRuntimeSystem(tgff_components[1]['PROC_0'], tgff_components[0], env)
+    system.simulate()
     print('Finished sample')
         
     
 
 if __name__ == '__main__':
     main()
+    
+    

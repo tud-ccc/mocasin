@@ -12,8 +12,8 @@ class TgffProcessor():
     """Represents the relevant information about a processor, included in a .tgff file.
     The processor can be transfered into the pykpn representation.
     """
-    def __init__(self, identifier, operations, processor_type=None):
-        self.identifier = identifier
+    def __init__(self, name, operations, processor_type=None):
+        self.name = name
         self.type = processor_type
         self.operations = {}
         self.cycle_time = self._get_cycle_time(operations)
@@ -27,13 +27,13 @@ class TgffProcessor():
     :rtype: Processor
     """
     def to_pykpn_processor(self):
-        frequency_domain = FrequencyDomain('fd{0}'.format(self.identifier), math.ceil(1/self.cycle_time))
+        frequency_domain = FrequencyDomain('fd{0}'.format(self.name), math.ceil(1/self.cycle_time))
         pykpn_processor = None
         
         if not self.type is None:
-            pykpn_processor = Processor(self.identifier, self.type, frequency_domain)
+            pykpn_processor = Processor(self.name, self.name, frequency_domain)
         else:
-            pykpn_processor = Processor(self.identifier, self.identifier, frequency_domain)
+            pykpn_processor = Processor(self.name, self.name, frequency_domain)
         
         return pykpn_processor
     
@@ -109,12 +109,12 @@ class TgffGraph():
                 read_from.append(name)
                 
         for channel_name in read_from:
-            execution_order.append(('r',channel_name))
+            execution_order.append(('r',self.identifier + '.' + channel_name))
         
         execution_order.append(('e', self.tasks[task_name]))
         
         for channel_name in write_to:
-            execution_order.append(('w', channel_name))
+            execution_order.append(('w', self.identifier + '.' + channel_name))
             
         return execution_order
     
