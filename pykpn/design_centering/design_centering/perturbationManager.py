@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import sys
 import random as rand
+import pint
 
 from pykpn.design_centering.design_centering import dc_sample
 from . import dc_oracle
@@ -86,11 +87,13 @@ class PerturbationManager(object):
 
         exec_times = []
         for r in results:
-            exec_times.append(float(r.sim_context.exec_time / 1000000000.0))
+            exec_times.append(float(r.sim_context.exec_time))
         
         feasible = []
         for e in exec_times:
-            if (e > self.config.threshold):
+            ureg = pint.UnitRegistry()
+            threshold = ureg(self.config.threshold).to(ureg.ps).magnitude
+            if (e > threshold):
                 feasible.append(False)
             else:
                 feasible.append(True)

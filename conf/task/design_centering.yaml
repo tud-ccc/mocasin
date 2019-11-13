@@ -15,7 +15,6 @@ distr : uniform
 shape : lpvol
 oracle : simulation
 random_seed : 42
-threshold : 280 #TODO: this depends on the app/platform combination
 run_perturbation : false
 num_perturbations : 10
 num_reference_mappings : 10 
@@ -25,3 +24,19 @@ visualize_mappings : False
 out_dir : ./
 #TODO: this should go to the kpn
 start_time : 0 us
+
+# thresholds for app-platform combinations
+#[hog/exynos]
+#threshold : 1200 ms
+#
+#[audio_filter/exynos]
+threshold : 51 ms
+#
+#[audio_filter/parallella]
+#threshold : 280 ms
+#
+#[speaker_recognition/parallella]
+#threshold : 50 ms
+#
+#[speaker_recognition/multidsp]
+#threshold : 181 ms

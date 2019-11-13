@@ -152,7 +152,10 @@ class Simulation(object):
         feasible = []
         for r in results:
             assert r.sim_context.exec_time is not None
-            if (r.sim_context.exec_time > self.sim_config.threshold):
+            ureg = pint.UnitRegistry()
+            threshold = ureg(self.sim_config.threshold).to(ureg.ps).magnitude
+
+            if (r.sim_context.exec_time > threshold):
                 r.setFeasibility(False)
                 feasible.append(False)
             else:
