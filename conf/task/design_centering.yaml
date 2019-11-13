@@ -18,12 +18,12 @@ random_seed : 42
 run_perturbation : false
 num_perturbations : 10
 num_reference_mappings : 10 
-representation : SimpleVector
 keep_metrics : True
 visualize_mappings : False
 out_dir : ./
 #TODO: this should go to the kpn
 start_time : 0 us
+perturbations_out : perturbation_plot.pdf
 
 # thresholds for app-platform combinations
 #[hog/exynos]

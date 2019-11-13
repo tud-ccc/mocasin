@@ -9,6 +9,7 @@ from pykpn.mapper import rand_partialmapper as rand_pm
 from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.mapper.proc_partialmapper import ProcPartialMapper
 from pykpn.mapper.rand_partialmapper import RandomPartialMapper
+from pykpn.representations import representations as reps
 
 from pykpn.util import logging
 
@@ -23,6 +24,11 @@ class PerturbationManager(object):
         self.sim = dc_oracle.Simulation(config)
         self.platform = self.sim.platform
         self.kpn = self.sim.kpn
+        #if config['representation'] != "GeomDummy":
+        #    representation_type = reps.RepresentationType[config['representation']]
+        #    self.representation = (representation_type.getClassType())(self.kpn,self.platform)
+        #TODO: (FIXME) Perturbation manager only works in simple vector representation (for now)
+        self.representation = (reps.RepresentationType['SimpleVector'].getClassType())(self.kpn, self.platform)
 
     def create_randomMappings(self):
         """ Creates a defined number of unique random mappings """
@@ -79,7 +85,7 @@ class PerturbationManager(object):
         for i in range(0, self.num_perturbations):
             mapping = pert_fun(mapping, history)
             history.append(mapping)
-            sample = dc_sample.Sample(mapping.to_list())
+            sample = dc_sample.Sample(mapping.to_list(),representation=self.representation)
             samples.append(sample)
         self.sim.prepare_sim_contexts_for_samples(samples)
 

@@ -107,7 +107,7 @@ class Simulation(object):
             log.debug("Using simcontext no.: {} {}".format(i,samples[i]))
             # create a simulation context
             mapping = Mapping(self.kpn,self.platform)
-            mapping.from_list(list(map(int,samples[i].sample2tuple())))
+            mapping.from_list(list(map(int,samples[i].sample2simpleTuple())))
             sim_context = self.prepare_sim_context(mapping)
             samples[i].setSimContext(sim_context)
 

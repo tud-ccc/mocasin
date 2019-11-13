@@ -105,7 +105,7 @@ def dc_task(cfg):
 
 
     # config = args.configFile
-    oracle = dc_oracle.Oracle(cfg )
+    oracle = dc_oracle.Oracle(cfg)
     dc = designCentering.DesignCentering(v, cfg['distr'], oracle, representation)
 
     center = dc.ds_explore()
@@ -144,7 +144,7 @@ def dc_task(cfg):
             json_dc_dump['rand mapping' + str(i)]['pert'] = c
             json_dc_dump['rand mapping' + str(i)]['passed'] = s
 
-        tp.plot_perturbations(pert_res)
+        tp.plot_perturbations(pert_res,cfg['perturbations_out'])
         log.info("==== Perturbation Test done ====")
 
     if not os.path.exists(cfg['out_dir']):

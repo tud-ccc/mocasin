@@ -41,7 +41,7 @@ class ThingPlotter(object):
         plt.yticks(np.arange(0, 1, 0.1))
         plt.show()
 
-    def plot_perturbations(sef, pert_res_list):
+    def plot_perturbations(sef, pert_res_list,out_dir=None):
         # the first list element is the center
         x = []
         y = []
@@ -55,11 +55,15 @@ class ThingPlotter(object):
             x.append(i)
             y.append(p)
 
+        fig = plt.figure(figsize=(14, 8))
         plt.scatter(x,y)
         plt.scatter(center_x, center_y, color='r')
         plt.xlabel("Mappings")
         plt.ylabel("Perturbations Passed")
-        plt.show()
+        if out_dir is None:
+            plt.show()
+        else:
+            fig.savefig(out_dir)
 
 class DesignCentering(object):
 
