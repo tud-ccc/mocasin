@@ -23,3 +23,11 @@ representation : SimpleVector
 keep_metrics : True
 visualize_mappings : False
 out_dir : ./
+# FIXME: These parameters are depricated and should be removed
+slx_version: ${kpn.params.slx_version}
+start_time: "0s"
+cpn_xml: ${kpn.params.cpngraph}
+platform_xml: ${platform.params.platform_xml}
+app_name: ${kpn.name}
+platform_name: ${platform.name}
+trace_dir: ${trace.params.trace_dir}

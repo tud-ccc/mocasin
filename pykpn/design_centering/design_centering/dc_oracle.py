@@ -147,8 +147,10 @@ class Simulation(object):
             log.debug("####### Mapping i={} toList: {}".format(i, app_context.mapping.to_list()))
             
             # create the trace reader
-            app_context.trace_reader = SlxTraceReader.factory(
-                app_config.trace_dir, '%s.' % (app_name), app_config.slx_version)
+            app_context.trace_reader = SlxTraceReader(
+                trace_dir=app_config.trace_dir,
+                prefix='%s.' % (app_name),
+                slx_version=app_config.slx_version)
             
             sim_context.app_contexts.append(app_context)
             samples[i].setSimContext(sim_context)
