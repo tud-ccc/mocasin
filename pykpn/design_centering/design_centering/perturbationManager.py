@@ -1,10 +1,10 @@
 #!/usr/bin/python
 import sys
 import random as rand
+
+from pykpn.design_centering.design_centering import dc_sample
 from . import dc_oracle
 from pykpn.mapper import rand_partialmapper as rand_pm
-from pykpn.slx.config import SlxSimulationConfig
-from pykpn.slx.kpn import SlxKpnGraph
 from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.mapper.proc_partialmapper import ProcPartialMapper
 from pykpn.mapper.rand_partialmapper import RandomPartialMapper
@@ -20,14 +20,14 @@ class PerturbationManager(object):
         self.num_mappings = num_mappings
         self.num_perturbations = num_tests
         self.sim = dc_oracle.Simulation(config)
-        self.platform = self.sim.get_platform()
-        self.kpns = self.sim.get_kpns()
+        self.platform = self.sim.platform
+        self.kpn = self.sim.kpn
 
     def create_randomMappings(self):
         """ Creates a defined number of unique random mappings """
         mapping_set = set([])
         while len(mapping_set) < self.num_mappings:
-            mg = rand_pm.RandomPartialMapper(self.kpns[0], self.platform)
+            mg = rand_pm.RandomPartialMapper(self.kpn, self.platform, self.config.random_seed)
             mapping_set.add(mg.generate_mapping())
         return mapping_set
 
@@ -38,19 +38,19 @@ class PerturbationManager(object):
         """
 
         # check for single application
-        rand_part_mapper = RandomPartialMapper(self.kpns[0], self.platform)
-        proc_part_mapper = ProcPartialMapper(self.kpns[0], self.platform, rand_part_mapper)
+        rand_part_mapper = RandomPartialMapper(self.kpn, self.platform, self.config.random_seed)
+        proc_part_mapper = ProcPartialMapper(self.kpn, self.platform, rand_part_mapper)
 
         if seed is not None:
             rand.seed(seed)
         pe = rand.randint(0, len(list(self.platform.processors()))-1)
-        process = rand.randint(0, len(list(self.kpns[0].processes()))-1)
+        process = rand.randint(0, len(list(self.kpn.processes()))-1)
         
         vec = []
         #assign cores to vector
         pe_mapping = proc_part_mapper.get_pe_name_mapping()
         log.debug(str(pe_mapping))
-        for p in self.kpns[0].processes():
+        for p in self.kpn.processes():
             log.debug(mapping.affinity(p).name) 
             vec.append(pe_mapping[mapping.affinity(p).name])
 
@@ -71,23 +71,22 @@ class PerturbationManager(object):
         Runs the perturbation test with the defined Perturbation Method.
         The given mapping is evaluated by comparing it to randomly generated mappings. 
         """
-        # Assume that only one application runs on the simulated platform 
-        assert(len(self.kpns) == 1)
-        kpn = self.kpns[0]
-        
+
         history = []
         results = []
-        sim_contexts = []
+        samples = []
         for i in range(0, self.num_perturbations):
             mapping = pert_fun(mapping, history)
             history.append(mapping)
-            sim_contexts.append(self.sim.prepare_sim_context(self.platform, kpn, mapping))
+            sample = dc_sample.Sample(mapping.to_list())
+            samples.append(sample)
+        self.sim.prepare_sim_contexts_for_samples(samples)
 
-        results = list(map(self.sim.run_simulation, sim_contexts))
+        results = list(map(self.sim.run_simulation, samples)) #these should be samples
 
         exec_times = []
         for r in results:
-            exec_times.append(float(r.exec_time / 1000000000.0))
+            exec_times.append(float(r.sim_context.exec_time / 1000000000.0))
         
         feasible = []
         for e in exec_times:

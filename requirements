@@ -1,0 +1,10 @@
+cvxpy
+pyxb
+simpy
+pint
+pydot
+termcolor
+matplotlib
+lxml
+tqdm
+third_party_dependencies/pynauty-0.6

@@ -24,6 +24,7 @@ from pykpn.tasks.simulate import simulate
 from pykpn.tasks.to_dot import kpn_to_dot
 from pykpn.tasks.to_dot import mapping_to_dot
 from pykpn.tasks.to_dot import platform_to_dot
+from scripts.slx.dc import dc_task
 
 log = logging.getLogger(__name__)
 
@@ -36,6 +37,7 @@ pykpn_tasks = {
     'platform_to_dot': platform_to_dot,
     'random_walk_mapping': random_walk,
     'simulate': simulate,
+    'design_centering' : dc_task,
 }
 """A dictionary that maps task names to a callable function."""
 

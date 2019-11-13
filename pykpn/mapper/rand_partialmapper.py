@@ -29,7 +29,6 @@ class RandomPartialMapper(object):
         self.full_mapper = True
         self.platform = platform
         self.kpn = kpn
-        self.mapping = Mapping(kpn, platform)
 
     def generate_mapping(self, seed = None, part_mapping = None):
         """ Generates a random mapping
@@ -46,8 +45,9 @@ class RandomPartialMapper(object):
         if seed is not None:
             random.seed(seed)
 
+        #generate new mapping if no partial mapping is given
         if not part_mapping:
-            part_mapping = self.mapping
+            part_mapping = Mapping(self.kpn, self.platform)
 
         # check if the platform/kpn is equivalent
         if not part_mapping.platform is self.platform or not part_mapping.kpn is self.kpn:
@@ -105,6 +105,5 @@ class RandomPartialMapper(object):
         # finally check if the mapping is fully specified
         assert not part_mapping.get_unmapped_processes()
         assert not part_mapping.get_unmapped_channels()
-        self.mapping = part_mapping
-        return self.mapping
+        return part_mapping
 

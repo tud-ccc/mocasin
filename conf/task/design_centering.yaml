@@ -23,3 +23,5 @@ representation : SimpleVector
 keep_metrics : True
 visualize_mappings : False
 out_dir : ./
+#TODO: this should go to the kpn
+start_time : 0 us

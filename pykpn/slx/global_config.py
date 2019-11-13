@@ -31,6 +31,12 @@ def to_int(s):
         res.append(int(f))
     return res
 
+def to_float(s):
+    res = []
+    for f in s.split(','):
+        res.append(float(f))
+    return res
+
 def to_str(s):
     res = []
     for f in s.split(','):
@@ -78,6 +84,7 @@ class GlobalConfig:
                      'deg_p_polynomial' : to_int,
                      'step_width' : to_float_list,
                      'deg_s_polynomial' : to_int,
+                     'starting_radius' : to_float,
                      'max_step' : to_int,
                      'show_polynomials' : to_bool,
                      'show_points' : to_bool,
@@ -86,9 +93,10 @@ class GlobalConfig:
                      'shape' : to_str,
                      'oracle' : to_str,
                      'random_seed' : to_int,
-                     'threshold' : to_int,
+                     'threshold' : to_time,
                      'run_perturbation' : to_bool,
                      'num_perturbations' : to_int,
+                     'num_reference_mappings' : to_int,
                      'representation' : to_str,
                      'keep_metrics' : to_bool,
                      'adaptable_center_weights' : to_bool,

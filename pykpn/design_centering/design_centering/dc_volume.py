@@ -13,7 +13,6 @@ from pykpn.util import logging
 
 log = logging.getLogger(__name__)
 
-
 class Volume(object):
 
     def __init__(self):
@@ -229,7 +228,7 @@ class LPVolume(Volume):
         Q = vecs[idx] * vals_sqrt_diag
         #Q * Q.transpose() is approx. self.transformation
         norm = np.abs(np.linalg.det(Q) )
-        self.covariance = norm**(1/self.dim) * Q
+        self.covariance = np.real(norm**(1/self.dim) * Q)
 
     #def draw_volume_projection(self,coordinates):
     #    assert(len(coordinates) == 2)
