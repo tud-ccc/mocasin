@@ -67,13 +67,14 @@ class ThingPlotter(object):
 
 class DesignCentering(object):
 
-    def __init__(self, init_vol, distr, oracle, representation):
+    def __init__(self, init_vol, distr, oracle, representation,record_samples):
         np.random.seed(oracle.config.random_seed)
         type(self).distr = distr
         type(self).vol = init_vol
         type(self).oracle = oracle
         type(self).samples = {}
         type(self).representation = representation
+        self.record_samples = record_samples
         type(self).p_value = self.__adapt_poly(oracle.config.hitting_probability, oracle.config.deg_p_polynomial)
         type(self).s_value = self.__adapt_poly(oracle.config.step_width, oracle.config.deg_s_polynomial)
 
@@ -109,6 +110,7 @@ class DesignCentering(object):
         """ explore design space (main loop of the DC algorithm) """
 
         center_history = []
+        sample_history = []
         for i in range(0, type(self).oracle.config.max_samples, type(self).oracle.config.adapt_samples):
             s = dc_sample.SampleGen(self.representation, type(self).oracle.config)
             
@@ -132,7 +134,10 @@ class DesignCentering(object):
             center = type(self).vol.adapt_center(s_set)
             center = list(map(int, center))
             center_history.append(dc_sample.Sample(sample = center,representation=self.representation))
-           # if not type(self).oracle.validate(dc_sample.GeometricSample(center)): #this breaks the rest!
+            if self.record_samples:
+                for sample in samples:
+                    sample_history.append(sample)
+            # if not type(self).oracle.validate(dc_sample.GeometricSample(center)): #this breaks the rest!
            #     c_cur = dc_sample.GeometricSample(center)
            #     c_old = dc_sample.GeometricSample(old_center)
            #     new_center = type(self).vol.correct_center(s_set, c_cur, c_old)
@@ -150,7 +155,7 @@ class DesignCentering(object):
             else:
                 self.visualize_mappings(s_set.sample_groups)
         log.debug("dc: center sample: {} {} {}".format(str(center_sample_result), str(center_sample), str(center)))
-        return center_sample_result[0]
+        return center_sample_result[0],sample_history
     
     def visualize_mappings(self, sample_groups, tick=0, center_history=[]):
         # put all evaluated samples in a big array

@@ -95,9 +95,9 @@ def dc_task(cfg):
 
     # config = args.configFile
     oracle = dc_oracle.Oracle(cfg)
-    dc = designCentering.DesignCentering(v, cfg['distr'], oracle, representation)
+    dc = designCentering.DesignCentering(v, cfg['distr'], oracle, representation,cfg['record_samples'])
 
-    center = dc.ds_explore()
+    center,samples = dc.ds_explore()
     # plot explored design space (in 2D)
     #if True:
     #    tp.plot_samples(dc.samples)
@@ -109,6 +109,12 @@ def dc_task(cfg):
     json_dc_dump['center']['mapping'] = center.getMapping(0).to_list()
     json_dc_dump['center']['feasible'] = center.getFeasibility()
     json_dc_dump['center']['runtime'] = center.getSimContext().exec_time / 1000000000.0
+    if cfg['record_samples']:
+        json_dc_dump['center']['samples'] = {}
+        for i,sample in enumerate(samples):
+            json_dc_dump['center']['samples'][i] = { 'mapping' : sample.getMapping(0).to_list()}
+            json_dc_dump['center']['samples'][i]['feasible'] = sample.getFeasibility()
+            json_dc_dump['center']['samples'][i]['runtime'] = sample.getSimContext().exec_time / 1000000000.0
 
     # run perturbation test
     if cfg['run_perturbation']:

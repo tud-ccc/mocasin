@@ -38,7 +38,6 @@ pykpn_tasks = {
     'platform_to_dot': platform_to_dot,
     'random_walk_mapping': random_walk,
     'simulate': simulate,
-    'design_centering' : dc_task,
 }
 """A dictionary that maps task names to a callable function."""
 

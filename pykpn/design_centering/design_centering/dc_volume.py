@@ -152,14 +152,14 @@ class LPVolume(Volume):
         mean_center_approx = self.representation.approximate(mean_center)
         new_center = self.representation.approximate(new_center_vec)
         dist1 = lp.p_norm(mean_center_approx - self.center, 1)
-        if np.allclose(dist1,0, rtol=0.01,atol=0.001):
+        if np.allclose(dist1,0):
             log.warning("DC mean center unchanged.")
         else:
             log.info(f"DC mean center moved by {dist1}")
         self.old_center = self.center
         self.center = np.array(new_center)
         dist2 = lp.p_norm(self.old_center-self.center,1)
-        if np.allclose(dist2, 0,rtol=0.01,atol=0.001):
+        if np.allclose(dist2, 0):
             log.warning("DC Center unchanged.")
         else:
             log.info(f"DC center moved by {dist2}")
@@ -246,12 +246,16 @@ class LPVolume(Volume):
         self.covariance = np.real(1/(norm**(1/self.dim)) * Q)
         norm = np.abs(np.linalg.det(self.covariance))
         cnt = 0
-        while not np.allclose(norm ,1,rtol=0.01,atol=0.001) and cnt < 100:
+        while not np.allclose(norm ,1) and cnt < 10:
             log.warning(f"covariance matrix not normed ({norm}), retrying.")
             norm = np.abs(np.linalg.det(self.covariance))
             cnt += 1
         self.covariance = np.real(1/(norm**(1/self.dim)) * Q)
-        assert np.allclose(norm ,1,rtol=0.01,atol=0.001), f"failed to norm ({norm}) covariance matrix"
+        if not np.allclose(norm ,1):
+            log.warning( f"failed to norm ({norm}) covariance matrix. Resetting to identity")
+            self.transformation = np.identity(self.dim) * self.radius**2
+            self.covariance = np.identity(self.dim)
+
 
     #def draw_volume_projection(self,coordinates):
     #    assert(len(coordinates) == 2)

@@ -16,12 +16,13 @@ distr : uniform
 shape : lpvol
 oracle : simulation
 random_seed : 42
-run_perturbation : false
+run_perturbation : true
 num_perturbations : 10
-num_reference_mappings : 10 
+num_reference_mappings : false
 keep_metrics : True
-visualize_mappings : False
+visualize_mappings : false
 out_dir : ./
+record_samples : false
 #TODO: this should go to the kpn
 start_time : 0 us
 perturbations_out : perturbation_plot.pdf
