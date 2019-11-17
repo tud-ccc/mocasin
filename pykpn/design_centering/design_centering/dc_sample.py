@@ -181,9 +181,9 @@ class MetricSpaceSampleGen(SampleGeneratorBase):
         sample_list = []
         for _ in range(nsamples):
             lp_random_vector = lp.uniform_from_p_ball(p=1,n=vol.dim)
-            transformed_vector = vol.covariance @ vol.center
             scaled_vector = vol.radius * lp_random_vector
-            new_sample_vector = transformed_vector + scaled_vector
+            transformed_vector = vol.covariance @ scaled_vector
+            new_sample_vector = vol.center + transformed_vector
             sample_ints = self.representation.approximate(new_sample_vector)
             new_sample = MetricSpaceSample(self.representation,sample_ints)
             sample_list.append(new_sample)

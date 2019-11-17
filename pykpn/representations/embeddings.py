@@ -19,7 +19,7 @@ import pykpn.util.random_distributions.lp as lp
 
 log = logging.getLogger(__name__)
 
-DEFAULT_DISTORTION = 1.05
+DEFAULT_DISTORTION = 1.005
 MAX_NUM_TRIES = 6
 
 #  An embedding \iota: M \hookrightarrow R^k

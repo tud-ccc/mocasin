@@ -88,7 +88,7 @@ def dc_task(cfg):
         representation_type = reps.RepresentationType[rep_type_str]
         log.info(f"initializing representation ({rep_type_str})")
 
-        representation = (representation_type.getClassType())(kpn,platform)
+        representation = (representation_type.getClassType())(kpn,platform,cfg)
 
     # run DC algorithm
     # starting volume (init):

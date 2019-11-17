@@ -321,7 +321,7 @@ def make_graph_symmetric(graph):
             symmetric_graph[node_from].append((node_to,round(avg)))
     return symmetric_graph
 
-def arch_graph_to_distance_metric(arch_graph):
+def arch_graph_to_distance_metric(arch_graph,scaling=True):
     inf = float('inf')
     n = 0
     nodes_correspondence = {}
@@ -333,6 +333,11 @@ def arch_graph_to_distance_metric(arch_graph):
         nc_inv[node] = n
         n += 1
         dist_metric_named[node] = dijkstra(graph,node)
+    if scaling:
+        scaling_factor = np.mean([dist_metric_named[node_from][node_to] for node_from in dist_metric_named.keys() for node_to in dist_metric_named[node_from].keys()])
+        for node_from in graph:
+         for node_to in dist_metric_named[node_from]:
+            dist_metric_named[node_from][node_to] /= float(scaling_factor)
 
     #We use the corresp. dictionaries to make sure we don't mess up the order
     res = []

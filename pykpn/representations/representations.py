@@ -209,7 +209,7 @@ class MetricSpaceRepresentation(FiniteMetricSpaceLP, metaclass=MappingRepresenta
     (slightly better) tested and documented.
     """
 
-    def __init__(self,kpn, platform, p=1):
+    def __init__(self,kpn, platform, cfg=None):
         self._topologyGraph = platform.to_adjacency_dict()
         M_list, self._arch_nc, self._arch_nc_inv = arch_graph_to_distance_metric(self._topologyGraph)
         M = FiniteMetricSpace(M_list)
@@ -262,7 +262,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
     In order to work with other mappings in the same class, the methods
     allEquivalent/_allEquivalent returns for a mapping, all mappings in that class.
     """
-    def __init__(self,kpn, platform):
+    def __init__(self,kpn, platform,cfg=None):
         self._topologyGraph = platform.to_adjacency_dict()
         self.kpn = kpn
         self.platform = platform
@@ -381,16 +381,29 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
     and makes calculations much more efficient.
 
     """
-    def __init__(self,kpn, platform, distortion=DEFAULT_DISTORTION):
+    def __init__(self,kpn, platform, cfg=None):
+        if cfg is None:
+            p = 2
+            distortion = DEFAULT_DISTORTION
+        else:
+            p = cfg['norm_p']
+            distortion = cfg['distortion']
         self._topologyGraph = platform.to_adjacency_dict()
         M_matrix, self._arch_nc, self._arch_nc_inv = arch_graph_to_distance_metric(self._topologyGraph)
         self._M = FiniteMetricSpace(M_matrix)
         self.kpn = kpn
         self.platform = platform
         self._d = len(kpn.processes())
-        self.p = 1
+        self.p = p
         init_app_ncs(self,kpn)
+        if self.p != 2:
+            log.warning(f"Metric space embeddings (currently) only supports p = 2. Embedding will not be low-distortion with regards to chosen p ({self.p})")
         MetricSpaceEmbedding.__init__(self,self._M,self._d,distortion)
+        #Debug:
+        #for p in self.iotainv.keys():
+        #    for q in self.iotainv.keys():
+        #        print(lp.p_norm(np.array(p)-np.array(q),self.p))
+        #        print(self.M.D[self.iotainv[p],self.iotainv[q]])
         
     def _simpleVec2Elem(self,x): 
         proc_vec = x[:self._d]

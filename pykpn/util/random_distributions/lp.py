@@ -20,7 +20,7 @@ def uniform_from_p_ball(p=1,n=2):
     #2. Construct a vector x ∈ Rn with components xi = siξi, where si are independent uniformly random signs.
     vec = r*signs
     #3. Compute z = w1/n, where w is a random variable uniformly distributed in the interval [0,1]. 
-    z = random.random()**n
+    z = random.random()**(1/n)
     y = z * 1/p_norm(vec,p)* vec
     #4. Return y = z x , where ∥x∥p = (∑n |xi|p)1/p.
     return y
