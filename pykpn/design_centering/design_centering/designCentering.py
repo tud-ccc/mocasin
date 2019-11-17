@@ -41,7 +41,7 @@ class ThingPlotter(object):
         plt.yticks(np.arange(0, 1, 0.1))
         plt.show()
 
-    def plot_perturbations(sef, pert_res_list):
+    def plot_perturbations(sef, pert_res_list,out_dir=None):
         # the first list element is the center
         x = []
         y = []
@@ -55,11 +55,15 @@ class ThingPlotter(object):
             x.append(i)
             y.append(p)
 
+        fig = plt.figure(figsize=(14, 8))
         plt.scatter(x,y)
         plt.scatter(center_x, center_y, color='r')
         plt.xlabel("Mappings")
         plt.ylabel("Perturbations Passed")
-        plt.show()
+        if out_dir is None:
+            plt.show()
+        else:
+            fig.savefig(out_dir)
 
 class DesignCentering(object):
 
@@ -91,6 +95,16 @@ class DesignCentering(object):
             tp.plot_curve(ret, type(self).oracle.config)
         return ret
 
+    def __has_duplicate(self, samples):
+        seen = set()
+        uniq_samples = []
+        for s in samples:
+            s = s.sample2simpleTuple()
+            if s not in seen:
+                seen.add(s)
+                uniq_samples.append(s)
+        return len(uniq_samples)
+
     def ds_explore(self):
         """ explore design space (main loop of the DC algorithm) """
 
@@ -99,46 +113,24 @@ class DesignCentering(object):
             s = dc_sample.SampleGen(self.representation, type(self).oracle.config)
             
             log.debug("dc: Current iteration {}".format(i))
-            # TODO: may genrate identical samples which makes things ineffective 
             s_set = dc_sample.SampleSet()
             samples = s.gen_samples_in_ball(type(self).vol, type(self).distr, nsamples=type(self).oracle.config.adapt_samples)
-            #print(samples)
-            #print(str([s.sample for s in samples]))
-
-            #serial
-            #for s in samples:
-            #    s.feasible = type(self).oracle.validate(s) #validate one sample
-            #parallel
-
-            #generate mapping from sample
-            #for s in samples:
-            #    m = genenrate_mapping(s)
-            #    mappings.append(m)
-
-            #put samples as paramater in simulation
-            log.debug("dc: Input samples:\n {}".format(samples))
-            samples = type(self).oracle.validate_set(samples) # validate multiple samples
-            log.debug("dc: Output samples:\n {}".format(samples))
-
-
-
-            #print("list {}".format(feasible_list))
-            #for s in samples:
-            #    print("Feasible: {}".format(s.feasible))
-            #print(s)
-
-
-
-            #for s in samples:
-                # add to internal overall sample set
-            #    type(self).samples.update({s.sample2tuple():s.feasible})
+            dup = type(self).oracle.config.adapt_samples - self.__has_duplicate(samples)
+            if dup > 0:
+                log.warning("DC: Sample-list of {} elements has {} duplicates.".format(type(self).oracle.config.adapt_samples, dup))
             
+            #put samples as paramater in simulation
+            log.info("dc: Input samples:\n {} ".format(samples))
+            samples = type(self).oracle.validate_set(samples) # validate multiple samples
+            log.info("dc: Output samples:\n {}".format(samples))
+
             s_set.add_sample_list(samples)
             s_set.add_sample_group(samples)
 
             log.debug("dc: Output fesaible samples:\n {}".format(s_set.get_feasible()))
             old_center = type(self).vol.center
             center = type(self).vol.adapt_center(s_set)
+            center = list(map(int, center))
             center_history.append(dc_sample.Sample(sample = center,representation=self.representation))
            # if not type(self).oracle.validate(dc_sample.GeometricSample(center)): #this breaks the rest!
            #     c_cur = dc_sample.GeometricSample(center)
@@ -149,19 +141,16 @@ class DesignCentering(object):
             log.debug("dc: center: {} radius: {:f} p: {}".format(type(self).vol.center, type(self).vol.radius, cur_p))
 
         #modify last sample
-        #TODO build mapping from center 
+        #TODO build mapping from center (this destroys parallel execution)
         center_sample = dc_sample.Sample(sample=center,representation=self.representation)
-        center_sample_list = []
-        center_sample_list.append(center_sample)
-        center_res_sample = type(self).oracle.validate_set(center_sample_list)
+        center_sample_result = type(self).oracle.validate_set([center_sample])
         if self.oracle.config.visualize_mappings:
             if(self.oracle.config.keep_metrics):
-
                 self.visualize_mappings(s_set.sample_groups, type(self).oracle.config.adapt_samples, center_history)
             else:
                 self.visualize_mappings(s_set.sample_groups)
-        log.debug("dc: center sample: {} {} {}".format(str(center_res_sample), str(center_sample), str(center)))
-        return center_res_sample[0]
+        log.debug("dc: center sample: {} {} {}".format(str(center_sample_result), str(center_sample), str(center)))
+        return center_sample_result[0]
     
     def visualize_mappings(self, sample_groups, tick=0, center_history=[]):
         # put all evaluated samples in a big array
@@ -219,74 +208,6 @@ class DesignCentering(object):
         thresholds[-1] = 0.5
         #print("thresholds: {}".format(thresholds))
         plot.visualize_mapping_space(mappings, exec_times, None, RepresentationType[self.oracle.config.representation], tick, len(center_history))
-
-
-# Of course, the existing DFG already provides a valid schedule derived from the order of GIMPLE statements, 
-# but this neither exploits parallel execution or consider any resource contraints. 
-
-##def main():
-##    parser = argparse.ArgumentParser()
-##
-##    logging.add_cli_args(parser)
-##    parser.add_argument('configFile', nargs=1,
-##                        help="input configuration file", type=str)
-##    args = parser.parse_args()
-##
-##
-##    argv = sys.argv
-##    print("===== run DC =====")
-##    #logging.basicConfig(filename="dc.log", filemode = 'w', level=logging.DEBUG)
-##    tp = ThingPlotter()
-##
-##    if (len(argv) > 1):
-##        # read cmd-line and settings
-##        try:
-##            center = [1,2,3,4,5,6,7,8]
-##            #json.loads(argv[1])
-##        except ValueError:
-##            print(" {:s} is not a vector \n".format(argv[1]))
-##            sys.stderr.write("JSON decoding failed (in function main) \n")
-##
-##        if (conf.shape == "cube"):
-##            v = dc_volume.Cube(center, len(center))
-##
-##        # run DC algorithm
-##        config = args.configFile
-##        oracle = dc_oracle.Oracle(args.configFile)
-##        dc = DesignCentering(v, conf.distr, oracle)
-##        center = dc.ds_explore()
-##
-##        # plot explored design space (in 2D)
-##        #if True:
-##        #    tp.plot_samples(dc.samples)
-##        #logging.info(" >>> center: {} radius: {:f}".format(dc.vol.center, dc.vol.radius))
-##        print(">>> center: {} radius: {:f}".format(dc.vol.center, dc.vol.radius))
-##        print("===== DC done =====")
-##
-##        # run perturbation test
-##        if conf.run_perturbation:
-##            num_pert = conf.num_perturbations
-##            num_mappings = conf.num_mappings
-##            pm = p.PerturbationManager( config, num_mappings, num_pert)
-##            map_set = pm.create_randomMappings()
-##
-##            pert_res = []
-##            pert_res.append(pm.run_perturbation(center.getMapping(0), pm.apply_singlePerturbation))
-##
-##            for m in map_set:
-##                pert_res.append(pm.run_perturbation(m, pm.apply_singlePerturbation))
-##
-##            tp.plot_perturbations(pert_res)
-##        
-##
-##    else:
-##        print("usage: python designCentering [x1,x2,...,xn]\n")
-##
-##
-##    return 0
-##
-##if __name__ == "__main__":
-##    main()
 
 # run script with config file:
 # ./dc_run ~/misc_code/kpn-apps/audio_filter/parallella/config.ini

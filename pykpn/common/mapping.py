@@ -431,7 +431,7 @@ class Mapping:
             else:
                 idx = list_from[i]
                 primitive = all_primitives[idx]
-                assert(primitive in suitable_primitives)
+                assert primitive in suitable_primitives, f"error: insuitable primitive ({primitive.name}). Suitable: {[p.name for p in suitable_primitives]}"
 
             info = ChannelMappingInfo(primitive, capacity)
             self.add_channel_info(c, info)

@@ -32,7 +32,6 @@ class ComPartialMapper(object):
         self.platform = platform
         self.kpn = kpn
         self.fullGenerator = fullGenerator
-        self.mapping = Mapping(kpn, platform)
     
     def generate_mapping(self, part_mapping=None):
         """ Generates an partial mapping from a given partial mapping
@@ -46,8 +45,10 @@ class ComPartialMapper(object):
         :raises: RuntimeError if the algorithm is not able to find a suitable
             channel mapping for a random process mapping.
         """
+        
+        #generate new mapping if no partial mapping is given
         if not part_mapping:
-            part_mapping = self.mapping
+            part_mapping = Mapping(self.kpn, self.platform)
             
         # map processes to scheduler and processor if not already done
         processes = part_mapping.get_unmapped_processes()
@@ -59,7 +60,6 @@ class ComPartialMapper(object):
             priority = random.randrange(0, 20)
             info = ProcessMappingInfo(scheduler, affinity, priority)
             part_mapping.add_process_info(p, info)
-            self.mapping.add_process_info(p, info)
             log.debug('com_map: map process %s to scheduler %s and processor %s '
                       '(priority: %d)', p.name, scheduler.name, affinity.name,
                       priority) 
@@ -85,8 +85,7 @@ class ComPartialMapper(object):
             log.debug('com_map: map channel %s to the primitive %s and bound to %d '
                       'tokens' % (c.name, primitive.name, capacity)) 
 
-        self.mapping = part_mapping
-        return self.fullGenerator.generate_mapping(self.mapping)
+        return self.fullGenerator.generate_mapping(part_mapping)
 
     def _get_minimal_costs(self,primitives, channel, src, sinks):
         """ Returns the primitive with the minimum of static costs. 

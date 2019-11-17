@@ -6,8 +6,7 @@ hydra:
 log_level : WARNING
 
 defaults:
-  - app : audio_filter
-  - representation : simple_vector
+  - representation : SimpleVector
   - platform: exynos
   - task: random_walk_mapping
   - hydra/job_logging: pykpn

@@ -68,7 +68,7 @@ class SlxTraceReader(TraceGenerator):
 
         Returns the next trace segment for a process running on a processor of
         the specified type (the segments could differ for different processor
-        types). This should be overridden by a subclass. The default behaviuour
+        types). This should be overridden by a subclass. The default behavior
         is to return None
 
         :param str process_name:

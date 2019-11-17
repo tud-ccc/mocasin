@@ -7,12 +7,11 @@ import sys
 import logging
 import numpy as np
 from pykpn.representations.representations import RepresentationType 
-from pykpn.common.mapping import Mapping
+import pykpn.util.random_distributions.lp as lp
 
 from pykpn.util import logging
 
 log = logging.getLogger(__name__)
-
 
 class Volume(object):
 
@@ -95,7 +94,7 @@ class Cube(Volume):
 
 class LPVolume(Volume):
 
-    def __init__(self, center, num_procs, kpn, platform, conf, representation_type=RepresentationType['SimpleVector'],p=2):
+    def __init__(self, center, num_procs, kpn, platform, conf, representation_type=RepresentationType['SimpleVector']):
         if representation_type not in [RepresentationType['SimpleVector'],
                                        RepresentationType['MetricSpaceEmbedding'],
                                        RepresentationType['Symmetries']]:
@@ -117,7 +116,7 @@ class LPVolume(Volume):
         self.radius = self.conf.radius
         self.dim = len(self.center)
         self.num_procs = num_procs
-        self.p = p #TODO: check, can I propagate this to the representations?
+        self.p = conf['norm_p']
         self.weight_center = 1/(np.exp(1)*self.dim)
         self.rk1_learning_constant = 1/np.sqrt(self.dim)
         self.rk1_vec = np.zeros(self.dim)
@@ -140,15 +139,30 @@ class LPVolume(Volume):
         num_feasible = len(fs_set) # mu
         if self.conf.adaptable_center_weights:
             self.weight_center = min(0.5,num_feasible/(np.exp(1)*self.dim))
+        if self.conf.aggressive_center_movement:
+            self.weight_center = 0.51
 
         mean_center = np.mean(fs_set, axis=0)
         log.debug("mean mapping {}".format(mean_center))
         new_center_vec = (1-self.weight_center) * self.center + self.weight_center * mean_center
-
+        vector_of_distances = [lp.p_norm(self.center - v,1) for v in fs_set]
+        if min(vector_of_distances) <= 0:
+            log.warning("DC points did not move.")
         #approximate center
+        mean_center_approx = self.representation.approximate(mean_center)
         new_center = self.representation.approximate(new_center_vec)
+        dist1 = lp.p_norm(mean_center_approx - self.center, 1)
+        if np.allclose(dist1,0, rtol=0.01,atol=0.001):
+            log.warning("DC mean center unchanged.")
+        else:
+            log.info(f"DC mean center moved by {dist1}")
         self.old_center = self.center
         self.center = np.array(new_center)
+        dist2 = lp.p_norm(self.old_center-self.center,1)
+        if np.allclose(dist2, 0,rtol=0.01,atol=0.001):
+            log.warning("DC Center unchanged.")
+        else:
+            log.info(f"DC center moved by {dist2}")
         return self.center
     
     def correct_center(self, s_set, center, old_center):
@@ -229,7 +243,15 @@ class LPVolume(Volume):
         Q = vecs[idx] * vals_sqrt_diag
         #Q * Q.transpose() is approx. self.transformation
         norm = np.abs(np.linalg.det(Q) )
-        self.covariance = norm**(1/self.dim) * Q
+        self.covariance = np.real(1/(norm**(1/self.dim)) * Q)
+        norm = np.abs(np.linalg.det(self.covariance))
+        cnt = 0
+        while not np.allclose(norm ,1,rtol=0.01,atol=0.001) and cnt < 100:
+            log.warning(f"covariance matrix not normed ({norm}), retrying.")
+            norm = np.abs(np.linalg.det(self.covariance))
+            cnt += 1
+        self.covariance = np.real(1/(norm**(1/self.dim)) * Q)
+        assert np.allclose(norm ,1,rtol=0.01,atol=0.001), f"failed to norm ({norm}) covariance matrix"
 
     #def draw_volume_projection(self,coordinates):
     #    assert(len(coordinates) == 2)

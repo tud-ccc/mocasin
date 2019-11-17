@@ -1,0 +1,3 @@
+representation: MetricSpaceEmbedding
+norm_p : 2
+distortion : 1.05
