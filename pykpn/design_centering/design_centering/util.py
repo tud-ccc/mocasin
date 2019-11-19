@@ -36,29 +36,31 @@ def read_dc_json(filename):
                 'start_time' :  raw['config']['start_time'],
                 #'adaptable_center_weights' : _raw['config']['adaptable_center_weigths'],
         }
-        for i,sample_key in enumerate(raw['center']['samples']):
-            sample = raw['center']['samples'][sample_key]
-            mapping_data = {
-                'mapping': sample['mapping'],
-                'center': False,
-                'perturbation': False,
-                'feasible': sample['feasible'],
-                'runtime': sample['runtime'],
-                'dc_iteration': int(i / raw['config']['adapt_samples']),
-                'perturbation_stability': ''}
-            dc_data.append({**config, **mapping_data})
+        if 'samples' in raw['center']:
+            for i,sample_key in enumerate(raw['center']['samples']):
+                sample = raw['center']['samples'][sample_key]
+                mapping_data = {
+                    'mapping': sample['mapping'],
+                    'center': False,
+                    'perturbation': False,
+                    'feasible': sample['feasible'],
+                    'runtime': sample['runtime'],
+                    'dc_iteration': int(i / raw['config']['adapt_samples']),
+                    'perturbation_stability': ''}
+                dc_data.append({**config, **mapping_data})
 
-        for i,sample_key in enumerate(raw['center']['pert']):
-            sample = raw['center']['pert'][sample_key]
-            mapping_data = {
-                'mapping': sample['mapping'],
-                'center': False,
-                'perturbation': True,
-                'feasible': sample['feasible'],
-                'runtime': sample['runtime'],
-                'dc_iteration': raw['config']['max_samples'] / raw['config']['adapt_samples'],
-                'perturbation_stability': ''}
-            dc_data.append({**config, **mapping_data})
+        if 'pert' in raw['center']:
+            for i,sample_key in enumerate(raw['center']['pert']):
+                sample = raw['center']['pert'][sample_key]
+                mapping_data = {
+                    'mapping': sample['mapping'],
+                    'center': False,
+                    'perturbation': True,
+                    'feasible': sample['feasible'],
+                    'runtime': sample['runtime'],
+                    'dc_iteration': raw['config']['max_samples'] / raw['config']['adapt_samples'],
+                    'perturbation_stability': ''}
+                dc_data.append({**config, **mapping_data})
 
     mapping_data = {
         'mapping': raw['center']['mapping'],
