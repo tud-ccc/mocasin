@@ -1,14 +1,20 @@
 import json
 import glob
 import csv
+import os
+import sys
 
 def write_dc_to_csv(dc_info,filename):
-    with open(filename,'w+', newline='') as file:
-        fieldnames = list(dc_info[0].keys())
-        writer = csv.DictWriter(file,fieldnames=fieldnames)
-        writer.writeheader()
-        for row in dc_info:
-            writer.writerow(row)
+    if not os.path.exists(filename):
+        with open(filename,'w+', newline='') as file:
+            fieldnames = list(dc_info[0].keys())
+            writer = csv.DictWriter(file,fieldnames=fieldnames)
+            writer.writeheader()
+            for row in dc_info:
+                writer.writerow(row)
+    else:
+        raise RuntimeError(f" file {filename} already exists")
+
 
 def read_multiple_dc_jsons(pattern):
     files = glob.glob(pattern)

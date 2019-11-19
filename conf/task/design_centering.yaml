@@ -4,7 +4,7 @@ adapt_samples : 10
 hitting_probability : [0.1, 0.5, 0.6, 0.7, 0.9]
 deg_p_polynomial : 2
 step_width : [0.9, 0.7, 0.6, 0.5, 0.1]
-radius : 100
+radius : 5
 deg_s_polynomial : 2
 adaptable_center_weights : true
 aggressive_center_movement : true
@@ -32,7 +32,7 @@ perturbations_out : perturbation_plot.pdf
 #threshold : 1200 ms
 #
 #[audio_filter/exynos]
-threshold : 51 ms
+#threshold : 51 ms
 #
 #[audio_filter/parallella]
 #threshold : 280 ms

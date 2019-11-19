@@ -1,7 +1,7 @@
 hydra:
   sweep:
     dir: multirun/${now:%Y-%m-%d-%H-%M-%S}
-    subdir: ${hydra.job.num}_${hydra.job.num}_${hydra.job.override_dirname}
+    subdir: ${hydra.job.num}_${hydra.job.override_dirname}
 
 log_level : WARNING
 
@@ -13,3 +13,4 @@ defaults:
   - kpn: audio_filter
   - mapping: default
   - trace: default
+  - app_platform_combination: ${defaults.3.kpn}_${defaults.1.platform}
