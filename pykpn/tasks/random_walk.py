@@ -11,6 +11,7 @@ import multiprocessing as mp
 import os
 import simpy
 import timeit
+import csv
 
 from pykpn.mapper.random import RandomMapping
 from pykpn.representations.representations import RepresentationType
@@ -145,10 +146,10 @@ def random_walk(cfg):
     # When we reach this point, all simulations completed
 
     stop = timeit.default_timer()
-    print('Tried %d random mappings in %0.1fs' %
+    log.info('Tried %d random mappings in %0.1fs' %
           (len(results), stop - start))
     exec_time = float(best_result.exec_time / 1000000000.0)
-    print('Best simulated execution time: %0.1fms' % (exec_time))
+    log.info('Best simulated execution time: %0.1fms' % (exec_time))
 
     # export the best mapping
     outdir = cfg['outdir']
@@ -164,14 +165,18 @@ def random_walk(cfg):
     # export all mappings if requested
     idx = 1
     if cfg['export_all']:
-        for r in results:
-            for ac in r.app_contexts:
-                mapping_name = '%s.rnd_%08d.mapping' % (ac.name, idx)
-                # FIXME: We assume an slx output here, this should be configured
-                export_slx_mapping(ac.mapping,
-                                   os.path.join(outdir, mapping_name),
-                                   '2017.10')
-            idx += 1
+        with open(os.path.join(outdir,'runtimes.csv'), 'w', newline='') as csvfile:
+            result_writer = csv.writer(csvfile, delimiter=',')
+            result_writer.writerow(['index', 'filename', 'runtime'])
+            for r in results:
+                for ac in r.app_contexts:
+                    mapping_name = '%s.rnd_%08d.mapping' % (ac.name, idx)
+                    result_writer.writerow([idx,mapping_name,exec_times[idx-1]])
+                    # FIXME: We assume an slx output here, this should be configured
+                    export_slx_mapping(ac.mapping,
+                                       os.path.join(outdir, mapping_name),
+                                       '2017.10')
+                idx += 1
 
     # plot result distribution
     if cfg['plot_distribution']:

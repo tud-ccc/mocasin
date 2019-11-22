@@ -34,20 +34,37 @@ def read_dc_json(filename):
                 'threshold' : raw['config']['threshold'],
                 'distribution' : raw['config']['distr'],
                 'start_time' :  raw['config']['start_time'],
+                'app' :  raw['config']['app'],
+                'platform' :  raw['config']['platform'],
                 #'adaptable_center_weights' : _raw['config']['adaptable_center_weigths'],
         }
-        if 'samples' in raw['center']:
-            for i,sample_key in enumerate(raw['center']['samples']):
-                sample = raw['center']['samples'][sample_key]
-                mapping_data = {
-                    'mapping': sample['mapping'],
-                    'center': False,
-                    'perturbation': False,
-                    'feasible': sample['feasible'],
-                    'runtime': sample['runtime'],
-                    'dc_iteration': int(i / raw['config']['adapt_samples']),
-                    'perturbation_stability': ''}
-                dc_data.append({**config, **mapping_data})
+        #start with center so that all fields (eg. pert. stability) get proper values from csv reader
+        mapping_data = {
+            'mapping': raw['center']['mapping'],
+            'center': True,
+            'perturbation': False,
+            'feasible': raw['center']['feasible'],
+            'runtime': raw['center']['runtime'],
+            'dc_iteration': int(raw['config']['max_samples'] / raw['config']['adapt_samples']),
+            'perturbation_stability': raw['center']['passed']}
+        dc_data.append({**config, **mapping_data})
+        if 'samples' in raw:
+            for i,dc_iteration in enumerate(raw['samples']):
+                for sample_key in raw['samples'][dc_iteration]:
+                    sample = raw['samples'][dc_iteration][sample_key]
+                    if sample_key == 'center':
+                        center = True
+                    else:
+                        center = False
+                    mapping_data = {
+                        'mapping': sample['mapping'],
+                        'center': center,
+                        'perturbation': False,
+                        'feasible': sample['feasible'],
+                        'runtime': sample['runtime'],
+                        'dc_iteration': dc_iteration,
+                        'perturbation_stability': ''}
+                    dc_data.append({**config, **mapping_data})
 
         if 'pert' in raw['center']:
             for i,sample_key in enumerate(raw['center']['pert']):
@@ -58,19 +75,9 @@ def read_dc_json(filename):
                     'perturbation': True,
                     'feasible': sample['feasible'],
                     'runtime': sample['runtime'],
-                    'dc_iteration': raw['config']['max_samples'] / raw['config']['adapt_samples'],
+                    'dc_iteration': int(raw['config']['max_samples'] / raw['config']['adapt_samples']),
                     'perturbation_stability': ''}
                 dc_data.append({**config, **mapping_data})
-
-    mapping_data = {
-        'mapping': raw['center']['mapping'],
-        'center': True,
-        'perturbation': False,
-        'feasible': raw['center']['feasible'],
-        'runtime': raw['center']['runtime'],
-        'dc_iteration': raw['config']['max_samples'] / raw['config']['adapt_samples'],
-        'perturbation_stability': raw['center']['passed']}
-    dc_data.append({**config, **mapping_data})
     return dc_data
 
 if __name__ ==  "__main__":

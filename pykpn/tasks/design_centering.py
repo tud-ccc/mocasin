@@ -44,8 +44,8 @@ def dc_task(cfg):
             'keep_metrics': cfg['keep_metrics'],
             'visualize_mappings': cfg['visualize_mappings'],
             'start_time': cfg['start_time'],
-            #'app_name': cfg['app_name'],
-            #'platform_name': cfg['platform_name'],
+            'app': cfg['kpn']['name'],
+            'platform': cfg['platform']['name'],
             #'trace_dir': cfg['trace_dir'],
         }}
     tp = designCentering.ThingPlotter()
@@ -97,7 +97,7 @@ def dc_task(cfg):
     oracle = dc_oracle.Oracle(cfg)
     dc = designCentering.DesignCentering(v, cfg['distr'], oracle, representation,cfg['record_samples'])
 
-    center,samples = dc.ds_explore()
+    center,centers,samples = dc.ds_explore()
     # plot explored design space (in 2D)
     #if True:
     #    tp.plot_samples(dc.samples)
@@ -110,11 +110,20 @@ def dc_task(cfg):
     json_dc_dump['center']['feasible'] = center.getFeasibility()
     json_dc_dump['center']['runtime'] = center.getSimContext().exec_time / 1000000000.0
     if cfg['record_samples']:
-        json_dc_dump['center']['samples'] = {}
+        json_dc_dump['samples'] = {}
+        for cent_idx,cent in enumerate(centers):
+            json_dc_dump['samples'][cent_idx] = { 'center' : {}}
+            json_dc_dump['samples'][cent_idx]['center']['mapping'] = cent.getMapping(0).to_list()
+            json_dc_dump['samples'][cent_idx]['center']['feasible'] = cent.getFeasibility()
+            json_dc_dump['samples'][cent_idx]['center']['runtime'] = cent.getSimContext().exec_time / 1000000000.0
+
+
+        n = cfg['adapt_samples']
         for i,sample in enumerate(samples):
-            json_dc_dump['center']['samples'][i] = { 'mapping' : sample.getMapping(0).to_list()}
-            json_dc_dump['center']['samples'][i]['feasible'] = sample.getFeasibility()
-            json_dc_dump['center']['samples'][i]['runtime'] = sample.getSimContext().exec_time / 1000000000.0
+            idx = int(i/n)
+            json_dc_dump['samples'][idx][i%n] = { 'mapping' : sample.getMapping(0).to_list()}
+            json_dc_dump['samples'][idx][i%n]['feasible'] = sample.getMapping(0).to_list()
+            json_dc_dump['samples'][idx][i%n]['runtime'] = sample.getSimContext().exec_time / 1000000000.0
 
     # run perturbation test
     if cfg['run_perturbation']:
@@ -139,7 +148,8 @@ def dc_task(cfg):
             json_dc_dump['rand mapping' + str(i)]['pert'] = c
             json_dc_dump['rand mapping' + str(i)]['passed'] = s
 
-        tp.plot_perturbations(pert_res,cfg['perturbations_out'])
+        if cfg['plot_perturbations']:
+            tp.plot_perturbations(pert_res,cfg['perturbations_out'])
         log.info("==== Perturbation Test done ====")
 
     if not os.path.exists(cfg['out_dir']):

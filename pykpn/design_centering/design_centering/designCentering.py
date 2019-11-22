@@ -133,7 +133,11 @@ class DesignCentering(object):
             old_center = type(self).vol.center
             center = type(self).vol.adapt_center(s_set)
             center = list(map(int, center))
-            center_history.append(dc_sample.Sample(sample = center,representation=self.representation))
+            current_center = dc_sample.Sample(sample = center,representation=self.representation)
+            self.oracle.validate_set([current_center])
+            if current_center.getFeasibility() == False:
+                log.warning("DC iteration with a non-feasible center")
+            center_history.append(current_center)
             if self.record_samples:
                 for sample in samples:
                     sample_history.append(sample)
@@ -155,7 +159,7 @@ class DesignCentering(object):
             else:
                 self.visualize_mappings(s_set.sample_groups)
         log.debug("dc: center sample: {} {} {}".format(str(center_sample_result), str(center_sample), str(center)))
-        return center_sample_result[0],sample_history
+        return center_sample_result[0],center_history,sample_history
     
     def visualize_mappings(self, sample_groups, tick=0, center_history=[]):
         # put all evaluated samples in a big array
