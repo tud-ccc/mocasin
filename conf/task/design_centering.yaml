@@ -23,22 +23,8 @@ keep_metrics : True
 visualize_mappings : false
 out_dir : ./
 record_samples : false
+plot_perturbations : false
 #TODO: this should go to the kpn
 start_time : 0 us
 perturbations_out : perturbation_plot.pdf
 
-# thresholds for app-platform combinations
-#[hog/exynos]
-#threshold : 1200 ms
-#
-#[audio_filter/exynos]
-#threshold : 51 ms
-#
-#[audio_filter/parallella]
-#threshold : 280 ms
-#
-#[speaker_recognition/parallella]
-#threshold : 50 ms
-#
-#[speaker_recognition/multidsp]
-#threshold : 181 ms
