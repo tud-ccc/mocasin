@@ -36,8 +36,12 @@ def read_dc_json(filename):
                 'start_time' :  raw['config']['start_time'],
                 'app' :  raw['config']['app'],
                 'platform' :  raw['config']['platform'],
+                'starting_radius' :  raw['config']['starting_radius'],
                 #'adaptable_center_weights' : _raw['config']['adaptable_center_weigths'],
         }
+        if 'periodic_boundary_conditions' in raw['config']:
+                config['periodic_boundary_conditions'] =  raw['config']['periodic_boundary_conditions']
+
         #start with center so that all fields (eg. pert. stability) get proper values from csv reader
         mapping_data = {
             'mapping': raw['center']['mapping'],

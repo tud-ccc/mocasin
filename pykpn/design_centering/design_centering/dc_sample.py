@@ -180,14 +180,17 @@ class MetricSpaceSampleGen(SampleGeneratorBase):
             exit(1)
         sample_list = []
         for _ in range(nsamples):
-            lp_random_vector = lp.uniform_from_p_ball(p=1,n=vol.dim)
+            lp_random_vector = lp.uniform_from_p_ball(p=vol.norm_p,n=vol.dim)
             scaled_vector = vol.radius * lp_random_vector
             transformed_vector = vol.covariance @ scaled_vector
             new_sample_vector = vol.center + transformed_vector
             sample_ints = self.representation.approximate(new_sample_vector)
             new_sample = MetricSpaceSample(self.representation,sample_ints)
             sample_list.append(new_sample)
-        log.debug(f"Generated {nsamples} samples:\n {sample_list}")
+            distance = self.representation.distance(sample_ints,vol.center)
+            if distance > vol.radius:
+                log.warning(f"Generated vector with distance ({distance}) greater than radius ({vol.radius}).")
+            log.debug(f"Generated sample (distance: {distance}):\n {sample_ints}")
         return sample_list
 
 

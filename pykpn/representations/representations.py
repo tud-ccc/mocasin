@@ -193,13 +193,16 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
     def distance(self,x,y):
         a = np.array(x)
         b = np.array(y)
-        return numpy.linalg.norm(a-b)
+        return np.linalg.norm(a-b)
 
     def approximate(self,x):
         approx = np.around(x)
         P = len(list(self.platform._processors.keys()))
-        corr_boundaries = list(map(lambda t : t % P,approx))
-        return corr_boundaries
+        if self.config['periodic_boundary_conditions']:
+            res = list(map(lambda t : t % P,approx))
+        else:
+            res = list(map(lambda t: max(0,min(t , P-1)), approx))
+        return res
 
 
 #FIXME: UNTESTED!!

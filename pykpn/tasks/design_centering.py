@@ -46,8 +46,11 @@ def dc_task(cfg):
             'start_time': cfg['start_time'],
             'app': cfg['kpn']['name'],
             'platform': cfg['platform']['name'],
+            'starting_radius': cfg['radius'],
             #'trace_dir': cfg['trace_dir'],
         }}
+    if 'periodic_boundary_conditions' in cfg:
+        json_dc_dump['config']['periodic_boundary_conditions'] = cfg['periodic_boundary_conditions']
     tp = designCentering.ThingPlotter()
     random.seed(cfg['random_seed'])
     log.info("Initialized random number generator. Seed: {" + str(cfg['random_seed']) + "}")

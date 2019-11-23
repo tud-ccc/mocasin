@@ -118,7 +118,7 @@ class LPVolume(Volume):
         self.radius = self.conf.radius
         self.dim = len(self.center)
         self.num_procs = num_procs
-        self.p = conf['norm_p']
+        self.norm_p = conf['norm_p']
         self.weight_center = 1/(np.exp(1)*self.dim)
         self.rk1_learning_constant = 1/np.sqrt(self.dim)
         self.rk1_vec = np.zeros(self.dim)
@@ -142,7 +142,7 @@ class LPVolume(Volume):
         if self.conf.adaptable_center_weights:
             self.weight_center = min(0.5,num_feasible/(np.exp(1)*self.dim))
         if self.conf.aggressive_center_movement:
-            self.weight_center = 0.51
+            self.weight_center = 0.75
 
         mean_center = np.mean(fs_set, axis=0)
         log.debug("mean mapping {}".format(mean_center))

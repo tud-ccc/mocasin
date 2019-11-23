@@ -79,7 +79,6 @@ class DesignCentering(object):
         type(self).s_value = self.__adapt_poly(oracle.config.step_width, oracle.config.deg_s_polynomial)
 
     def __adapt_poly(self, support_values, deg):
-        tp = ThingPlotter()
         num = len(support_values)
         x_interval = (type(self).oracle.config.max_samples/(num - 1))
         x = []
@@ -93,6 +92,7 @@ class DesignCentering(object):
         for _j in range(0, type(self).oracle.config.max_samples, 1):
             ret.append(poly(_j))
         if (type(self).oracle.config.show_polynomials):
+            tp = ThingPlotter()
             tp.plot_curve(ret, type(self).oracle.config)
         return ret
 
@@ -142,12 +142,12 @@ class DesignCentering(object):
                 for sample in samples:
                     sample_history.append(sample)
             # if not type(self).oracle.validate(dc_sample.GeometricSample(center)): #this breaks the rest!
-           #     c_cur = dc_sample.GeometricSample(center)
-           #     c_old = dc_sample.GeometricSample(old_center)
-           #     new_center = type(self).vol.correct_center(s_set, c_cur, c_old)
-           #     print("Correction of infeasible center: {} take {} instead".format(center, new_center))
+            #     c_cur = dc_sample.GeometricSample(center)
+            #     c_old = dc_sample.GeometricSample(old_center)
+            #     new_center = type(self).vol.correct_center(s_set, c_cur, c_old)
+            #     print("Correction of infeasible center: {} take {} instead".format(center, new_center))
             cur_p = type(self).vol.adapt_volume(s_set, type(self).p_value[i], type(self).s_value[i])
-            log.debug("dc: center: {} radius: {:f} p: {}".format(type(self).vol.center, type(self).vol.radius, cur_p))
+            log.debug("dc: center: {} radius: {:f} p_emp: {}, target_p {}".format(type(self).vol.center, type(self).vol.radius, cur_p,self.p_value[i]))
 
         #modify last sample
         #TODO build mapping from center (this destroys parallel execution)

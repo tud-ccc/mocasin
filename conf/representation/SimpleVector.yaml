@@ -1,2 +1,3 @@
 representation: SimpleVector
-norm_p : 1
+norm_p : 2
+periodic_boundary_conditions: false
