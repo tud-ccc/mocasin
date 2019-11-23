@@ -252,7 +252,7 @@ class LPVolume(Volume):
             log.warning(f"covariance matrix not normed ({norm}), retrying.")
             norm = np.abs(np.linalg.det(self.covariance))
             cnt += 1
-        self.covariance = np.real(1/(norm**(1/self.dim)) * Q)
+            self.covariance = np.real(1/(norm**(1/self.dim)) * Q)
         if not np.allclose(norm ,1):
             log.warning( f"failed to norm ({norm}) covariance matrix. Resetting to identity")
             self.transformation = np.identity(self.dim) * self.radius**2

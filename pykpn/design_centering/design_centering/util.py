@@ -46,7 +46,9 @@ def read_dc_json(filename):
             'feasible': raw['center']['feasible'],
             'runtime': raw['center']['runtime'],
             'dc_iteration': int(raw['config']['max_samples'] / raw['config']['adapt_samples']),
-            'perturbation_stability': raw['center']['passed']}
+            'perturbation_stability': None}
+        if 'passed' in raw['center']:
+            mapping_data['perturbation_stability']  = raw['center']['passed']
         dc_data.append({**config, **mapping_data})
         if 'samples' in raw:
             for i,dc_iteration in enumerate(raw['samples']):
