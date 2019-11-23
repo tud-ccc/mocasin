@@ -187,6 +187,7 @@ class MetricSpaceSampleGen(SampleGeneratorBase):
             sample_ints = self.representation.approximate(new_sample_vector)
             new_sample = MetricSpaceSample(self.representation,sample_ints)
             sample_list.append(new_sample)
+        log.debug(f"Generated {nsamples} samples:\n {sample_list}")
         return sample_list
 
 

@@ -91,10 +91,11 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
     interface, but they are provided in case they prove useful, when you know
     what you are doing.
     """
-    def __init__(self, kpn, platform,channels=False):
+    def __init__(self, kpn, platform,config,channels=False):
         self.kpn = kpn
         self.platform = platform
         self.channels=channels
+        self.config = config
         self.num_procs = len(list(self.kpn._processes.keys()))
     def _uniform(self):
       Procs = list(self.kpn._processes.keys())

@@ -85,6 +85,7 @@ def dc_task(cfg):
         starting_center = [1,2,3,4,5,6,7,8]
     else:
         starting_center = representation.uniform()
+    log.info(f"Starting with center: {starting_center.to_list()}")
     #center = dc_sample.Sample(center)
 
     if (cfg['shape'] == "cube"):
@@ -122,7 +123,7 @@ def dc_task(cfg):
         for i,sample in enumerate(samples):
             idx = int(i/n)
             json_dc_dump['samples'][idx][i%n] = { 'mapping' : sample.getMapping(0).to_list()}
-            json_dc_dump['samples'][idx][i%n]['feasible'] = sample.getMapping(0).to_list()
+            json_dc_dump['samples'][idx][i%n]['feasible'] = sample.getFeasibility()
             json_dc_dump['samples'][idx][i%n]['runtime'] = sample.getSimContext().exec_time / 1000000000.0
 
     # run perturbation test

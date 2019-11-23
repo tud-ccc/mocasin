@@ -70,7 +70,12 @@ class ProcPartialMapper(object):
         mapping = Mapping(self.kpn, self.platform)
 
         # map processes to scheduler and processor
-        for i,p in enumerate(self.kpn.processes()):
+        processes = self.kpn.processes()
+        if len(processes) < len(vec):
+            log.warning(f"Trying to convert a mapping vector with too many processes ({len(vec)}), application has {len(processes)} processes.")
+        else:
+            log.debug(f"Converting mapping with {len(vec)} processes. Application has len{processes} processes.")
+        for i,p in enumerate(processes):
             # choose the desired processor from list
             pe = self.vec_pe_mapping[vec[i]]
             # choose the first scheduler from list
@@ -85,10 +90,10 @@ class ProcPartialMapper(object):
             log.debug('dc_map: map process %s to scheduler %s and processor %s '
                       '(priority: %d)', p.name, scheduler.name, affinity.name,
                       priority)
-            if mapping in map_history:
-                return None
-            else:
-                return self.fullGenerator.generate_mapping(mapping)
+        if mapping in map_history:
+            return None
+        else:
+            return self.fullGenerator.generate_mapping(mapping)
 
         
 

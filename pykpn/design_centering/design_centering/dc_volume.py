@@ -112,6 +112,8 @@ class LPVolume(Volume):
         self.kpn = kpn
         self.platform = platform
         self.center = np.array(self.representation.toRepresentation(center))
+        log = logging.getLogger(__name__)
+        log.debug(f"Initializing center with representation:{self.center}")
         self.old_center = self.center
         self.radius = self.conf.radius
         self.dim = len(self.center)
