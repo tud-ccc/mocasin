@@ -38,20 +38,22 @@ def read_dc_json(filename):
                 'platform' :  raw['config']['platform'],
                 #'adaptable_center_weights' : _raw['config']['adaptable_center_weigths'],
         }
+        radius = raw['config']['starting_radius']
         if 'periodic_boundary_conditions' in raw['config']:
                 config['periodic_boundary_conditions'] =  raw['config']['periodic_boundary_conditions']
 
         #start with center so that all fields (eg. pert. stability) get proper values from csv reader
+        if 'radius' in raw['center']:
+            radius = raw['center']['radius']
         mapping_data = {
             'mapping': raw['center']['mapping'],
             'center': True,
             'perturbation': False,
             'feasible': raw['center']['feasible'],
             'runtime': raw['center']['runtime'],
+            'radius' : radius,
             'dc_iteration': int(raw['config']['max_samples'] / raw['config']['adapt_samples']),
             'perturbation_stability': None}
-        if 'radius' in raw['center']:
-            mapping_data['radius'] = raw['center']['radius']
         if 'passed' in raw['center']:
             mapping_data['perturbation_stability']  = raw['center']['passed']
         dc_data.append({**config, **mapping_data})
@@ -63,6 +65,8 @@ def read_dc_json(filename):
                         center = True
                     else:
                         center = False
+                    if 'radius' in sample:
+                        radius = sample['radius']
                     mapping_data = {
                         'mapping': sample['mapping'],
                         'center': center,
@@ -70,9 +74,8 @@ def read_dc_json(filename):
                         'feasible': sample['feasible'],
                         'runtime': sample['runtime'],
                         'dc_iteration': dc_iteration,
+                        'radius': radius,
                         'perturbation_stability': ''}
-                    if 'radius' in sample:
-                        mapping_data['radius'] = sample['radius']
                     dc_data.append({**config, **mapping_data})
 
         if 'pert' in raw['center']:

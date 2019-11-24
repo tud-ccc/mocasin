@@ -85,7 +85,7 @@ class ComPartialMapper(object):
             log.debug('com_map: map channel %s to the primitive %s and bound to %d '
                       'tokens' % (c.name, primitive.name, capacity)) 
 
-        return self.fullGenerator.generate_mapping(part_mapping)
+        return self.fullGenerator.generate_mapping(part_mapping=part_mapping)
 
     def _get_minimal_costs(self,primitives, channel, src, sinks):
         """ Returns the primitive with the minimum of static costs. 

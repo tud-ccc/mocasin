@@ -30,7 +30,7 @@ class RandomPartialMapper(object):
         self.platform = platform
         self.kpn = kpn
 
-    def generate_mapping(self, seed = None, part_mapping = None):
+    def generate_mapping(self, part_mapping = None, seed = None):
         """ Generates a random mapping
 
         The generated mapping takes a partial mapping (that may also be empty)
