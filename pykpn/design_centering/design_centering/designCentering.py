@@ -109,8 +109,18 @@ class DesignCentering(object):
     def ds_explore(self):
         """ explore design space (main loop of the DC algorithm) """
 
-        center_history = []
-        sample_history = []
+        history = {'samples' : [], 'centers' : [], 'radii' : []}
+
+        #check starting center
+        center = self.vol.center
+        current_center = dc_sample.Sample(sample=center, representation=self.representation)
+        self.oracle.validate_set([current_center])
+        if current_center.getFeasibility() == False:
+            log.warning("DC starting with a non-feasible center")
+        if self.record_samples:
+            history['centers'].append(current_center)
+            history['radii'].append(self.vol.radius)
+
         for i in range(0, type(self).oracle.config.max_samples, type(self).oracle.config.adapt_samples):
             s = dc_sample.SampleGen(self.representation, type(self).oracle.config)
             
@@ -130,17 +140,12 @@ class DesignCentering(object):
             s_set.add_sample_group(samples)
 
             log.debug("dc: Output fesaible samples:\n {}".format(s_set.get_feasible()))
-            old_center = type(self).vol.center
             center = type(self).vol.adapt_center(s_set)
             center = list(map(int, center))
             current_center = dc_sample.Sample(sample = center,representation=self.representation)
             self.oracle.validate_set([current_center])
             if current_center.getFeasibility() == False:
                 log.warning("DC iteration with a non-feasible center")
-            center_history.append(current_center)
-            if self.record_samples:
-                for sample in samples:
-                    sample_history.append(sample)
             # if not type(self).oracle.validate(dc_sample.GeometricSample(center)): #this breaks the rest!
             #     c_cur = dc_sample.GeometricSample(center)
             #     c_old = dc_sample.GeometricSample(old_center)
@@ -148,6 +153,11 @@ class DesignCentering(object):
             #     print("Correction of infeasible center: {} take {} instead".format(center, new_center))
             cur_p = type(self).vol.adapt_volume(s_set, type(self).p_value[i], type(self).s_value[i])
             log.debug("dc: center: {} radius: {:f} p_emp: {}, target_p {}".format(type(self).vol.center, type(self).vol.radius, cur_p,self.p_value[i]))
+            if self.record_samples:
+                for sample in samples:
+                    history['samples'].append(sample)
+                history['centers'].append(current_center)
+                history['radii'].append(self.vol.radius)
 
         #modify last sample
         #TODO build mapping from center (this destroys parallel execution)
@@ -155,11 +165,11 @@ class DesignCentering(object):
         center_sample_result = type(self).oracle.validate_set([center_sample])
         if self.oracle.config.visualize_mappings:
             if(self.oracle.config.keep_metrics):
-                self.visualize_mappings(s_set.sample_groups, type(self).oracle.config.adapt_samples, center_history)
+                self.visualize_mappings(s_set.sample_groups, type(self).oracle.config.adapt_samples, history['centers'])
             else:
                 self.visualize_mappings(s_set.sample_groups)
         log.debug("dc: center sample: {} {} {}".format(str(center_sample_result), str(center_sample), str(center)))
-        return center_sample_result[0],center_history,sample_history
+        return center_sample_result[0],history
     
     def visualize_mappings(self, sample_groups, tick=0, center_history=[]):
         # put all evaluated samples in a big array

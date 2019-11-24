@@ -98,14 +98,14 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         self.config = config
         self.num_procs = len(list(self.kpn._processes.keys()))
     def _uniform(self):
-      Procs = list(self.kpn._processes.keys())
-      PEs = list(self.platform._processors.keys())
+      Procs = sorted(list(self.kpn._processes.keys()))
+      PEs = sorted(list(self.platform._processors.keys()))
       pe_mapping = list(randint(0,len(PEs),size=len(Procs)))
       return SimpleVectorRepresentation.randomPrimitives(self,pe_mapping)
     def randomPrimitives(self,pe_mapping):
-      Procs = list(self.kpn._processes.keys())
-      PEs = list(self.platform._processors.keys())
-      CPs = list(self.platform._primitives.keys())
+      Procs = sorted(list(self.kpn._processes.keys()))
+      PEs = sorted(list(self.platform._processors.keys()))
+      CPs = sorted(list(self.platform._primitives.keys()))
       res = pe_mapping[:len(Procs)]
       for c in self.kpn.channels():
         suitable_primitives = []

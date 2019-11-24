@@ -36,7 +36,6 @@ def read_dc_json(filename):
                 'start_time' :  raw['config']['start_time'],
                 'app' :  raw['config']['app'],
                 'platform' :  raw['config']['platform'],
-                'starting_radius' :  raw['config']['starting_radius'],
                 #'adaptable_center_weights' : _raw['config']['adaptable_center_weigths'],
         }
         if 'periodic_boundary_conditions' in raw['config']:
@@ -51,6 +50,8 @@ def read_dc_json(filename):
             'runtime': raw['center']['runtime'],
             'dc_iteration': int(raw['config']['max_samples'] / raw['config']['adapt_samples']),
             'perturbation_stability': None}
+        if 'radius' in raw['center']:
+            mapping_data['radius'] = raw['center']['radius']
         if 'passed' in raw['center']:
             mapping_data['perturbation_stability']  = raw['center']['passed']
         dc_data.append({**config, **mapping_data})
@@ -70,6 +71,8 @@ def read_dc_json(filename):
                         'runtime': sample['runtime'],
                         'dc_iteration': dc_iteration,
                         'perturbation_stability': ''}
+                    if 'radius' in sample:
+                        mapping_data['radius'] = sample['radius']
                     dc_data.append({**config, **mapping_data})
 
         if 'pert' in raw['center']:

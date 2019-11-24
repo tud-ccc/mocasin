@@ -27,7 +27,7 @@ class ProcPartialMapper(object):
         self.platform = platform
         self.kpn = kpn
         self.fullGenerator = fullGenerator
-        pes = sorted(list(self.platform.processors()))
+        pes = sorted(list(self.platform.processors()),key=(lambda p : p.name))
         self.pe_vec_mapping = dict(zip(pes,[n for n in range(0, len(pes))]))
         # build a reverse dict of the pe_vec_mapping dictionary (since it is a one-to-one dict)
         self.vec_pe_mapping = dict([(self.pe_vec_mapping[key],key) for key in self.pe_vec_mapping])
@@ -70,7 +70,7 @@ class ProcPartialMapper(object):
         mapping = Mapping(self.kpn, self.platform)
 
         # map processes to scheduler and processor
-        processes = self.kpn.processes()
+        processes = sorted(self.kpn.processes(),key = (lambda p : p.name))
         if len(processes) < len(vec):
             log.warning(f"Trying to convert a mapping vector with too many processes ({len(vec)}), application has {len(processes)} processes.")
         else:
