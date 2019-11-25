@@ -3,12 +3,11 @@
 #
 # Authors: Felix Teweleit
 
-from tgffParser import regEx as expr
+from pykpnt.tgff.tgffParser import regEx as expr
 import argparse
 
 from pykpn.util import logging
-from tgff.tgffParser.dataStructures import TgffProcessor, TgffGraph, TgffLink
-from pykpn.common.kpn import KpnProcess, KpnGraph, KpnChannel
+from pykpn.tgff.tgffParser.dataStructures import TgffProcessor, TgffGraph, TgffLink
 
 class Parser():
     """A parser for .tgff files. The information parsed from a file are 

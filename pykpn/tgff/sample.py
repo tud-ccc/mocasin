@@ -3,9 +3,9 @@
 #
 # Authors: Felix Teweleit
 
-from tgff.tgffParser.parser import Parser
-from tgff.tgffGenerators import TgffTraceGenerator
-from tgff.tgffSimulation import TgffRuntimeSystem
+from pykpn.tgff.tgffGenerators import TgffTraceGenerator
+from pykpn.tgff.tgffSimulation import TgffRuntimeSystem
+from pykpn.tgff.tgffParser.parser import Parser
 import simpy
 
 '''A simple example script to demonstrate the use of the 
@@ -22,7 +22,7 @@ def main():
     [2] link dict
     [3] tgff communication quantities
     '''
-    tgff_components = tgff_parser.parse_file('tgff/graphs/auto-indust-cords.tgff')
+    tgff_components = tgff_parser.parse_file('pykpn/tgff/graphs/auto-indust-cords.tgff')
     
     '''Transfer tgff graphs into kpn graphs
     '''

@@ -6,13 +6,35 @@
 from pykpn.simulate.system import RuntimeSystem
 from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.common.platform import Platform
-from platforms.platformDesigner import PlatformDesigner
+from pykpn.platforms.platformDesigner import PlatformDesigner
 from pykpn.mapper.random import RandomMapping
-from tgff.tgffGenerators import TgffTraceGenerator
+from pykpn.tgff.tgffGenerators import TgffTraceGenerator
 
 class TgffRuntimeSystem(RuntimeSystem):
-    def __init__(self, tgff_processor, tgff_graphs, env):
-        platform = TgffRuntimePlatform(tgff_processor)
+    """Specification of the RuntimeSystem class for tgff simulation
+    """
+    def __init__(self, tgff_processor, tgff_graphs, env, topology="bus"):
+        """Create a new RuntimeSystem for simulation purposes. As simulation
+        platform a mesh or bus architecture will be created, using the given
+        tgff processor. 
+        :param tgff_processor: The processing element for the platform.
+        :type tgff_processor: TgffProcessor
+        :param tgff_graphs: A set of tgff application graphs, which should be 
+        executed on the platform.
+        :type tgff_graphs: dict {String : TgffGraph}
+        :param env: The related simpy environment
+        :type env: Environment
+        """
+        platform = None
+        if topology == "bus":
+            platform = TgffRuntimePlatformBus(tgff_processor)
+        elif topology == "mesh":
+            platform = TgffRuntimePlatformMesh(tgff_processor)
+            #TODO: implement a mesh example architecture
+            #specify the amount of pe's? how?
+            pass
+        else:
+            raise RuntimeError("Please provide a valid topology for the runtime platform!")
         applications = []
         trace_generator = TgffTraceGenerator({tgff_processor.name : tgff_processor}, tgff_graphs)
         for tgff_graph in tgff_graphs.values():
@@ -23,18 +45,26 @@ class TgffRuntimeSystem(RuntimeSystem):
         
         super(TgffRuntimeSystem, self).__init__(platform, applications, env)
 
-class TgffRuntimePlatform(Platform):
-    """Initializes an example 2x2 architecture with the 
-    given processor as processing element connected via
-    a shared memory.
-    """
-    def __init__(self, tgff_processor, name="example_platform"):
-        super(TgffRuntimePlatform, self).__init__(name)
+class TgffRuntimePlatformBus(Platform):
+    def __init__(self, tgff_processor, name="simulation_platform"):
+        """Initializes an example platform with four processing
+        elements connected via an shared memory.
+        :param tgff_processor: the processing element for the platform
+        :type tgff_processor: TgffProcessor
+        :param name: The name for the returned platform
+        :type name: String
+        """
+        super(TgffRuntimePlatformBus, self).__init__(name)
         designer = PlatformDesigner(self)
         designer.setSchedulingPolicy('FIFO', 1000)
         designer.newElement("test_chip")
-        designer.addPeClusterTMP("cluster_0", tgff_processor.to_pykpn_processor(), 4)
-        #just some random guessed numbers from here on
+        designer.addPeClusterForProcessor("cluster_0", tgff_processor.to_pykpn_processor(), 4)
         designer.addCommunicationResource("shared_memory", ["cluster_0"], 100, 100, 1000, 1000, frequencyDomain=2000)
         designer.finishElement()
+        
+class TgffRuntimePlatformMesh(Platform):
+    def __init__(self):
+        return
+    
+    
         

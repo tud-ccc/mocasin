@@ -3,9 +3,9 @@
 #
 # Authors: Felix Teweleit
 
-from common.platform import FrequencyDomain, Platform, Processor, \
-    SchedulingPolicy, Scheduler, Storage, CommunicationPhase, Primitive, \
-    CommunicationResource, CommunicationResourceType
+from pykpn.common.platform import FrequencyDomain, Processor, \
+    SchedulingPolicy, Scheduler, Storage, CommunicationPhase, \
+    Primitive, CommunicationResource, CommunicationResourceType
 from collections import OrderedDict
 from pykpn.util import logging
 import sys
@@ -19,21 +19,29 @@ class PlatformDesigner():
     or clusters themselves with communication resources.
     
     :ivar int __peAmount: Holds the amount of the platforms PEs.
-    :ivar int __namingSuffix: Increases every time a new element is pushed on the stack. Will be added to the
+    :type __peAmount: int
+    :ivar __namingSuffix: Increases every time a new element is pushed on the stack. Will be added to the
                             name of every communication resource added to this element.
-    :ivar SchedulingPolicy __schedulingPolicy: Holds the currently set scheduling policy. This policy will 
+    :type __namingSuffix: int
+    :ivar __schedulingPolicy: Holds the currently set scheduling policy. This policy will 
                             be applied to all PE clusters initialized afterwards.
-    :ivar Platform __platform: The platform object, that is created and manipulated.
-    :ivar string __activeScope: The identifier of the scope, the designer is currently working on.
-    :ivar list[string] __scopeStack: A stack for the identifiers of the scopes that are currently opened.
-    :ivar dict{string : {int : [processors]}} __elementDict: For each scope it maps the cluster identifiers to 
+    :type __schedulingPolicy: SchedulingPolicy
+    :ivar __platform: The platform object, that is created and manipulated.
+    :type __platform: Platform
+    :ivar __activeScope: The identifier of the scope, the designer is currently working on.
+    :type __activeScope: string
+    :ivar __scopeStack: A stack for the identifiers of the scopes that are currently opened.
+    :type __scopeStack: list[string]
+    :ivar __elementDict: For each scope it maps the cluster identifiers to 
                             the list of processing elements of the cluster. 
+    :type __elementDict: dict{string : {int : [processors]}}
     """
     
     def __init__(self, platform):
         """Initialize a new instance of the platformDesigner. Should be called by the constructor of a class inheriting
         from Platform.
-        :param Platform platform: The platform object which will be modified.
+        :param platform: The platform object which will be modified.
+        :type platform: Platform
         """
         self.__peAmount = 0
         self.__namingSuffix = 0
@@ -49,7 +57,8 @@ class PlatformDesigner():
     
     def newElement(self, identifier):
         """A new scope is opened and pushed on the stack.
-        :param int identifier: The identifier, the element can be addressed with.
+        :param identifier: The identifier, the element can be addressed with.
+        :type identifier: int
         """
         self.__scopeStack.append(self.__activeScope)
         self.__activeScope = identifier
@@ -92,10 +101,14 @@ class PlatformDesigner():
                     amount, 
                     frequency):
         """Creates a new cluster of processing elements on the platform.
-        :param int identifier: The identifier the cluster can be addressed within the currently active scope.
-        :param string name: The name of the processing elements.
-        :param int amount: The amount of processing elements in the cluster.
-        :param int frequency: The frequency of the processing elements.
+        :param identifier: The identifier the cluster can be addressed within the currently active scope.
+        :type identifier: int
+        :param name: The name of the processing elements.
+        :type name: string
+        :param amount: The amount of processing elements in the cluster.
+        :type amount: int
+        :param frequency: The frequency of the processing elements.
+        :type frequency: int
         """
         try:
             fd = FrequencyDomain('fd_' + name, frequency)
@@ -113,15 +126,17 @@ class PlatformDesigner():
         except:
             log.error("Exception caught: " + sys.exc_info()[0])
     
-    def addPeClusterTMP(self,
+    def addPeClusterForProcessor(self,
                      identifier,
                      processor,
                      amount):
         """Creates a new cluster of processing elements on the platform.
-        :param int identifier: The identifier the cluster can be addressed within the currently active scope.
-        :param string name: The name of the processing elements.
-        :param int amount: The amount of processing elements in the cluster.
-        :param int frequency: The frequency of the processing elements.
+        :param identifier: The identifier the cluster can be addressed within the currently active scope.
+        :type identifier: int
+        :param processor: The pykpn Processor object which will be used for the cluster.
+        :type processor: Processor
+        :param amount: The amount of processing elements in the cluster.
+        :type amount: int
         """
         try:
             start = self.__peAmount
@@ -149,8 +164,10 @@ class PlatformDesigner():
                             policy, 
                             cycles):
         """Sets a new scheduling policy, which will be applied to all schedulers of new PE Clusters.
-        :param String policy: The name of the policy.
-        :param int cycles: The cycles of the policy.
+        :param policy: The name of the policy.
+        :type policy: String
+        :param cycles: The cycles of the policy.
+        :type cycles: int
         :returns: Whether the policy set successfully or not.
         :rtype: bool
         """
@@ -169,12 +186,18 @@ class PlatformDesigner():
                        writeThroughput, 
                        name='default'):
         """Adds a level 1 cache to each PE of the given cluster.
-        :param int identifier: The identifier of the cluster to which the cache will be added. 
-        :param int readLatency: The read latency of the cache.
-        :param int writeLatency: The write latency of the cache.
-        :param int readThroughput: The read throughput of the cache.
-        :param int writeThroughput: The write throughput of the cache.
-        :param string name: The cache name, in case it differs from L1.
+        :param identifier: The identifier of the cluster to which the cache will be added. 
+        :type identifier: int
+        :param readLatency: The read latency of the cache.
+        :type readLatency: int
+        :param writeLatency: The write latency of the cache.
+        :type writeLatency: int
+        :param readThroughput: The read throughput of the cache.
+        :type readThroughput: int
+        :param writeThroughput: The write throughput of the cache.
+        :type writeThroughput: int
+        :param name: The cache name, in case it differs from L1.
+        :type name: String
         """
         if self.__schedulingPolicy == None:
             return
@@ -223,14 +246,19 @@ class PlatformDesigner():
                                   frequencyDomain=0):
         """Adds a communication resource to the platform. All cores of the given cluster identifiers can communicate
         via this resource. 
-        :param string name: The name of the storage
-        :param list[int] clusterIds: A list of identifiers for all clusters which will be connected.
-        :param int readLatency: The read latency of the communication resource.
-        :param int writeLatency: The write latency of the communication resource.
-        :param int readThroughput: The read throughput of the communication resource.
-        :param int writeThroughput: The write throughput of the communication resource.
+        :param name: The name of the storage
+        :type name: String
+        :param clusterIds: A list of identifiers for all clusters which will be connected.
+        :type clusterIds: list[int]
+        :param readLatency: The read latency of the communication resource.
+        :type readLatency: int
+        :param writeLatency: The write latency of the communication resource.
+        :type writeLatency: int
+        :param readThroughput: The read throughput of the communication resource.
+        :type readThroughput: int
+        :param writeThroughput: The write throughput of the communication resource.
+        :type writeThroughput: int
         """
-
         if self.__schedulingPolicy == None:
             return
         if self.__activeScope == None:
@@ -239,9 +267,11 @@ class PlatformDesigner():
         for clusterId in clusterIds:
             if not clusterId in self.__elementDict[self.__activeScope]:
                 return
+        
         clusterDict = self.__elementDict[self.__activeScope]
         nameToGive = str(self.__activeScope) + '_' + name + "_" + str(self.__namingSuffix)
         fd = FrequencyDomain('fd_' + name, frequencyDomain)
+        
         try:
             if resourceType == CommunicationResourceType.Storage:
                 communicationRessource = Storage(nameToGive, 
@@ -250,8 +280,6 @@ class PlatformDesigner():
                                                  writeLatency,
                                                  readThroughput, 
                                                  writeThroughput)
-                
-            
             else:
                 communicationRessource = CommunicationResource(nameToGive,
                                                                resourceType,
@@ -263,6 +291,7 @@ class PlatformDesigner():
 
             self.__platform.add_communication_resource(communicationRessource)
             prim = Primitive('prim_' + nameToGive)
+
             for clusterId in clusterIds:
                 for pe in clusterDict[clusterId]:
                     pe[1].append(communicationRessource)
@@ -270,7 +299,9 @@ class PlatformDesigner():
                     consume = CommunicationPhase('consume', pe[1], 'read')
                     prim.add_producer(pe[0], [produce])
                     prim.add_consumer(pe[0], [consume])        
+            
             self.__platform.add_primitive(prim)
+        
         except :
             log.error("Exception caught: " + str(sys.exc_info()[0]))
             return
@@ -288,20 +319,29 @@ class PlatformDesigner():
                     readThroughput,
                     writeThroughput):
         """Creates a network on chip topology for the given cluster.
-        :param int clusterIdentifier: The identifier of the cluster the network will be created for.
-        :param string networkName: The name of the network. (primitives belonging to the network will be named
+        :param clusterIdentifier: The identifier of the cluster the network will be created for.
+        :type clusterIdentifier: int 
+        :param networkName: The name of the network. (primitives belonging to the network will be named
                                 like this.
-        :param dict {string : list[string]} adjacencyList: The adjacency list of the processing elements within
-                                the network. The key is the name of a processing element and the list contains
+        :type networkName: String
+        :param adjacencyList: The adjacency list of the processing elements within the network. 
+                                The key is the name of a processing element and the list contains
                                 the names of processing elements the key has a physical link to.
-        :param function routingFunction: A function, that takes the name of a source processing element, a target 
+        :type adjacencyList: dict {String : list[String]}
+        :param routingFunction: A function, that takes the name of a source processing element, a target 
                                 processing element and the adjacency list. Should return the path, taken to communicate
                                 between source and target, in case there is no direct physical link between them.
-        :param int frequencyDomain: The frequency of the physical links an network routers.
-        :param int readLatency: The read latency of the physical links an network routers.
-        :param int writeLatency: The write latency of the physical links an network routers.
-        :param int readThroughput: The read throughput of the physical links an network routers.
-        :param int writeThroughput: The write throughput of the physical links and network routers.
+        :type routingFunction: function
+        :param frequencyDomain: The frequency of the physical links an network routers.
+        :type frequencyDomain: int
+        :param readLatency: The read latency of the physical links an network routers.
+        :type readLatency: int
+        :param writeLatency: The write latency of the physical links an network routers.
+        :type witeLatency: int
+        :param readThroughput: The read throughput of the physical links an network routers.
+        :type readThroughput: int
+        :param writeThroughput: The write throughput of the physical links and network routers.
+        :type writeThroughput: int
         """
         
         fd = FrequencyDomain('fd_' + networkName, frequencyDomain)
@@ -384,19 +424,27 @@ class PlatformDesigner():
                       readThroughput,
                       writeThroughput):
         """Creates a network between the given elements.
-        :param string networkName: The name of the network. (primitives belonging to the network will be named
+        :param networkName: The name of the network. (primitives belonging to the network will be named
                                 like this.
-        :param dict {string : list[string]} adjacencyList: The adjacency list of the elements within the network. 
-                                The key is the name of an element and the list contains the names of elements the
-                                key has a physical link to.
-        :param function routingFunction: A function, that takes the name of a source element, a target element and
+        :type networkName: String
+        :param adjacencyList: The adjacency list of the elements within the network. The key is the name of 
+                                an element and the list contains the names of elements the key has a physical
+                                link to.
+        :type adjacencyList: dict {String : list[String]}
+        :param routingFunction: A function, that takes the name of a source element, a target element and
                                 the adjacency list. Should return the path, taken to communicate between source and
                                 target, in case there is no direct physical link between them.
-        :param int frequencyDomain: The frequency of the physical links an network routers.
-        :param int readLatency: The read latency of the physical links an network routers.
-        :param int writeLatency: The write latency of the physical links an network routers.
-        :param int readThroughput: The read throughput of the physical links an network routers.
-        :param int writeThroughput: The write throughput of the physical links and network routers.
+        :type routingFunction: function
+        :param frequencyDomain: The frequency of the physical links an network routers.
+        :type frequencyDomaing: int
+        :param readLatency: The read latency of the physical links an network routers.
+        :type readLatency: int
+        :param writeLatency: The write latency of the physical links an network routers.
+        :type writeLatency: int
+        :param readThroughput: The read throughput of the physical links an network routers.
+        :type readThroughput: int
+        :param writeThroughput: The write throughput of the physical links and network routers.
+        :type writeThroughput: int
         """
         
         fd = FrequencyDomain('fd_' + networkName, frequencyDomain)
@@ -479,7 +527,8 @@ class PlatformDesigner():
     
     def getClusterList(self, identifier):
         """Returns a list of all processing elements contained in specified cluster.
-        :param int identifier: The identifier of the target cluster.
+        :param identifier: The identifier of the target cluster.
+        :type identifier: int
         :returns: A list of names of processing elements
         :rtype list[string]:
         """

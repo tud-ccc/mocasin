@@ -13,13 +13,13 @@ class TgffTraceGenerator(TraceGenerator):
         """ Initializes the generator
     
         :param processor_dict: a dictionary over all processors a
-        trace is available for
+                                trace is available for.
         :type processor_dict: dict {string : TgffProcessor}
         :param tgff_graphs: A dictionary of TgffGraphs for which 
-        traces should be yielded
+                            traces should be yielded.
         :type tgff_graphs: dict{string : TgffGraph}
         :param repetition: The amount of times the process is
-        executed before it terminates
+                            executed before it terminates.
         """
         self._processor_dict = processor_dict
         self._repetition = repetition
