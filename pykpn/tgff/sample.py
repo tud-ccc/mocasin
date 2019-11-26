@@ -3,10 +3,10 @@
 #
 # Authors: Felix Teweleit
 
-from pykpn.tgff.tgffGenerators import TgffTraceGenerator
-from pykpn.tgff.tgffSimulation import TgffRuntimeSystem
-from pykpn.tgff.tgffParser.parser import Parser
 import simpy
+from pykpn.tgff.tgffParser.parser import Parser
+from pykpn.tgff.tgffSimulation import TgffRuntimeSystem
+from pykpn.tgff.tgffGenerators import TgffTraceGenerator
 
 '''A simple example script to demonstrate the use of the 
 tgff parser and the corresponding generators.

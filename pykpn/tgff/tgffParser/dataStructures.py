@@ -3,10 +3,9 @@
 #
 # Authors: Felix Teweleit
 
-from pykpn.common.platform import Processor, FrequencyDomain, CommunicationResource
-from pykpn.common.kpn import KpnProcess, KpnChannel, KpnGraph
-
 import math
+from pykpn.common.kpn import KpnProcess, KpnChannel, KpnGraph
+from pykpn.common.platform import Processor, FrequencyDomain, CommunicationResource
 
 class TgffProcessor():
     """Represents the relevant information about a processor, included in a .tgff file.
@@ -33,7 +32,7 @@ class TgffProcessor():
         if not self.type is None:
             pykpn_processor = Processor(self.name, self.name, frequency_domain)
         else:
-            pykpn_processor = Processor(self.name, self.name, frequency_domain)
+            pykpn_processor = Processor(self.name, self.type, frequency_domain)
         
         return pykpn_processor
     
@@ -90,7 +89,7 @@ class TgffGraph():
     graph
     
     :param task_name: the name of the specific task
-    :type task_name: string
+    :type task_name: String
     :returns the order and type of actions the task performs when executed
     :rtype list[tuple(char, string)] a list of actions (read, write execute)
     and their target operation/channel
@@ -123,7 +122,7 @@ class TgffGraph():
     :rtype: KpnGraph
     """                   
     def to_kpn_graph(self):
-        kpn_graph = KpnGraph()
+        kpn_graph = KpnGraph(self.identifier)
         tasks = []
         channels = []
             

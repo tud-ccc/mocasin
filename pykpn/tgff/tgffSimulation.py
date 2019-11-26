@@ -3,12 +3,12 @@
 #
 # Authors: Felix Teweleit
 
-from pykpn.simulate.system import RuntimeSystem
-from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.common.platform import Platform
-from pykpn.platforms.platformDesigner import PlatformDesigner
 from pykpn.mapper.random import RandomMapping
+from pykpn.simulate.system import RuntimeSystem
 from pykpn.tgff.tgffGenerators import TgffTraceGenerator
+from pykpn.simulate.application import RuntimeKpnApplication
+from pykpn.platforms.platformDesigner import PlatformDesigner
 
 class TgffRuntimeSystem(RuntimeSystem):
     """Specification of the RuntimeSystem class for tgff simulation
@@ -20,7 +20,7 @@ class TgffRuntimeSystem(RuntimeSystem):
         :param tgff_processor: The processing element for the platform.
         :type tgff_processor: TgffProcessor
         :param tgff_graphs: A set of tgff application graphs, which should be 
-        executed on the platform.
+                            executed on the platform.
         :type tgff_graphs: dict {String : TgffGraph}
         :param env: The related simpy environment
         :type env: Environment

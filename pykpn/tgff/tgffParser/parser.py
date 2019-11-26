@@ -3,10 +3,9 @@
 #
 # Authors: Felix Teweleit
 
-from pykpnt.tgff.tgffParser import regEx as expr
 import argparse
-
 from pykpn.util import logging
+from pykpn.tgff.tgffParser import regEx as expr
 from pykpn.tgff.tgffParser.dataStructures import TgffProcessor, TgffGraph, TgffLink
 
 class Parser():
@@ -84,8 +83,8 @@ class Parser():
     def parse_file(self, file_path):
         with open(file_path, 'r') as file:
             last_missmatch = None
-            
             current_line  = file.readline()
+            
             while current_line:
                 key, match = self._parse_line(current_line, self.data_components)
                 if key == 'task_graph':
@@ -97,15 +96,14 @@ class Parser():
                 elif key == 'hw_component':
                     self.logger.debug('Parse HW component')
                     self._parse_hw_component(file, match, last_missmatch)
-                elif key == 'processor':
-                    pass
                 elif key == 'unused_scope':
                     self.logger.debug('Parse unused group')
                     self._parse_unused_scope(file)
                 else:
+                    self._key_missmatch(key, file.tell())
                     if not key is None:
                         last_missmatch = (key, match)
-                    self._key_missmatch(key, file.tell())
+                    
                 current_line = file.readline()
         
         self.logger.info('Finished parsing')
@@ -168,24 +166,26 @@ class Parser():
     def _parse_hw_component(self, file, match, last_missmatch):
         identifier = match.group('name') + '_' + match.group('identifier')
         current_line = file.readline()
-        last_missmatch = last_missmatch
+        lower_last_missmatch = None
+        upper_last_missmatch = last_missmatch
+        
         
         while current_line:
             key, match = self._parse_line(current_line, self.hw_components)
             if key == 'std_link_value':
-                self._parse_std_link(identifier, file, match, last_missmatch)
+                self._parse_std_link(identifier, file, match, lower_last_missmatch)
                 return
             elif key == 'prim_link_value':
-                self._parsePrimLink(identifier, file, match)
+                self._parse_prim_link(identifier, file, match)
                 return
             elif key == 'properties' or key == 'operation':
-                self._parse_processor(identifier, file, key, match, last_missmatch)
+                self._parse_processor(identifier, file, key, match, upper_last_missmatch)
                 return
             elif key == 'scope_limiter':
                 self.logger.error('Reached end of scope. Unable to recognize HW component!')
             else:
                 self._key_missmatch(key, file.tell())
-                #last_missmatch = (key, match)
+                lower_last_missmatch = (key, match)
             current_line = file.readline()
         
     def _parse_std_link(self, identifier, file, match, last_missmatch):
@@ -199,6 +199,15 @@ class Parser():
         
         self.logger.info('Added to link dict: ' + str(identifier))
         self.std_link_dict.update( {identifier : link } )
+        
+        current_line = file.readline()
+        
+        while(current_line):
+            key, match = self._parse_line(current_line, None)
+            if key == 'scope_limiter':
+                return
+            else:
+                self._key_missmatch(key, file.tell())
         
     
     def _parse_prim_link(self, identifier, file, match):
