@@ -6,9 +6,12 @@
 from pykpn.common.platform import Platform
 from pykpn.mapper.random import RandomMapping
 from pykpn.simulate.system import RuntimeSystem
+from pykpn.platforms.topologies import meshTopology
 from pykpn.tgff.tgffGenerators import TgffTraceGenerator
 from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.platforms.platformDesigner import PlatformDesigner
+
+from pykpn.platforms.utils import simpleDijkstra as sd
 
 class TgffRuntimeSystem(RuntimeSystem):
     """Specification of the RuntimeSystem class for tgff simulation
@@ -26,9 +29,9 @@ class TgffRuntimeSystem(RuntimeSystem):
         :type env: Environment
         """
         platform = None
-        if topology == "bus":
+        if topology == 'bus':
             platform = TgffRuntimePlatformBus(tgff_processor)
-        elif topology == "mesh":
+        elif topology == 'mesh':
             platform = TgffRuntimePlatformMesh(tgff_processor)
             #TODO: implement a mesh example architecture
             #specify the amount of pe's? how?
@@ -54,17 +57,24 @@ class TgffRuntimePlatformBus(Platform):
         :param name: The name for the returned platform
         :type name: String
         """
-        super(TgffRuntimePlatformBus, self).__init__(name)
+        super(TgffRuntimePlatformMesh, self).__init__(name)
         designer = PlatformDesigner(self)
         designer.setSchedulingPolicy('FIFO', 1000)
         designer.newElement("test_chip")
-        designer.addPeClusterForProcessor("cluster_0", tgff_processor.to_pykpn_processor(), 4)
+        designer.addPeClusterOfProcessor("cluster_0", tgff_processor.to_pykpn_processor(), 4)
         designer.addCommunicationResource("shared_memory", ["cluster_0"], 100, 100, 1000, 1000, frequencyDomain=2000)
         designer.finishElement()
         
 class TgffRuntimePlatformMesh(Platform):
-    def __init__(self):
-        return
+    def __init__(self, tgff_processor, name="simulation_platform"):
+        super(TgffRuntimePlatformMesh, self).__init__(name)
+        designer = PlatformDesigner(self)
+        designer.setSchedulingPolicy('FIFO', 1000)
+        designer.newElement("test_chip")
+        designer.addPeClusterForProcessor("cluster_0", tgff_processor.to_pykpn_processor(), 4)
+        topology = meshTopology(['processor_0', 'processor_1','processor_2', 'processor_3'])
+        designer.createNetworkForCluster("cluster_0", 'testNet', topology, sd, 2000, 100, 100, 100, 100)
+        designer.finishElement()
     
     
         

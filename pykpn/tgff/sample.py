@@ -52,7 +52,7 @@ def main():
     PROC_0 in the example
     '''
     env = simpy.Environment()
-    system = TgffRuntimeSystem(tgff_components[1]['PROC_0'], tgff_components[0], env)
+    system = TgffRuntimeSystem(tgff_components[1]['PROC_0'], tgff_components[0], env, topology='mesh')
     system.simulate()
     print('Finished sample')
         

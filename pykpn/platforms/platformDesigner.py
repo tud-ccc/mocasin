@@ -362,14 +362,14 @@ class PlatformDesigner():
                 self.__platform.add_communication_resource(communicationResource)
                 
                 for target in adjacencyList[key]:
-                    name = str(clusterIdentifier) + "_pl_" + str(target) + "_" + key
+                    name = str(clusterIdentifier) + "_pl_" + str(target) + "_" + str(key)
                     communicationResource = CommunicationResource(name,
-                                                               CommunicationResourceType.PhysicalLink,
-                                                               fd,
-                                                               readLatency,
-                                                               writeLatency,
-                                                               readThroughput,
-                                                               writeThroughput)
+                                                                  fd,
+                                                                  CommunicationResourceType.PhysicalLink,
+                                                                  readLatency,
+                                                                  writeLatency,
+                                                                  readThroughput,
+                                                                  writeThroughput)
                     self.__platform.add_communication_resource(communicationResource)
                     
             for processor in processorList:
