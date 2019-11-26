@@ -14,7 +14,7 @@ def graph_dict():
     parser = Parser()
     data = None
     try:
-        data = parser.parse_file('graphs/auto-indust-cords.tgff')
+        data = parser.parse_file('pykpn/tgff/graphs/auto-indust-cords.tgff')
     except:
         logger.error('Error parsing: auto-indust-cords.tgff')
     return data[0]
@@ -24,7 +24,7 @@ def processor_dict():
     parser = Parser()
     data = None
     try:
-        data = parser.parse_file('graphs/auto-indust-cowls.tgff')
+        data = parser.parse_file('pykpn/tgff/graphs/auto-indust-cowls.tgff')
     except:
         logger.error('Error parsing: auto-indust-cowls.tgff')
     return data[1]
@@ -34,7 +34,7 @@ def link_dict():
     parser = Parser()
     data = None
     try:
-        data = parser.parse_file('graphs/consumer-cords.tgff')
+        data = parser.parse_file('pykpn/tgff/graphs/consumer-cords.tgff')
     except:
         logger.error('Error parsing: consumer-cords.tgff')
     return data[2]
@@ -43,9 +43,10 @@ def link_dict():
 def communication_quantities():
     parser = Parser()
     data = None
-    data = parser.parse_file('graphs/consumer-cowls.tgff')
-    #except:
-        #logger.error('Error parsing: consumer-cowls.tgff')
+    try:
+        data = parser.parse_file('pykpn/tgff/graphs/consumer-cowls.tgff')
+    except:
+        logger.error('Error parsing: consumer-cowls.tgff')
     return data[3]
 
 
