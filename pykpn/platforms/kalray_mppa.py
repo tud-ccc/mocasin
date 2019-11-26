@@ -30,7 +30,7 @@ class KalrayMppa(Platform):
             
             designer.finishElement()
             
-        designer.createNetwork("NOC", {"chip_0": ["chip_1","chip_4"], 
+        designer.createNetworkForChips("NOC", {"chip_0": ["chip_1","chip_4"], 
                                            "chip_1":["chip_0","chip_5", "chip_2"], 
                                            "chip_2":["chip_1","chip_6", "chip_3"], 
                                            "chip_3":["chip_2","chip_7"],
