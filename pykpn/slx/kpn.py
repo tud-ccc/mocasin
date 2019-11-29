@@ -17,8 +17,7 @@ class SlxKpnGraph(KpnGraph):
     def __init__(self, name, pngraph, version):
         # version is currently ignored for KpnGraphs (all SLX versions so far
         # have the same graph structure)
-        KpnGraph.__init__(self)
-        self.name = name
+        super(SlxKpnGraph, self).__init__(name)
         tree = ET.parse(pngraph)
         xmlroot = tree.getroot()
 
