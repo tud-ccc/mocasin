@@ -12,15 +12,17 @@ doc/api
 build
 *.o
 third_party_dependencies/pynauty-0.6/nauty/config.*
-
 .project
 .pydevproject
-.settings/
-.coverage
+.settings
+testBench.py
+*.dot
+*.png
 .eggs
 *.png
 *.dot
 # pycharm
+.coverage
 *.idea
 
 # default json dump

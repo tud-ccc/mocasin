@@ -6,7 +6,7 @@
 from pykpn.mapper.mapgen import MappingGeneratorOrbit, MappingGeneratorSimvec
 from pykpn.common.mapping import Mapping
 from pykpn.representations.representations import RepresentationType
-from pykpn.ontologies.logicLanguage import Grammar, SemanticAnalysis, MappingConstraint, EqualsConstraint, SharedCoreUsageConstraint
+from ontologies.logicLanguage import Grammar, SemanticAnalysis, MappingConstraint, EqualsConstraint, SharedCoreUsageConstraint
 from arpeggio import ParserPython, visit_parse_tree
 from threading import Thread
 

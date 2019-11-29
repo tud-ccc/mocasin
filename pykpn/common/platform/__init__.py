@@ -7,7 +7,15 @@ import pydot
 
 import math
 
+from enum import Enum
 
+class CommunicationResourceType(Enum):
+    PhysicalLink = 1
+    LogicalLink = 2
+    DMAController = 3
+    Storage = 4
+    Router = 5
+    
 class FrequencyDomain:
 
     def __init__(self, name, frequency):
@@ -17,7 +25,6 @@ class FrequencyDomain:
     def cycles_to_ticks(self, cycles):
         tmp = float(cycles) * 1000000000000 / float(self.frequency)
         return int(round(tmp))
-
 
 class Processor:
 
@@ -48,7 +55,7 @@ class Processor:
         return self.__str__()
 
 
-class CommunicationResource:
+class CommunicationResource(object):
     '''
     Represents a resource required for communication. This can be anything from
     a link or bus to a memory.
@@ -56,11 +63,13 @@ class CommunicationResource:
     This is a base class that can be specialized to model more complex
     resources like caches.
     '''
+    #resource Type attribute added by Felix Teweleit 10.08.2018
 
-    def __init__(self, name, frequency_domain, read_latency, write_latency,
+    def __init__(self, name, frequency_domain, resource_type, read_latency, write_latency,
                  read_throughput=float('inf'), write_throughput=float('inf'),
-                 exclusive=False, is_storage=False):
+                 exclusive=False, is_storage=False, ):
         self.name = name
+        self._resource_type = resource_type
         self._frequency_domain = frequency_domain
         self._read_latency = read_latency
         self._write_latency = write_latency
@@ -68,6 +77,9 @@ class CommunicationResource:
         self._write_throughput = write_throughput
         self.exclusive = exclusive
         self.is_storage = is_storage
+        
+    def ressource_type(self):
+        return self.ressource_type
 
     def read_latency(self):
         return self._frequency_domain.cycles_to_ticks(self._read_latency)
@@ -98,7 +110,7 @@ class Storage(CommunicationResource):
     def __init__(self, name, frequency_domain, read_latency, write_latency,
                  read_throughput=float('inf'), write_throughput=float('inf'),
                  exclusive=False):
-        super().__init__(name, frequency_domain, read_latency, write_latency,
+        super(Storage, self).__init__(name, frequency_domain, CommunicationResourceType.Storage, read_latency, write_latency,
                          read_throughput, write_throughput, exclusive, True)
 
 
