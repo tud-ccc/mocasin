@@ -79,15 +79,15 @@ class RuntimeSystem:
         # resources do not have any notion of simpy resources. However, to
         # simulate the exclusiveness of resources correctly, we need simpy
         # resources that correspond to the communication resources. The best
-        # way (TM) of doing this would be to create a runtime represantation of
-        # the entire communicarion system (similar to Scheduler ->
+        # way (TM) of doing this would be to create a runtime representation of
+        # the entire communication system (similar to Scheduler ->
         # RuntimeScheduler). However, since this would be quite extensive, we
         # use the following workaround.
         #
         # We iterate over all channels and their cost models to get all
         # communication resources that are required for simulation. For each
         # communication resource we create a simpy resource object and extend
-        # the communication reource by an attribute 'simpy_resource' that
+        # the communication resource by an attribute 'simpy_resource' that
         # points to the simpy resource.
         for r in platform.communication_resources():
             if r.exclusive and not hasattr(r, 'simpy_resource'):

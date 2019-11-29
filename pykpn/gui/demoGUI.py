@@ -10,7 +10,12 @@ import tkinter as tk
 from pykpn.slx.platform import SlxPlatform
 from pykpn.slx.kpn import SlxKpnGraph
 from pykpn.mapper.random import RandomMapping
-from pykpn.gui import drawAPI
+
+from pykpn.platforms.kalray_mppa import KalrayMppa as kmppa
+
+#Development imports
+from testPlatform import TestPlatform
+import drawAPI
 
 class controlPanel(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
@@ -51,9 +56,10 @@ class controlPanel(tk.Frame):
         self.exitButton.grid(sticky='EW',row = 8)
     
     def __loadExynos(self):
-        platform =  SlxPlatform('SlxPlatform', 'apps/audio_filter/exynos/exynos.platform', '2017.04')
+        #platform =  SlxPlatform('SlxPlatform', 'apps/audio_filter/exynos/exynos.platform', '2017.04')
+        platform = TestPlatform()
         self.__platform = platform
-        self.parent.drawPanel.drawDevice.setPlatform(self.__platform)
+        self.parent.drawPanel.drawDevice.setPlatform(platform)
         self.loadPaButton['state'] = 'disabled'
         self.loadMdButton['state'] = 'disabled'
         self.addMappingButton['state'] = 'normal'
@@ -105,9 +111,9 @@ class drawPanel(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
         self.parent = parent
-        self.__canvas = tk.Canvas(width = 800, height = 600)
+        self.__canvas = tk.Canvas(width = 1000, height = 750)
         self.__canvas.grid(row = 0, column = 1, rowspan = 9)
-        self.drawDevice = drawAPI.drawAPI(self.__canvas, 5, 15, 800, 600)
+        self.drawDevice = drawAPI.drawAPI(self.__canvas, 5, 15, 1000, 750)
 
        
 class mainWindow(tk.Frame):

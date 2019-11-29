@@ -4,7 +4,7 @@
 # Authors: Felix Teweleit
 
 from pykpn.common.platform import Platform
-from pykpn.platforms import platformDesigner
+from pykpn.platforms.platformDesigner import PlatformDesigner
 from pykpn.platforms import utils
 
 class KalrayMppa(Platform):
@@ -13,7 +13,7 @@ class KalrayMppa(Platform):
     """
     def __init__(self):
         super(KalrayMppa, self).__init__("KalrayMppa")
-        designer = platformDesigner.platformDesigner(self)
+        designer = PlatformDesigner(self)
         designer.setSchedulingPolicy('FIFO', 1000)
         
         for i in range(0,16):
@@ -30,7 +30,7 @@ class KalrayMppa(Platform):
             
             designer.finishElement()
             
-        designer.createNetwork("NOC", {"chip_0": ["chip_1","chip_4"], 
+        designer.createNetworkForChips("NOC", {"chip_0": ["chip_1","chip_4"], 
                                            "chip_1":["chip_0","chip_5", "chip_2"], 
                                            "chip_2":["chip_1","chip_6", "chip_3"], 
                                            "chip_3":["chip_2","chip_7"],

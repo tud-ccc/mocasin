@@ -87,8 +87,9 @@ class KpnGraph(object):
     :type _channels: dict[str, KpnChannel]
     """
 
-    def __init__(self):
+    def __init__(self, name):
         """Create an empty graph"""
+        self.name = name
         self._processes = {}
         self._channels = {}
 

@@ -24,7 +24,7 @@ POINT = [15,13]
 
 #@pytest.fixture
 def kpn():
-    k = KpnGraph()
+    k = KpnGraph('a')
     k.add_process(KpnProcess('a'))
     k.add_process(KpnProcess('b'))
     return k
@@ -227,7 +227,7 @@ def visualize_s_sets(points,coordinates=[0,1],ns=[NUM_PROCS,NUM_PROCS]):
         if i < len(points):
             (x,y,colors) = points[i]
         else:
-            (x,y,colors) = points[len(poits)]
+            (x,y,colors) = points[len(points)]
 
         plot.set_offsets(np.c_[x,y])
         return plot,
