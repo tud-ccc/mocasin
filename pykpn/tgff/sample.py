@@ -5,7 +5,7 @@
 
 import simpy
 from pykpn.tgff.tgffParser.parser import Parser
-from pykpn.tgff.tgffSimulation import TgffRuntimeSystem
+from tgff.tgffSimulation import TgffRuntimeSystem, TgffToKpnGraph
 from pykpn.tgff.tgffGenerators import TgffTraceGenerator
 
 '''A simple example script to demonstrate the use of the 
@@ -15,6 +15,8 @@ def main():
     '''Instantiate a parser object
     '''
     tgff_parser = Parser()
+    
+    some_graph = TgffToKpnGraph('pykpn/tgff/graphs/auto-indust-cords.tgff', 'TASK_GRAPH_0')
     
     '''Parse a specified file. Result is a list containing following items in specified order:
     [0] tgff graph dict

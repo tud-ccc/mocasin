@@ -4,14 +4,17 @@
 # Authors: Felix Teweleit
 
 from pykpn.common.platform import Platform
+from pykpn.common.kpn import KpnGraph
 from pykpn.mapper.random import RandomMapping
 from pykpn.simulate.system import RuntimeSystem
 from pykpn.platforms.topologies import meshTopology
 from pykpn.tgff.tgffGenerators import TgffTraceGenerator
 from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.platforms.platformDesigner import PlatformDesigner
+from pykpn.tgff.tgffParser.parser import Parser
 
 from pykpn.platforms.utils import simpleDijkstra as sd
+from _ast import Raise
 
 class TgffRuntimeSystem(RuntimeSystem):
     """Specification of the RuntimeSystem class for tgff simulation
@@ -48,6 +51,33 @@ class TgffRuntimeSystem(RuntimeSystem):
         
         super(TgffRuntimeSystem, self).__init__(platform, applications, env)
 
+class KpnGraphFromTgff():
+    """New, since we want to return a common.kpn instance instead of am TgffToKpnGraph instance
+    """
+    #TODO: Add doc string
+    def __new__(self, file_path, task_graph):
+        parser = Parser()
+        tgff_graphs = parser.parse_file(file_path)[0]
+        return tgff_graphs[task_graph].to_kpn_graph()
+
+class TraceGeneratorWrapper():
+    def __new__(self, file_path):
+        parser = Parser()
+        tgff_components = parser.parse_file(file_path)
+        trace_generator = TgffTraceGenerator(tgff_components[1], tgff_components[0])
+        return trace_generator
+    
+class PlatformFromTgff():
+    def __new__(self, platform_type, processor, file_path, amount):
+        parser = Parser()
+        tgff_processors = parser.parse_file(file_path)[1]
+        if platform_type == 'bus':
+            return TgffRuntimePlatformBus(tgff_processors[processor])
+        elif platform_type == 'mesh':
+            return TgffRuntimePlatformMesh(tgff_processors[processor])
+        else:
+            raise RuntimeError('You have to implement this type first!')
+
 class TgffRuntimePlatformBus(Platform):
     def __init__(self, tgff_processor, name="simulation_platform"):
         """Initializes an example platform with four processing
@@ -57,11 +87,11 @@ class TgffRuntimePlatformBus(Platform):
         :param name: The name for the returned platform
         :type name: String
         """
-        super(TgffRuntimePlatformMesh, self).__init__(name)
+        super(TgffRuntimePlatformBus, self).__init__(name)
         designer = PlatformDesigner(self)
         designer.setSchedulingPolicy('FIFO', 1000)
         designer.newElement("test_chip")
-        designer.addPeClusterOfProcessor("cluster_0", tgff_processor.to_pykpn_processor(), 4)
+        designer.addPeClusterForProcessor("cluster_0", tgff_processor.to_pykpn_processor(), 4)
         designer.addCommunicationResource("shared_memory", ["cluster_0"], 100, 100, 1000, 1000, frequencyDomain=2000)
         designer.finishElement()
         

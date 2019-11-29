@@ -6,10 +6,10 @@ hydra:
 log_level : WARNING
 
 defaults:
-  - representation : SimpleVector
   - platform: exynos
   - task: random_walk_mapping
   - hydra/job_logging: pykpn
   - kpn: audio_filter
   - mapping: default
   - trace: default
+  - tgff: default

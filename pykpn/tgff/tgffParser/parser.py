@@ -4,6 +4,7 @@
 # Authors: Felix Teweleit
 
 import argparse
+import os
 from pykpn.util import logging
 from pykpn.tgff.tgffParser import regEx as expr
 from pykpn.tgff.tgffParser.dataStructures import TgffProcessor, TgffGraph, TgffLink
@@ -81,6 +82,7 @@ class Parser():
                     dict{string : TgffLink} )
     """
     def parse_file(self, file_path):
+        print(os.getcwd())
         with open(file_path, 'r') as file:
             last_missmatch = None
             current_line  = file.readline()
