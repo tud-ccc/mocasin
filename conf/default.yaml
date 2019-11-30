@@ -6,6 +6,7 @@ hydra:
 log_level : WARNING
 
 defaults:
+  - representation: SimpleVector
   - platform: exynos
   - task: random_walk_mapping
   - hydra/job_logging: pykpn
