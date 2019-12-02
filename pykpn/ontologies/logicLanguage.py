@@ -154,7 +154,7 @@ class SemanticAnalysis(PTNodeVisitor):
             processorName = children[2]
         processId = self.__processes[processName]
         processorId = self.__processors[processorName]
-        return [[MappingConstraint(negate, processName, processId, processorName, processorId)]]
+        return [[MappingConstraint(negate, processId, processorId)]]
     
     def visit___processingOp(self, node, children):
         if len(children) == 1:
@@ -214,38 +214,36 @@ class Constraint(ABC):
         pass
     
 class MappingConstraint(Constraint):
-    def __init__(self, negate, processName, processId, processorName, processorId):
-        self.__negate = negate
-        self.__processName = processName
-        self.__processId = processId
-        self.__processorName = processorName
-        self.__processorId = processorId
+    def __init__(self, negate, processId, processorId):
+        self.negate = negate
+        self.processId = processId
+        self.processorId = processorId
     
     def isFulfilled(self, mapping):
         if isinstance(mapping, Mapping):
             procVec = mapping.to_list()
-            if procVec[self.__processId] == self.__processorId:
-                if self.__negate:
+            if procVec[self.processId] == self.processorId:
+                if self.negate:
                     return False
                 return True
             else:
-                if self.__negate:
+                if self.negate:
                     return True
                 return False
         else:
             return False
     
     def setEntry(self, partialMapping):
-        partialMapping[self.__processId] = self.__processorId
+        partialMapping[self.processId] = self.processorId
         
     def isNegated(self):
-        return self.__negate
+        return self.negate
         
 class ProcessingConstraint(Constraint):
     def __init__(self, negate, processorName, processorId):
-        self.__negate = negate
-        self.__processorName = processorName
-        self.__processorId = processorId
+        self.negate = negate
+        self.processorName = processorName
+        self.processorId = processorId
     
     def isFulfilled(self, mapping):
         #TODO:
@@ -255,73 +253,73 @@ class ProcessingConstraint(Constraint):
             raise RuntimeWarning("Mapping object is needed to evaluate constraint!")
         else:
             processList = mapping.to_list()
-            if self.__processorId in processList:
-                if self.__negate:
+            if self.processorId in processList:
+                if self.negate:
                     return False
                 return True
             else:
-                if self.__negate:
+                if self.negate:
                     return True
                 return False
     
     def getProcessorId(self):
-        return self.__processorId
+        return self.processorId
     
     def isNegated(self):
-        return self.__negate
+        return self.negate
     
 class SharedCoreUsageConstraint(Constraint):
     def __init__(self, negate, idVec):
-        self.__negate = negate
-        self.__idVector = idVec
+        self.negate = negate
+        self.idVector = idVec
         
     def isFulfilled(self, mapping):
         if isinstance(mapping, Mapping):
             simVec = mapping.to_list()
             
-            executingPe = simVec[self.__idVector[0]]
-            for key in self.__idVector:
+            executingPe = simVec[self.idVector[0]]
+            for key in self.idVector:
                 if not simVec[key] == executingPe:
-                    if self.__negate:
+                    if self.negate:
                         return True
                     return False
-            if self.__negate:
+            if self.negate:
                 return False
             return True
         else:
             return False
         
     def getIdVector(self):
-        return self.__idVector
+        return self.idVector
     
     def isNegated(self):
-        return self.__negate
+        return self.negate
         
 class EqualsConstraint(Constraint):
     def __init__(self, negate, mappingObject, kpn, platform):
-        self.__negate = negate
-        self.__mapping = mappingObject
-        self.__lense = RepresentationType['Symmetries'].getClassType()(kpn, platform)
+        self.negate = negate
+        self.mapping = mappingObject
+        self.lense = RepresentationType['Symmetries'].getClassType()(kpn, platform)
         
     def isFulfilled(self, mapping):
         if isinstance(mapping, Mapping):
-            allEquivalent = self.__lense.allEquivalentGen(mapping)
+            allEquivalent = self.lense.allEquivalentGen(mapping)
             for equivalent in allEquivalent:
                 if equivalent.to_list() == mapping.to_list():
-                    if self.__negate:
+                    if self.negate:
                         return False
                     return True
-            if self.__negate:
+            if self.negate:
                 return True
             return False
         else:
             return False
         
     def getMapping(self):
-        return self.__mapping
+        return self.mapping
     
     def isNegated(self):
-        return self.__negate
+        return self.negate
 
 
 

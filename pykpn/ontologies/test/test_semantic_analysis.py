@@ -4,7 +4,7 @@
 #Authors: Felix Teweleit
 
 from arpeggio import visit_parse_tree
-from pykpn.ontologies.logicLanguage import Grammar, SemanticAnalysis
+from pykpn.ontologies.logicLanguage import SemanticAnalysis
 
 class TestSemanticAnalysis(object):
     
@@ -49,32 +49,36 @@ class TestSemanticAnalysis(object):
         assert(len(result[0]) == 5)
         
     def test_query_5(self, parser, kpnGraph, platform):
-        inputQuery = "EXISTS (ARM00 PROCESSING AND (fft_l MAPPED ARM01 OR sink MAPPED ARM03)) AND (ARM04 PROCESSING OR ARM02 PROCESSING OR (ARM01 PROCESSING AND sink MAPPED ARM02))"
+        inputQuery = "EXISTS (ARM00 PROCESSING) AND ((fft_l MAPPED ARM01) OR ((sink MAPPED ARM03) AND ((ARM04 PROCESSING) OR ((ARM02 PROCESSING) OR ((ARM01 PROCESSING) AND (sink MAPPED ARM02))))))"
         parse_tree = parser.parse(inputQuery)
         result = visit_parse_tree(parse_tree, SemanticAnalysis(kpnGraph, platform, debug=False))
         
-        assert(len(result) == 6)
+        assert(len(result) == 4)
         
         """Count occurrence of different set lengths  
         """
+        lenTwo = 0
         lenThree = 0
         lenFour = 0
         lenDefault = 0
         
         for element in result:
-            if len(element) == 3:
+            if len(element) == 2:
+                lenTwo += 1
+            elif len(element) == 3:
                 lenThree += 1
             elif len(element) == 4:
                 lenFour += 1
             else:
                 lenDefault += 1
-                
-        assert(lenThree == 4)
-        assert(lenFour == 2)
+        
+        assert(lenTwo == 1)
+        assert(lenThree == 2)
+        assert(lenFour == 1)
         assert(lenDefault == 0)
         
     def test_query_6(self, parser, kpnGraph, platform):
-        inputQuery = "EXISTS (ARM00 PROCESSING OR (fft_l MAPPED ARM01 AND sink MAPPED ARM03)) OR ((ARM04 PROCESSING AND (ARM02 PROCESSING OR ARM03 PROCESSING)) OR (ARM01 PROCESSING AND sink MAPPED ARM02))"
+        inputQuery = "EXISTS (ARM00 PROCESSING) OR ((fft_l MAPPED ARM01) AND ((sink MAPPED ARM03) OR ((ARM04 PROCESSING) AND ((ARM02 PROCESSING) OR ((ARM03 PROCESSING) OR ((ARM01 PROCESSING) AND (sink MAPPED ARM02)))))))"
         parse_tree = parser.parse(inputQuery)
         result = visit_parse_tree(parse_tree, SemanticAnalysis(kpnGraph, platform, debug=False))
         
@@ -84,6 +88,8 @@ class TestSemanticAnalysis(object):
         """
         lenOne = 0
         lenTwo = 0
+        lenThree = 0
+        lenFour = 0
         lenDefault = 0
         
         for element in result:
@@ -91,11 +97,17 @@ class TestSemanticAnalysis(object):
                 lenOne += 1
             elif len(element) == 2:
                 lenTwo += 1
+            elif len(element)  == 3:
+                lenThree += 1
+            elif len(element) == 4:
+                lenFour += 1
             else:
                 lenDefault += 1
                 
         assert(lenOne == 1)
-        assert(lenTwo == 4)
+        assert(lenTwo == 1)
+        assert(lenThree == 2)
+        assert(lenFour == 1)
         assert(lenDefault == 0)
         
     def test_query_7(self, parser, kpnGraph, platform):
@@ -132,10 +144,4 @@ class TestSemanticAnalysis(object):
         assert(len(result) == 2)
         assert(len(result[0]) == 2)
         assert(len(result[1]) == 2)
-        
-    
-    
-    
-    
-    
     

@@ -3,12 +3,13 @@
 #
 #Authors: Felix Teweleit
 
-from pykpn.mapper.mapgen import MappingGeneratorOrbit, MappingGeneratorSimvec
-from pykpn.common.mapping import Mapping
-from pykpn.representations.representations import RepresentationType
-from ontologies.logicLanguage import Grammar, SemanticAnalysis, MappingConstraint, EqualsConstraint, SharedCoreUsageConstraint
-from arpeggio import ParserPython, visit_parse_tree
+
 from threading import Thread
+from pykpn.common.mapping import Mapping
+from arpeggio import ParserPython, visit_parse_tree
+from pykpn.representations.representations import RepresentationType
+from pykpn.mapper.mapgen import MappingGeneratorOrbit, MappingGeneratorSimvec
+from pykpn.ontologies.logicLanguage import Grammar, SemanticAnalysis, MappingConstraint, EqualsConstraint, SharedCoreUsageConstraint
 
 import queue
 
@@ -66,9 +67,29 @@ class Solver():
                     equalsConstraints.append(constraint)
                 elif isinstance(constraint, SharedCoreUsageConstraint):
                     sharedCoreConstraints.append(constraint)
+                    remaining.append(constraint)
                 else:
                     remaining.append(constraint)
         
+        #checking for contradictions in mapping constraints
+        for firstConstraint in mappingConstraints:
+            for secondConstraint in equalsConstraints:
+                if firstConstraint != secondConstraint:
+                    if firstConstraint.processId == secondConstraint.processId and firstConstraint.processorId != secondConstraint.processId:
+                        returnBuffer.put((threadIdentifier, False))
+                        return
+        
+        #checking for contradictions between mapping and shared core 
+        #usage constraints
+        for scConstraint in sharedCoreConstraints: 
+            core = -1
+            for mConstraint in mappingConstraints:
+                if core == -1 and mConstraint.processId in scConstraint.idVector:
+                    core = mConstraint.processorId
+                elif mConstraint.processId in scConstraint.idVector and core != mConstraint.processorId:
+                    returnBuffer.put((threadIdentifier, False))
+                    return
+                    
         generator = None
         
         #if there is at least one equalsConstraint, this generator is chosen

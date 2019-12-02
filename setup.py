@@ -58,6 +58,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         'argparse',
+        'arpeggio',
         'cvxpy<=1.0.0',
         'cvxopt',
         'scipy<=1.1.0',

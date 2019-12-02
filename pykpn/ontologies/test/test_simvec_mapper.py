@@ -3,9 +3,6 @@
 #
 #Authors: Felix Teweleit
 
-from arpeggio import visit_parse_tree
-from pykpn.ontologies.logicLanguage import Grammar, SemanticAnalysis
-
 class TestSimvecMapper(object):
     
     def setUp(self):
@@ -14,7 +11,6 @@ class TestSimvecMapper(object):
     def tearDown(self):
         pass
     
-        
     def testMappingGeneration1(self, solver):
         inputQuery = "EXISTS src MAPPED ARM00 AND fft_l MAPPED ARM01"
         result = [0, 1, 0, 0, 0, 0, 0, 0]
