@@ -1,0 +1,7 @@
+platform:
+  name: exynos
+  class: pykpn.slx.platform.SlxPlatform
+  params:
+    name: ${platform.name}
+    platform_xml: ../../../apps/${kpn.name}/${platform.name}/${platform.name}.platform
+    slx_version: '2017.10'
