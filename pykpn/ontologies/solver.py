@@ -9,9 +9,12 @@ from pykpn.common.mapping import Mapping
 from arpeggio import ParserPython, visit_parse_tree
 from pykpn.representations.representations import RepresentationType
 from pykpn.mapper.mapgen import MappingGeneratorOrbit, MappingGeneratorSimvec
-from pykpn.ontologies.logicLanguage import Grammar, SemanticAnalysis, MappingConstraint, EqualsConstraint, SharedCoreUsageConstraint
+from pykpn.ontologies.logicLanguage import Grammar, SemanticAnalysis, MappingConstraint, EqualsConstraint, SharedCoreUsageConstraint, ProcessingConstraint
 
 import queue
+
+#GLOBAL DEFINITION
+RUN_THREADS = True
 
 class Solver():
     def __init__(self, kpnGraph, platform, mappingDict={}, debug=False):
@@ -26,25 +29,34 @@ class Solver():
         constraints = visit_parse_tree(parse_tree, SemanticAnalysis(self.__kpn, self.__platform, self.__mappingDict, debug=self.__debug))
         threadQueue = queue.Queue()
         
-        #start a different thread for each constraint set, so each thread can work
-        #with an individual generator
+        """Creation of individual threads for each constraint set
+        """
         threadCounter = 0
+        threadPool = []
+        RUN_THREADS = True
         for constraintSet in constraints:
             threadCounter += 1
             thread = Thread(target=self.exploreMappingSpace, args=(constraintSet, threadQueue, vec, threadCounter))
             thread.daemon = True
+            threadPool.append(thread)
             thread.start()
         
+        """Waiting for results in the thread queue
+        """
+        result = False
         while threadCounter > 0:
             threadResult = threadQueue.get()
             threadCounter -= 1
-            
             if isinstance(threadResult[1], Mapping):
                 print(threadResult[0])
-                return threadResult[1]
+                result = threadResult[1]
+                RUN_THREADS = False
+                break
+        for thread in threadPool:
+            thread.join(1)
+        print("All threads terminated")
         
-        #In case neither of the threads returned a valid mapping
-        return False
+        return result
     
     def parseString(self, queryString):
         parse_tree = self.__parser.parse(queryString)
@@ -54,11 +66,15 @@ class Solver():
         mappingConstraints = []
         equalsConstraints = []
         sharedCoreConstraints = []
+        processingConstraints = []
         remaining = []
         
+        """Sorting of constraints in given set
+        """
         for constraint in constraintSet:
-            #Sort Constraints
-            if constraint.isNegated():
+            if isinstance(constraint, ProcessingConstraint):
+                processingConstraints.append(constraint)
+            elif constraint.isNegated():
                 remaining.append(constraint)
             else:
                 if isinstance(constraint, MappingConstraint):
@@ -70,6 +86,16 @@ class Solver():
                     remaining.append(constraint)
                 else:
                     remaining.append(constraint)
+                    
+        """Checking for contradictions in constraints
+        """
+        for i in range(0, len(mappingConstraints) - 1):
+            firstConstraint = mappingConstraints[i].getProperties()
+            for j in range(i+1,len(mappingConstraints)):
+                secondConstraint = mappingConstraints[j].getProperties()
+                if firstConstraint[0] == secondConstraint[0] and not firstConstraint[1] == secondConstraint[1]:
+                    returnBuffer.put((threadIdentifier, False))
+                    return
         
         #checking for contradictions in mapping constraints
         for firstConstraint in mappingConstraints:
@@ -79,40 +105,62 @@ class Solver():
                         returnBuffer.put((threadIdentifier, False))
                         return
         
-        #checking for contradictions between mapping and shared core 
-        #usage constraints
-        for scConstraint in sharedCoreConstraints: 
-            core = -1
-            for mConstraint in mappingConstraints:
-                if core == -1 and mConstraint.processId in scConstraint.idVector:
-                    core = mConstraint.processorId
-                elif mConstraint.processId in scConstraint.idVector and core != mConstraint.processorId:
+        for sharedConst in sharedCoreConstraints:
+            vector = sharedConst.getIdVector()
+            pePool = []
+            for mapConst in mappingConstraints:
+                properties = mapConst.getProperties()
+                if properties[0] in vector:
+                    if not properties[1] in pePool:
+                        pePool.append(properties[1])
+            if len(pePool) > 1:
+                returnBuffer.put((threadIdentifier, False))
+                return
+        
+        for i in range(0, len(processingConstraints)-1):
+            identifier = processingConstraints[i].getProcessorId()
+            negated = processingConstraints[i].isNegated()
+            for j in range( i+1, len(processingConstraints)):
+                if processingConstraints[j].getProcessorId() == identifier and ((processingConstraints[j].isNegated() and not negated) or (not processingConstraints[j].isNegated() and negated)):
                     returnBuffer.put((threadIdentifier, False))
                     return
-                    
+                
+        for constraint in processingConstraints:
+            if constraint.isNegated():
+                for mappConst in mappingConstraints:
+                    if mappConst.getProperties()[1] == constraint.getProcessorId() and not mappConst.isNegated():
+                        returnBuffer.put((threadIdentifier, False))
+                        return
+                
+        remaining += processingConstraints
+       
+        """Decision which generator to choose and creation of generator
+        """
         generator = None
-        
-        #if there is at least one equalsConstraint, this generator is chosen
         if not equalsConstraints == []:
             genMapping = equalsConstraints[0].getMapping()
             
-            #check if all given mappings in the constrains are equal
+            """Check for contradictions in IsEqualConstraints
+            """
             if len(equalsConstraints) > 1:
                 for i in range(1, len(equalsConstraints)):
                     if not equalsConstraints[i].isFulfilled(genMapping):
                         returnBuffer.put((threadIdentifier, False))
+                        return
             
-            #if so, generate a generator for later use
             remaining = remaining + mappingConstraints + sharedCoreConstraints
             symmetryLense = RepresentationType['Symmetries'].getClassType()(self.__kpn, self.__platform)
             generator = MappingGeneratorOrbit(symmetryLense, genMapping)
-        
-        #otherwise the simpleVectorMapper is used a generator
         else:
-            generator = MappingGeneratorSimvec(self.__kpn, self.__platform, mappingConstraints, sharedCoreConstraints, vec)
+            generator = MappingGeneratorSimvec(self.__kpn, self.__platform, mappingConstraints, sharedCoreConstraints, processingConstraints, vec)
         
+        """Iteration over the mapping space, checking if remaining constraints are fulfilled
+        """
         if generator:
             for mapping in generator:
+                global RUN_THREADS
+                if not RUN_THREADS:
+                    return
                 mappingValid = True
                 for constraint in remaining:
                     if not constraint.isFulfilled(mapping):

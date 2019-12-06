@@ -144,14 +144,14 @@ class SemanticAnalysis(PTNodeVisitor):
         return children[0]
     
     def visit___mappingOp(self, node, children):
+        offset = 0
         if len(children) == 2:
             negate = False
-            processName = children[0]
-            processorName = children[1]
         else:
             negate = True
-            processName = children[1]
-            processorName = children[2]
+            offset = 1
+        processName = children[0 + offset]
+        processorName = children[1 + offset]
         processId = self.__processes[processName]
         processorId = self.__processors[processorName]
         return [[MappingConstraint(negate, processId, processorId)]]
@@ -238,6 +238,9 @@ class MappingConstraint(Constraint):
         
     def isNegated(self):
         return self.negate
+    
+    def getProperties(self):
+        return (self.processId, self.processorId)
         
 class ProcessingConstraint(Constraint):
     def __init__(self, negate, processorName, processorId):
@@ -272,6 +275,8 @@ class SharedCoreUsageConstraint(Constraint):
     def __init__(self, negate, idVec):
         self.negate = negate
         self.idVector = idVec
+        if idVec == []:
+            raise RuntimeError("Empty constructor")
         
     def isFulfilled(self, mapping):
         if isinstance(mapping, Mapping):
@@ -322,7 +327,3 @@ class EqualsConstraint(Constraint):
         return self.negate
 
 
-
-
-
-    
