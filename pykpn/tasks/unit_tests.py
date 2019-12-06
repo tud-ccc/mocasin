@@ -7,8 +7,9 @@ import pytest
 import os
 
 def unit_tests(cfg):
-    pytest.main()
+    print(os.getcwd())
+    pytest.main(["../../../pykpn/",])
+    
     
 if __name__ == "__main__":
-    print(os.getcwd())
     unit_tests(None)

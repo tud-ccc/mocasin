@@ -25,6 +25,7 @@ from pykpn.tasks.simulate import simulate
 from pykpn.tasks.to_dot import kpn_to_dot
 from pykpn.tasks.to_dot import mapping_to_dot
 from pykpn.tasks.to_dot import platform_to_dot
+from pykpn.tasks.unit_tests import unit_tests
 
 log = logging.getLogger(__name__)
 
@@ -38,6 +39,7 @@ pykpn_tasks = {
     'platform_to_dot': platform_to_dot,
     'random_walk_mapping': random_walk,
     'simulate': simulate,
+    'unit_tests' : unit_tests,    
 }
 """A dictionary that maps task names to a callable function."""
 
