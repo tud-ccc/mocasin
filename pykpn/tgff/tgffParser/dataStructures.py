@@ -27,14 +27,7 @@ class TgffProcessor():
     """
     def to_pykpn_processor(self):
         frequency_domain = FrequencyDomain('fd{0}'.format(self.name), math.ceil(1/self.cycle_time))
-        pykpn_processor = None
-        
-        if not self.type is None:
-            pykpn_processor = Processor(self.name, self.name, frequency_domain)
-        else:
-            pykpn_processor = Processor(self.name, self.type, frequency_domain)
-        
-        return pykpn_processor
+        return Processor(self.name, self.type, frequency_domain)
     
     """Calculates the time needed for a single processor cycle, in a way that the 
     execution time og all operations are an integer multiple of the cycle time.

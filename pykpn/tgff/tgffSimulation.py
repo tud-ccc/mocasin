@@ -4,7 +4,6 @@
 # Authors: Felix Teweleit
 
 from pykpn.common.platform import Platform
-from pykpn.common.kpn import KpnGraph
 from pykpn.mapper.random import RandomMapping
 from pykpn.simulate.system import RuntimeSystem
 from pykpn.platforms.topologies import meshTopology
@@ -14,12 +13,32 @@ from pykpn.platforms.platformDesigner import PlatformDesigner
 from pykpn.tgff.tgffParser.parser import Parser
 
 from pykpn.platforms.utils import simpleDijkstra as sd
-from _ast import Raise
 
-class KpnInstantiationError(Exception):
-    """KPN instantiation failed!"""
+class TgffReferenceError(Exception):
+    """Referenced a non existent tgff component"""
     pass
 
+class RuntimeParser(Parser):
+    __instance = None
+    file_path = None
+    components = None
+    def __new__(self):
+        if not RuntimeParser.__instance:
+            RuntimeParser.__instance = object.__new__(RuntimeParser)
+            RuntimeParser.__instance.__init__()
+        return RuntimeParser.__instance
+    
+    def __init__(self):
+        super(RuntimeParser, self).__init__()
+    
+    def parse_file(self, file_path):
+        if not file_path == RuntimeParser.file_path:
+            RuntimeParser.file_path = file_path
+            RuntimeParser.components = super(RuntimeParser, self).parse_file(file_path)
+            return RuntimeParser.components
+        else:
+            return RuntimeParser.components
+    
 
 class TgffRuntimeSystem(RuntimeSystem):
     """Specification of the RuntimeSystem class for tgff simulation
@@ -61,25 +80,27 @@ class KpnGraphFromTgff():
     """
     #TODO: Add doc string
     def __new__(self, file_path, task_graph):
-        parser = Parser()
+        parser = RuntimeParser()
         tgff_graphs = parser.parse_file(file_path)[0]
         
         if not task_graph in tgff_graphs:
-            raise KpnInstantiationError()
+            raise TgffReferenceError()
         
         return tgff_graphs[task_graph].to_kpn_graph()
 
 class TraceGeneratorWrapper():
     def __new__(self, file_path):
-        parser = Parser()
+        parser = RuntimeParser()
         tgff_components = parser.parse_file(file_path)
         trace_generator = TgffTraceGenerator(tgff_components[1], tgff_components[0])
         return trace_generator
     
 class PlatformFromTgff():
     def __new__(self, platform_type, processor, file_path, amount):
-        parser = Parser()
+        parser = RuntimeParser()
         tgff_processors = parser.parse_file(file_path)[1]
+        if processor < 0 or processor >= len(tgff_processors):
+            raise TgffReferenceError()
         if platform_type == 'bus':
             return TgffRuntimePlatformBus(tgff_processors[processor])
         elif platform_type == 'mesh':

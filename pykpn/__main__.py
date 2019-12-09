@@ -10,7 +10,7 @@ import sys
 import traceback
 
 from pykpn.tasks import execute_task
-from pykpn.tgff.tgffSimulation import KpnInstantiationError
+from pykpn.tgff.tgffSimulation import TgffReferenceError
 
 log = logging.getLogger(__name__)
 
@@ -33,8 +33,8 @@ def main():
     # execute the task
     try:
         execute_task()
-    except KpnInstantiationError:
-        print("KPN specification not available\n")
+    except TgffReferenceError:
+        log.warning("Referenced non existing tgff component!")
         sys.exit(0)
     except Exception:
         log.error(traceback.format_exc())
