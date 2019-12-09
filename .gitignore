@@ -24,6 +24,7 @@ ontologies/
 *.idea
 
 outputs/
+multirun/
 tsne.pdf
 
 # default json dump

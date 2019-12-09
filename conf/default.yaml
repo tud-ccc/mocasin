@@ -6,12 +6,12 @@ hydra:
 log_level : WARNING
 
 defaults:
-  - type: kpn
+  - source: slx
   - representation: SimpleVector
-  - platform: ${defaults.0.type}/default
-  - task: ${defaults.0.type}/default
+  - platform: ${defaults.0.source}/default
+  - task: default
   - hydra/job_logging: pykpn
-  - kpn: ${defaults.0.type}/default
+  - kpn: ${defaults.0.source}/default
   - mapping: random_mapping
-  - trace: ${defaults.0.type}/default
+  - trace: ${defaults.0.source}/default
   - tgff: default

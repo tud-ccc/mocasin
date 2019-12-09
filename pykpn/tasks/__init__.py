@@ -11,7 +11,6 @@ To add a new task, write a function within this package and add an entry to the
 expect precisely one parameter, the Omniconf object as created by hydra.
 """
 
-
 import hydra
 import logging
 import sys
@@ -26,6 +25,7 @@ from pykpn.tasks.to_dot import kpn_to_dot
 from pykpn.tasks.to_dot import mapping_to_dot
 from pykpn.tasks.to_dot import platform_to_dot
 from pykpn.tasks.unit_tests import unit_tests
+from pykpn.tasks.visualize import visualize
 
 log = logging.getLogger(__name__)
 
@@ -39,7 +39,8 @@ pykpn_tasks = {
     'platform_to_dot': platform_to_dot,
     'random_walk_mapping': random_walk,
     'simulate': simulate,
-    'unit_tests' : unit_tests,    
+    'unit_tests' : unit_tests,
+    'visualize' : visualize,    
 }
 """A dictionary that maps task names to a callable function."""
 
@@ -61,3 +62,4 @@ def execute_task(cfg):
     # execute the task
     function = pykpn_tasks[task]
     function(cfg)
+

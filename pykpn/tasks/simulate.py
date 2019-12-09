@@ -43,6 +43,7 @@ def simulate(cfg):
     """
 
     kpn = hydra.utils.instantiate(cfg['kpn'])
+    
     platform = hydra.utils.instantiate(cfg['platform'])
     mapping = hydra.utils.instantiate(cfg['mapping'], kpn, platform)
     trace = hydra.utils.instantiate(cfg['trace'])

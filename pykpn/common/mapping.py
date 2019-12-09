@@ -316,8 +316,8 @@ class Mapping:
             mapped processes are the values
         :rtype dict[string, string]:
         """
-        procs_list = self._kpn.processes()
-        pes_list = self._platform.processors()
+        procs_list = self.kpn.processes()
+        pes_list = self.platform.processors()
         pes2procs = {}
         for pe in pes_list:
             pes2procs.update({pe.name:[]})

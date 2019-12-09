@@ -13,9 +13,8 @@ from pykpn.mapper.random import RandomMapping
 
 from pykpn.platforms.kalray_mppa import KalrayMppa as kmppa
 
-#Development imports
-from testPlatform import TestPlatform
-import drawAPI
+from pykpn.gui.testPlatform import TestPlatform
+from pykpn.gui.drawAPI import  drawAPI
 
 class controlPanel(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
@@ -113,7 +112,7 @@ class drawPanel(tk.Frame):
         self.parent = parent
         self.__canvas = tk.Canvas(width = 1000, height = 750)
         self.__canvas.grid(row = 0, column = 1, rowspan = 9)
-        self.drawDevice = drawAPI.drawAPI(self.__canvas, 5, 15, 1000, 750)
+        self.drawDevice = drawAPI(self.__canvas, 5, 15, 1000, 750)
 
        
 class mainWindow(tk.Frame):

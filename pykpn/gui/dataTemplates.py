@@ -3,7 +3,7 @@
 #
 # Authors: Felix Teweleit
 
-from utils import platformOperations, listOperations
+from pykpn.gui.utils import platformOperations, listOperations
 
 class mappingInformation():
     """Data object that holds the necessary information to draw a mapping.

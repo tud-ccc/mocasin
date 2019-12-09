@@ -4,9 +4,8 @@
 # Authors: Felix Teweleit
 
 #development imports
-from dataTemplates import mappingInformation
-from dataTemplates import PlatformInformation
-from managers import drawManager
+from pykpn.gui.dataTemplates import mappingInformation, PlatformInformation
+from pykpn.gui.managers import drawManager
 
 class drawAPI():
     """"Main interface for the user to visualize platforms and mapped processes.

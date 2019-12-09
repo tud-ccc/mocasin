@@ -16,6 +16,11 @@ from pykpn.tgff.tgffParser.parser import Parser
 from pykpn.platforms.utils import simpleDijkstra as sd
 from _ast import Raise
 
+class KpnInstantiationError(Exception):
+    """KPN instantiation failed!"""
+    pass
+
+
 class TgffRuntimeSystem(RuntimeSystem):
     """Specification of the RuntimeSystem class for tgff simulation
     """
@@ -58,6 +63,10 @@ class KpnGraphFromTgff():
     def __new__(self, file_path, task_graph):
         parser = Parser()
         tgff_graphs = parser.parse_file(file_path)[0]
+        
+        if not task_graph in tgff_graphs:
+            raise KpnInstantiationError()
+        
         return tgff_graphs[task_graph].to_kpn_graph()
 
 class TraceGeneratorWrapper():

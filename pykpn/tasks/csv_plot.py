@@ -8,11 +8,9 @@ import hydra
 from pykpn.util import plot
 from pykpn.util.csv_reader import DataReader
 
-
 def csv_plot(cfg):
     platform = hydra.utils.instantiate(cfg['platform'])
     kpn = hydra.utils.instantiate(cfg['kpn'])
-
     dataReader = DataReader(platform,
                             cfg['filePath'],
                             kpn,
