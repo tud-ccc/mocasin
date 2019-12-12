@@ -20,7 +20,7 @@ def graph_dict():
     return data[0]
 
 @pytest.fixture
-def processor_dict():
+def processor_list():
     parser = Parser()
     data = None
     try:

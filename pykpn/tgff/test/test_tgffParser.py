@@ -35,12 +35,12 @@ def test_graph_dict(graph_dict):
     #Todo: get the right execution time
     assert(execution_order == [('r', 'TASK_GRAPH_3.a3_1'),('e', 3), ('w', 'TASK_GRAPH_3.a3_2')])
     
-def test_processor_dict(processor_dict):
-    assert(len(processor_dict) == 34)
+def test_processor_dict(processor_list):
+    assert(len(processor_list) == 34)
     
     """Test common methods for all processors
     """
-    for tgff_processor in processor_dict.values():
+    for tgff_processor in processor_list:
         assert(isinstance(tgff_processor, TgffProcessor))
         pykpn_processor = tgff_processor.to_pykpn_processor()
         assert(isinstance(pykpn_processor, Processor))
@@ -48,19 +48,19 @@ def test_processor_dict(processor_dict):
         
     """Test some specific properties for selected processors
     """
-    tgff_processor = processor_dict['CLIENT_PE_0']
+    tgff_processor = processor_list[0]
     assert(tgff_processor.name == 'CLIENT_PE_0')
-    assert(tgff_processor.type == 'AMD_ElanSC520-133_MHz')
+    assert(tgff_processor.type == 0)
     #Todo: Get right cycle time
     assert(tgff_processor.cycle_time == float('1e-06'))
     #Todo: Get correct execution cycles
     assert(tgff_processor.operations[0] == 45)
     
-    tgff_processor = processor_dict['SERVER_PE_16']
-    assert(tgff_processor.name == 'SERVER_PE_16')
-    assert(tgff_processor.type == 'TI_TMS320C6203-300MHz')
+    tgff_processor = processor_list[32]
+    assert(tgff_processor.name == 'SERVER_PE_15')
+    assert(tgff_processor.type == 32)
     #Todo: Get right cycle time
-    assert(tgff_processor.cycle_time == float('1e-08'))
+    assert(tgff_processor.cycle_time == float('1e-07'))
     #Todo: Get correct execution cycles
     assert(tgff_processor.operations[0] == 0)
 
