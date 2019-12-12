@@ -1,7 +1,7 @@
 # Copyright (C) 2017 TU Dresden
 # All Rights Reserved
 #
-# Authors: Christian Menard
+# Authors: Christian Menard, Felix Teweleit
 
 
 from enum import Enum
@@ -270,6 +270,38 @@ class FifoScheduler(RuntimeScheduler):
         # sleep otherwise
         return None
 
+class RoundRobinScheduler(RuntimeScheduler):
+    """
+    """
+    def __init__(self, name, processor, context_switch_mode, scheduling_cycles, env):
+        """Initialize a FIFO scheduler
+
+        Calls :func:`RuntimeScheduler.__init__`.
+        """
+        super(RoundRobinScheduler, self).__init__(name, processor, context_switch_mode, scheduling_cycles, env)
+        
+    def schedule(self):
+        """Perform the scheduling.
+        
+        Appends the current process at the end of the ready queue, if its ready. Then pops and returns the first process
+        in the ready queue.
+        """
+        cp = self.current_process
+        
+        if cp is None:
+            #if no process is loaded yet, skip the append to ready queue phase
+            pass
+        elif cp.check_state(ProcessState.READY):
+            #else append current process at back of ready queue
+            self._ready_queue.append(cp)
+        
+        if len(self._ready_queue) > 0:
+            #return the first process in the queue and remove it from queue
+            next_process = self._ready_queue.pop(0)
+            return next_process
+        
+        #sleep otherwise
+        return None
 
 def create_scheduler(name, processor, policy, param, env):
     if policy.name == 'Dummy':
@@ -279,10 +311,7 @@ def create_scheduler(name, processor, policy, param, env):
         s = FifoScheduler(name, processor, ContextSwitchMode.AFTER_SCHEDULING,
                           policy.scheduling_cycles, env)
     elif policy.name == 'RoundRobin':
-        # TODO Actually implement RoundRobin
-        log.warning('RoundRobin scheduler is not yet implemented -> Fall back '
-                    'to FIFO')
-        s = FifoScheduler(name, processor, ContextSwitchMode.AFTER_SCHEDULING,
+        s = RoundRobinScheduler(name, processor, ContextSwitchMode.AFTER_SCHEDULING,
                           policy.scheduling_cycles, env)
     else:
         raise NotImplementedError(
