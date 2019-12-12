@@ -9,7 +9,7 @@ defaults:
   - source: slx
   - representation: SimpleVector
   - platform: ${defaults.0.source}/default
-  - task: default
+  - task: random_walk_mapping
   - hydra/job_logging: pykpn
   - kpn: ${defaults.0.source}/default
   - mapping: random_mapping

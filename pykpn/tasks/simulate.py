@@ -3,7 +3,6 @@
 #
 # Authors: Christian Menard
 
-
 import hydra
 import logging
 import simpy
@@ -13,7 +12,6 @@ from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.simulate.system import RuntimeSystem
 
 log = logging.getLogger(__name__)
-
 
 def simulate(cfg):
     """Simulate the execution of a KPN application mapped to a platform.
@@ -43,7 +41,7 @@ def simulate(cfg):
     """
 
     kpn = hydra.utils.instantiate(cfg['kpn'])
-    
+
     platform = hydra.utils.instantiate(cfg['platform'])
     mapping = hydra.utils.instantiate(cfg['mapping'], kpn, platform)
     trace = hydra.utils.instantiate(cfg['trace'])

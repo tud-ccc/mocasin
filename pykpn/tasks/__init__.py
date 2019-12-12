@@ -27,6 +27,8 @@ from pykpn.tasks.to_dot import platform_to_dot
 from pykpn.tasks.unit_tests import unit_tests
 from pykpn.tasks.visualize import visualize
 
+from pykpn.tgff.tgffSimulation import TgffReferenceError
+
 log = logging.getLogger(__name__)
 
 pykpn_tasks = {
@@ -53,13 +55,19 @@ def execute_task(cfg):
     :return:
     """
     task = cfg['task']
-
+    
     if task not in pykpn_tasks:
         log.error("Tried to run a task unknown to pykpn (%s)" % task)
         log.info("Choose one of %s" % list(pykpn_tasks.keys()))
         sys.exit(-1)
 
-    # execute the task
-    function = pykpn_tasks[task]
-    function(cfg)
+    try:
+        # execute the task
+        function = pykpn_tasks[task]
+        function(cfg)
+    except TgffReferenceError:
+        #Special exception indicates a bad combination of tgff components
+        #can be thrown during multiruns and should not stop the hydra
+        #execution 
+        log.warning("Referenced non existing tgff component!")
 

@@ -10,8 +10,6 @@ import sys
 import traceback
 
 from pykpn.tasks import execute_task
-from pykpn.tgff.tgffSimulation import TgffReferenceError
-
 log = logging.getLogger(__name__)
 
 
@@ -33,9 +31,6 @@ def main():
     # execute the task
     try:
         execute_task()
-    except TgffReferenceError:
-        log.warning("Referenced non existing tgff component!")
-        sys.exit(0)
     except Exception:
         log.error(traceback.format_exc())
         sys.exit(-1)
@@ -43,3 +38,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
