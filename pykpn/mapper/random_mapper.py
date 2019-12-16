@@ -4,12 +4,10 @@
 # Authors: Christian Menard, Andres Goens
 
 
-import random
 from pykpn.representations.representations import RepresentationType
 
 from pykpn.util import logging
-from pykpn.common.mapping import (ChannelMappingInfo, Mapping,
-    ProcessMappingInfo, SchedulerMappingInfo)
+from pykpn.common.mapping import ChannelMappingInfo, Mapping, ProcessMappingInfo, SchedulerMappingInfo
 
 
 log = logging.getLogger(__name__)

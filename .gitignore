@@ -27,5 +27,7 @@ outputs/
 multirun/
 tsne.pdf
 
+test_bench.py
+
 # default json dump
 dump.json

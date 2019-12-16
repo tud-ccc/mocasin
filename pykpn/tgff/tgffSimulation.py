@@ -4,7 +4,7 @@
 # Authors: Felix Teweleit
 
 from pykpn.common.platform import Platform
-from pykpn.mapper.random import RandomMapping
+from pykpn.mapper.random_mapper import RandomMapping
 from pykpn.simulate.system import RuntimeSystem
 from pykpn.platforms.topologies import meshTopology
 from pykpn.tgff.tgffGenerators import TgffTraceGenerator

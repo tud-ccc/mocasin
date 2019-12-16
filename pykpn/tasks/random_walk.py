@@ -12,7 +12,7 @@ import os
 import simpy
 import timeit
 
-from pykpn.mapper.random import RandomMapping
+from pykpn.mapper.random_mapper import RandomMapping
 from pykpn.representations.representations import RepresentationType
 from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.simulate.system import RuntimeSystem

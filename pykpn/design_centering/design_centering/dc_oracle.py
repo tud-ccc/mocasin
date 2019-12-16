@@ -14,7 +14,7 @@ from pykpn.simulate.system import RuntimeSystem
 from pykpn.mapper.proc_partialmapper import ProcPartialMapper
 from pykpn.mapper.rand_partialmapper import RandomPartialMapper
 from pykpn.mapper.com_partialmapper import ComPartialMapper
-from pykpn.mapper.random import RandomMapping
+from pykpn.mapper.random_mapper import RandomMapping
 from . import dc_sample
 
 from sys import exit
