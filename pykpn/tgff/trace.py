@@ -9,7 +9,7 @@ class TgffTraceGenerator(TraceGenerator):
     """A trace generator based on the tgff representation.
     """
     
-    def __init__(self, processor_list, tgff_graphs, repetition=1):
+    def __init__(self, processor_list, tgff_graph, repetition=1):
         """ Initializes the generator
     
         :param processor_list: a list of all processors a
@@ -24,8 +24,7 @@ class TgffTraceGenerator(TraceGenerator):
         self._processor_list = processor_list
         self._repetition = repetition
         self._trace_dict = {}
-        for tgff_graph in tgff_graphs.values():
-            self._initialize_trace_dict(tgff_graph)
+        self._initialize_trace_dict(tgff_graph)
     
     def next_segment(self, process_name, processor_idx):
         """Returns the next trace segment
@@ -74,7 +73,7 @@ class TgffTraceGenerator(TraceGenerator):
         of the current status for each trace.
         """
         for task in tgff_graph.tasks:
-            self._trace_dict.update({tgff_graph.identifier+'.'+task : [self._repetition, 0, tgff_graph.get_execution_order(task)]})
+            self._trace_dict.update({task : [self._repetition, 0, tgff_graph.get_execution_order(task)]})
             
     
     

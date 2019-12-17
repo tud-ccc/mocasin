@@ -6,12 +6,12 @@
 from pykpn.common.platform import Platform
 from pykpn.mapper.random_mapper import RandomMapping
 from pykpn.simulate.system import RuntimeSystem
-from pykpn.platforms.topologies import meshTopology
-from pykpn.tgff.tgffGenerators import TgffTraceGenerator
 from pykpn.simulate.application import RuntimeKpnApplication
+from pykpn.platforms.topologies import meshTopology
 from pykpn.platforms.platformDesigner import PlatformDesigner
-from pykpn.tgff.tgffParser.parser import Parser
 from pykpn.platforms.utils import simpleDijkstra as sd
+from pykpn.tgff.trace import TgffTraceGenerator
+from pykpn.tgff.tgffParser.parser import Parser
 
 
 class TgffReferenceError(Exception):
