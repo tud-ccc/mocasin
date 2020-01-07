@@ -82,7 +82,6 @@ class Parser():
                     dict{int : dict{int : float}})
     """
     def parse_file(self, file_path):
-        print(os.getcwd())
         with open(file_path, 'r') as file:
             last_missmatch = None
             current_line  = file.readline()
