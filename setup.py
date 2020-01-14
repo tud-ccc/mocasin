@@ -72,6 +72,7 @@ setup(
         'tqdm',
         'hydra-core',
         'deap',
+        'networkx',
     ],
     setup_requires=['pytest-runner', 'sphinx', 'numpy<1.16'],
     tests_require=['pytest', 'pytest_mock'],

@@ -51,7 +51,7 @@ class RandomPartialMapper(object):
 
         # check if the platform/kpn is equivalent
         if not part_mapping.platform is self.platform or not part_mapping.kpn is self.kpn:
-           raise RuntimeError('rand_map: Try to map partial mapping of platform,KPN %s,%s to %s,%s',
+            raise RuntimeError('rand_map: Try to map partial mapping of platform,KPN %s,%s to %s,%s',
                              part_mapping.platform.name, part_mapping.kpn.name, 
                              self.platform.name, self.kpn.name)
 

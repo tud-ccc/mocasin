@@ -65,7 +65,7 @@ class TraceGenerator(object):
 
         Returns the next trace segment for a process running on a processor of
         the specified type (the segments could differ for different processor
-        types). This should be overridden by a subclass. The default behaviuour
+        types). This should be overridden by a subclass. The default behavior
         is to return None
 
         :param str process_name:
@@ -108,7 +108,6 @@ class TraceGraph(nx.DiGraph):
             process_mapping (dict {str : list(str)} : 
             channel_mapping (dict {str : list(int)} :
             processor_groups (dict {str : list(processor)} :
-            primitive_groups (dict {int : list(primitive)} :
         """
         
         super(TraceGraph, self).__init__()
@@ -152,9 +151,7 @@ class TraceGraph(nx.DiGraph):
                 else:
                     edge_weight = 0
                     if not last_segment.processing_cycles == None:
-                        edge_weight = processor.cycles_to_ticks(last_segment.processing_cycles)
-                        print(last_segment.processing_cycles)
-                        print(edge_weight)
+                        edge_weight = processor.ticks(last_segment.processing_cycles)
                     
                     #Adding sequential order dependencies
                     self.add_edges_from([("{}_{}".format(process_name, last_segment_index),
@@ -167,11 +164,7 @@ class TraceGraph(nx.DiGraph):
                 #Adding unblock read dependencies
                 if not last_segment == None and not last_segment.write_to_channel is None:
                     name = last_segment.write_to_channel
-                    read_time = self._determine_slowest_access(name,
-                                                                  channel_mapping,
-                                                                  primitive_groups,
-                                                                  write_access=False)
-                        
+                    read_time = self._determine_slowest_access(name, channel_mapping)
                     self.add_edges_from([("r_{}_{}".format(name, channel_dict[name][1]-1),
                                     "{}_{}".format(process_name, last_segment_index+1))],
                                     type=EdgeType.UNBLOCK_READ,
@@ -180,9 +173,7 @@ class TraceGraph(nx.DiGraph):
                 #Adding block read dependencies
                 if not current_segment.write_to_channel is None:
                     name = current_segment.write_to_channel
-                    write_time = self._determine_slowest_access(name,
-                                                                   channel_mapping,
-                                                                   primitive_groups)
+                    write_time = self._determine_slowest_access(name, channel_mapping)
                     self.add_edges_from([("{}_{}".format(process_name, last_segment_index+1),
                                           "r_{}_{}".format(name, channel_dict[name][1]))],
                                           type=EdgeType.BLOCK_READ,
@@ -192,9 +183,7 @@ class TraceGraph(nx.DiGraph):
                 #Adding read after compute dependencies
                 if not current_segment.read_from_channel is None:
                     name = current_segment.read_from_channel
-                    write_time = self._determine_slowest_access(name,
-                                                                   channel_mapping,
-                                                                   primitive_groups)
+                    write_time = self._determine_slowest_access(name, channel_mapping)
                     self.add_edges_from([("{}_{}".format(process_name, last_segment_index+1),
                                           "r_{}_{}".format(name, channel_dict[name][0]))],
                                           type=EdgeType.READ_AFTER_COMPUTE,
@@ -207,35 +196,37 @@ class TraceGraph(nx.DiGraph):
                 self.add_edges_from([(node, "V_e")], type=EdgeType.ROOT_OR_LEAF, weight=0)
     
     def _determine_slowest_processor(self, process_name, process_mapping, processor_groups):
-        if len(process_mapping[process_name] == 1):
+        if len(process_mapping[process_name]) == 1:
             return processor_groups[process_mapping[process_name]][0]
         else:
             processor = None
+            
             for group_id in process_mapping[process_name]:
+            
                 if processor == None:
                     processor = processor_groups[group_id][0]
                 else:
                     if processor.frequency_domain.frequency > processor_groups[group_id][0].frequency_domain.frequency:
                         processor = processor_groups[group_id][0]
+            
             if not processor == None:
                 return processor
             else:
-                #ToDo: May throw custom exception?
-                return None
+                raise RuntimeError("No valid group available!")
     
-    def _determine_slowest_access(self, channel_name, channel_mapping, primitive_groups, write_access=True):
-        if len(channel_mapping[channel_name]) == 1:
-            return primitive_groups[channel_mapping[channel_name]][0]
+    def _determine_slowest_access(self, channel_name, channel_mapping):
+        static_cost = None
+            
+        for group_id in channel_mapping[channel_name]:
+                    
+            if static_cost == None:
+                static_cost = group_id
+            else:
+                if group_id > static_cost:
+                    static_cost = group_id
+        
+        if not static_cost == None:
+            return static_cost
         else:
-            primitive = None
-            for group_id in channel_mapping[channel_name]:
-                if primitive == None:
-                    primitive = primitive_groups[group_id][0]
-                else:
-                    if write_access:
-                        #ToDo: Find good way to compare primitives without
-                        #having specific source/sink pair available
-                        pass
-                    else:
-                        pass
+            raise RuntimeError('Cant determine slowest resource in channel mapping!')
 
