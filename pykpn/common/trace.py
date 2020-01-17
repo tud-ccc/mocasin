@@ -6,6 +6,7 @@
 import networkx as nx
 from enum import Enum
 from simulate.test.conftest import channel
+from copy import deepcopy
 
 class TraceSegment(object):
     """Represents a segment in a process' execution trace
@@ -111,7 +112,10 @@ class TraceGraph(nx.DiGraph):
         """
         
         super(TraceGraph, self).__init__()
-        self.add_nodes_from(["V_e", "V_s"])
+        self.add_node('V_e', kpn_element=None)
+        self.add_node('V_s', kpn_element=None)
+        
+        self.critical_path_nodes = None
         
         #captures the amount of read and write accesses for each channel
         channel_dict = {}
@@ -159,7 +163,8 @@ class TraceGraph(nx.DiGraph):
                     self.add_edges_from([("{}_{}".format(process_name, last_segment_index),
                                           "{}_{}".format(process_name, last_segment_index+1))],
                                           type=EdgeType.SEQUENTIAL_ORDER,
-                                          weight=edge_weight)
+                                          weight=edge_weight,
+                                          cycles=last_segment.processing_cycles)
                     
                     #Add associated process as node attribute
                     self.nodes['{}_{}'.format(process_name, last_segment_index)]['kpn_element'] = process_name
@@ -224,23 +229,94 @@ class TraceGraph(nx.DiGraph):
             if list(self.successors(node)) == [] and not node == "V_e":
                 self.add_edges_from([(node, "V_e")], type=EdgeType.ROOT_OR_LEAF, weight=0)
     
+    def change_element_mapping(self, element_name, element_mapping, element_groups, definitive=True):
+        
+        if self.critical_path_nodes == None:
+            raise RuntimeError('Call determine_critical_path_elements() in the first place!')
+        
+        last_node = None
+        critical_path_length = 0
+        
+        for node in self.critical_path_nodes:
+            if node == 'V_s':
+                last_node = node
+                continue
+            
+            new_weight = self.edges[last_node,node]['weight']
+            
+            if (self.edges[last_node,node]['type'] == EdgeType.SEQUENTIAL_ORDER and
+                        self.nodes[last_node]['kpn_element'] == element_name):
+                #for sequential order edges the last nodes element is relevant
+                cycles = self.edges[last_node,node]['cycles']
+                if not cycles == None:
+                    processor = self._determine_slowest_processor(element_name,
+                                                                  element_mapping,
+                                                                  element_groups)
+                    new_weight = processor.ticks(cycles)
+                
+            elif (self.edges[last_node,node]['type'] == EdgeType.READ_AFTER_COMPUTE and
+                        self.nodes[node]['kpn_element'] == element_name):
+                #for read after compute edges the actual node is relevant
+                new_weight = self._determine_slowest_access(element_name,
+                                                                element_mapping,
+                                                                element_groups,
+                                                                read_access=False)
+                
+            elif (self.edges[last_node,node]['type'] == EdgeType.BLOCK_READ and 
+                        self.nodes[node]['kpn_element'] == element_name):
+                #for block read edges the actual node is relevant
+                new_weight = self._determine_slowest_access(element_name,
+                                                                element_mapping,
+                                                                element_groups,
+                                                                read_access=False)
+                
+            elif (self.edges[last_node,node]['type'] == EdgeType.UNBLOCK_READ and 
+                        self.nodes[last_node]['kpn_element'] == element_name):
+                #for unblock read edges the last node is relevant
+                new_weight = self._determine_slowest_access(element_name,
+                                                               element_mapping,
+                                                               element_groups,
+                                                               read_access=True)
+                
+            elif self.edges[last_node,node]['type'] == EdgeType.BLOCK_WRITE:
+                #this kind of edges is currently not implemented
+                #due to no representation of buffer sizes in pykpn
+                pass
+                
+            elif self.edges[last_node,node]['type'] == EdgeType.ROOT_OR_LEAF:
+                #edges to start and end node will always
+                #remain unchanged
+                pass
+            
+            if definitive:
+                self.edges[last_node,node]['weight'] = new_weight
+            
+            critical_path_length += new_weight
+            last_node = node
+        
+        return critical_path_length
+        
+        
+    
     def determine_critical_path_elements(self):
         elements = []
-        path_nodes = nx.dag_longest_path(self)
+        self.critical_path_nodes = nx.dag_longest_path(self)
         path_length = nx.dag_longest_path_length(self)
-        for node in path_nodes:
+        
+        for node in self.critical_path_nodes:
+        
             if not (node == 'V_s' or node == 'V_e'):
                 associated_element = self.nodes[node]['kpn_element']
             
                 if not associated_element in elements:
                     elements.append(associated_element)
         
-        return (elements, path_nodes, path_length)
+        return (elements, self.critical_path_nodes, path_length)
     
     def _determine_slowest_processor(self, process_name, process_mapping, processor_groups):
         
         if len(process_mapping[process_name]) == 1:
-            return processor_groups[process_mapping[process_name]][0]
+            return processor_groups[process_mapping[process_name][0]][0]
         else:
             processor = None
             
