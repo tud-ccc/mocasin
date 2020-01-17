@@ -1,4 +1,4 @@
-# Copyright (C) 2019 TU Dresden
+# Copyright (C) 2020 TU Dresden
 # All Rights Reserved
 #
 # Authors: Felix Teweleit
@@ -141,5 +141,48 @@ class TgffRuntimePlatformMesh(Platform):
         topology = meshTopology(['processor_0', 'processor_1','processor_2', 'processor_3'])
         designer.createNetworkForCluster("cluster_0", 'testNet', topology, sd, 2000, 100, 100, 100, 100)
         designer.finishElement()
-    
+        
+class TgffRuntimePlatformMultiCluster(Platform):
+    def __init__(self, processor_cl0, processor_cl1, name="simulation_platform"):
+        super(TgffRuntimePlatformMultiCluster, self).__init__(name)
+        designer = PlatformDesigner(self)
+        
+        designer.setSchedulingPolicy('FIFO', 1000)
+        designer.newElement("test_chip")
+        
+        #cluster 0
+        designer.addPeClusterForProcessor("cluster_0",
+                                          processor_cl0.to_pykpn_processor(),
+                                          4)
+        designer.addCommunicationResource("lvl2_cl0",
+                                          ["cluster_0"],
+                                          25,
+                                          30,
+                                          float('inf'),
+                                          float('inf'),
+                                          frequencyDomain=600000000.0)
+        
+        #cluster 1
+        designer.addPeClusterForProcessor("cluster_1",
+                                          processor_cl1.to_pykpn_processor(),
+                                          2)
+        designer.addCommunicationResource("lvl2_cl1",
+                                          ["cluster_1"],
+                                          25,
+                                          30,
+                                          float('inf'),
+                                          float('inf'),
+                                          frequencyDomain=667000000.0)
+        
+        #shared memory
+        designer.addCommunicationResource("RAM",
+                                          ["cluster_0", "cluster_1"],
+                                          55,
+                                          60,
+                                          float('inf'),
+                                          float('inf'),
+                                          frequencyDomain=670000000.0)
+        designer.finishElement()
+        
+        
         
