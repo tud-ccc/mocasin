@@ -31,3 +31,5 @@ test_bench.py
 
 # default json dump
 dump.json
+
+pykpn.iml
