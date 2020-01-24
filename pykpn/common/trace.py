@@ -229,6 +229,7 @@ class TraceGraph(nx.DiGraph):
             if list(self.successors(node)) == [] and not node == "V_e":
                 self.add_edges_from([(node, "V_e")], type=EdgeType.ROOT_OR_LEAF, weight=0)
     
+    
     def change_element_mapping(self, element_name, element_mapping, element_groups, definitive=True):
         
         if self.critical_path_nodes == None:
@@ -294,8 +295,8 @@ class TraceGraph(nx.DiGraph):
             critical_path_length += new_weight
             last_node = node
         
-        return critical_path_length
         
+        return critical_path_length
         
     
     def determine_critical_path_elements(self):
@@ -311,7 +312,8 @@ class TraceGraph(nx.DiGraph):
                 if not associated_element in elements:
                     elements.append(associated_element)
         
-        return (elements, self.critical_path_nodes, path_length)
+        return elements, path_length, self.critical_path_nodes
+    
     
     def _determine_slowest_processor(self, process_name, process_mapping, processor_groups):
         
@@ -332,6 +334,7 @@ class TraceGraph(nx.DiGraph):
                 return processor
             else:
                 raise RuntimeError("No valid group available!")
+    
     
     def _determine_slowest_access(self, channel_name, channel_mapping, primitive_groups, read_access=True):
         static_cost = None
