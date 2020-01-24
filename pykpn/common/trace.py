@@ -230,7 +230,7 @@ class TraceGraph(nx.DiGraph):
                 self.add_edges_from([(node, "V_e")], type=EdgeType.ROOT_OR_LEAF, weight=0)
     
     
-    def change_element_mapping(self, element_name, element_mapping, element_groups, definitive=True):
+    def change_element_mapping(self, element_name, element_mapping, element_groups, definitive=False):
         
         if self.critical_path_nodes == None:
             raise RuntimeError('Call determine_critical_path_elements() in the first place!')
