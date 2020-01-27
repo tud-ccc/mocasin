@@ -4,8 +4,12 @@
 # Authors: Andres Goens
 
 from pykpn.util import logging
+from pykpn.representations.representations import RepresentationType
 from deap import base, creator, tools
+from pykpn.mapper.rand_partialmapper import RandomPartialMapper
 from deap.algorithms import eaMuCommaLambda,eaMuPlusLambda
+import random
+import numpy
 
 log = logging.getLogger(__name__)
 
@@ -13,17 +17,40 @@ class GeneticFullMapper(object):
     """Generates a full mapping by using genetic algorithms.
     """
     def random_mapping(self):
-        #TODO: Implement
-        return some_random_mapping
+        return self.random_mapper.generate_mapping()
 
 
-    def mapping_crossover(self,ass1,ass2,k=2):
-        #TODO: Implement
-        return ass1,ass2
+    def mapping_crossover(self,m1,m2,k=2):
+        #TODO: make a representation-specific crossover operator
+        assert len(m1) == len(m2)
+        crossover_points = random.sample(range(len(m1)),k)
+        swap = False
+        new_m1 = []
+        new_m2 = []
+        for i in range(len(m1)):
+            if i in crossover_points:
+                swap = not swap
+            if swap:
+                new_m1.append(m2[i])
+                new_m2.append(m1[i])
+            else:
+                new_m1.append(m1[i])
+                new_m2.append(m2[i])
+        return new_m1,new_m2
 
-    def mapping_mutation(self,ass):
-        #TODO: Implement
-        return ass
+    def mapping_mutation(self,mapping):
+        m_obj = self.representation.fromRepresentation(mapping)
+        radius = self.config['radius']
+        while(1):
+            new_mappings = self.representation.uniformFrommBall(m_obj,radius,20)
+            for m in new_mappings:
+                if self.representation.toRepresentation(m) != mapping:
+                    return self.representation.toRepresentation(m)
+            radius *= 1.1
+            if radius > 10000 * self.config['radius']:
+                log.error("Could not mutate mapping")
+                raise RuntimeError("Could not mutate mapping")
+
 
     def __init__(self, kpn, platform, config):
         """Generates a partial mapping for a given platform and KPN application.
@@ -39,6 +66,18 @@ class GeneticFullMapper(object):
         self.platform = platform
         self.kpn = kpn
         self.config = config
+        self.random_mapper = RandomPartialMapper(kpn,platform)
+        rep_type_str = config['representation']
+        if rep_type_str not in dir(RepresentationType):
+            log.exception("Representation " + rep_type_str + " not recognized. Available: " + ", ".join(
+                dir(RepresentationType)))
+            raise RuntimeError('Unrecognized representation.')
+        else:
+            representation_type = RepresentationType[rep_type_str]
+            log.info(f"initializing representation ({rep_type_str})")
+
+            representation = (representation_type.getClassType())(kpn, platform, config)
+        self.representation = representation
 
         creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
         creator.create("Individual", list, fitness=creator.FitnessMin)
@@ -50,20 +89,19 @@ class GeneticFullMapper(object):
         toolbox.register("mate", self.mapping_crossover)
         toolbox.register("mutate", self.mapping_mutation)
         toolbox.register("evaluate", self.evaluate_mapping)
-        toolbox.register("select", tools.selTournament, tournsize=tournsize)
+        toolbox.register("select", tools.selTournament, tournsize=self.config['tournsize'])
 
         self.evolutionary_toolbox = toolbox
-        self.evolutionary_stats = stats
         self.hof = tools.HallOfFame(1)
         stats = tools.Statistics(lambda ind: ind.fitness.values)
         stats.register("avg", numpy.mean)
         stats.register("std", numpy.std)
         stats.register("min", numpy.min)
         stats.register("max", numpy.max)
-        self.stats = stats
+        self.evolutionary_stats = stats
 
         if config.initials is None:
-            self.population = toolbox.population(n=pop_size)
+            self.population = toolbox.population(n=self.config['pop_size'])
         else:
             log.error("Initials not supported yet")
             raise RuntimeError('GeneticFullMapper: Initials not supported')
@@ -75,7 +113,13 @@ class GeneticFullMapper(object):
         toolbox = self.evolutionary_toolbox
         stats = self.evolutionary_stats
         hof = self.hof
-        stats = self.stats
+        pop_size = self.config['pop_size']
+        num_gens = self.config['num_gens']
+        cxpb = self.config['cxpb']
+        mutpb = self.config['mutpb']
+        verbose = True #TODO: get from config
+
+        population = self.population
 
         if self.conf.mupluslambda:
             population, logbook = eaMuPlusLambda(population,toolbox,mu=pop_size,lambda_=3*pop_size,

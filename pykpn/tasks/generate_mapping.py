@@ -1,47 +1,20 @@
 #!/usr/bin/env python3
 
-# Copyright (C) 2017-2019 TU Dresden
+# Copyright (C) 2017-2020 TU Dresden
 # All Rights Reserved
 #
 # Authors: Christian Menard, Andres Goens
 
 import logging
 import hydra
-import multiprocessing as mp
 import os
-import simpy
-import timeit
 
-from pykpn.mapper.random_mapper import RandomMapping
 from pykpn.representations.representations import RepresentationType
-from pykpn.simulate.application import RuntimeKpnApplication
-from pykpn.simulate.system import RuntimeSystem
 from pykpn.slx.mapping import export_slx_mapping
 from pykpn.util import plot
 
 log = logging.getLogger(__name__)
 
-
-class ApplicationContext(object):
-
-    def __init__(self, name=None, kpn=None, mapping=None, trace_reader=None,
-                 start_time=None):
-        self.name = name
-        self.kpn = kpn
-        self.mapping = mapping
-        self.trace_reader = trace_reader
-        self.start_time = start_time
-
-
-class SimulationContext(object):
-
-    def __init__(self, platform=None, app_contexts=None):
-        self.platform = platform
-        if app_contexts is None:
-            self.app_contexts = []
-        else:
-            self.app_contexts = app_contexts
-        self.exec_time = None
 
 
 def random_walk(cfg):
@@ -56,13 +29,12 @@ def random_walk(cfg):
         cfg(~omegaconf.dictconfig.DictConfig): the hydra configuration object
 
     **Hydra Parameters**:
+        * **mapper:** the mapper (mapping algorithm) to be used.
         * **export_all:** a flag indicating whether all mappings should be
           exported. If ``false`` only the best mapping will be exported.
-        * **jobs:** the number of parallel jobs
         * **kpn:** the input kpn graph. The task expects a configuration dict
           that can be instantiated to a :class:`~pykpn.common.kpn.KpnGraph`
           object.
-        * **num_operations:** the total number of mappings to be generated
         * **outdir:** the output directory
         * **progress:** a flag indicating whether to show a progress bar with
           ETA
@@ -94,61 +66,10 @@ def random_walk(cfg):
         raise RuntimeError('Unrecognized representation.')
     rep_type = RepresentationType[rep_type_str]
 
-    start = timeit.default_timer()
 
-    # Create a list of 'simulations'. These are later executed by multiple
-    # worker processes.
-    simulations = []
-    for i in range(0, num_iterations):
+    mapper = hydra.utils.instantiate(cfg['mapper'])
 
-        # create a simulation context
-        sim_context = SimulationContext(platform)
-
-        # create the application context
-        name = kpn.name
-        app_context = ApplicationContext(name, kpn)
-
-        app_context.start_time = 0
-
-        # generate a random mapping
-        app_context.representation = RepresentationType[rep_type_str]
-        app_context.mapping = RandomMapping(kpn, platform)
-
-        # create the trace reader
-        app_context.trace_reader = hydra.utils.instantiate(cfg['trace'])
-
-        sim_context.app_contexts.append(app_context)
-
-        simulations.append(sim_context)
-
-    # run the simulations and search for the best mapping
-    pool = mp.Pool(processes=cfg['jobs'])
-
-    # execute the simulations in parallel
-    if cfg['progress']:
-        import tqdm
-        results = list(tqdm.tqdm(pool.imap(run_simualtion, simulations,
-                                           chunksize=10),
-                                 total=num_iterations))
-    else:
-        results = list(pool.map(run_simualtion, simulations, chunksize=10))
-
-    # calculate the execution times in milliseconds and look for the best
-    # result
-    best_result = results[0]
-    exec_times = []  # keep a list of exec_times for later
-    for r in results:
-        exec_times.append(float(r.exec_time / 1000000000.0))
-        if r.exec_time < best_result.exec_time:
-            best_result = r
-
-    # When we reach this point, all simulations completed
-
-    stop = timeit.default_timer()
-    print('Tried %d random mappings in %0.1fs' %
-          (len(results), stop - start))
-    exec_time = float(best_result.exec_time / 1000000000.0)
-    print('Best simulated execution time: %0.1fms' % (exec_time))
+    #Run mapper
 
     # export the best mapping
     outdir = cfg['outdir']
@@ -199,26 +120,3 @@ def random_walk(cfg):
                                      show_plot=cfg['show_plots'],)
 
 
-def run_simualtion(sim_context):
-    # Create simulation environment
-    env = simpy.Environment()
-
-    # create the applications
-    applications = []
-    mappings = {}
-    for ac in sim_context.app_contexts:
-        app = RuntimeKpnApplication(ac.name, ac.kpn, ac.mapping,
-                                    ac.trace_reader, env, ac.start_time)
-        applications.append(app)
-        mappings[ac.name] = ac.mapping
-
-    # Create the system
-    system = RuntimeSystem(sim_context.platform, applications, env)
-
-    # run the simulation
-    system.simulate()
-    system.check_errors()
-
-    sim_context.exec_time = env.now
-
-    return sim_context

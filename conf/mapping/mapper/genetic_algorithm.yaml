@@ -1,0 +1,15 @@
+mapper:
+   class:
+      GeneticFullMapper
+   params:
+      kpn : 
+      platform : 
+      config : 
+pop_size : 50
+num_gens : 100
+cxpb : 0.35
+mutpb : 0.5
+tournsize : 4
+mupluslambda: true
+
+
