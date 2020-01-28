@@ -294,7 +294,7 @@ class TraceGraph(nx.DiGraph):
             
             critical_path_length += new_weight
             last_node = node
-        
+            
         
         return critical_path_length
         
