@@ -50,7 +50,7 @@ def generate_mapping(cfg):
     output from the individual simulations.
 """
 
-    mapper = hydra.utils.instantiate(cfg['mapper'],config=cfg)
+    mapper = hydra.utils.instantiate(cfg['mapper'],cfg)
     #Run mapper
     result = mapper.generate_mapping()
 

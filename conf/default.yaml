@@ -12,7 +12,6 @@ defaults:
   - task: random_walk_mapping
   - hydra/job_logging: pykpn
   - kpn: ${defaults.0.source}/default
-  - mapping:
-          mapper: random_mapping
+  - mapping/mapper: default
   - trace: ${defaults.0.source}/default
   - tgff: default

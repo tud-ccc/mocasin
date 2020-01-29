@@ -82,7 +82,7 @@ class RandomWalkFullMapper(object):
         * **num_operations:** the total number of mappings to be generated
     """
 
-    def __init__(self, kpn, platform,config):
+    def __init__(self, config):
         """Generates a random mapping for a given platform and KPN application. 
         Args:
            cfg(~omegaconf.dictconfig.DictConfig): the hydra configuration object
@@ -91,7 +91,7 @@ class RandomWalkFullMapper(object):
         self.kpn = hydra.utils.instantiate(config['kpn'])
         self.platform = hydra.utils.instantiate(config['platform'])
         self.config = config
-        rep_type_str = config['rep_type_str']
+        rep_type_str = config['representation']
 
 
         if rep_type_str not in dir(RepresentationType):

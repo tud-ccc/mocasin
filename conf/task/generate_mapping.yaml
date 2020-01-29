@@ -1,4 +1,4 @@
 task : generate_mapping
-mapper: random_walk
+mapper : ${mapping.mapper}
 objective : runtime
 outdir : ./
