@@ -15,7 +15,7 @@ class RandomPartialMapper(object):
     platform and KPN application. 
     """
 
-    def __init__(self, kpn, platform, seed=None):
+    def __init__(self, kpn, platform, config, seed=None):
         """Generates a random mapping for a given platform and KPN application. 
 
         :param kpn: a KPN graph
@@ -26,6 +26,7 @@ class RandomPartialMapper(object):
         if seed is not None:
             random.seed(seed)
         self.seed = seed
+        self.config = config
         self.full_mapper = True
         self.platform = platform
         self.kpn = kpn

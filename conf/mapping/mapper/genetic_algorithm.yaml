@@ -1,10 +1,6 @@
 mapper:
    class:
-      GeneticFullMapper
-   params:
-      kpn : 
-      platform : 
-      config : 
+      pykpn.mapper.ga_fullmapper.GeneticFullMapper
 pop_size : 50
 num_gens : 100
 cxpb : 0.35

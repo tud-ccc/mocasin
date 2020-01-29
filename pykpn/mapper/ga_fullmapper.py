@@ -10,6 +10,7 @@ from pykpn.mapper.rand_partialmapper import RandomPartialMapper
 from deap.algorithms import eaMuCommaLambda,eaMuPlusLambda
 import random
 import numpy
+import hydra
 
 log = logging.getLogger(__name__)
 
@@ -52,7 +53,7 @@ class GeneticFullMapper(object):
                 raise RuntimeError("Could not mutate mapping")
 
 
-    def __init__(self, kpn, platform, config):
+    def __init__(self, config):
         """Generates a partial mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
@@ -63,10 +64,10 @@ class GeneticFullMapper(object):
         :type fullGererator: OmniConf
         """
         self.full_mapper = True # flag indicating the mapper type
-        self.platform = platform
-        self.kpn = kpn
+        self.kpn = hydra.utils.instantiate(config['kpn'])
+        self.platform = hydra.utils.instantiate(config['platform'])
         self.config = config
-        self.random_mapper = RandomPartialMapper(kpn,platform)
+        self.random_mapper = RandomPartialMapper(self.kpn,self.platform,config)
         rep_type_str = config['representation']
         if rep_type_str not in dir(RepresentationType):
             log.exception("Representation " + rep_type_str + " not recognized. Available: " + ", ".join(
@@ -76,7 +77,7 @@ class GeneticFullMapper(object):
             representation_type = RepresentationType[rep_type_str]
             log.info(f"initializing representation ({rep_type_str})")
 
-            representation = (representation_type.getClassType())(kpn, platform, config)
+            representation = (representation_type.getClassType())(self.kpn, self.platform, config)
         self.representation = representation
 
         creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
