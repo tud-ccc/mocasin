@@ -7,9 +7,12 @@ from pykpn.util import logging
 from pykpn.representations.representations import RepresentationType
 from deap import base, creator, tools
 from pykpn.mapper.rand_partialmapper import RandomPartialMapper
+from pykpn.simulate.application import RuntimeKpnApplication
+from pykpn.simulate.system import RuntimeSystem
 from deap.algorithms import eaMuCommaLambda,eaMuPlusLambda
 import random
 import numpy
+import simpy
 import hydra
 
 log = logging.getLogger(__name__)
@@ -18,7 +21,9 @@ class GeneticFullMapper(object):
     """Generates a full mapping by using genetic algorithms.
     """
     def random_mapping(self):
-        return self.random_mapper.generate_mapping()
+        mapping = self.random_mapper.generate_mapping()
+        as_rep = self.representation.toRepresentation(mapping)
+        return list(as_rep)
 
 
     def mapping_crossover(self,m1,m2,k=2):
@@ -51,6 +56,21 @@ class GeneticFullMapper(object):
             if radius > 10000 * self.config['radius']:
                 log.error("Could not mutate mapping")
                 raise RuntimeError("Could not mutate mapping")
+    def evaluate_mapping(self,mapping):
+        print(mapping)
+        m_obj = self.representation.fromRepresentation(mapping)
+        env = simpy.Environment()
+        app = RuntimeKpnApplication(name=self.kpn.name,
+                                kpn_graph=self.kpn,
+                                mapping=m_obj,
+                                trace_generator=self.trace,
+                                env=env,)
+        system = RuntimeSystem(self.platform, [app], env)
+        system.simulate()
+        exec_time = float(env.now) / 1000000000.0
+        return exec_time
+
+
 
 
     def __init__(self, config):
@@ -66,6 +86,7 @@ class GeneticFullMapper(object):
         self.full_mapper = True # flag indicating the mapper type
         self.kpn = hydra.utils.instantiate(config['kpn'])
         self.platform = hydra.utils.instantiate(config['platform'])
+        self.trace = hydra.utils.instantiate(config['trace'])
         self.config = config
         self.random_mapper = RandomPartialMapper(self.kpn,self.platform,config)
         rep_type_str = config['representation']
@@ -77,10 +98,10 @@ class GeneticFullMapper(object):
             representation_type = RepresentationType[rep_type_str]
             log.info(f"initializing representation ({rep_type_str})")
 
-            representation = (representation_type.getClassType())(self.kpn, self.platform, config)
+            representation = (representation_type.getClassType())(self.kpn, self.platform)
         self.representation = representation
 
-        creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
+        creator.create("FitnessMin", base.Fitness, weights=(1.0,))
         creator.create("Individual", list, fitness=creator.FitnessMin)
         toolbox = base.Toolbox()
         toolbox.register("attribute", random.random)
@@ -101,7 +122,7 @@ class GeneticFullMapper(object):
         stats.register("max", numpy.max)
         self.evolutionary_stats = stats
 
-        if config.initials is None:
+        if config.initials == 'random':
             self.population = toolbox.population(n=self.config['pop_size'])
         else:
             log.error("Initials not supported yet")
@@ -122,7 +143,7 @@ class GeneticFullMapper(object):
 
         population = self.population
 
-        if self.conf.mupluslambda:
+        if self.config.mupluslambda:
             population, logbook = eaMuPlusLambda(population,toolbox,mu=pop_size,lambda_=3*pop_size,
                                                   cxpb=cxpb, mutpb=mutpb, ngen=num_gens, stats=stats, halloffame=hof,verbose=verbose)
         else:
