@@ -31,44 +31,41 @@ class GeneticFullMapper(object):
         assert len(m1) == len(m2)
         crossover_points = random.sample(range(len(m1)),k)
         swap = False
-        new_m1 = []
-        new_m2 = []
         for i in range(len(m1)):
             if i in crossover_points:
                 swap = not swap
             if swap:
-                new_m1.append(m2[i])
-                new_m2.append(m1[i])
-            else:
-                new_m1.append(m1[i])
-                new_m2.append(m2[i])
-        return new_m1,new_m2
+                m1[i] = m2[i]
+                m2[i] = m2[i]
+        return m1,m2
 
     def mapping_mutation(self,mapping):
-        m_obj = self.representation.fromRepresentation(mapping)
+        #m_obj = self.representation.fromRepresentation(list((mapping)))
         radius = self.config['radius']
         while(1):
-            new_mappings = self.representation.uniformFrommBall(m_obj,radius,20)
+            new_mappings = self.representation._uniformFromBall(mapping,radius,20)
             for m in new_mappings:
-                if self.representation.toRepresentation(m) != mapping:
-                    return self.representation.toRepresentation(m)
+                if list(m) != list(mapping):
+                    for i in range(len(mapping)):
+                        mapping[i] = m[i]
+                        return mapping,
             radius *= 1.1
             if radius > 10000 * self.config['radius']:
                 log.error("Could not mutate mapping")
                 raise RuntimeError("Could not mutate mapping")
     def evaluate_mapping(self,mapping):
-        print(mapping)
         m_obj = self.representation.fromRepresentation(mapping)
+        trace = hydra.utils.instantiate(self.config['trace'])
         env = simpy.Environment()
         app = RuntimeKpnApplication(name=self.kpn.name,
                                 kpn_graph=self.kpn,
                                 mapping=m_obj,
-                                trace_generator=self.trace,
+                                trace_generator=trace,
                                 env=env,)
         system = RuntimeSystem(self.platform, [app], env)
         system.simulate()
         exec_time = float(env.now) / 1000000000.0
-        return exec_time
+        return (exec_time,)
 
 
 
@@ -86,7 +83,6 @@ class GeneticFullMapper(object):
         self.full_mapper = True # flag indicating the mapper type
         self.kpn = hydra.utils.instantiate(config['kpn'])
         self.platform = hydra.utils.instantiate(config['platform'])
-        self.trace = hydra.utils.instantiate(config['trace'])
         self.config = config
         self.random_mapper = RandomPartialMapper(self.kpn,self.platform,config)
         rep_type_str = config['representation']
@@ -101,7 +97,7 @@ class GeneticFullMapper(object):
             representation = (representation_type.getClassType())(self.kpn, self.platform)
         self.representation = representation
 
-        creator.create("FitnessMin", base.Fitness, weights=(1.0,))
+        creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
         creator.create("Individual", list, fitness=creator.FitnessMin)
         toolbox = base.Toolbox()
         toolbox.register("attribute", random.random)
@@ -156,5 +152,5 @@ class GeneticFullMapper(object):
         """ Generates a full mapping using a genetic algorithm
         """
         _,_,hof = self.run_genetic_algorithm()
-        mapping = hof[0] #TODO: convert to proper mapping
-        return mapping
+        mapping = hof[0]
+        return self.representation.fromRepresentation(mapping)

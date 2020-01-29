@@ -197,3 +197,5 @@ class RandomWalkFullMapper(object):
                                          representation_type=self.rep_type,
                                          show_plot=cfg['show_plots'], )
 
+        return best_result.app_contexts[0].mapping
+

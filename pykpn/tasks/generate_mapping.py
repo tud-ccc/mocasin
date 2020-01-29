@@ -8,6 +8,9 @@
 import logging
 import hydra
 import os
+import simpy
+from pykpn.simulate.application import RuntimeKpnApplication
+from pykpn.simulate.system import RuntimeSystem
 
 from pykpn.slx.mapping import export_slx_mapping
 
@@ -58,10 +61,27 @@ def generate_mapping(cfg):
     outdir = cfg['outdir']
     if not os.path.exists(outdir):
         os.makedirs(outdir)
-    for ac in result.app_contexts:
-        mapping_name = '%s.best.mapping' % (ac.name)
-        # FIXME: We assume an slx output here, this should be configured
-        export_slx_mapping(ac.mapping,
-                           os.path.join(outdir, mapping_name),
-                           '2017.10')
 
+
+
+    kpn = hydra.utils.instantiate(cfg['kpn'])
+    platform = hydra.utils.instantiate(cfg['platform'])
+    trace = hydra.utils.instantiate(cfg['trace'])
+
+    env = simpy.Environment()
+    app = RuntimeKpnApplication(name=kpn.name,
+                                kpn_graph=kpn,
+                                mapping=result,
+                                trace_generator=trace,
+                                env=env,)
+    system = RuntimeSystem(platform, [app], env)
+
+    system.simulate()
+
+    exec_time = float(env.now) / 1000000000.0
+    log.info('Best mapping simulated time: ' + str(exec_time) + ' ms')
+
+
+    export_slx_mapping(result,
+                   os.path.join(outdir, 'generated_mapping'),
+                   '2017.10')

@@ -183,11 +183,10 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         else:
             res.append(v)
         log.debug(f"uniform from ball: {res}")
-        print(f"uniform from ball: {res}")
         return res
       
     def uniformFromBall(self,p,r,npoints=1):
-        return self.fromRepresentation(self._uniformFRomBall(p,r,npoints=npoints))
+        return self.fromRepresentation(self._uniformFromBall(p,r,npoints=npoints))
 
     def distance(self,x,y):
         a = np.array(x)
