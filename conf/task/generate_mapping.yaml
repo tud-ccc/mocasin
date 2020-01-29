@@ -1,2 +1,4 @@
-algorithm: genetic_algorithm
+task : generate_mapping
+mapper: random_walk
 objective : runtime
+outdir : ./

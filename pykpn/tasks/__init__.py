@@ -19,7 +19,7 @@ from pykpn.tasks.csv_plot import csv_plot
 from pykpn.tasks.design_centering import dc_task
 from pykpn.tasks.enumerate_equivalent import enumerate_equivalent
 from pykpn.tasks.platform_to_autgrp import platform_to_autgrp
-from pykpn.tasks.generate_mapping import random_walk
+from pykpn.tasks.generate_mapping import generate_mapping
 from pykpn.tasks.simulate import simulate
 from pykpn.tasks.to_dot import kpn_to_dot
 from pykpn.tasks.to_dot import mapping_to_dot

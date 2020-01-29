@@ -5,7 +5,6 @@
 #
 # Authors: Christian Menard, Andres Goens
 
-import random
 import timeit
 import multiprocessing as mp
 import hydra
@@ -14,8 +13,13 @@ import simpy
 from pykpn.mapper.random_mapper import RandomMapping
 from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.simulate.system import RuntimeSystem
+import os
 
 from pykpn.util import logging
+
+from pykpn.slx.mapping import export_slx_mapping
+from pykpn.representations.representations import RepresentationType
+from pykpn.util import plot
 
 log = logging.getLogger(__name__)
 
@@ -84,13 +88,23 @@ class RandomWalkFullMapper(object):
            cfg(~omegaconf.dictconfig.DictConfig): the hydra configuration object
         """
         self.full_mapper = True
-        self.platform = platform
-        self.kpn = kpn
+        self.kpn = hydra.utils.instantiate(config['kpn'])
+        self.platform = hydra.utils.instantiate(config['platform'])
         self.config = config
+        rep_type_str = config['rep_type_str']
+
+
+        if rep_type_str not in dir(RepresentationType):
+            log.exception("Representation " + rep_type_str + " not recognized. Available: " + ", ".join(dir(RepresentationType)))
+            raise RuntimeError('Unrecognized representation.')
+        self.rep_type = RepresentationType[rep_type_str]
+
 
     def generate_mapping(self):
         """ Generates a mapping via a random walk
         """
+        cfg = self.config
+        num_iterations = cfg['num_iterations']
 
         start = timeit.default_timer()
         # Create a list of 'simulations'. These are later executed by multiple
@@ -102,13 +116,13 @@ class RandomWalkFullMapper(object):
 
             # create the application context
             name = self.kpn.name
-            app_context = ApplicationContext(name, kpn)
+            app_context = ApplicationContext(name, self.kpn)
 
             app_context.start_time = 0
 
             # generate a random mapping
-            app_context.representation = RepresentationType[rep_type_str]
-            app_context.mapping = RandomMapping(kpn, platform)
+            app_context.representation = self.rep_type
+            app_context.mapping = RandomMapping(self.kpn, self.platform)
 
             # create the trace reader
             app_context.trace_reader = hydra.utils.instantiate(cfg['trace'])
@@ -145,65 +159,41 @@ class RandomWalkFullMapper(object):
               (len(results), stop - start))
         exec_time = float(best_result.exec_time / 1000000000.0)
         print('Best simulated execution time: %0.1fms' % (exec_time))
-        #generate new mapping if no partial mapping is given
-        if not part_mapping:
-            part_mapping = Mapping(self.kpn, self.platform)
+        # export all mappings if requested
+        idx = 1
+        outdir = cfg['outdir']
+        if cfg['export_all']:
+            for r in results:
+                for ac in r.app_contexts:
+                    mapping_name = '%s.rnd_%08d.mapping' % (ac.name, idx)
+                    # FIXME: We assume an slx output here, this should be configured
+                    export_slx_mapping(ac.mapping,
+                                       os.path.join(outdir, mapping_name),
+                                       '2017.10')
+                idx += 1
 
-        # check if the platform/kpn is equivalent
-        if not part_mapping.platform is self.platform or not part_mapping.kpn is self.kpn:
-            raise RuntimeError('rand_map: Try to map partial mapping of platform,KPN %s,%s to %s,%s',
-                             part_mapping.platform.name, part_mapping.kpn.name, 
-                             self.platform.name, self.kpn.name)
+        # plot result distribution
+        if cfg['plot_distribution']:
+            import matplotlib.pyplot as plt
+            # exec time in milliseconds
+            plt.hist(exec_times, bins=int(cfg['num_iterations'] / 20), density=True)
+            plt.yscale('log', nonposy='clip')
+            plt.title("Mapping Distribution")
+            plt.xlabel("Execution Time [ms]")
+            plt.ylabel("Probability")
+            if cfg['show_plots']:
+                plt.show()
+            plt.savefig("distribution.pdf")
 
-
-        
-        # configure policy of schedulers
-        for s in self.platform.schedulers():
-            i = random.randrange(0, len(s.policies))
-            policy = s.policies[i]
-            info = SchedulerMappingInfo(policy, None)
-            part_mapping.add_scheduler_info(s, info)
-            log.debug('rand_map: configure scheduler %s to use the %s policy',
-                      s.name, policy.name)
-        
-        # map processes
-        processes = part_mapping.get_unmapped_processes()
-        #print("remaining process list: {}".format(processes))
-        for p in processes:
-            i = random.randrange(0, len(self.platform.schedulers()))
-            scheduler = list(self.platform.schedulers())[i]
-            i = random.randrange(0, len(scheduler.processors))
-            affinity = scheduler.processors[i]
-            priority = random.randrange(0, 20)
-            info = ProcessMappingInfo(scheduler, affinity, priority)
-            part_mapping.add_process_info(p, info)
-            log.debug('rand_map: map process %s to scheduler %s and processor %s '
-                      '(priority: %d)', p.name, scheduler.name, affinity.name,
-                      priority)          
-        
-        # map channels
-        channels = part_mapping.get_unmapped_channels()
-        for c in channels:
-            capacity = 4 # fixed channel bound this may cause problems
-            suitable_primitives = []
-            for p in part_mapping.platform.primitives():
-                src = part_mapping.process_info(c.source).affinity
-                sinks = [part_mapping.process_info(s).affinity for s in c.sinks]
-                if p.is_suitable(src, sinks):
-                    suitable_primitives.append(p)
-            if len(suitable_primitives) == 0:
-                raise RuntimeError('rand_map: Mapping failed! No suitable primitive for '
-                                   'communication from %s to %s found!' %
-                                   (src.name, str(sinks)))
-            i = random.randrange(0, len(suitable_primitives))
-            primitive = suitable_primitives[i]
-            info = ChannelMappingInfo(primitive, capacity)
-            part_mapping.add_channel_info(c, info)
-            log.debug('rand_map: map channel %s to the primitive %s and bound to %d '
-                      'tokens' % (c.name, primitive.name, capacity)) 
-
-        # finally check if the mapping is fully specified
-        assert not part_mapping.get_unmapped_processes()
-        assert not part_mapping.get_unmapped_channels()
-        return part_mapping
+        # visualize searched space
+        visualize = cfg['visualize']
+        if cfg['visualize']:
+            if len(results[0].app_contexts) > 1:
+                raise RuntimeError('Search space visualization only works '
+                                   'for single application mappings')
+            mappings = [r.app_contexts[0].mapping for r in results]
+            plot.visualize_mapping_space(mappings,
+                                         exec_times,
+                                         representation_type=self.rep_type,
+                                         show_plot=cfg['show_plots'], )
 
