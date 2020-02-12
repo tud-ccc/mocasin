@@ -12,6 +12,7 @@ from pykpn.simulate.system import RuntimeSystem
 from deap.algorithms import eaMuCommaLambda,eaMuPlusLambda
 import random
 import numpy
+import timeit
 import simpy
 import hydra
 
@@ -53,22 +54,29 @@ class GeneticFullMapper(object):
             if radius > 10000 * self.config['radius']:
                 log.error("Could not mutate mapping")
                 raise RuntimeError("Could not mutate mapping")
+
     def evaluate_mapping(self,mapping):
-        m_obj = self.representation.fromRepresentation(mapping)
-        trace = hydra.utils.instantiate(self.config['trace'])
-        env = simpy.Environment()
-        app = RuntimeKpnApplication(name=self.kpn.name,
-                                kpn_graph=self.kpn,
-                                mapping=m_obj,
-                                trace_generator=trace,
-                                env=env,)
-        system = RuntimeSystem(self.platform, [app], env)
-        system.simulate()
-        exec_time = float(env.now) / 1000000000.0
-        return (exec_time,)
-
-
-
+        tup = tuple(mapping)
+        if tup in self.mapping_cache:
+            return self.mapping_cache[tup],
+        else:
+            self.statistics['mappings_evaluated'] += 1
+            time = timeit.default_timer()
+            m_obj = self.representation.fromRepresentation(mapping)
+            trace = hydra.utils.instantiate(self.config['trace'])
+            env = simpy.Environment()
+            app = RuntimeKpnApplication(name=self.kpn.name,
+                                    kpn_graph=self.kpn,
+                                    mapping=m_obj,
+                                    trace_generator=trace,
+                                    env=env,)
+            system = RuntimeSystem(self.platform, [app], env)
+            system.simulate()
+            exec_time = float(env.now) / 1000000000.0
+            self.mapping_cache[tup] = exec_time
+            time = timeit.default_timer() - time
+            self.statistics['simulation_time'] += time
+            return (exec_time,)
 
     def __init__(self, config):
         """Generates a partial mapping for a given platform and KPN application.
@@ -85,6 +93,8 @@ class GeneticFullMapper(object):
         self.platform = hydra.utils.instantiate(config['platform'])
         self.config = config
         self.random_mapper = RandomPartialMapper(self.kpn,self.platform,config)
+        self.mapping_cache = {}
+        self.statistics = { 'mappings_evaluated' : 0, 'simulation_time' : 0, 'representation_time' : 0}
         rep_type_str = config['representation']
         if rep_type_str not in dir(RepresentationType):
             log.exception("Representation " + rep_type_str + " not recognized. Available: " + ", ".join(
@@ -148,9 +158,12 @@ class GeneticFullMapper(object):
 
         return population,logbook,hof
 
+
     def generate_mapping(self):
         """ Generates a full mapping using a genetic algorithm
         """
         _,_,hof = self.run_genetic_algorithm()
         mapping = hof[0]
+        #log.info(self.statistics)
+        print(self.statistics)
         return self.representation.fromRepresentation(mapping)
