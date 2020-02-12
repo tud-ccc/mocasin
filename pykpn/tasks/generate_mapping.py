@@ -68,18 +68,19 @@ def generate_mapping(cfg):
     platform = hydra.utils.instantiate(cfg['platform'])
     trace = hydra.utils.instantiate(cfg['trace'])
 
-    env = simpy.Environment()
-    app = RuntimeKpnApplication(name=kpn.name,
-                                kpn_graph=kpn,
-                                mapping=result,
-                                trace_generator=trace,
-                                env=env,)
-    system = RuntimeSystem(platform, [app], env)
+    if cfg['simulate_best']:
+        env = simpy.Environment()
+        app = RuntimeKpnApplication(name=kpn.name,
+                                    kpn_graph=kpn,
+                                    mapping=result,
+                                    trace_generator=trace,
+                                    env=env,)
+        system = RuntimeSystem(platform, [app], env)
 
-    system.simulate()
+        system.simulate()
 
-    exec_time = float(env.now) / 1000000000.0
-    log.info('Best mapping simulated time: ' + str(exec_time) + ' ms')
+        exec_time = float(env.now) / 1000000000.0
+        log.info('Best mapping simulated time: ' + str(exec_time) + ' ms')
 
 
     export_slx_mapping(result,

@@ -91,8 +91,9 @@ class GeneticFullMapper(object):
         self.full_mapper = True # flag indicating the mapper type
         self.kpn = hydra.utils.instantiate(config['kpn'])
         self.platform = hydra.utils.instantiate(config['platform'])
+        random.seed(config['random_seed'])
         self.config = config
-        self.random_mapper = RandomPartialMapper(self.kpn,self.platform,config)
+        self.random_mapper = RandomPartialMapper(self.kpn,self.platform,config,seed=None)
         self.mapping_cache = {}
         self.statistics = { 'mappings_evaluated' : 0, 'simulation_time' : 0, 'representation_time' : 0}
         rep_type_str = config['representation']

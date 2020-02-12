@@ -1,4 +1,5 @@
 task : generate_mapping
 mapper : ${mapping.mapper}
+simulate_best : true
 objective : runtime
 outdir : ./
