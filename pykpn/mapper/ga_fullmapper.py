@@ -57,10 +57,14 @@ class GeneticFullMapper(object):
 
     def evaluate_mapping(self,mapping):
         tup = tuple(mapping)
+        log.info(f"evaluating mapping: {tup}...")
         if tup in self.mapping_cache:
+            log.info("... from cache.")
+            self.statistics['mappings_cached'] += 1
             return self.mapping_cache[tup],
         else:
             self.statistics['mappings_evaluated'] += 1
+            log.info("... from simulation.")
             time = timeit.default_timer()
             m_obj = self.representation.fromRepresentation(mapping)
             trace = hydra.utils.instantiate(self.config['trace'])
@@ -88,14 +92,15 @@ class GeneticFullMapper(object):
         :param config: the hyrda configuration
         :type fullGererator: OmniConf
         """
+        random.seed(config['random_seed'])
+        numpy.random.seed(config['random_seed'])
         self.full_mapper = True # flag indicating the mapper type
         self.kpn = hydra.utils.instantiate(config['kpn'])
         self.platform = hydra.utils.instantiate(config['platform'])
-        random.seed(config['random_seed'])
         self.config = config
         self.random_mapper = RandomPartialMapper(self.kpn,self.platform,config,seed=None)
         self.mapping_cache = {}
-        self.statistics = { 'mappings_evaluated' : 0, 'simulation_time' : 0, 'representation_time' : 0}
+        self.statistics = { 'mappings_evaluated' : 0, 'mappings_cached' : 0, 'simulation_time' : 0, 'representation_time' : 0}
         rep_type_str = config['representation']
         if rep_type_str not in dir(RepresentationType):
             log.exception("Representation " + rep_type_str + " not recognized. Available: " + ", ".join(
