@@ -24,9 +24,10 @@ class TgffTraceGenerator(TraceGenerator):
         self._processor_list = processor_list
         self._repetition = repetition
         self._trace_dict = {}
+        self._tgff_graph = tgff_graph
         self._initialize_trace_dict(tgff_graph)
     
-    def next_segment(self, process_name, processor_idx):
+    def next_segment(self, process_name, processor_type):
         """Returns the next trace segment
         
         :param process_name: the name of the specific process 
@@ -38,10 +39,10 @@ class TgffTraceGenerator(TraceGenerator):
         if not process_name in self._trace_dict:
             raise RuntimeError("Unknown specified process!")
         
-        if not processor_idx < len(self._processor_list) and processor_idx >= 0:
+        if not processor_type < len(self._processor_list) and processor_type >= 0:
             raise RuntimeError("Unknown specified processor")
     
-        processor = self._processor_list[processor_idx]
+        processor = self._processor_list[processor_type]
         process = self._trace_dict[process_name]
         segment = TraceSegment()
         
@@ -51,7 +52,7 @@ class TgffTraceGenerator(TraceGenerator):
             if process[1] == len(process[2]):
                 process[0] -= 1
                 process[1] = 0
-                return self.next_segment(process_name, processor_idx)
+                return self.next_segment(process_name, processor_type)
             else:
                 trace_parameter = process[2][process[1]]
                 
@@ -67,6 +68,17 @@ class TgffTraceGenerator(TraceGenerator):
                 process[1] += 1                
         
         return segment
+    
+    def reset(self):
+        """Resets the generator.
+        
+        This method resets the generator to its initial state. 
+        Therefore it is not needed to instantiate a new generator
+        if a trace has to be calculated twice.
+        """
+        self._trace_dict = {}
+        self._initialize_trace_dict(self._tgff_graph)
+        
     
     def _initialize_trace_dict(self, tgff_graph):
         """Initializes an internal structure to keep track 

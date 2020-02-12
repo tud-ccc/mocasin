@@ -77,6 +77,19 @@ class TraceGenerator(object):
         :rtype: TraceSegment or None
         """
         return None
+    
+    def reset(self):
+        """Resets the generator.
+        
+        Resets the generator to its initial state. In this way we
+        can avoid to instantiate a new generator in case a trace
+        has to be calculated multiple times.
+        
+        Returns:
+            None: By default. Nothing should be returned by the
+                implementation of any subclass.
+        """
+        return None
  
 
 class EdgeType(Enum):
