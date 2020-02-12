@@ -292,12 +292,13 @@ class RoundRobinScheduler(RuntimeScheduler):
             #if no process is loaded yet, skip the append to ready queue phase
             pass
         elif cp.check_state(ProcessState.READY):
-            #else append current process at back of ready queue
-            self._ready_queue.append(cp)
+            #else append current process at back of ready queue, it it's not already in there
+            if not cp in self._ready_queue:
+                self._ready_queue.append(cp)
         
         if len(self._ready_queue) > 0:
             #return the first process in the queue and remove it from queue
-            next_process = self._ready_queue.pop(0)
+            next_process = self._ready_queue[0]
             return next_process
         
         #sleep otherwise
