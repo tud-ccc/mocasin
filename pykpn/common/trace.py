@@ -398,6 +398,20 @@ class TraceGraph(nx.DiGraph):
     
     
     def _determine_slowest_access(self, channel_name, channel_mapping, primitive_groups, read_access=True):
+        """Determines communication resource with slowest read/write characteristic.
+        
+        Determines for a given channel, mapped to multiple groups of communication primitives,
+        the resource group which either has slowest read or write access.
+        
+        Args:
+            channel_name (str): The name of the channel.
+            channel_mapping (dict{str : list[int]}: A dictionary which maps the names of channels
+                to a list of ids of hardware groups.
+            primitive_groups (dict{int : list[pykpn.mapper.gbm_fullmapper.DerivedPrimitive]}): A 
+                dictionary which maps the ids of hardware groups to a list of primitives.
+            read_access (bool): States whether the function should determine the cycle count for 
+                a read or write access. Is true by default.
+        """
         static_cost = None
             
         for group_id in channel_mapping[channel_name]:
