@@ -5,16 +5,17 @@
 
 from pykpn.util import logging
 from pykpn.representations.representations import RepresentationType
-from deap import base, creator, tools
 from pykpn.mapper.rand_partialmapper import RandomPartialMapper
 from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.simulate.system import RuntimeSystem
-from deap.algorithms import eaMuCommaLambda,eaMuPlusLambda
+import deap
+from deap import creator,tools,base,algorithms
 import random
-import numpy
+import numpy as np
 import timeit
 import simpy
 import hydra
+import pickle
 
 log = logging.getLogger(__name__)
 
@@ -59,14 +60,13 @@ class GeneticFullMapper(object):
         tup = tuple(mapping)
         log.info(f"evaluating mapping: {tup}...")
         if tup in self.mapping_cache:
-            log.info("... from cache.")
+            log.info(f"... from cache: {self.mapping_cache[tup]}")
             self.statistics['mappings_cached'] += 1
             return self.mapping_cache[tup],
         else:
             self.statistics['mappings_evaluated'] += 1
-            log.info("... from simulation.")
             time = timeit.default_timer()
-            m_obj = self.representation.fromRepresentation(mapping)
+            m_obj = self.representation.fromRepresentation(np.array(tup))
             trace = hydra.utils.instantiate(self.config['trace'])
             env = simpy.Environment()
             app = RuntimeKpnApplication(name=self.kpn.name,
@@ -80,6 +80,7 @@ class GeneticFullMapper(object):
             self.mapping_cache[tup] = exec_time
             time = timeit.default_timer() - time
             self.statistics['simulation_time'] += time
+            log.info(f"... from simulation: {exec_time}.")
             return (exec_time,)
 
     def __init__(self, config):
@@ -93,7 +94,7 @@ class GeneticFullMapper(object):
         :type fullGererator: OmniConf
         """
         random.seed(config['random_seed'])
-        numpy.random.seed(config['random_seed'])
+        np.random.seed(config['random_seed'])
         self.full_mapper = True # flag indicating the mapper type
         self.kpn = hydra.utils.instantiate(config['kpn'])
         self.platform = hydra.utils.instantiate(config['platform'])
@@ -113,25 +114,27 @@ class GeneticFullMapper(object):
             representation = (representation_type.getClassType())(self.kpn, self.platform)
         self.representation = representation
 
-        creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
-        creator.create("Individual", list, fitness=creator.FitnessMin)
-        toolbox = base.Toolbox()
+        if 'FitnessMin' not in deap.creator.__dict__:
+            deap.creator.create("FitnessMin", deap.base.Fitness, weights=(-1.0,))
+        if 'Individual' not in deap.creator.__dict__:
+            deap.creator.create("Individual", list, fitness=deap.creator.FitnessMin)
+        toolbox = deap.base.Toolbox()
         toolbox.register("attribute", random.random)
         toolbox.register("mapping", self.random_mapping)
-        toolbox.register("individual", tools.initIterate, creator.Individual, toolbox.mapping)
-        toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+        toolbox.register("individual", deap.tools.initIterate, deap.creator.Individual, toolbox.mapping)
+        toolbox.register("population", deap.tools.initRepeat, list, toolbox.individual)
         toolbox.register("mate", self.mapping_crossover)
         toolbox.register("mutate", self.mapping_mutation)
         toolbox.register("evaluate", self.evaluate_mapping)
-        toolbox.register("select", tools.selTournament, tournsize=self.config['tournsize'])
+        toolbox.register("select", deap.tools.selTournament, tournsize=self.config['tournsize'])
 
         self.evolutionary_toolbox = toolbox
-        self.hof = tools.HallOfFame(1)
-        stats = tools.Statistics(lambda ind: ind.fitness.values)
-        stats.register("avg", numpy.mean)
-        stats.register("std", numpy.std)
-        stats.register("min", numpy.min)
-        stats.register("max", numpy.max)
+        self.hof = deap.tools.HallOfFame(1)
+        stats = deap.tools.Statistics(lambda ind: ind.fitness.values)
+        stats.register("avg", np.mean)
+        stats.register("std", np.std)
+        stats.register("min", np.min)
+        stats.register("max", np.max)
         self.evolutionary_stats = stats
 
         if config.initials == 'random':
@@ -156,10 +159,10 @@ class GeneticFullMapper(object):
         population = self.population
 
         if self.config.mupluslambda:
-            population, logbook = eaMuPlusLambda(population,toolbox,mu=pop_size,lambda_=3*pop_size,
+            population, logbook = deap.algorithms.eaMuPlusLambda(population,toolbox,mu=pop_size,lambda_=3*pop_size,
                                                   cxpb=cxpb, mutpb=mutpb, ngen=num_gens, stats=stats, halloffame=hof,verbose=verbose)
         else:
-            population, logbook = eaMuCommaLambda(population,toolbox,mu=pop_size,lambda_=3*pop_size,
+            population, logbook = deap.algorithms.eaMuCommaLambda(population,toolbox,mu=pop_size,lambda_=3*pop_size,
                                               cxpb=cxpb, mutpb=mutpb, ngen=num_gens, stats=stats, halloffame=hof,verbose=verbose)
 
         return population,logbook,hof
@@ -168,8 +171,29 @@ class GeneticFullMapper(object):
     def generate_mapping(self):
         """ Generates a full mapping using a genetic algorithm
         """
-        _,_,hof = self.run_genetic_algorithm()
+        _,logbook,hof = self.run_genetic_algorithm()
         mapping = hof[0]
         #log.info(self.statistics)
         print(self.statistics)
-        return self.representation.fromRepresentation(mapping)
+        with open('evolutionary_logbook.pickle','wb') as f:
+            pickle.dump(logbook,f)
+        result = self.representation.fromRepresentation(np.array(mapping))
+        self.cleanup()
+        return result
+    
+    def cleanup(self):
+        print("cleaning up")
+        toolbox = self.evolutionary_toolbox
+        toolbox.unregister("attribute")
+        toolbox.unregister("mapping")
+        toolbox.unregister("individual")
+        toolbox.unregister("population")
+        toolbox.unregister("mate")
+        toolbox.unregister("mutate")
+        toolbox.unregister("evaluate")
+        toolbox.unregister("select")
+        stats = self.evolutionary_stats
+        self.evolutionary_stats = None
+        del stats
+        del deap.creator.FitnessMin
+        del deap.creator.Individual
