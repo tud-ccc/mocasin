@@ -47,7 +47,7 @@ pykpn_tasks = {
 """A dictionary that maps task names to a callable function."""
 
 
-@hydra.main(config_path='../conf/default.yaml')
+@hydra.main(config_path='conf/default.yaml')
 def execute_task(cfg):
     """Executes an individual task as specified in the configuration
 
