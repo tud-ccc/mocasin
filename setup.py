@@ -114,5 +114,6 @@ setup(
         'install': InstallCommand,
         'develop': DevelopCommand,
     },
-    entry_points={'console_scripts': ['pykpn=pykpn.__main__:main']}
+    entry_points={'console_scripts': ['pykpn=pykpn.__main__:main']},
+    include_package_data=True,
 )
