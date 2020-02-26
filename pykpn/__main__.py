@@ -25,10 +25,12 @@ def main():
     See :module:`pykpn.tasks` for a description of how new tasks can be added.
     """
 
-    # If there is an positional argument that is not an assignment, we treat it
-    # as a task.
+    # If there is a positional argument that is not an assignment and comes
+    # before any command (starting with '-'), we treat it as a task.
     for i in range(1, len(sys.argv)):
-        if '=' not in sys.argv[i] and sys.argv[i][0] != '-':
+        if sys.argv[i][0] == '-':
+            break
+        if '=' not in sys.argv[i]:
             sys.argv[i] = "task=%s" % sys.argv[i]
             break
 
@@ -42,4 +44,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
