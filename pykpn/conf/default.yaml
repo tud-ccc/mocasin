@@ -15,3 +15,5 @@ defaults:
   - mapping: random_mapping
   - trace: ${defaults.0.source}/default
   - tgff: default
+  # allow external configurations to append any configurations
+  - append: default
