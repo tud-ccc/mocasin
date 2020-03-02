@@ -22,7 +22,7 @@ def kpn_to_dot(cfg):
         * **dot:** the output file
     """
     kpn = hydra.utils.instantiate(cfg['kpn'])
-    kpn.to_pydot().write_raw(cfg['dot'])
+    kpn.to_pydot().write_raw(cfg['output_file'])
 
 
 def platform_to_dot(cfg):
@@ -41,7 +41,7 @@ def platform_to_dot(cfg):
         * **dot:** the output file
     """
     platform = hydra.utils.instantiate(cfg['platform'])
-    platform.to_pydot().write_raw(cfg['dot'])
+    platform.to_pydot().write_raw(cfg['output_file'])
 
 
 def mapping_to_dot(cfg):
@@ -65,4 +65,4 @@ def mapping_to_dot(cfg):
     kpn = hydra.utils.instantiate(cfg['kpn'])
     platform = hydra.utils.instantiate(cfg['platform'])
     mapping = hydra.utils.instantiate(cfg['mapping'], kpn, platform)
-    mapping.to_pydot().write_raw(cfg['dot'])
+    mapping.to_pydot().write_raw(cfg['output_file'])

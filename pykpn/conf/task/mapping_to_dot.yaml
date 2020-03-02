@@ -1,2 +1,2 @@
 task: mapping_to_dot
-dot: ${mapping.name}.dot
+output_file: ${mapping.name}.dot
