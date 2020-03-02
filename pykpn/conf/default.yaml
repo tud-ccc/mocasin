@@ -8,12 +8,12 @@ log_level : WARNING
 defaults:
   - source: slx
   - representation: SimpleVector
-  - platform: ${defaults.0.source}/default
+  - platform: invalid
   - task: random_walk_mapping
   - hydra/job_logging: pykpn
-  - kpn: ${defaults.0.source}/default
   - mapping: random_mapping
   - trace: ${defaults.0.source}/default
   - tgff: default
+  - kpn: invalid
   # allow external configurations to append any configurations
   - append: default
