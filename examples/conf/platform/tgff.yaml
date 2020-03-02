@@ -1,0 +1,9 @@
+platform:
+  name: 'tgff'
+  type: 'bus'
+  class: pykpn.tgff.tgffSimulation.PlatformFromTgff
+  params:
+    platform_type: ${platform.type}
+    processor: 0
+    file_path: ${tgff.directory}/${tgff.file}
+    amount: 2
