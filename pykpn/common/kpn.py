@@ -103,6 +103,9 @@ class KpnGraph(object):
 
     def processes(self):
         return self._processes.values()
+    
+    def process_names(self):
+        return list(self._processes.keys())
 
     def channels(self):
         return self._channels.values()
