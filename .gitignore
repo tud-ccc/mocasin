@@ -23,7 +23,7 @@ testBench.py
 ontologies/
 *.idea
 outputs
-
+test_bench.py
 
 outputs/
 multirun/
