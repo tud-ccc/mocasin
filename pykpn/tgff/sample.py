@@ -5,8 +5,8 @@
 
 import simpy
 from pykpn.tgff.tgffParser.parser import Parser
-from tgff.tgffSimulation import TgffRuntimeSystem, TgffToKpnGraph
-from pykpn.tgff.tgffGenerators import TgffTraceGenerator
+from pykpn.tgff.tgffSimulation import TgffRuntimeSystem, KpnGraphFromTgff
+from pykpn.tgff.trace import TgffTraceGenerator
 
 '''A simple example script to demonstrate the use of the 
 tgff parser and the corresponding generators.
@@ -16,7 +16,7 @@ def main():
     '''
     tgff_parser = Parser()
     
-    some_graph = TgffToKpnGraph('pykpn/tgff/graphs/auto-indust-cords.tgff', 'TASK_GRAPH_0')
+    some_graph = KpnGraphFromTgff('pykpn/tgff/graphs/auto-indust-cords.tgff', 'TASK_GRAPH_0')
     
     '''Parse a specified file. Result is a list containing following items in specified order:
     [0] tgff graph dict
@@ -35,7 +35,7 @@ def main():
     '''Transfer tgff processors into kpn processors
     '''
     pykpnProcessors = []
-    for processor in tgff_components[1].values():
+    for processor in tgff_components[1]:
         pykpnProcessors.append(processor.to_pykpn_processor())
         
     '''Create a traceGenerator based on the tgff components

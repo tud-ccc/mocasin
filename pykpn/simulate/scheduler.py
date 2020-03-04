@@ -294,6 +294,7 @@ class RoundRobinScheduler(RuntimeScheduler):
         elif cp.check_state(ProcessState.READY):
             #else append current process at back of ready queue
             self._ready_queue.append(cp)
+
         
         if len(self._ready_queue) > 0:
             #return the first process in the queue and remove it from queue
