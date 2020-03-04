@@ -42,7 +42,7 @@ class SchedulerMappingInfo:
     :ivar list[KpnProcess] processes: a list of processes mapped to this
                                       scheduler
     :ivar SchedulingPolicy policy: the policy to be used by the scheduler
-    :ivar param: a paramter that can be used to configure a scheduling policy
+    :ivar param: a parameter that can be used to configure a scheduling policy
     """
     def __init__(self, policy, param):
         self.policy = policy
