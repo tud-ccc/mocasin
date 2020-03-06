@@ -1,0 +1,8 @@
+kpn:
+  name: ???
+  file: ???
+  class: pykpn.slx.kpn.SlxKpnGraph
+  params:
+    name: ${kpn.name}
+    cpngraph: ${kpn.file}
+    slx_version: ${slx.version}
