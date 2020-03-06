@@ -22,15 +22,14 @@ class PykpnSearchPathPlugin(SearchPathPlugin):
     """
 
     def manipulate_search_path(self, search_path):
+        search_path.prepend(
+            provider="pykpn-searchpath-plugin", path="conf/", anchor="main")
+
         # append paths from the environment variable PYKPN_CONF_PATH
         pykpn_conf_path = os.environ.get('PYKPN_CONF_PATH')
-        print(pykpn_conf_path)
         if pykpn_conf_path is not None:
             split = pykpn_conf_path.split(":")
             for path in split:
-                search_path.append(
-                    provider="pykpn-searchpath-plugin", path=path)
-
-        # append conf directory located in CWD
-        search_path.append(
-            provider="pykpn-searchpath-plugin", path="conf/")
+                search_path.prepend(
+                    provider="pykpn-searchpath-plugin", path=path,
+                    anchor="main")
