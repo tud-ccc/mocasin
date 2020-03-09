@@ -1,4 +1,14 @@
-task : design_centering
+defaults:
+  - common
+  - hydra/job_logging: pykpn
+  - slx: default
+  - tgff: default
+  - kpn: default
+  - platform: default
+  - mapping: default
+  - trace: default
+  - representation: default
+
 max_samples : 50
 adapt_samples : 10
 hitting_probability : [0.1, 0.5, 0.6, 0.7, 0.9]
@@ -27,18 +37,4 @@ record_samples : false
 start_time : 0 us
 perturbations_out : perturbation_plot.pdf
 
-# thresholds for app-platform combinations
-#[hog/exynos]
-#threshold : 1200 ms
-#
-#[audio_filter/exynos]
 threshold : 51 ms
-#
-#[audio_filter/parallella]
-#threshold : 280 ms
-#
-#[speaker_recognition/parallella]
-#threshold : 50 ms
-#
-#[speaker_recognition/multidsp]
-#threshold : 181 ms
