@@ -5,7 +5,6 @@ defaults:
   - tgff: default
   - kpn: default
   - platform: default
-  - mapping: default
   - trace: default
   - representation: default
 

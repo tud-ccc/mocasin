@@ -1,4 +1,12 @@
-task : random_walk_mapping
+defaults:
+  - common
+  - hydra/job_logging: pykpn
+  - slx: default
+  - tgff: default
+  - kpn: default
+  - platform: default
+  - trace: default
+
 num_iterations : 100
 jobs : 4
 progress :  true
