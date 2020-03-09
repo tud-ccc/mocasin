@@ -1,2 +1,0 @@
-task : platform_to_dot
-output_file : ${platform.name}.dot
