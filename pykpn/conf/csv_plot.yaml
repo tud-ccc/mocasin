@@ -1,0 +1,12 @@
+defaults:
+  - common
+  - hydra/job_logging: pykpn
+  - slx: default
+  - tgff: default
+  - platform: default
+  - kpn: default
+
+csv_file: ???
+property: "wall_clock_time"
+prefix: 't_'
+suffix: ''
