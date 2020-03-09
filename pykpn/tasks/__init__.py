@@ -24,7 +24,6 @@ from pykpn.tasks.simulate import simulate
 from pykpn.tasks.to_dot import kpn_to_dot
 from pykpn.tasks.to_dot import mapping_to_dot
 from pykpn.tasks.to_dot import platform_to_dot
-from pykpn.tasks.unit_tests import unit_tests
 from pykpn.tasks.visualize import visualize
 
 from pykpn.tgff.tgffSimulation import TgffReferenceError
