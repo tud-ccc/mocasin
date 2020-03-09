@@ -25,22 +25,21 @@ def main():
     See :module:`pykpn.tasks` for a description of how new tasks can be added.
     """
 
-    # If there is a positional argument that is not an assignment and comes
-    # before any command (starting with '-'), we treat it as a task.
-    for i in range(1, len(sys.argv)):
-        if sys.argv[i][0] == '-':
-            break
-        if '=' not in sys.argv[i]:
-            sys.argv[i] = "task=%s" % sys.argv[i]
-            break
+    # We treat the first argument as the task to be executed
+    # and remove it from argv. All other command line arguments are processed
+    # later by hydra.
 
-    # execute the task
+    task = None
+    if len(sys.argv) > 1:
+        task = sys.argv[1]
+        del sys.argv[1]
+
     try:
-        execute_task()
+        execute_task(task)
     except Exception:
         log.error(traceback.format_exc())
         sys.exit(-1)
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)

@@ -11,7 +11,6 @@ To add a new task, write a function within this package and add an entry to the
 expect precisely one parameter, the Omniconf object as created by hydra.
 """
 
-import hydra
 import logging
 import sys
 import textwrap
@@ -93,25 +92,27 @@ def _print_help_impl():
             print("%s%s" % ("{:<24}".format(''), line))
 
 
-@hydra.main(config_path='conf/default.yaml')
-def execute_task(cfg):
+def execute_task(task):
     """Executes an individual task as specified in the configuration
 
     :param cfg: Omniconf object created by hydra decorator
     :return:
     """
-    task = cfg['task']
+
+    if task is None:
+        log.error("ERROR: You need to specify a task!\n")
+        print_help()
+        sys.exit(-1)
 
     if task not in _tasks:
-        log.error("Tried to run a task unknown to pykpn (%s)" % task)
-        print(help)
-        # log.info("Choose one of %s" % list(pykpn_tasks.keys()))
+        log.error("ERROR: Tried to run a task unknown to pykpn (%s)\n" % task)
+        print_help()
         sys.exit(-1)
 
     try:
         # execute the task
         function = _tasks[task][0]
-        function(cfg)
+        function()
     except TgffReferenceError:
         # Special exception indicates a bad combination of tgff components
         # can be thrown during multiruns and should not stop the hydra
