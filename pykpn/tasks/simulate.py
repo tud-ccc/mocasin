@@ -13,6 +13,8 @@ from pykpn.simulate.system import RuntimeSystem
 
 log = logging.getLogger(__name__)
 
+
+@hydra.main(config_path='conf/simulate.yaml')
 def simulate(cfg):
     """Simulate the execution of a KPN application mapped to a platform.
 
