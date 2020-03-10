@@ -134,3 +134,11 @@ Documentation
 
 For more information, please refert to the online documentation:
 https://cc.inf.tu-dresden.de/pykpn/
+
+Running Tests
+-------------
+
+pykpn comes with a set of tests. You can run them as follows:
+```
+python setup.py test
+```
