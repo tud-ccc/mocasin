@@ -70,9 +70,9 @@ class InstallCommand(install):
 class DevelopCommand(develop):
 
     def run(self):
+        develop.run(self)
         self.run_command('pynauty')
         self.run_command('tsne')
-        develop.run(self)
 
 
 setup(
