@@ -11,6 +11,7 @@ To add a new task, write a function within this package and add an entry to the
 expect precisely one parameter, the Omniconf object as created by hydra.
 """
 
+import hydra
 import logging
 import sys
 import textwrap
@@ -31,6 +32,7 @@ from pykpn.tgff.tgffSimulation import TgffReferenceError
 log = logging.getLogger(__name__)
 
 
+@hydra.main(config_path='conf/help.yaml')
 def print_help(cfg=None):
     _print_help_impl()
 
