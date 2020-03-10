@@ -45,7 +45,7 @@ _tasks = {
         "generate a mapping using the design centering algorityh"),
     'enumerate_equivalent': (
         enumerate_equivalent,
-        "ennumerate all mappings equivalent to the given mapping",
+        "ennumerate all mappings equivalent to the given mapping"),
     'help': (
         print_help,
         "Print a help message"),
