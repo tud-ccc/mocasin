@@ -1,2 +1,0 @@
-task : platform_to_dot
-dot : ${platform.name}.dot

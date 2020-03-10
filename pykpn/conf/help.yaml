@@ -1,0 +1,3 @@
+defaults:
+  - common
+  - hydra/job_logging: pykpn

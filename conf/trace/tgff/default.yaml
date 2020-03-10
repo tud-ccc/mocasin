@@ -1,4 +1,0 @@
-trace:
-        class: pykpn.tgff.tgffSimulation.TraceGeneratorWrapper
-        params:
-                file_path: ${tgff.directory}/${tgff.file}

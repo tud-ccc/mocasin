@@ -4,7 +4,7 @@
 # Authors: Christian Menard, Andres Goens
 
 
-from third_party_dependencies.tsne import tsne
+from tsne import tsne
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import cm as cm
