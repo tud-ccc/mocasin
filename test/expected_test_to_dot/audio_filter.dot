@@ -1,0 +1,25 @@
+digraph G {
+process_src [label=src];
+process_fft_l [label=fft_l];
+process_filter_l [label=filter_l];
+process_ifft_l [label=ifft_l];
+process_fft_r [label=fft_r];
+process_filter_r [label=filter_r];
+process_ifft_r [label=ifft_r];
+process_sink [label=sink];
+process_src -> process_fft_l  [label=wave_param_chan];
+process_src -> process_filter_l  [label=wave_param_chan];
+process_src -> process_ifft_l  [label=wave_param_chan];
+process_src -> process_fft_r  [label=wave_param_chan];
+process_src -> process_filter_r  [label=wave_param_chan];
+process_src -> process_ifft_r  [label=wave_param_chan];
+process_src -> process_sink  [label=wave_param_chan];
+process_src -> process_fft_l  [label=src_left];
+process_fft_l -> process_filter_l  [label=fft_coef_left];
+process_filter_l -> process_ifft_l  [label=filtered_coef_left];
+process_ifft_l -> process_sink  [label=sink_left];
+process_src -> process_fft_r  [label=src_right];
+process_fft_r -> process_filter_r  [label=fft_coef_right];
+process_filter_r -> process_ifft_r  [label=filtered_coef_right];
+process_ifft_r -> process_sink  [label=sink_right];
+}
