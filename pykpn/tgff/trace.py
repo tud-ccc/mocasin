@@ -85,7 +85,7 @@ class TgffTraceGenerator(TraceGenerator):
         of the current status for each trace.
         """
         for task in tgff_graph.tasks:
-            self._trace_dict.update({task : [self._repetition, 0, tgff_graph.get_execution_order(task)]})
+            self._trace_dict.update({tgff_graph.identifier+"."+task : [self._repetition, 0, tgff_graph.get_execution_order(task)]})
             
     
     

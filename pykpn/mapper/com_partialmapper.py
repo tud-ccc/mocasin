@@ -38,7 +38,7 @@ class ComPartialMapper(object):
 
         The generated mapping provides a best effort placement of 
         communication structures. If the initial mapping is empty the 
-        process-mapping is rendomly determined.
+        process-mapping is randomly determined.
         
         :param mapping: a partial mapping with placed processes or an empty mapping
         :type mapping: mapping
@@ -94,7 +94,7 @@ class ComPartialMapper(object):
         costs = []
         if len(sinks) == 1:
             for p in primitives:
-               costs.append(p.static_costs(src,sinks[0],channel.token_size))
+                costs.append(p.static_costs(src,sinks[0],channel.token_size))
             return primitives[costs.index(min(costs))]
 
         if len(sinks) > 1:

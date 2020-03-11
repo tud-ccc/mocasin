@@ -5,7 +5,6 @@
 
 import networkx as nx
 from enum import Enum
-from copy import deepcopy
 
 class TraceSegment(object):
     """Represents a segment in a process' execution trace
@@ -150,7 +149,7 @@ class TraceGraph(nx.DiGraph):
                 processor = self._determine_slowest_processor(process_name, process_mapping, processor_groups)
                 
                 try:
-                    current_segment = trace_generator.next_segment(process_name, processor.type)
+                    current_segment = trace_generator.next_segment(kpn.name +"."+process_name, processor.type)
                 except AttributeError:
                     continue
                 last_segment_index = process_dict[process_name][0]
@@ -188,7 +187,7 @@ class TraceGraph(nx.DiGraph):
 
                 #Adding unblock read dependencies
                 if not last_segment == None and not last_segment.write_to_channel is None:
-                    name = last_segment.write_to_channel
+                    name = last_segment.write_to_channel.split('.')[1]
                     read_time = self._determine_slowest_access(name,
                                                                channel_mapping,
                                                                primitive_groups,
@@ -204,7 +203,7 @@ class TraceGraph(nx.DiGraph):
                  
                 #Adding block read dependencies
                 if not current_segment.write_to_channel is None:
-                    name = current_segment.write_to_channel
+                    name = current_segment.write_to_channel.split('.')[1]
                     write_time = self._determine_slowest_access(name,
                                                                 channel_mapping,
                                                                 primitive_groups,
@@ -222,7 +221,7 @@ class TraceGraph(nx.DiGraph):
                 
                 #Adding read after compute dependencies
                 if not current_segment.read_from_channel is None:
-                    name = current_segment.read_from_channel
+                    name = current_segment.read_from_channel.split('.')[1]
                     write_time = self._determine_slowest_access(name,
                                                                 channel_mapping,
                                                                 primitive_groups,

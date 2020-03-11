@@ -42,7 +42,7 @@ class SchedulerMappingInfo:
     :ivar list[KpnProcess] processes: a list of processes mapped to this
                                       scheduler
     :ivar SchedulingPolicy policy: the policy to be used by the scheduler
-    :ivar param: a paramter that can be used to configure a scheduling policy
+    :ivar param: a parameter that can be used to configure a scheduling policy
     """
     def __init__(self, policy, param):
         self.policy = policy
@@ -144,17 +144,6 @@ class Mapping:
    #     # filter all channels with name is partof list
    #     unmapped_schedulers = dict(filter(lambda s: s[1] is None, self._scheduler_info.items())).keys()
    #     return list(filter(lambda s: s.name in unmapped_schedulerss, self.kpn.schedulers()))
-
-    def get_unmapped_channels(self):
-        """Returns a list of unmapped channels
-        
-        :returns: List of unmapped channels
-        :rtype: List[Channels]
-        """
-        log.debug("mapping remaining channels: {}".format(dict(filter(lambda c: c[1] is None, self._channel_info.items())).keys()))
-        # filter all channels with name is partof list
-        unmapped_channels = dict(filter(lambda c: c[1] is None, self._channel_info.items())).keys()
-        return list(filter(lambda c: c.name in unmapped_channels, self.kpn.channels()))
     
     def get_unmapped_processes(self):
         """Returns a list of unmapped processes
