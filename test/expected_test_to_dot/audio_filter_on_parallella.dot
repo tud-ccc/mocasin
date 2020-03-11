@@ -1,0 +1,228 @@
+digraph G {
+subgraph cluster_scheduler_sch_Linux {
+label=sch_Linux;
+subgraph cluster_processor_ARM0 {
+label=ARM0;
+dummy_ARM0 [style=invis];
+process_ifft_l [label=ifft_l];
+process_ifft_r [label=ifft_r];
+}
+
+subgraph cluster_processor_ARM1 {
+label=ARM1;
+dummy_ARM1 [style=invis];
+}
+
+}
+
+subgraph cluster_scheduler_sch_E00 {
+label=sch_E00;
+subgraph cluster_processor_E00 {
+label=E00;
+dummy_E00 [style=invis];
+process_src [label=src];
+}
+
+}
+
+subgraph cluster_scheduler_sch_E01 {
+label=sch_E01;
+subgraph cluster_processor_E01 {
+label=E01;
+dummy_E01 [style=invis];
+process_fft_l [label=fft_l];
+}
+
+}
+
+subgraph cluster_scheduler_sch_E02 {
+label=sch_E02;
+subgraph cluster_processor_E02 {
+label=E02;
+dummy_E02 [style=invis];
+process_fft_r [label=fft_r];
+}
+
+}
+
+subgraph cluster_scheduler_sch_E03 {
+label=sch_E03;
+subgraph cluster_processor_E03 {
+label=E03;
+dummy_E03 [style=invis];
+process_filter_l [label=filter_l];
+}
+
+}
+
+subgraph cluster_scheduler_sch_E04 {
+label=sch_E04;
+subgraph cluster_processor_E04 {
+label=E04;
+dummy_E04 [style=invis];
+process_filter_r [label=filter_r];
+}
+
+}
+
+subgraph cluster_scheduler_sch_E05 {
+label=sch_E05;
+subgraph cluster_processor_E05 {
+label=E05;
+dummy_E05 [style=invis];
+process_sink [label=sink];
+}
+
+}
+
+subgraph cluster_scheduler_sch_E06 {
+label=sch_E06;
+subgraph cluster_processor_E06 {
+label=E06;
+dummy_E06 [style=invis];
+}
+
+}
+
+subgraph cluster_scheduler_sch_E07 {
+label=sch_E07;
+subgraph cluster_processor_E07 {
+label=E07;
+dummy_E07 [style=invis];
+}
+
+}
+
+subgraph cluster_scheduler_sch_E08 {
+label=sch_E08;
+subgraph cluster_processor_E08 {
+label=E08;
+dummy_E08 [style=invis];
+}
+
+}
+
+subgraph cluster_scheduler_sch_E09 {
+label=sch_E09;
+subgraph cluster_processor_E09 {
+label=E09;
+dummy_E09 [style=invis];
+}
+
+}
+
+subgraph cluster_scheduler_sch_E10 {
+label=sch_E10;
+subgraph cluster_processor_E10 {
+label=E10;
+dummy_E10 [style=invis];
+}
+
+}
+
+subgraph cluster_scheduler_sch_E11 {
+label=sch_E11;
+subgraph cluster_processor_E11 {
+label=E11;
+dummy_E11 [style=invis];
+}
+
+}
+
+subgraph cluster_scheduler_sch_E12 {
+label=sch_E12;
+subgraph cluster_processor_E12 {
+label=E12;
+dummy_E12 [style=invis];
+}
+
+}
+
+subgraph cluster_scheduler_sch_E13 {
+label=sch_E13;
+subgraph cluster_processor_E13 {
+label=E13;
+dummy_E13 [style=invis];
+}
+
+}
+
+subgraph cluster_scheduler_sch_E14 {
+label=sch_E14;
+subgraph cluster_processor_E14 {
+label=E14;
+dummy_E14 [style=invis];
+}
+
+}
+
+subgraph cluster_scheduler_sch_E15 {
+label=sch_E15;
+subgraph cluster_processor_E15 {
+label=E15;
+dummy_E15 [style=invis];
+}
+
+}
+
+primitive_EMEM [label=EMEM];
+primitive_hostToHostCached [label=hostToHostCached];
+primitive_meshDirect_E00 [label=meshDirect_E00];
+primitive_meshDirect_E01 [label=meshDirect_E01];
+primitive_meshDirect_E02 [label=meshDirect_E02];
+primitive_meshDirect_E03 [label=meshDirect_E03];
+primitive_meshDirect_E04 [label=meshDirect_E04];
+primitive_meshDirect_E05 [label=meshDirect_E05];
+primitive_meshDirect_E06 [label=meshDirect_E06];
+primitive_meshDirect_E07 [label=meshDirect_E07];
+primitive_meshDirect_E08 [label=meshDirect_E08];
+primitive_meshDirect_E09 [label=meshDirect_E09];
+primitive_meshDirect_E10 [label=meshDirect_E10];
+primitive_meshDirect_E11 [label=meshDirect_E11];
+primitive_meshDirect_E12 [label=meshDirect_E12];
+primitive_meshDirect_E13 [label=meshDirect_E13];
+primitive_meshDirect_E14 [label=meshDirect_E14];
+primitive_meshDirect_E15 [label=meshDirect_E15];
+channel_wave_param_chan [label=wave_param_chan, shape=diamond];
+process_src -> channel_wave_param_chan  [minlen=4];
+channel_wave_param_chan -> process_fft_l  [minlen=4];
+channel_wave_param_chan -> process_filter_l  [minlen=4];
+channel_wave_param_chan -> process_ifft_l  [minlen=4];
+channel_wave_param_chan -> process_fft_r  [minlen=4];
+channel_wave_param_chan -> process_filter_r  [minlen=4];
+channel_wave_param_chan -> process_ifft_r  [minlen=4];
+channel_wave_param_chan -> process_sink  [minlen=4];
+channel_wave_param_chan -> primitive_EMEM  [arrowhead=none, style=dashed];
+channel_src_left [label=src_left, shape=diamond];
+process_src -> channel_src_left  [minlen=4];
+channel_src_left -> process_fft_l  [minlen=4];
+channel_src_left -> primitive_meshDirect_E00  [arrowhead=none, style=dashed];
+channel_fft_coef_left [label=fft_coef_left, shape=diamond];
+process_fft_l -> channel_fft_coef_left  [minlen=4];
+channel_fft_coef_left -> process_filter_l  [minlen=4];
+channel_fft_coef_left -> primitive_meshDirect_E01  [arrowhead=none, style=dashed];
+channel_filtered_coef_left [label=filtered_coef_left, shape=diamond];
+process_filter_l -> channel_filtered_coef_left  [minlen=4];
+channel_filtered_coef_left -> process_ifft_l  [minlen=4];
+channel_filtered_coef_left -> primitive_EMEM  [arrowhead=none, style=dashed];
+channel_sink_left [label=sink_left, shape=diamond];
+process_ifft_l -> channel_sink_left  [minlen=4];
+channel_sink_left -> process_sink  [minlen=4];
+channel_sink_left -> primitive_EMEM  [arrowhead=none, style=dashed];
+channel_src_right [label=src_right, shape=diamond];
+process_src -> channel_src_right  [minlen=4];
+channel_src_right -> process_fft_r  [minlen=4];
+channel_src_right -> primitive_meshDirect_E00  [arrowhead=none, style=dashed];
+channel_fft_coef_right [label=fft_coef_right, shape=diamond];
+process_fft_r -> channel_fft_coef_right  [minlen=4];
+channel_fft_coef_right -> process_filter_r  [minlen=4];
+channel_fft_coef_right -> primitive_meshDirect_E02  [arrowhead=none, style=dashed];
+channel_filtered_coef_right [label=filtered_coef_right, shape=diamond];
+process_filter_r -> channel_filtered_coef_right  [minlen=4];
+channel_filtered_coef_right -> process_ifft_r  [minlen=4];
+channel_filtered_coef_right -> primitive_EMEM  [arrowhead=none, style=dashed];
+channel_sink_right [label=sink_right, shape=diamond];
+process_ifft_r -> channel_sink_right  [minlen=4];
+channel_sink_right -> process_sink  [minlen=4];
+channel_sink_right -> primitive_EMEM  [arrowhead=none, style=dashed];
+}

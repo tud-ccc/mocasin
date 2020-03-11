@@ -1,0 +1,13 @@
+digraph G {
+process_src [label=src];
+process_can1 [label=can1];
+process_fp [label=fp];
+process_can2 [label=can2];
+process_pulse [label=pulse];
+process_sink [label=sink];
+process_src -> process_can1  [label=a0_0];
+process_can1 -> process_fp  [label=a0_1];
+process_fp -> process_can2  [label=a0_1_0];
+process_can2 -> process_pulse  [label=a0_2];
+process_pulse -> process_sink  [label=a0_3];
+}
