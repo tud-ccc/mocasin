@@ -1,7 +1,7 @@
-# Copyright (C) 2017 TU Dresden
+# Copyright (C) 2017-2019 TU Dresden
 # All Rights Reserved
 #
-# Authors: Christian Menard
+# Authors: Christian Menard, Andres Goens
 
 
 import configparser
@@ -17,7 +17,8 @@ log = logging.getLogger(__name__)
 
 
 class SlxApplicationConfig:
-    """INI parser for application sections
+    """INI parser for application sections.
+
 
     :ivar str name: application name
     :ivar str mapping_xml: path to the mapping descriptor
@@ -73,27 +74,54 @@ class SlxSimulationConfig:
     :type applications: list[SlxApplicationConfig]
     """
 
-    def __init__(self, config_file):
+    def __init__(self, config_file=None, config_dict=None):
         """Initialize config object by parsing an INI file.
 
         :param str config_file: configuration file to be parsed
+        :param str config_dict: configuration dictionary: overides values from configuration file
         """
 
-        # read the ini file
-        conf = configparser.ConfigParser()
-        conf.read(config_file)
+        if config_file == None and config_dict == None:
+            log.error("No configuration supplied.")
 
-        # parse the ini version
-        version = conf['simulation']['slx_version']
-        self.slx_version = version
+        # read the ini file
+        if not config_file is None:
+            conf = configparser.ConfigParser()
+            conf.read(config_file)
+
+            # parse the ini version
+            version = conf['simulation']['slx_version']
+            self.slx_version = version
+        if not config_dict is None:
+            if 'slx_version' in config_dict:
+                self.slx_version = config_dict['slx_version']
+            else:
+                if config_file is None:
+                    log.error("Incomplete configuration. Missing slx_version")
+
+
 
         # parse the platform
-        if 'platform' in conf['simulation']:
-            platform = conf['simulation']['platform']
+        platform = None
+        if not config_file is None:
+            if 'platform' in conf['simulation']:
+                platform = conf['simulation']['platform']
+        if not config_dict is None:
+            if 'platform' in config_dict:
+                platform = config_dict['platform']
+
+        if not platform is None:
             self.platform_class = getattr(pykpn.platforms, platform)
             self.platform_xml = None
+
         else:
-            platform_xml = conf['simulation']['platform_xml']
+            if not config_file is None:
+                platform_xml = conf['simulation']['platform_xml']
+            if not config_dict is None:
+                if 'platform_xml' in config_dict:
+                    platform_xml = config_dict['platform_xml']
+
+            print(os.getcwd())
             if not os.path.isfile(platform_xml):
                 raise ValueError('The platform description does not exist: %s' %
                                  platform_xml)
@@ -101,7 +129,13 @@ class SlxSimulationConfig:
             self.platform_class = None
 
         # parse all applications
-        app_names = conf['simulation']['applications'].split(",")
-        self.applications = []
-        for an in app_names:
-            self.applications.append(SlxApplicationConfig(an, conf))
+        if not config_file is None:
+            #legacy multi-app:
+            app_names = conf['simulation']['applications'].split(",")
+            self.applications = []
+            for an in app_names:
+                self.applications.append(SlxApplicationConfig(an, conf))
+        if not config_dict is None and 'app_name' in config_dict:
+            dummy_conf = {config_dict['app_name']: config_dict}
+            #hydra: single-app per execution
+            self.applications = [SlxApplicationConfig(config_dict['app_name'],dummy_conf)]

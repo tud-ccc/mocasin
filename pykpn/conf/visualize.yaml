@@ -1,0 +1,12 @@
+defaults:
+  - common
+  - hydra/job_logging: pykpn
+  - slx: default
+  - tgff: default
+  - kpn: default
+  - platform: default
+  - mapping: default
+
+task_names: True
+width: 800
+height: 600

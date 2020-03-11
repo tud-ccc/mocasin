@@ -1,0 +1,4 @@
+# XXX: This is required as a workaround.
+# Placing this directly in platform_to_dot.yaml leads to a recursion error...
+
+output_file: "${platform.name}.dot"

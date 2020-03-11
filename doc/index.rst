@@ -8,7 +8,6 @@ Welcome to pykpn's documentation!
    getting_started
    documentation
    testing
-   logging
    ci
    api/modules
    scripts/modules

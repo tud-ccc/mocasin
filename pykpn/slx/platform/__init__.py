@@ -15,12 +15,12 @@ log = logging.getLogger(__name__)
 
 class SlxPlatform(Platform):
 
-    def __init__(self, name, xml_path, version):
+    def __init__(self, name, platform_xml, slx_version):
         super().__init__(name)
         log.info('start parsing the platform description')
-        if (version == '2017.04' or version == '2017.10'):
-            xml_platform = parse_2017_04(xml_path, True)
+        if (slx_version == '2017.04' or slx_version == '2017.10'):
+            xml_platform = parse_2017_04(platform_xml, True)
             convert_2017_04(self, xml_platform)
         else:
-            raise RuntimeError('SLX version %s is not supported!' % version)
+            raise RuntimeError('SLX version %s is not supported!' % slx_version)
         log.info('done parsing the platform description')

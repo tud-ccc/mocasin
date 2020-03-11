@@ -1,0 +1,7 @@
+kpn:
+  name: hog
+  class: pykpn.slx.kpn.SlxKpnGraph
+  params:
+    name: ${kpn.name}
+    cpngraph: ../../../slx/app/${kpn.name}/${kpn.name}.cpn.xml
+    slx_version: '2017.10'

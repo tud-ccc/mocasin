@@ -34,10 +34,32 @@ class InstallPynautyCommand(distutils.cmd.Command):
                               cwd="third_party_dependencies/pynauty-0.6")
 
 
+class InstallTsneCommand(distutils.cmd.Command):
+    """A custom command to install the tsne dependency"""
+
+    description = "install the tsne dependency"
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        """Run the command.
+
+        Run ``python setup.py install`` to install tsne.
+        """
+        subprocess.check_call(["python", "setup.py", "install"],
+                              cwd="third_party_dependencies/tsne")
+
+
 class InstallCommand(install):
 
     def run(self):
         self.run_command('pynauty')
+        self.run_command('tsne')
         # XXX Actually install.run(self) should be used here. But there seems
         # to be a bug in setuptools that skips installing the required
         # packages... The line below seems to fix this.
@@ -48,8 +70,9 @@ class InstallCommand(install):
 class DevelopCommand(develop):
 
     def run(self):
-        self.run_command('pynauty')
         develop.run(self)
+        self.run_command('pynauty')
+        self.run_command('tsne')
 
 
 setup(
@@ -70,6 +93,8 @@ setup(
         'simpy',
         'termcolor',
         'tqdm',
+        'hydra-core',
+        'deap',
     ],
     setup_requires=['pytest-runner', 'sphinx', 'numpy<1.16'],
     tests_require=['pytest', 'pytest_mock'],
@@ -85,7 +110,10 @@ setup(
     cmdclass={
         'doc': BuildDocCommand,
         'pynauty': InstallPynautyCommand,
+        'tsne': InstallTsneCommand,
         'install': InstallCommand,
         'develop': DevelopCommand,
     },
+    entry_points={'console_scripts': ['pykpn=pykpn.__main__:main']},
+    include_package_data=True,
 )

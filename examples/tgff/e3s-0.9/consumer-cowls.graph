@@ -1,0 +1,55 @@
+@HYPERPERIOD 6
+
+@COMMUN_QUANT 0 {
+0  2E6
+1  6E6
+2  1E6
+}
+
+@TASK_GRAPH 0 {
+PERIOD 2
+
+TASK src TYPE 45 host 0
+
+TASK filt-r TYPE 39 host 1
+TASK filt-g TYPE 39 host 1
+TASK filt-b TYPE 39 host 1
+
+TASK rgb-yiq TYPE 41 host 1
+TASK cjpeg TYPE 37 host 1
+TASK sink TYPE 45 host 2
+
+ARC a0_1 FROM src TO filt-r TYPE 0
+ARC a0_2 FROM src TO filt-g TYPE 0
+ARC a0_3 FROM src TO filt-b TYPE 0
+
+ARC a0_4 FROM filt-r TO rgb-yiq TYPE 0
+ARC a0_5 FROM filt-g TO rgb-yiq TYPE 0
+ARC a0_6 FROM filt-b TO rgb-yiq TYPE 0
+
+ARC a0_7 FROM rgb-yiq TO cjpeg TYPE 1
+ARC a0_8 FROM cjpeg TO sink TYPE 2
+
+HARD_DEADLINE d0_0 ON sink AT 2.5
+SOFT_DEADLINE d0_1 ON sink AT 0.1
+}
+
+@TASK_GRAPH 1 {
+PERIOD 6
+
+TASK src TYPE 45 host 2
+TASK djpeg TYPE 38 host 1
+TASK display TYPE 45 host 0
+TASK rgb-cymk TYPE 40 host 1
+TASK print TYPE 45 host 2
+
+ARC a1_0 FROM src TO djpeg TYPE 2
+ARC a1_1 FROM djpeg TO display TYPE 1
+ARC a1_2 FROM djpeg TO rgb-cymk TYPE 1
+ARC a1_3 FROM rgb-cymk TO print TYPE 1
+
+HARD_DEADLINE d1_0 ON display AT 15
+HARD_DEADLINE d1_1 ON print AT 15
+SOFT_DEADLINE d1_2 ON display AT 1
+SOFT_DEADLINE d1_3 ON print AT 5
+}

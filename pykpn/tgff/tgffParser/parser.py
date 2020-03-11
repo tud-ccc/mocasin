@@ -4,6 +4,7 @@
 # Authors: Felix Teweleit
 
 import argparse
+import os
 from pykpn.util import logging
 from pykpn.tgff.tgffParser import regEx as expr
 from pykpn.tgff.tgffParser.dataStructures import TgffProcessor, TgffGraph, TgffLink
@@ -24,7 +25,7 @@ class Parser():
         self.std_link_dict = {}
         self.prim_link_dict = {}
         self.task_graph_dict = {}
-        self.processor_dict= {}
+        self.processor_list= []
         
         self.common_components = { 
             'comment' : expr.comment(),
@@ -76,11 +77,12 @@ class Parser():
     [3]:    dictionary of all Links
     
     :rtype: tuple(  dict{string : TgffGraph},
-                    dict{int : dict{int : float}},
-                    dict{string : TgffProcessor},
-                    dict{string : TgffLink} )
+                    list[TgffProcessor],
+                    dict{string : TgffLink},
+                    dict{int : dict{int : float}})
     """
     def parse_file(self, file_path):
+        print(os.getcwd())
         with open(file_path, 'r') as file:
             last_missmatch = None
             current_line  = file.readline()
@@ -107,7 +109,7 @@ class Parser():
                 current_line = file.readline()
         
         self.logger.info('Finished parsing')
-        return (self.task_graph_dict, self.processor_dict, self.std_link_dict, self.quantity_dict)
+        return (self.task_graph_dict, self.processor_list, self.std_link_dict, self.quantity_dict)
     
     def _parse_task_graph(self, file, match):
         identifier = 'TASK_GRAPH_' + (match.group('identifier'))
@@ -266,16 +268,8 @@ class Parser():
             current_line = file.readline()
             
         self.logger.info('Added to processor dict: ' + str(identifier))
-        if last_missmatch[0] != 'comment':
-            self.processor_dict.update( {identifier : TgffProcessor(identifier, operations)} )
-        else:
-            comment = last_missmatch[1].group('comment').split()
-            processor_type = comment[0]
-            
-            if len(comment) > 1:
-                for i in range(1, len(comment)):
-                    processor_type += '_' + comment[i]
-            self.processor_dict.update( {identifier : TgffProcessor(identifier, operations, processor_type=processor_type)} )
+        
+        self.processor_list.append(TgffProcessor(identifier, operations, processor_type=len(self.processor_list)))
     
     def _add_properties(self, properties, match):
         self.logger.debug('Parsed processor properties')

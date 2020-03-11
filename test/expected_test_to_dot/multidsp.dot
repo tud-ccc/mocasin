@@ -1,0 +1,38 @@
+strict digraph G {
+subgraph cluster_scheduler_sched_dsp0 {
+label=sched_dsp0;
+processor_dsp0 [label=dsp0, shape=square];
+}
+
+subgraph cluster_scheduler_sched_dsp1 {
+label=sched_dsp1;
+processor_dsp1 [label=dsp1, shape=square];
+}
+
+subgraph cluster_scheduler_sched_dsp2 {
+label=sched_dsp2;
+processor_dsp2 [label=dsp2, shape=square];
+}
+
+subgraph cluster_scheduler_sched_dsp3 {
+label=sched_dsp3;
+processor_dsp3 [label=dsp3, shape=square];
+}
+
+subgraph cluster_scheduler_sched_dsp4 {
+label=sched_dsp4;
+processor_dsp4 [label=dsp4, shape=square];
+}
+
+primitive_comm_cp_shared_shared_memory [label=comm_cp_shared_shared_memory];
+processor_dsp0 -> primitive_comm_cp_shared_shared_memory  [minlen=5.605170185988092];
+processor_dsp1 -> primitive_comm_cp_shared_shared_memory  [minlen=5.605170185988092];
+processor_dsp2 -> primitive_comm_cp_shared_shared_memory  [minlen=5.605170185988092];
+processor_dsp3 -> primitive_comm_cp_shared_shared_memory  [minlen=5.605170185988092];
+processor_dsp4 -> primitive_comm_cp_shared_shared_memory  [minlen=5.605170185988092];
+primitive_comm_cp_shared_shared_memory -> processor_dsp0  [minlen=5.605170185988092];
+primitive_comm_cp_shared_shared_memory -> processor_dsp1  [minlen=5.605170185988092];
+primitive_comm_cp_shared_shared_memory -> processor_dsp2  [minlen=5.605170185988092];
+primitive_comm_cp_shared_shared_memory -> processor_dsp3  [minlen=5.605170185988092];
+primitive_comm_cp_shared_shared_memory -> processor_dsp4  [minlen=5.605170185988092];
+}

@@ -81,9 +81,10 @@ class PertubationGenerator(object):
 	return m.sqrt(dist_euc)
 
     @staticmethod
-    def gen_random_mapping(s):
+    def gen_random_mapping(s=None):
         """ Generates a random mapping """
-        rand.seed(s)
+        if s is not None:
+            rand.seed(s)
 	return [rand.randint(0,15),
 	        rand.randint(0,15),
 		rand.randint(0,15),
@@ -96,10 +97,11 @@ class PertubationGenerator(object):
 		rand.randint(0,15)]
 
     @staticmethod
-    def gen_mappingForDist(s, dist, mapping_in):
+    def gen_mappingForDist(dist, mapping_in, s = None):
         """Retrun a new mapping for a given distance"""
 	m = cp.deepcopy(mapping_in)
-        rand.seed(s)
+        if s is not None:
+            rand.seed(s)
 
         #print mapping_in
 	#print dist
@@ -118,7 +120,7 @@ class PertubationGenerator(object):
         return m
 
     @staticmethod
-    def singleCoreMove(mapping, s):
+    def singleCoreMove(mapping, s=None):
         """ Takes a core at a random position of the mapping vector and maps it, 
 	    and all other occurece of this core, to one random other core.
 	    
@@ -128,14 +130,15 @@ class PertubationGenerator(object):
 	    Returns:
 	        The modified mapping vector
 	"""
-        rand.seed(s)
+        if s is not None:
+            rand.seed(s)
         t = rand.randint(0, conf.max_pe) # random target core
 	r = mapping[rand.randint(0, conf.num_pr-1)] # takes core from random vector position
 	new_mapping = [x if x != r else t for x in mapping] # replace this core(s)
         return new_mapping
     
     @staticmethod
-    def singleCoreArchMove(mapping, s):
+    def singleCoreArchMove(mapping, s=None):
         """ Takes a core at a random position of the mapping vector and maps it to a adjacent core 
 	    (according to the given architecture).
 	    
@@ -145,21 +148,22 @@ class PertubationGenerator(object):
 	    Returns:
 	        The modified mapping vector
 	"""
-	m = cp.deepcopy(mapping)
-        rand.seed(s)
-	idx = rand.randint(0, conf.num_pr-1)
-	r = mapping[idx] # takes core from random vector position
-	if (r == 3):
-	    m[idx] = r + 4 # replace this core with a neighbouring core
-	elif (r == 7):
-	    m[idx] = r + 4 # replace this core with a neighbouring core
-	elif (r == 11):
-	    m[idx] = r + 4 # replace this core with a neighbouring core
-	elif (r == 15):
-	    m[idx] = r - 1 # replace this core with a neighbouring core
-	else:
-	    m[idx] = r + 1 # replace this core with a neighbouring core
-        return m
+        m = cp.deepcopy(mapping)
+        if s is not None:
+            rand.seed(s)
+    idx = rand.randint(0, conf.num_pr-1)
+    r = mapping[idx] # takes core from random vector position
+    if (r == 3):
+        m[idx] = r + 4 # replace this core with a neighbouring core
+    elif (r == 7):
+        m[idx] = r + 4 # replace this core with a neighbouring core
+    elif (r == 11):
+        m[idx] = r + 4 # replace this core with a neighbouring core
+    elif (r == 15):
+        m[idx] = r - 1 # replace this core with a neighbouring core
+    else:
+        m[idx] = r + 1 # replace this core with a neighbouring core
+            return m
     
     @staticmethod
     def multiCoreMove(mapping, s, n):
@@ -171,16 +175,16 @@ class PertubationGenerator(object):
         return mapping
 	
     @staticmethod
-    def doubleCoreArchMove(mapping, s):
-        return PertubationGenerator.multiCoreMove(mapping, s, 2)
+    def doubleCoreArchMove(mapping):
+        return PertubationGenerator.multiCoreMove(mapping,2)
     
     @staticmethod
-    def tripleCoreArchMove(mapping, s):
-        return PertubationGenerator.multiCoreMove(mapping, s, 3)
+    def tripleCoreArchMove(mapping):
+        return PertubationGenerator.multiCoreMove(mapping, 3)
     
     @staticmethod
-    def quadCoreArchMove(mapping, s):
-        return PertubationGenerator.multiCoreMove(mapping, s, 4)
+    def quadCoreArchMove(mapping):
+        return PertubationGenerator.multiCoreMove(mapping, 4)
     
     @staticmethod
     def read_logs(value_class, file_name):
@@ -225,7 +229,7 @@ class PertubationGenerator(object):
        for i in range(1,2):
             testrange = i * 2
             for j in range(0,testrange):
-                mapping = PertubationGenerator.gen_mappingForDist(j+42, i, start)
+                mapping = PertubationGenerator.gen_mappingForDist(i, start)
 		#if mapping in log_db
                 #print mapping
 		#print mapping
@@ -272,15 +276,15 @@ def main(argv):
    try:
       opts, args = getopt.getopt(argv,"hpsc")
    except getopt.GetoptError:
-      print 'pertubation.py [-h|-p|-s|-c [<mapping>]]'
+      print('pertubation.py [-h|-p|-s|-c [<mapping>]]')
       sys.exit(2)
    if opts == []:
-      print 'pertubation.py [-h|-p|-s|-c [<mapping>]]'
+      print('pertubation.py [-h|-p|-s|-c [<mapping>]]')
    for opt, arg in opts:
       if opt == '-h':
-         print 'pertubation.py [-h|-p|-s|-c [<mapping>]]'
+         print('pertubation.py [-h|-p|-s|-c [<mapping>]]')
          sys.exit()
-      elif opt == '-p': #pertubation
+      alif opt == '-p': #pertubation
          pert = 1
       elif opt == '-s': #scatter diagram
          scat = 1
@@ -300,9 +304,9 @@ def main(argv):
        mapgen = mu.PartialMapper(conf.default_path)
 
        if (len(mapping) > conf.num_pr):
-	   print mapgen.extmap2map(mapping)
+	   print(mapgen.extmap2map(mapping))
        else:
-	   print mapgen.map2extmap(mapping)
+	   print(mapgen.map2extmap(mapping))
 
        return
    
@@ -343,7 +347,7 @@ def main(argv):
            # run parallel oracle
            #print mapping_q
            res_q = delphi.run_oracle_parallel(mapping_q, len(conf.pertubations))
-	   print res_q
+	   print(res_q)
            
            for res in res_q:
                if (conf.threshold > res):
@@ -353,7 +357,7 @@ def main(argv):
            logging.debug("-------------------------")
 
        
-       print results
+       print(results)
 
 
 
@@ -361,7 +365,7 @@ def main(argv):
 
 
        results.sort()
-       print results
+       print(results)
 
        p.bar_chart(dc, results, x_len=len(conf.test_set))
 
