@@ -5,7 +5,6 @@
 
 import networkx as nx
 from enum import Enum
-from simulate.test.conftest import channel
 from copy import deepcopy
 
 class TraceSegment(object):

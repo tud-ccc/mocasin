@@ -1,6 +1,7 @@
-# Authors: Gerald Hempel
+# Authors: Gerald Hempel, Andres Goens
 
 import random
+import hydra
 
 from pykpn.util import logging
 from pykpn.common.mapping import (ChannelMappingInfo, Mapping,
@@ -8,8 +9,9 @@ from pykpn.common.mapping import (ChannelMappingInfo, Mapping,
 
 log = logging.getLogger(__name__)
 
+
 class RandomPartialMapper(object):
-    """Generates a full random mapping
+    """Generates a random mapping
 
     This class is used to generate a random mapping for a given
     platform and KPN application. 
@@ -108,3 +110,13 @@ class RandomPartialMapper(object):
         assert not part_mapping.get_unmapped_channels()
         return part_mapping
 
+
+class RandomFullMapper(RandomPartialMapper):
+    """Generates a random mapping
+    This class is a FullMapper wrapper
+    for RandomPartialMapper.
+    """
+    def __init__(self,config):
+        kpn = hydra.utils.instantiate(config['kpn'])
+        platform = hydra.utils.instantiate(config['platform'])
+        super().__init__(kpn, platform, config, seed=None)

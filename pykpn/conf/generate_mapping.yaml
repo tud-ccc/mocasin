@@ -6,9 +6,9 @@ defaults:
   - kpn: default
   - platform: default
   - trace: default
-  - mapping/mapper: default
+  - representation: default
+  - mapper: default
 
-mapper : ${mapping.mapper}
 simulate_best : true
 objective : runtime
 outdir : ./

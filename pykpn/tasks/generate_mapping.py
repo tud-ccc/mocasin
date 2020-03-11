@@ -16,6 +16,7 @@ from pykpn.slx.mapping import export_slx_mapping
 
 log = logging.getLogger(__name__)
 
+@hydra.main(config_path='conf/generate_mapping.yaml')
 def generate_mapping(cfg):
     """Mapper Task
 

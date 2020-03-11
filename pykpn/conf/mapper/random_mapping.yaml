@@ -1,0 +1,3 @@
+mapper:
+   class:
+      pykpn.mapper.rand_partialmapper.RandomFullMapper
