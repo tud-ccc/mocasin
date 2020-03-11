@@ -76,6 +76,19 @@ class TraceGenerator(object):
         :rtype: TraceSegment or None
         """
         return None
+    
+    def reset(self):
+        """Resets the generator.
+        
+        Resets the generator to its initial state. In this way we
+        can avoid to instantiate a new generator in case a trace
+        has to be calculated multiple times.
+        
+        Returns:
+            None: By default. Nothing should be returned by the
+                implementation of any subclass.
+        """
+        return None
  
 
 class EdgeType(Enum):
@@ -93,6 +106,8 @@ class TraceGraph(nx.DiGraph):
     The graph covers the full execution of a KPN application on a specific platform. Individual 
     segments in the execution are covered within the graphs nodes. Dependencies between those 
     segments are covered within the graphs edges.
+    The weight of each edge equals the amount of ticks needed to execute the following segment,
+    regarding the current mapping.
     The graphs inherits the a directed graph from the networkX framework. All surrounding code 
     is construction overhead.
     """
@@ -228,8 +243,29 @@ class TraceGraph(nx.DiGraph):
             if list(self.successors(node)) == [] and not node == "V_e":
                 self.add_edges_from([(node, "V_e")], type=EdgeType.ROOT_OR_LEAF, weight=0)
     
-    def change_element_mapping(self, element_name, element_mapping, element_groups, definitive=True):
-        
+   
+    def change_element_mapping(self, element_name, element_mapping, element_groups, definitive=False):
+        """Updates the graph regarding to a change in the mapping.
+    
+        This method updates the graph, regarding to the remapping of a single KPN element. Since the
+        remapping of an element does not change the execution trace of an application, only the weights
+        of edges are affected. Also it can be specified whether the update should be permanent or just
+        temporarily for analytic purposes.
+        In latter case, the method will just determine the length of the critical path considering the
+        new mapping.
+    
+        Args:
+            element_name (str): The name of the kpn element that has been remapped.
+            element_mapping (list[int]): The ids of the hardware groups, the element
+                has been mapped to.
+            element_groups (dict{int : [hw_resource]}): A dictionary which maps the available ids to the
+                existing hardware element groups for either communication resources or procesing elements.
+            definitive (bool): States whether the change will be applied permanently or just for the sake
+                of critical path determination.
+        Returns:
+            int: In every case the method will return the accumulated cycle count of all edges on the 
+                critical path.
+        """
         if self.critical_path_nodes == None:
             raise RuntimeError('Call determine_critical_path_elements() in the first place!')
         
@@ -292,12 +328,24 @@ class TraceGraph(nx.DiGraph):
             
             critical_path_length += new_weight
             last_node = node
+            
         
         return critical_path_length
         
-        
     
     def determine_critical_path_elements(self):
+        """Determine nodes and edges on the critical path.
+        
+        This method determines the critical path through the trace graph. It returns all 
+        KPN elements associated with the critical path. Also the path's length and all
+        nodes laying on the path.
+        
+        Returns:
+            list[kpn_elements]: A list containing all elements associated with the
+                critical path. The elements can either be channels or processes.
+            int: The length of the critical path.
+            list[str]: A list of all nodes laying on the critical path.
+        """
         elements = []
         self.critical_path_nodes = nx.dag_longest_path(self)
         path_length = nx.dag_longest_path_length(self)
@@ -310,10 +358,25 @@ class TraceGraph(nx.DiGraph):
                 if not associated_element in elements:
                     elements.append(associated_element)
         
-        return (elements, self.critical_path_nodes, path_length)
+        return elements, path_length, self.critical_path_nodes
+    
     
     def _determine_slowest_processor(self, process_name, process_mapping, processor_groups):
+        """Determines the slowest group of processors from given set of groups.
         
+        Determines from a given mapping of a KPN process to multiple groups of processors
+        the group with the slowest timing characteristic.
+        
+        Args:
+            process_name(str): The name of the KPN process.
+            process_mapping(dict{str : list[int]}): A dictionary mapping the names of processes
+                to ids of processor groups. 
+            processor_groups(dict{int : list[pykpn.common.processor]}): A dictionary mapping 
+                the id of a hardware group to a list of actual processors.
+        Returns:
+            pykpn.common.platform.Processor: Returns one processor of the slowest available
+                hardware group.
+        """
         if len(process_mapping[process_name]) == 1:
             return processor_groups[process_mapping[process_name][0]][0]
         else:
@@ -332,7 +395,22 @@ class TraceGraph(nx.DiGraph):
             else:
                 raise RuntimeError("No valid group available!")
     
+    
     def _determine_slowest_access(self, channel_name, channel_mapping, primitive_groups, read_access=True):
+        """Determines communication resource with slowest read/write characteristic.
+        
+        Determines for a given channel, mapped to multiple groups of communication primitives,
+        the resource group which either has slowest read or write access.
+        
+        Args:
+            channel_name (str): The name of the channel.
+            channel_mapping (dict{str : list[int]}: A dictionary which maps the names of channels
+                to a list of ids of hardware groups.
+            primitive_groups (dict{int : list[pykpn.mapper.gbm_fullmapper.DerivedPrimitive]}): A 
+                dictionary which maps the ids of hardware groups to a list of primitives.
+            read_access (bool): States whether the function should determine the cycle count for 
+                a read or write access. Is true by default.
+        """
         static_cost = None
             
         for group_id in channel_mapping[channel_name]:

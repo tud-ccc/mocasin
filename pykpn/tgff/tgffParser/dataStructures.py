@@ -11,7 +11,7 @@ class TgffProcessor():
     """Represents the relevant information about a processor, included in a .tgff file.
     The processor can be transfered into the pykpn representation.
     """
-    def __init__(self, name, operations, processor_type=None):
+    def __init__(self, name, operations, processor_type):
         self.name = name
         self.type = processor_type
         self.operations = {}
