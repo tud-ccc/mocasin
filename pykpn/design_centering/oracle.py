@@ -1,3 +1,8 @@
+# Copyright (C) 2017-2019 TU Dresden
+# All Rights Reserved
+#
+# Authors: Gerald Hempel, Andres Goens
+
 import os
 import timeit
 import simpy
@@ -15,7 +20,7 @@ from pykpn.mapper.proc_partialmapper import ProcPartialMapper
 from pykpn.mapper.rand_partialmapper import RandomPartialMapper
 from pykpn.mapper.com_partialmapper import ComPartialMapper
 from pykpn.mapper.random import RandomMapping
-from . import dc_sample
+from pykpn.design_centering import sample
 
 from sys import exit
 

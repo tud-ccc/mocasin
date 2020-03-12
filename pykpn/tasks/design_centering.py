@@ -11,10 +11,11 @@ import logging
 import random
 import hydra
 
-from pykpn.design_centering.design_centering import dc_oracle
-from pykpn.design_centering.design_centering import dc_volume
-from pykpn.design_centering.design_centering import designCentering
-from pykpn.design_centering.design_centering import perturbationManager as p
+from pykpn.design_centering import DesignCentering
+from pykpn.design_centering import volume
+from pykpn.design_centering import oracle as o
+from pykpn.design_centering import util as dc_util
+from pykpn.design_centering import perturbation_manager as p
 from pykpn.representations import representations as reps
 
 log = logging.getLogger(__name__)
@@ -51,7 +52,7 @@ def dc_task(cfg):
         }}
     if 'periodic_boundary_conditions' in cfg:
         json_dc_dump['config']['periodic_boundary_conditions'] = cfg['periodic_boundary_conditions']
-    tp = designCentering.ThingPlotter()
+    tp = dc_util.ThingPlotter()
     random.seed(cfg['random_seed'])
     log.info("Initialized random number generator. Seed: {" + str(cfg['random_seed']) + "}")
     # if config.platform_class is not None:
@@ -92,14 +93,14 @@ def dc_task(cfg):
     #center = dc_sample.Sample(center)
 
     if (cfg['shape'] == "cube"):
-        v = dc_volume.Cube(starting_center, starting_center.get_numProcs(),cfg) #TODO: refactor, remove unnecessary arguments passed
+        v = volume.Cube(starting_center, starting_center.get_numProcs(),cfg) #TODO: refactor, remove unnecessary arguments passed
     elif (cfg['shape'] == "lpvol"):
-        v = dc_volume.LPVolume(starting_center, starting_center.get_numProcs(),kpn,platform,cfg,representation_type)#TODO: refactor, remove unnecessary arguments passed
+        v = volume.LPVolume(starting_center, starting_center.get_numProcs(),kpn,platform,cfg,representation_type)#TODO: refactor, remove unnecessary arguments passed
 
 
     # config = args.configFile
-    oracle = dc_oracle.Oracle(cfg)
-    dc = designCentering.DesignCentering(v, cfg['distr'], oracle, representation,cfg['record_samples'])
+    oracle = o.Oracle(cfg)
+    dc = DesignCentering(v, cfg['distr'], oracle, representation,cfg['record_samples'])
 
     center,history = dc.ds_explore()
     centers = history['centers']

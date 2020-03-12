@@ -1,10 +1,14 @@
-#!/usr/bin/python
+# Copyright (C) 2017-2019 TU Dresden
+# All Rights Reserved
+#
+# Authors: Gerald Hempel, Andres Goens
+
 import sys
 import random as rand
 import pint
 
-from pykpn.design_centering.design_centering import dc_sample
-from . import dc_oracle
+from pykpn.design_centering import sample as dc_sample
+from pykpn.design_centering import oracle
 from pykpn.mapper import rand_partialmapper as rand_pm
 from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.mapper.proc_partialmapper import ProcPartialMapper
@@ -21,7 +25,7 @@ class PerturbationManager(object):
         self.config = config
         self.num_mappings = num_mappings
         self.num_perturbations = num_tests
-        self.sim = dc_oracle.Simulation(config)
+        self.sim = oracle.Simulation(config)
         self.platform = self.sim.platform
         self.kpn = self.sim.kpn
         #if config['representation'] != "GeomDummy":

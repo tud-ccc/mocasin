@@ -1,8 +1,13 @@
+# Copyright (C) 2017-2019 TU Dresden
+# All Rights Reserved
+#
+# Authors: Gerald Hempel, Andres Goens
+
 import numpy as np
 import random as rand
 
-from . import dc_volume
-from . import dc_oracle
+from pykpn.design_centering import volume
+from pykpn.design_centering import oracle
 from pykpn.representations.metric_spaces import FiniteMetricSpace
 from pykpn.common.mapping import Mapping
 from pykpn.representations.representations import RepresentationType, MetricSpaceRepresentation, MetricEmbeddingRepresentation, SimpleVectorRepresentation, SymmetryRepresentation
@@ -173,7 +178,7 @@ class MetricSpaceSampleGen(SampleGeneratorBase):
     def gen_sample_in_vol(self,vol,distr):
         return self.gen_samples_in_ball(vol,distr,nsamples=1)
 
-    #TODO: this seems it would be better housed in dc_volume than here.
+    #TODO: this seems it would be better housed in volume than here.
     def gen_samples_in_ball(self,vol,distr,nsamples=1):
         if distr != "uniform":
             log.error("Error!, distribution '" + str(distr) + "' not supported (yet).")
