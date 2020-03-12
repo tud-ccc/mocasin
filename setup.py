@@ -73,7 +73,7 @@ setup(
         'hydra-core',
         'deap',
     ],
-    setup_requires=['pytest-runner', 'sphinx', 'numpy<1.16'],
+    setup_requires=['pytest-runner', 'numpy<1.16'],
     tests_require=['pytest', 'pytest_mock'],
     command_options={
         'build_sphinx': {

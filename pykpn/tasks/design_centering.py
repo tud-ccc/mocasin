@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright (C) 2017-2019 TU Dresden
+# Copyright (C) 2017-2020 TU Dresden
 # All Rights Reserved
 #
 # Authors: Gerald Hempel, Andres Goens
@@ -116,7 +116,8 @@ def dc_task(cfg):
     json_dc_dump['center']['mapping'] = center.getMapping(0).to_list()
     json_dc_dump['center']['feasible'] = center.getFeasibility()
     json_dc_dump['center']['runtime'] = center.getSimContext().exec_time / 1000000000.0
-    json_dc_dump['center']['radius'] = radii[-1]
+    # FIXME: This crashs with index out of range:
+    #json_dc_dump['center']['radius'] = radii[-1]
     if cfg['record_samples']:
         json_dc_dump['samples'] = {}
         for cent_idx,cent in enumerate(centers):
