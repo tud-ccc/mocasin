@@ -15,7 +15,7 @@ class RandomPartialMapper(object):
     platform and KPN application. 
     """
 
-    def __init__(self, kpn, platform, seed=None):
+    def __init__(self, kpn, platform):
         """Generates a random mapping for a given platform and KPN application. 
 
         :param kpn: a KPN graph
@@ -23,9 +23,6 @@ class RandomPartialMapper(object):
         :param platform: a platform
         :type platform: Platform
         """
-        if seed is not None:
-            random.seed(seed)
-        self.seed = seed
         self.full_mapper = True
         self.platform = platform
         self.kpn = kpn
@@ -42,6 +39,7 @@ class RandomPartialMapper(object):
         :param part_mapping: partial mapping to start from
         :type part_mapping: Mapping
         """
+        rand_state = random.getstate()
         if seed is not None:
             random.seed(seed)
 
@@ -101,6 +99,10 @@ class RandomPartialMapper(object):
             part_mapping.add_channel_info(c, info)
             log.debug('rand_map: map channel %s to the primitive %s and bound to %d '
                       'tokens' % (c.name, primitive.name, capacity)) 
+
+        # restore random generator state if necessary
+        if seed is not None:
+            random.setstate(rand_state)
 
         # finally check if the mapping is fully specified
         assert not part_mapping.get_unmapped_processes()

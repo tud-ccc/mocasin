@@ -38,24 +38,25 @@ class PerturbationManager(object):
         """ Creates a defined number of unique random mappings """
         mapping_set = set([])
         while len(mapping_set) < self.num_mappings:
-            mg = rand_pm.RandomPartialMapper(self.kpn, self.platform, self.config.random_seed)
+            mg = rand_pm.RandomPartialMapper(self.kpn, self.platform)
             mapping_set.add(mg.generate_mapping())
         return mapping_set
 
-    def apply_singlePerturbation(self, mapping, history,seed=None):
+    def apply_singlePerturbation(self, mapping, history, seed=None):
         """ Creates a defined number of unique single core perturbations 
             Therefore, the mapping is interpreted as vector with the 
             processor cores assigned to the vector elements.
         """
-
-        # check for single application
-        rand_part_mapper = RandomPartialMapper(self.kpn, self.platform, self.config.random_seed)
+        rand_part_mapper = RandomPartialMapper(self.kpn, self.platform)
         proc_part_mapper = ProcPartialMapper(self.kpn, self.platform, rand_part_mapper)
 
+        rand_state = rand.getstate()
         if seed is not None:
             rand.seed(seed)
         pe = rand.randint(0, len(list(self.platform.processors()))-1)
         process = rand.randint(0, len(list(self.kpn.processes()))-1)
+        if seed is not None:
+            rand.setstate(rand_state)
         
         vec = []
         #assign cores to vector
@@ -65,17 +66,17 @@ class PerturbationManager(object):
             log.debug(mapping.affinity(p).name) 
             vec.append(pe_mapping[mapping.affinity(p).name])
 
-        log.debug("vec: {} ".format(vec))
-        #permutate vector
-        log.debug("pr: {} vec: {}".format(process, vec))
+        log.debug("Process: {} PE: {} vec: {}".format(process, pe, vec))
         vec[process] = pe
+        log.debug("Perturbated vec: {}".format(vec))
 
+        # The code above can produce identical perturbations, the following loop should prevent this:
         while True:
-            pert_mapping = proc_part_mapper.generate_mapping(vec, history)
-            if pert_mapping:
+            perturbated_mapping = proc_part_mapper.generate_mapping(vec, history)
+            if perturbated_mapping:
                 break;
 
-        return pert_mapping
+        return perturbated_mapping
 
     def run_perturbation(self, mapping, pert_fun):
         """ 

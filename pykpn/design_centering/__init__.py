@@ -18,7 +18,6 @@ log = logging.getLogger(__name__)
 class DesignCentering(object):
 
     def __init__(self, init_vol, distr, oracle, representation,record_samples):
-        np.random.seed(oracle.config.random_seed)
         type(self).distr = distr
         type(self).vol = init_vol
         type(self).oracle = oracle

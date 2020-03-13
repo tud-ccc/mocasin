@@ -97,7 +97,7 @@ class Simulation(object):
         self.kpn = hydra.utils.instantiate(config['kpn'])
         self.platform = hydra.utils.instantiate(config['platform'])
         self.trace_reader_gen = lambda: hydra.utils.instantiate(config['trace'])
-        self.randMapGen = RandomPartialMapper(self.kpn, self.platform, self.sim_config.random_seed)
+        self.randMapGen = RandomPartialMapper(self.kpn, self.platform)
         self.comMapGen = ComPartialMapper(self.kpn, self.platform, self.randMapGen)
         self.dcMapGen = ProcPartialMapper(self.kpn, self.platform, self.comMapGen)
 
