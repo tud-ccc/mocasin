@@ -68,8 +68,9 @@ class PerturbationManager(object):
             vec.append(pe_mapping[mapping.affinity(p).name])
 
         log.debug("Process: {} PE: {} vec: {}".format(process, pe, vec))
-        vec[process] = pe
-        log.debug("Perturbated vec: {}".format(vec))
+        orig_vec = vec[:]
+        vec[process] = pe # apply initial perturbation to mapping
+        log.debug("Perturbated vec: {} Original vec: {}".format(vec, orig_vec))
 
         # The code above can produce identical perturbations, the following loop should prevent this:
         timeout = 0
@@ -77,7 +78,12 @@ class PerturbationManager(object):
             perturbated_mapping = proc_part_mapper.generate_mapping(vec, history)
             if perturbated_mapping:
                 break;
+            else:
+                pe = rand.randint(0, len(list(self.platform.processors()))-1)
+                process = rand.randint(0, len(list(self.kpn.processes()))-1)
+                vec[process] = pe # apply a new perturbation to mapping
             timeout += 1
+
         if timeout == iteration_max:
             log.error("Could not find a new perturbation")
             sys.exit(1)
