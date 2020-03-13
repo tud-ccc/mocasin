@@ -41,11 +41,19 @@ if __name__ == "__main__":
         
     import matplotlib.pyplot as plt
     
-    if len(z) == 0:
-        plt.scatter(x,y)
-    else:
-        from mpl_toolkits.mplot3d import Axes3D  
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        ax.scatter(x,y,z)
+    #if len(z) == 0:
+    #    plt.scatter(x,y)
+    #else:
+    #    from mpl_toolkits.mplot3d import Axes3D  
+    #    fig = plt.figure()
+    #    ax = fig.add_subplot(111, projection='3d')
+    #    ax.scatter(x,y,z)
+    #plt.show()
+
+    norms = []
+    for i in range(1000):
+        vec = uniform_from_p_ball(p=1,n=8)
+        norms.append(p_norm(vec,1))
+
+    plt.boxplot(norms)
     plt.show()

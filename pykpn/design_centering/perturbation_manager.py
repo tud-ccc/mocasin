@@ -42,7 +42,7 @@ class PerturbationManager(object):
             mapping_set.add(mg.generate_mapping())
         return mapping_set
 
-    def apply_singlePerturbation(self, mapping, history, seed=None):
+    def apply_singlePerturbation(self, mapping, history):
         """ Creates a defined number of unique single core perturbations 
             Therefore, the mapping is interpreted as vector with the 
             processor cores assigned to the vector elements.
@@ -50,14 +50,9 @@ class PerturbationManager(object):
         rand_part_mapper = RandomPartialMapper(self.kpn, self.platform)
         proc_part_mapper = ProcPartialMapper(self.kpn, self.platform, rand_part_mapper)
 
-        rand_state = rand.getstate()
-        if seed is not None:
-            rand.seed(seed)
         pe = rand.randint(0, len(list(self.platform.processors()))-1)
         process = rand.randint(0, len(list(self.kpn.processes()))-1)
-        if seed is not None:
-            rand.setstate(rand_state)
-        
+
         vec = []
         #assign cores to vector
         pe_mapping = proc_part_mapper.get_pe_name_mapping()

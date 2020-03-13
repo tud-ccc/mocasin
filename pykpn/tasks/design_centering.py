@@ -10,6 +10,7 @@ import json
 import logging
 import random
 import hydra
+import numpy as np
 
 from pykpn.design_centering import DesignCentering
 from pykpn.design_centering import volume
@@ -54,6 +55,7 @@ def dc_task(cfg):
         json_dc_dump['config']['periodic_boundary_conditions'] = cfg['periodic_boundary_conditions']
     tp = dc_util.ThingPlotter()
     random.seed(cfg['random_seed'])
+    np.random.seed(cfg['random_seed'])
     log.info("Initialized random number generator. Seed: {" + str(cfg['random_seed']) + "}")
     # if config.platform_class is not None:
     #     platform = config.platform_class()
