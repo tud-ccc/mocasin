@@ -15,6 +15,7 @@ from pykpn.mapper.proc_partialmapper import ProcPartialMapper
 from pykpn.mapper.rand_partialmapper import RandomPartialMapper
 from pykpn.representations import representations as reps
 
+
 from pykpn.util import logging
 
 log = logging.getLogger(__name__)
@@ -28,6 +29,9 @@ class PerturbationManager(object):
         self.sim = oracle.Simulation(config)
         self.platform = self.sim.platform
         self.kpn = self.sim.kpn
+        self.perturbation_ball_num = config['perturbation_ball_num']
+        self.iteration_max = config['perturbation_max_iters']
+        self.radius = config['radius']
         #if config['representation'] != "GeomDummy":
         #    representation_type = reps.RepresentationType[config['representation']]
         #    self.representation = (representation_type.getClassType())(self.kpn,self.platform)
@@ -43,12 +47,13 @@ class PerturbationManager(object):
         return mapping_set
 
     def apply_singlePerturbation(self, mapping, history):
-        """ Creates a defined number of unique single core perturbations 
+        """ Creates a defined number of unique single core perturbations
             Therefore, the mapping is interpreted as vector with the 
             processor cores assigned to the vector elements.
         """
         rand_part_mapper = RandomPartialMapper(self.kpn, self.platform)
         proc_part_mapper = ProcPartialMapper(self.kpn, self.platform, rand_part_mapper)
+        iteration_max = self.iteration_max
 
         pe = rand.randint(0, len(list(self.platform.processors()))-1)
         process = rand.randint(0, len(list(self.kpn.processes()))-1)
@@ -66,12 +71,49 @@ class PerturbationManager(object):
         log.debug("Perturbated vec: {}".format(vec))
 
         # The code above can produce identical perturbations, the following loop should prevent this:
-        while True:
+        timeout = 0
+        while timeout < iteration_max:
             perturbated_mapping = proc_part_mapper.generate_mapping(vec, history)
             if perturbated_mapping:
                 break;
+            timeout += 1
+        if timeout == iteration_max:
+            log.error("Could not find a new perturbation")
+            sys.exit(1)
 
         return perturbated_mapping
+
+    def applyPerturbationRepresentation(self,mapping_obj,history):
+        """ Creates perturbations functions using the representation.
+        """
+        mapping = self.representation.toRepresentation(mapping_obj)
+        log.debug(f"Finding (representation-based) perturbation for mapping {mapping}")
+        iteration_max = self.iteration_max
+        if history is None:
+            history = []
+        radius = self.radius
+        timeout = 0
+        while timeout < iteration_max:
+            perturbation_ball = self.representation._uniformFromBall(mapping,radius,self.perturbation_ball_num)
+            for m in perturbation_ball:
+                if m != mapping:
+                    if len(history) == 0:
+                        log.debug("Perturbated vec (rep): {}".format(m))
+                        return (self.representation.fromRepresentation(m))
+                    else:
+                        for hist_map in history:
+                            if self.representation.toRepresentation(hist_map) != m:
+                                log.debug("Perturbated vec (rep): {}".format(m))
+                                return(self.representation.fromRepresentation(m))
+                            else:
+                                log.debug(f"mapping {m} already in history")
+            timeout += 1
+            if timeout % 10 == 0:
+                radius *= 1.5
+                log.debug(f"increasing perturbation radius to {radius}")
+        if timeout == iteration_max:
+            log.error("Could not find a new perturbation")
+            sys.exit(1)
 
     def run_perturbation(self, mapping, pert_fun):
         """ 

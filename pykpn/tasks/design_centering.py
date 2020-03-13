@@ -11,6 +11,7 @@ import logging
 import random
 import hydra
 import numpy as np
+import sys
 
 from pykpn.design_centering import DesignCentering
 from pykpn.design_centering import volume
@@ -144,17 +145,24 @@ def dc_task(cfg):
         num_pert = cfg['num_perturbations']
         num_mappings = cfg['num_reference_mappings']
         pm = p.PerturbationManager( cfg, num_mappings, num_pert) #TODO: propagate cfg
+        if cfg['perturbation_type'] == 'classic':
+            pert_func = pm.apply_singlePerturbation
+        elif cfg['perturbation_type'] == 'representation':
+            pert_func = pm.applyPerturbationRepresentation
+        else:
+            log.error(f"Unknown perturbation type: {cfg['perturbation_type']} ")
+            sys.exit(1)
         map_set = pm.create_randomMappings()
 
         pert_res = []
-        s,c = pm.run_perturbation(center.getMapping(0), pm.apply_singlePerturbation)
+        s,c = pm.run_perturbation(center.getMapping(0), pert_func)
         pert_res.append(s)
 
         json_dc_dump['center']['pert'] = c
         json_dc_dump['center']['passed'] = s
 
         for i,m in enumerate(map_set):
-            s,c = pm.run_perturbation(m, pm.apply_singlePerturbation)
+            s,c = pm.run_perturbation(m, pert_func)
             pert_res.append(s)
             json_dc_dump['rand mapping' + str(i)] = {}
             json_dc_dump['rand mapping' + str(i)]['mapping'] = m.to_list()
