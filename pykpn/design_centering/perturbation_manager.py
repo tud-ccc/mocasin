@@ -6,6 +6,7 @@
 import sys
 import random as rand
 import pint
+import numpy as np
 
 from pykpn.design_centering import sample as dc_sample
 from pykpn.design_centering import oracle
@@ -32,11 +33,11 @@ class PerturbationManager(object):
         self.perturbation_ball_num = config['perturbation_ball_num']
         self.iteration_max = config['perturbation_max_iters']
         self.radius = config['radius']
-        #if config['representation'] != "GeomDummy":
-        #    representation_type = reps.RepresentationType[config['representation']]
-        #    self.representation = (representation_type.getClassType())(self.kpn,self.platform)
+        if config['representation'] != "GeomDummy":
+            representation_type = reps.RepresentationType[config['representation']]
+            self.representation = (representation_type.getClassType())(self.kpn,self.platform)
         #TODO: (FIXME) Perturbation manager only works in simple vector representation (for now)
-        self.representation = (reps.RepresentationType['SimpleVector'].getClassType())(self.kpn, self.platform)
+        #self.representation = (reps.RepresentationType['SimpleVector'].getClassType())(self.kpn, self.platform)
 
     def create_randomMappings(self):
         """ Creates a defined number of unique random mappings """
@@ -86,7 +87,7 @@ class PerturbationManager(object):
     def applyPerturbationRepresentation(self,mapping_obj,history):
         """ Creates perturbations functions using the representation.
         """
-        mapping = self.representation.toRepresentation(mapping_obj)
+        mapping = np.array(self.representation.toRepresentation(mapping_obj))
         log.debug(f"Finding (representation-based) perturbation for mapping {mapping}")
         iteration_max = self.iteration_max
         if history is None:
@@ -96,13 +97,14 @@ class PerturbationManager(object):
         while timeout < iteration_max:
             perturbation_ball = self.representation._uniformFromBall(mapping,radius,self.perturbation_ball_num)
             for m in perturbation_ball:
-                if m != mapping:
+                #TODO: this should be handled in the representations too (with an _equal function or something)
+                if not (m == mapping).all():
                     if len(history) == 0:
                         log.debug("Perturbated vec (rep): {}".format(m))
                         return (self.representation.fromRepresentation(m))
                     else:
                         for hist_map in history:
-                            if self.representation.toRepresentation(hist_map) != m:
+                            if not (np.array(self.representation.toRepresentation(hist_map)) == m).all():
                                 log.debug("Perturbated vec (rep): {}".format(m))
                                 return(self.representation.fromRepresentation(m))
                             else:
@@ -127,7 +129,7 @@ class PerturbationManager(object):
         for i in range(0, self.num_perturbations):
             mapping = pert_fun(mapping, history)
             history.append(mapping)
-            sample = dc_sample.Sample(mapping.to_list(),representation=self.representation)
+            sample = dc_sample.Sample(self.representation.toRepresentation(mapping),representation=self.representation)
             samples.append(sample)
         self.sim.prepare_sim_contexts_for_samples(samples)
 

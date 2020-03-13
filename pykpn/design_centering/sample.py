@@ -192,7 +192,7 @@ class MetricSpaceSampleGen(SampleGeneratorBase):
             sample_ints = self.representation.approximate(new_sample_vector)
             new_sample = MetricSpaceSample(self.representation,sample_ints)
             sample_list.append(new_sample)
-            distance = self.representation.distance(sample_ints,vol.center)
+            distance = self.representation._distance(sample_ints,vol.center)
             if distance > vol.radius:
                 log.warning(f"Generated vector with distance ({distance}) greater than radius ({vol.radius}).")
             log.debug(f"Generated sample (distance: {distance}):\n {sample_ints}")

@@ -1,7 +1,7 @@
 # Copyright (C) 2017-2019 TU Dresden
 # All Rights Reserved
 #
-# Authors: Gerald Hempel
+# Authors: Gerald Hempel, Andres Goens
 
 import json
 import glob
