@@ -179,12 +179,11 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
             real_point = (np.array(center) + np.array(offset)).tolist() 
             v = list(map(_round,real_point))
 
-        if self.channels:
-            res.append(self.randomPrimitives(v))
-        else:
-            res.append(v)
+            if self.channels:
+                res.append(self.randomPrimitives(v))
+            else:
+                res.append(v)
         log.debug(f"uniform from ball: {res}")
-        print(f"uniform from ball: {res}")
         return res
       
     def uniformFromBall(self,p,r,npoints=1):
