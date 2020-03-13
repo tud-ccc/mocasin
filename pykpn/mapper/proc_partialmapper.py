@@ -61,7 +61,7 @@ class ProcPartialMapper(object):
         if map_history is None:
             map_history = []
 
-        #TODO: raise not implemented exaception for input of part_mapping
+        #TODO: raise not implemented exception for input of part_mapping
 
          # raise NotImplementedError(
          #       'The slx trace reader does not support version %s' % version)
