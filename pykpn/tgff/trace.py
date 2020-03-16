@@ -25,7 +25,8 @@ class TgffTraceGenerator(TraceGenerator):
         self._repetition = repetition
         self._trace_dict = {}
         self._tgff_graph = tgff_graph
-        self._initialize_trace_dict(tgff_graph)
+        for graph in tgff_graph.values():
+            self._initialize_trace_dict(graph)
     
     def next_segment(self, process_name, processor_type):
         """Returns the next trace segment
