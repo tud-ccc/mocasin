@@ -92,8 +92,8 @@ def read_dc_json(filename):
                 #'adaptable_center_weights' : _raw['config']['adaptable_center_weigths'],
         }
         radius = raw['config']['starting_radius']
-        if 'periodic_boundary_conditions' in raw['config']:
-                config['periodic_boundary_conditions'] =  raw['config']['periodic_boundary_conditions']
+        #if 'periodic_boundary_conditions' in raw['config']:
+        #        config['periodic_boundary_conditions'] =  raw['config']['periodic_boundary_conditions']
 
         #start with center so that all fields (eg. pert. stability) get proper values from csv reader
         if 'radius' in raw['center']:

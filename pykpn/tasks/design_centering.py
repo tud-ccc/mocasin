@@ -15,6 +15,7 @@ import sys
 
 from pykpn.design_centering import DesignCentering
 from pykpn.design_centering import volume
+from pykpn.design_centering import sample as dc_sample
 from pykpn.design_centering import oracle as o
 from pykpn.design_centering import util as dc_util
 from pykpn.design_centering import perturbation_manager as p
@@ -87,11 +88,26 @@ def dc_task(cfg):
         representation = (representation_type.getClassType())(kpn,platform,cfg)
 
     # run DC algorithm
+
+    oracle = o.Oracle(cfg)
+
     # starting volume (init):
     if representation == "GeomDummy":
         starting_center = [1,2,3,4,5,6,7,8]
     else:
-        starting_center = representation.uniform()
+        timeout = 0
+        while timeout < cfg['perturbation_max_iters']:
+            starting_center = representation.uniform()
+            starting_center_sample = dc_sample.Sample(sample=representation.toRepresentation(starting_center),representation = representation)
+            oracle.validate_set([starting_center_sample])
+            if starting_center_sample.getFeasibility() == True:
+                break
+            else:
+                timeout += 1
+    if timeout == cfg['perturbation_max_iters']:
+        log.error(f"could not find a feasible starting center after {timeout} iterations")
+        sys.exit(1)
+
     log.info(f"Starting with center: {starting_center.to_list()}")
     #center = dc_sample.Sample(center)
 
@@ -102,7 +118,6 @@ def dc_task(cfg):
 
 
     # config = args.configFile
-    oracle = o.Oracle(cfg)
     dc = DesignCentering(v, cfg['distr'], oracle, representation,cfg['record_samples'])
 
     center,history = dc.ds_explore()

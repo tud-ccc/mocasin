@@ -117,17 +117,18 @@ class LPVolume(Volume):
         self.old_center = self.center
         self.radius = self.conf.radius
         self.dim = len(self.center)
+        self.true_dim = len(kpn.processes())
         self.num_procs = num_procs
         self.norm_p = conf['norm_p']
         self.weight_center = 1/(np.exp(1)*self.dim)
-        self.rk1_learning_constant = 1/np.sqrt(self.dim)
+        self.rk1_learning_constant = 1/np.sqrt(self.true_dim)
         self.rk1_vec = np.zeros(self.dim)
         self.transformation = np.identity(self.dim) * self.radius**2
         self.adapt_covariance()
         
 
     def update_factors(self,p,num_samples):
-        self.learning_rate = 0.6/((self.dim+1.3)**2 + p*num_samples) #Beta
+        self.learning_rate = 0.6/((self.true_dim+1.3)**2 + p*num_samples) #Beta
         self.expansion_factor = 1 + (self.learning_rate *(1-p)) #f_e
         self.contraction_factor = 1 - (self.learning_rate * p) #f_c
 
@@ -140,7 +141,7 @@ class LPVolume(Volume):
         # take mean of feasible points to add weighted to the old center
         num_feasible = len(fs_set) # mu
         if self.conf.adaptable_center_weights:
-            self.weight_center = min(0.5,num_feasible/(np.exp(1)*self.dim))
+            self.weight_center = min(0.5,num_feasible/(np.exp(1)*self.true_dim))
         if self.conf.aggressive_center_movement:
             self.weight_center = 0.75
 
@@ -228,7 +229,7 @@ class LPVolume(Volume):
             rank_1_matrix = np.matrix(V).transpose() * np.matrix(V)
             rank_mu_update += 1/num_feasible * alpha_sq * rank_1_matrix
 
-        rk_1_weight  = 0.6/((self.dim + 1.3)**2 + num_feasible)
+        rk_1_weight  = 0.6/((self.true_dim + 1.3)**2 + num_feasible)
         rk_mu_weight = 0.04 * (num_feasible - 2 + (1/num_feasible))/((self.dim + 2)**2 + 0.2*num_feasible)
 
         self.transformation = (1-rk_1_weight - rk_mu_weight) * self.transformation
