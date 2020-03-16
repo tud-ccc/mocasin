@@ -40,8 +40,8 @@ class TgffTraceGenerator(TraceGenerator):
         if not process_name in self._trace_dict:
             raise RuntimeError("Unknown specified process!")
         
-        if not processor_type < len(self._processor_list) and processor_type >= 0:
-            raise RuntimeError("Unknown specified processor")
+        #if not processor_type < len(self._processor_list) and processor_type >= 0:
+            #raise RuntimeError("Unknown specified processor")
     
         processor = self._processor_list[processor_type]
         process = self._trace_dict[process_name]

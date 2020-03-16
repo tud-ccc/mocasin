@@ -39,26 +39,34 @@ class TraceGeneratorWrapper():
             _parsed_tgff_files.update( {file_path : Parser().parse_file(file_path)} )
         
         tgff_components = _parsed_tgff_files[file_path]
-        trace_generator = TgffTraceGenerator(tgff_components[1], tgff_components[0])
+        processor_dict = {}
+        for processor in tgff_components[1]:
+            processor_dict.update({processor.type : processor})
+        trace_generator = TgffTraceGenerator(processor_dict, tgff_components[0])
         
         return trace_generator
     
 
 class PlatformFromTgff():
     def __new__(self, platform_type, processor, file_path, amount):
-        
         if not file_path in _parsed_tgff_files:
             _parsed_tgff_files.update( {file_path : Parser().parse_file(file_path)} )
         
         tgff_processors = _parsed_tgff_files[file_path][1]
-        
-        if processor < 0 or processor >= len(tgff_processors):
+
+
+        if int(processor.split('_')[1]) >= len(tgff_processors):
             raise TgffReferenceError()
-        
+
+        processor_dict = {}
+        for proc in tgff_processors:
+            processor_dict.update({proc.type : proc})
+
+
         if platform_type == 'bus':
-            return TgffRuntimePlatformBus(tgff_processors[processor])
+            return TgffRuntimePlatformBus(processor_dict[processor])
         elif platform_type == 'mesh':
-            return TgffRuntimePlatformMesh(tgff_processors[processor])
+            return TgffRuntimePlatformMesh(processor_dict[processor])
         else:
             raise RuntimeError('You have to implement this type first!')
 
