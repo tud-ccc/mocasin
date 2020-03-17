@@ -1,4 +1,5 @@
 task : design_centering
+threads : 4
 max_samples : 50
 adapt_samples : 10
 hitting_probability : [0.1, 0.5, 0.6, 0.7, 0.9]

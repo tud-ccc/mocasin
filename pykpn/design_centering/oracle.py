@@ -82,12 +82,12 @@ class Oracle(object):
         """ check whether a set of samples is feasible """
         # extra switch for evaluation of static sets vs. simulation
         res = []
-        #check cache:
         self.oracle.prepare_sim_contexts_for_samples(samples)
 
         for s in samples:
             mapping = tuple(s.getMapping(0).to_list())
             if mapping in self.oracle.cache:
+                log.debug(f"skipping simulation for mapping {mapping}: cached.")
                 s.sim_context.exec_time = self.oracle.cache[mapping]
 
         if self.config.oracle != "simulation":
@@ -104,10 +104,11 @@ class Simulation(object):
         self.sim_config = AttrDict(config)
         self.kpn = hydra.utils.instantiate(config['kpn'])
         self.platform = hydra.utils.instantiate(config['platform'])
-        self.trace_reader_gen = lambda: hydra.utils.instantiate(config['trace'])
+        self.trace_reader_gen = lambda : hydra.utils.instantiate(config['trace'])
         self.randMapGen = RandomPartialMapper(self.kpn, self.platform)
         self.comMapGen = ComPartialMapper(self.kpn, self.platform, self.randMapGen)
         self.dcMapGen = ProcPartialMapper(self.kpn, self.platform, self.comMapGen)
+        self.threads = config['threads']
         self.cache = {}
         self.total_cached = 0
 
@@ -151,11 +152,18 @@ class Simulation(object):
 
         # execute the simulations in parallel
         # TODO: this is somehow broken, since non-python objects cannot be pickled
-        #pool = ProcessPool(processes=4)
-        #results = list(pool.map(self.run_simulation, samples, chunksize=4))
-
+        if self.threads > 1:
+            from multiprocessing import Pool
+            pool = Pool(self.threads)
+            #Store and remove lambda object that's unpickable for multithreading (workaround)
+            trace_reader_gen = self.trace_reader_gen
+            self.trace_reader_gen = None
+            results = list(pool.map(self.run_simulation, samples, chunksize=self.threads))
+            #Restore lambda object after having executed simulations
+            self.trace_reader_gen = trace_reader_gen
+        else:
         # results list of simulation contexts
-        results = list(map(self.run_simulation, samples))
+            results = list(map(self.run_simulation, samples))
         
         #find runtime from results
         exec_times = [] #in ps
