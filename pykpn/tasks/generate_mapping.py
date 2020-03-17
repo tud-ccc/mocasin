@@ -95,9 +95,9 @@ def generate_mapping(cfg):
         del platform
         del trace
 
-
-    export_slx_mapping(result,
-                   os.path.join(outdir, 'generated_mapping'),
-                   '2017.10')
+    if not cfg['kpn']['class'] == 'pykpn.tgff.tgffSimulation.KpnGraphFromTgff':
+        export_slx_mapping(result,
+                           os.path.join(outdir, 'generated_mapping'),
+                           '2017.10')
 
     del mapper
