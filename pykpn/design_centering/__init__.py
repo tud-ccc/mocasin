@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 class DesignCentering(object):
 
-    def __init__(self, init_vol, distr, oracle, representation,record_samples):
+    def __init__(self, init_vol, distr, oracle, representation,record_samples,p_threshold):
         type(self).distr = distr
         type(self).vol = init_vol
         type(self).oracle = oracle
@@ -26,6 +26,7 @@ class DesignCentering(object):
         self.record_samples = record_samples
         type(self).p_value = self.__adapt_poly(oracle.config.hitting_probability, oracle.config.deg_p_polynomial)
         type(self).s_value = self.__adapt_poly(oracle.config.step_width, oracle.config.deg_s_polynomial)
+        self.p_threshold = p_threshold
 
     def __adapt_poly(self, support_values, deg):
         num = len(support_values)
@@ -69,7 +70,8 @@ class DesignCentering(object):
         if self.record_samples:
             history['centers'].append(current_center)
             history['radii'].append(self.vol.radius)
-
+        best_radius = 0
+        best_center = current_center
         for i in range(0, type(self).oracle.config.max_samples, type(self).oracle.config.adapt_samples):
             s = dc_sample.SampleGen(self.representation, type(self).oracle.config)
             
@@ -102,15 +104,23 @@ class DesignCentering(object):
             #     print("Correction of infeasible center: {} take {} instead".format(center, new_center))
             cur_p = type(self).vol.adapt_volume(s_set, type(self).p_value[i], type(self).s_value[i])
             log.debug("dc: center: {} radius: {:f} p_emp: {}, target_p {}".format(type(self).vol.center, type(self).vol.radius, cur_p,self.p_value[i]))
+            if cur_p >= self.p_threshold and self.vol.radius >= best_radius and current_center.getFeasibility() == True:
+                best_radius = self.vol.radius
+                best_center = center
+                log.info(f"found a better center (radius {self.vol.radius}, p {cur_p}). updating.")
+
             if self.record_samples:
                 for sample in samples:
                     history['samples'].append(sample)
                 history['centers'].append(current_center)
                 history['radii'].append(self.vol.radius)
 
+        if best_radius == 0:
+            log.error("Could not find a center within hitting probability threshold. Returning last center candidate found.")
+            best_center = center
         #modify last sample
         #TODO build mapping from center (this destroys parallel execution)
-        center_sample = dc_sample.Sample(sample=center,representation=self.representation)
+        center_sample = dc_sample.Sample(sample=best_center,representation=self.representation)
         center_sample_result = type(self).oracle.validate_set([center_sample])
         if self.oracle.config.visualize_mappings:
             if(self.oracle.config.keep_metrics):
