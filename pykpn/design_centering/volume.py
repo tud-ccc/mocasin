@@ -148,20 +148,20 @@ class LPVolume(Volume):
         mean_center = np.mean(fs_set, axis=0)
         log.debug("mean mapping {}".format(mean_center))
         new_center_vec = (1-self.weight_center) * self.center + self.weight_center * mean_center
-        vector_of_distances = [lp.p_norm(self.center - v,1) for v in fs_set]
+        vector_of_distances = [lp.p_norm(self.center - v,self.norm_p) for v in fs_set]
         if min(vector_of_distances) <= 0:
             log.warning("DC points did not move.")
         #approximate center
         mean_center_approx = self.representation.approximate(mean_center)
         new_center = self.representation.approximate(new_center_vec)
-        dist1 = lp.p_norm(mean_center_approx - self.center, 1)
+        dist1 = lp.p_norm(mean_center_approx - self.center, self.norm_p)
         if np.allclose(dist1,0):
             log.warning("DC mean center unchanged.")
         else:
             log.info(f"DC mean center moved by {dist1}")
         self.old_center = self.center
         self.center = np.array(new_center)
-        dist2 = lp.p_norm(self.old_center-self.center,1)
+        dist2 = lp.p_norm(self.old_center-self.center,self.norm_p)
         if np.allclose(dist2, 0):
             log.warning("DC Center unchanged.")
         else:
