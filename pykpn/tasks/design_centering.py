@@ -187,6 +187,8 @@ def dc_task(cfg):
         if cfg['plot_perturbations']:
             tp.plot_perturbations(pert_res,cfg['perturbations_out'])
         log.info("==== Perturbation Test done ====")
+    #FIXME: it should probably not be oracle.oracle
+    log.info(f"total simulations from cache: {oracle.oracle.total_cached}")
 
     if not os.path.exists(cfg['out_dir']):
         os.mkdir(cfg['out_dir'])

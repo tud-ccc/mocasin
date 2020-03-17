@@ -82,6 +82,14 @@ class Oracle(object):
         """ check whether a set of samples is feasible """
         # extra switch for evaluation of static sets vs. simulation
         res = []
+        #check cache:
+        self.oracle.prepare_sim_contexts_for_samples(samples)
+
+        for s in samples:
+            mapping = tuple(s.getMapping(0).to_list())
+            if mapping in self.oracle.cache:
+                s.sim_context.exec_time = self.oracle.cache[mapping]
+
         if self.config.oracle != "simulation":
             for s in samples:
                 res.append(type(self).oracle.is_feasible(s.sample2simpleTuple))
@@ -100,6 +108,8 @@ class Simulation(object):
         self.randMapGen = RandomPartialMapper(self.kpn, self.platform)
         self.comMapGen = ComPartialMapper(self.kpn, self.platform, self.randMapGen)
         self.dcMapGen = ProcPartialMapper(self.kpn, self.platform, self.comMapGen)
+        self.cache = {}
+        self.total_cached = 0
 
     def prepare_sim_contexts_for_samples(self, samples):
         """ Prepare simualtion/application context and mapping for a each element in `samples`. """
@@ -136,8 +146,7 @@ class Simulation(object):
         """
         #prepare simulation
         results = []
-        self.prepare_sim_contexts_for_samples(samples)
-        
+
         # run simulations and search for the best mapping
 
         # execute the simulations in parallel
@@ -173,6 +182,9 @@ class Simulation(object):
     
     #do simulation requires sim_context,
     def run_simulation(self, sample):
+        if sample.sim_context.exec_time is not None:
+            self.total_cached += 1
+            return sample
         try:
             # Create simulation environment
             env = simpy.Environment()
@@ -194,6 +206,10 @@ class Simulation(object):
             system.simulate()
             system.check_errors()
             sample.sim_context.exec_time = env.now
+
+            #add to cache
+            mapping = tuple(sample.getMapping(0).to_list())
+            self.cache[mapping] = env.now
             
         except Exception as e:
             log.debug("Exception in Simulation: {}".format(str(e)))
