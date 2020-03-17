@@ -14,6 +14,8 @@ from pykpn.simulate.system import RuntimeSystem
 
 from pykpn.slx.mapping import export_slx_mapping
 
+from pykpn.tgff.tgffSimulation import TgffReferenceError
+
 log = logging.getLogger(__name__)
 
 @hydra.main(config_path='conf/generate_mapping.yaml')
@@ -53,8 +55,15 @@ def generate_mapping(cfg):
     It is recommended to use the silent all logginf o (``-s``) to suppress all logging
     output from the individual simulations.
 """
+    try:
+        mapper = hydra.utils.instantiate(cfg['mapper'],cfg)
+    except TgffReferenceError:
+        # Special exception indicates a bad combination of tgff components
+        # can be thrown during multiruns and should not stop the hydra
+        # execution
+        log.warning("Referenced non existing tgff component!")
+        return
 
-    mapper = hydra.utils.instantiate(cfg['mapper'],cfg)
     #Run mapper
     result = mapper.generate_mapping()
 

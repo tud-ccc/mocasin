@@ -343,10 +343,9 @@ class PlatformDesigner():
         :param writeThroughput: The write throughput of the physical links and network routers.
         :type writeThroughput: int
         """
-        
         fd = FrequencyDomain('fd_' + networkName, frequencyDomain)
         
-        if self.__activeScope != None:
+        if self.__activeScope is not None:
             processorList = self.__elementDict[self.__activeScope][clusterIdentifier]
             
             '''Adding physical links and NOC memories according to the adjacency list
@@ -373,7 +372,7 @@ class PlatformDesigner():
                     self.__platform.add_communication_resource(communicationResource)
                     
             for processor in processorList:
-                if  adjacencyList[processor[0].name] == []:
+                if not adjacencyList[processor[0].name]:
                     continue
                 else:
                     prim = Primitive(networkName + "_" + processor[0].name)
@@ -381,7 +380,7 @@ class PlatformDesigner():
                     memory = self.__platform.find_communication_resource(memoryName)
                     
                     for innerProcessor in processorList:
-                        if adjacencyList[innerProcessor[0].name] == []:
+                        if not adjacencyList[innerProcessor[0].name]:
                             continue
                             
                         resourceList = [memory]
