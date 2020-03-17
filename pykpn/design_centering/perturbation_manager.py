@@ -32,7 +32,7 @@ class PerturbationManager(object):
         self.kpn = self.sim.kpn
         self.perturbation_ball_num = config['perturbation_ball_num']
         self.iteration_max = config['perturbation_max_iters']
-        self.radius = config['radius']
+        self.radius = config['perturbation_radius']
         if config['representation'] != "GeomDummy":
             representation_type = reps.RepresentationType[config['representation']]
             self.representation = (representation_type.getClassType())(self.kpn,self.platform)
@@ -161,7 +161,7 @@ class PerturbationManager(object):
         for i in range(0, self.num_perturbations):
             complex_res['p' + str(i)] = {}
             complex_res['p' + str(i)]['mapping'] = history[i].to_list()
-            complex_res['p' + str(i)]['runtime'] = exec_times[i]
+            complex_res['p' + str(i)]['runtime'] = exec_times[i] / 1000000000.0
             complex_res['p' + str(i)]['feasible'] = feasible[i]
 
         return simple_res,complex_res

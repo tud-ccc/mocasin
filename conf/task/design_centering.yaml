@@ -30,4 +30,5 @@ perturbations_out : perturbation_plot.pdf
 perturbation_type : representation
 perturbation_max_iters : 1000
 perturbation_ball_num : 20
+perturbation_radius : 2
 
