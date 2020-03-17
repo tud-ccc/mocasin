@@ -151,13 +151,15 @@ class Simulation(object):
         # run simulations and search for the best mapping
 
         # execute the simulations in parallel
-        # TODO: this is somehow broken, since non-python objects cannot be pickled
-        if self.threads > 1:
+        # TODO: this is somehow broken, seems to fall into recursive infinite loop creating more threads
+        #if self.threads > 1:
+        if False:
             from multiprocessing import Pool
-            pool = Pool(self.threads)
+            #about maxtasksperchild argument: https://stackoverflow.com/questions/21485319/high-memory-usage-using-python-multiprocessing
             #Store and remove lambda object that's unpickable for multithreading (workaround)
             trace_reader_gen = self.trace_reader_gen
             self.trace_reader_gen = None
+            pool = Pool(processes=self.threads,maxtasksperchild=100)
             results = list(pool.map(self.run_simulation, samples, chunksize=self.threads))
             #Restore lambda object after having executed simulations
             self.trace_reader_gen = trace_reader_gen
