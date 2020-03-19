@@ -96,6 +96,7 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         self.platform = platform
         self.channels=channels
         self.config = config
+        self.p = config['norm_p']
         self.num_procs = len(list(self.kpn._processes.keys()))
     def _uniform(self):
       Procs = sorted(list(self.kpn._processes.keys()))
@@ -175,7 +176,7 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
                     offset.append(randint(-radius,radius))
 
             else:
-                offset = r * lp.uniform_from_p_ball(p=1,n=len(Procs))
+                offset = r * lp.uniform_from_p_ball(p=self.p,n=len(Procs))
             real_point = (np.array(center) + np.array(offset)).tolist() 
             v = list(map(_round,real_point))
 

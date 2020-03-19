@@ -2,8 +2,8 @@ task : design_centering
 threads : 1
 max_samples : 50
 adapt_samples : 10
-hitting_probability : [0.1, 0.5, 0.6, 0.7, 0.9]
-hitting_probability_threshold : 0.6
+hitting_probability : [0.4, 0.5, 0.5, 0.7, 0.9]
+hitting_probability_threshold : 0.7
 deg_p_polynomial : 2
 step_width : [0.9, 0.7, 0.6, 0.5, 0.1]
 radius : 5

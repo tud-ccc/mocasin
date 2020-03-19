@@ -143,16 +143,16 @@ class LPVolume(Volume):
         if self.conf.adaptable_center_weights:
             self.weight_center = min(0.5,num_feasible/(np.exp(1)*self.true_dim))
         if self.conf.aggressive_center_movement:
-            self.weight_center = 0.75
+            self.weight_center = 0.51
 
         mean_center = np.mean(fs_set, axis=0)
+        mean_center_approx = self.representation.approximate(mean_center)
         log.debug("mean mapping {}".format(mean_center))
-        new_center_vec = (1-self.weight_center) * self.center + self.weight_center * mean_center
+        new_center_vec = (1-self.weight_center) * self.center + self.weight_center * np.array(mean_center_approx)
         vector_of_distances = [lp.p_norm(self.center - v,self.norm_p) for v in fs_set]
         if min(vector_of_distances) <= 0:
             log.warning("DC points did not move.")
         #approximate center
-        mean_center_approx = self.representation.approximate(mean_center)
         new_center = self.representation.approximate(new_center_vec)
         dist1 = lp.p_norm(mean_center_approx - self.center, self.norm_p)
         if np.allclose(dist1,0):

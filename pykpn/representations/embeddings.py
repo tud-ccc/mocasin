@@ -207,10 +207,9 @@ class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
     def uniformFromBall(self,p,r,npoints=1):
         vecs = []
         for _ in range(npoints):
-            #currently fixed at l1 norm (Manhattan)
             p_flat = [item for sublist in map(list,p) for item in sublist]
             #print(f"k : {self._k}, shape p: {np.array(p).shape},\n p: {p} \n p_flat: {p_flat}")
-            v = (np.array(p_flat)+ np.array(r*lp.uniform_from_p_ball(p=1,n=self._k*self._d))).tolist()
+            v = (np.array(p_flat)+ np.array(r*lp.uniform_from_p_ball(p=self.p,n=self._k*self._d))).tolist()
             vecs.append(self.approx(v))
             
         return vecs 
