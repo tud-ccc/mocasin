@@ -154,16 +154,17 @@ class GeneticFullMapper(object):
         num_gens = self.config['num_gens']
         cxpb = self.config['cxpb']
         mutpb = self.config['mutpb']
-        verbose = True #TODO: get from config
 
         population = self.population
 
         if self.config.mupluslambda:
             population, logbook = deap.algorithms.eaMuPlusLambda(population,toolbox,mu=pop_size,lambda_=3*pop_size,
-                                                  cxpb=cxpb, mutpb=mutpb, ngen=num_gens, stats=stats, halloffame=hof,verbose=verbose)
+                                                  cxpb=cxpb, mutpb=mutpb, ngen=num_gens, stats=stats, halloffame=hof,verbose=False)
+            log.info(logbook.stream)
         else:
             population, logbook = deap.algorithms.eaMuCommaLambda(population,toolbox,mu=pop_size,lambda_=3*pop_size,
-                                              cxpb=cxpb, mutpb=mutpb, ngen=num_gens, stats=stats, halloffame=hof,verbose=verbose)
+                                              cxpb=cxpb, mutpb=mutpb, ngen=num_gens, stats=stats, halloffame=hof,verbose=False)
+            log.info(logbook.stream)
 
         return population,logbook,hof
 

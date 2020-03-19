@@ -9,6 +9,7 @@ import logging
 import hydra
 import os
 import simpy
+import pickle
 from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.simulate.system import RuntimeSystem
 
@@ -71,8 +72,9 @@ def generate_mapping(cfg):
     outdir = cfg['outdir']
     if not os.path.exists(outdir):
         os.makedirs(outdir)
-
-
+        with open(outdir + "/mapping.pickle" ,'wb') as f:
+            p = pickle.Pickler(f)
+            p.dump(result)
 
 
     if cfg['simulate_best']:
@@ -86,11 +88,13 @@ def generate_mapping(cfg):
                                     trace_generator=trace,
                                     env=env,)
         system = RuntimeSystem(platform, [app], env)
-
         system.simulate()
+
 
         exec_time = float(env.now) / 1000000000.0
         log.info('Best mapping simulated time: ' + str(exec_time) + ' ms')
+        with open(outdir + 'best_time.txt','w') as f:
+            f.write(str(exec_time))
         del kpn
         del platform
         del trace
