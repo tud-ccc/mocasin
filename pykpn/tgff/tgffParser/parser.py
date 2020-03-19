@@ -83,7 +83,7 @@ class Parser():
     """
     def parse_file(self, file_path):
         with open(file_path, 'r') as file:
-            last_missmatch = None
+            last_mismatch = None
             current_line  = file.readline()
             
             while current_line:
@@ -96,14 +96,14 @@ class Parser():
                     self._parse_commun_quant(file, match)
                 elif key == 'hw_component':
                     self.logger.debug('Parse HW component')
-                    self._parse_hw_component(file, match, last_missmatch)
+                    self._parse_hw_component(file, match, last_mismatch)
                 elif key == 'unused_scope':
                     self.logger.debug('Parse unused group')
                     self._parse_unused_scope(file)
                 else:
                     self._key_missmatch(key, file.tell())
                     if not key is None:
-                        last_missmatch = (key, match)
+                        last_mismatch = (key, match)
                     
                 current_line = file.readline()
         
@@ -298,7 +298,7 @@ class Parser():
         while current_line:
             key, match = self._parse_line(current_line)
             if key == 'unused_statement':
-                self.logger.info.log("Ignored statement")
+                self.logger.info("Ignored statement")
             elif key == 'scope_limiter':
                 self.logger.info("Parsed block which will be ignored")
                 break

@@ -22,12 +22,12 @@ class KpnGraphFromTgff():
     """
     #TODO: Add doc string
     def __new__(self, file_path, task_graph):
-        if not file_path in _parsed_tgff_files:
+        if file_path not in _parsed_tgff_files:
             _parsed_tgff_files.update( {file_path : Parser().parse_file(file_path)} )
         
         tgff_graphs = _parsed_tgff_files[file_path][0]
         
-        if not task_graph in tgff_graphs:
+        if task_graph not in tgff_graphs:
             raise TgffReferenceError()
         
         return tgff_graphs[task_graph].to_kpn_graph()
@@ -67,6 +67,8 @@ class PlatformFromTgff():
             return TgffRuntimePlatformBus(processor_dict[processor])
         elif platform_type == 'mesh':
             return TgffRuntimePlatformMesh(processor_dict[processor])
+        elif platform_type == 'clustered':
+            return TgffRuntimePlatformMultiCluster(processor_dict[processor])
         else:
             raise RuntimeError('You have to implement this type first!')
 
@@ -95,8 +97,11 @@ class TgffRuntimePlatformMesh(Platform):
         designer = PlatformDesigner(self)
         designer.setSchedulingPolicy('FIFO', 1000)
         designer.newElement("test_chip")
-        designer.addPeClusterForProcessor("cluster_0", tgff_processor.to_pykpn_processor(), 4)
-        topology = meshTopology(['processor_0', 'processor_1','processor_2', 'processor_3'])
+        designer.addPeClusterForProcessor("cluster_0", tgff_processor.to_pykpn_processor(), 16)
+        topology = meshTopology(['processor_0', 'processor_1', 'processor_2', 'processor_3', 'processor_4',
+                                 'processor_5', 'processor_6', 'processor_7', 'processor_8', 'processor_9',
+                                 'processor_10', 'processor_11', 'processor_12', 'processor_13', 'processor_14',
+                                 'processor_15'])
         designer.createNetworkForCluster("cluster_0", 'testNet', topology, sd, 2000, 100, 100, 100, 100)
         designer.finishElement()
         
