@@ -104,7 +104,6 @@ class Simulation(object):
         self.sim_config = AttrDict(config)
         self.kpn = hydra.utils.instantiate(config['kpn'])
         self.platform = hydra.utils.instantiate(config['platform'])
-        self.trace_reader_gen = lambda : hydra.utils.instantiate(config['trace'])
         self.randMapGen = RandomPartialMapper(self.kpn, self.platform)
         self.comMapGen = ComPartialMapper(self.kpn, self.platform, self.randMapGen)
         self.dcMapGen = ProcPartialMapper(self.kpn, self.platform, self.comMapGen)
@@ -134,7 +133,7 @@ class Simulation(object):
         # generate a mapping for the given sample
         app_context.mapping = self.dcMapGen.generate_mapping(mapping.to_list())
         # generate trace reader
-        app_context.trace_reader = self.trace_reader_gen()
+        app_context.trace_reader = hydra.utils.instantiate(self.sim_config['trace'])
         log.debug("Mapping toList: {}".format(app_context.mapping.to_list()))
         sim_context.app_contexts.append(app_context)
         return sim_context
@@ -145,26 +144,17 @@ class Simulation(object):
         Trigger the simulation on 4 for parallel jobs and process the resulting array 
         of simulation results according to the given threshold.
         """
-        #prepare simulation
         results = []
-
         # run simulations and search for the best mapping
-
-        # execute the simulations in parallel
-        # TODO: this is somehow broken, seems to fall into recursive infinite loop creating more threads
-        #if self.threads > 1:
-        if False:
+        if len(samples) > 1 and self.threads > 1:
+            # run parallel simulation for more than one sample in samples list
             from multiprocessing import Pool
-            #about maxtasksperchild argument: https://stackoverflow.com/questions/21485319/high-memory-usage-using-python-multiprocessing
-            #Store and remove lambda object that's unpickable for multithreading (workaround)
-            trace_reader_gen = self.trace_reader_gen
-            self.trace_reader_gen = None
+            log.debug("Running parallel simulation for {} samples".format(len(samples)))
             pool = Pool(processes=self.threads,maxtasksperchild=100)
             results = list(pool.map(self.run_simulation, samples, chunksize=self.threads))
-            #Restore lambda object after having executed simulations
-            self.trace_reader_gen = trace_reader_gen
         else:
-        # results list of simulation contexts
+            # results list of simulation contexts
+            log.debug("Running single simulation")
             results = list(map(self.run_simulation, samples))
         
         #find runtime from results
