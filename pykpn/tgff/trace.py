@@ -78,7 +78,8 @@ class TgffTraceGenerator(TraceGenerator):
         if a trace has to be calculated twice.
         """
         self._trace_dict = {}
-        self._initialize_trace_dict(self._tgff_graph)
+        for graph in self._tgff_graph.values():
+            self._initialize_trace_dict(graph)
         
     
     def _initialize_trace_dict(self, tgff_graph):
