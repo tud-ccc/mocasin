@@ -93,7 +93,7 @@ setup(
         'simpy',
         'termcolor',
         'tqdm',
-        'hydra-core==0.10.0',
+        'hydra-core',
         'deap',
         'networkx',
     ],
