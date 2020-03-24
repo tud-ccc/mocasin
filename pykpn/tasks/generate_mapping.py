@@ -78,8 +78,8 @@ def generate_mapping(cfg):
 
 
     if cfg['simulate_best']:
-        kpn = hydra.utils.instantiate(cfg['kpn'])
-        platform = hydra.utils.instantiate(cfg['platform'])
+        kpn = result.kpn
+        platform = result.platform
         trace = hydra.utils.instantiate(cfg['trace'])
         env = simpy.Environment()
         app = RuntimeKpnApplication(name=kpn.name,
