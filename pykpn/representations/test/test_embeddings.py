@@ -17,7 +17,7 @@ class TestEmbeddings(object):
     def tearDown(self):
         pass
 
-    @pytest.mark.skip("Test is non deterministic and fails sometimes!")
+    @pytest.mark.skip("Test is nondeterministic and fails sometimes!")
     def test_approx(self, exampleClusterArch):
         M = exampleClusterArch
         E = MetricSpaceEmbeddingBase(M)
