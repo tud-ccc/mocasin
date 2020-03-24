@@ -6,6 +6,7 @@
 from enum import Enum
 import numpy as np
 from numpy.random import randint
+from copy import deepcopy
 
 try:
     import pynauty as pynauty
@@ -50,7 +51,10 @@ class MappingRepresentation(type):
             cls._instances[(cls,kpn,platform)] = super(MappingRepresentation,cls).__call__(*args, **kwargs)
             log.info(f"Initializing representation {cls} of kpn with processes: {kpn} on platform {platform}")
             cls._instances[(cls,kpn,platform)]._representationType = cls
-        return cls._instances[(cls,kpn,platform)]
+        instance = deepcopy(cls._instances[(cls,kpn,platform)])
+        instance.kpn = kpn
+        instance.platform = platform
+        return instance
 
     def toRepresentation(self,mapping): 
         return self.simpleVec2Elem(mapping.to_list())
