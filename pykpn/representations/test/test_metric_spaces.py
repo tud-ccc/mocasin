@@ -1,11 +1,13 @@
-# Copyright (C) 2017 TU Dresden
+# Copyright (C) 2017-2020 TU Dresden
 # All Rights Reserved
 #
-# Authors: Andrès Goens, Felix Teweleit
+# Authors: Andrés Goens, Felix Teweleit
 
 import pytest
 
-from pykpn.representations.metric_spaces import arch_graph_to_distance_metric, FiniteMetricSpaceLP, FiniteMetricSpaceLPSym
+from pykpn.representations.metric_spaces import dijkstra, arch_graph_to_distance_metric, FiniteMetricSpaceLP, FiniteMetricSpaceLPSym
+from pykpn.representations.embeddings import isMetricSpaceMatrix
+import numpy as np
 
 class TestMetricSpaces(object):
     
@@ -15,12 +17,23 @@ class TestMetricSpaces(object):
     def tearDown(self):
         pass
     
-    @pytest.mark.skip("Test can't succeed. Need fix by Goens.")
     def test_dijkstra(self, exampleDijkstra):
-        assert(arch_graph_to_distance_metric(exampleDijkstra) ==
-                              ([[0, 15, 45, 35, 49, 41], [15, 0, 30, 20, 34, 26], [45, 30, 0, 10, 24, 16],[35, 20, 10, 0, 14, 6],
-                                [49, 34, 24, 14, 0, 8], [41, 26, 16, 6, 8, 0]], {0: 'N0', 1: 'N2', 2: 'N3', 3: 'N1', 4: 'N4', 5: 'N5'},
-                                {'N0': 0, 'N2': 1, 'N3': 2, 'N1': 3, 'N4': 4, 'N5': 5}))
+        distances = dijkstra(exampleDijkstra, 'N0')
+        assert(distances['N0'] == 0)
+        assert(distances['N1'] == 35)
+        assert(distances['N2'] == 15)
+        assert(distances['N3'] == 45)
+        assert(distances['N4'] == 49)
+        assert(distances['N5'] == 41)
+
+
+    def test_arch_graph_to_distance_metric(self, exampleDijkstra):
+        distance_metric, nodes_correspondence, nc_inv = arch_graph_to_distance_metric(exampleDijkstra)
+        for node in nodes_correspondence:
+            assert(nc_inv[nodes_correspondence[node]] == node)
+        for node in nc_inv:
+            assert(nodes_correspondence[nc_inv[node]] == node)
+        assert(isMetricSpaceMatrix(np.array(distance_metric)))
 
     @pytest.mark.skip("Test is nondeterministic and fails sometimes!")
     def test_finiteMetricSpace_uniformFromBall(self, exampleClusterArch, N):

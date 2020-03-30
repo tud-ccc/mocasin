@@ -19,9 +19,6 @@ import pykpn.util.random_distributions.lp as lp
 
 log = logging.getLogger(__name__)
 
-DEFAULT_DISTORTION = 1.005
-MAX_NUM_TRIES = 6
-
 #  An embedding \iota: M \hookrightarrow R^k
 #  will be calculated and realized as a lookup-table.
 #  This does not scale for large metric spaces as well.
@@ -29,25 +26,13 @@ MAX_NUM_TRIES = 6
 #  However: the idea is to do this for the small space M
 #  and then handle the case M^d \hat \iota R^{kd} specially.
 class MetricSpaceEmbeddingBase():
-    def __init__(self,M,distortion=DEFAULT_DISTORTION):
+    def __init__(self,M):
         assert( isinstance(M,metric.FiniteMetricSpace))
         self.M = M
-        self.distortion = distortion
         self.k = M.n
 
         #First: calculate a good embedding by solving an optimization problem
-        E,self._k = None, None
-        num_tries = 0
-        while(E is None):
-            E,self._k = self.calculateEmbeddingMatrix(np.array(M.D),self.distortion)
-            if E is None:
-                if num_tries < MAX_NUM_TRIES:
-                    log.warning(f"Incrementing distortion {self.distortion} to {self.distortion**2}")
-                    self.distortion = self.distortion**2
-                else:
-                    log.error(f"Could not find an embedding with distortion <= {self.distortion}")
-                    sys.exit(-1)
-            #print(E)
+        E,self.distortion = self.calculateEmbeddingMatrix(np.array(M.D))
 
         #Populate look-up table
         self.iota = dict()
@@ -64,16 +49,18 @@ class MetricSpaceEmbeddingBase():
     def inv(self,j):
         assert(j in iotainv.keys())
         return self.iotainv[j]
-    
+
+
     @staticmethod
-    def calculateEmbeddingMatrix(D,distortion):
-        size = D.shape
-        assert(size[0] == size[1])
-        n = size[0]
+    def calculateEmbeddingMatrix(D):
+        assert(isMetricSpaceMatrix(D))
+        n = D.shape[0]
         if int(cvx.__version__.split('.')[0]) == 0:
             Q = cvx.Semidef(n)
+            d = cvx.NonNegative()
         else:
             Q = cvx.Variable(shape=(n,n), PSD=True)
+            d = cvx.Variable(shape=(1,1), nonneg=True)
         #print(D)
         
         #c = matrix(([1]*n))
@@ -83,19 +70,19 @@ class MetricSpaceEmbeddingBase():
         for i in range(n):
             for j in range(i,n):
                 constraints += [D[i,j]**2 <= Q[i,i] + Q[j,j] - 2*Q[i,j]]
-                constraints += [Q[i,i] + Q[j,j] - 2*Q[i,j] <= distortion**2 * D[i,j]**2 ]
+                constraints += [Q[i,i] + Q[j,j] - 2*Q[i,j] <= d * D[i,j]**2 ]
                 log.debug(f"adding constraint: {D[i,j]}**2 <= Q{[i,i]} + Q{[j,j]} - 2*Q{[i,j]}")
-                log.debug(f"adding constraint: Q{[i,i]} + Q{[j,j]} - 2*Q{[i,j]} <= {distortion}**2 * {D[i,j]}**2 ")
+                log.debug(f"adding constraint: Q{[i,i]} + Q{[j,j]} - 2*Q{[i,j]} <= d * {D[i,j]}**2 ")
         
-        obj = cvx.Minimize(1)
+        obj = cvx.Minimize(d)
         prob = cvx.Problem(obj,constraints)
         solvers = cvx.installed_solvers()
         if 'MOSEK' in solvers:
-            log.info("Solvig problem with MOSEK solver")
+            log.info("Solving problem with MOSEK solver")
             prob.solve(solver=cvx.MOSEK)
         elif 'CVXOPT' in solvers:
-            prob.solve(solver=cvx.CVXOPT,verbose=True)
-            log.info("Solvig problem with CVXOPT solver")
+            prob.solve(solver=cvx.CVXOPT,verbose=False)
+            log.info("Solving problem with CVXOPT solver")
         else:
             prob.solve(solver=cvx.CVXOPT,verbose=True)
             log.warning("CVXOPT not installed. Solvig problem with default solver.")
@@ -129,7 +116,7 @@ class MetricSpaceEmbeddingBase():
         log.debug(f"Shape of lower-triangular matrix L: {L.shape}")
         #lowerdim = fjlt.fjlt(L,10,1)
         #print(lowerdim)
-        return L,n
+        return L,d.value
 
     def approx(self,vec):
         vecs = [list(self.iota[i]) for i in range(len(self.iota))]
@@ -145,8 +132,8 @@ class MetricSpaceEmbeddingBase():
 
 
 class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
-    def __init__(self,M,d=1,distortion=DEFAULT_DISTORTION):
-        MetricSpaceEmbeddingBase.__init__(self,M,distortion)
+    def __init__(self,M,d=1):
+        MetricSpaceEmbeddingBase.__init__(self,M)
         self._d = d
     
     def i(self,vec):
@@ -177,13 +164,13 @@ class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
         else:
             log.error(f"approx: Type error, unrecognized type ({type(i_vec)})")
             exit(-1)
-        assert( len(vec) == self._k * self._d or log.error(f"length of vector ({len(vec)}) does not fit to dimensions ({self._k} * {self._d})"))
+        assert( len(vec) == self.k * self._d or log.error(f"length of vector ({len(vec)}) does not fit to dimensions ({self.k} * {self._d})"))
 
         res = []
         for i in range(0,self._d):
             comp = []
-            for j in range(0,self._k):
-                comp.append(vec[self._k*i +j])
+            for j in range(0,self.k):
+                comp.append(vec[self.k*i +j])
 
             res.append(MetricSpaceEmbeddingBase.approx(self,tuple(comp)))
 
@@ -209,8 +196,34 @@ class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
         for _ in range(npoints):
             #currently fixed at l1 norm (Manhattan)
             p_flat = [item for sublist in map(list,p) for item in sublist]
-            #print(f"k : {self._k}, shape p: {np.array(p).shape},\n p: {p} \n p_flat: {p_flat}")
-            v = (np.array(p_flat)+ np.array(r*lp.uniform_from_p_ball(p=1,n=self._k*self._d))).tolist()
+            #print(f"k : {self.k}, shape p: {np.array(p).shape},\n p: {p} \n p_flat: {p_flat}")
+            v = (np.array(p_flat)+ np.array(r*lp.uniform_from_p_ball(p=1,n=self.k*self._d))).tolist()
             vecs.append(self.approx(v))
             
-        return vecs 
+        return vecs
+
+def isMetricSpaceMatrix(D):
+    size = D.shape
+    n = size[0]
+    dimensions = (size[0] == size[1])
+    # check that matrix is symmetric:
+    m = D.transpose() - D
+    symmetric = np.allclose(m, np.zeros((n, n)))
+    # check that matrix is non-degenerate (and non-negative):
+    nondegenerate = True
+    for i in range(n):
+        for j in range(n):
+            if i == j:
+                nondegenerate = nondegenerate and (D[i,j] == 0)
+            else:
+                nondegenerate = nondegenerate and (D[i, j] > 0)
+    #triangle inequality (which is O(n**3)...)
+    triangle = True
+    for x in range(n):
+        for y in range(n):
+            for z in range(n):
+                triangle = triangle and (D[x,y] + D[y,z] >= D[x,z])
+
+    return dimensions and symmetric and nondegenerate and triangle
+
+
