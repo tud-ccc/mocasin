@@ -14,12 +14,12 @@ def _discrete_random(dims, mu, r, Q, func):
     assert(type(dims) == list)
     for dim in dims:
         assert(type(dim) == int)
-    assert(type(mu) == list)
+    assert(type(mu) == list or type(mu) == np.ndarray)
     assert(len(mu) == len(dims))
     for comp in mu:
-        assert(type(comp) == int)
+        assert(isinstance(comp, (int, np.integer)))
     assert(type(Q) == np.ndarray)
-    n = sum( dims)
+    n = sum(dims)
     Sigma = float(r**2) * Q @ np.transpose(Q)
     #T eigenvectors as transformation matrix
     eigenvals,T = np.linalg.eig(Sigma)
@@ -49,7 +49,7 @@ def _discrete_gauss_plain(dims,eigenvals):
         if (1- 4 * sigma/dims[i]) > 0:
             p = (1 + np.sqrt(1- 4 * sigma/dims[i]))/2
         else:
-            print("Warning: r and Q incompatible with space, yield sigma(" + str(sigma) + ")too large for dimension (" + str(dims[i]) + ")! ")
+            #print("Warning: r and Q incompatible with space, yield sigma(" + str(sigma) + ")too large for dimension (" + str(dims[i]) + ")! ")
             p = 1/2
         ps.append(p)
         i += 1

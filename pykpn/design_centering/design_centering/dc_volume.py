@@ -191,6 +191,7 @@ class LPVolume(Volume):
             log.debug(f"extend radius {self.radius} by factor: {factor}")
         else:
             log.debug(f"shrink radius {self.radius} by factor: {factor}")
+        #print(f"radius: {self.radius} with p_emp = {num_feasible/num_samples} yields factor {factor}")
         self.radius = self.radius * factor
 
     def adapt_transformation(self,s_set):
@@ -211,7 +212,7 @@ class LPVolume(Volume):
         if np.dot(centers,centers.transpose()) != 0:
             centers_alpha = 1/np.sqrt(np.dot(centers,centers))
             self.rk1_vec += centers_factor * centers_alpha * centers
-        rank_one_update = np.matrix(self.rk1_vec).transpose() * np.matrix(self.rk1_vec)
+        rank_one_update = np.array(self.rk1_vec).transpose() @ np.array(self.rk1_vec)
 
         rank_mu_update = np.zeros([self.dim,self.dim])
         for j,X in enumerate(feasible):
@@ -223,7 +224,7 @@ class LPVolume(Volume):
             else:
                 alpha_sq = 0
                 
-            rank_1_matrix = np.matrix(V).transpose() * np.matrix(V)
+            rank_1_matrix = np.array(V).transpose() @ np.array(V)
             rank_mu_update += 1/num_feasible * alpha_sq * rank_1_matrix
 
         rk_1_weight  = 0.6/((self.dim + 1.3)**2 + num_feasible)
@@ -237,20 +238,22 @@ class LPVolume(Volume):
     def adapt_covariance(self):
 
         vals, vecs = np.linalg.eig(self.transformation)
-        
-        idx = vals.argsort()
-        vals_sqrt_diag = np.sqrt(vals[idx])
-        Q = vecs[idx] * vals_sqrt_diag
-        #Q * Q.transpose() is approx. self.transformation
-        norm = np.abs(np.linalg.det(Q) )
-        self.covariance = np.real(1/(norm**(1/self.dim)) * Q)
-        norm = np.abs(np.linalg.det(self.covariance))
+
+        vals_sqrt_diag = np.sqrt(vals)
+        Q = vecs * vals_sqrt_diag
+        #idx = vals.argsort() #why would I sort them?
+        #vals_sqrt_diag = np.sqrt(vals[idx])
+        #Q = vecs[idx] * vals_sqrt_diag
+        #Q @ Q.transpose() is approx. self.transformation
+        norm = np.linalg.det(Q)
+        self.covariance = np.real(1/(np.abs(norm)**(1/self.dim)) * Q)
+        norm = np.linalg.det(self.covariance)
         cnt = 0
         while not np.allclose(norm ,1) and cnt < 10:
             log.warning(f"covariance matrix not normed ({norm}), retrying.")
-            norm = np.abs(np.linalg.det(self.covariance))
+            norm = np.linalg.det(self.covariance)
             cnt += 1
-        self.covariance = np.real(1/(norm**(1/self.dim)) * Q)
+            self.covariance = np.real(1/(np.abs(norm)**(1/self.dim)) * Q)
         if not np.allclose(norm ,1):
             log.warning( f"failed to norm ({norm}) covariance matrix. Resetting to identity")
             self.transformation = np.identity(self.dim) * self.radius**2
