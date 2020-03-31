@@ -17,16 +17,19 @@ class TestEmbeddings(object):
     def tearDown(self):
         pass
 
-    @pytest.mark.skip("Test is nondeterministic and fails sometimes!")
-    def test_approx(self, exampleClusterArch):
+    def test_approx(self, exampleClusterArch,N):
         M = exampleClusterArch
         E = MetricSpaceEmbeddingBase(M)
+
+        for _ in range(N):
+            result = E.approx(np.random.random(E.k))
+            found = False
+            for vec in E.iotainv.keys():
+                if np.allclose(vec,result):
+                    found = True
+            assert found
         
-        result = E.approx(np.random.random(E.k))
-        
-        for value in result:
-            assert(value < 1.0 and value > -1.0)
-        
+
     def test_Evec(self, exampleClusterArch, dimension):
         M = exampleClusterArch
         MLP = FiniteMetricSpaceLP(M, dimension,p=2)

@@ -35,15 +35,20 @@ class TestMetricSpaces(object):
             assert(nodes_correspondence[nc_inv[node]] == node)
         assert(isMetricSpaceMatrix(np.array(distance_metric)))
 
-    @pytest.mark.skip("Test is nondeterministic and fails sometimes!")
     def test_finiteMetricSpace_uniformFromBall(self, exampleClusterArch, N):
         testSpace = exampleClusterArch
-        runs = testSpace.uniformFromBall(3,1,N)
-        result = list(zip(range(4),map(lambda x : len(x)/float(N), [ [run for run in runs if run == i] for i in range(4)])))
-        
-        for probabilitie in result:
-            assert((probabilitie[1] == 0.0 or probabilitie[1] >= 0.3) and probabilitie[1] <= 0.38)
-        
+        p = 3
+        r = 1
+        runs = testSpace.uniformFromBall(p,r,N)
+        result = list(zip(range(testSpace.n),map(lambda x : len(x)/float(N), [ [run for run in runs if run == i] for i in range(testSpace.n)])))
+        for (i,prob) in result:
+            dist = testSpace.dist(i,p)
+            if np.isclose(prob,0):
+                assert(dist > r or (dist == 0 and i == p))
+            else:
+                assert(testSpace.dist(i,p) <= r)
+
+
     def test_finiteMetricSpaceLP_ball1(self, exampleClusterArch):
         testSpace = exampleClusterArch
         testProdSpace = FiniteMetricSpaceLP(testSpace,d=3)
