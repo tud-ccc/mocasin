@@ -1,9 +1,9 @@
-# Copyright: Andres Goens, 2017
+# Copyright: Andres Goens, 2017-2020
 
 import types
+from functools import reduce
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.linalg import sqrtm
 #from scipy.stats import multinomial
 from mpl_toolkits.mplot3d import Axes3D
 import itertools
@@ -18,9 +18,9 @@ def _discrete_random(dims, mu, r, Q, func):
     assert(len(mu) == len(dims))
     for comp in mu:
         assert(type(comp) == int)
-    assert(type(Q) == np.matrix)
+    assert(type(Q) == np.ndarray)
     n = sum( dims)
-    Sigma = float(r**2) * Q*np.transpose(Q)
+    Sigma = float(r**2) * Q @ np.transpose(Q)
     #T eigenvectors as transformation matrix
     eigenvals,T = np.linalg.eig(Sigma)
         
@@ -29,7 +29,7 @@ def _discrete_random(dims, mu, r, Q, func):
     centered = []
     for i,dim in enumerate(dims):
         centered.append([transformed[i] - median_vec[i]])
-    retransformed = (np.transpose(T)*np.matrix(centered)).A1
+    retransformed = (np.transpose(T) @ np.array(centered))
 
     res = []
     for i,dim in enumerate(dims):
@@ -113,52 +113,3 @@ def plot_distribution(ns,mu,Q,r,distribution,num_points=1000):
         support.append((min( map(lambda x : x[i], [key for key in res.keys() if res[key] != 0])),max( map(lambda x : x[i], [key for key in res.keys() if res[key] != 0]))))
     print("Support: "  + str(support))
     plt.show()
-    
-def test_plain_distribution(distribution_func,dims,eigens,num_executions=1000):
-    print("")
-    print("Testing plain distribution")
-    print("--------------------------")
-    randoms =[]
-    for i in range(num_executions):
-        randoms.append(distribution_func(dims,eigens)[0])
-
-    median = distribution_func(dims,eigens)[1]
-
-    for i in range(len(dims)):    
-        empty_dict = dict()
-        for j in range(dims[i]):
-            empty_dict[j] = 0
-        print( "Frequencies for component " + str(i) +": "  + str( reduce(lambda res, x : res.update({x[i] : res[x[i]]+1}) or res,randoms, empty_dict)))
-
-    empty_dict = dict()
-    for i in itertools.product(*map(lambda dim: range(dim),dims)):
-                empty_dict[tuple(i)] = 0
-    reduce(lambda res, x : res.update({tuple(x) : res[tuple(x)]+1}) or res,randoms, empty_dict)
-    non_zero_freqs = [ x for x in empty_dict.values() if x != 0]
-    print("Non-zero frequencies: " + str( non_zero_freqs))
-    print("Mean non-zero frequency: " + str( np.mean(non_zero_freqs)))
-    print("Std. dev: " + str(np.std(non_zero_freqs,ddof=1)))
-    print("Mean value (general): " + str( np.mean(randoms,axis=0)) + ", normed: " +  str( np.mean(randoms,axis=0)- median))
-    print("Deviations (general): " + str( np.std(randoms,axis=0,ddof=1)))
-
-if __name__ == "__main__":
-    np.random.seed(0)
-    ns = [50,80]
-    mu = [15,35]
-    #Q = np.matrix(sqrtm(np.matrix([[ 2., 0.], [0., 1/2.]]))) 
-    Q = np.matrix(sqrtm(np.matrix([[ 3., 0.], [0., 1/3.]]))) 
-    #Q = np.matrix(sqrtm(np.matrix([[ 1.66666667,  1.33333333], [ 1.33333333,  1.66666667]]))) # same as above, rotated 45^\circ
-    r = 3
-
-    # print np.linalg.det(Q)
-    # print np.linalg.eig(Q)
-    eigenv,_ = np.linalg.eig(r**2 * Q*np.transpose(Q))
-    print("Eigenvalues of Cov: " + str(eigenv))
-
-    #test discrete uniform plain
-    test_plain_distribution(_discrete_uniform_plain,ns,eigenv,10000)
-
-    np.random.seed(0)
-    plot_distribution(ns,mu,Q,r,discrete_uniform,num_points=1000)
-    #plot_distribution(ns,mu,Q,r,discrete_gauss,num_points=10000)
-

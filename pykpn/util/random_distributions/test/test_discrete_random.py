@@ -9,27 +9,27 @@ def template_test_plain_distribution(distribution_func,dims,eigens,num_execution
     randoms =[]
     for i in range(num_executions):
         randoms.append(distribution_func(dims,eigens)[0])
+    median_vec = distribution_func(dims,eigens)[1]
 
-    median = distribution_func(dims,eigens)[1]
+    #median = distribution_func(dims,eigens)[1]
 
-    for i in range(len(dims)):
-        empty_dict = dict()
-        for j in range(dims[i]):
-            empty_dict[j] = 0
-        print( "Frequencies for component " + str(i) +": "  + str( reduce(lambda res, x : res.update({x[i] : res[x[i]]+1}) or res,randoms, empty_dict)))
+    #for i in range(len(dims)):
+    #    empty_dict = dict()
+    #    for j in range(dims[i]):
+    #        empty_dict[j] = 0
+    #    #print( "Frequencies for component " + str(i) +": "  + str( reduce(lambda res, x : res.update({x[i] : res[x[i]]+1}) or res,randoms, empty_dict)))
 
-    empty_dict = dict()
-    for i in product(*map(lambda dim: range(dim),dims)):
-        empty_dict[tuple(i)] = 0
-    reduce(lambda res, x : res.update({tuple(x) : res[tuple(x)]+1}) or res,randoms, empty_dict)
-    non_zero_freqs = [ x for x in empty_dict.values() if x != 0]
+    #empty_dict = dict()
+    #for i in product(*map(lambda dim: range(dim),dims)):
+    #    empty_dict[tuple(i)] = 0
+    #reduce(lambda res, x : res.update({tuple(x) : res[tuple(x)]+1}) or res,randoms, empty_dict)
+    #non_zero_freqs = [ x for x in empty_dict.values() if x != 0]
     #print("Non-zero frequencies: " + str( non_zero_freqs))
     #print("Mean non-zero frequency: " + str( np.mean(non_zero_freqs)))
     #print("Std. dev: " + str(np.std(non_zero_freqs,ddof=1)))
     mean = np.mean(randoms, axis=0)
     std = np.std(randoms, axis=0, ddof=1)
-    print("Mean value (general): " + str( np.mean(randoms,axis=0)) + ", normed: " +  str( np.mean(randoms,axis=0)- median))
-    print("Deviations (general): " + str( np.std(randoms,axis=0,ddof=1)))
+    return mean,std,median_vec
 
 def constant_nums(dims,eigenvals):
     eigenvals_int = eigenvals.astype(int)
@@ -40,10 +40,18 @@ def constant_nums(dims,eigenvals):
     #plot_distribution(ns,mu,Q,r,discrete_uniform,num_points=1000)
     #plot_distribution(ns,mu,Q,r,discrete_gauss,num_points=10000)
 def test_discrete_uniform(ns,eigenv):
-    template_test_plain_distribution(_discrete_uniform_plain, ns, eigenv, 10000)
+    np.random.seed(0)
+    mean,std,_ = template_test_plain_distribution(_discrete_uniform_plain, ns, eigenv, 100000)
+    expected_std = [ np.sqrt(((b - 0 + 1)**2-1)/12) for b in eigenv.flat]
+    assert(np.allclose(mean,eigenv/2.,atol=0.5))
+    assert(np.allclose(std,expected_std,atol=0.5))
 
 def test_discrete_gauss(ns,eigenv):
-    template_test_plain_distribution(_discrete_gauss_plain, ns, eigenv, 10000)
+    np.random.seed(0)
+    mean,std,median_vec = template_test_plain_distribution(_discrete_gauss_plain, ns, eigenv, 100000)
+    deviation = np.abs(mean-median_vec)
+    assert(np.allclose(deviation, 0,atol=0.5))
+    assert(np.allclose(std,np.array([[2.28, 1.32]]),atol=0.3))
 
 def test_discrete_random(ns,mu,r,Q):
     Sigma = float(r**2) * Q @ np.transpose(Q)
