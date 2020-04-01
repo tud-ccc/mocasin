@@ -81,11 +81,11 @@ class MetricSpaceEmbeddingBase():
             log.info("Solving problem with MOSEK solver")
             prob.solve(solver=cvx.MOSEK)
         elif 'CVXOPT' in solvers:
-            prob.solve(solver=cvx.CVXOPT,verbose=False)
+            prob.solve(solver=cvx.CVXOPT,kktsolver=cvx.ROBUST_KKTSOLVER,verbose=False)
             log.info("Solving problem with CVXOPT solver")
         else:
-            prob.solve(solver=cvx.CVXOPT,verbose=True)
-            log.warning("CVXOPT not installed. Solvig problem with default solver.")
+            prob.solve(verbose=False)
+            log.warning("CVXOPT not installed. Solving problem with default solver.")
         if prob.status != cvx.OPTIMAL:
             log.warning("embedding optimization status non-optimal: " + str(prob.status)) 
             return None,None
