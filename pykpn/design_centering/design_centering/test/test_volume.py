@@ -1,92 +1,22 @@
+# Copyright (C) 2019-2020 TU Dresden
+# All Rights Reserved
+#
+# Author: Andrés Goens
+
 import numpy as np
-import pytest
 from unittest.mock import Mock
 
 from pykpn.design_centering.design_centering.dc_volume import *
 import pykpn.design_centering.design_centering.dc_sample as sample
-import pykpn.design_centering.design_centering.dc_oracle as oracle
-import pykpn.design_centering.design_centering.designCentering as dc
 
-from pykpn.common.kpn import KpnGraph, KpnProcess
-from pykpn.common.platform import Platform, Processor, Scheduler
-from pykpn.common.mapping import Mapping
 import pykpn.util.random_distributions.discrete_random as rd
-from scipy.linalg import sqrtm
 
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-#from ..dc_volume import *
-
-NUM_PROCS = 50
-NUM_SAMPLES = 200
-NUM_ITER = 20
-POINT = [15,13]
-
-#@pytest.fixture
-def kpn():
-    k = KpnGraph('a')
-    k.add_process(KpnProcess('a'))
-    k.add_process(KpnProcess('b'))
-    return k
-
-#@pytest.fixture
-def platform(num_procs=NUM_PROCS):
-    p = Platform('platform')
-    procs = []
-    for i in range(num_procs):
-        proc = Processor(('processor' + str(i)), 'proctype', Mock())
-        procs.append(proc)
-        p.add_processor(proc)
-    policies = [Mock()]
-    sched = Scheduler('name',procs,policies)
-    p.add_scheduler(sched)
-    return p
-
-#@pytest.fixture
-def center(point=[1,2]):
-    k = kpn()
-    p = platform()
-    m = Mapping(k,p)
-    m.from_list(point)
-    return m
 
 
-#@pytest.fixture
-def lp_vol(point=[1,2],transf=None):
-    k = kpn()
-    p = platform()
-    dim = 2
-    c = center(point=point)
-    vol = LPVolume(c,dim,k,p,conf())
-    if transf is not None:
-        vol.transformation = transf
-    return vol
 
-#@pytest.fixture
-def s_set():
-    result = sample.SampleSet()
-    n = 5
-    for i in range(n):
-        s = sample.Sample(sample=[i,i])
-        s.setFeasibility(True)
-        result.add_sample(s)
-        
-        s = sample.Sample(sample=[-i,i])
-        s.setFeasibility(False)
-        result.add_sample(s)
-    return result
-
-#https://stackoverflow.com/questions/4984647/accessing-dict-keys-like-an-attribute
-class AttrDict(dict):
-    def __init__(self, *args, **kwargs):
-        super(AttrDict, self).__init__(*args, **kwargs)
-        self.__dict__ = self
-
-#@pytest.fixture
-def conf():
-    return AttrDict({'adapt_samples' : NUM_SAMPLES, 'max_step': 10, 'adaptable_center_weights' : False , 'radius' : 10})
-
-def random_s_set_gen(n,procs,mu,Q,r,threshold=0.05,num_points=10):
+def random_s_set_gen(n,procs,mu,Q,r,num_samples,threshold=0.05,num_points=10):
     ns = [procs] * n
 
     # print np.linalg.det(Q)
@@ -96,34 +26,33 @@ def random_s_set_gen(n,procs,mu,Q,r,threshold=0.05,num_points=10):
 
     #test discrete uniform plain
     result = sample.SampleSet()
-    for i in range(NUM_SAMPLES):
-        sample_vec = rd.discrete_gauss(ns,mu,r,np.matrix(Q))
+    for i in range(num_samples):
+        sample_vec = rd.discrete_gauss(ns,mu.astype(int),r,np.array(Q))
         s = sample.Sample(sample=sample_vec)
         s.setFeasibility(True)
         result.add_sample(s)
     return result
 
+def random_s_set_test_center(dim,num_procs,mu,num_samples,Q,r):
+    procs = num_procs
+    s_set = random_s_set_gen(dim,procs,mu,Q,r,num_samples)
+    component = np.random.randint(2)
+    other_component = 1 - component
+    for sample in s_set.get_samples():
+        tup = sample.sample2simpleTuple()
+        # skew upward
+        if tup[component] > mu[component] and (tup[other_component] == mu[other_component]):
+            sample.setFeasibility(True)
+        else:
+            sample.setFeasibility(False)
+    return s_set
 
-#@pytest.fixture
-def random_s_set_test_center():
-    n = 2
-    procs = NUM_PROCS
-    mu = POINT
-    #Q = np.matrix(sqrtm(np.matrix([[ 3., 0.], [0., 1/3.]]))) 
-    Q = np.matrix(sqrtm(np.matrix([[ 1.66666667,  1.33333333], [ 1.33333333,  1.66666667]]))) # same as above, rotated 45^\circ
-    r = 3
-    return random_s_set_gen(n,procs,mu,Q,r)
-
-def random_s_set_test_radius(r,center=POINT,r_set=3):
-    n = 2
-    procs = 50
-    mu = [15,13]
-    #Q = np.matrix(sqrtm(np.matrix([[ 3., 0.], [0., 1/3.]]))) 
-    Q = np.matrix(sqrtm(np.matrix([[ 1.66666667,  1.33333333], [ 1.33333333,  1.66666667]]))) # same as above, rotated 45^\circ
-    test_set = random_s_set_gen(n,procs,mu,Q,r)
+#generates random sets of points around a feasible circle with radius r_set
+def random_s_set_test_radius(r,point,dim,num_procs,num_samples,Q,r_set):
+    test_set = random_s_set_gen(dim,num_procs,point,Q,r,num_samples)
     Qinv = np.linalg.inv(Q)
     for s in test_set.get_feasible():
-        vecNotShifted = (np.array(s.sample2tuple()) - np.array(center))
+        vecNotShifted = (np.array(s.sample2tuple()) - np.array(point))
         vec = np.dot(vecNotShifted , Qinv)
         dist = np.sqrt(np.dot(vec,vec.transpose()))
         if dist >= r_set:
@@ -131,17 +60,12 @@ def random_s_set_test_radius(r,center=POINT,r_set=3):
 
     return test_set
 
-def random_s_set_test_covariance(Q,center=POINT):
-    n = 2
-    procs = 50
-    mu = [15,13]
-    r = 3
-    #Q = np.matrix(sqrtm(np.matrix([[ 3., 0.], [0., 1/3.]]))) 
-    Q_set = np.matrix(sqrtm(np.matrix([[ 1.66666667,  1.33333333], [ 1.33333333,  1.66666667]]))) # same as above, rotated 45^\circ
-    test_set = random_s_set_gen(n,procs,mu,Q,r)
-    Qinv = np.linalg.inv(Q_set)
+#center and radius should not really change
+def random_s_set_test_covariance(Q,Q_target,dim,num_procs,r,mu,num_samples):
+    test_set = random_s_set_gen(dim,num_procs,mu,Q,r,num_samples)
+    Qinv = np.linalg.inv(Q_target)
     for s in test_set.get_feasible():
-        vecNotShifted = (np.array(s.sample2tuple()) - np.array(center))
+        vecNotShifted = (np.array(s.sample2tuple()) - np.array(mu))
         vec = np.dot(vecNotShifted , Qinv)
         dist = np.sqrt(np.dot(vec,vec.transpose()))
        # print(dist)
@@ -168,61 +92,108 @@ def parse_s_set(s_set,center,coordinates):
     colors.append(2)
     return x,y,colors
 
-@pytest.mark.skip("Test can't succeed. Need fix by Goens.")
-def test_center_adaptation():
-    vol = lp_vol()
+def test_center_adaptation(vol_mu,num_iter,num_procs,num_samples,Q,r,seed):
     points = []
-    centers = [vol.center]
+    centers = [vol_mu.center]
+    dim = len(vol_mu.center)
+    np.random.seed(seed)
 
-    for _ in range(NUM_ITER):
-        sample_set = random_s_set_test_center()
-        vol.adapt_center(sample_set)
-        x,y,colors = parse_s_set(sample_set,vol.center,coordinates=[0,1])
+
+    for _ in range(num_iter):
+        sample_set = random_s_set_test_center(dim,num_procs,vol_mu.center,num_samples,Q,r)
+        vol_mu.adapt_center(sample_set)
+        x,y,colors = parse_s_set(sample_set,vol_mu.center,coordinates=[0,1])
         points.append((x,y,colors))
-        centers.append(vol.center)
-    print(centers)
+        centers.append(vol_mu.center)
+
+    itercenters = iter(centers)
+    old_center = next(itercenters)
+    for center in itercenters:
+        for new,old in zip(center,old_center):
+            assert(new >= old)
+    num_centers = len(set(map(tuple,centers)))
+    assert num_centers > 1
+
+#Note on the radius adaptation: if the p value hits perfectly the target_p,
+#the radius will still vary a bit (albeit not much).
+#This follows directly from the forumlas in the original paper.
+#We can see this with the following Sage code, for example:
+#var('N', 'mu', 'lambd', 'Beta')
+#Beta = 0.6/((2+1.3)**2 + mu)
+#f = (1+Beta*(1-mu/lambd))^mu * (1-Beta * mu/lambd)^(lambd-mu)
+#plot(f(lambd=1000),(mu,0,1000))
+
+def test_radius_adaptation(vol_mu,num_samples,seed,num_iter,num_procs,dim,Q,r_set,target_p,conf):
+    np.random.seed(seed)
+    #points = []
+    radii = [vol_mu.radius]
+    for _ in range(num_iter):
+        sample_set = random_s_set_test_radius(vol_mu.radius,vol_mu.center,dim,num_procs,num_samples,Q,r_set) # (r,point,dim,num_procs,num_samples,Q,r_set)
+        conf.adapt_samples=num_samples
+        vol_mu.adapt_volume(sample_set,target_p,Mock())
+        radii.append(vol_mu.radius)
+        #x,y,colors = parse_s_set(sample_set,vol_mu.center,coordinates=[0,1])
+        #points.append((x,y,colors))
+    #distances to target p should improve:
+    target_r = target_p * r_set #I don't know why this is. I feel it should be: r_set * target_p ** (-1./dim)
+    iterradii = iter(radii)
+    old_radius = next(iterradii)
+    for new_radius in iterradii:
+        dist_old = np.abs(target_r - old_radius)
+        dist_new = np.abs(target_r - new_radius)
+        assert(dist_old + 0.5 >= dist_new) #allow a (generous) 0.5 margin of error
+        old_radius = new_radius
+
+    #in the end (actual) p should be close to target_p
+    #rel_vol_feasible = r_set**dim  #ignoring pi and such factors
+    #rel_vol_found = vol_mu.radius**dim  #ignoring pi and such factors
+    p = new_radius/r_set #again, no idea why it is this, I feel it should be: rel_vol_feasible / rel_vol_found
+    assert np.isclose(p,target_p,atol=0.1)
+
+    
+def test_covariance_adaptation(seed,num_iter,num_samples,r_small,num_procs,vol_mu,Q,Q_not_rotated,conf):
+    np.random.seed(seed)
+    points = []
+    mu = vol_mu.center
+    vol_mu.covariance = Q
+    r = r_small
+    vol_mu.radius = r
+    dim = len(mu)
+    p_target = 0.65
+
+    for _ in range(num_iter):
+        #print(f"\n radius: {vol_mu.radius} ;covariance (det: {np.linalg.det(vol_mu.covariance)}): \n {vol_mu.covariance}")
+        sample_set = random_s_set_test_covariance(vol_mu.covariance,Q_not_rotated,dim,num_procs,r,vol_mu.center,num_samples)
+        conf.adapt_samples=num_samples
+        vol_mu.adapt_volume(sample_set,p_target,Mock())
+        if vol_mu.radius > r:
+            p_target = 0.9
+        else:
+            p_target = 0.1
+        #assert(np.isclose(np.linalg.det(vol_mu.covariance),1,rtol=0.1))
+
+        #print(vol_mu.covariance)
+        #x,y,colors = parse_s_set(sample_set,vol_mu.center,coordinates=[0,1])
+        #points.append((x,y,colors))
+    print(vol_mu.covariance)
     #visualize_s_sets(points)
-
-@pytest.mark.skip("Test can't succeed. Need fix by Goens.")
-def test_radius_adaptation():
-    vol = lp_vol(point=POINT)
-    print(vol.radius)
-    points = []
-    for _ in range(NUM_ITER):
-        sample_set = random_s_set_test_radius(vol.radius)
-        conf.adapt_samples=NUM_SAMPLES
-        vol.adapt_volume(sample_set,0.65,Mock())
-        print(vol.radius)
-        x,y,colors = parse_s_set(sample_set,vol.center,coordinates=[0,1])
-        points.append((x,y,colors))
-    
-@pytest.mark.skip("Test can't succeed. Need fix by Goens.")
-def test_covariance_adaptation():
-    vol = lp_vol(transf=np.identity(2))
-    points = []
-    for _ in range(NUM_ITER):
-        sample_set = random_s_set_test_covariance(vol.covariance)
-        conf.adapt_samples=NUM_SAMPLES
-        vol.adapt_volume(sample_set,0.65,Mock())
-        print(vol.covariance)
-        x,y,colors = parse_s_set(sample_set,vol.center,coordinates=[0,1])
-        points.append((x,y,colors))
-
-    #visualize_s_sets(points)
     
     
-@pytest.mark.skip("Test can't succeed. Need fix by Goens.")
-def test_all_infeasible():
-    vol = lp_vol(transf=np.identity(2))
-    points = []
+def test_all_infeasible(lp_vol,num_samples,conf):
     sample_set = sample.SampleSet()
-    conf.adapt_samples=NUM_SAMPLES
-    vol.adapt_volume(sample_set,0.65,Mock())
-    print(vol.covariance)
+    conf.adapt_samples=num_samples
+    cov = lp_vol.covariance
+    radius = lp_vol.radius
+    center = lp_vol.center
+    lp_vol.adapt_volume(sample_set,0.65,Mock())
+    #nothing should change, but algorithm should not crash
+    assert np.alltrue(cov == lp_vol.covariance)
+    assert radius == lp_vol.radius
+    assert np.alltrue(center == lp_vol.center)
 
 
-@pytest.mark.skip("Test can't succeed. Need fix by Goens.")
-def visualize_s_sets(points,coordinates=[0,1],ns=[NUM_PROCS,NUM_PROCS]):
+def visualize_s_sets(points,num_procs):
+    ns=[num_procs,num_procs]
     fig, ax = plt.subplots()
     (x,y,colors) = points[0]
     plot = plt.scatter(x, y,  c=colors, alpha=0.5)
@@ -240,12 +211,3 @@ def visualize_s_sets(points,coordinates=[0,1],ns=[NUM_PROCS,NUM_PROCS]):
     myAnimation = animation.FuncAnimation(fig, animate, interval=1000, blit=True, repeat=True)
 
     plt.show()
-
-
-    plt.show()
-
-def main():
-    test_covariance_adaptation()
-
-if __name__ == "__main__":
-    main()

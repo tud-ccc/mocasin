@@ -15,7 +15,7 @@ from . import permutations as perm
 class FiniteMetricSpace():
     def __init__(self,matrix):
         try:
-            self.D = np.matrix(matrix)
+            self.D = np.array(matrix)
         except Exception as ex:
             logging.error("An error ocurred while initializing a finite metric space with a distance matrix.\n" + str(ex))
             exit(1)
