@@ -164,7 +164,7 @@ class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
         else:
             log.error(f"approx: Type error, unrecognized type ({type(i_vec)})")
             raise RuntimeError("unrecognized type.")
-        assert( len(vec) == self._k * self._d or log.error(f"length of vector ({len(vec)}) does not fit to dimensions ({self._k} * {self._d})"))
+        assert( len(vec) == self.k * self._d or log.error(f"length of vector ({len(vec)}) does not fit to dimensions ({self.k} * {self._d})"))
 
         res = []
         for i in range(0,self._d):
