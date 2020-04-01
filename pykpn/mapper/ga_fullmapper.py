@@ -28,8 +28,8 @@ class GeneticFullMapper(object):
         return list(as_rep)
 
 
-    def mapping_crossover(self,m1,m2,k=2):
-        return self.representation._crossover(m1,m2,k)
+    def mapping_crossover(self,m1,m2):
+        return self.representation._crossover(m1,m2,self.crossover_rate)
 
     def mapping_mutation(self,mapping):
         #m_obj = self.representation.fromRepresentation(list((mapping)))
@@ -91,6 +91,10 @@ class GeneticFullMapper(object):
         self.config = config
         self.random_mapper = RandomPartialMapper(self.kpn,self.platform,config,seed=None)
         self.mapping_cache = {}
+        self.crossover_rate = self.config['crossover_rate']
+        if self.crossover_rate > len(self.kpn.processes()):
+            log.error("Crossover rate cannot be higher than number of processes in application")
+            raise RuntimeError("Invalid crossover rate")
         self.statistics = { 'mappings_evaluated' : 0, 'mappings_cached' : 0, 'simulation_time' : 0, 'representation_time' : 0}
         rep_type_str = config['representation']
         if rep_type_str not in dir(RepresentationType):
