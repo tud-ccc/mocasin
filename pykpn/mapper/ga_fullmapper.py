@@ -29,17 +29,7 @@ class GeneticFullMapper(object):
 
 
     def mapping_crossover(self,m1,m2,k=2):
-        #TODO: make a representation-specific crossover operator
-        assert len(m1) == len(m2)
-        crossover_points = random.sample(range(len(m1)),k)
-        swap = False
-        for i in range(len(m1)):
-            if i in crossover_points:
-                swap = not swap
-            if swap:
-                m1[i] = m2[i]
-                m2[i] = m2[i]
-        return m1,m2
+        return self.representation._crossover(m1,m2,k)
 
     def mapping_mutation(self,mapping):
         #m_obj = self.representation.fromRepresentation(list((mapping)))
