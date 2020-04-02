@@ -1,0 +1,12 @@
+mapper:
+   class:
+      pykpn.mapper.randomwalk_fullmapper.RandomWalkFullMapper
+
+num_iterations : 100
+jobs : 4
+progress :  true
+export_all : false
+plot_distribution: false
+visualize : false
+show_plots : false
+radius : 5

@@ -1,6 +1,7 @@
-# Authors: Gerald Hempel
+# Authors: Gerald Hempel, Andres Goens
 
 import random
+import hydra
 
 from pykpn.util import logging
 from pykpn.common.mapping import (ChannelMappingInfo, Mapping,
@@ -8,21 +9,26 @@ from pykpn.common.mapping import (ChannelMappingInfo, Mapping,
 
 log = logging.getLogger(__name__)
 
+
 class RandomPartialMapper(object):
-    """Generates a full random mapping
+    """Generates a random mapping
 
     This class is used to generate a random mapping for a given
     platform and KPN application. 
     """
 
-    def __init__(self, kpn, platform):
-        """Generates a random mapping for a given platform and KPN application. 
+    def __init__(self, kpn, platform, config, seed=None):
+        """Generates a random mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
         :type kpn: KpnGraph
         :param platform: a platform
         :type platform: Platform
         """
+        if seed is not None:
+            random.seed(seed)
+        self.seed = seed
+        self.config = config
         self.full_mapper = True
         self.platform = platform
         self.kpn = kpn
@@ -46,7 +52,7 @@ class RandomPartialMapper(object):
 
         # check if the platform/kpn is equivalent
         if not part_mapping.platform is self.platform or not part_mapping.kpn is self.kpn:
-           raise RuntimeError('rand_map: Try to map partial mapping of platform,KPN %s,%s to %s,%s',
+            raise RuntimeError('rand_map: Try to map partial mapping of platform,KPN %s,%s to %s,%s',
                              part_mapping.platform.name, part_mapping.kpn.name, 
                              self.platform.name, self.kpn.name)
 
@@ -103,3 +109,13 @@ class RandomPartialMapper(object):
         assert not part_mapping.get_unmapped_channels()
         return part_mapping
 
+
+class RandomFullMapper(RandomPartialMapper):
+    """Generates a random mapping
+    This class is a FullMapper wrapper
+    for RandomPartialMapper.
+    """
+    def __init__(self,config):
+        kpn = hydra.utils.instantiate(config['kpn'])
+        platform = hydra.utils.instantiate(config['platform'])
+        super().__init__(kpn, platform, config, seed=None)

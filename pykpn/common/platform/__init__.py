@@ -63,7 +63,6 @@ class CommunicationResource(object):
     This is a base class that can be specialized to model more complex
     resources like caches.
     '''
-    #resource Type attribute added by Felix Teweleit 10.08.2018
 
     def __init__(self, name, frequency_domain, resource_type, read_latency, write_latency,
                  read_throughput=float('inf'), write_throughput=float('inf'),
@@ -94,6 +93,9 @@ class CommunicationResource(object):
     def write_throughput(self):
         return (self._write_throughput /
                 self._frequency_domain.cycles_to_ticks(1))
+        
+    def frequency_domain_name(self):
+        return self._frequency_domain.name
 
     def __str__(self):
         return self.name

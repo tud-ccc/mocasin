@@ -1,6 +1,6 @@
 hydra:
   sweep:
     dir: multirun/${now:%Y-%m-%d-%H-%M-%S}
-    subdir: ${hydra.job.num}_${hydra.job.num}_${hydra.job.override_dirname}
+    subdir: ${hydra.job.num}
 
 log_level : WARNING

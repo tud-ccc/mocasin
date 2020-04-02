@@ -6,12 +6,14 @@ defaults:
   - kpn: default
   - platform: default
   - trace: default
+  - representation: default
+  - mapper: default
 
-num_iterations : 100
+simulate_best : true
+objective : runtime
+outdir : ./
 jobs : 4
 progress :  true
-export_all : false
-outdir : random_walking_output
 plot_distribution: false
 visualize : false
 rep_type_str : SimpleVector

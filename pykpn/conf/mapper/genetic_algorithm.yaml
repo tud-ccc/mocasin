@@ -1,0 +1,13 @@
+mapper:
+   class:
+      pykpn.mapper.ga_fullmapper.GeneticFullMapper
+pop_size : 50
+num_gens : 20
+cxpb : 0.35
+mutpb : 0.5
+tournsize : 4
+mupluslambda: true
+initials : random
+radius : 5
+random_seed: 42
+crossover_rate : 2

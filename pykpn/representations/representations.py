@@ -7,6 +7,7 @@ from enum import Enum
 import numpy as np
 from numpy.random import randint
 from copy import deepcopy
+import random
 
 try:
     import pynauty as pynauty
@@ -193,7 +194,7 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         return res
       
     def uniformFromBall(self,p,r,npoints=1):
-        return self.fromRepresentation(self._uniformFRomBall(p,r,npoints=npoints))
+        return self.fromRepresentation(self._uniformFromBall(p,r,npoints=npoints))
 
     def distance(self,x,y):
         a = np.array(x)
@@ -211,6 +212,21 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         else:
             res = list(map(lambda t: max(0,min(t , P-1)), approx))
         return res
+
+    def crossover(self,m1,m2,k):
+        return self._crossover(self.toRepresentation(m1),self.toRepresentation(m2),k)
+
+    def _crossover(self,m1,m2,k):
+        assert len(m1) == len(m2)
+        crossover_points = random.sample(range(len(m1)),k)
+        swap = False
+        for i in range(len(m1)):
+            if i in crossover_points:
+                swap = not swap
+            if swap:
+                m1[i] = m2[i]
+                m2[i] = m2[i]
+        return m1,m2
 
 
 #FIXME: UNTESTED!!
@@ -437,7 +453,7 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
       point = []
       for i in range(self._d):
           val = []
-          point.append(list(p)[self._k*i:self._k*(i+1)])
+          point.append(list(p)[self.k*i:self.k*(i+1)])
       results_raw = MetricSpaceEmbedding.uniformFromBall(self,point,r,npoints)
       results = list(map(lambda x : np.array(list(np.array(x).flat)),results_raw))
       #print(f"results uniform from ball: {results}")
@@ -467,6 +483,22 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
 
     def approximate(self,x):
         return np.array(self.approx(x)).flatten()
+
+    def crossover(self, m1, m2, k):
+        return self._crossover(self.toRepresentation(m1), self.toRepresentation(m2), k)
+
+    def _crossover(self, m1, m2, k):
+        assert len(m1) == len(m2)
+        crossover_points = np.array(random.sample(range(self._d), k)) * self.k
+        swap = False
+        for i in range(len(m1)):
+            if i in crossover_points:
+                swap = not swap
+            if swap:
+                m1[i] = m2[i]
+                m2[i] = m2[i]
+        return m1, m2
+
 
 class SymmetryEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepresentation):
     """Symmetry Embedding Representation
