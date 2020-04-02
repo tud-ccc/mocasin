@@ -26,6 +26,7 @@ from pykpn.tasks.to_dot import kpn_to_dot
 from pykpn.tasks.to_dot import mapping_to_dot
 from pykpn.tasks.to_dot import platform_to_dot
 from pykpn.tasks.visualize import visualize
+from pykpn.tasks.generate_yaml import generate_yaml
 
 from pykpn.tgff.tgffSimulation import TgffReferenceError
 
@@ -71,6 +72,10 @@ _tasks = {
     'visualize': (
         visualize,
         "Visualize a mapping in the GUI"),
+    'generate_yaml': (
+        generate_yaml,
+        "Generates a bunch of yaml files"
+    )
 }
 """A dictionary that maps task names to a callable function."""
 

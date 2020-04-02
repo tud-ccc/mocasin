@@ -318,7 +318,7 @@ class Parser():
         """Try to match the line to the patterns that can
         occur in the current context.
         """
-        if not additional_components == None:
+        if additional_components is not None:
             for key, rx in additional_components.items():
                 match = rx.fullmatch(line)
                 if match:
@@ -338,22 +338,8 @@ class Parser():
         if key == 'new_line' or key == 'comment':
             if self._debug:
                 print('Skip empty or comment line')
-        elif not key == None:
+        elif key is not None:
             self.logger.warning('Parsed unhandled group: <' + key + '> at position: ' + str(position))
         else:
             self.logger.error('Parse error on position: ' + str(position))
-                
-def main():
-    argument_parser = argparse.ArgumentParser()
-    argument_parser.add_argument('path',metavar='P', type=str)
-    argument_parser.add_argument('--debug', metavar='D', const=True, nargs='?')
-    args = argument_parser.parse_args()
 
-    mParser = Parser(debug=args.debug)
-    mParser.parseFile(args.path)
-    
-    
-if __name__ == "__main__":
-    main()
-    
-    
