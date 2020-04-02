@@ -49,6 +49,7 @@ class TraceGeneratorWrapper():
 
 class PlatformFromTgff():
     def __new__(self, platform_type, processor, file_path, amount):
+        print(processor)
         if not file_path in _parsed_tgff_files:
             _parsed_tgff_files.update( {file_path : Parser().parse_file(file_path)} )
         
@@ -68,7 +69,7 @@ class PlatformFromTgff():
         elif platform_type == 'mesh':
             return TgffRuntimePlatformMesh(processor_dict[processor])
         elif platform_type == 'clustered':
-            return TgffRuntimePlatformMultiCluster(processor_dict[processor])
+            return TgffRuntimePlatformMultiCluster(processor_dict[processor], processor_dict[processor])
         else:
             raise RuntimeError('You have to implement this type first!')
 
