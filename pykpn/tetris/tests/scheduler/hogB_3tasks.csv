@@ -1,0 +1,25 @@
+# Both DAC and DAC-2 produce the same output
+# RUN: %pytetris --scenario %s -s DAC  --mode=single | %check %s --check-prefix=CHECK-DAC
+# RUN: %pytetris --scenario %s -s DAC-2  --mode=single | %check %s --check-prefix=CHECK-DAC
+# RUN: %pytetris --scenario %s -s FAST  --mode=single | %check %s --check-prefix=CHECK-FAST
+app,start_time,deadline
+hog.B,0,51.91
+hog.B,0,51.91
+hog.B,0,51.91
+# CHECK-DAC-L: Time window: [0.000, 41.922), Energy (Total): 220.309
+# CHECK-DAC-L:   Job: 0 [hog.B], mapping: 4
+# CHECK-DAC-L:   Job: 1 [hog.B], mapping: 25
+# CHECK-DAC-L:   Job: 2 [hog.B], mapping: 30
+# CHECK-DAC-L: Time window: [41.922, 42.465), Energy (Total): 2.360
+# CHECK-DAC-L:   Job: 1 [hog.B], mapping: 25
+# CHECK-DAC-L:   Job: 2 [hog.B], mapping: 30
+# CHECK-DAC-L: Time window: [42.465, 43.076), Energy (Total): 1.067
+# CHECK-DAC-L:   Job: 1 [hog.B], mapping: 25
+#
+# CHECK-FAST-L: Time window: [0.000, 41.922), Energy (Total): 220.309
+# CHECK-FAST-L:   Job: 0 [hog.B], mapping: 4
+# CHECK-FAST-L:   Job: 1 [hog.B], mapping: 25
+# CHECK-FAST-L:   Job: 2 [hog.B], mapping: 30
+# CHECK-FAST-L: Time window: [41.922, 43.385), Energy (Total): 1.617
+# CHECK-FAST-L:   Job: 1 [hog.B], mapping: 4
+# CHECK-FAST-L:   Job: 2 [hog.B], mapping: 0

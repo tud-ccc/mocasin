@@ -1,0 +1,32 @@
+# RUN: %pytetris --scenario %s -s FAST  --mode=single | %check %s --check-prefix=CHECK-FAST
+# RUN: %pytetris --scenario %s -s DAC  --mode=single | %check %s --check-prefix=CHECK-DAC
+# RUN: %pytetris --scenario %s -s DAC-2  --mode=single | %check %s --check-prefix=CHECK-DAC
+# RUN: %pytetris --scenario %s -s BF  --mode=single | %check %s --check-prefix=CHECK-BF
+# RUN: %pytetris --scenario %s -s BF-MEM  --mode=single | %check %s --check-prefix=CHECK-BF
+# RUN: %pytetris --scenario %s -s WWT15  --mode=single | %check %s --check-prefix=CHECK-WWT15
+app,start_time,deadline
+hog.B,0,47.718
+hog.B,0,47.718
+# CHECK-FAST: Time window: \[0.000, 41.922\), Energy \(Total\): 111.476
+# CHECK-FAST:   Job: \d \[hog.B\], mapping: 4
+# CHECK-FAST:   Job: \d \[hog.B\], mapping: 25
+# CHECK-FAST: Time window: \[41.922, 43.045\), Energy \(Total\): 1.025
+# CHECK-FAST:   Job: \d \[hog.B\], mapping: 4
+
+# CHECK-DAC: Time window: \[0.000, 41.922\), Energy \(Total\): 111.476
+# CHECK-DAC:   Job: \d \[hog.B\], mapping: 4
+# CHECK-DAC:   Job: \d \[hog.B\], mapping: 25
+# CHECK-DAC: Time window: \[41.922, 43.076\), Energy \(Total\): 2.016
+# CHECK-DAC:   Job: \d \[hog.B\], mapping: 25
+
+# CHECK-BF: Time window: \[0.000, 41.922\), Energy \(Total\): 108.197
+# CHECK-BF:   Job: \d \[hog.B\], mapping:
+# CHECK-BF:   Job: \d \[hog.B\], mapping:
+# CHECK-BF: Time window: \[41.922, 45.033\), Energy \(Total\): 2.838
+# CHECK-BF:   Job: \d \[hog.B\], mapping: 4
+
+# CHECK-WWT15: Time window: \[0.000, 41.922\), Energy \(Total\): 111.476
+# CHECK-WWT15:   Job: 0 \[hog.B\], mapping: 4
+# CHECK-WWT15:   Job: 1 \[hog.B\], mapping: 25
+# CHECK-WWT15: Time window: \[41.922, 43.045\), Energy \(Total\): 1.025
+# CHECK-WWT15:   Job: \d \[hog.B\], mapping: 4

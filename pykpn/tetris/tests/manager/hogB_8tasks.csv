@@ -1,0 +1,36 @@
+# RUN: %pytetris --scenario %s -s DAC -l INFO 2>&1 | %check %s --check-prefix=CHECK-DAC
+app,arrival,deadline
+hog.B,0,100
+hog.B,0,133.29
+hog.B,0,100
+hog.B,0,100
+hog.B,20,100
+hog.B,60,100
+hog.B,80,133.29
+hog.B,100,133.29
+# CHECK-DAC-L: Simulation started
+# CHECK-DAC-L: t:0.00  New request 0, application = hog.B, deadline = 100.0
+# CHECK-DAC-L: t:0.00  Request 0 is accepted
+# CHECK-DAC-L: t:0.00  New request 1, application = hog.B, deadline = 133.29
+# CHECK-DAC-L: t:0.00  Request 1 is accepted
+# CHECK-DAC-L: t:0.00  New request 2, application = hog.B, deadline = 100.0
+# CHECK-DAC-L: t:0.00  Request 2 is accepted
+# CHECK-DAC-L: t:0.00  New request 3, application = hog.B, deadline = 100.0
+# CHECK-DAC-L: t:0.00  Request 3 is accepted
+# CHECK-DAC-L: t:20.00  New request 4, application = hog.B, deadline = 100.0
+# CHECK-DAC-L: t:20.00  Request 4 is accepted
+# CHECK-DAC-L: t:42.21, job (rid=0) finished
+# CHECK-DAC-L: t:60.00  New request 5, application = hog.B, deadline = 100.0
+# CHECK-DAC-L: t:60.00  Request 5 is accepted
+# CHECK-DAC-L: t:61.92, job (rid=2) finished
+# CHECK-DAC-L: t:80.00  New request 6, application = hog.B, deadline = 133.29
+# CHECK-DAC-L: t:80.00  Request 6 is accepted
+# CHECK-DAC-L: t:91.09, job (rid=3) finished
+# CHECK-DAC-L: t:100.00  New request 7, application = hog.B, deadline = 133.29
+# CHECK-DAC-L: t:100.00  Request 7 is accepted
+# CHECK-DAC-L: t:101.15, job (rid=4) finished
+# CHECK-DAC-L: t:133.01, job (rid=1) finished
+# CHECK-DAC-L: t:159.88, job (rid=5) finished
+# CHECK-DAC-L: t:174.93, job (rid=6) finished
+# CHECK-DAC-L: t:216.86, job (rid=7) finished
+# CHECK-DAC-L: Simulation finished at time 216.86

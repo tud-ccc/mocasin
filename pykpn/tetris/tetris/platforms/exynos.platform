@@ -1,0 +1,1039 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?><slxplatform:Platform xmlns:slxplatform="http://xsd.silexica.com/slxPlatform" generatorTarget="armhf" version="1.0" xmlns:slxPlatform="slxPlatform" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xsd.silexica.com/slxPlatform SlxPlatformDescriptor.xsd">
+  <VoltageDomain id="vd_A7">
+    <Voltage unit="V" value="0"/>
+    <Voltage unit="V" value="0.91"/>
+    <Voltage unit="V" value="0.92"/>
+    <Voltage unit="V" value="0.94"/>
+    <Voltage unit="V" value="0.98"/>
+    <Voltage unit="V" value="1.01"/>
+    <Voltage unit="V" value="1.05"/>
+    <Voltage unit="V" value="1.09"/>
+    <Voltage unit="V" value="1.13"/>
+    <Voltage unit="V" value="1.17"/>
+    <Voltage unit="V" value="1.22"/>
+  </VoltageDomain>
+  <FrequencyDomain id="fd_A7">
+    <Frequency unit="MHz" value="0">
+      <VoltageDomainCondition condition="min" unit="V" value="0" voltageDomain="vd_A7"/>
+    </Frequency>
+    <Frequency unit="MHz" value="200">
+      <VoltageDomainCondition condition="min" unit="V" value="0.91" voltageDomain="vd_A7"/>
+    </Frequency>
+    <Frequency unit="MHz" value="300">
+      <VoltageDomainCondition condition="min" unit="V" value="0.91" voltageDomain="vd_A7"/>
+    </Frequency>
+    <Frequency unit="MHz" value="400">
+      <VoltageDomainCondition condition="min" unit="V" value="0.91" voltageDomain="vd_A7"/>
+    </Frequency>
+    <Frequency unit="MHz" value="500">
+      <VoltageDomainCondition condition="min" unit="V" value="0.91" voltageDomain="vd_A7"/>
+    </Frequency>
+    <Frequency unit="MHz" value="600">
+      <VoltageDomainCondition condition="min" unit="V" value="0.92" voltageDomain="vd_A7"/>
+    </Frequency>
+    <Frequency unit="MHz" value="700">
+      <VoltageDomainCondition condition="min" unit="V" value="0.94" voltageDomain="vd_A7"/>
+    </Frequency>
+    <Frequency unit="MHz" value="800">
+      <VoltageDomainCondition condition="min" unit="V" value="0.98" voltageDomain="vd_A7"/>
+    </Frequency>
+    <Frequency unit="MHz" value="900">
+      <VoltageDomainCondition condition="min" unit="V" value="1.01" voltageDomain="vd_A7"/>
+    </Frequency>
+    <Frequency unit="MHz" value="1000">
+      <VoltageDomainCondition condition="min" unit="V" value="1.05" voltageDomain="vd_A7"/>
+    </Frequency>
+    <Frequency unit="MHz" value="1100">
+      <VoltageDomainCondition condition="min" unit="V" value="1.09" voltageDomain="vd_A7"/>
+    </Frequency>
+    <Frequency unit="MHz" value="1200">
+      <VoltageDomainCondition condition="min" unit="V" value="1.13" voltageDomain="vd_A7"/>
+    </Frequency>
+    <Frequency unit="MHz" value="1300">
+      <VoltageDomainCondition condition="min" unit="V" value="1.17" voltageDomain="vd_A7"/>
+    </Frequency>
+    <Frequency unit="MHz" value="1400">
+      <VoltageDomainCondition condition="min" unit="V" value="1.22" voltageDomain="vd_A7"/>
+    </Frequency>
+  </FrequencyDomain>
+  <ProcessorPowerModel id="ppm_A7" leakageCurrentUnit="mA" leakageCurrentValue="115" switchedCapacitanceUnit="pF" switchedCapacitanceValue="117">
+    <ProcessorPowerState name="idle">
+      <FrequencyCondition condition="max" unit="MHz" value="0"/>
+    </ProcessorPowerState>
+    <ProcessorPowerState name="14percent">
+      <FrequencyCondition condition="max" unit="MHz" value="200"/>
+    </ProcessorPowerState>
+    <ProcessorPowerState name="21percent">
+      <FrequencyCondition condition="max" unit="MHz" value="300"/>
+    </ProcessorPowerState>
+    <ProcessorPowerState name="28percent">
+      <FrequencyCondition condition="max" unit="MHz" value="400"/>
+    </ProcessorPowerState>
+    <ProcessorPowerState name="35percent">
+      <FrequencyCondition condition="max" unit="MHz" value="500"/>
+    </ProcessorPowerState>
+    <ProcessorPowerState name="42percent">
+      <FrequencyCondition condition="max" unit="MHz" value="600"/>
+    </ProcessorPowerState>
+    <ProcessorPowerState name="50percent">
+      <FrequencyCondition condition="max" unit="MHz" value="700"/>
+    </ProcessorPowerState>
+    <ProcessorPowerState name="57percent">
+      <FrequencyCondition condition="max" unit="MHz" value="800"/>
+    </ProcessorPowerState>
+    <ProcessorPowerState name="64percent">
+      <FrequencyCondition condition="max" unit="MHz" value="900"/>
+    </ProcessorPowerState>
+    <ProcessorPowerState name="71percent">
+      <FrequencyCondition condition="max" unit="MHz" value="1000"/>
+    </ProcessorPowerState>
+    <ProcessorPowerState name="78percent">
+      <FrequencyCondition condition="max" unit="MHz" value="1100"/>
+    </ProcessorPowerState>
+    <ProcessorPowerState name="85percent">
+      <FrequencyCondition condition="max" unit="MHz" value="1200"/>
+    </ProcessorPowerState>
+    <ProcessorPowerState name="92percent">
+      <FrequencyCondition condition="max" unit="MHz" value="1300"/>
+    </ProcessorPowerState>
+    <ProcessorPowerState name="full">
+      <FrequencyCondition condition="max" unit="MHz" value="1400"/>
+    </ProcessorPowerState>
+  </ProcessorPowerModel>
+  <VoltageDomain id="vd_A15">
+    <Voltage unit="V" value="0"/>
+    <Voltage unit="V" value="0.9"/>
+    <Voltage unit="V" value="0.91"/>
+    <Voltage unit="V" value="0.94"/>
+    <Voltage unit="V" value="0.96"/>
+    <Voltage unit="V" value="1"/>
+    <Voltage unit="V" value="1.02"/>
+    <Voltage unit="V" value="1.03"/>
+    <Voltage unit="V" value="1.06"/>
+    <Voltage unit="V" value="1.1"/>
+    <Voltage unit="V" value="1.14"/>
+    <Voltage unit="V" value="1.18"/>
+    <Voltage unit="V" value="1.24"/>
+    <Voltage unit="V" value="1.31"/>
+  </VoltageDomain>
+  <FrequencyDomain id="fd_A15">
+    <Frequency unit="MHz" value="0">
+      <VoltageDomainCondition condition="min" unit="V" value="0" voltageDomain="vd_A15"/>
+    </Frequency>
+    <Frequency unit="MHz" value="200">
+      <VoltageDomainCondition condition="min" unit="V" value="0.9" voltageDomain="vd_A15"/>
+    </Frequency>
+    <Frequency unit="MHz" value="300">
+      <VoltageDomainCondition condition="min" unit="V" value="0.9" voltageDomain="vd_A15"/>
+    </Frequency>
+    <Frequency unit="MHz" value="400">
+      <VoltageDomainCondition condition="min" unit="V" value="0.9" voltageDomain="vd_A15"/>
+    </Frequency>
+    <Frequency unit="MHz" value="500">
+      <VoltageDomainCondition condition="min" unit="V" value="0.9" voltageDomain="vd_A15"/>
+    </Frequency>
+    <Frequency unit="MHz" value="600">
+      <VoltageDomainCondition condition="min" unit="V" value="0.9" voltageDomain="vd_A15"/>
+    </Frequency>
+    <Frequency unit="MHz" value="700">
+      <VoltageDomainCondition condition="min" unit="V" value="0.9" voltageDomain="vd_A15"/>
+    </Frequency>
+    <Frequency unit="MHz" value="800">
+      <VoltageDomainCondition condition="min" unit="V" value="0.9" voltageDomain="vd_A15"/>
+    </Frequency>
+    <Frequency unit="MHz" value="900">
+      <VoltageDomainCondition condition="min" unit="V" value="0.91" voltageDomain="vd_A15"/>
+    </Frequency>
+    <Frequency unit="MHz" value="1000">
+      <VoltageDomainCondition condition="min" unit="V" value="0.94" voltageDomain="vd_A15"/>
+    </Frequency>
+    <Frequency unit="MHz" value="1100">
+      <VoltageDomainCondition condition="min" unit="V" value="0.96" voltageDomain="vd_A15"/>
+    </Frequency>
+    <Frequency unit="MHz" value="1200">
+      <VoltageDomainCondition condition="min" unit="V" value="1" voltageDomain="vd_A15"/>
+    </Frequency>
+    <Frequency unit="MHz" value="1300">
+      <VoltageDomainCondition condition="min" unit="V" value="1.02" voltageDomain="vd_A15"/>
+    </Frequency>
+    <Frequency unit="MHz" value="1400">
+      <VoltageDomainCondition condition="min" unit="V" value="1.03" voltageDomain="vd_A15"/>
+    </Frequency>
+    <Frequency unit="MHz" value="1500">
+      <VoltageDomainCondition condition="min" unit="V" value="1.06" voltageDomain="vd_A15"/>
+    </Frequency>
+    <Frequency unit="MHz" value="1600">
+      <VoltageDomainCondition condition="min" unit="V" value="1.1" voltageDomain="vd_A15"/>
+    </Frequency>
+    <Frequency unit="MHz" value="1700">
+      <VoltageDomainCondition condition="min" unit="V" value="1.14" voltageDomain="vd_A15"/>
+    </Frequency>
+    <Frequency unit="MHz" value="1800">
+      <VoltageDomainCondition condition="min" unit="V" value="1.18" voltageDomain="vd_A15"/>
+    </Frequency>
+    <Frequency unit="MHz" value="1900">
+      <VoltageDomainCondition condition="min" unit="V" value="1.24" voltageDomain="vd_A15"/>
+    </Frequency>
+    <Frequency unit="MHz" value="2000">
+      <VoltageDomainCondition condition="min" unit="V" value="1.31" voltageDomain="vd_A15"/>
+    </Frequency>
+  </FrequencyDomain>
+  <ProcessorPowerModel id="ppm_A15" leakageCurrentUnit="mA" leakageCurrentValue="182" switchedCapacitanceUnit="pF" switchedCapacitanceValue="572">
+    <ProcessorPowerState name="idle">
+      <FrequencyCondition condition="max" unit="MHz" value="0"/>
+    </ProcessorPowerState>
+    <ProcessorPowerState name="10percent">
+      <FrequencyCondition condition="max" unit="MHz" value="200"/>
+    </ProcessorPowerState>
+    <ProcessorPowerState name="15percent">
+      <FrequencyCondition condition="max" unit="MHz" value="300"/>
+    </ProcessorPowerState>
+    <ProcessorPowerState name="20percent">
+      <FrequencyCondition condition="max" unit="MHz" value="400"/>
+    </ProcessorPowerState>
+    <ProcessorPowerState name="25percent">
+      <FrequencyCondition condition="max" unit="MHz" value="500"/>
+    </ProcessorPowerState>
+    <ProcessorPowerState name="30percent">
+      <FrequencyCondition condition="max" unit="MHz" value="600"/>
+    </ProcessorPowerState>
+    <ProcessorPowerState name="35percent">
+      <FrequencyCondition condition="max" unit="MHz" value="700"/>
+    </ProcessorPowerState>
+    <ProcessorPowerState name="40percent">
+      <FrequencyCondition condition="max" unit="MHz" value="800"/>
+    </ProcessorPowerState>
+    <ProcessorPowerState name="45percent">
+      <FrequencyCondition condition="max" unit="MHz" value="900"/>
+    </ProcessorPowerState>
+    <ProcessorPowerState name="50percent">
+      <FrequencyCondition condition="max" unit="MHz" value="1000"/>
+    </ProcessorPowerState>
+    <ProcessorPowerState name="55percent">
+      <FrequencyCondition condition="max" unit="MHz" value="1100"/>
+    </ProcessorPowerState>
+    <ProcessorPowerState name="60percent">
+      <FrequencyCondition condition="max" unit="MHz" value="1200"/>
+    </ProcessorPowerState>
+    <ProcessorPowerState name="65percent">
+      <FrequencyCondition condition="max" unit="MHz" value="1300"/>
+    </ProcessorPowerState>
+    <ProcessorPowerState name="70percent">
+      <FrequencyCondition condition="max" unit="MHz" value="1400"/>
+    </ProcessorPowerState>
+    <ProcessorPowerState name="75percent">
+      <FrequencyCondition condition="max" unit="MHz" value="1500"/>
+    </ProcessorPowerState>
+    <ProcessorPowerState name="80percent">
+      <FrequencyCondition condition="max" unit="MHz" value="1600"/>
+    </ProcessorPowerState>
+    <ProcessorPowerState name="85percent">
+      <FrequencyCondition condition="max" unit="MHz" value="1700"/>
+    </ProcessorPowerState>
+    <ProcessorPowerState name="90percent">
+      <FrequencyCondition condition="max" unit="MHz" value="1800"/>
+    </ProcessorPowerState>
+    <ProcessorPowerState name="95percent">
+      <FrequencyCondition condition="max" unit="MHz" value="1900"/>
+    </ProcessorPowerState>
+    <ProcessorPowerState name="full">
+      <FrequencyCondition condition="max" unit="MHz" value="2000"/>
+    </ProcessorPowerState>
+  </ProcessorPowerModel>
+  <FrequencyDomain id="fd_DRAM">
+    <Frequency unit="MHz" value="933"/>
+  </FrequencyDomain>
+  <SchedulingPolicyList id="sched_list_Linux">
+    <SchedulingPolicy schedulingAlgorithm="RoundRobin" timeSliceUnit="ms" timeSliceValue="10"/>
+  </SchedulingPolicyList>
+  <Scheduler id="sched_Linux" schedulingPolicyList="sched_list_Linux"/>
+  <Processor clockGating="true" contextLoadUnit="kcycles" contextLoadValue="3.0" contextStoreUnit="kcycles" contextStoreValue="3.0" core="ARM_CORTEX_A7" frequencyDomain="fd_A7" id="ARM00" processorPowerModel="ppm_A7" scheduler="sched_Linux" supportedToolchain="armhf" voltageDomain="vd_A7">
+    <DataCacheRef cache="c_L1D_ARM00"/>
+    <InstructionCacheRef cache="c_L1I_ARM00"/>
+  </Processor>
+  <Processor clockGating="true" contextLoadUnit="kcycles" contextLoadValue="3.0" contextStoreUnit="kcycles" contextStoreValue="3.0" core="ARM_CORTEX_A7" frequencyDomain="fd_A7" id="ARM01" processorPowerModel="ppm_A7" scheduler="sched_Linux" supportedToolchain="armhf" voltageDomain="vd_A7">
+    <DataCacheRef cache="c_L1D_ARM01"/>
+    <InstructionCacheRef cache="c_L1I_ARM01"/>
+  </Processor>
+  <Processor clockGating="true" contextLoadUnit="kcycles" contextLoadValue="3.0" contextStoreUnit="kcycles" contextStoreValue="3.0" core="ARM_CORTEX_A7" frequencyDomain="fd_A7" id="ARM02" processorPowerModel="ppm_A7" scheduler="sched_Linux" supportedToolchain="armhf" voltageDomain="vd_A7">
+    <DataCacheRef cache="c_L1D_ARM02"/>
+    <InstructionCacheRef cache="c_L1I_ARM02"/>
+  </Processor>
+  <Processor clockGating="true" contextLoadUnit="kcycles" contextLoadValue="3.0" contextStoreUnit="kcycles" contextStoreValue="3.0" core="ARM_CORTEX_A7" frequencyDomain="fd_A7" id="ARM03" processorPowerModel="ppm_A7" scheduler="sched_Linux" supportedToolchain="armhf" voltageDomain="vd_A7">
+    <DataCacheRef cache="c_L1D_ARM03"/>
+    <InstructionCacheRef cache="c_L1I_ARM03"/>
+  </Processor>
+  <Processor clockGating="true" contextLoadUnit="kcycles" contextLoadValue="3.0" contextStoreUnit="kcycles" contextStoreValue="3.0" core="ARM_CORTEX_A15" frequencyDomain="fd_A15" id="ARM04" processorPowerModel="ppm_A15" scheduler="sched_Linux" supportedToolchain="armhf" voltageDomain="vd_A15">
+    <DataCacheRef cache="c_L1D_ARM04"/>
+    <InstructionCacheRef cache="c_L1I_ARM04"/>
+  </Processor>
+  <Processor clockGating="true" contextLoadUnit="kcycles" contextLoadValue="3.0" contextStoreUnit="kcycles" contextStoreValue="3.0" core="ARM_CORTEX_A15" frequencyDomain="fd_A15" id="ARM05" processorPowerModel="ppm_A15" scheduler="sched_Linux" supportedToolchain="armhf" voltageDomain="vd_A15">
+    <DataCacheRef cache="c_L1D_ARM05"/>
+    <InstructionCacheRef cache="c_L1I_ARM05"/>
+  </Processor>
+  <Processor clockGating="true" contextLoadUnit="kcycles" contextLoadValue="3.0" contextStoreUnit="kcycles" contextStoreValue="3.0" core="ARM_CORTEX_A15" frequencyDomain="fd_A15" id="ARM06" processorPowerModel="ppm_A15" scheduler="sched_Linux" supportedToolchain="armhf" voltageDomain="vd_A15">
+    <DataCacheRef cache="c_L1D_ARM06"/>
+    <InstructionCacheRef cache="c_L1I_ARM06"/>
+  </Processor>
+  <Processor clockGating="true" contextLoadUnit="kcycles" contextLoadValue="3.0" contextStoreUnit="kcycles" contextStoreValue="3.0" core="ARM_CORTEX_A15" frequencyDomain="fd_A15" id="ARM07" processorPowerModel="ppm_A15" scheduler="sched_Linux" supportedToolchain="armhf" voltageDomain="vd_A15">
+    <DataCacheRef cache="c_L1D_ARM07"/>
+    <InstructionCacheRef cache="c_L1I_ARM07"/>
+  </Processor>
+  <Cache coherency="hard" frequencyDomain="fd_A7" id="c_L1D_ARM00" lineSizeUnit="B" lineSizeValue="64" prefetch="miss" prefetchDistance="1" readHitLatencyUnit="cycles" readHitLatencyValue="1" readHitThroughputUnit="B/cycle" readHitThroughputValue="8" readMissThroughputUnit="B/cycle" readMissThroughputValue="8" replacement="random" sizeUnit="KiB" sizeValue="32" ways="4" writeAllocate="noFetch" writeBack="noFetch" writeHitLatencyUnit="cycles" writeHitLatencyValue="4" writeHitThroughputUnit="B/cycle" writeHitThroughputValue="8" writeMissThroughputUnit="B/cycle" writeMissThroughputValue="8">
+    <ParentCacheRef cache="c_L2D_A7"/>
+  </Cache>
+  <Cache coherency="hard" frequencyDomain="fd_A7" id="c_L1I_ARM00" lineSizeUnit="B" lineSizeValue="64" prefetch="miss" prefetchDistance="1" readHitLatencyUnit="cycles" readHitLatencyValue="1" readHitThroughputUnit="B/cycle" readHitThroughputValue="8" readMissThroughputUnit="B/cycle" readMissThroughputValue="8" replacement="random" sizeUnit="KiB" sizeValue="32" ways="4">
+    <ParentCacheRef cache="c_L2D_A7"/>
+  </Cache>
+  <Cache coherency="hard" frequencyDomain="fd_A7" id="c_L1D_ARM01" lineSizeUnit="B" lineSizeValue="64" prefetch="miss" prefetchDistance="1" readHitLatencyUnit="cycles" readHitLatencyValue="1" readHitThroughputUnit="B/cycle" readHitThroughputValue="8" readMissThroughputUnit="B/cycle" readMissThroughputValue="8" replacement="random" sizeUnit="KiB" sizeValue="32" ways="4" writeAllocate="noFetch" writeBack="noFetch" writeHitLatencyUnit="cycles" writeHitLatencyValue="4" writeHitThroughputUnit="B/cycle" writeHitThroughputValue="8" writeMissThroughputUnit="B/cycle" writeMissThroughputValue="8">
+    <ParentCacheRef cache="c_L2D_A7"/>
+  </Cache>
+  <Cache coherency="hard" frequencyDomain="fd_A7" id="c_L1I_ARM01" lineSizeUnit="B" lineSizeValue="64" prefetch="miss" prefetchDistance="1" readHitLatencyUnit="cycles" readHitLatencyValue="1" readHitThroughputUnit="B/cycle" readHitThroughputValue="8" readMissThroughputUnit="B/cycle" readMissThroughputValue="8" replacement="random" sizeUnit="KiB" sizeValue="32" ways="4">
+    <ParentCacheRef cache="c_L2D_A7"/>
+  </Cache>
+  <Cache coherency="hard" frequencyDomain="fd_A7" id="c_L1D_ARM02" lineSizeUnit="B" lineSizeValue="64" prefetch="miss" prefetchDistance="1" readHitLatencyUnit="cycles" readHitLatencyValue="1" readHitThroughputUnit="B/cycle" readHitThroughputValue="8" readMissThroughputUnit="B/cycle" readMissThroughputValue="8" replacement="random" sizeUnit="KiB" sizeValue="32" ways="4" writeAllocate="noFetch" writeBack="noFetch" writeHitLatencyUnit="cycles" writeHitLatencyValue="4" writeHitThroughputUnit="B/cycle" writeHitThroughputValue="8" writeMissThroughputUnit="B/cycle" writeMissThroughputValue="8">
+    <ParentCacheRef cache="c_L2D_A7"/>
+  </Cache>
+  <Cache coherency="hard" frequencyDomain="fd_A7" id="c_L1I_ARM02" lineSizeUnit="B" lineSizeValue="64" prefetch="miss" prefetchDistance="1" readHitLatencyUnit="cycles" readHitLatencyValue="1" readHitThroughputUnit="B/cycle" readHitThroughputValue="8" readMissThroughputUnit="B/cycle" readMissThroughputValue="8" replacement="random" sizeUnit="KiB" sizeValue="32" ways="4">
+    <ParentCacheRef cache="c_L2D_A7"/>
+  </Cache>
+  <Cache coherency="hard" frequencyDomain="fd_A7" id="c_L1D_ARM03" lineSizeUnit="B" lineSizeValue="64" prefetch="miss" prefetchDistance="1" readHitLatencyUnit="cycles" readHitLatencyValue="1" readHitThroughputUnit="B/cycle" readHitThroughputValue="8" readMissThroughputUnit="B/cycle" readMissThroughputValue="8" replacement="random" sizeUnit="KiB" sizeValue="32" ways="4" writeAllocate="noFetch" writeBack="noFetch" writeHitLatencyUnit="cycles" writeHitLatencyValue="4" writeHitThroughputUnit="B/cycle" writeHitThroughputValue="8" writeMissThroughputUnit="B/cycle" writeMissThroughputValue="8">
+    <ParentCacheRef cache="c_L2D_A7"/>
+  </Cache>
+  <Cache coherency="hard" frequencyDomain="fd_A7" id="c_L1I_ARM03" lineSizeUnit="B" lineSizeValue="64" prefetch="miss" prefetchDistance="1" readHitLatencyUnit="cycles" readHitLatencyValue="1" readHitThroughputUnit="B/cycle" readHitThroughputValue="8" readMissThroughputUnit="B/cycle" readMissThroughputValue="8" replacement="random" sizeUnit="KiB" sizeValue="32" ways="4">
+    <ParentCacheRef cache="c_L2D_A7"/>
+  </Cache>
+  <Cache coherency="hard" frequencyDomain="fd_A15" id="c_L1D_ARM04" lineSizeUnit="B" lineSizeValue="64" prefetch="miss" prefetchDistance="1" readHitLatencyUnit="cycles" readHitLatencyValue="1" readHitThroughputUnit="B/cycle" readHitThroughputValue="8" readMissThroughputUnit="B/cycle" readMissThroughputValue="8" replacement="random" sizeUnit="KiB" sizeValue="32" ways="2" writeAllocate="noFetch" writeBack="noFetch" writeHitLatencyUnit="cycles" writeHitLatencyValue="4" writeHitThroughputUnit="B/cycle" writeHitThroughputValue="8" writeMissThroughputUnit="B/cycle" writeMissThroughputValue="8">
+    <ParentCacheRef cache="c_L2D_A15"/>
+  </Cache>
+  <Cache coherency="hard" frequencyDomain="fd_A7" id="c_L1I_ARM04" lineSizeUnit="B" lineSizeValue="64" prefetch="miss" prefetchDistance="1" readHitLatencyUnit="cycles" readHitLatencyValue="1" readHitThroughputUnit="B/cycle" readHitThroughputValue="8" readMissThroughputUnit="B/cycle" readMissThroughputValue="8" replacement="random" sizeUnit="KiB" sizeValue="32" ways="4">
+    <ParentCacheRef cache="c_L2D_A15"/>
+  </Cache>
+  <Cache coherency="hard" frequencyDomain="fd_A15" id="c_L1D_ARM05" lineSizeUnit="B" lineSizeValue="64" prefetch="miss" prefetchDistance="1" readHitLatencyUnit="cycles" readHitLatencyValue="1" readHitThroughputUnit="B/cycle" readHitThroughputValue="8" readMissThroughputUnit="B/cycle" readMissThroughputValue="8" replacement="random" sizeUnit="KiB" sizeValue="32" ways="2" writeAllocate="noFetch" writeBack="noFetch" writeHitLatencyUnit="cycles" writeHitLatencyValue="4" writeHitThroughputUnit="B/cycle" writeHitThroughputValue="8" writeMissThroughputUnit="B/cycle" writeMissThroughputValue="8">
+    <ParentCacheRef cache="c_L2D_A15"/>
+  </Cache>
+  <Cache coherency="hard" frequencyDomain="fd_A7" id="c_L1I_ARM05" lineSizeUnit="B" lineSizeValue="64" prefetch="miss" prefetchDistance="1" readHitLatencyUnit="cycles" readHitLatencyValue="1" readHitThroughputUnit="B/cycle" readHitThroughputValue="8" readMissThroughputUnit="B/cycle" readMissThroughputValue="8" replacement="random" sizeUnit="KiB" sizeValue="32" ways="4">
+    <ParentCacheRef cache="c_L2D_A15"/>
+  </Cache>
+  <Cache coherency="hard" frequencyDomain="fd_A15" id="c_L1D_ARM06" lineSizeUnit="B" lineSizeValue="64" prefetch="miss" prefetchDistance="1" readHitLatencyUnit="cycles" readHitLatencyValue="1" readHitThroughputUnit="B/cycle" readHitThroughputValue="8" readMissThroughputUnit="B/cycle" readMissThroughputValue="8" replacement="random" sizeUnit="KiB" sizeValue="32" ways="2" writeAllocate="noFetch" writeBack="noFetch" writeHitLatencyUnit="cycles" writeHitLatencyValue="4" writeHitThroughputUnit="B/cycle" writeHitThroughputValue="8" writeMissThroughputUnit="B/cycle" writeMissThroughputValue="8">
+    <ParentCacheRef cache="c_L2D_A15"/>
+  </Cache>
+  <Cache coherency="hard" frequencyDomain="fd_A7" id="c_L1I_ARM06" lineSizeUnit="B" lineSizeValue="64" prefetch="miss" prefetchDistance="1" readHitLatencyUnit="cycles" readHitLatencyValue="1" readHitThroughputUnit="B/cycle" readHitThroughputValue="8" readMissThroughputUnit="B/cycle" readMissThroughputValue="8" replacement="random" sizeUnit="KiB" sizeValue="32" ways="4">
+    <ParentCacheRef cache="c_L2D_A15"/>
+  </Cache>
+  <Cache coherency="hard" frequencyDomain="fd_A15" id="c_L1D_ARM07" lineSizeUnit="B" lineSizeValue="64" prefetch="miss" prefetchDistance="1" readHitLatencyUnit="cycles" readHitLatencyValue="1" readHitThroughputUnit="B/cycle" readHitThroughputValue="8" readMissThroughputUnit="B/cycle" readMissThroughputValue="8" replacement="random" sizeUnit="KiB" sizeValue="32" ways="2" writeAllocate="noFetch" writeBack="noFetch" writeHitLatencyUnit="cycles" writeHitLatencyValue="4" writeHitThroughputUnit="B/cycle" writeHitThroughputValue="8" writeMissThroughputUnit="B/cycle" writeMissThroughputValue="8">
+    <ParentCacheRef cache="c_L2D_A15"/>
+  </Cache>
+  <Cache coherency="hard" frequencyDomain="fd_A7" id="c_L1I_ARM07" lineSizeUnit="B" lineSizeValue="64" prefetch="miss" prefetchDistance="1" readHitLatencyUnit="cycles" readHitLatencyValue="1" readHitThroughputUnit="B/cycle" readHitThroughputValue="8" readMissThroughputUnit="B/cycle" readMissThroughputValue="8" replacement="random" sizeUnit="KiB" sizeValue="32" ways="4">
+    <ParentCacheRef cache="c_L2D_A15"/>
+  </Cache>
+  <Cache coherency="hard" frequencyDomain="fd_A7" id="c_L2D_A7" lineSizeUnit="B" lineSizeValue="64" prefetch="miss" prefetchDistance="4" readHitLatencyUnit="cycles" readHitLatencyValue="21" readHitThroughputUnit="B/cycle" readHitThroughputValue="8" readMissThroughputUnit="B/cycle" readMissThroughputValue="8" replacement="random" sizeUnit="KiB" sizeValue="512" ways="8" writeAllocate="noFetch" writeBack="noFetch" writeHitLatencyUnit="cycles" writeHitLatencyValue="21" writeHitThroughputUnit="B/cycle" writeHitThroughputValue="8" writeMissThroughputUnit="B/cycle" writeMissThroughputValue="8"/>
+  <Cache coherency="hard" frequencyDomain="fd_A15" id="c_L2D_A15" lineSizeUnit="B" lineSizeValue="64" prefetch="miss" prefetchDistance="8" readHitLatencyUnit="cycles" readHitLatencyValue="21" readHitThroughputUnit="B/cycle" readHitThroughputValue="8" readMissThroughputUnit="B/cycle" readMissThroughputValue="8" replacement="random" sizeUnit="MiB" sizeValue="2" ways="16" writeAllocate="noFetch" writeBack="noFetch" writeHitLatencyUnit="cycles" writeHitLatencyValue="21" writeHitThroughputUnit="B/cycle" writeHitThroughputValue="8" writeMissThroughputUnit="B/cycle" writeMissThroughputValue="8"/>
+  <Memory frequencyDomain="fd_DRAM" id="m_DRAM" readLatencyUnit="cycles" readLatencyValue="120" readThroughputUnit="B/cycle" readThroughputValue="8" sizeUnit="GiB" sizeValue="2" writeLatencyUnit="cycles" writeLatencyValue="120" writeThroughputUnit="B/cycle" writeThroughputValue="8"/>
+  <LogicalLink frequencyDomain="fd_A7" id="ll_prod_L1_ARM00" latencyUnit="cycles" latencyValue="50"/>
+  <LogicalLink frequencyDomain="fd_A7" id="ll_cons_L1_ARM00" latencyUnit="cycles" latencyValue="50"/>
+  <Communication id="comm_L1_ARM00" multicast="true">
+    <Buffer>
+      <MemoryRef memory="m_DRAM"/>
+      <CacheRef cache="c_L1D_ARM00"/>
+    </Buffer>
+    <Producer processor="ARM00">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_prod_L1_ARM00"/>
+      </Active>
+    </Producer>
+    <Consumer processor="ARM00">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_cons_L1_ARM00"/>
+      </Active>
+    </Consumer>
+  </Communication>
+  <Communication id="comm_L1_ARM00_putget" multicast="true">
+    <Buffer>
+      <MemoryRef memory="m_DRAM"/>
+      <CacheRef cache="c_L1D_ARM00"/>
+    </Buffer>
+    <Producer processor="ARM00">
+      <Active>
+        <CacheAccess access="write" cache="c_L1D_ARM00"/>
+      </Active>
+    </Producer>
+    <Consumer processor="ARM00">
+      <Active>
+        <CacheAccess access="read" cache="c_L1D_ARM00"/>
+      </Active>
+    </Consumer>
+  </Communication>
+  <LogicalLink frequencyDomain="fd_A7" id="ll_prod_L1_ARM01" latencyUnit="cycles" latencyValue="50"/>
+  <LogicalLink frequencyDomain="fd_A7" id="ll_cons_L1_ARM01" latencyUnit="cycles" latencyValue="50"/>
+  <Communication id="comm_L1_ARM01" multicast="true">
+    <Buffer>
+      <MemoryRef memory="m_DRAM"/>
+      <CacheRef cache="c_L1D_ARM01"/>
+    </Buffer>
+    <Producer processor="ARM01">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_prod_L1_ARM01"/>
+      </Active>
+    </Producer>
+    <Consumer processor="ARM01">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_cons_L1_ARM01"/>
+      </Active>
+    </Consumer>
+  </Communication>
+  <Communication id="comm_L1_ARM01_putget" multicast="true">
+    <Buffer>
+      <MemoryRef memory="m_DRAM"/>
+      <CacheRef cache="c_L1D_ARM01"/>
+    </Buffer>
+    <Producer processor="ARM01">
+      <Active>
+        <CacheAccess access="write" cache="c_L1D_ARM01"/>
+      </Active>
+    </Producer>
+    <Consumer processor="ARM01">
+      <Active>
+        <CacheAccess access="read" cache="c_L1D_ARM01"/>
+      </Active>
+    </Consumer>
+  </Communication>
+  <LogicalLink frequencyDomain="fd_A7" id="ll_prod_L1_ARM02" latencyUnit="cycles" latencyValue="50"/>
+  <LogicalLink frequencyDomain="fd_A7" id="ll_cons_L1_ARM02" latencyUnit="cycles" latencyValue="50"/>
+  <Communication id="comm_L1_ARM02" multicast="true">
+    <Buffer>
+      <MemoryRef memory="m_DRAM"/>
+      <CacheRef cache="c_L1D_ARM02"/>
+    </Buffer>
+    <Producer processor="ARM02">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_prod_L1_ARM02"/>
+      </Active>
+    </Producer>
+    <Consumer processor="ARM02">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_cons_L1_ARM02"/>
+      </Active>
+    </Consumer>
+  </Communication>
+  <Communication id="comm_L1_ARM02_putget" multicast="true">
+    <Buffer>
+      <MemoryRef memory="m_DRAM"/>
+      <CacheRef cache="c_L1D_ARM02"/>
+    </Buffer>
+    <Producer processor="ARM02">
+      <Active>
+        <CacheAccess access="write" cache="c_L1D_ARM02"/>
+      </Active>
+    </Producer>
+    <Consumer processor="ARM02">
+      <Active>
+        <CacheAccess access="read" cache="c_L1D_ARM02"/>
+      </Active>
+    </Consumer>
+  </Communication>
+  <LogicalLink frequencyDomain="fd_A7" id="ll_prod_L1_ARM03" latencyUnit="cycles" latencyValue="50"/>
+  <LogicalLink frequencyDomain="fd_A7" id="ll_cons_L1_ARM03" latencyUnit="cycles" latencyValue="50"/>
+  <Communication id="comm_L1_ARM03" multicast="true">
+    <Buffer>
+      <MemoryRef memory="m_DRAM"/>
+      <CacheRef cache="c_L1D_ARM03"/>
+    </Buffer>
+    <Producer processor="ARM03">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_prod_L1_ARM03"/>
+      </Active>
+    </Producer>
+    <Consumer processor="ARM03">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_cons_L1_ARM03"/>
+      </Active>
+    </Consumer>
+  </Communication>
+  <Communication id="comm_L1_ARM03_putget" multicast="true">
+    <Buffer>
+      <MemoryRef memory="m_DRAM"/>
+      <CacheRef cache="c_L1D_ARM03"/>
+    </Buffer>
+    <Producer processor="ARM03">
+      <Active>
+        <CacheAccess access="write" cache="c_L1D_ARM03"/>
+      </Active>
+    </Producer>
+    <Consumer processor="ARM03">
+      <Active>
+        <CacheAccess access="read" cache="c_L1D_ARM03"/>
+      </Active>
+    </Consumer>
+  </Communication>
+  <LogicalLink frequencyDomain="fd_A15" id="ll_prod_L1_ARM04" latencyUnit="cycles" latencyValue="50"/>
+  <LogicalLink frequencyDomain="fd_A15" id="ll_cons_L1_ARM04" latencyUnit="cycles" latencyValue="50"/>
+  <Communication id="comm_L1_ARM04" multicast="true">
+    <Buffer>
+      <MemoryRef memory="m_DRAM"/>
+      <CacheRef cache="c_L1D_ARM04"/>
+    </Buffer>
+    <Producer processor="ARM04">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_prod_L1_ARM04"/>
+      </Active>
+    </Producer>
+    <Consumer processor="ARM04">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_cons_L1_ARM04"/>
+      </Active>
+    </Consumer>
+  </Communication>
+  <Communication id="comm_L1_ARM04_putget" multicast="true">
+    <Buffer>
+      <MemoryRef memory="m_DRAM"/>
+      <CacheRef cache="c_L1D_ARM04"/>
+    </Buffer>
+    <Producer processor="ARM04">
+      <Active>
+        <CacheAccess access="write" cache="c_L1D_ARM04"/>
+      </Active>
+    </Producer>
+    <Consumer processor="ARM04">
+      <Active>
+        <CacheAccess access="read" cache="c_L1D_ARM04"/>
+      </Active>
+    </Consumer>
+  </Communication>
+  <LogicalLink frequencyDomain="fd_A15" id="ll_prod_L1_ARM05" latencyUnit="cycles" latencyValue="50"/>
+  <LogicalLink frequencyDomain="fd_A15" id="ll_cons_L1_ARM05" latencyUnit="cycles" latencyValue="50"/>
+  <Communication id="comm_L1_ARM05" multicast="true">
+    <Buffer>
+      <MemoryRef memory="m_DRAM"/>
+      <CacheRef cache="c_L1D_ARM05"/>
+    </Buffer>
+    <Producer processor="ARM05">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_prod_L1_ARM05"/>
+      </Active>
+    </Producer>
+    <Consumer processor="ARM05">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_cons_L1_ARM05"/>
+      </Active>
+    </Consumer>
+  </Communication>
+  <Communication id="comm_L1_ARM05_putget" multicast="true">
+    <Buffer>
+      <MemoryRef memory="m_DRAM"/>
+      <CacheRef cache="c_L1D_ARM05"/>
+    </Buffer>
+    <Producer processor="ARM05">
+      <Active>
+        <CacheAccess access="write" cache="c_L1D_ARM05"/>
+      </Active>
+    </Producer>
+    <Consumer processor="ARM05">
+      <Active>
+        <CacheAccess access="read" cache="c_L1D_ARM05"/>
+      </Active>
+    </Consumer>
+  </Communication>
+  <LogicalLink frequencyDomain="fd_A15" id="ll_prod_L1_ARM06" latencyUnit="cycles" latencyValue="50"/>
+  <LogicalLink frequencyDomain="fd_A15" id="ll_cons_L1_ARM06" latencyUnit="cycles" latencyValue="50"/>
+  <Communication id="comm_L1_ARM06" multicast="true">
+    <Buffer>
+      <MemoryRef memory="m_DRAM"/>
+      <CacheRef cache="c_L1D_ARM06"/>
+    </Buffer>
+    <Producer processor="ARM06">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_prod_L1_ARM06"/>
+      </Active>
+    </Producer>
+    <Consumer processor="ARM06">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_cons_L1_ARM06"/>
+      </Active>
+    </Consumer>
+  </Communication>
+  <Communication id="comm_L1_ARM06_putget" multicast="true">
+    <Buffer>
+      <MemoryRef memory="m_DRAM"/>
+      <CacheRef cache="c_L1D_ARM06"/>
+    </Buffer>
+    <Producer processor="ARM06">
+      <Active>
+        <CacheAccess access="write" cache="c_L1D_ARM06"/>
+      </Active>
+    </Producer>
+    <Consumer processor="ARM06">
+      <Active>
+        <CacheAccess access="read" cache="c_L1D_ARM06"/>
+      </Active>
+    </Consumer>
+  </Communication>
+  <LogicalLink frequencyDomain="fd_A15" id="ll_prod_L1_ARM07" latencyUnit="cycles" latencyValue="50"/>
+  <LogicalLink frequencyDomain="fd_A15" id="ll_cons_L1_ARM07" latencyUnit="cycles" latencyValue="50"/>
+  <Communication id="comm_L1_ARM07" multicast="true">
+    <Buffer>
+      <MemoryRef memory="m_DRAM"/>
+      <CacheRef cache="c_L1D_ARM07"/>
+    </Buffer>
+    <Producer processor="ARM07">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_prod_L1_ARM07"/>
+      </Active>
+    </Producer>
+    <Consumer processor="ARM07">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_cons_L1_ARM07"/>
+      </Active>
+    </Consumer>
+  </Communication>
+  <Communication id="comm_L1_ARM07_putget" multicast="true">
+    <Buffer>
+      <MemoryRef memory="m_DRAM"/>
+      <CacheRef cache="c_L1D_ARM07"/>
+    </Buffer>
+    <Producer processor="ARM07">
+      <Active>
+        <CacheAccess access="write" cache="c_L1D_ARM07"/>
+      </Active>
+    </Producer>
+    <Consumer processor="ARM07">
+      <Active>
+        <CacheAccess access="read" cache="c_L1D_ARM07"/>
+      </Active>
+    </Consumer>
+  </Communication>
+  <LogicalLink frequencyDomain="fd_A7" id="ll_prod_L2_ARM00" latencyUnit="cycles" latencyValue="250"/>
+  <LogicalLink frequencyDomain="fd_A7" id="ll_cons_L2_ARM00" latencyUnit="cycles" latencyValue="250"/>
+  <LogicalLink frequencyDomain="fd_A7" id="ll_prod_L2_ARM01" latencyUnit="cycles" latencyValue="250"/>
+  <LogicalLink frequencyDomain="fd_A7" id="ll_cons_L2_ARM01" latencyUnit="cycles" latencyValue="250"/>
+  <LogicalLink frequencyDomain="fd_A7" id="ll_prod_L2_ARM02" latencyUnit="cycles" latencyValue="250"/>
+  <LogicalLink frequencyDomain="fd_A7" id="ll_cons_L2_ARM02" latencyUnit="cycles" latencyValue="250"/>
+  <LogicalLink frequencyDomain="fd_A7" id="ll_prod_L2_ARM03" latencyUnit="cycles" latencyValue="250"/>
+  <LogicalLink frequencyDomain="fd_A7" id="ll_cons_L2_ARM03" latencyUnit="cycles" latencyValue="250"/>
+  <Communication id="comm_L2_A7" multicast="true">
+    <Buffer>
+      <MemoryRef memory="m_DRAM"/>
+      <CacheRef cache="c_L2D_A7"/>
+    </Buffer>
+    <Producer processor="ARM00">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_prod_L2_ARM00"/>
+      </Active>
+    </Producer>
+    <Producer processor="ARM01">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_prod_L2_ARM01"/>
+      </Active>
+    </Producer>
+    <Producer processor="ARM02">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_prod_L2_ARM02"/>
+      </Active>
+    </Producer>
+    <Producer processor="ARM03">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_prod_L2_ARM03"/>
+      </Active>
+    </Producer>
+    <Consumer processor="ARM00">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_cons_L2_ARM00"/>
+      </Active>
+    </Consumer>
+    <Consumer processor="ARM01">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_cons_L2_ARM01"/>
+      </Active>
+    </Consumer>
+    <Consumer processor="ARM02">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_cons_L2_ARM02"/>
+      </Active>
+    </Consumer>
+    <Consumer processor="ARM03">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_cons_L2_ARM03"/>
+      </Active>
+    </Consumer>
+    </Communication>
+  <Communication id="comm_L2_A7_putget" multicast="true">
+    <Buffer>
+      <MemoryRef memory="m_DRAM"/>
+      <CacheRef cache="c_L2D_A7"/>
+    </Buffer>
+    <Producer processor="ARM00">
+      <Active>
+        <CacheAccess access="write" cache="c_L1D_ARM00"/>
+        <CacheAccess access="write" cache="c_L2D_A7"/>
+      </Active>
+    </Producer>
+    <Producer processor="ARM01">
+      <Active>
+        <CacheAccess access="write" cache="c_L1D_ARM01"/>
+        <CacheAccess access="write" cache="c_L2D_A7"/>
+      </Active>
+    </Producer>
+    <Producer processor="ARM02">
+      <Active>
+        <CacheAccess access="write" cache="c_L1D_ARM02"/>
+        <CacheAccess access="write" cache="c_L2D_A7"/>
+      </Active>
+    </Producer>
+    <Producer processor="ARM03">
+      <Active>
+        <CacheAccess access="write" cache="c_L1D_ARM03"/>
+        <CacheAccess access="write" cache="c_L2D_A7"/>
+      </Active>
+    </Producer>
+    <Consumer processor="ARM00">
+      <Active>
+        <CacheAccess access="read" cache="c_L1D_ARM00"/>
+        <CacheAccess access="read" cache="c_L2D_A7"/>
+      </Active>
+    </Consumer>
+    <Consumer processor="ARM01">
+      <Active>
+        <CacheAccess access="read" cache="c_L1D_ARM01"/>
+        <CacheAccess access="read" cache="c_L2D_A7"/>
+      </Active>
+    </Consumer>
+    <Consumer processor="ARM02">
+      <Active>
+        <CacheAccess access="read" cache="c_L1D_ARM02"/>
+        <CacheAccess access="read" cache="c_L2D_A7"/>
+      </Active>
+    </Consumer>
+    <Consumer processor="ARM03">
+      <Active>
+        <CacheAccess access="read" cache="c_L1D_ARM03"/>
+        <CacheAccess access="read" cache="c_L2D_A7"/>
+      </Active>
+    </Consumer>
+    </Communication>
+  <LogicalLink frequencyDomain="fd_A15" id="ll_prod_L2_ARM04" latencyUnit="cycles" latencyValue="250"/>
+  <LogicalLink frequencyDomain="fd_A15" id="ll_cons_L2_ARM04" latencyUnit="cycles" latencyValue="250"/>
+  <LogicalLink frequencyDomain="fd_A15" id="ll_prod_L2_ARM05" latencyUnit="cycles" latencyValue="250"/>
+  <LogicalLink frequencyDomain="fd_A15" id="ll_cons_L2_ARM05" latencyUnit="cycles" latencyValue="250"/>
+  <LogicalLink frequencyDomain="fd_A15" id="ll_prod_L2_ARM06" latencyUnit="cycles" latencyValue="250"/>
+  <LogicalLink frequencyDomain="fd_A15" id="ll_cons_L2_ARM06" latencyUnit="cycles" latencyValue="250"/>
+  <LogicalLink frequencyDomain="fd_A15" id="ll_prod_L2_ARM07" latencyUnit="cycles" latencyValue="250"/>
+  <LogicalLink frequencyDomain="fd_A15" id="ll_cons_L2_ARM07" latencyUnit="cycles" latencyValue="250"/>
+  <Communication id="comm_L2_A15" multicast="true">
+    <Buffer>
+      <MemoryRef memory="m_DRAM"/>
+      <CacheRef cache="c_L2D_A15"/>
+    </Buffer>
+    <Producer processor="ARM04">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_prod_L2_ARM04"/>
+      </Active>
+    </Producer>
+    <Producer processor="ARM05">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_prod_L2_ARM05"/>
+      </Active>
+    </Producer>
+    <Producer processor="ARM06">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_prod_L2_ARM06"/>
+      </Active>
+    </Producer>
+    <Producer processor="ARM07">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_prod_L2_ARM07"/>
+      </Active>
+    </Producer>
+    <Consumer processor="ARM04">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_cons_L2_ARM04"/>
+      </Active>
+    </Consumer>
+    <Consumer processor="ARM05">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_cons_L2_ARM05"/>
+      </Active>
+    </Consumer>
+    <Consumer processor="ARM06">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_cons_L2_ARM06"/>
+      </Active>
+    </Consumer>
+    <Consumer processor="ARM07">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_cons_L2_ARM07"/>
+      </Active>
+    </Consumer>
+    </Communication>
+  <Communication id="comm_L2_A15_putget" multicast="true">
+    <Buffer>
+      <MemoryRef memory="m_DRAM"/>
+      <CacheRef cache="c_L2D_A15"/>
+    </Buffer>
+    <Producer processor="ARM04">
+      <Active>
+        <CacheAccess access="write" cache="c_L1D_ARM04"/>
+        <CacheAccess access="write" cache="c_L2D_A15"/>
+      </Active>
+    </Producer>
+    <Producer processor="ARM05">
+      <Active>
+        <CacheAccess access="write" cache="c_L1D_ARM05"/>
+        <CacheAccess access="write" cache="c_L2D_A15"/>
+      </Active>
+    </Producer>
+    <Producer processor="ARM06">
+      <Active>
+        <CacheAccess access="write" cache="c_L1D_ARM06"/>
+        <CacheAccess access="write" cache="c_L2D_A15"/>
+      </Active>
+    </Producer>
+    <Producer processor="ARM07">
+      <Active>
+        <CacheAccess access="write" cache="c_L1D_ARM07"/>
+        <CacheAccess access="write" cache="c_L2D_A15"/>
+      </Active>
+    </Producer>
+    <Consumer processor="ARM04">
+      <Active>
+        <CacheAccess access="read" cache="c_L1D_ARM04"/>
+        <CacheAccess access="read" cache="c_L2D_A15"/>
+      </Active>
+    </Consumer>
+    <Consumer processor="ARM05">
+      <Active>
+        <CacheAccess access="read" cache="c_L1D_ARM05"/>
+        <CacheAccess access="read" cache="c_L2D_A15"/>
+      </Active>
+    </Consumer>
+    <Consumer processor="ARM06">
+      <Active>
+        <CacheAccess access="read" cache="c_L1D_ARM06"/>
+        <CacheAccess access="read" cache="c_L2D_A15"/>
+      </Active>
+    </Consumer>
+    <Consumer processor="ARM07">
+      <Active>
+        <CacheAccess access="read" cache="c_L1D_ARM07"/>
+        <CacheAccess access="read" cache="c_L2D_A15"/>
+      </Active>
+    </Consumer>
+    </Communication>
+  <LogicalLink frequencyDomain="fd_A7" id="ll_prod_DRAM_ARM00" latencyUnit="cycles" latencyValue="500"/>
+  <LogicalLink frequencyDomain="fd_A7" id="ll_cons_DRAM_ARM00" latencyUnit="cycles" latencyValue="500"/>
+  <LogicalLink frequencyDomain="fd_A7" id="ll_prod_DRAM_ARM01" latencyUnit="cycles" latencyValue="500"/>
+  <LogicalLink frequencyDomain="fd_A7" id="ll_cons_DRAM_ARM01" latencyUnit="cycles" latencyValue="500"/>
+  <LogicalLink frequencyDomain="fd_A7" id="ll_prod_DRAM_ARM02" latencyUnit="cycles" latencyValue="500"/>
+  <LogicalLink frequencyDomain="fd_A7" id="ll_cons_DRAM_ARM02" latencyUnit="cycles" latencyValue="500"/>
+  <LogicalLink frequencyDomain="fd_A7" id="ll_prod_DRAM_ARM03" latencyUnit="cycles" latencyValue="500"/>
+  <LogicalLink frequencyDomain="fd_A7" id="ll_cons_DRAM_ARM03" latencyUnit="cycles" latencyValue="500"/>
+  <LogicalLink frequencyDomain="fd_A15" id="ll_prod_DRAM_ARM04" latencyUnit="cycles" latencyValue="500"/>
+  <LogicalLink frequencyDomain="fd_A15" id="ll_cons_DRAM_ARM04" latencyUnit="cycles" latencyValue="500"/>
+  <LogicalLink frequencyDomain="fd_A15" id="ll_prod_DRAM_ARM05" latencyUnit="cycles" latencyValue="500"/>
+  <LogicalLink frequencyDomain="fd_A15" id="ll_cons_DRAM_ARM05" latencyUnit="cycles" latencyValue="500"/>
+  <LogicalLink frequencyDomain="fd_A15" id="ll_prod_DRAM_ARM06" latencyUnit="cycles" latencyValue="500"/>
+  <LogicalLink frequencyDomain="fd_A15" id="ll_cons_DRAM_ARM06" latencyUnit="cycles" latencyValue="500"/>
+  <LogicalLink frequencyDomain="fd_A15" id="ll_prod_DRAM_ARM07" latencyUnit="cycles" latencyValue="500"/>
+  <LogicalLink frequencyDomain="fd_A15" id="ll_cons_DRAM_ARM07" latencyUnit="cycles" latencyValue="500"/>
+  <Communication id="comm_DRAM" multicast="true">
+    <Buffer>
+      <MemoryRef memory="m_DRAM"/>
+    </Buffer>
+    <Producer processor="ARM00">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_prod_DRAM_ARM00"/>
+      </Active>
+    </Producer>
+    <Producer processor="ARM01">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_prod_DRAM_ARM01"/>
+      </Active>
+    </Producer>
+    <Producer processor="ARM02">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_prod_DRAM_ARM02"/>
+      </Active>
+    </Producer>
+    <Producer processor="ARM03">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_prod_DRAM_ARM03"/>
+      </Active>
+    </Producer>
+    <Producer processor="ARM04">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_prod_DRAM_ARM04"/>
+      </Active>
+    </Producer>
+    <Producer processor="ARM05">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_prod_DRAM_ARM05"/>
+      </Active>
+    </Producer>
+    <Producer processor="ARM06">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_prod_DRAM_ARM06"/>
+      </Active>
+    </Producer>
+    <Producer processor="ARM07">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_prod_DRAM_ARM07"/>
+      </Active>
+    </Producer>
+    <Consumer processor="ARM00">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_cons_DRAM_ARM00"/>
+      </Active>
+    </Consumer>
+    <Consumer processor="ARM01">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_cons_DRAM_ARM01"/>
+      </Active>
+    </Consumer>
+    <Consumer processor="ARM02">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_cons_DRAM_ARM02"/>
+      </Active>
+    </Consumer>
+    <Consumer processor="ARM03">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_cons_DRAM_ARM03"/>
+      </Active>
+    </Consumer>
+    <Consumer processor="ARM04">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_cons_DRAM_ARM04"/>
+      </Active>
+    </Consumer>
+    <Consumer processor="ARM05">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_cons_DRAM_ARM05"/>
+      </Active>
+    </Consumer>
+    <Consumer processor="ARM06">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_cons_DRAM_ARM06"/>
+      </Active>
+    </Consumer>
+    <Consumer processor="ARM07">
+      <Active>
+        <LogicalLinkRef logicalLink="ll_cons_DRAM_ARM07"/>
+      </Active>
+    </Consumer>
+    </Communication>
+  <Communication id="comm_DRAM_putget" multicast="true">
+    <Buffer>
+      <MemoryRef memory="m_DRAM"/>
+    </Buffer>
+    <Producer processor="ARM00">
+      <Active>
+        <CacheAccess access="write" cache="c_L1D_ARM00"/>
+        <CacheAccess access="write" cache="c_L2D_A7"/>
+        <MemoryAccess access="write" memory="m_DRAM"/>
+      </Active>
+    </Producer>
+    <Producer processor="ARM01">
+      <Active>
+        <CacheAccess access="write" cache="c_L1D_ARM01"/>
+        <CacheAccess access="write" cache="c_L2D_A7"/>
+        <MemoryAccess access="write" memory="m_DRAM"/>
+      </Active>
+    </Producer>
+    <Producer processor="ARM02">
+      <Active>
+        <CacheAccess access="write" cache="c_L1D_ARM02"/>
+        <CacheAccess access="write" cache="c_L2D_A7"/>
+        <MemoryAccess access="write" memory="m_DRAM"/>
+      </Active>
+    </Producer>
+    <Producer processor="ARM03">
+      <Active>
+        <CacheAccess access="write" cache="c_L1D_ARM03"/>
+        <CacheAccess access="write" cache="c_L2D_A7"/>
+        <MemoryAccess access="write" memory="m_DRAM"/>
+      </Active>
+    </Producer>
+    <Producer processor="ARM04">
+      <Active>
+        <CacheAccess access="write" cache="c_L1D_ARM04"/>
+        <CacheAccess access="write" cache="c_L2D_A15"/>
+        <MemoryAccess access="write" memory="m_DRAM"/>
+      </Active>
+    </Producer>
+    <Producer processor="ARM05">
+      <Active>
+        <CacheAccess access="write" cache="c_L1D_ARM05"/>
+        <CacheAccess access="write" cache="c_L2D_A15"/>
+        <MemoryAccess access="write" memory="m_DRAM"/>
+      </Active>
+    </Producer>
+    <Producer processor="ARM06">
+      <Active>
+        <CacheAccess access="write" cache="c_L1D_ARM06"/>
+        <CacheAccess access="write" cache="c_L2D_A15"/>
+        <MemoryAccess access="write" memory="m_DRAM"/>
+      </Active>
+    </Producer>
+    <Producer processor="ARM07">
+      <Active>
+        <CacheAccess access="write" cache="c_L1D_ARM07"/>
+        <CacheAccess access="write" cache="c_L2D_A15"/>
+        <MemoryAccess access="write" memory="m_DRAM"/>
+      </Active>
+    </Producer>
+    <Consumer processor="ARM00">
+      <Active>
+        <CacheAccess access="read" cache="c_L1D_ARM00"/>
+        <CacheAccess access="read" cache="c_L2D_A7"/>
+        <MemoryAccess access="read" memory="m_DRAM"/>
+      </Active>
+    </Consumer>
+    <Consumer processor="ARM01">
+      <Active>
+        <CacheAccess access="read" cache="c_L1D_ARM01"/>
+        <CacheAccess access="read" cache="c_L2D_A7"/>
+        <MemoryAccess access="read" memory="m_DRAM"/>
+      </Active>
+    </Consumer>
+    <Consumer processor="ARM02">
+      <Active>
+        <CacheAccess access="read" cache="c_L1D_ARM02"/>
+        <CacheAccess access="read" cache="c_L2D_A7"/>
+        <MemoryAccess access="read" memory="m_DRAM"/>
+      </Active>
+    </Consumer>
+    <Consumer processor="ARM03">
+      <Active>
+        <CacheAccess access="read" cache="c_L1D_ARM03"/>
+        <CacheAccess access="read" cache="c_L2D_A7"/>
+        <MemoryAccess access="read" memory="m_DRAM"/>
+      </Active>
+    </Consumer>
+    <Consumer processor="ARM04">
+      <Active>
+        <CacheAccess access="read" cache="c_L1D_ARM04"/>
+        <CacheAccess access="read" cache="c_L2D_A15"/>
+        <MemoryAccess access="read" memory="m_DRAM"/>
+      </Active>
+    </Consumer>
+    <Consumer processor="ARM05">
+      <Active>
+        <CacheAccess access="read" cache="c_L1D_ARM05"/>
+        <CacheAccess access="read" cache="c_L2D_A15"/>
+        <MemoryAccess access="read" memory="m_DRAM"/>
+      </Active>
+    </Consumer>
+    <Consumer processor="ARM06">
+      <Active>
+        <CacheAccess access="read" cache="c_L1D_ARM06"/>
+        <CacheAccess access="read" cache="c_L2D_A15"/>
+        <MemoryAccess access="read" memory="m_DRAM"/>
+      </Active>
+    </Consumer>
+    <Consumer processor="ARM07">
+      <Active>
+        <CacheAccess access="read" cache="c_L1D_ARM07"/>
+        <CacheAccess access="read" cache="c_L2D_A15"/>
+        <MemoryAccess access="read" memory="m_DRAM"/>
+      </Active>
+    </Consumer>
+    </Communication>
+</slxplatform:Platform>

@@ -84,6 +84,9 @@ _tasks = {
         'visualize',
         'visualize',
         "Visualize a mapping in the GUI"),
+    'tetris' : (
+        tetris,
+        "Run TETRiS scheduler")
 }
 """A dictionary that maps task names to descriptors of callable functions."""
 
