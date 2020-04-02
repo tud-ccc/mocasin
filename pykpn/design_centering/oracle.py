@@ -19,7 +19,7 @@ from pykpn.simulate.system import RuntimeSystem
 from pykpn.mapper.proc_partialmapper import ProcPartialMapper
 from pykpn.mapper.rand_partialmapper import RandomPartialMapper
 from pykpn.mapper.com_partialmapper import ComPartialMapper
-from pykpn.mapper.random import RandomMapping
+from pykpn.mapper.random_mapper import RandomMapping
 from pykpn.design_centering import sample
 
 from sys import exit
@@ -104,7 +104,7 @@ class Simulation(object):
         self.sim_config = AttrDict(config)
         self.kpn = hydra.utils.instantiate(config['kpn'])
         self.platform = hydra.utils.instantiate(config['platform'])
-        self.randMapGen = RandomPartialMapper(self.kpn, self.platform)
+        self.randMapGen = RandomPartialMapper(self.kpn, self.platform, config)
         self.comMapGen = ComPartialMapper(self.kpn, self.platform, self.randMapGen)
         self.dcMapGen = ProcPartialMapper(self.kpn, self.platform, self.comMapGen)
         self.threads = config['threads']
