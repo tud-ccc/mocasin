@@ -10,3 +10,4 @@ mupluslambda: true
 initials : random
 radius : 5
 random_seed: 42
+crossover_rate : 2

@@ -43,6 +43,10 @@ class RuntimeSystem:
 
         self._env = env
         self._applications = applications
+        for app in applications:
+            if app.mapping.platform != platform:
+                log.error(f"Application {app.name} is mapped into a different platform than the system")
+
 
         # initialize all schedulers
         self._schedulers = []

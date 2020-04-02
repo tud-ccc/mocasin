@@ -6,6 +6,8 @@
 from enum import Enum
 import numpy as np
 from numpy.random import randint
+from copy import deepcopy
+import random
 
 try:
     import pynauty as pynauty
@@ -15,7 +17,7 @@ except:
 from pykpn.common.mapping import Mapping
 
 from .metric_spaces import FiniteMetricSpace, FiniteMetricSpaceSym, FiniteMetricSpaceLP, FiniteMetricSpaceLPSym, arch_graph_to_distance_metric
-from .embeddings import MetricSpaceEmbedding, DEFAULT_DISTORTION
+from .embeddings import MetricSpaceEmbedding
 import pykpn.representations.automorphisms as aut
 import pykpn.representations.permutations as perm
 import pykpn.util.random_distributions.lp as lp
@@ -43,14 +45,18 @@ class MappingRepresentation(type):
     _instances = {}
     def __call__(cls, *args, **kwargs):
         #print(str(cls) + " is being called")
-        kpn = ";".join(map(lambda x : x.name, args[0].channels()))
-        platform = args[1].name
+        kpn = args[0]
+        platform = args[1]
+        kpn_names = ";".join(map(lambda x : x.name, kpn.channels()))
         if (cls,kpn,platform) not in cls._instances:
             #make hashables of these two
-            cls._instances[(cls,kpn,platform)] = super(MappingRepresentation,cls).__call__(*args, **kwargs)
-            log.info(f"Initializing representation {cls} of kpn with processes: {kpn} on platform {platform}")
-            cls._instances[(cls,kpn,platform)]._representationType = cls
-        return cls._instances[(cls,kpn,platform)]
+            cls._instances[(cls,kpn_names,platform.name)] = super(MappingRepresentation,cls).__call__(*args, **kwargs)
+            log.info(f"Initializing representation {cls} of kpn with processes: {kpn_names} on platform {platform.name}")
+            cls._instances[(cls,kpn_names,platform.name)]._representationType = cls
+        instance = deepcopy(cls._instances[(cls,kpn_names,platform.name)])
+        instance.kpn = kpn
+        instance.platform = platform
+        return instance
 
     def toRepresentation(self,mapping): 
         return self.simpleVec2Elem(mapping.to_list())
@@ -198,6 +204,21 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         P = len(list(self.platform._processors.keys()))
         corr_boundaries = list(map(lambda t : t % P,approx))
         return corr_boundaries
+
+    def crossover(self,m1,m2,k):
+        return self._crossover(self.toRepresentation(m1),self.toRepresentation(m2),k)
+
+    def _crossover(self,m1,m2,k):
+        assert len(m1) == len(m2)
+        crossover_points = random.sample(range(len(m1)),k)
+        swap = False
+        for i in range(len(m1)):
+            if i in crossover_points:
+                swap = not swap
+            if swap:
+                m1[i] = m2[i]
+                m2[i] = m2[i]
+        return m1,m2
 
 
 #FIXME: UNTESTED!!
@@ -383,10 +404,8 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
     def __init__(self,kpn, platform, cfg=None):
         if cfg is None:
             p = 2
-            distortion = DEFAULT_DISTORTION
         else:
             p = cfg['norm_p']
-            distortion = cfg['distortion']
         self._topologyGraph = platform.to_adjacency_dict()
         M_matrix, self._arch_nc, self._arch_nc_inv = arch_graph_to_distance_metric(self._topologyGraph)
         self._M = FiniteMetricSpace(M_matrix)
@@ -396,8 +415,9 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
         self.p = p
         init_app_ncs(self,kpn)
         if self.p != 2:
-            log.warning(f"Metric space embeddings (currently) only supports p = 2. Embedding will not be low-distortion with regards to chosen p ({self.p})")
-        MetricSpaceEmbedding.__init__(self,self._M,self._d,distortion)
+            log.error(f"Metric space embeddings only supports p = 2. For p = 1, for example, finding such an embedding is NP-hard (See Matousek, J.,  Lectures on Discrete Geometry, Chap. 15.5)")
+        MetricSpaceEmbedding.__init__(self,self._M,self._d)
+        log.info(f"Found embedding with distortion: {self.distortion}")
         #Debug:
         #for p in self.iotainv.keys():
         #    for q in self.iotainv.keys():
@@ -425,7 +445,7 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
       point = []
       for i in range(self._d):
           val = []
-          point.append(list(p)[self._k*i:self._k*(i+1)])
+          point.append(list(p)[self.k*i:self.k*(i+1)])
       results_raw = MetricSpaceEmbedding.uniformFromBall(self,point,r,npoints)
       results = list(map(lambda x : np.array(list(np.array(x).flat)),results_raw))
       #print(f"results uniform from ball: {results}")
@@ -458,12 +478,28 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
     def approximate(self,x):
         return np.array(self.approx(x)).flatten()
 
+    def crossover(self, m1, m2, k):
+        return self._crossover(self.toRepresentation(m1), self.toRepresentation(m2), k)
+
+    def _crossover(self, m1, m2, k):
+        assert len(m1) == len(m2)
+        crossover_points = np.array(random.sample(range(self._d), k)) * self.k
+        swap = False
+        for i in range(len(m1)):
+            if i in crossover_points:
+                swap = not swap
+            if swap:
+                m1[i] = m2[i]
+                m2[i] = m2[i]
+        return m1, m2
+
+
 class SymmetryEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepresentation):
     """Symmetry Embedding Representation
     A representation combining symmetries with an embedding of a metric space. Currently still work in progress
     and not ready for using.
     """
-    def __init__(self,kpn, platform, distortion=DEFAULT_DISTORTION):
+    def __init__(self,kpn, platform):
         self.kpn = kpn
         self.platform = platform
         self._d = len(kpn.processes())
@@ -481,7 +517,7 @@ class SymmetryEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRep
         M = FiniteMetricSpace(M_matrix)
         self._M = FiniteMetricSpaceLPSym(M,self._G,self._d)
         self._M._populateD()
-        MetricSpaceEmbedding.__init__(self,self._M,1,distortion)
+        MetricSpaceEmbedding.__init__(self,self._M,1)
         
     def _simpleVec2Elem(self,x): 
         proc_vec = x[:self._d]
