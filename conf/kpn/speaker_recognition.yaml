@@ -1,7 +1,0 @@
-kpn:
-  name: speaker_recognition
-  class: pykpn.slx.kpn.SlxKpnGraph
-  params:
-    name: ${kpn.name}
-    cpngraph: ../../../apps/${kpn.name}/${kpn.name}.cpn.xml
-    slx_version: '2017.10'

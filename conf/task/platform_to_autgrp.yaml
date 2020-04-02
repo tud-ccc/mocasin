@@ -1,2 +1,0 @@
-task : platform_to_autgrp
-out : ${platform.name}.autgrp.out

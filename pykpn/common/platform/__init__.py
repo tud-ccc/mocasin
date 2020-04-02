@@ -9,7 +9,6 @@ import math
 
 from enum import Enum
 
-#enum added by Felix Teweleit, 10.08.2018
 class CommunicationResourceType(Enum):
     PhysicalLink = 1
     LogicalLink = 2
@@ -17,7 +16,6 @@ class CommunicationResourceType(Enum):
     Storage = 4
     Router = 5
     
-
 class FrequencyDomain:
 
     def __init__(self, name, frequency):
@@ -27,7 +25,6 @@ class FrequencyDomain:
     def cycles_to_ticks(self, cycles):
         tmp = float(cycles) * 1000000000000 / float(self.frequency)
         return int(round(tmp))
-
 
 class Processor:
 

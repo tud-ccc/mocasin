@@ -3,8 +3,8 @@
 #
 # Authors: Felix Teweleit
 
-from pykpn.gui.dataTemplates import mappingInformation
-from pykpn.gui.dataTemplates import platformInformation
+#development imports
+from pykpn.gui.dataTemplates import mappingInformation, PlatformInformation
 from pykpn.gui.managers import drawManager
 
 class drawAPI():
@@ -29,7 +29,6 @@ class drawAPI():
                         :int fontSize: The size of the font all names are displayed in.
         """
         self.__mPlatform = None
-        self.__drawOnlyPEs = None
         self.__mMappings = {}
         self.__currentMappingID = 0
         self.__usedCores = []
@@ -41,58 +40,24 @@ class drawAPI():
     Methods that can be called by the user.
     """
        
-    def setPlatform(self, platform, drawOnlyPEs = False):
+    def setPlatform(self, platform):
         """Analyzes and draws the given platform.
         :param SlxPlatform platform: The pykpn platform object.
         :param bool drawOnlyPEs: Defines if the drawManager should only draw the PEs of the platform
         """ 
         if self.__mPlatform == None:
-            self.__mPlatform = platformInformation(platform)
+            self.__mPlatform = PlatformInformation(platform)
         else:
             self.__mMappings.clear()
-            self.__mPlatform = platformInformation(platform)
+            self.__mPlatform = PlatformInformation(platform)
         
-        self.__mDrawManager.drawPlatform(drawOnlyPEs)
-        self.__drawOnlyPEs = drawOnlyPEs
+        self.__mDrawManager.drawPlatform()
         return
-    
-    def setFakePlatform(self, platform, drawOnlyPEs = False):
-        if self.__mPlatform == None:
-            self.__mPlatform = platform
-        else:
-            self.__mMappings.clear()
-            self.__mPlatform = platform
-        
-        self.__mDrawManager.drawPlatform(drawOnlyPEs)
-        self.__drawOnlyPEs = drawOnlyPEs
-        return
-    
-    def addFakeMapping(self, mapping, color = "default"):
-        key = -1
-        if self.__mPlatform == None:
-            raise RuntimeWarning('Can not add a mapping if no platform is specified')
-        else:
-            if not color == 'default':
-                mappingColor = color
-            else:
-                mappingColor = self.__mDrawManager.getColorForMapping()
-            if mappingColor != None:
-                key = self.__currentMappingID
-                mapping.setIdentifier(key)
-                mapping.setColor(mappingColor)
-                self.__currentMappingID += 1
-                value = mapping
-                self.__mMappings.update({key : value})
-                self.__mDrawManager.drawMappings()
-            else:
-                raise RuntimeWarning('Could not add mapping  because no color was available!')
-        return key
     
     
     def addMapping(self, mapping, color = 'default'):
         """Applies the mapping for a given application to the platform.
         :param Mapping mapping: The pykpn mapping object that should be applied.
-        :param int mappingID: The ID for the mapping so the api can identify it.
         :param str color: A Tkinter color value. The dots of the mapping will be drawn in this color.
                         If not given, a default color will be applied.
         """

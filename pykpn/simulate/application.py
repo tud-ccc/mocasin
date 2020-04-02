@@ -44,6 +44,8 @@ class RuntimeKpnApplication:
         """
         self.name = name
         self.mapping = mapping
+        if mapping.kpn != kpn_graph:
+            log.error("KPN and mapping incompatible in RuntimeKpnApplication")
 
         log.info('initialize new runtime application: %s', name)
         logging.inc_indent()

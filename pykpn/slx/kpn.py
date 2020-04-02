@@ -17,8 +17,7 @@ class SlxKpnGraph(KpnGraph):
     def __init__(self, name, cpngraph, slx_version):
         # version is currently ignored for KpnGraphs (all SLX versions so far
         # have the same graph structure)
-        KpnGraph.__init__(self)
-        self.name = name
+        super(SlxKpnGraph, self).__init__(name)
 
         log.info('Start parsing the PnGraph')
 

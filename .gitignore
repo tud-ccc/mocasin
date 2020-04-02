@@ -3,7 +3,7 @@ __pycache__
 *.swp
 *.eggs
 dist
-pykpn.egg-info
+*.egg-info
 .#*
 dist
 doc/api
@@ -16,12 +16,17 @@ third_party_dependencies/pynauty-0.6/nauty/config.*
 .pydevproject
 .settings
 testBench.py
-*.dot
 *.png
 .eggs
 .coverage
 ontologies/
 *.idea
+outputs
+test_bench.py
+
+outputs/
+multirun/
+tsne.pdf
 
 # default json dump
 dump.json

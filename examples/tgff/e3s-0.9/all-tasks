@@ -1,0 +1,61 @@
+Automotive/Industrial
+----
+0  Angle to Time Conversion
+1  Basic floating point
+2  Bit Manipulation
+3  Cache Buster
+4  CAN Remote Data Request
+5  Fast Fourier Transform (Auto/Indust. Version)
+6  Finite Impulse Response Filter (Auto/Indust. Vers)
+7  Infinite Impulse Response Filter
+8  Inverse discrete cosine transfom
+9  Inverse Fast Fourier Transform (Auto/Indust. Vers)
+10 Matrix arithmetic
+11 Pointer Chasing
+12 Pulse Width Modulation
+13 Road Speed Calculation
+14 Table Lookup and Interpolation
+15 Tooth To Spark
+
+Consumer
+----
+16 Compress JPEG
+17 Decompress JPEG
+18 High Pass Grey-scale filter
+19 RGB to CYMK Conversion
+20 RGB to YIQ Conversion
+
+Networking
+----
+21 OSPF/Dijkstra
+22 Route Lookup/Patricia
+23 Packet Flow - 512 kbytes
+24 Packet Flow - 1 Mbyte
+25 Packet Flow - 2 Mbytes
+
+Office automation
+----
+26 Dithering
+27 Image Rotation
+28 Text Processing
+
+Telecom
+----
+29 Autocorrelation - Data1 (pulse)
+30 Autocorrelation - Data2 (sine)
+31 Auto-Correlation - Data3 (speech)
+32 Convolutional Encoder - Data1 (xk5r2dt)
+33 Convolutional Encoder - Data2 (xk4r2dt)
+34 Convolutional Encoder - Data3 (xk3r2dt)
+35 Fixed-point Bit Allocation - Data2 (typ)
+36 Fixed-point Bit Allocation - Data3 (step)
+37 Fixed Point Bit Allocation - Data6 (pent)
+38 Fixed Point Complex FFT - Data1 (pulse)
+39 Fixed point Complex FFT - Data2 (spn)
+40 Fixed Point Complex FFT - Data3 (sine)
+41 Viterbi GSM Decoder - Data1 (get)
+42 Viterbi GSM Decoder - Data2 (toggle)
+43 Viterbi GSM Decoder - Data3 (ones)
+44 Viterbi GSM Decoder - Data4 (zeros)
+
+45 Placeholder task

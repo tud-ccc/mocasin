@@ -1,0 +1,9 @@
+defaults:
+  - common
+  - hydra/job_logging: pykpn
+  - slx: default
+  - tgff: default
+  - kpn: default
+  - platform: default
+  - mapping: default
+  - mapping_to_dot_inc

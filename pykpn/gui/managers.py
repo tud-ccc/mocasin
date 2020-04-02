@@ -2,8 +2,9 @@
 # All Rights Reserved
 #
 # Authors: Felix Teweleit
-from pykpn.gui.utils import listOperations
-from pykpn.gui.utils import platformOperations
+
+from pykpn.gui.utils import listOperations, platformOperations
+from pykpn.gui.dataTemplates import platformLayout
 import tkinter as tk
 
 class drawManager():
@@ -21,7 +22,7 @@ class drawManager():
     :ivar bool __displayTaskNames: States if whether names of task should be displayed or not. Is true by default.
     :ivar bool __displayPENames: States if whether the names of the processing elements should be displayed or not. Is true by default.
     :ivar bool __enableDragAndDrop: State if whether drag and drop feature is enabled or not. Is false by default.
-    :ivar list [int] __drawnCrosses: Holds the handles of each cross drawn for a already used core. 
+    :ivar list [int] __drawnCrosses: Holds the handles of each cross drawn for an already used core. 
     """
     def __init__(self, apiInstance, canvas, border, scaling, width, height, **kwargs):
         """Initizalizes a drawManager.
@@ -51,8 +52,10 @@ class drawManager():
         
         self.__drawnCrosses = []
         
-        self.__textSpace = 10
+        self.__textSpace = 5
         self.__fontSize = 'default'
+        self.__layout = None
+        
         for key in kwargs:
             if key == 'fontSize':
                 self.__fontSize = kwargs[key]
@@ -60,6 +63,13 @@ class drawManager():
                 self.__textSpace = kwargs[key]
         
         self.setColorVectors()
+        
+        
+        self.__cornerRadius = 20
+        self.__currentPaddingLevel = 1
+        self.__clusterPadding = 20
+        self.__pePadding = 10
+        self.__lastPrimitiveSize = 0
     
     def setColorVectors(self, platformColors = ['default'], mappingColors = ['default'], peColors = ['default']):
         """Applies custom color values.
@@ -89,7 +99,7 @@ class drawManager():
         self.__mappingColors.append(color)
         return
     
-    def drawPlatform(self, drawOnlyPEs):
+    def TRMVdrawPlatform(self, drawOnlyPEs):
         """Draws the platform given to the api with the given canvas.
         :param bool drawOnlyPEs: Defines if the hole platform or just the PEs should be drawn
         """
@@ -312,10 +322,10 @@ class drawManager():
         :returns: An available Tkiner color value.
         :rtype str:
         """
-        if isinstance(colorValue, int) and colorValue >= 0 and colorValue <= 6:
+        if isinstance(colorValue, int) and colorValue >= 0 and colorValue <= len(self.__platformColors):
             return self.__platformColors[colorValue]
         else:
-            raise ValueError('Wrong color value to resolve given!')
+            return self.__resolvePlatformColor(colorValue % len(self.__platformColors))
         
     def __resolvePEColor(self, coreSize):
         """Returns a available color for a processing element.
@@ -333,13 +343,17 @@ class drawManager():
         """
         self.__platformColors = {}
         if colorList[0] == 'default':
-            self.__platformColors = { 0: 'royalblue1',
-                                    1: 'steelblue1',
-                                    2: 'skyblue1',
-                                    3: 'lightskyblue1',
-                                    4: 'slategray1',
-                                    5: 'lightsteelblue1',
-                                    6: 'lightblue1'
+            self.__platformColors = { 0: 'lightsteelblue1',
+                                    1: 'mediumturquoise',
+                                    2: 'darkseagreen',
+                                    3: 'greenyellow',
+                                    4: 'palegreen',
+                                    5: 'darkkhaki',
+                                    6: 'khaki',
+                                    7: 'indianred',
+                                    8: 'tomato',
+                                    9: 'pink',
+                                    10: 'maroon',
                                     }
         else:
             i = 1
@@ -354,7 +368,7 @@ class drawManager():
         """
         if colorList[0] == 'default':
             self.__mappingColors = ['red2','orangered3','tomato2', 'coral2', 'salmon2','darkorange2','orange3', 'cornflower blue','pale goldenrod',
-                                    'deep pink', 'RoyalBlue1','PaleTurquoise2', 'sienna3', 'magenta4', 'IndianRed3', 'aquamarine2', 'seashell2']
+                                    'deep pink', 'RoyalBlue1','PaleTurquoise2', 'sienna3', 'magenta4', 'IndianRed3', 'aquamarine2']
         else:
             self.__mappingColors = colorList
         return
@@ -380,6 +394,7 @@ class drawManager():
                 i += 1
         return 
 
+#TODO: REMOVE FOLLOWING CODE!
     def __drawInnerRessource(self, toDraw, drawWidth, drawHeight, relativeXValue, xIndent, colorValue):      
         """Draws components, mostly primitives, of the platform. Calls itself recursively as long as there are primitives left.
         :param list[(str, [str])] toDraw: List that contains tuples with first the name of the primitive an second a list of primitives and or processing
@@ -388,7 +403,7 @@ class drawManager():
         :param int drawHeight: The height of the canvas left to draw this primitive.
         :param int relativeXValue: The amount of components on the same hierarchy level and the same parent primitive that are allready drawn.
         :param int XIndent: The space taken by components on the same hierarchy level but different parent primitives that are allready drawn.
-        :param int colorValue: An integer used to resolve the color for the primtive. Each level of hierarchy resolves in the same color.
+        :param int colorValue: An integer used to resolve the color for the primitive. Each level of hierarchy resolves in the same color.
         """
         border = self.__border
         length = drawWidth - border
@@ -639,7 +654,200 @@ class drawManager():
             
                 j += 1
             i += 1
-        return   
+        return
+    
+    
+#END OF TO REMOVE CODE 
+    def drawPlatform(self):
+        #clear the canvas
+        for handle in self.__mCanvas.find_all():
+            self.__mCanvas.delete(handle)
+            
+        toDraw = self.__mApiInstance.getPlatform()
+        clusters = toDraw.getClusterDict()
+        
+        matrix = []
+        for clusterId in clusters:
+            matrix.append(clusters[clusterId])
+            
+        matrix = listOperations.convertToMatrix(matrix)
+        
+        dimension = len(matrix[0])
+        slotSizeX = self.__drawWidth / dimension
+        slotSizeY = self.__drawHeight / dimension
+        
+        self.__layout = platformLayout(dimension, slotSizeX, slotSizeY)
+        self.__layout.addPrimitives(toDraw.getPrimitiveDict())
+        
+        for prim in self.__layout.getPrimitives():
+            self.drawPrimitive(prim)
+        
+        self.__currentPaddingLevel += 1
+        for slot in self.__layout.getLayout():
+            if not slot[0]:
+                """In case a cluster is assigned to this slot
+                """
+                self.drawProcessingElements(slot[2] + self.__currentPaddingLevel * self.__clusterPadding,
+                                             slot[3] + self.__currentPaddingLevel * self.__clusterPadding, 
+                                             slot[4] - self.__currentPaddingLevel * self.__clusterPadding, 
+                                             slot[5] - self.__currentPaddingLevel * self.__clusterPadding, 
+                                             clusters[slot[1]])
+         
+    def drawProcessingElements(self, startX, startY, endX, endY, clusterObject):
+        matrix = listOperations.convertToMatrix(clusterObject[0])
+        dimension = len(matrix[0])
+        slotSizeX = (endX - startX) / dimension
+        slotSizeY = (endY - startY) / dimension
+        
+        platform = self.__mApiInstance.getPlatform()
+        platform.addCoreClass(slotSizeX)
+        color = self.__resolvePEColor(slotSizeX)
+        
+        if clusterObject[4]:
+            """In case cluster has a L2 cache
+            """
+            self.draw_rectangle(startX, 
+                                startY, 
+                                endX, 
+                                endY,
+                                fill=self.__resolvePlatformColor(1))
+        
+        for i in range(0, dimension):
+            leftCornerY = startY + i * slotSizeY + self.__pePadding
+            rightCornerY = startY + (i + 1) * slotSizeY - self.__pePadding
+            peSizeY = rightCornerY - leftCornerY
+                
+            if clusterObject[3]:
+                    """In case PE's in cluster have a level 1 cache
+                    """
+                    platformColor = self.__resolvePlatformColor(0)
+                    rightCornerYPrim = rightCornerY
+                    rightCornerY = rightCornerY - 0.3 * peSizeY
+                    leftCornerYPrim = rightCornerY
+                    primSizeY = rightCornerYPrim - leftCornerYPrim
+            
+            for j in range(0, dimension):
+                try:
+                    """Test if there is a actually a core
+                    """
+                    matrix[i][j]
+                except:
+                    continue
+                
+                leftCornerX = startX + j * slotSizeX + self.__pePadding
+                rightCornerX = startX + (j + 1) * slotSizeX - self.__pePadding
+                
+                peSizeX = rightCornerX - leftCornerX
+                
+                peHandle = self.__mCanvas.create_rectangle(leftCornerX, leftCornerY, rightCornerX, rightCornerY, fill=color)
+                if self.__displayPENames:
+                    self.__mCanvas.create_text(leftCornerX + 0.5 * peSizeX, rightCornerY - self.__textSpace, text=matrix[i][j])
+                
+                if peSizeY < peSizeX and peSizeY < self.__minimalPeSize:
+                    self.__minimalPeSize = peSizeY
+                elif peSizeX <= peSizeY and peSizeX < self.__minimalPeSize:
+                    self.__minimalPeSize = peSizeY
+                
+                self.__mApiInstance.getPlatform().updateCoreDict(matrix[i][j], [leftCornerX,
+                                                                                rightCornerX,
+                                                                                leftCornerY,
+                                                                                rightCornerY,
+                                                                                peHandle,
+                                                                                color])
+                if clusterObject[3]:
+                    """Draw belonging level 1 cache
+                    """
+                    self.__mCanvas.create_rectangle(leftCornerX, leftCornerYPrim, rightCornerX, rightCornerYPrim, fill=platformColor)
+                    self.__mCanvas.create_text(leftCornerX + 0.5 * peSizeX, leftCornerYPrim + 0.5 * primSizeY, text="L1 Cache")
+                
+                
+                if clusterObject[2]:
+                    """In case PE's in cluster are connected via network on chip
+                    """
+                    if i < dimension - 1:
+                        lineStartY = rightCornerY
+                        if clusterObject[3]:
+                            lineStartY = rightCornerYPrim
+                        lineEndY = lineStartY + 2 * self.__pePadding
+                        lineX = leftCornerX + 0.5 * peSizeX
+                        self.__mCanvas.create_line(lineX, lineStartY, lineX, lineEndY)
+                    
+                    if j < dimension - 1:
+                        lineY = leftCornerY + 0.5 * peSizeY
+                        lineStartX = rightCornerX
+                        lineEndX = lineStartX + 2 * self.__pePadding
+                        self.__mCanvas.create_line(lineStartX, lineY, lineEndX, lineY)
+                        
+
+        return
+    
+    def drawPrimitive(self, primitive):
+        clusterAmount = int(len(primitive[1]) / 4)
+        color = self.__resolvePlatformColor(clusterAmount)
+        
+        if self.__lastPrimitiveSize == 0:
+            self.__lastPrimitiveSize = clusterAmount
+        elif clusterAmount < self.__lastPrimitiveSize:
+            self.__currentPaddingLevel += 1
+            self.__lastPrimitiveSize = clusterAmount
+        
+        for i in range(0, clusterAmount):
+            startPointX = primitive[1][i * 4]
+            startPointY = primitive[1][i * 4 + 1]
+            
+            endPointX = primitive[1][i * 4 + 2]
+            endPointY = primitive[1][i * 4 + 3]
+            
+            for j in range(i + 1, clusterAmount):
+                if primitive[1][j * 4 + 1] == primitive[1][i * 4 + 1]:
+                    """In case next cluster in X direction belongs to the same primitive
+                    """
+                    if primitive[1][i * 4] >= primitive[1][j * 4]:
+                        startPointX = primitive[1][j * 4]
+                    else:
+                        endPointX = primitive[1][j * 4 + 2] 
+                if primitive[1][j * 4] == primitive[1][i * 4]:
+                    """In case next cluster in Y direction belongs to the same primitive
+                    """
+                    if primitive[1][i * 4 + 1] >= primitive[1][j * 4 + 1]:
+                        startPointY = primitive[1][j * 4 + 1]
+                    else:
+                        endPointY = primitive[1][j * 4 + 3]
+            
+            self.draw_rectangle(startPointX + self.__currentPaddingLevel * self.__clusterPadding, 
+                                startPointY + self.__currentPaddingLevel * self.__clusterPadding, 
+                                endPointX - self.__currentPaddingLevel * self.__clusterPadding, 
+                                endPointY - self.__currentPaddingLevel * self.__clusterPadding, 
+                                fill=color)
+            print(self.__currentPaddingLevel)
+
+    def draw_rectangle(self, x1, y1, x2, y2, fill='red', outline=False):
+        radius = self.__cornerRadius
+        
+        points = [x1+radius, y1,
+        x1+radius, y1,
+        x2-radius, y1,
+        x2-radius, y1,
+        x2, y1,
+        x2, y1+radius,
+        x2, y1+radius,
+        x2, y2-radius,
+        x2, y2-radius,
+        x2, y2,
+        x2-radius, y2,
+        x2-radius, y2,
+        x1+radius, y2,
+        x1+radius, y2,
+        x1, y2,
+        x1, y2-radius,
+        x1, y2-radius,
+        x1, y1+radius,
+        x1, y1+radius,
+        x1, y1,]
+        if outline:
+            self.__mCanvas.create_polygon(points, fill=fill,smooth=True, outline='black')
+        else:
+            self.__mCanvas.create_polygon(points, fill=fill,smooth=True)
     
 class dragAndDropManager():
     """This manager provides the necessary method for dragging and dropping elements of a canvas.
@@ -711,8 +919,7 @@ class dragAndDropManager():
         self.onPressDot(event)
         self.__mCanvas.tag_bind(self.__draggedItemId + 1, "<Motion>", self.__onMove)
         self.__mCanvas.tag_bind(self.__draggedItemId + 1, "<ButtonRelease-1>", self.__onRelease, '+')
-
-    
+  
     def __onMove(self, event):
         """The method that handles the fired event if a mapping dot is dragged and the mouse moves.
         :param Event event: The event that is fired.

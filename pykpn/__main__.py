@@ -10,7 +10,6 @@ import sys
 import traceback
 
 from pykpn.tasks import execute_task
-
 log = logging.getLogger(__name__)
 
 
@@ -25,17 +24,22 @@ def main():
 
     See :module:`pykpn.tasks` for a description of how new tasks can be added.
     """
-    # if the first argument is not an assignment, we treat it as a task
-    if len(sys.argv) > 1 and '=' not in sys.argv[1]:
-        sys.argv[1] = "task=%s" % sys.argv[1]
 
-    # execute the task
+    # We treat the first argument as the task to be executed
+    # and remove it from argv. All other command line arguments are processed
+    # later by hydra.
+
+    task = None
+    if len(sys.argv) > 1:
+        task = sys.argv[1]
+        del sys.argv[1]
+
     try:
-        execute_task()
+        execute_task(task)
     except Exception:
         log.error(traceback.format_exc())
         sys.exit(-1)
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)

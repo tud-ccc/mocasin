@@ -45,6 +45,7 @@ class SimulationContext(object):
         self.exec_time = None
 
 
+@hydra.main(config_path='conf/random_walk_mapping.yaml')
 def random_walk(cfg):
     """A Random Walk Mapper
 

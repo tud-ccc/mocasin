@@ -50,7 +50,7 @@ def platform_to_autgrp(cfg):
     log.info("done coverting automorhpism of edges to nodes.")
 
     log.info("start writing to file.")
-    with open(cfg['out'], 'w') as f:
+    with open(cfg['out_file'], 'w') as f:
         f.write("Platform Graph:")
         f.write(str(plat_graph))
         #f.write("Edge Group with ~" + str(autgrp_edges[1]) + " * 10^" + str(autgrp_edges[2]) + " elements.\n")

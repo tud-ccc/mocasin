@@ -1,6 +1,0 @@
-mapping:
-  name: ${kpn.name}_on_${platform.name}
-  class: pykpn.slx.mapping.SlxMapping
-  params:
-    mapping_xml: ../../../apps/${kpn.name}/${platform.name}/default.mapping
-    slx_version: ${kpn.params.slx_version}
