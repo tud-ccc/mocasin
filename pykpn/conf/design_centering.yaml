@@ -7,7 +7,7 @@ defaults:
   - platform: default
   - trace: default
   - representation: default
-  - app_platform_combination: ${defaults.5.kpn}_${defaults.6.platform}
+  - app_platform_combination: ${defaults.3.kpn}_${defaults.4.platform}
 
 threads : 1
 max_samples : 50
@@ -43,8 +43,3 @@ perturbation_type : representation
 perturbation_max_iters : 1000
 perturbation_ball_num : 20
 perturbation_radius : 2
-
-<<<<<<< HEAD:conf/task/design_centering.yaml
-=======
-threshold : 51 ms
->>>>>>> fix_tests:pykpn/conf/design_centering.yaml

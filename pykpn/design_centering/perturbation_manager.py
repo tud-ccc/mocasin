@@ -35,7 +35,7 @@ class PerturbationManager(object):
         self.radius = config['perturbation_radius']
         if config['representation'] != "GeomDummy":
             representation_type = reps.RepresentationType[config['representation']]
-            self.representation = (representation_type.getClassType())(self.kpn,self.platform)
+            self.representation = (representation_type.getClassType())(self.kpn,self.platform,config)
         #TODO: (FIXME) Perturbation manager only works in simple vector representation (for now)
         #self.representation = (reps.RepresentationType['SimpleVector'].getClassType())(self.kpn, self.platform)
 

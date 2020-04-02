@@ -52,7 +52,7 @@ def visualize_mapping_space(mappings, exec_times, show_plot=False,
         annotes.append(a)
 
 
-    representation = representation_type.getClassType()(mappings[0].kpn,mappings[0].platform)
+    representation = representation_type.getClassType()(mappings[0].kpn,mappings[0].platform,config)
     #print(mapping_tuples)
     # print("MAPPING TUPLES: {}".format(mapping_tuples[0]))
     X = tsne.tsne(mapping_tuples,
