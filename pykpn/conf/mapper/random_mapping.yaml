@@ -1,3 +1,5 @@
 mapper:
    class:
       pykpn.mapper.rand_partialmapper.RandomFullMapper
+
+random_seed : None

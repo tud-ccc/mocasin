@@ -68,6 +68,6 @@ class RandomMapping(Mapping):
             elem = representation.uniform()
         else:
             elem = self._representation.uniformFromBall(mapping,radius)[0]
-        print(elem.to_list())
+        log.debug(elem.to_list())
         self.from_mapping(elem)
         

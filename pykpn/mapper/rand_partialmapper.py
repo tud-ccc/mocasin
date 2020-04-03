@@ -119,4 +119,4 @@ class RandomFullMapper(RandomPartialMapper):
     def __init__(self,config):
         kpn = hydra.utils.instantiate(config['kpn'])
         platform = hydra.utils.instantiate(config['platform'])
-        super().__init__(kpn, platform, config, seed=None)
+        super().__init__(kpn, platform, config, seed=config['random_seed'])

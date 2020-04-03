@@ -9,6 +9,8 @@ import timeit
 import multiprocessing as mp
 import hydra
 import simpy
+import random
+import numpy as np
 
 from pykpn.mapper.random_mapper import RandomMapping
 from pykpn.simulate.application import RuntimeKpnApplication
@@ -93,6 +95,10 @@ class RandomWalkFullMapper(object):
         self.config = config
         rep_type_str = config['representation']
 
+        self.seed = config['random_seed']
+        if self.seed is not None:
+            random.seed(self.seed)
+            np.random.seed(self.seed)
 
         if rep_type_str not in dir(RepresentationType):
             log.exception("Representation " + rep_type_str + " not recognized. Available: " + ", ".join(dir(RepresentationType)))
@@ -155,10 +161,10 @@ class RandomWalkFullMapper(object):
         # When we reach this point, all simulations completed
 
         stop = timeit.default_timer()
-        print('Tried %d random mappings in %0.1fs' %
+        log.info('Tried %d random mappings in %0.1fs' %
               (len(results), stop - start))
         exec_time = float(best_result.exec_time / 1000000000.0)
-        print('Best simulated execution time: %0.1fms' % (exec_time))
+        log.info('Best simulated execution time: %0.1fms' % (exec_time))
         # export all mappings if requested
         idx = 1
         outdir = cfg['outdir']
