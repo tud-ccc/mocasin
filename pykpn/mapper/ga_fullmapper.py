@@ -47,7 +47,7 @@ class GeneticFullMapper(object):
                 raise RuntimeError("Could not mutate mapping")
 
     def evaluate_mapping(self,mapping):
-        tup = tuple(mapping)
+        tup = tuple(self.representation.approximate(np.array(mapping)))
         log.info(f"evaluating mapping: {tup}...")
         if tup in self.mapping_cache:
             log.info(f"... from cache: {self.mapping_cache[tup]}")

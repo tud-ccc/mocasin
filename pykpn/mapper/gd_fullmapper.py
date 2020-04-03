@@ -29,7 +29,7 @@ class GradientDescentFullMapper(object):
         if tup in self.mapping_cache:
             log.info(f"... from cache: {self.mapping_cache[tup]}")
             self.statistics['mappings_cached'] += 1
-            return self.mapping_cache[tup],
+            return self.mapping_cache[tup]
         else:
             self.statistics['mappings_evaluated'] += 1
             time = timeit.default_timer()
@@ -48,7 +48,7 @@ class GradientDescentFullMapper(object):
             time = timeit.default_timer() - time
             self.statistics['simulation_time'] += time
             log.info(f"... from simulation: {exec_time}.")
-            return (exec_time,)
+            return exec_time
 
     def __init__(self, config):
         """Generates a partial mapping for a given platform and KPN application.
@@ -106,7 +106,7 @@ class GradientDescentFullMapper(object):
                     best_exec_time = exec_time
                     best_mapping = mapping+evec
                 grad[i] = exec_time - cur_exec_time
-            mapping = mapping + (self.setpsize/ best_exec_time) * (-grad)
+            mapping = mapping + (self.stepsize/ best_exec_time) * (-grad)
             cur_exec_time = self.evaluate_mapping(mapping)
             if cur_exec_time < best_exec_time:
                 best_exec_time = cur_exec_time

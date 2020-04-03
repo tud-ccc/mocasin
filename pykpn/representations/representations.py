@@ -140,6 +140,8 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
 
     def fromRepresentation(self,mapping):
         mapping_obj = Mapping(self.kpn,self.platform)
+        if type(mapping) == np.ndarray:
+            mapping = mapping.astype(int)
         mapping_obj.from_list(mapping)
         return mapping_obj
 
