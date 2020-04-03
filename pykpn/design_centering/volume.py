@@ -218,7 +218,10 @@ class LPVolume(Volume):
         rank_one_update = np.array(self.rk1_vec).transpose() @ np.array(self.rk1_vec)
 
         rank_mu_update = np.zeros([self.dim,self.dim])
-        Qinv = np.linalg.inv(self.covariance)
+        try:
+            Qinv = np.linalg.inv(self.covariance)
+        except np.linalg.LinAlgError:
+            Qinv = np.identity(self.dim)
         arnorm = dict()
         for j,X in enumerate(feasible):
             V = Qinv @ (np.array(X.sample2tuple()) - self.old_center)

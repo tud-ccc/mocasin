@@ -83,6 +83,7 @@ def read_dc_json(filename):
         raw =  json.load(file)
         config = {
                 'representation' : raw['config']['representation'],
+                'perturbation_type' : raw['config']['perturbation_type'],
                 'random_seed' : raw['config']['random_seed'],
                 'threshold' : raw['config']['threshold'],
                 'distribution' : raw['config']['distr'],
@@ -148,4 +149,5 @@ def read_dc_json(filename):
 if __name__ ==  "__main__":
     from sys import argv
     dcs  = read_multiple_dc_jsons(argv[1])
+    print(f"Parsed {len(dcs)} json files... writing to {argv[2]}.")
     write_dc_to_csv(dcs,argv[2])

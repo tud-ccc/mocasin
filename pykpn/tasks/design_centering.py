@@ -44,7 +44,7 @@ def dc_task(cfg):
             'oracle': cfg['oracle'],
             'random_seed': cfg['random_seed'],
             'threshold': cfg['threshold'],
-            'perturtbation_type': cfg['perturbation_type'],
+            'perturbation_type': cfg['perturbation_type'],
             'run_perturbation': cfg['run_perturbation'],
             'num_perturbations': cfg['num_perturbations'],
             'representation': cfg['representation'],
