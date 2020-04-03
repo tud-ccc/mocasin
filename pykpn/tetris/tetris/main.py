@@ -25,12 +25,6 @@ from pykpn.tetris.tetris.scheduler.lr_solver import LRConstraint
 from pykpn.tetris.tetris.manager import ResourceManager
 from pykpn.tetris.tetris.tracer import TracePlayer
 
-def parse_resource(s):
-    pattern = re.compile(r"""(?P<big>\d+)b(?P<little>\d+)l""", re.VERBOSE)
-    match = pattern.match(s)
-
-    return int(match.group('big')), int(match.group('little'))
-
 def print_summary(parsed_args, res, scheduling, schedule_time, within_time):
     # TODO: Take the name of scheduler from scheduler
     summary_file = parsed_args.summary
@@ -103,8 +97,6 @@ def main():
                       help='Scenario to schedule')
     args.add_argument('--mapping-dir', dest='mapping_dir', action='store', default='mappings',
                       help='Folder contanings pareto configurations of all applications')
-    args.add_argument('--resources', dest='resources', action='store', default='4b4l',
-                      metavar='XbYl', help='Number of big and little cores')
     args.add_argument('--output', dest='output', action='store', default="",
                       help='Output file for scheduling')
     args.add_argument("--platform", "-p", dest="platform", choices=['exynos'], default="exynos",
@@ -158,7 +150,6 @@ def main():
     scenario = parsed_args.scenario
     mapping_dir = parsed_args.mapping_dir
     idle = parsed_args.idle
-    (big, little) = parse_resource(parsed_args.resources) # TODO: Remove big, littles
     out_fn = parsed_args.output
     if out_fn != "":
         outf = open(out_fn, mode='w')
