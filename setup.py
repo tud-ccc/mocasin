@@ -87,7 +87,7 @@ setup(
         'cvxopt',
         'scipy<=1.1.0',
         'lxml',
-        'numpy<.16',
+        'numpy<1.16',
         'matplotlib<3.0',
         'pint',
         'pydot',
