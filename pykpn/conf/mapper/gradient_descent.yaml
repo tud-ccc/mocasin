@@ -1,0 +1,5 @@
+mapper:
+   class:
+      pykpn.mapper.gd_fullmapper.GradientDescentFullMapper
+gd_iterations : 100
+stepsize : 2
