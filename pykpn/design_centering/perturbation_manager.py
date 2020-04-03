@@ -52,7 +52,7 @@ class PerturbationManager(object):
             Therefore, the mapping is interpreted as vector with the 
             processor cores assigned to the vector elements.
         """
-        rand_part_mapper = RandomPartialMapper(self.kpn, self.platform)
+        rand_part_mapper = RandomPartialMapper(self.kpn, self.platform,self.config)
         proc_part_mapper = ProcPartialMapper(self.kpn, self.platform, rand_part_mapper)
         iteration_max = self.iteration_max
 

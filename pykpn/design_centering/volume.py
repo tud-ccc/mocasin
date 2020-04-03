@@ -221,6 +221,8 @@ class LPVolume(Volume):
         for j,X in enumerate(feasible):
             V = (np.array(X.sample2tuple()) - self.old_center)
             #TODO: look up the alphas in original implementation, as not described in paper
+            #arnorm = np.sqrt(sum((invB*(pop - repmat(mu_old,1,numfeas))).^2,1));
+            #alphai = np.sqrt(self.dim) * min(1./median(arnorm), 2./arnorm)
             alpha_sq_inv =  np.dot(V,V)
             if alpha_sq_inv != 0:
                 alpha_sq = 1/alpha_sq_inv 
