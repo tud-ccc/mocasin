@@ -123,12 +123,8 @@ class PermutationGroup(list):
     def generators(self):
         return [ gen.get_cycles() for gen in self ]
 
+
     def orbit(self,function,point):
-        orbit_gen = self.orbit_generator(function,point)
-        return list(orbit_gen)
-
-
-    def orbit_generator(self,function,point):
         stack = [point]
         orbit = [point]
         while stack:
@@ -138,17 +134,14 @@ class PermutationGroup(list):
                 if im not in orbit:
                     stack.append(im)
                     orbit.append(im)
-                    yield im
 
+        return orbit
 
     def point_orbit(self,point):
         return frozenset(self.orbit( (lambda perm, p : perm[p]), point))
 
     def tuple_orbit(self,tup):
         return frozenset([ tuple(e) for e in self.orbit( (lambda perm, p : perm.act(p)), tup)])
-
-    def tuple_orbit_generator(self,tup):
-        return self.orbit_generator((lambda perm, p : perm.act(p)), tup)
 
     def point_orbit_hash(self,point):
         return hash(self.point_orbit( point))

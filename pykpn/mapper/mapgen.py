@@ -28,12 +28,17 @@ class MappingGeneratorPartial(MappingGenerator):
 
 class MappingGeneratorOrbit(MappingGenerator):
     def __init__(self,representation,mapping):
-        self.orbit_gen = representation._allEquivalentGen(representation.toRepresentation(mapping))
+        self.orbit_gen = representation.allEquivalent(representation.toRepresentation(mapping))
         self.representation = representation
+        self.next_mapping_index = 0
 
     def __next__(self):
-        next_mapping = next(self.orbit_gen)
-        return self.representation.fromRepresentation(next_mapping)
+        try:
+            next_mapping = self.orbit_gen[self.next_mapping_index]
+        except:
+            raise StopIteration()
+        self.next_mapping_index += 1
+        return next_mapping
 
 class MappingGeneratorSimvec(MappingGenerator):
     def __init__(self, kpn, platform, mappingConstraints, sharedCoreConstraints, processingConstraints, vec):

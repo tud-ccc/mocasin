@@ -139,27 +139,27 @@ class Solver():
         """Decision which generator to choose and creation of generator
         """
         generator = None
-        if not equalsConstraints == []:
-            genMapping = equalsConstraints[0].getMapping()
+        try:
+            if not equalsConstraints == []:
+                genMapping = equalsConstraints[0].getMapping()
             
-            """Check for contradictions in IsEqualConstraints
-            """
-            if len(equalsConstraints) > 1:
-                for i in range(1, len(equalsConstraints)):
-                    if not equalsConstraints[i].isFulfilled(genMapping):
-                        returnBuffer.put((threadIdentifier, False))
-                        return
+                """Check for contradictions in IsEqualConstraints
+                """
+                if len(equalsConstraints) > 1:
+                    for i in range(1, len(equalsConstraints)):
+                        if not equalsConstraints[i].isFulfilled(genMapping):
+                            returnBuffer.put((threadIdentifier, False))
+                            return
             
-            remaining = remaining + mappingConstraints + sharedCoreConstraints
-            symmetryLense = RepresentationType['Symmetries'].getClassType()(self.__kpn, self.__platform)
-            generator = MappingGeneratorOrbit(symmetryLense, genMapping)
-        else:
-            generator = MappingGeneratorSimvec(self.__kpn, self.__platform, mappingConstraints, sharedCoreConstraints, processingConstraints, vec)
+                remaining = remaining + mappingConstraints + sharedCoreConstraints
+                symmetryLense = RepresentationType['Symmetries'].getClassType()(self.__kpn, self.__platform)
+                generator = MappingGeneratorOrbit(symmetryLense, genMapping)
+            else:
+                generator = MappingGeneratorSimvec(self.__kpn, self.__platform, mappingConstraints, sharedCoreConstraints, processingConstraints, vec)
         
-        """Iteration over the mapping space, checking if remaining constraints are fulfilled
-        """
-        if generator:
-            try:
+            """Iteration over the mapping space, checking if remaining constraints are fulfilled
+            """
+            if generator:
                 for mapping in generator:
                     global RUN_THREADS
                     if not RUN_THREADS:
@@ -173,9 +173,9 @@ class Solver():
                     if mappingValid:
                         returnBuffer.put((threadIdentifier, mapping))
                         return
-            except:
-                print("Exception occurred: ", sys.exc_info()[0])
-                returnBuffer.put((threadIdentifier, False))
+        except:
+            print("Exception occurred: ", sys.exc_info()[0])
+            returnBuffer.put((threadIdentifier, False))
             
         returnBuffer.put((threadIdentifier, False))
         

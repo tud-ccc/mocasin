@@ -3,6 +3,8 @@
 #
 #Authors: Felix Teweleit
 
+import pytest
+
 class TestSimvecMapper(object):
     
     def setUp(self):
@@ -32,13 +34,13 @@ class TestSimvecMapper(object):
         assert(result[0] == 3)
         assert(result.count(5) >= 1)
         assert(result.count(6) >= 1)
-        
+
     def testMappingGeneration5(self, mapDictSolver):
         #identifier and corresponding mapping are provided by conftest
         inputQuery = "EXISTS RUNNING TOGETHER [src, fft_l, fft_r, filter_l, filter_r, ifft_l, ifft_r, sink ] AND EQUALS map_two"
         result = mapDictSolver.request(inputQuery).to_list()
         assert(result.count(result[0]) == 8)
-        
+
     def testMappingGeneration6(self, mapDictSolver):
         #identifier and corresponding mapping are provided by conftest
         inputQuery = "EXISTS RUNNING TOGETHER [src, sink ] AND EQUALS map_one"
@@ -59,7 +61,7 @@ class TestSimvecMapper(object):
         stateVec = [1, 1, 1, 1, 1]
         result = [0, 1, 1, 1, 1, 1, 1, 2]
         assert(solver.request(inputQuery, vec=stateVec).to_list() == result)
-    
+
     def testSetVector3(self, mapDictSolver):
         #identifier and corresponding mapping are provided by conftest
         inputQuery = "EXISTS RUNNING TOGETHER [src, fft_l, fft_r, filter_l, filter_r, ifft_l, ifft_r, sink ] AND EQUALS map_two"
