@@ -12,7 +12,7 @@ import simpy
 import random
 import numpy as np
 
-from pykpn.mapper.random_mapper import RandomMapping
+from pykpn.mapper.rand_partialmapper import RandomFullMapper
 from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.simulate.system import RuntimeSystem
 import os
@@ -92,6 +92,7 @@ class RandomWalkFullMapper(object):
         self.full_mapper = True
         self.kpn = hydra.utils.instantiate(config['kpn'])
         self.platform = hydra.utils.instantiate(config['platform'])
+        self.random_mapper = RandomFullMapper(config)
         self.config = config
         rep_type_str = config['representation']
 
@@ -128,7 +129,7 @@ class RandomWalkFullMapper(object):
 
             # generate a random mapping
             app_context.representation = self.rep_type
-            app_context.mapping = RandomMapping(self.kpn, self.platform)
+            app_context.mapping = self.random_mapper.generate_mapping()
 
             # create the trace reader
             app_context.trace_reader = hydra.utils.instantiate(cfg['trace'])
