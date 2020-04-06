@@ -316,8 +316,8 @@ class Mapping:
             mapped processes are the values
         :rtype dict[string, string]:
         """
-        procs_list = self._kpn.processes()
-        pes_list = self._platform.processors()
+        procs_list = self.kpn.processes()
+        pes_list = self.platform.processors()
         pes2procs = {}
         for pe in pes_list:
             pes2procs.update({pe.name:[]})
@@ -431,7 +431,7 @@ class Mapping:
             else:
                 idx = list_from[i]
                 primitive = all_primitives[idx]
-                assert(primitive in suitable_primitives)
+                assert primitive in suitable_primitives, f"error: insuitable primitive ({primitive.name}). Suitable: {[p.name for p in suitable_primitives]}"
 
             info = ChannelMappingInfo(primitive, capacity)
             self.add_channel_info(c, info)

@@ -17,22 +17,22 @@ def parser():
 
 @pytest.fixture
 def kpnGraph():
-    return SlxKpnGraph('SlxKpnGraph',  'apps/audio_filter/audio_filter.cpn.xml','2017.04')
+    return SlxKpnGraph('SlxKpnGraph',  'examples/slx/app/audio_filter/audio_filter.cpn.xml','2017.04')
 
 @pytest.fixture
 def platform():
-    return SlxPlatform('SlxPlatform', 'apps/audio_filter/exynos/exynos.platform', '2017.04')
+    return SlxPlatform('SlxPlatform', 'examples/slx/platforms/exynos.platform', '2017.04')
 
 @pytest.fixture
 def solver():
-    kpn = SlxKpnGraph('SlxKpnGraph',  'apps/audio_filter/audio_filter.cpn.xml','2017.04')
-    platform = SlxPlatform('SlxPlatform', 'apps/audio_filter/exynos/exynos.platform', '2017.04')
+    kpn = SlxKpnGraph('SlxKpnGraph',  'examples/slx/app/audio_filter/audio_filter.cpn.xml','2017.04')
+    platform = SlxPlatform('SlxPlatform', 'examples/slx/platforms/exynos.platform', '2017.04')
     return Solver(kpn, platform)
 
 @pytest.fixture
 def mapDictSolver():
-    kpn = SlxKpnGraph('SlxKpnGraph',  'apps/audio_filter/audio_filter.cpn.xml','2017.04')
-    platform = SlxPlatform('SlxPlatform', 'apps/audio_filter/exynos/exynos.platform', '2017.04')
+    kpn = SlxKpnGraph('SlxKpnGraph',  'examples/slx/app/audio_filter/audio_filter.cpn.xml','2017.04')
+    platform = SlxPlatform('SlxPlatform', 'examples/slx/platforms/exynos.platform', '2017.04')
     fullMapper = MappingCompletionWrapper(kpn, platform)
     
     processMappingVec = [7, 6, 5, 4, 3, 2, 1, 0]
@@ -43,4 +43,3 @@ def mapDictSolver():
     
     mapDict = {'map_one' : firstMapping, 'map_two' : secondMapping}
     return Solver(kpn, platform, mappingDict=mapDict)
-    

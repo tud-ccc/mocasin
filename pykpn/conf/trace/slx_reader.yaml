@@ -1,0 +1,7 @@
+trace:
+  directory: ???
+  class: pykpn.slx.trace.SlxTraceReader
+  params:
+    trace_dir: ${trace.directory}
+    prefix: ${kpn.name}.
+    slx_version: ${slx.version}

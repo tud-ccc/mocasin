@@ -1,0 +1,10 @@
+defaults:
+  - common
+  - hydra/job_logging: pykpn
+  - slx: default
+  - tgff: default
+  - kpn: default
+  - platform: default
+  - mapping: default
+
+output_file: equivalent_mappings.txt

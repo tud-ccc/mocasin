@@ -27,11 +27,11 @@ class ProcPartialMapper(object):
         self.platform = platform
         self.kpn = kpn
         self.fullGenerator = fullGenerator
-        self.mapping = Mapping(kpn, platform)
         pes = sorted(list(self.platform.processors()))
         self.pe_vec_mapping = dict(zip(pes,[n for n in range(0, len(pes))]))
         # build a reverse dict of the pe_vec_mapping dictionary (since it is a one-to-one dict)
         self.vec_pe_mapping = dict([(self.pe_vec_mapping[key],key) for key in self.pe_vec_mapping])
+        self.mapping = None
 
     def get_pe_name_mapping(self):
         """Return the used mapping of PE names to integers"""
@@ -40,7 +40,7 @@ class ProcPartialMapper(object):
             res[key.name] = self.pe_vec_mapping[key]
         return res
 
-    def generate_mapping(self, vec, map_history = []):
+    def generate_mapping(self, vec, map_history = None):
         """ Generates an unique partial mapping for a numeric vector
 
         The generated mapping is derived from a numeric vector
@@ -54,9 +54,21 @@ class ProcPartialMapper(object):
         :raises: RuntimeError if the algorithm is not able to find a suitable
             channel mapping for a random process mapping.
         """
+        #TODO: This should be adapted to use representations
 
         log.debug('dc_map: start mapping generation for {} on {} with simpleVec: {}'
                    .format(self.kpn.name,self.platform.name,vec))
+
+        if map_history is None:
+            map_history = []
+
+        #TODO: raise not implemented exaception for input of part_mapping
+
+         # raise NotImplementedError(
+         #       'The slx trace reader does not support version %s' % version)
+
+        # generate new mapping
+        self.mapping = Mapping(self.kpn, self.platform)
 
         # map processes to scheduler and processor
         for i,p in enumerate(self.kpn.processes()):
@@ -74,11 +86,12 @@ class ProcPartialMapper(object):
             log.debug('dc_map: map process %s to scheduler %s and processor %s '
                       '(priority: %d)', p.name, scheduler.name, affinity.name,
                       priority)
+
         if self.mapping in map_history:
             return None
         else:
             return self.fullGenerator.generate_mapping(self.mapping)
-
+    
     def reset(self):
         self.mapping = Mapping(self.kpn, self.platform)
         

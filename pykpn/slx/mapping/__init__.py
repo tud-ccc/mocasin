@@ -19,21 +19,21 @@ _ur = pint.UnitRegistry()
 
 class SlxMapping(Mapping):
 
-    def __init__(self, kpn, platform, mapping_file, version):
+    def __init__(self, kpn, platform, mapping_xml, slx_version):
         super().__init__(kpn, platform)
 
-        log.info('Start parsing the SLX mapping ' + mapping_file)
+        log.info('Start parsing the SLX mapping ' + mapping_xml)
 
         # load the xml
-        with open(mapping_file) as mf:
-            if (version == '2017.10'):
+        with open(mapping_xml) as mf:
+            if (slx_version == '2017.10'):
                 from ._2017_10 import slxmapping
                 xml_mapping = slxmapping.CreateFromDocument(mf.read())
-            elif (version == '2017.04'):
+            elif (slx_version == '2017.04'):
                 from ._2017_04 import slxmapping
                 xml_mapping = slxmapping.CreateFromDocument(mf.read())
             else:
-                raise ValueError('SLX version %s is not supported!' % version)
+                raise ValueError('SLX version %s is not supported!' % slx_version)
 
         # keep track of the mapping process->scheduler
         process_scheduler = {}
@@ -43,14 +43,14 @@ class SlxMapping(Mapping):
             scheduler = platform.find_scheduler(name)
 
             # the policy mechanism differs depending on the version
-            if (version == '2017.10'):
+            if (slx_version == '2017.10'):
                 policy = scheduler.policies[0]
                 param = None
                 log.warning('2017.10 mapping descriptors do not specify the '
                             'scheduling policy. -> Set the policy for %s to the '
                             'first policy specified by the platform (%s)' %
                             (name, policy.name))
-            elif (version == '2017.04'):
+            elif (slx_version == '2017.04'):
                 if xs.timeSliceValue is not None:
                     time_slice = _ur(str(xs.timeSliceValue) + xs.timeSliceUnit)
                     param = time_slice.to('ps').magnitude

@@ -1,0 +1,39 @@
+defaults:
+  - common
+  - hydra/job_logging: pykpn
+  - slx: default
+  - tgff: default
+  - kpn: default
+  - platform: default
+  - trace: default
+  - representation: default
+
+max_samples : 50
+adapt_samples : 10
+hitting_probability : [0.1, 0.5, 0.6, 0.7, 0.9]
+deg_p_polynomial : 2
+step_width : [0.9, 0.7, 0.6, 0.5, 0.1]
+radius : 100
+deg_s_polynomial : 2
+adaptable_center_weights : true
+aggressive_center_movement : true
+max_step : 10
+show_polynomials : false
+show_points : true
+max_pe : 16
+distr : uniform
+shape : lpvol
+oracle : simulation
+random_seed : 42
+run_perturbation : true
+num_perturbations : 10
+num_reference_mappings : false
+keep_metrics : True
+visualize_mappings : false
+out_dir : ./
+record_samples : false
+#TODO: this should go to the kpn
+start_time : 0 us
+perturbations_out : perturbation_plot.pdf
+
+threshold : 51 ms

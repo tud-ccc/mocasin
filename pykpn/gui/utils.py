@@ -3,7 +3,7 @@
 #
 # Authors: Felix Teweleit
 
-from collections import Sequence
+from collections.abc import Sequence
 from itertools import chain, count
 
 class listOperations(object):

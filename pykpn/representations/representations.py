@@ -152,28 +152,40 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         else:
             return x[:self.num_procs]
 
-    def _uniformFromBall(self,p,r,npoints=1):
-      Procs = list(self.kpn._processes.keys())
-      PEs = list(self.platform._processors.keys())
-      P = len(PEs)
-      res = []
-      def _round(point):
-        #perodic boundary conditions
-        return int(round(point) % P)
-        #if point > P-1:
-        #  return P-1
-        #elif point < 0:
-        #  return 0
-        #else:
-        
-      for _ in range(npoints):
-        v = list(map(_round,(np.array(p[:len(Procs)]) + np.array(r*lp.uniform_from_p_ball(p=1,n=len(Procs)))).tolist()))
+    def _uniformFromBall(self,p,r,npoints=1,simple=False):
+        Procs = list(self.kpn._processes.keys())
+        PEs = list(self.platform._processors.keys())
+        P = len(PEs)
+        res = []
+        def _round(point):
+            #perodic boundary conditions
+            return int(round(point) % P)
+            #if point > P-1:
+            #  return P-1
+            #elif point < 0:
+            #  return 0
+            #else:
+          
+        center = p[:len(Procs)]
+        for _ in range(npoints):
+            if simple:
+                radius = _round(r/2)
+                offset = []
+                for _ in range(len(Procs)):
+                    offset.append(randint(-radius,radius))
+
+            else:
+                offset = r * lp.uniform_from_p_ball(p=1,n=len(Procs))
+            real_point = (np.array(center) + np.array(offset)).tolist() 
+            v = list(map(_round,real_point))
+
         if self.channels:
             res.append(self.randomPrimitives(v))
         else:
             res.append(v)
-        log.debug(f"unfiorm from ball: {res}")
-      return res
+        log.debug(f"uniform from ball: {res}")
+        print(f"uniform from ball: {res}")
+        return res
       
     def uniformFromBall(self,p,r,npoints=1):
         return self.fromRepresentation(self._uniformFRomBall(p,r,npoints=npoints))
@@ -198,7 +210,7 @@ class MetricSpaceRepresentation(FiniteMetricSpaceLP, metaclass=MappingRepresenta
     (slightly better) tested and documented.
     """
 
-    def __init__(self,kpn, platform, p=1):
+    def __init__(self,kpn, platform, cfg=None):
         self._topologyGraph = platform.to_adjacency_dict()
         M_list, self._arch_nc, self._arch_nc_inv = arch_graph_to_distance_metric(self._topologyGraph)
         M = FiniteMetricSpace(M_list)
@@ -251,7 +263,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
     In order to work with other mappings in the same class, the methods
     allEquivalent/_allEquivalent returns for a mapping, all mappings in that class.
     """
-    def __init__(self,kpn, platform):
+    def __init__(self,kpn, platform,cfg=None):
         self._topologyGraph = platform.to_adjacency_dict()
         self.kpn = kpn
         self.platform = platform
@@ -376,16 +388,29 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
     and makes calculations much more efficient.
 
     """
-    def __init__(self,kpn, platform, distortion=DEFAULT_DISTORTION):
+    def __init__(self,kpn, platform, cfg=None):
+        if cfg is None:
+            p = 2
+            distortion = DEFAULT_DISTORTION
+        else:
+            p = cfg['norm_p']
+            distortion = cfg['distortion']
         self._topologyGraph = platform.to_adjacency_dict()
         M_matrix, self._arch_nc, self._arch_nc_inv = arch_graph_to_distance_metric(self._topologyGraph)
         self._M = FiniteMetricSpace(M_matrix)
         self.kpn = kpn
         self.platform = platform
         self._d = len(kpn.processes())
-        self.p = 1
+        self.p = p
         init_app_ncs(self,kpn)
+        if self.p != 2:
+            log.warning(f"Metric space embeddings (currently) only supports p = 2. Embedding will not be low-distortion with regards to chosen p ({self.p})")
         MetricSpaceEmbedding.__init__(self,self._M,self._d,distortion)
+        #Debug:
+        #for p in self.iotainv.keys():
+        #    for q in self.iotainv.keys():
+        #        print(lp.p_norm(np.array(p)-np.array(q),self.p))
+        #        print(self.M.D[self.iotainv[p],self.iotainv[q]])
         
     def _simpleVec2Elem(self,x): 
         proc_vec = x[:self._d]

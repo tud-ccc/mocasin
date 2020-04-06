@@ -11,6 +11,7 @@ from pykpn.representations.representations import RepresentationType
 from pykpn.mapper.mapgen import MappingGeneratorOrbit, MappingGeneratorSimvec
 from pykpn.ontologies.logicLanguage import Grammar, SemanticAnalysis, MappingConstraint, EqualsConstraint, SharedCoreUsageConstraint, ProcessingConstraint
 
+import sys
 import queue
 
 #GLOBAL DEFINITION
@@ -33,6 +34,7 @@ class Solver():
         """
         threadCounter = 0
         threadPool = []
+        global RUN_THREADS
         RUN_THREADS = True
         for constraintSet in constraints:
             threadCounter += 1
@@ -157,19 +159,23 @@ class Solver():
         """Iteration over the mapping space, checking if remaining constraints are fulfilled
         """
         if generator:
-            for mapping in generator:
-                global RUN_THREADS
-                if not RUN_THREADS:
-                    return
-                mappingValid = True
-                for constraint in remaining:
-                    if not constraint.isFulfilled(mapping):
-                        mappingValid = False
-                        break
+            try:
+                for mapping in generator:
+                    global RUN_THREADS
+                    if not RUN_THREADS:
+                        return
+                    mappingValid = True
+                    for constraint in remaining:
+                        if not constraint.isFulfilled(mapping):
+                            mappingValid = False
+                            break
             
-                if mappingValid:
-                    returnBuffer.put((threadIdentifier, mapping))
-                    return
+                    if mappingValid:
+                        returnBuffer.put((threadIdentifier, mapping))
+                        return
+            except:
+                print("Exception occurred: ", sys.exc_info()[0])
+                returnBuffer.put((threadIdentifier, False))
             
         returnBuffer.put((threadIdentifier, False))
         

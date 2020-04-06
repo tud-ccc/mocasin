@@ -4,7 +4,7 @@
 # Authors: Felix Teweleit
 
 from pykpn.gui.utils import listOperations, platformOperations
-from dataTemplates import platformLayout
+from pykpn.gui.dataTemplates import platformLayout
 import tkinter as tk
 
 class drawManager():

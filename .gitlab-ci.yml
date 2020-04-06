@@ -1,7 +1,7 @@
 stages:
   - test
 
-test-python3.7:
+test-python3.7-develop:
   stage: test
   image: python:3.7
   tags:
@@ -12,7 +12,7 @@ test-python3.7:
   - python setup.py develop
   - python setup.py test
 
-test-python3.6:
+test-python3.6-develop:
   stage: test
   image: python:3.6
   tags:
@@ -21,4 +21,26 @@ test-python3.6:
   - apt-get update
   - apt-get -y install libblas-dev liblapack-dev
   - python setup.py develop
+  - python setup.py test
+
+test-python3.7-install:
+  stage: test
+  image: python:3.7
+  tags:
+    - python3.7
+  script:
+  - apt-get update
+  - apt-get -y install libblas-dev liblapack-dev
+  - python setup.py install
+  - python setup.py test
+
+test-python3.6-install:
+  stage: test
+  image: python:3.6
+  tags:
+    - python3.6
+  script:
+  - apt-get update
+  - apt-get -y install libblas-dev liblapack-dev
+  - python setup.py install
   - python setup.py test
