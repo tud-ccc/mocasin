@@ -74,6 +74,8 @@ class DevelopCommand(develop):
         self.run_command('pynauty')
         self.run_command('tsne')
 
+#All version restrictions stem from numpy causing issues, it seems with CI:
+#see: https://github.com/numpy/numpy/issues/14012
 
 setup(
     name=project_name,
