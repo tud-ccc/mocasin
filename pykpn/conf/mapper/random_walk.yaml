@@ -11,3 +11,4 @@ visualize : false
 show_plots : false
 radius : 5
 random_seed: None
+record_statistics: true

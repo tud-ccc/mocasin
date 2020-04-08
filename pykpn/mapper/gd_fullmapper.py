@@ -42,7 +42,7 @@ class GradientDescentFullMapper(object):
         self.mapping_cache = MappingCache()
         self.gd_iterations = config['gd_iterations']
         self.stepsize = config['stepsize']
-        self.statistics = Statistics(log, len(self.kpn.processes()))
+        self.statistics = Statistics(log, len(self.kpn.processes()), config['record_statistics'])
         rep_type_str = config['representation']
 
         if rep_type_str not in dir(RepresentationType):

@@ -47,7 +47,7 @@ class GeneticFullMapper(object):
             log.error("Crossover rate cannot be higher than number of processes in application")
             raise RuntimeError("Invalid crossover rate")
 
-        self.statistics = Statistics(log, len(self.kpn.processes()))
+        self.statistics = Statistics(log, len(self.kpn.processes()), config['record_statistics'])
         rep_type_str = config['representation']
 
         if rep_type_str not in dir(RepresentationType):
