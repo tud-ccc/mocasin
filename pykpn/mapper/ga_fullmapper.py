@@ -23,7 +23,7 @@ log = logging.getLogger(__name__)
 class GeneticFullMapper(object):
     """Generates a full mapping by using genetic algorithms.
     """
-    def __init__(self, kpn,platform config):
+    def __init__(self, kpn,platform, config):
         """Generates a partial mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
