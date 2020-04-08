@@ -57,7 +57,9 @@ def generate_mapping(cfg):
     output from the individual simulations.
 """
     try:
-        mapper = hydra.utils.instantiate(cfg['mapper'],cfg)
+        kpn = hydra.utils.instantiate(cfg['kpn'])
+        platform = hydra.utils.instantiate(cfg['platform'])
+        mapper = hydra.utils.instantiate(cfg['mapper'],kpn,platform,cfg)
     except TgffReferenceError:
         # Special exception indicates a bad combination of tgff components
         # can be thrown during multiruns and should not stop the hydra

@@ -23,14 +23,14 @@ class GradientDescentFullMapper(object):
     """Generates a full mapping by using a gradient descent on the mapping space.
     """
     def __init__(self, config):
-        """Generates a partial mapping for a given platform and KPN application.
+        """Generates a full mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
         :type kpn: KpnGraph
         :param platform: a platform
         :type platform: Platform
         :param config: the hyrda configuration
-        :type fullGererator: OmniConf
+        :type config: OmniConf
         """
         random.seed(config['random_seed'])
         np.random.seed(config['random_seed'])

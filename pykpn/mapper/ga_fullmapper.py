@@ -23,7 +23,7 @@ log = logging.getLogger(__name__)
 class GeneticFullMapper(object):
     """Generates a full mapping by using genetic algorithms.
     """
-    def __init__(self, config):
+    def __init__(self, kpn,platform config):
         """Generates a partial mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
@@ -36,8 +36,8 @@ class GeneticFullMapper(object):
         random.seed(config['random_seed'])
         np.random.seed(config['random_seed'])
         self.full_mapper = True # flag indicating the mapper type
-        self.kpn = hydra.utils.instantiate(config['kpn'])
-        self.platform = hydra.utils.instantiate(config['platform'])
+        self.kpn = kpn
+        self.platform = platform
         self.config = config
         self.random_mapper = RandomPartialMapper(self.kpn, self.platform, config, seed=None)
         self.mapping_cache = MappingCache()
