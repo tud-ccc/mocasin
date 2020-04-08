@@ -3,11 +3,11 @@ mapper:
       pykpn.mapper.randomwalk_fullmapper.RandomWalkFullMapper
 
 num_iterations : 100
-jobs : 4
-progress :  true
+jobs : 1
+progress :  false
 export_all : false
 plot_distribution: false
 visualize : false
 show_plots : false
 radius : 5
-random_seed: None
+random_seed : None

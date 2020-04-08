@@ -122,6 +122,10 @@ class KpnGraph(object):
                 'Channel %s was already added to the graph' % (x.name))
         self._channels[x.name] = x
 
+    def sort(self):
+        """Sort process list in topological order"""
+        pass
+
     def to_pydot(self):
         """Convert the KPN graph to a dot graph."""
         dot = pydot.Dot(graph_type='digraph')
