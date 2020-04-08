@@ -116,7 +116,5 @@ class RandomFullMapper(RandomPartialMapper):
     This class is a FullMapper wrapper
     for RandomPartialMapper.
     """
-    def __init__(self,config):
-        kpn = hydra.utils.instantiate(config['kpn'])
-        platform = hydra.utils.instantiate(config['platform'])
+    def __init__(self,kpn,platform,config):
         super().__init__(kpn, platform, config, seed=config['random_seed'])

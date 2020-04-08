@@ -94,7 +94,7 @@ class RandomWalkFullMapper(object):
         self.full_mapper = True
         self.kpn = hydra.utils.instantiate(config['kpn'])
         self.platform = hydra.utils.instantiate(config['platform'])
-        self.random_mapper = RandomFullMapper(config)
+        self.random_mapper = RandomFullMapper(self.kpn,self.platform,config)
         self.config = config
         self.statistics = Statistics(log, len(self.kpn.processes()), config['record_statistics'])
         rep_type_str = config['representation']
@@ -206,7 +206,6 @@ class RandomWalkFullMapper(object):
             plt.savefig("distribution.pdf")
 
         # visualize searched space
-        visualize = cfg['visualize']
         if cfg['visualize']:
 
             if len(results[0].app_contexts) > 1:

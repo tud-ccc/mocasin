@@ -36,7 +36,8 @@ def visualize_mapping_space(mappings, exec_times, show_plot=False,
     """
     assert len(mappings) == len(exec_times)
 
-    mapping_tuples = np.array(list(map(lambda o: o.to_list(), mappings)))
+    representation = representation_type.getClassType()(mappings[0].kpn,mappings[0].platform)
+    mapping_tuples = np.array(list(map(representation.toRepresentation, mappings)))
 
     #Code to derive mapping from dot graph:
     #Unfortunately with embarrising results :( 
@@ -52,7 +53,6 @@ def visualize_mapping_space(mappings, exec_times, show_plot=False,
         annotes.append(a)
 
 
-    representation = representation_type.getClassType()(mappings[0].kpn,mappings[0].platform)
     #print(mapping_tuples)
     # print("MAPPING TUPLES: {}".format(mapping_tuples[0]))
     X = tsne.tsne(mapping_tuples,
