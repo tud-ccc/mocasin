@@ -35,7 +35,7 @@ class KpnGraphFromTgff():
 
 class TraceGeneratorWrapper():
     def __new__(self, file_path):
-        if not file_path in _parsed_tgff_files:
+        if file_path not in _parsed_tgff_files:
             _parsed_tgff_files.update( {file_path : Parser().parse_file(file_path)} )
         
         tgff_components = _parsed_tgff_files[file_path]
@@ -49,8 +49,7 @@ class TraceGeneratorWrapper():
 
 class PlatformFromTgff():
     def __new__(self, platform_type, processor, file_path, amount):
-        print(processor)
-        if not file_path in _parsed_tgff_files:
+        if file_path not in _parsed_tgff_files:
             _parsed_tgff_files.update( {file_path : Parser().parse_file(file_path)} )
         
         tgff_processors = _parsed_tgff_files[file_path][1]

@@ -12,12 +12,13 @@ import simpy
 import random
 import numpy as np
 
-from pykpn.mapper.random_mapper import RandomMapping
+from pykpn.mapper.rand_partialmapper import RandomFullMapper
 from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.simulate.system import RuntimeSystem
 import os
 
 from pykpn.util import logging
+from pykpn.mapper.utils import Statistics, MappingCache
 
 from pykpn.slx.mapping import export_slx_mapping
 from pykpn.representations.representations import RepresentationType
@@ -46,6 +47,7 @@ class SimulationContext(object):
             self.app_contexts = app_contexts
         self.exec_time = None
 
+#TODO: find references, fix typo
 def run_simualtion(sim_context):
     # Create simulation environment
     env = simpy.Environment()
@@ -92,7 +94,9 @@ class RandomWalkFullMapper(object):
         self.full_mapper = True
         self.kpn = hydra.utils.instantiate(config['kpn'])
         self.platform = hydra.utils.instantiate(config['platform'])
+        self.random_mapper = RandomFullMapper(config)
         self.config = config
+        self.statistics = Statistics(log, len(self.kpn.processes()))
         rep_type_str = config['representation']
 
         self.seed = config['random_seed']
@@ -116,6 +120,7 @@ class RandomWalkFullMapper(object):
         # Create a list of 'simulations'. These are later executed by multiple
         # worker processes.
         simulations = []
+
         for i in range(0, self.config['num_iterations']):
             # create a simulation context
             sim_context = SimulationContext(self.platform)
@@ -128,7 +133,10 @@ class RandomWalkFullMapper(object):
 
             # generate a random mapping
             app_context.representation = self.rep_type
-            app_context.mapping = RandomMapping(self.kpn, self.platform)
+            app_context.mapping = self.random_mapper.generate_mapping()
+
+            #since mappings are simulated in parallel, whole simulation time is added later as offset
+            self.statistics.mapping_evaluated(0)
 
             # create the trace reader
             app_context.trace_reader = hydra.utils.instantiate(cfg['trace'])
@@ -163,13 +171,17 @@ class RandomWalkFullMapper(object):
         stop = timeit.default_timer()
         log.info('Tried %d random mappings in %0.1fs' %
               (len(results), stop - start))
+        self.statistics.add_offset(stop - start)
         exec_time = float(best_result.exec_time / 1000000000.0)
         log.info('Best simulated execution time: %0.1fms' % (exec_time))
         # export all mappings if requested
         idx = 1
         outdir = cfg['outdir']
+
         if cfg['export_all']:
+
             for r in results:
+
                 for ac in r.app_contexts:
                     mapping_name = '%s.rnd_%08d.mapping' % (ac.name, idx)
                     # FIXME: We assume an slx output here, this should be configured
@@ -187,20 +199,25 @@ class RandomWalkFullMapper(object):
             plt.title("Mapping Distribution")
             plt.xlabel("Execution Time [ms]")
             plt.ylabel("Probability")
+
             if cfg['show_plots']:
                 plt.show()
+
             plt.savefig("distribution.pdf")
 
         # visualize searched space
         if cfg['visualize']:
+
             if len(results[0].app_contexts) > 1:
                 raise RuntimeError('Search space visualization only works '
                                    'for single application mappings')
+
             mappings = [r.app_contexts[0].mapping for r in results]
             plot.visualize_mapping_space(mappings,
                                          exec_times,
                                          representation_type=self.rep_type,
                                          show_plot=cfg['show_plots'], )
 
+        self.statistics.to_file()
         return best_result.app_contexts[0].mapping
 
