@@ -96,7 +96,7 @@ class RandomWalkFullMapper(object):
         self.platform = hydra.utils.instantiate(config['platform'])
         self.random_mapper = RandomFullMapper(self.kpn,self.platform,config)
         self.config = config
-        self.statistics = Statistics(log, len(self.kpn.processes()))
+        self.statistics = Statistics(log, len(self.kpn.processes()), config['record_statistics'])
         rep_type_str = config['representation']
 
         self.seed = config['random_seed']

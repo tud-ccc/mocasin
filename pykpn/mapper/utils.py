@@ -7,8 +7,9 @@ from pykpn.util.logging import getLogger
 
 class Statistics(object):
 
-    def __init__(self, logger, process_amount):
+    def __init__(self, logger, process_amount, record):
         self._log = logger
+        self.record = record
         self._processes = process_amount
         self._mappings_cached = 0
         self._mappings_evaluated = 0
@@ -32,6 +33,8 @@ class Statistics(object):
         self._log.info(f"Time spend simulating: {self._simulation_time}")
 
     def to_file(self):
+        if not self.record:
+            return
         file = open('statistics.txt', 'x')
         file.write("Processes: " + str(self._processes) + "\n")
         file.write("Mappings cached: " + str(self._mappings_cached) + "\n")
