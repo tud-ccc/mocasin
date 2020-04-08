@@ -131,7 +131,6 @@ class SimulatedAnnealingFullMapper(object):
         temperature = self.initial_temperature
         while rejections < self.max_rejections:
             temperature = self.temperature_cooling(temperature,iter)
-            print(temperature)
             mapping = self.move(last_mapping,temperature)
             cur_exec_time = self.evaluate_mapping(mapping)
             if cur_exec_time < last_exec_time or self.query_accept(cur_exec_time-last_exec_time,temperature):
