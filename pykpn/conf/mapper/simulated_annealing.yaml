@@ -1,0 +1,10 @@
+mapper:
+   class:
+      pykpn.mapper.sa_fullmapper.SimulatedAnnealingFullMapper
+random_seed : 42
+record_statistics: true
+
+initial_temperature : 1.0
+final_temperature : 0.001
+temperature_proportionality_constant : 0.95
+radius : 2

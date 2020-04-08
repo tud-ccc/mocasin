@@ -30,7 +30,7 @@ class Statistics(object):
         self._log.info(f"Amount of processes in task:  {self._processes}")
         self._log.info(f"Mappings cached: {self._mappings_cached}")
         self._log.info(f"Mappings evaluated: {self._mappings_evaluated}")
-        self._log.info(f"Time spend simulating: {self._simulation_time}")
+        self._log.info(f"Time spent simulating: {self._simulation_time}")
 
     def to_file(self):
         if not self.record:

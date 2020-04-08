@@ -112,8 +112,9 @@ class GeneticFullMapper(object):
             for m in new_mappings:
                 if list(m) != list(mapping):
                     for i in range(len(mapping)):
+                        #we do this since mapping is a DEAP Individual data structure
                         mapping[i] = m[i]
-                        return mapping,
+                    return mapping,
             radius *= 1.1
             if radius > 10000 * self.config['radius']:
                 log.error("Could not mutate mapping")
