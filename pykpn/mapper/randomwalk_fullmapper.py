@@ -192,7 +192,6 @@ class RandomWalkFullMapper(object):
             plt.savefig("distribution.pdf")
 
         # visualize searched space
-        visualize = cfg['visualize']
         if cfg['visualize']:
             if len(results[0].app_contexts) > 1:
                 raise RuntimeError('Search space visualization only works '
