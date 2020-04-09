@@ -124,7 +124,6 @@ class PlatformDesigner():
                 
                 self.__elementDict[self.__activeScope].update({identifier : processors})
         except:
-            print(1)
             log.error("Exception caught: " + sys.exc_info()[0])
     
     def addPeClusterForProcessor(self,
@@ -159,7 +158,6 @@ class PlatformDesigner():
                 
                 self.__elementDict[self.__activeScope].update({identifier : processors})
         except:
-            print(2)
             log.error("Exception caught: " + str(sys.exc_info()[0]))
     
     def setSchedulingPolicy(self, 
@@ -177,7 +175,6 @@ class PlatformDesigner():
             self.__schedulingPolicy = SchedulingPolicy(policy, cycles)
             return True
         except:
-            print(3)
             log.error("Exception caught: " + sys.exc_info()[0])
             return False
           
@@ -236,7 +233,6 @@ class PlatformDesigner():
                 self.__platform.add_primitive(prim)
                 
         except:
-            print(4)
             log.error("Exception caught: " + sys.exc_info()[0])
          
     def addCommunicationResource(self, 
@@ -263,13 +259,13 @@ class PlatformDesigner():
         :param writeThroughput: The write throughput of the communication resource.
         :type writeThroughput: int
         """
-        if self.__schedulingPolicy == None:
+        if not self.__schedulingPolicy:
             return
-        if self.__activeScope == None:
+        if not self.__activeScope:
             return
         
         for clusterId in clusterIds:
-            if not clusterId in self.__elementDict[self.__activeScope]:
+            if clusterId not in self.__elementDict[self.__activeScope]:
                 return
         
         clusterDict = self.__elementDict[self.__activeScope]
@@ -278,14 +274,14 @@ class PlatformDesigner():
         
         try:
             if resourceType == CommunicationResourceType.Storage:
-                communicationRessource = Storage(nameToGive, 
+                com_resource = Storage(nameToGive,
                                                  fd,
                                                  readLatency,
                                                  writeLatency,
                                                  readThroughput, 
                                                  writeThroughput)
             else:
-                communicationRessource = CommunicationResource(nameToGive,
+                com_resource = CommunicationResource(nameToGive,
                                                                resourceType,
                                                                fd,
                                                                readLatency,
@@ -293,21 +289,20 @@ class PlatformDesigner():
                                                                readThroughput,
                                                                writeThroughput)
 
-            self.__platform.add_communication_resource(communicationRessource)
+            self.__platform.add_communication_resource(com_resource)
             prim = Primitive('prim_' + nameToGive)
 
             for clusterId in clusterIds:
                 for pe in clusterDict[clusterId]:
-                    pe[1].append(communicationRessource)
-                    produce = CommunicationPhase('produce', pe[1], 'write')
-                    consume = CommunicationPhase('consume', pe[1], 'read')
+                    pe[1].append(com_resource)
+                    produce = CommunicationPhase('produce', [com_resource], 'write')
+                    consume = CommunicationPhase('consume', [com_resource], 'read')
                     prim.add_producer(pe[0], [produce])
                     prim.add_consumer(pe[0], [consume])        
             
             self.__platform.add_primitive(prim)
         
         except :
-            print(5)
             log.error("Exception caught: " + str(sys.exc_info()[0]))
             return
         

@@ -10,4 +10,3 @@ platform:
     processor_3: 'processor_2'
     processor_4: 'processor_3'
     file_path: ${platform.file}
-    amount: 2

@@ -48,7 +48,7 @@ class TraceGeneratorWrapper():
     
 
 class PlatformFromTgff():
-    def __new__(self, platform_type, processor_1, processor_2, processor_3, processor_4, file_path, amount):
+    def __new__(self, platform_type, processor_1, processor_2, processor_3, processor_4, file_path):
         if file_path not in _parsed_tgff_files:
             _parsed_tgff_files.update( {file_path : Parser().parse_file(file_path)} )
         
