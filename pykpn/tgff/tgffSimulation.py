@@ -74,7 +74,7 @@ class PlatformFromTgff():
 
             return TgffRuntimePlatformMesh(processor_dict[processor_1], processor_dict[processor_2])
 
-        elif platform_type == 'exynos':
+        elif platform_type == 'exynos990':
 
             if int(processor_1.split('_')[1]) >= len(tgff_processors):
                 raise TgffReferenceError()
