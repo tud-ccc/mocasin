@@ -124,6 +124,7 @@ class PlatformDesigner():
                 
                 self.__elementDict[self.__activeScope].update({identifier : processors})
         except:
+            print(1)
             log.error("Exception caught: " + sys.exc_info()[0])
     
     def addPeClusterForProcessor(self,
@@ -158,6 +159,7 @@ class PlatformDesigner():
                 
                 self.__elementDict[self.__activeScope].update({identifier : processors})
         except:
+            print(2)
             log.error("Exception caught: " + str(sys.exc_info()[0]))
     
     def setSchedulingPolicy(self, 
@@ -175,6 +177,7 @@ class PlatformDesigner():
             self.__schedulingPolicy = SchedulingPolicy(policy, cycles)
             return True
         except:
+            print(3)
             log.error("Exception caught: " + sys.exc_info()[0])
             return False
           
@@ -233,6 +236,7 @@ class PlatformDesigner():
                 self.__platform.add_primitive(prim)
                 
         except:
+            print(4)
             log.error("Exception caught: " + sys.exc_info()[0])
          
     def addCommunicationResource(self, 
@@ -303,6 +307,7 @@ class PlatformDesigner():
             self.__platform.add_primitive(prim)
         
         except :
+            print(5)
             log.error("Exception caught: " + str(sys.exc_info()[0]))
             return
         

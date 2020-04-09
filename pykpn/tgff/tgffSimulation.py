@@ -92,6 +92,12 @@ class PlatformFromTgff():
                                                    processor_dict[processor_2],
                                                    processor_dict[processor_3],
                                                    processor_dict[processor_4])
+        elif platform_type == 'coolidge':
+            if int(processor_1.split('_')[1]) >= len(tgff_processors):
+                raise TgffReferenceError()
+
+            return TgffRuntimePlatformCoolidge(processor_dict[processor_1])
+
         else:
             raise RuntimeError('You have to implement this type first!')
 
@@ -216,3 +222,45 @@ class TgffRuntimePlatformMultiCluster(Platform):
                                           float('inf'),
                                           frequencyDomain=4000000.0)
         designer.finishElement()
+
+class TgffRuntimePlatformCoolidge(Platform):
+    def __init__(self, processor, name="simulation_platform"):
+        super(TgffRuntimePlatformCoolidge, self).__init__(name)
+
+        designer = PlatformDesigner(self)
+        designer.setSchedulingPolicy('FIFO', 1000)
+        designer.newElement('coolidge')
+
+        for i in range(0, 5):
+            designer.newElement('chip_{0}'.format(i))
+
+            for j in range(0, 4):
+                designer.addPeClusterForProcessor('cluster_{0}_{1}'.format(i, j),
+                                                  processor.to_pykpn_processor(),
+                                                  4)
+
+                topology = meshTopology(['processor_{0}'.format(i * 16 + j * 4),
+                                         'processor_{0}'.format(i * 16 + j * 4 + 1),
+                                         'processor_{0}'.format(i * 16 + j * 4 + 2),
+                                         'processor_{0}'.format(i * 16 + j * 4 + 3)])
+
+                designer.createNetworkForCluster('cluster_{0}_{1}'.format(i, j),
+                                                 'noc_{0}_{1}'.format(i, j),
+                                                 topology,
+                                                 sd,
+                                                 2000, 100, 500, 100, 20)
+
+            designer.addCommunicationResource('L2_{0}'.format(i),
+                                              ['cluster_{0}_0'.format(i),
+                                               'cluster_{0}_1'.format(i),
+                                               'cluster_{0}_2'.format(i),
+                                               'cluster_{0}_3'.format(i)],
+                                              100, 100, 1000, 1000, frequencyDomain=2000)
+
+            designer.finishElement()
+
+        designer.addCommunicationResource("RAM", ['chip_0', 'chip_1', 'chip_2', 'chip_3', 'chip_4'],
+                                          1000, 1000, 1000, 1000, frequencyDomain=10000)
+
+        designer.finishElement()
+
