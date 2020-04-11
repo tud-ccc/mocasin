@@ -132,7 +132,7 @@ class TgffRuntimePlatformMesh(Platform):
                                  'processor_5', 'processor_6', 'processor_7', 'processor_8', 'processor_9',
                                  'processor_10', 'processor_11', 'processor_12', 'processor_13', 'processor_14',
                                  'processor_15'])
-        designer.createNetworkForCluster("cluster_0", 'testNet', topology, sd, 2000, 100, 500, 100, 20)
+        designer.createNetworkForCluster("cluster_0", 'testNet', topology, sd, 6000000.0, 100, 150, 100, 60)
 
         designer.addPeClusterForProcessor("cluster_1", processor_2.to_pykpn_processor(), 2)
         designer.addCommunicationResource("lvl2_cl1",
@@ -146,8 +146,8 @@ class TgffRuntimePlatformMesh(Platform):
 
         designer.addCommunicationResource("RAM",
                                           ["cluster_0", "cluster_1"],
-                                          5000,
-                                          10000,
+                                          1000,
+                                          3000,
                                           float('inf'),
                                           float('inf'),
                                           frequencyDomain=6000000.0)
@@ -166,11 +166,12 @@ class TgffRuntimePlatformMultiCluster(Platform):
         designer.addPeClusterForProcessor("cluster_0",
                                           processor_1.to_pykpn_processor(),
                                           2)
-
+        #Add L1/L2 caches
+        designer.addCacheForPEs("cluster_0", 5,7, float('inf'), float('inf'), frequencyDomain=6000000.0 ,name='L1')
         designer.addCommunicationResource("lvl2_cl0",
                                           ["cluster_0"],
-                                          25,
-                                          30,
+                                          225,
+                                          300,
                                           float('inf'),
                                           float('inf'),
                                           frequencyDomain=600000000.0)
@@ -179,10 +180,12 @@ class TgffRuntimePlatformMultiCluster(Platform):
         designer.addPeClusterForProcessor("cluster_1",
                                           processor_2.to_pykpn_processor(),
                                           2)
+        #Add L1/L2 caches
+        designer.addCacheForPEs("cluster_1", 5,7, float('inf'), float('inf'), frequencyDomain=6670000.0 ,name='L1')
         designer.addCommunicationResource("lvl2_cl1",
                                           ["cluster_1"],
-                                          25,
-                                          30,
+                                          225,
+                                          300,
                                           float('inf'),
                                           float('inf'),
                                           frequencyDomain=667000000.0)
@@ -191,10 +194,12 @@ class TgffRuntimePlatformMultiCluster(Platform):
         designer.addPeClusterForProcessor("cluster_2",
                                           processor_3.to_pykpn_processor(),
                                           4)
+        #Add L1/L2 caches
+        designer.addCacheForPEs("cluster_2", 5,7, float('inf'), float('inf'), frequencyDomain=6670000.0 ,name='L1')
         designer.addCommunicationResource("lvl2_cl2",
                                           ["cluster_2"],
-                                          25,
-                                          30,
+                                          225,
+                                          300,
                                           float('inf'),
                                           float('inf'),
                                           frequencyDomain=667000000.0)
@@ -202,8 +207,8 @@ class TgffRuntimePlatformMultiCluster(Platform):
         #RAM connecting all clusters
         designer.addCommunicationResource("RAM",
                                           ["cluster_0", "cluster_1", "cluster_2"],
-                                          5000,
-                                          10000,
+                                          800,
+                                          2000,
                                           float('inf'),
                                           float('inf'),
                                           frequencyDomain=6000000.0)
@@ -212,19 +217,23 @@ class TgffRuntimePlatformMultiCluster(Platform):
         designer.addPeClusterForProcessor("GPU",
                                           processor_4.to_pykpn_processor(),
                                           1)
+        designer.addCacheForPEs("GPU", 5,7, float('inf'), float('inf'), frequencyDomain=6670000.0 ,name='GPU_MEM')
 
         #another memory, simulating BUS
         designer.addCommunicationResource("BUS",
                                           ["cluster_0", "cluster_1", "cluster_2", "GPU"],
-                                          10000,
-                                          400000,
+                                          2000,
+                                          6000,
                                           float('inf'),
                                           float('inf'),
                                           frequencyDomain=4000000.0)
+
         designer.finishElement()
 
 class TgffRuntimePlatformCoolidge(Platform):
-    def __init__(self, processor, name="simulation_platform"):
+    #The topology and latency numbers (!) of this should come from the MPPA3 Coolidge
+    #sheet published by Kalray
+    def __init__(self, processor_1, processor_2, name="coolidge-inspired"):
         super(TgffRuntimePlatformCoolidge, self).__init__(name)
 
         designer = PlatformDesigner(self)
@@ -232,14 +241,14 @@ class TgffRuntimePlatformCoolidge(Platform):
         designer.newElement('coolidge')
 
         for i in range(0, 5):
-            designer.newElement('chip_{0}'.format(i))
+            designer.newElement('cluster_{0}'.format(i))
 
             for j in range(0, 4):
                 designer.addPeClusterForProcessor('cluster_{0}_{1}'.format(i, j),
                                                   processor.to_pykpn_processor(),
                                                   4)
 
-                topology = meshTopology(['processor_{0}'.format(i * 16 + j * 4),
+                topology = fullyConnectedTopology(['processor_{0}'.format(i * 16 + j * 4),
                                          'processor_{0}'.format(i * 16 + j * 4 + 1),
                                          'processor_{0}'.format(i * 16 + j * 4 + 2),
                                          'processor_{0}'.format(i * 16 + j * 4 + 3)])

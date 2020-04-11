@@ -9,8 +9,6 @@ from pykpn.mapper.rand_partialmapper import RandomPartialMapper
 from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.simulate.system import RuntimeSystem
 from pykpn.mapper.utils import Statistics, MappingCache
-import deap
-from deap import creator,tools,base,algorithms
 import random
 import numpy as np
 import timeit
@@ -95,12 +93,15 @@ class TabuSearchFullMapper(object):
         new_mappings = map(np.array, new_mappings)
         moves = set([(tuple(new_mapping - np.array(mapping)),self.evaluate_mapping(new_mapping)) for new_mapping in new_mappings])
         missing = self.move_set_size - len(moves)
-        new_mappings = self.representation._uniformFromBall(mapping, self.radius, missing)
-        moves = moves.union( set([(tuple(np.array(new_mapping)-np.array(mapping)),self.evaluate_mapping(new_mapping)) for new_mapping in new_mappings]) )
-        missing = self.move_set_size - len(moves)
-        self.moves = moves
+        retries = 0
+        while missing > 0 and retries < 10:
+            new_mappings = self.representation._uniformFromBall(mapping, self.radius, missing)
+            moves = moves.union( set([(tuple(np.array(new_mapping)-np.array(mapping)),self.evaluate_mapping(new_mapping)) for new_mapping in new_mappings]) )
+            missing = self.move_set_size - len(moves)
+            retries += 1
         if missing > 0:
-            log.warning(f"Running with smaller move list  (by {missing} moves).")
+            log.warning(f"Running with smaller move list  (by {missing} moves). The radius might be set too small?")
+        self.moves = moves
 
     def move(self, best):
         delete = []

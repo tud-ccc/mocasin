@@ -4,8 +4,8 @@ mapper:
 random_seed : 42
 record_statistics: true
 
-max_iterations : 30
+max_iterations : 50
 iteration_size : 10
 tabu_tenure : 10
-move_set_size :  10
+move_set_size :  20
 radius : 2

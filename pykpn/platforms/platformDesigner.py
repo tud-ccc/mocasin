@@ -183,7 +183,8 @@ class PlatformDesigner():
                        readLatency, 
                        writeLatency, 
                        readThroughput, 
-                       writeThroughput, 
+                       writeThroughput,
+                       frequencyDomain=100000, #TODO: this should be added to tests
                        name='default'):
         """Adds a level 1 cache to each PE of the given cluster.
         :param identifier: The identifier of the cluster to which the cache will be added. 
@@ -213,11 +214,13 @@ class PlatformDesigner():
         else:
             nameToGive = 'L1_'
         peList = self.__elementDict[self.__activeScope][identifier]
-        
+
+        fd = FrequencyDomain('fd_' + name, frequencyDomain)
+
         try:
             for pe in peList:
                 communicationRessource = Storage(nameToGive + pe[0].name,
-                                                 self.__schedulingPolicy,
+                                                 frequency_domain= fd,
                                                  read_latency = readLatency,
                                                  write_latency = writeLatency,
                                                  read_throughput = readThroughput,
@@ -397,14 +400,14 @@ class PlatformDesigner():
                                 lastPoint = point
                             
                             produce = CommunicationPhase('produce', resourceList, 'write')
-                            consume = CommunicationPhase('consume', resourceList, 'read')
+                            consume = CommunicationPhase('consume', reversed(resourceList), 'read')
                                         
                             prim.add_producer(innerProcessor[0], [produce])
                             prim.add_consumer(innerProcessor[0], [consume])
                         
                         else:
                             produce = CommunicationPhase('produce', resourceList, 'write')
-                            consume = CommunicationPhase('consume', resourceList, 'read')
+                            consume = CommunicationPhase('consume', reversed(resourceList), 'read')
                                         
                             prim.add_producer(innerProcessor[0], [produce])
                             prim.add_consumer(innerProcessor[0], [consume])

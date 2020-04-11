@@ -485,12 +485,9 @@ class Platform(object):
                         adjacency_dict[x.name][y.name] = cost 
                     #here we should decide what to do with the different primitive
                     #I dediced to just take the minimum for now.
-                    adjacency_dict[x.name][y.name] = min(adjacency_dict[x.name][y.name],cost)
-                    if precision < 0 or cost == 0:
-                        pass
                     else:
-                        cost = round(cost, precision-1-int(math.floor(math.log10(abs(cost)))))
-                    
+                        adjacency_dict[x.name][y.name] = min(adjacency_dict[x.name][y.name],cost)
+
         res = {}
         for elem in adjacency_dict:
             res[elem] = [(adjacent, adjacency_dict[elem][adjacent]) for adjacent in adjacency_dict[elem]]

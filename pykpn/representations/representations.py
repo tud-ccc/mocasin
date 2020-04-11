@@ -397,7 +397,7 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
 
     Elements in this representation are real vectors, the meaning of the components
     does not have a concrete interpretation. However, they do have a particular
-    structure. For multiple processes, a single embedding for the archticeture is
+    structure. For multiple processes, a single embedding for the architecture is
     calculated. The multi-process vector space is the orthogonal sum of copies of a vector
     space emebedding for the single-process case. This provably preserves the distortion
     and makes calculations much more efficient.

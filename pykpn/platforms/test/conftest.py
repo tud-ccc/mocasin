@@ -49,6 +49,10 @@ def peList():
     return ['PE00', 'PE01', 'PE02', 'PE03', 'PE04', 'PE05', 'PE06', 'PE07', 'PE08', 'PE09',]
 
 @pytest.fixture
+def peListNineElems():
+    return ['PE00', 'PE01', 'PE02', 'PE03', 'PE04', 'PE05', 'PE06', 'PE07', 'PE08']
+
+@pytest.fixture
 def peListLong():
     return ['PE00', 'PE01', 'PE02', 'PE03', 'PE04', 'PE05', 'PE06', 'PE07', 'PE08', 'PE09',
             'PE10', 'PE11', 'PE12', 'PE13', 'PE14', 'PE15', 'PE16', 'PE17', 'PE18', 'PE19']
