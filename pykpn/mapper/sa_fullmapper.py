@@ -99,7 +99,7 @@ class SimulatedAnnealingFullMapper(object):
 
     def query_accept(self,time,temperature):
         normalized_probability = 1 / (np.exp(time/(0.5*temperature*self.initial_cost)))
-        return random.choices([True,False],weights=[normalized_probability, 1-normalized_probability],k=1)[0]
+        return normalized_probability
 
     def move(self,mapping,temperature):
         radius = self.config['radius']
@@ -131,9 +131,17 @@ class SimulatedAnnealingFullMapper(object):
         temperature = self.initial_temperature
         while rejections < self.max_rejections:
             temperature = self.temperature_cooling(temperature,iter)
+            log.info(f"Current temperature {temperature}")
             mapping = self.move(last_mapping,temperature)
             cur_exec_time = self.evaluate_mapping(mapping)
-            if cur_exec_time < last_exec_time or self.query_accept(cur_exec_time-last_exec_time,temperature):
+            faster = cur_exec_time < last_exec_time
+            if not faster and cur_exec_time != last_exec_time:
+                prob = self.query_accept(cur_exec_time - last_exec_time, temperature)
+                rand = random.random()
+                accept_randomly = prob > rand
+            else:
+                accept_randomly = False #don't accept if no movement.
+            if faster or accept_randomly:
                 #accept
                 if cur_exec_time < best_exec_time:
                     best_exec_time = cur_exec_time
