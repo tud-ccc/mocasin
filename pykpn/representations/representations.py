@@ -1,4 +1,4 @@
-# Copyright (C) 2018-2019 TU Dresden
+# Copyright (C) 2018-2020 TU Dresden
 # All Rights Reserved
 #
 # Author: Andres Goens
@@ -15,6 +15,8 @@ except:
     pass
 
 from pykpn.common.mapping import Mapping
+from pykpn.mapper.com_partialmapper import ComFullMapper
+from pykpn.mapper.proc_partialmapper import ProcPartialMapper
 
 from .metric_spaces import FiniteMetricSpace, FiniteMetricSpaceSym, FiniteMetricSpaceLP, FiniteMetricSpaceLPSym, arch_graph_to_distance_metric
 from .embeddings import MetricSpaceEmbedding
@@ -47,6 +49,7 @@ class MappingRepresentation(type):
         #print(str(cls) + " is being called")
         kpn = args[0]
         platform = args[1]
+        cfg = args[2]
         kpn_names = ";".join(map(lambda x : x.name, kpn.channels()))
         if (cls,kpn,platform) not in cls._instances:
             #make hashables of these two
@@ -56,6 +59,8 @@ class MappingRepresentation(type):
         instance = deepcopy(cls._instances[(cls,kpn_names,platform.name)])
         instance.kpn = kpn
         instance.platform = platform
+        com_mapper = ComFullMapper(kpn,platform,cfg)
+        instance.list_mapper = ProcPartialMapper(kpn,platform,com_mapper)
         return instance
 
     def toRepresentation(self,mapping): 
@@ -97,11 +102,14 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
     interface, but they are provided in case they prove useful, when you know
     what you are doing.
     """
-    def __init__(self, kpn, platform,channels=False):
+    def __init__(self, kpn, platform,cfg):
         self.kpn = kpn
         self.platform = platform
-        self.channels=channels
+        self.channels=cfg['channels']
         self.num_procs = len(list(self.kpn._processes.keys()))
+        com_mapper = ComFullMapper(kpn,platform,cfg)
+        self.list_mapper = ProcPartialMapper(kpn,platform,com_mapper)
+
     def _uniform(self):
       Procs = list(self.kpn._processes.keys())
       PEs = list(self.platform._processors.keys())
@@ -139,18 +147,16 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         return mapping.to_list(channels=self.channels)
 
     def fromRepresentation(self,mapping):
-        mapping_obj = Mapping(self.kpn,self.platform)
         if type(mapping) == np.ndarray:
             mapping = mapping.astype(int)
-        mapping_obj.from_list(mapping)
+        mapping_obj = self.list_mapper.generate_mapping(mapping)
         return mapping_obj
 
     def _simpleVec2Elem(self,x):
         if not self.channels:
             return x
         else:
-            m = Mapping(self.kpn,self.platform)
-            m.from_list(x)
+            m = self.list_mapper.generate_mapping(x)
             return m.to_list(channels=True)
         
     def _elem2SimpleVec(self,x):
@@ -231,12 +237,13 @@ class MetricSpaceRepresentation(FiniteMetricSpaceLP, metaclass=MappingRepresenta
     (slightly better) tested and documented.
     """
 
-    def __init__(self,kpn, platform, cfg=None):
+    def __init__(self,kpn, platform, cfg):
         self._topologyGraph = platform.to_adjacency_dict()
         M_list, self._arch_nc, self._arch_nc_inv = arch_graph_to_distance_metric(self._topologyGraph)
         M = FiniteMetricSpace(M_list)
         self.kpn = kpn
         self.platform = platform
+        self.cfg = cfg
         d = len(kpn.processes())
         init_app_ncs(self,kpn)
         super().__init__(M,d)
@@ -284,7 +291,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
     In order to work with other mappings in the same class, the methods
     allEquivalent/_allEquivalent returns for a mapping, all mappings in that class.
     """
-    def __init__(self,kpn, platform,cfg=None):
+    def __init__(self,kpn, platform,cfg):
         self._topologyGraph = platform.to_adjacency_dict()
         self.kpn = kpn
         self.platform = platform
@@ -293,6 +300,10 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         init_app_ncs(self,kpn)
         self._arch_nc_inv = {}
         self.channels=False
+        self.cfg = cfg
+        com_mapper = ComFullMapper(kpn,platform,cfg)
+        self.list_mapper = ProcPartialMapper(kpn,platform,com_mapper)
+
         for node in self._arch_nc:
             self._arch_nc_inv[self._arch_nc[node]] = node
         #TODO: ensure that nodes_correspondence fits simpleVec
@@ -323,8 +334,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         orbit = self._allEquivalent(x)
         res = []
         for elem in orbit:
-            mapping = Mapping(self.kpn, self.platform)
-            mapping.from_list(list(elem))
+            mapping = self.list_mapper.generate_mapping(list(elem))
             res.append(mapping)
         return res
 
@@ -333,8 +343,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
 
     def fromRepresentation(self,mapping):
         #Does not check if canonical. This is deliberate.
-        mapping_obj = Mapping(self.kpn,self.platform)
-        mapping_obj.from_list(mapping)
+        mapping_obj = self.list_mapper.generate_mapping(mapping)
         return mapping_obj
 
     def _uniformFromBall(self,p,r,npoints=1):
@@ -403,18 +412,17 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
     and makes calculations much more efficient.
 
     """
-    def __init__(self,kpn, platform, cfg=None):
-        if cfg is None:
-            p = 2
-        else:
-            p = cfg['norm_p']
+    def __init__(self,kpn, platform, cfg):
         self._topologyGraph = platform.to_adjacency_dict()
         M_matrix, self._arch_nc, self._arch_nc_inv = arch_graph_to_distance_metric(self._topologyGraph)
         self._M = FiniteMetricSpace(M_matrix)
         self.kpn = kpn
         self.platform = platform
         self._d = len(kpn.processes())
-        self.p = p
+        self.cfg = cfg
+        self.p = cfg['norm_p']
+        com_mapper = ComFullMapper(kpn,platform,cfg)
+        self.list_mapper = ProcPartialMapper(kpn,platform,com_mapper)
         init_app_ncs(self,kpn)
         if self.p != 2:
             log.error(f"Metric space embeddings only supports p = 2. For p = 1, for example, finding such an embedding is NP-hard (See Matousek, J.,  Lectures on Discrete Geometry, Chap. 15.5)")
@@ -465,8 +473,7 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
         return self._simpleVec2Elem(mapping.to_list())
 
     def fromRepresentation(self,mapping):
-        mapping_obj = Mapping(self.kpn,self.platform)
-        mapping_obj.from_list(self._elem2SimpleVec(mapping))
+        mapping_obj = self.list_mapper.generate_mapping(self._elem2SimpleVec(mapping))
         return mapping_obj
 
     def _distance(self,x,y):

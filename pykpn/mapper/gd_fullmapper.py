@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 class GradientDescentFullMapper(object):
     """Generates a full mapping by using a gradient descent on the mapping space.
     """
-    def __init__(self, config):
+    def __init__(self, kpn,platform,config):
         """Generates a full mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
@@ -35,8 +35,9 @@ class GradientDescentFullMapper(object):
         random.seed(config['random_seed'])
         np.random.seed(config['random_seed'])
         self.full_mapper = True # flag indicating the mapper type
-        self.kpn = hydra.utils.instantiate(config['kpn'])
-        self.platform = hydra.utils.instantiate(config['platform'])
+        self.kpn = kpn
+        self.platform = platform
+        self.num_PEs = len(platform.processors())
         self.config = config
         self.random_mapper = RandomPartialMapper(self.kpn,self.platform,config,seed=None)
         self.mapping_cache = MappingCache()
@@ -53,7 +54,7 @@ class GradientDescentFullMapper(object):
             representation_type = RepresentationType[rep_type_str]
             log.info(f"initializing representation ({rep_type_str})")
 
-            representation = (representation_type.getClassType())(self.kpn, self.platform)
+            representation = (representation_type.getClassType())(self.kpn, self.platform,self.config)
 
         self.representation = representation
 
@@ -67,9 +68,9 @@ class GradientDescentFullMapper(object):
             self.statistics.mapping_cached()
             return runtime
         else:
-            time = timeit.default_timer()
             m_obj = self.representation.fromRepresentation(np.array(tup))
             trace = hydra.utils.instantiate(self.config['trace'])
+            time = timeit.default_timer()
             env = simpy.Environment()
             app = RuntimeKpnApplication(name=self.kpn.name,
                                         kpn_graph=self.kpn,
@@ -78,9 +79,9 @@ class GradientDescentFullMapper(object):
                                         env=env,)
             system = RuntimeSystem(self.platform, [app], env)
             system.simulate()
+            time = timeit.default_timer() - time
             exec_time = float(env.now) / 1000000000.0
             self.mapping_cache.add_time(exec_time)
-            time = timeit.default_timer() - time
             self.statistics.mapping_evaluated(time)
             log.info(f"... from simulation: {exec_time}.")
             return exec_time
@@ -101,22 +102,50 @@ class GradientDescentFullMapper(object):
 
             for i in range(dim):
                 evec = np.zeros(dim)
-                evec[i] = 1.
-                exec_time = self.evaluate_mapping(mapping+evec)
+                if mapping[i] == 0:
+                    evec[i] = 1.
+                    exec_time = self.evaluate_mapping(mapping+evec)
+                    if exec_time < best_exec_time:
+                        best_exec_time = exec_time
+                        best_mapping = mapping + evec
+                    gr = exec_time - cur_exec_time
+                    grad[i] = max(gr,0) #can go below 0 here
+                elif mapping[i] == self.num_PEs - 1:
+                    evec[i] = -1.
+                    exec_time = self.evaluate_mapping(mapping+evec)
+                    if exec_time < best_exec_time:
+                        best_exec_time = exec_time
+                        best_mapping = mapping + evec
+                    gr = cur_exec_time - exec_time# because of the -h in the denominator of the difference quotient
+                    grad[i] = min(gr,0) #can't go above self.num_PEs-1 here
 
-                if exec_time < best_exec_time:
-                    best_exec_time = exec_time
-                    best_mapping = mapping+evec
+                else:
+                    evec[i] = 1.
+                    exec_time = self.evaluate_mapping(mapping+evec)
+                    if exec_time < best_exec_time:
+                        best_exec_time = exec_time
+                        best_mapping = mapping+evec
+                    diff_plus = exec_time - cur_exec_time
+                    evec[i] = -1.
+                    exec_time = self.evaluate_mapping(mapping+evec)
+                    if exec_time < best_exec_time:
+                        best_exec_time = exec_time
+                        best_mapping = mapping+evec
+                    diff_minus = cur_exec_time - exec_time # because of the -h in the denominator of the difference quotient
+                    grad[i] = (diff_plus + diff_minus)/2
 
-                grad[i] = exec_time - cur_exec_time
-
+            if np.allclose(grad,np.zeros(dim)): #found local minimum
+                break
             mapping = mapping + (self.stepsize / best_exec_time) * (-grad)
+            mapping = self.representation.approximate(np.array(mapping))
+
             cur_exec_time = self.evaluate_mapping(mapping)
 
             if cur_exec_time < best_exec_time:
                 best_exec_time = cur_exec_time
                 best_mapping = mapping
 
+        best_mapping = np.array(self.representation.approximate(np.array(best_mapping)))
         self.statistics.log_statistics()
         self.statistics.to_file()
 

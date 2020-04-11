@@ -62,7 +62,7 @@ class SimulatedAnnealingFullMapper(object):
             representation_type = RepresentationType[rep_type_str]
             log.info(f"initializing representation ({rep_type_str})")
 
-            representation = (representation_type.getClassType())(self.kpn, self.platform)
+            representation = (representation_type.getClassType())(self.kpn, self.platform,self.config)
 
         self.representation = representation
 

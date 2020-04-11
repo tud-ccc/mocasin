@@ -8,7 +8,6 @@ import pydot
 import random
 from pykpn.util import logging
 
-
 log = logging.getLogger(__name__)
 
 class ChannelMappingInfo:
@@ -361,6 +360,19 @@ class Mapping:
         return res
 
     def from_list(self,list_from):
+        """
+        Deprecated function. Corresponding mappers should be used instead,
+        or from_list_random, which is explicit (in its name) in that it is
+        non-deterministic.
+           """
+        log.warning("Mapping.from_list is deprecated. Use either Mapping.from_list_random," +
+                    "if determinism is not important. Better however is to use the classes" +
+                    "from the pykpn.mapper module.")
+
+        return self.from_list_random(list_from)
+
+
+    def from_list_random(self,list_from):
         """Convert from a list (tuple), the simple vector representation.
            Priority and policy chosen at random, and scheduler chosen randomly from the possible ones.
            If list has length # processes + # channels, then channels are chosen as the second part of the list.
