@@ -108,7 +108,7 @@ class LPVolume(Volume):
                 super(AttrDict, self).__init__(*args, **kwargs)
                 self.__dict__ = self
         self.conf = AttrDict(conf)
-        self.representation = representation_type.getClassType()(kpn,platform)
+        self.representation = representation_type.getClassType()(kpn,platform,conf)
         self.kpn = kpn
         self.platform = platform
         self.center = np.array(self.representation.toRepresentation(center))
