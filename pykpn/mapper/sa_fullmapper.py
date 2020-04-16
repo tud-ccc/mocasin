@@ -42,7 +42,6 @@ class SimulatedAnnealingFullMapper(object):
         self.platform = platform
         self.config = config
         self.random_mapper = RandomPartialMapper(self.kpn,self.platform,config,seed=None)
-        self.mapping_cache = MappingCache()
         self.statistics = Statistics(log, len(self.kpn.processes()),config['record_statistics'])
         self.initial_temperature = config['initial_temperature']
         self.final_temperature = config['final_temperature']
@@ -65,34 +64,7 @@ class SimulatedAnnealingFullMapper(object):
             representation = (representation_type.getClassType())(self.kpn, self.platform,self.config)
 
         self.representation = representation
-
-    def evaluate_mapping(self, mapping):
-        tup = tuple(self.representation.approximate(np.array(mapping)))
-        log.info(f"evaluating mapping: {tup}...")
-
-        runtime = self.mapping_cache.lookup(tup)
-        if runtime:
-            log.info(f"... from cache: {runtime}")
-            self.statistics.mapping_cached()
-            return runtime
-        else:
-            time = timeit.default_timer()
-            m_obj = self.representation.fromRepresentation(np.array(tup))
-            trace = hydra.utils.instantiate(self.config['trace'])
-            env = simpy.Environment()
-            app = RuntimeKpnApplication(name=self.kpn.name,
-                                        kpn_graph=self.kpn,
-                                        mapping=m_obj,
-                                        trace_generator=trace,
-                                        env=env,)
-            system = RuntimeSystem(self.platform, [app], env)
-            system.simulate()
-            exec_time = float(env.now) / 1000000000.0
-            self.mapping_cache.add_time(exec_time)
-            time = timeit.default_timer() - time
-            self.statistics.mapping_evaluated(time)
-            log.info(f"... from simulation: {exec_time}.")
-            return exec_time
+        self.mapping_cache = MappingCache(representation,config)
 
     def temperature_cooling(self,temperature,iter):
         return self.initial_temperature*self.p**np.floor(iter/self.max_rejections)
@@ -121,7 +93,7 @@ class SimulatedAnnealingFullMapper(object):
         mapping = self.representation.toRepresentation(mapping_obj)
 
         last_mapping = mapping
-        last_exec_time = self.evaluate_mapping(mapping)
+        last_exec_time = self.mapping_cache.evaluate_mapping(mapping)
         self.initial_cost = last_exec_time
         best_mapping = mapping
         best_exec_time = last_exec_time
@@ -133,7 +105,7 @@ class SimulatedAnnealingFullMapper(object):
             temperature = self.temperature_cooling(temperature,iter)
             log.info(f"Current temperature {temperature}")
             mapping = self.move(last_mapping,temperature)
-            cur_exec_time = self.evaluate_mapping(mapping)
+            cur_exec_time = self.mapping_cache.evaluate_mapping(mapping)
             faster = cur_exec_time < last_exec_time
             if not faster and cur_exec_time != last_exec_time:
                 prob = self.query_accept(cur_exec_time - last_exec_time, temperature)

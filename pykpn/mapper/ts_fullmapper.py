@@ -38,7 +38,6 @@ class TabuSearchFullMapper(object):
         self.platform = platform
         self.config = config
         self.random_mapper = RandomPartialMapper(self.kpn,self.platform,config,seed=None)
-        self.mapping_cache = MappingCache()
         self.max_iterations = config['max_iterations']
         self.iteration_size = config['iteration_size']
         self.tabu_tenure = config['tabu_tenure']
@@ -59,44 +58,17 @@ class TabuSearchFullMapper(object):
             representation = (representation_type.getClassType())(self.kpn, self.platform,self.config)
 
         self.representation = representation
-
-    def evaluate_mapping(self, mapping):
-        tup = tuple(self.representation.approximate(np.array(mapping)))
-        log.info(f"evaluating mapping: {tup}...")
-
-        runtime = self.mapping_cache.lookup(tup)
-        if runtime:
-            log.info(f"... from cache: {runtime}")
-            self.statistics.mapping_cached()
-            return runtime
-        else:
-            time = timeit.default_timer()
-            m_obj = self.representation.fromRepresentation(np.array(tup))
-            trace = hydra.utils.instantiate(self.config['trace'])
-            env = simpy.Environment()
-            app = RuntimeKpnApplication(name=self.kpn.name,
-                                        kpn_graph=self.kpn,
-                                        mapping=m_obj,
-                                        trace_generator=trace,
-                                        env=env,)
-            system = RuntimeSystem(self.platform, [app], env)
-            system.simulate()
-            exec_time = float(env.now) / 1000000000.0
-            self.mapping_cache.add_time(exec_time)
-            time = timeit.default_timer() - time
-            self.statistics.mapping_evaluated(time)
-            log.info(f"... from simulation: {exec_time}.")
-            return exec_time
+        self.mapping_cache = MappingCache(representation,config)
 
     def update_candidate_moves(self,mapping):
         new_mappings = self.representation._uniformFromBall(mapping, self.radius, self.move_set_size)
         new_mappings = map(np.array, new_mappings)
-        moves = set([(tuple(new_mapping - np.array(mapping)),self.evaluate_mapping(new_mapping)) for new_mapping in new_mappings])
+        moves = set([(tuple(new_mapping - np.array(mapping)),self.mapping_cache.evaluate_mapping(new_mapping)) for new_mapping in new_mappings])
         missing = self.move_set_size - len(moves)
         retries = 0
         while missing > 0 and retries < 10:
             new_mappings = self.representation._uniformFromBall(mapping, self.radius, missing)
-            moves = moves.union( set([(tuple(np.array(new_mapping)-np.array(mapping)),self.evaluate_mapping(new_mapping)) for new_mapping in new_mappings]) )
+            moves = moves.union( set([(tuple(np.array(new_mapping)-np.array(mapping)),self.mapping_cache.evaluate_mapping(new_mapping)) for new_mapping in new_mappings]) )
             missing = self.move_set_size - len(moves)
             retries += 1
         if missing > 0:
@@ -132,7 +104,7 @@ class TabuSearchFullMapper(object):
     def diversify(self,mapping):
         new_mappings = self.representation._uniformFromBall(mapping, 3*self.radius, self.move_set_size)
         new_mappings = map(np.array, new_mappings)
-        moves = [(tuple(mapping - new_mapping),self.evaluate_mapping(new_mapping)) for new_mapping in new_mappings]
+        moves = [(tuple(mapping - new_mapping),self.mapping_cache.evaluate_mapping(new_mapping)) for new_mapping in new_mappings]
         return(sorted(moves,key= lambda x : x[1])[0])
 
 
@@ -144,7 +116,7 @@ class TabuSearchFullMapper(object):
         cur_mapping = self.representation.toRepresentation(mapping_obj)
 
         best_mapping = cur_mapping
-        best_exec_time = self.evaluate_mapping(cur_mapping)
+        best_exec_time = self.mapping_cache.evaluate_mapping(cur_mapping)
         since_last_improvement = 0
 
         for iter in range(self.max_iterations):

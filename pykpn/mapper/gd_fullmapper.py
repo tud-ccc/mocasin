@@ -40,7 +40,6 @@ class GradientDescentFullMapper(object):
         self.num_PEs = len(platform.processors())
         self.config = config
         self.random_mapper = RandomPartialMapper(self.kpn,self.platform,config,seed=None)
-        self.mapping_cache = MappingCache()
         self.gd_iterations = config['gd_iterations']
         self.stepsize = config['stepsize']
         self.statistics = Statistics(log, len(self.kpn.processes()), config['record_statistics'])
@@ -57,34 +56,7 @@ class GradientDescentFullMapper(object):
             representation = (representation_type.getClassType())(self.kpn, self.platform,self.config)
 
         self.representation = representation
-
-    def evaluate_mapping(self, mapping):
-        tup = tuple(self.representation.approximate(np.array(mapping)))
-        log.info(f"evaluating mapping: {tup}...")
-
-        runtime = self.mapping_cache.lookup(tup)
-        if runtime:
-            log.info(f"... from cache: {runtime}")
-            self.statistics.mapping_cached()
-            return runtime
-        else:
-            m_obj = self.representation.fromRepresentation(np.array(tup))
-            trace = hydra.utils.instantiate(self.config['trace'])
-            time = timeit.default_timer()
-            env = simpy.Environment()
-            app = RuntimeKpnApplication(name=self.kpn.name,
-                                        kpn_graph=self.kpn,
-                                        mapping=m_obj,
-                                        trace_generator=trace,
-                                        env=env,)
-            system = RuntimeSystem(self.platform, [app], env)
-            system.simulate()
-            time = timeit.default_timer() - time
-            exec_time = float(env.now) / 1000000000.0
-            self.mapping_cache.add_time(exec_time)
-            self.statistics.mapping_evaluated(time)
-            log.info(f"... from simulation: {exec_time}.")
-            return exec_time
+        self.mapping_cache = MappingCache(representation,config)
 
     def generate_mapping(self):
         """ Generates a full mapping using gradient descent
@@ -93,7 +65,7 @@ class GradientDescentFullMapper(object):
         mapping = self.representation.toRepresentation(mapping_obj)
 
         dim = len(mapping)
-        cur_exec_time = self.evaluate_mapping(mapping)
+        cur_exec_time = self.mapping_cache.evaluate_mapping(mapping)
         best_mapping = mapping
         best_exec_time = cur_exec_time
 
@@ -104,7 +76,7 @@ class GradientDescentFullMapper(object):
                 evec = np.zeros(dim)
                 if mapping[i] == 0:
                     evec[i] = 1.
-                    exec_time = self.evaluate_mapping(mapping+evec)
+                    exec_time = self.mapping_cache.evaluate_mapping(mapping+evec)
                     if exec_time < best_exec_time:
                         best_exec_time = exec_time
                         best_mapping = mapping + evec
@@ -112,7 +84,7 @@ class GradientDescentFullMapper(object):
                     grad[i] = max(gr,0) #can go below 0 here
                 elif mapping[i] == self.num_PEs - 1:
                     evec[i] = -1.
-                    exec_time = self.evaluate_mapping(mapping+evec)
+                    exec_time = self.mapping_cache.evaluate_mapping(mapping+evec)
                     if exec_time < best_exec_time:
                         best_exec_time = exec_time
                         best_mapping = mapping + evec
@@ -121,13 +93,13 @@ class GradientDescentFullMapper(object):
 
                 else:
                     evec[i] = 1.
-                    exec_time = self.evaluate_mapping(mapping+evec)
+                    exec_time = self.mapping_cache.evaluate_mapping(mapping+evec)
                     if exec_time < best_exec_time:
                         best_exec_time = exec_time
                         best_mapping = mapping+evec
                     diff_plus = exec_time - cur_exec_time
                     evec[i] = -1.
-                    exec_time = self.evaluate_mapping(mapping+evec)
+                    exec_time = self.mapping_cache.evaluate_mapping(mapping+evec)
                     if exec_time < best_exec_time:
                         best_exec_time = exec_time
                         best_mapping = mapping+evec
@@ -139,7 +111,7 @@ class GradientDescentFullMapper(object):
             mapping = mapping + (self.stepsize / best_exec_time) * (-grad)
             mapping = self.representation.approximate(np.array(mapping))
 
-            cur_exec_time = self.evaluate_mapping(mapping)
+            cur_exec_time = self.mapping_cache.evaluate_mapping(mapping)
 
             if cur_exec_time < best_exec_time:
                 best_exec_time = cur_exec_time

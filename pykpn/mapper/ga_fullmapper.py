@@ -6,16 +6,11 @@
 from pykpn.util import logging
 from pykpn.representations.representations import RepresentationType
 from pykpn.mapper.rand_partialmapper import RandomPartialMapper
-from pykpn.simulate.application import RuntimeKpnApplication
-from pykpn.simulate.system import RuntimeSystem
-from pykpn.mapper.utils import Statistics, MappingCache
+from pykpn.mapper.utils import MappingCache
 import deap
 from deap import creator,tools,base,algorithms
 import random
 import numpy as np
-import timeit
-import simpy
-import hydra
 import pickle
 
 log = logging.getLogger(__name__)
@@ -40,14 +35,12 @@ class GeneticFullMapper(object):
         self.platform = platform
         self.config = config
         self.random_mapper = RandomPartialMapper(self.kpn, self.platform, config, seed=None)
-        self.mapping_cache = MappingCache()
         self.crossover_rate = self.config['crossover_rate']
 
         if self.crossover_rate > len(self.kpn.processes()):
             log.error("Crossover rate cannot be higher than number of processes in application")
             raise RuntimeError("Invalid crossover rate")
 
-        self.statistics = Statistics(log, len(self.kpn.processes()), config['record_statistics'])
         rep_type_str = config['representation']
 
         if rep_type_str not in dir(RepresentationType):
@@ -61,6 +54,7 @@ class GeneticFullMapper(object):
             representation = (representation_type.getClassType())(self.kpn, self.platform,self.config)
 
         self.representation = representation
+        self.mapping_cache = MappingCache(self.representation,config)
 
         if 'FitnessMin' not in deap.creator.__dict__:
             deap.creator.create("FitnessMin", deap.base.Fitness, weights=(-1.0,))
@@ -96,6 +90,10 @@ class GeneticFullMapper(object):
             #toolbox.register("population_guess", self.initPopulation, list, toolbox.individual_guess, initials,pop_size)
             #population = toolbox.population_guess()
 
+    def evaluate_mapping(self,mapping):
+        #wrapper to make it into a 1-tuple because DEAP needs that
+        return self.mapping_cache.evaluate_mapping(mapping),
+
     def random_mapping(self):
         mapping = self.random_mapper.generate_mapping()
         as_rep = self.representation.toRepresentation(mapping)
@@ -120,33 +118,6 @@ class GeneticFullMapper(object):
                 log.error("Could not mutate mapping")
                 raise RuntimeError("Could not mutate mapping")
 
-    def evaluate_mapping(self,mapping):
-        tup = tuple(self.representation.approximate(np.array(mapping)))
-        log.info(f"evaluating mapping: {tup}...")
-
-        runtime = self.mapping_cache.lookup(tup)
-        if runtime:
-            log.info(f"... from cache: {runtime}")
-            self.statistics.mapping_cached()
-            return runtime,
-        else:
-            time = timeit.default_timer()
-            m_obj = self.representation.fromRepresentation(np.array(tup))
-            trace = hydra.utils.instantiate(self.config['trace'])
-            env = simpy.Environment()
-            app = RuntimeKpnApplication(name=self.kpn.name,
-                                        kpn_graph=self.kpn,
-                                        mapping=m_obj,
-                                        trace_generator=trace,
-                                        env=env,)
-            system = RuntimeSystem(self.platform, [app], env)
-            system.simulate()
-            exec_time = float(env.now) / 1000000000.0
-            self.mapping_cache.add_time(exec_time)
-            time = timeit.default_timer() - time
-            self.statistics.mapping_evaluated(time)
-            log.info(f"... from simulation: {exec_time}.")
-            return (exec_time,)
 
     def run_genetic_algorithm(self):
         toolbox = self.evolutionary_toolbox
@@ -175,11 +146,11 @@ class GeneticFullMapper(object):
         """
         _,logbook,hof = self.run_genetic_algorithm()
         mapping = hof[0]
-        self.statistics.log_statistics()
+        self.mapping_cache.statistics.log_statistics()
         with open('evolutionary_logbook.pickle','wb') as f:
             pickle.dump(logbook,f)
         result = self.representation.fromRepresentation(np.array(mapping))
-        self.statistics.to_file()
+        self.mapping_cache.statistics.to_file()
         self.cleanup()
         return result
     
