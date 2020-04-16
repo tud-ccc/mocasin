@@ -6,16 +6,9 @@
 from pykpn.util import logging
 from pykpn.representations.representations import RepresentationType
 from pykpn.mapper.rand_partialmapper import RandomPartialMapper
-from pykpn.simulate.application import RuntimeKpnApplication
-from pykpn.simulate.system import RuntimeSystem
 from pykpn.mapper.utils import Statistics, MappingCache
-import deap
-from deap import creator,tools,base,algorithms
 import random
 import numpy as np
-import timeit
-import simpy
-import hydra
 
 log = logging.getLogger(__name__)
 
