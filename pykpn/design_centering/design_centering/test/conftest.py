@@ -145,5 +145,5 @@ class AttrDict(dict):
 @pytest.fixture
 def conf(num_samples):
     #center movement should probably work without aggressive movement (fix this in dc branch)
-    return AttrDict({'adapt_samples' : num_samples, 'max_step': 10, 'adaptable_center_weights' : False , 'radius' : 7, 'representation' : 'SimpleVector', 'channels' : False, 'norm_p' : 2, 'aggressive_center_movement' : True})
+    return AttrDict({'adapt_samples' : num_samples, 'max_step': 10, 'adaptable_center_weights' : False , 'radius' : 7, 'representation' : 'SimpleVector', 'channels' : False, 'norm_p' : 2, 'aggressive_center_movement' : True, 'periodic_boundary_conditions' : False})
 

@@ -106,6 +106,7 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         self.kpn = kpn
         self.platform = platform
         self.channels=cfg['channels']
+        self.boundary_conditions = cfg['periodic_boundary_conditions']
         self.num_procs = len(list(self.kpn._processes.keys()))
         com_mapper = ComFullMapper(kpn,platform,cfg)
         self.list_mapper = ProcPartialMapper(kpn,platform,com_mapper)
@@ -172,12 +173,16 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         res = []
         def _round(point):
             #perodic boundary conditions
-            return int(round(point) % P)
-            #if point > P-1:
-            #  return P-1
-            #elif point < 0:
-            #  return 0
-            #else:
+            rounded = int(round(point) % P)
+            if self.boundary_conditions:
+                return rounded
+            else:
+                if point > P-1:
+                    return P-1
+                elif point < 0:
+                   return 0
+                else:
+                    return rounded
           
         center = p[:len(Procs)]
         for _ in range(npoints):

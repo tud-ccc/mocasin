@@ -1,3 +1,4 @@
 representation: SimpleVector
 channels : false
 norm_p : 1
+periodic_boundary_conditions : False

@@ -76,6 +76,8 @@ class TabuSearchFullMapper(object):
             self.tabu_moves[move] -= 1
             if self.tabu_moves[move] <= 0:
                 delete.append(move)
+
+        tabu = set(self.tabu_moves.keys())
         for move in delete:
             del self.tabu_moves[move]
 
@@ -85,7 +87,6 @@ class TabuSearchFullMapper(object):
             return moves_sorted[0]
         else:
             no_move = np.zeros(len(moves_sorted[0][0]))
-            tabu = set(self.tabu_moves.keys())
             non_tabu = [m for m in moves_sorted if m[0] not in tabu.union(no_move)]
             #no need to re-sort: https://stackoverflow.com/questions/1286167/is-the-order-of-results-coming-from-a-list-comprehension-guaranteed
             if len(non_tabu) > 0:
@@ -94,6 +95,7 @@ class TabuSearchFullMapper(object):
             else:
                 self.tabu_moves[moves_sorted[0][0]] = self.tabu_tenure
                 return moves_sorted[0]
+
 
 
     def diversify(self,mapping):
