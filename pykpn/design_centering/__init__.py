@@ -17,25 +17,23 @@ log = logging.getLogger(__name__)
 
 
 class DesignCentering(object):
-
-    def __init__(self, init_vol, distr, oracle, representation,record_samples,p_threshold):
-        type(self).distr = distr
+    def __init__(self, init_vol, oracle, representation, cfg):
         type(self).vol = init_vol
         type(self).oracle = oracle
-        type(self).samples = {}
         type(self).representation = representation
-        self.record_samples = record_samples
-        type(self).p_value = self.__adapt_poly(oracle.config.hitting_probability, oracle.config.deg_p_polynomial)
-        type(self).s_value = self.__adapt_poly(oracle.config.step_width, oracle.config.deg_s_polynomial)
-        if p_threshold <= 1:
-            self.p_threshold = p_threshold
+        type(self).samples = {}
+        type(self).cfg = cfg
+        type(self).p_value = self.__adapt_poly(cfg['hitting_probability'], cfg['deg_p_polynomial'])
+        type(self).s_value = self.__adapt_poly(cfg['step_width'], cfg['deg_s_polynomial'])
+        if cfg['hitting_probability_threshold'] <= 1:
+            self.p_threshold = cfg['hitting_probability_threshold']
         else:
             log.error(f"Hitting probability threshold ({p_threshold}) is unreachable (>1)")
             sys.exit(1)
 
     def __adapt_poly(self, support_values, deg):
         num = len(support_values)
-        x_interval = (type(self).oracle.config.max_samples/(num - 1))
+        x_interval = (type(self).cfg['max_samples']/(num - 1))
         x = []
         y = []
         ret = []
@@ -44,11 +42,11 @@ class DesignCentering(object):
             y.append(support_values[_i])
         coeff = np.polyfit(x, y, deg)
         poly = np.poly1d(coeff)
-        for _j in range(0, type(self).oracle.config.max_samples, 1):
+        for _j in range(0, type(self).cfg['max_samples'], 1):
             ret.append(poly(_j))
-        if (type(self).oracle.config.show_polynomials):
+        if (type(self).cfg['show_polynomials']):
             tp = dc_util.ThingPlotter()
-            tp.plot_curve(ret, type(self).oracle.config)
+            tp.plot_curve(ret, type(self).cfg)
         return ret
 
     def __has_duplicate(self, samples):
@@ -71,15 +69,15 @@ class DesignCentering(object):
         current_center = dc_sample.Sample(sample=center, representation=self.representation)
         best_area = 0
         best_center = current_center
-        for i in range(0, type(self).oracle.config.max_samples, type(self).oracle.config.adapt_samples):
-            s = dc_sample.SampleGen(self.representation, type(self).oracle.config)
+        for i in range(0, type(self).cfg['max_samples'], type(self).cfg['adapt_samples']):
+            s = dc_sample.SampleGen(self.representation, type(self).cfg)
             
             log.debug("dc: Current iteration {}".format(i))
             s_set = dc_sample.SampleSet()
-            samples = s.gen_samples_in_ball(type(self).vol, type(self).distr, nsamples=type(self).oracle.config.adapt_samples)
-            dup = type(self).oracle.config.adapt_samples - self.__has_duplicate(samples)
+            samples = s.gen_samples_in_ball(type(self).vol, self.cfg['distr'], nsamples=type(self).cfg['adapt_samples'])
+            dup = type(self).cfg['adapt_samples'] - self.__has_duplicate(samples)
             if dup > 0:
-                log.warning("DC: Sample-list of {} elements has {} duplicates.".format(type(self).oracle.config.adapt_samples, dup))
+                log.warning("DC: Sample-list of {} elements has {} duplicates.".format(type(self).cfg['adapt_samples'], dup))
             
             #put samples as paramater in simulation
             log.info("dc: Input samples:\n {} ".format(samples))
@@ -92,7 +90,7 @@ class DesignCentering(object):
             log.debug("dc: Output fesaible samples:\n {}".format(s_set.get_feasible()))
             center = type(self).vol.adapt_center(s_set)
             #center = list(map(int, center))
-            current_center = dc_sample.Sample(sample = center,representation=self.representation)
+            current_center = dc_sample.Sample(sample = center, representation=self.representation)
             self.oracle.validate_set([current_center])
             if current_center.getFeasibility() == False:
                 log.warning("DC iteration with a non-feasible center")
@@ -109,7 +107,7 @@ class DesignCentering(object):
                 best_center = center
                 log.info(f"found a better center (radius {self.vol.radius}, p {cur_p}). updating.")
 
-            if self.record_samples:
+            if self.cfg['record_samples']:
                 for sample in samples:
                     history['samples'].append(sample)
                 history['centers'].append(current_center)
@@ -120,11 +118,11 @@ class DesignCentering(object):
             best_center = center
         #modify last sample
         #TODO build mapping from center (this destroys parallel execution)
-        center_sample = dc_sample.Sample(sample=best_center,representation=self.representation)
+        center_sample = dc_sample.Sample(sample=best_center, representation=self.representation)
         center_sample_result = type(self).oracle.validate_set([center_sample])
-        if self.oracle.config.visualize_mappings:
-            if(self.oracle.config.keep_metrics):
-                self.visualize_mappings(s_set.sample_groups, type(self).oracle.config.adapt_samples, history['centers'])
+        if self.cfg['visualize_mappings']:
+            if(self.cfg['keep_metrics']):
+                self.visualize_mappings(s_set.sample_groups, type(self).cfg['adapt_samples'], history['centers'])
             else:
                 self.visualize_mappings(s_set.sample_groups)
         log.debug("dc: center sample: {} {} {}".format(str(center_sample_result), str(center_sample), str(center)))
@@ -185,4 +183,4 @@ class DesignCentering(object):
                 thresholds.append(0)
         thresholds[-1] = 0.5
         #print("thresholds: {}".format(thresholds))
-        plot.visualize_mapping_space(mappings, exec_times, None, RepresentationType[self.oracle.config.representation], tick, len(center_history))
+        plot.visualize_mapping_space(mappings, exec_times, None, RepresentationType[self.cfg['representation']], tick, len(center_history))

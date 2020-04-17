@@ -135,6 +135,19 @@ def s_set():
         s.setFeasibility(False)
         result.add_sample(s)
     return result
+
+@pytest.fixture
+def oracle():
+    return MockOracle
+
+# custom class to be the mock for the oracle and simulation environment for DC
+class MockOracle(object):
+    @staticmethod
+    def validate_set(samples):
+        for s in samples:
+            s.setFeasibility(True)
+        return samples
+
 #https://stackoverflow.com/questions/4984647/accessing-dict-keys-like-an-attribute
 class AttrDict(dict):
     def __init__(self, *args, **kwargs):
@@ -145,5 +158,22 @@ class AttrDict(dict):
 @pytest.fixture
 def conf(num_samples):
     #center movement should probably work without aggressive movement (fix this in dc branch)
-    return AttrDict({'adapt_samples' : num_samples, 'max_step': 10, 'adaptable_center_weights' : False , 'radius' : 7, 'representation' : 'SimpleVector', 'norm_p' : 2, 'aggressive_center_movement' : True, 'periodic_boundary_conditions' : False })
+    return AttrDict({'adapt_samples' : num_samples, 
+    'max_step': 10,
+    'max_samples' : 50,
+    'max_step' : 10,
+    'adaptable_center_weights' : False , 
+    'radius' : 7, 'representation' : 
+    'SimpleVector', 'norm_p' : 2, 
+    'aggressive_center_movement' : True,
+    'periodic_boundary_conditions' : False , 
+    'distr' : 'uniform', 
+    'record_samples' : False,
+    'visualize_mappings' : False,
+    'show_polynomials' : False,
+    'deg_p_polynomial' : 2,
+    'deg_s_polynomial' : 2,
+    'step_width' : [0.9, 0.7, 0.6, 0.5, 0.1],
+    'hitting_probability' : [0.4, 0.5, 0.5, 0.7, 0.9],
+    'hitting_probability_threshold' : 0.7})
 
