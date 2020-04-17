@@ -1,5 +1,6 @@
 from pykpn.mapper.test.mock_cache import MockMappingCache
 from pykpn.mapper.sa_fullmapper import SimulatedAnnealingFullMapper
+from itertools import product
 import pytest
 import numpy as np
 
@@ -22,9 +23,11 @@ def mapper(kpn,platform,conf,evaluation_function):
     return m
 
 
-def test_sa(mapper):
-    result = mapper.generate_mapping()
-    assert result.to_list() == [6,6] #minimum of 1 + cos(x-y) sin(2y-1)
+def test_ts(mapper,evaluation_function):
+    result_mapper = mapper.generate_mapping()
+    results = [ (evaluation_function([x,y]),x,y) for x,y in product(range(7),range(7))]
+    expected = set([(x,y) for (_,x,y) in sorted(results)[:5]])
+    assert tuple(result_mapper.to_list()) in expected #result is top 5 best
 
 def test_temperature_cooling(conf,mapper):
     timeout = 10000
