@@ -170,4 +170,3 @@ class generator():
         rnd = randrange(len(self._mappingIdentifier))
         result += "EQUALS " + self._mappingIdentifier[rnd]
         return result
-    

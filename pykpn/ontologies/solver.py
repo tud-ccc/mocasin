@@ -178,4 +178,4 @@ class Solver():
             returnBuffer.put((threadIdentifier, False))
             
         returnBuffer.put((threadIdentifier, False))
-        
+
