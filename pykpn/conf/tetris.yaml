@@ -1,11 +1,11 @@
 defaults:
   - common
   - hydra/job_logging: pykpn
-    #  - slx: default
+  - slx: default
     #  - tgff: default
     #  - kpn: default
     # Set the platform
-  - platform: default
+  - platform: exynos
     #  - trace: default
     #  - representation: default
     #  - mapper: default

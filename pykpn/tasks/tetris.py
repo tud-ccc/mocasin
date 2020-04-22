@@ -119,6 +119,9 @@ def tetris(cfg):
         cfg(~omegaconf.dictconfig.DictConfig): the hydra configuration object
 
     **Hydra Parameters**:
+        * **platform:** the input platform. The task expects a configuration
+          dict that can be instantiated to a
+          :class:`~pykpn.common.platform.Platform` object.
         TODO: Write down 
     """
     print(cfg.pretty())
@@ -137,8 +140,6 @@ def tetris(cfg):
     else:
         outf = sys.stdout
     scheduler_name = cfg["scheduler"]
-    # TODO: How to use platform from pykpn?
-    platform_name = cfg["platform"]
     mode = cfg["mode"]
 
     loglevel_opt = cfg["loglevel"]
@@ -172,18 +173,7 @@ def tetris(cfg):
                             "../tetris/tetris")
 
     # Set the platform
-    # TODO: Remove this "1"
-    if platform_name == "exynos" or True:
-        platform = Platform(
-            "exynos",
-            SlxPlatform(
-                "SlxPlatform",
-                os.path.join(BASE_DIR, "platforms/exynos.platform"),
-                "2017.04",
-            ),
-        )
-    else:
-        assert False
+    platform = Platform("exynos", hydra.utils.instantiate(cfg['platform']))
 
     # Initialize request table, and fill it by requests from the file
     req_table = ReqTable()

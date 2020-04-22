@@ -1,0 +1,8 @@
+platform:
+  name: exynos
+  file: ../../../../../examples/slx/platforms/exynos.platform
+  class: pykpn.slx.platform.SlxPlatform
+  params:
+    name: ${platform.name}
+    platform_xml: ${platform.file}
+    slx_version: ${slx.version}
