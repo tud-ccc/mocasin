@@ -6,6 +6,8 @@ from pykpn.tetris.tetris.scheduler.base import SingleVariantSegmentMapper, Singl
 import math
 import logging
 
+log = logging.getLogger(__name__)
+
 FINISH_MAX_DIFF = 0.5
 
 class FastSegmentMapper(SingleVariantSegmentMapper):
@@ -95,7 +97,7 @@ class FastSegmentMapper(SingleVariantSegmentMapper):
                 c = self.__job_table[i].cratio
                 app = Context().req_table[rid].app()
                 to_finish[i] = self.__select_app_mappings_fit_deadline_resources(app, d - self.__start_time, avl_core_types, completion = c)
-                logging.debug("{}: {}".format(i, to_finish[i]))
+                log.debug("{}: {}".format(i, to_finish[i]))
                 if len(to_finish[i]) == 0:
                     mapping[i] = '__idle__'
                     continue
@@ -106,7 +108,7 @@ class FastSegmentMapper(SingleVariantSegmentMapper):
                 if to_finish[i][1][1] - to_finish[i][0][1] > diff:
                     diff = to_finish[i][1][1] - to_finish[i][0][1]
                     i_max_diff = i
-            logging.debug("Choose {}".format(i_max_diff))
+            log.debug("Choose {}".format(i_max_diff))
             if i_max_diff is None:
                 return None
             # On Odroid XU-4, the check that it can be scheduled is simple. All mappings in to_finish are valid.
@@ -116,7 +118,7 @@ class FastSegmentMapper(SingleVariantSegmentMapper):
             m = a.mappings[mid]
             avl_core_types -= m.core_types
             mapping[i_max_diff] = mid
-        logging.debug('Mapping: {}'.format(mapping))
+        log.debug('Mapping: {}'.format(mapping))
         res, segment = self.__create_mapping_from_list(mapping)
         if res:
             return segment

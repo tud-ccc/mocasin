@@ -29,6 +29,15 @@ from pykpn.tetris.tetris.scheduler.lr_solver import LRConstraint
 from pykpn.tetris.tetris.manager import ResourceManager
 from pykpn.tetris.tetris.tracer import TracePlayer
 
+log = logging.getLogger(__name__)
+
+
+def init_logging():
+    logging.getLogger("pykpn.slx.platform.convert_2017_04").setLevel(
+        logging.ERROR)
+    logging.getLogger("pykpn.slx.platform").setLevel(logging.WARNING)
+    logging.getLogger("pykpn.slx.kpn").setLevel(logging.WARNING)
+
 
 def print_summary(scenario, res, scheduling, schedule_time, within_time,
                   opt_summary, opt_summary_append, scheduler, opt_reschedule,
@@ -92,18 +101,18 @@ def single_mode_scheduler(scheduler, scenario):
         scheduler (SchedulerBase): Scheduler instance
     """
     Context().req_table.read_from_file(scenario)
-    logging.info("Read requests from the file")
-    logging.info(Context().req_table.dump_str().rstrip())
+    log.info("Read requests from the file")
+    log.info(Context().req_table.dump_str().rstrip())
 
     # Job table
     job_table = JobTable()
     job_table.init_by_req_table()
 
-    logging.info("Starting scheduling")
+    log.info("Starting scheduling")
     start_time = time.time()
     res, scheduling, within_time = scheduler.schedule(job_table)
     stop_time = time.time()
-    logging.info("Finished scheduling")
+    log.info("Finished scheduling")
     schedule_time = stop_time - start_time
     return res, scheduling, schedule_time
 
@@ -141,32 +150,8 @@ def tetris(cfg):
     scheduler_name = cfg["scheduler"]
     mode = cfg["mode"]
 
-    loglevel_opt = cfg["loglevel"]
-    logout = cfg["logout"]
-
-    # TODO: Use pykpn infra for logging
-    if loglevel_opt is not None:
-        loglevel = getattr(logging, loglevel_opt)
-
-        if logout is None:
-            logging.basicConfig(
-                level=loglevel,
-                format="[%(asctime)s %(levelname)s] %(message)s")
-        else:
-            logging.basicConfig(
-                level=loglevel,
-                format="[%(asctime)s %(levelname)s] %(message)s",
-                filename=logout,
-            )
-
     # Suppress logs from pykpn module
-    logging.getLogger("pykpn.slx.platform.convert_2017_04").setLevel(
-        logging.ERROR)
-    logging.getLogger("pykpn.slx.platform").setLevel(logging.ERROR)
-    logging.getLogger("pykpn.slx.kpn").setLevel(logging.ERROR)
-
-    logging.getLogger("pykpn.tetris.tetris.apptable").setLevel(logging.ERROR)
-    logging.getLogger("pykpn.common.mapping").setLevel(logging.ERROR)
+    init_logging()
 
     BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                             "../tetris/tetris")

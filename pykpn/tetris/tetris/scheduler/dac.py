@@ -8,6 +8,8 @@ from pykpn.tetris.tetris.scheduler.base import SchedulerBase
 
 from pykpn.tetris.tetris.tplatform import Platform
 
+log = logging.getLogger(__name__)
+
 EPS = 0.00001
 
 class DacScheduler(SchedulerBase):
@@ -176,10 +178,10 @@ class DacScheduler(SchedulerBase):
         to_be_scheduled = set([i for i, x in enumerate(tt) if x.deadline != math.inf])
         max_deadline = max([tt[x].deadline for x in to_be_scheduled])
         core_type_jars = self.__platform.core_types() * max_deadline
-        logging.debug(to_be_scheduled)
+        log.debug(to_be_scheduled)
 
         while len(to_be_scheduled) != 0:
-            logging.debug("Jars: {}".format(core_type_jars))
+            log.debug("Jars: {}".format(core_type_jars))
             # List of mappings to finish the applications
             to_finish = {}
             i_md, diff = None, -math.inf
@@ -189,7 +191,7 @@ class DacScheduler(SchedulerBase):
                 c = ts.cratio
                 app = ts.app
                 to_finish[tid] = self.__select_app_mappings_fit_jars(app, d, core_type_jars, completion = c)
-                logging.debug("{}: {}".format(tid, to_finish[tid]))
+                log.debug("{}: {}".format(tid, to_finish[tid]))
                 if len(to_finish[tid]) == 0:
                     continue
                 if len(to_finish[tid]) == 1:
@@ -200,7 +202,7 @@ class DacScheduler(SchedulerBase):
                 if cdiff > diff:
                     diff = cdiff
                     i_md = tid
-            logging.debug("Choose {}".format(i_md))
+            log.debug("Choose {}".format(i_md))
             if i_md is None:
                 return None
 
@@ -214,8 +216,8 @@ class DacScheduler(SchedulerBase):
                         return None
                 else:
                     mapping = new_mapping
-                    logging.debug("New mapping: {}".format(mapping))
-                    logging.debug(res_scheduling.legacy_dump_str())
+                    log.debug("New mapping: {}".format(mapping))
+                    log.debug(res_scheduling.legacy_dump_str())
                     ts = self.__job_table[i_md]
                     cm = ts.app.mappings[mapping[i_md]]
                     rem_time = cm.time(start_cratio=ts.cratio)
@@ -237,10 +239,10 @@ class DacScheduler(SchedulerBase):
         to_be_scheduled = set([i for i, x in enumerate(tt) if x.deadline != math.inf])
         max_deadline = max([tt[x].deadline for x in to_be_scheduled])
         core_type_jars = self.__platform.core_types() * max_deadline
-        logging.debug(to_be_scheduled)
+        log.debug(to_be_scheduled)
 
         while len(to_be_scheduled) != 0:
-            logging.debug("Jars: {}".format(core_type_jars))
+            log.debug("Jars: {}".format(core_type_jars))
             # List of mappings to finish the applications
             to_finish = {}
             for tid in to_be_scheduled:
@@ -249,12 +251,12 @@ class DacScheduler(SchedulerBase):
                 c = ts.cratio
                 app = ts.app
                 to_finish[tid] = self.__select_app_mappings_fit_jars(app, d, core_type_jars, completion = c)
-                logging.debug("{}: {}".format(tid, to_finish[tid]))
+                log.debug("{}: {}".format(tid, to_finish[tid]))
 
             while True:
                 i_md, diff = None, -math.inf
                 for tid in to_be_scheduled:
-                    logging.debug("Canonical mappings in list (to_finish), job {}: {}".format(tid, to_finish[tid]))
+                    log.debug("Canonical mappings in list (to_finish), job {}: {}".format(tid, to_finish[tid]))
                     if len(to_finish[tid]) == 0:
                         continue
                     if len(to_finish[tid]) == 1:
@@ -265,7 +267,7 @@ class DacScheduler(SchedulerBase):
                     if cdiff > diff:
                         diff = cdiff
                         i_md = tid
-                logging.debug("Choose {}".format(i_md))
+                log.debug("Choose {}".format(i_md))
                 if i_md is None:
                     return None
 
@@ -277,8 +279,8 @@ class DacScheduler(SchedulerBase):
                     to_finish[i_md].pop(0)
                 else:
                     mapping = new_mapping
-                    logging.debug("New mapping: {}".format(mapping))
-                    logging.debug(res_scheduling.legacy_dump_str())
+                    log.debug("New mapping: {}".format(mapping))
+                    log.debug(res_scheduling.legacy_dump_str())
                     ts = self.__job_table[i_md]
                     cm = ts.app.mappings[mapping[i_md]]
                     rem_time = cm.time(start_cratio=ts.cratio)

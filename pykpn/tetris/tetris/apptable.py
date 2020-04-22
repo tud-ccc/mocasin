@@ -204,11 +204,11 @@ class AppTable:
 
     def read_applications(self, path):
         assert os.path.isdir(path), "The folder '{}' does not exist".format(path)
-        logging.info("Reading applications:")
+        log.info("Reading applications:")
         for name in os.listdir(path):
             app_folder = os.path.join(path,name)
             if not os.path.isdir(app_folder):
                 continue
             app = Application(name, app_folder, self.__platform)
             self.add(app)
-            logging.info("   * {}".format(name))
+            log.info("   * {}".format(name))
