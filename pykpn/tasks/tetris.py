@@ -14,7 +14,6 @@ from pykpn.tetris.tetris.reqtable import ReqTable
 from pykpn.tetris.tetris.apptable import AppTable
 from pykpn.tetris.tetris.job import JobTable
 
-from pykpn.slx.platform import SlxPlatform
 from pykpn.tetris.tetris.tplatform import Platform
 
 from pykpn.tetris.tetris.scheduler.bruteforce import BruteforceScheduler
