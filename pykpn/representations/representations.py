@@ -14,7 +14,6 @@ try:
 except:
     pass
 
-from pykpn.common.mapping import Mapping
 from pykpn.mapper.com_partialmapper import ComFullMapper
 from pykpn.mapper.proc_partialmapper import ProcPartialMapper
 
