@@ -1,3 +1,8 @@
+# Copyright (C) 2017-2019 TU Dresden
+# All Rights Reserved
+#
+# Authors: Gerald Hempel, Andres Goens
+
 import os
 import timeit
 import simpy
@@ -15,7 +20,7 @@ from pykpn.mapper.proc_partialmapper import ProcPartialMapper
 from pykpn.mapper.rand_partialmapper import RandomPartialMapper
 from pykpn.mapper.com_partialmapper import ComPartialMapper
 from pykpn.mapper.random_mapper import RandomMapping
-from . import dc_sample
+from pykpn.design_centering import sample
 
 from sys import exit
 
@@ -77,6 +82,14 @@ class Oracle(object):
         """ check whether a set of samples is feasible """
         # extra switch for evaluation of static sets vs. simulation
         res = []
+        self.oracle.prepare_sim_contexts_for_samples(samples)
+
+        for s in samples:
+            mapping = tuple(s.getMapping(0).to_list())
+            if mapping in self.oracle.cache:
+                log.debug(f"skipping simulation for mapping {mapping}: cached.")
+                s.sim_context.exec_time = self.oracle.cache[mapping]
+
         if self.config.oracle != "simulation":
             for s in samples:
                 res.append(type(self).oracle.is_feasible(s.sample2simpleTuple))
@@ -91,10 +104,12 @@ class Simulation(object):
         self.sim_config = AttrDict(config)
         self.kpn = hydra.utils.instantiate(config['kpn'])
         self.platform = hydra.utils.instantiate(config['platform'])
-        self.trace_reader_gen = lambda: hydra.utils.instantiate(config['trace'])
-        self.randMapGen = RandomPartialMapper(self.kpn, self.platform, self.sim_config.random_seed)
+        self.randMapGen = RandomPartialMapper(self.kpn, self.platform, config)
         self.comMapGen = ComPartialMapper(self.kpn, self.platform, self.randMapGen)
         self.dcMapGen = ProcPartialMapper(self.kpn, self.platform, self.comMapGen)
+        self.threads = config['threads']
+        self.cache = {}
+        self.total_cached = 0
 
     def prepare_sim_contexts_for_samples(self, samples):
         """ Prepare simualtion/application context and mapping for a each element in `samples`. """
@@ -118,7 +133,7 @@ class Simulation(object):
         # generate a mapping for the given sample
         app_context.mapping = self.dcMapGen.generate_mapping(mapping.to_list())
         # generate trace reader
-        app_context.trace_reader = self.trace_reader_gen()
+        app_context.trace_reader = hydra.utils.instantiate(self.sim_config['trace'])
         log.debug("Mapping toList: {}".format(app_context.mapping.to_list()))
         sim_context.app_contexts.append(app_context)
         return sim_context
@@ -129,19 +144,18 @@ class Simulation(object):
         Trigger the simulation on 4 for parallel jobs and process the resulting array 
         of simulation results according to the given threshold.
         """
-        #prepare simulation
         results = []
-        self.prepare_sim_contexts_for_samples(samples)
-        
         # run simulations and search for the best mapping
-
-        # execute the simulations in parallel
-        # TODO: this is somehow broken, since non-python objects cannot be pickled
-        #pool = ProcessPool(processes=4)
-        #results = list(pool.map(self.run_simulation, samples, chunksize=4))
-
-        # results list of simulation contexts
-        results = list(map(self.run_simulation, samples))
+        if len(samples) > 1 and self.threads > 1:
+            # run parallel simulation for more than one sample in samples list
+            from multiprocessing import Pool
+            log.debug("Running parallel simulation for {} samples".format(len(samples)))
+            pool = Pool(processes=self.threads,maxtasksperchild=100)
+            results = list(pool.map(self.run_simulation, samples, chunksize=self.threads))
+        else:
+            # results list of simulation contexts
+            log.debug("Running single simulation")
+            results = list(map(self.run_simulation, samples))
         
         #find runtime from results
         exec_times = [] #in ps
@@ -168,6 +182,9 @@ class Simulation(object):
     
     #do simulation requires sim_context,
     def run_simulation(self, sample):
+        if sample.sim_context.exec_time is not None:
+            self.total_cached += 1
+            return sample
         try:
             # Create simulation environment
             env = simpy.Environment()
@@ -189,6 +206,10 @@ class Simulation(object):
             system.simulate()
             system.check_errors()
             sample.sim_context.exec_time = env.now
+
+            #add to cache
+            mapping = tuple(sample.getMapping(0).to_list())
+            self.cache[mapping] = env.now
             
         except Exception as e:
             log.debug("Exception in Simulation: {}".format(str(e)))

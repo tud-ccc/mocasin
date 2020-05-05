@@ -6,8 +6,8 @@
 import numpy as np
 from unittest.mock import Mock
 
-from pykpn.design_centering.design_centering.dc_volume import *
-import pykpn.design_centering.design_centering.dc_sample as sample
+from pykpn.design_centering.volume import *
+import pykpn.design_centering.sample as sample
 
 import pykpn.util.random_distributions.discrete_random as rd
 

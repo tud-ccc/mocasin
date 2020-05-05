@@ -106,19 +106,21 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         self.platform = platform
         self.channels=cfg['channels']
         self.boundary_conditions = cfg['periodic_boundary_conditions']
+        self.config = cfg
+        self.p = cfg['norm_p']
         self.num_procs = len(list(self.kpn._processes.keys()))
         com_mapper = ComFullMapper(kpn,platform,cfg)
         self.list_mapper = ProcPartialMapper(kpn,platform,com_mapper)
 
     def _uniform(self):
-      Procs = list(self.kpn._processes.keys())
-      PEs = list(self.platform._processors.keys())
+      Procs = sorted(list(self.kpn._processes.keys()))
+      PEs = sorted(list(self.platform._processors.keys()))
       pe_mapping = list(randint(0,len(PEs),size=len(Procs)))
       return SimpleVectorRepresentation.randomPrimitives(self,pe_mapping)
     def randomPrimitives(self,pe_mapping):
-      Procs = list(self.kpn._processes.keys())
-      PEs = list(self.platform._processors.keys())
-      CPs = list(self.platform._primitives.keys())
+      Procs = sorted(list(self.kpn._processes.keys()))
+      PEs = sorted(list(self.platform._processors.keys()))
+      CPs = sorted(list(self.platform._primitives.keys()))
       res = pe_mapping[:len(Procs)]
       for c in self.kpn.channels():
         suitable_primitives = []
@@ -192,7 +194,7 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
                     offset.append(randint(-radius,radius))
 
             else:
-                offset = r * lp.uniform_from_p_ball(p=1,n=len(Procs))
+                offset = r * lp.uniform_from_p_ball(p=self.p,n=len(Procs))
             real_point = (np.array(center) + np.array(offset)).tolist() 
             v = list(map(_round,real_point))
 
@@ -209,13 +211,19 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
     def distance(self,x,y):
         a = np.array(x)
         b = np.array(y)
-        return numpy.linalg.norm(a-b)
+        return np.linalg.norm(a-b)
+
+    def _distance(self,x,y):
+        return self.distance(x,y)
 
     def approximate(self,x):
         approx = np.around(x)
         P = len(list(self.platform._processors.keys()))
-        corr_boundaries = list(map(lambda t : t % P,approx))
-        return corr_boundaries
+        if self.config['periodic_boundary_conditions']:
+            res = list(map(lambda t : t % P,approx))
+        else:
+            res = list(map(lambda t: max(0,min(t , P-1)), approx))
+        return res
 
     def crossover(self,m1,m2,k):
         return self._crossover(self.toRepresentation(m1),self.toRepresentation(m2),k)
@@ -481,9 +489,7 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
         return mapping_obj
 
     def _distance(self,x,y):
-        x_np = self._simpleVec2Elem(x)
-        y_np = self._simpleVec2Elem(y)
-        return np.linalg.norm(x_np - y_np)
+        return lp.p_norm(x-y,self.p)
 
     def distance(self,x,y):
         return self._distance(x.to_list(),y.to_list())

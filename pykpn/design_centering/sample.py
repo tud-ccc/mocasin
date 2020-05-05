@@ -1,8 +1,13 @@
+# Copyright (C) 2017-2019 TU Dresden
+# All Rights Reserved
+#
+# Authors: Gerald Hempel, Andres Goens
+
 import numpy as np
 import random as rand
 
-from . import dc_volume
-from . import dc_oracle
+from pykpn.design_centering import volume
+from pykpn.design_centering import oracle
 from pykpn.representations.metric_spaces import FiniteMetricSpace
 from pykpn.common.mapping import Mapping
 from pykpn.representations.representations import RepresentationType, MetricSpaceRepresentation, MetricEmbeddingRepresentation, SimpleVectorRepresentation, SymmetryRepresentation
@@ -173,20 +178,24 @@ class MetricSpaceSampleGen(SampleGeneratorBase):
     def gen_sample_in_vol(self,vol,distr):
         return self.gen_samples_in_ball(vol,distr,nsamples=1)
 
-    #TODO: this seems it would be better housed in dc_volume than here.
+    #TODO: this seems it would be better housed in volume than here.
     def gen_samples_in_ball(self,vol,distr,nsamples=1):
         if distr != "uniform":
             log.error("Error!, distribution '" + str(distr) + "' not supported (yet).")
             exit(1)
         sample_list = []
         for _ in range(nsamples):
-            lp_random_vector = lp.uniform_from_p_ball(p=1,n=vol.dim)
+            lp_random_vector = lp.uniform_from_p_ball(p=vol.norm_p,n=vol.dim)
             scaled_vector = vol.radius * lp_random_vector
             transformed_vector = vol.covariance @ scaled_vector
             new_sample_vector = vol.center + transformed_vector
             sample_ints = self.representation.approximate(new_sample_vector)
             new_sample = MetricSpaceSample(self.representation,sample_ints)
             sample_list.append(new_sample)
+            distance = self.representation._distance(sample_ints,vol.center)
+            if distance > vol.radius:
+                log.warning(f"Generated vector with distance ({distance}) greater than radius ({vol.radius}).")
+            log.debug(f"Generated sample (distance: {distance}):\n {sample_ints}")
         return sample_list
 
 

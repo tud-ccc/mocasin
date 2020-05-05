@@ -27,7 +27,7 @@ class ProcPartialMapper(object):
         self.platform = platform
         self.kpn = kpn
         self.fullGenerator = fullGenerator
-        pes = sorted(list(self.platform.processors()))
+        pes = sorted(list(self.platform.processors()),key=(lambda p : p.name))
         self.pe_vec_mapping = dict(zip(pes,[n for n in range(0, len(pes))]))
         # build a reverse dict of the pe_vec_mapping dictionary (since it is a one-to-one dict)
         self.vec_pe_mapping = dict([(self.pe_vec_mapping[key],key) for key in self.pe_vec_mapping])
@@ -80,7 +80,7 @@ class ProcPartialMapper(object):
         if map_history is None:
             map_history = []
 
-        #TODO: raise not implemented exaception for input of part_mapping
+        #TODO: raise not implemented exception for input of part_mapping
 
          # raise NotImplementedError(
          #       'The slx trace reader does not support version %s' % version)
@@ -91,9 +91,6 @@ class ProcPartialMapper(object):
             return None
         else:
             return self.fullGenerator.generate_mapping(mapping)
-
-
-
 
 
 

@@ -324,14 +324,15 @@ class Mapping:
         pes_list = self.platform.processors()
         prim_list = self.platform.primitives()
 
-        # map PEs to an integer
+        # map PEs to an integer in alphabetic order
         pes = {}
-        for i, pe in enumerate(pes_list):
-            pes[pe.name] = i
+        pe_names = sorted([pe.name for pe in pes_list])
+        for i, pe in enumerate(pe_names):
+            pes[pe] = i
         res = []
 
         # add one result entry for each process mapping
-        for proc in procs_list:
+        for proc in sorted(procs_list,key=(lambda p : p.name)):
             res.append(pes[self.affinity(proc).name])
 
         #if flag set,
@@ -340,9 +341,10 @@ class Mapping:
         if channels:
             # map chans to an integer
             prims = {}
-            for j, prim in enumerate(prim_list):
+            prim_names = sorted([prim.name for prim in prim_list])
+            for j, prim in enumerate(prim_names):
                 prims[prim.name] = j+i
-            for chan in chans_list:
+            for chan in sorted(chans_list,key=(lambda c : c.name)):
                 prim = self.primitive(chan)
                 res.append(prims[prim.name])
 
@@ -382,9 +384,9 @@ class Mapping:
            TODO: make it possible to give schedulers, too.
            TODO: check if we need to use correspondence of representation to ensure ordering is right
         """
-        processors = list(self.platform.processors())
-        all_schedulers = list(self.platform.schedulers())
-        all_primitives = list(self.platform.primitives())
+        processors = sorted(list(self.platform.processors()),key=(lambda p : p.name))
+        all_schedulers = sorted(list(self.platform.schedulers()))
+        all_primitives = sorted(list(self.platform.primitives()),key=(lambda p : p.name))
         #print(list_from)
 
         # configure schedulers
@@ -397,7 +399,7 @@ class Mapping:
                       s.name, policy.name)
             
         # map processes
-        for i,p in enumerate(self.kpn.processes()):
+        for i,p in enumerate(sorted(self.kpn.processes(),key=(lambda p : p.name))):
             idx = list_from[i]
             schedulers = [ sched for sched in all_schedulers if processors[idx] in sched.processors]
             j = random.randrange(0, len(schedulers))

@@ -108,24 +108,27 @@ class LPVolume(Volume):
                 super(AttrDict, self).__init__(*args, **kwargs)
                 self.__dict__ = self
         self.conf = AttrDict(conf)
-        self.representation = representation_type.getClassType()(kpn,platform,conf)
+        self.representation = representation_type.getClassType()(kpn,platform,self.conf)
         self.kpn = kpn
         self.platform = platform
         self.center = np.array(self.representation.toRepresentation(center))
+        log = logging.getLogger(__name__)
+        log.debug(f"Initializing center with representation:{self.center}")
         self.old_center = self.center
         self.radius = self.conf.radius
         self.dim = len(self.center)
+        self.true_dim = len(kpn.processes())
         self.num_procs = num_procs
-        self.p = conf['norm_p']
+        self.norm_p = conf['norm_p']
         self.weight_center = 1/(np.exp(1)*self.dim)
-        self.rk1_learning_constant = 1/np.sqrt(self.dim)
+        self.rk1_learning_constant = 1/np.sqrt(self.true_dim)
         self.rk1_vec = np.zeros(self.dim)
         self.transformation = np.identity(self.dim) * self.radius**2
         self.adapt_covariance()
         
 
     def update_factors(self,p,num_samples):
-        self.learning_rate = 0.6/((self.dim+1.3)**2 + p*num_samples) #Beta
+        self.learning_rate = 0.6/((self.true_dim+1.3)**2 + p*num_samples) #Beta
         self.expansion_factor = 1 + (self.learning_rate *(1-p)) #f_e
         self.contraction_factor = 1 - (self.learning_rate * p) #f_c
 
@@ -138,27 +141,27 @@ class LPVolume(Volume):
         # take mean of feasible points to add weighted to the old center
         num_feasible = len(fs_set) # mu
         if self.conf.adaptable_center_weights:
-            self.weight_center = min(0.5,num_feasible/(np.exp(1)*self.dim))
+            self.weight_center = min(0.5,num_feasible/(np.exp(1)*self.true_dim))
         if self.conf.aggressive_center_movement:
             self.weight_center = 0.51
 
         mean_center = np.mean(fs_set, axis=0)
+        mean_center_approx = self.representation.approximate(mean_center)
         log.debug("mean mapping {}".format(mean_center))
-        new_center_vec = (1-self.weight_center) * self.center + self.weight_center * mean_center
-        vector_of_distances = [lp.p_norm(self.center - v,1) for v in fs_set]
+        new_center_vec = (1-self.weight_center) * self.center + self.weight_center * np.array(mean_center_approx)
+        vector_of_distances = [lp.p_norm(self.center - v,self.norm_p) for v in fs_set]
         if min(vector_of_distances) <= 0:
             log.warning("DC points did not move.")
         #approximate center
-        mean_center_approx = self.representation.approximate(mean_center)
         new_center = self.representation.approximate(new_center_vec)
-        dist1 = lp.p_norm(mean_center_approx - self.center, 1)
+        dist1 = lp.p_norm(mean_center_approx - self.center, self.norm_p)
         if np.allclose(dist1,0):
             log.warning("DC mean center unchanged.")
         else:
             log.info(f"DC mean center moved by {dist1}")
         self.old_center = self.center
         self.center = np.array(new_center)
-        dist2 = lp.p_norm(self.old_center-self.center,1)
+        dist2 = lp.p_norm(self.old_center-self.center,self.norm_p)
         if np.allclose(dist2, 0):
             log.warning("DC Center unchanged.")
         else:
@@ -215,19 +218,27 @@ class LPVolume(Volume):
         rank_one_update = np.array(self.rk1_vec).transpose() @ np.array(self.rk1_vec)
 
         rank_mu_update = np.zeros([self.dim,self.dim])
+        try:
+            Qinv = np.linalg.inv(self.covariance)
+        except np.linalg.LinAlgError:
+            Qinv = np.identity(self.dim)
+        arnorm = dict()
         for j,X in enumerate(feasible):
-            V = (np.array(X.sample2tuple()) - self.old_center)
+            V = Qinv @ (np.array(X.sample2tuple()) - self.old_center)
             #TODO: look up the alphas in original implementation, as not described in paper
-            alpha_sq_inv =  np.dot(V,V)
-            if alpha_sq_inv != 0:
-                alpha_sq = 1/alpha_sq_inv 
+            arnorm[j] =  np.sqrt(np.dot(V,V))
+            if arnorm[j] != 0:
+                arnorm[j] = 1/arnorm[j]
             else:
-                alpha_sq = 0
-                
-            rank_1_matrix = np.array(V).transpose() @ np.array(V)
-            rank_mu_update += 1/num_feasible * alpha_sq * rank_1_matrix
+                arnorm[j] = 0
 
-        rk_1_weight  = 0.6/((self.dim + 1.3)**2 + num_feasible)
+        for j, X in enumerate(feasible):
+            alphai = np.sqrt(self.dim) * min(np.median(np.array(list(arnorm.values()))), 2.*arnorm[j])
+
+            rank_1_matrix = np.array(V).transpose() @ np.array(V)
+            rank_mu_update += 1/num_feasible * alphai * rank_1_matrix
+
+        rk_1_weight  = 0.6/((self.true_dim + 1.3)**2 + num_feasible)
         rk_mu_weight = 0.04 * (num_feasible - 2 + (1/num_feasible))/((self.dim + 2)**2 + 0.2*num_feasible)
 
         self.transformation = (1-rk_1_weight - rk_mu_weight) * self.transformation
@@ -239,22 +250,21 @@ class LPVolume(Volume):
 
         vals, vecs = np.linalg.eig(self.transformation)
 
-        vals_sqrt_diag = np.sqrt(vals)
-        Q = vecs * vals_sqrt_diag
-        #idx = vals.argsort() #why would I sort them?
-        #vals_sqrt_diag = np.sqrt(vals[idx])
-        #Q = vecs[idx] * vals_sqrt_diag
-        #Q @ Q.transpose() is approx. self.transformation
-        norm = np.linalg.det(Q)
-        self.covariance = np.real(1/(np.abs(norm)**(1/self.dim)) * Q)
-        norm = np.linalg.det(self.covariance)
+        idx = vals.argsort() #why would I sort them? #Josefine does in her matlab implementation...
+        vals_sqrt_diag = np.sqrt(vals[idx])
+        norm = np.prod(vals_sqrt_diag**(1/self.dim))
+        vals_sqrt_diag = (vals_sqrt_diag * 1/norm)
+        Q = vecs[idx] * vals_sqrt_diag
+        #Q @ Q.transpose() is approx. self.transformation (modulo norm)
+        self.covariance = Q
+        norm = np.abs(np.linalg.det(self.covariance))
         cnt = 0
-        while not np.allclose(norm ,1) and cnt < 10:
+        while not np.allclose(norm ,1,atol=0.1**(11-cnt)) and cnt < 10:
             log.warning(f"covariance matrix not normed ({norm}), retrying.")
-            norm = np.linalg.det(self.covariance)
+            norm = np.abs(np.linalg.det(self.covariance))
             cnt += 1
-            self.covariance = np.real(1/(np.abs(norm)**(1/self.dim)) * Q)
-        if not np.allclose(norm ,1):
+            self.covariance = np.real(1/(norm**(1/self.dim)) * self.covariance)
+        if not np.allclose(norm ,1,atol=0.1**(11-cnt)):
             log.warning( f"failed to norm ({norm}) covariance matrix. Resetting to identity")
             self.transformation = np.identity(self.dim) * self.radius**2
             self.covariance = np.identity(self.dim)
