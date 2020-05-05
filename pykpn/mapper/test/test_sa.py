@@ -7,6 +7,7 @@ import numpy as np
 @pytest.fixture
 def conf():
     return {'random_seed' : 42, 'initial_temperature' : 1.0,
+            'norm_p' : 2, 'periodic_boundary_conditions' : False,
             'final_temperature'  : 0.01, 'record_statistics' : False,
            'temperature_proportionality_constant' : 0.5, 'radius' : 2,
             'periodic_boundary_conditions' : False,

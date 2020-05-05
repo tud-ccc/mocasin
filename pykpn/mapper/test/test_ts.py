@@ -7,6 +7,7 @@ from itertools import product
 @pytest.fixture
 def conf():
     return {'random_seed' : 42, 'max_iterations' : 100,
+            'norm_p' : 2, 'periodic_boundary_conditions' : False,
             'iteration_size'  : 10, 'tabu_tenure' : 10,
             'move_set_size' : 10, 'radius' : 2, 'record_statistics' : False,
            'representation' : 'SimpleVector', 'channels' : False, 'periodic_boundary_conditions' : False,
@@ -31,17 +32,18 @@ def test_ts(mapper,evaluation_function):
 def test_update_candidate_moves(mapper):
     mapper.update_candidate_moves([3,3])
     moves = [ move for (move,_) in mapper.moves]
-    expected = {(0, 1), (0, 0), (1, 0), (-1, 1), (1, 1), (0, -2), (-2, 0), (1, -1), (2, 0), (0, 2), (0, -1), (-1, 0), (-1, -1)}
+    expected = {(0, 1), (0, 0), (1, 0), (-1, 1), (1, 1), (0, -2), (-2, 0), (1, -1), (2, 0), (0, 2), (0, -1), (-1, 0), (-1, -1),
+    (-1, -2), (-1, 2), (1, 2), (1, -2), (-2, -1), (-2, 1), (2,1) , (2,-1)}
     assert set(moves).issubset(expected)
 
     mapper.update_candidate_moves([0,0])
     moves = [ move for (move,_) in mapper.moves]
-    expected = {(0, 1), (0, 0), (1, 0), (1, 1), (2, 0), (0, 2)}
+    expected = {(0, 1), (0, 0), (1, 0), (1, 1), (2, 0), (0, 2), (1,2), (2,1)}
     assert set(moves).issubset(expected)
 
     mapper.update_candidate_moves([6, 6])
     moves = [move for (move, _) in mapper.moves]
-    expected = {(0, -1), (0, 0), (-1, 0), (-1, -1), (-2, 0), (0, -2)}
+    expected = {(0, -1), (0, 0), (-1, 0), (-1, -1), (-2, 0), (0, -2), (-1,-2), (-2,-1)}
     assert set(moves).issubset(expected)
 
 def test_move(mapper):
