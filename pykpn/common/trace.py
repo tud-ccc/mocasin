@@ -38,12 +38,12 @@ class TraceSegment(object):
         self.read_from_channel = None
         self.write_to_channel = None
         self.n_tokens = None
-        self.terminate=False
+        self.terminate = False
 
     def sanity_check(self):
         """Perform a series of sanity checks on the object"""
         if (self.read_from_channel is not None and
-            self.write_to_channel is not None):
+                self.write_to_channel is not None):
             raise RuntimeError('A trace segment may not contain both a read '
                                'and a write access')
         if (self.n_tokens is None and (self.read_from_channel is not None or
@@ -133,7 +133,7 @@ class TraceGraph(nx.DiGraph):
         #captures the amount of read and write accesses for each channel
         channel_dict = {}
         for channel in kpn.channels():
-            channel_dict.update({channel.name : [0,0]})
+            channel_dict.update({channel.name : [0, 0]})
         
         #captures the amount of executed segments and the last segment
         process_dict = {}
@@ -149,7 +149,7 @@ class TraceGraph(nx.DiGraph):
                 processor = self._determine_slowest_processor(process_name, process_mapping, processor_groups)
                 
                 try:
-                    current_segment = trace_generator.next_segment(kpn.name +"."+process_name, processor.type)
+                    current_segment = trace_generator.next_segment(kpn.name + "." + process_name, processor.type)
                 except AttributeError:
                     continue
                 last_segment_index = process_dict[process_name][0]
@@ -169,7 +169,7 @@ class TraceGraph(nx.DiGraph):
                     self.nodes['{}_1'.format(process_name)]['kpn_element'] = process_name
                 else:
                     edge_weight = 0
-                    if not last_segment.processing_cycles == None:
+                    if last_segment.processing_cycles:
                         edge_weight = processor.ticks(last_segment.processing_cycles)
                     
                     #Adding sequential order dependencies
@@ -186,23 +186,23 @@ class TraceGraph(nx.DiGraph):
                 process_dict[process_name][0] += 1
 
                 #Adding unblock read dependencies
-                if not last_segment == None and not last_segment.write_to_channel is None:
+                if last_segment and last_segment.write_to_channel is not None:
                     name = last_segment.write_to_channel.split('.')[1]
                     read_time = self._determine_slowest_access(name,
                                                                channel_mapping,
                                                                primitive_groups,
                                                                read_access=True)
                     self.add_edges_from([("r_{}_{}".format(name, channel_dict[name][1]-1),
-                                    "{}_{}".format(process_name, last_segment_index+1))],
-                                    type=EdgeType.UNBLOCK_READ,
-                                    weight=read_time)
+                                         "{}_{}".format(process_name, last_segment_index+1))],
+                                        type=EdgeType.UNBLOCK_READ,
+                                        weight=read_time)
                     
                     #Add associated process as node attribute
                     self.nodes['r_{}_{}'.format(name, channel_dict[name][1]-1)]['kpn_element'] = name
                     self.nodes['{}_{}'.format(process_name, last_segment_index+1)]['kpn_element'] = process_name
                  
                 #Adding block read dependencies
-                if not current_segment.write_to_channel is None:
+                if current_segment.write_to_channel is not None:
                     name = current_segment.write_to_channel.split('.')[1]
                     write_time = self._determine_slowest_access(name,
                                                                 channel_mapping,
@@ -220,7 +220,7 @@ class TraceGraph(nx.DiGraph):
                     channel_dict[name][1] += 1
                 
                 #Adding read after compute dependencies
-                if not current_segment.read_from_channel is None:
+                if current_segment.read_from_channel is not None:
                     name = current_segment.read_from_channel.split('.')[1]
                     write_time = self._determine_slowest_access(name,
                                                                 channel_mapping,
@@ -265,7 +265,7 @@ class TraceGraph(nx.DiGraph):
             int: In every case the method will return the accumulated cycle count of all edges on the 
                 critical path.
         """
-        if self.critical_path_nodes == None:
+        if not self.critical_path_nodes:
             raise RuntimeError('Call determine_critical_path_elements() in the first place!')
         
         last_node = None
@@ -276,19 +276,19 @@ class TraceGraph(nx.DiGraph):
                 last_node = node
                 continue
             
-            new_weight = self.edges[last_node,node]['weight']
+            new_weight = self.edges[last_node, node]['weight']
             
-            if (self.edges[last_node,node]['type'] == EdgeType.SEQUENTIAL_ORDER and
+            if (self.edges[last_node, node]['type'] == EdgeType.SEQUENTIAL_ORDER and
                         self.nodes[last_node]['kpn_element'] == element_name):
                 #for sequential order edges the last nodes element is relevant
-                cycles = self.edges[last_node,node]['cycles']
-                if not cycles == None:
+                cycles = self.edges[last_node, node]['cycles']
+                if cycles:
                     processor = self._determine_slowest_processor(element_name,
                                                                   element_mapping,
                                                                   element_groups)
                     new_weight = processor.ticks(cycles)
                 
-            elif (self.edges[last_node,node]['type'] == EdgeType.READ_AFTER_COMPUTE and
+            elif (self.edges[last_node, node]['type'] == EdgeType.READ_AFTER_COMPUTE and
                         self.nodes[node]['kpn_element'] == element_name):
                 #for read after compute edges the actual node is relevant
                 new_weight = self._determine_slowest_access(element_name,
@@ -296,7 +296,7 @@ class TraceGraph(nx.DiGraph):
                                                                 element_groups,
                                                                 read_access=False)
                 
-            elif (self.edges[last_node,node]['type'] == EdgeType.BLOCK_READ and 
+            elif (self.edges[last_node, node]['type'] == EdgeType.BLOCK_READ and
                         self.nodes[node]['kpn_element'] == element_name):
                 #for block read edges the actual node is relevant
                 new_weight = self._determine_slowest_access(element_name,
@@ -304,7 +304,7 @@ class TraceGraph(nx.DiGraph):
                                                                 element_groups,
                                                                 read_access=False)
                 
-            elif (self.edges[last_node,node]['type'] == EdgeType.UNBLOCK_READ and 
+            elif (self.edges[last_node, node]['type'] == EdgeType.UNBLOCK_READ and
                         self.nodes[last_node]['kpn_element'] == element_name):
                 #for unblock read edges the last node is relevant
                 new_weight = self._determine_slowest_access(element_name,
@@ -312,12 +312,12 @@ class TraceGraph(nx.DiGraph):
                                                                element_groups,
                                                                read_access=True)
                 
-            elif self.edges[last_node,node]['type'] == EdgeType.BLOCK_WRITE:
+            elif self.edges[last_node, node]['type'] == EdgeType.BLOCK_WRITE:
                 #this kind of edges is currently not implemented
                 #due to no representation of buffer sizes in pykpn
                 pass
                 
-            elif self.edges[last_node,node]['type'] == EdgeType.ROOT_OR_LEAF:
+            elif self.edges[last_node, node]['type'] == EdgeType.ROOT_OR_LEAF:
                 #edges to start and end node will always
                 #remain unchanged
                 pass
@@ -354,7 +354,7 @@ class TraceGraph(nx.DiGraph):
             if not (node == 'V_s' or node == 'V_e'):
                 associated_element = self.nodes[node]['kpn_element']
             
-                if not associated_element in elements:
+                if associated_element not in elements:
                     elements.append(associated_element)
         
         return elements, path_length, self.critical_path_nodes
@@ -383,13 +383,13 @@ class TraceGraph(nx.DiGraph):
             
             for group_id in process_mapping[process_name]:
             
-                if processor == None:
+                if not processor:
                     processor = processor_groups[group_id][0]
                 else:
                     if processor.frequency_domain.frequency > processor_groups[group_id][0].frequency_domain.frequency:
                         processor = processor_groups[group_id][0]
             
-            if not processor == None:
+            if processor:
                 return processor
             else:
                 raise RuntimeError("No valid group available!")
@@ -414,13 +414,13 @@ class TraceGraph(nx.DiGraph):
             
         for group_id in channel_mapping[channel_name]:
                     
-            if static_cost == None:
+            if not static_cost:
                 static_cost = group_id
             else:
                 if group_id > static_cost:
                     static_cost = group_id
         
-        if not static_cost == None:
+        if static_cost or static_cost == 0:
             
             if read_access:
                 return primitive_groups[static_cost][0].read_cost

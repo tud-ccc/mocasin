@@ -17,11 +17,10 @@ class TgffReferenceError(Exception):
     pass
 
 
-class KpnGraphFromTgff():
+class KpnGraphFromTgff:
     """New, since we want to return a common.kpn instance instead of am TgffToKpnGraph instance
     """
-    #TODO: Add doc string
-    def __new__(self, file_path, task_graph):
+    def __new__(cls, file_path, task_graph):
         if file_path not in _parsed_tgff_files:
             _parsed_tgff_files.update( {file_path : Parser().parse_file(file_path)} )
         
@@ -33,35 +32,40 @@ class KpnGraphFromTgff():
         return tgff_graphs[task_graph].to_kpn_graph()
 
 
-class TraceGeneratorWrapper():
-    def __new__(self, file_path):
+class TraceGeneratorWrapper:
+    def __new__(cls, file_path, repetition=1):
         if file_path not in _parsed_tgff_files:
             _parsed_tgff_files.update( {file_path : Parser().parse_file(file_path)} )
         
         tgff_components = _parsed_tgff_files[file_path]
         processor_dict = {}
+
         for processor in tgff_components[1]:
             processor_dict.update({processor.type : processor})
-        trace_generator = TgffTraceGenerator(processor_dict, tgff_components[0])
+
+        trace_generator = TgffTraceGenerator(processor_dict, tgff_components[0], repetition)
         
         return trace_generator
     
 
-class PlatformFromTgff():
-    def __new__(self, platform_type, processor_1, processor_2, processor_3, processor_4, file_path):
+class PlatformFromTgff:
+    def __new__(cls, platform_type, processor_1, processor_2, processor_3, processor_4, file_path):
         if file_path not in _parsed_tgff_files:
             _parsed_tgff_files.update( {file_path : Parser().parse_file(file_path)} )
         
         tgff_processors = _parsed_tgff_files[file_path][1]
 
         processor_dict = {}
+
         for proc in tgff_processors:
             processor_dict.update({proc.type : proc})
 
 
         if platform_type == 'bus':
+
             if int(processor_1.split('_')[1]) >= len(tgff_processors):
                 raise TgffReferenceError()
+
             return TgffRuntimePlatformBus(processor_dict[processor_1])
 
         elif platform_type == 'parallella':
@@ -88,24 +92,36 @@ class PlatformFromTgff():
             if int(processor_4.split('_')[1]) >= len(tgff_processors):
                 raise TgffReferenceError()
 
-            return TgffRuntimePlatformMultiCluster(processor_dict[processor_1],
+            return TgffRuntimePlatformExynos990(processor_dict[processor_1],
                                                    processor_dict[processor_2],
                                                    processor_dict[processor_3],
                                                    processor_dict[processor_4])
         elif platform_type == 'coolidge':
+
             if int(processor_1.split('_')[1]) >= len(tgff_processors):
                 raise TgffReferenceError()
+
             if int(processor_2.split('_')[1]) >= len(tgff_processors):
                 raise TgffReferenceError()
 
             return TgffRuntimePlatformCoolidge(processor_dict[processor_1], processor_dict[processor_2])
+
+        elif platform_type == 'multi_cluster':
+            if int(processor_1.split('_')[1]) >= len(tgff_processors):
+                raise TgffReferenceError()
+
+            if int(processor_2.split('_')[1]) >= len(tgff_processors):
+                raise TgffReferenceError()
+
+            return TgffRuntimePlatformMultiCluster(processor_dict[processor_1], processor_dict[processor_2])
+
 
         else:
             raise RuntimeError('You have to implement this type first!')
 
 
 class TgffRuntimePlatformBus(Platform):
-    def __init__(self, tgff_processor, name="simulation_platform"):
+    def __init__(self, tgff_processor, name="bus"):
         """Initializes an example platform with four processing
         elements connected via an shared memory.
         :param tgff_processor: the processing element for the platform
@@ -120,10 +136,9 @@ class TgffRuntimePlatformBus(Platform):
         designer.addPeClusterForProcessor("cluster_0", tgff_processor.to_pykpn_processor(), 4)
         designer.addCommunicationResource("shared_memory", ["cluster_0"], 100, 100, 1000, 1000, frequencyDomain=2000)
         designer.finishElement()
-        
-#prallella inspired
+
 class TgffRuntimePlatformMesh(Platform):
-    def __init__(self, tgff_processor, processor_2, name="simulation_platform"):
+    def __init__(self, tgff_processor, processor_2, name="parallella-styled"):
         super(TgffRuntimePlatformMesh, self).__init__(name)
         designer = PlatformDesigner(self)
         designer.setSchedulingPolicy('FIFO', 1000)
@@ -155,10 +170,9 @@ class TgffRuntimePlatformMesh(Platform):
                                           frequencyDomain=6000000.0)
         designer.finishElement()
 
-#exynos inspired
-class TgffRuntimePlatformMultiCluster(Platform):
-    def __init__(self, processor_1, processor_2, processor_3, processor_4, name="simulation_platform"):
-        super(TgffRuntimePlatformMultiCluster, self).__init__(name)
+class TgffRuntimePlatformExynos990(Platform):
+    def __init__(self, processor_1, processor_2, processor_3, processor_4, name="exynos-990"):
+        super(TgffRuntimePlatformExynos990, self).__init__(name)
         designer = PlatformDesigner(self)
         
         designer.setSchedulingPolicy('FIFO', 1000)
@@ -169,7 +183,7 @@ class TgffRuntimePlatformMultiCluster(Platform):
                                           processor_1.to_pykpn_processor(),
                                           2)
         #Add L1/L2 caches
-        designer.addCacheForPEs("cluster_0", 5,7, float('inf'), float('inf'), frequencyDomain=6000000.0 ,name='L1')
+        designer.addCacheForPEs("cluster_0", 5, 7, float('inf'), float('inf'), frequencyDomain=6000000.0, name='L1')
         designer.addCommunicationResource("lvl2_cl0",
                                           ["cluster_0"],
                                           225,
@@ -183,7 +197,7 @@ class TgffRuntimePlatformMultiCluster(Platform):
                                           processor_2.to_pykpn_processor(),
                                           2)
         #Add L1/L2 caches
-        designer.addCacheForPEs("cluster_1", 5,7, float('inf'), float('inf'), frequencyDomain=6670000.0 ,name='L1')
+        designer.addCacheForPEs("cluster_1", 5, 7, float('inf'), float('inf'), frequencyDomain=6670000.0, name='L1')
         designer.addCommunicationResource("lvl2_cl1",
                                           ["cluster_1"],
                                           225,
@@ -197,7 +211,7 @@ class TgffRuntimePlatformMultiCluster(Platform):
                                           processor_3.to_pykpn_processor(),
                                           4)
         #Add L1/L2 caches
-        designer.addCacheForPEs("cluster_2", 5,7, float('inf'), float('inf'), frequencyDomain=6670000.0 ,name='L1')
+        designer.addCacheForPEs("cluster_2", 5, 7, float('inf'), float('inf'), frequencyDomain=6670000.0, name='L1')
         designer.addCommunicationResource("lvl2_cl2",
                                           ["cluster_2"],
                                           225,
@@ -219,7 +233,7 @@ class TgffRuntimePlatformMultiCluster(Platform):
         designer.addPeClusterForProcessor("GPU",
                                           processor_4.to_pykpn_processor(),
                                           1)
-        designer.addCacheForPEs("GPU", 5,7, float('inf'), float('inf'), frequencyDomain=6670000.0 ,name='GPU_MEM')
+        designer.addCacheForPEs("GPU", 5, 7, float('inf'), float('inf'), frequencyDomain=6670000.0, name='GPU_MEM')
 
         #another memory, simulating BUS
         designer.addCommunicationResource("BUS",
@@ -235,7 +249,7 @@ class TgffRuntimePlatformMultiCluster(Platform):
 class TgffRuntimePlatformCoolidge(Platform):
     #The topology and latency numbers (!) of this should come from the MPPA3 Coolidge
     #sheet published by Kalray
-    def __init__(self, processor_1, processor_2, name="coolidge-inspired"):
+    def __init__(self, processor_1, processor_2, name="coolidge"):
         super(TgffRuntimePlatformCoolidge, self).__init__(name)
 
         designer = PlatformDesigner(self)
@@ -255,7 +269,8 @@ class TgffRuntimePlatformCoolidge(Platform):
                                                'processor_{0}'.format(i * 17 + 8), 'processor_{0}'.format(i * 17 + 9),
                                                'processor_{0}'.format(i * 17 + 10), 'processor_{0}'.format(i * 17 + 11),
                                                'processor_{0}'.format(i * 17 + 12), 'processor_{0}'.format(i * 17 + 13),
-                                               'processor_{0}'.format(i * 17 + 14), 'processor_{0}'.format(i * 17 + 15)])
+                                               'processor_{0}'.format(i * 17 + 14), 'processor_{0}'.format(i * 17 + 15)
+                                               ])
 
             designer.createNetworkForCluster(f'cluster_{i}_0', f'noc_{i}', topology, sd, 40000.0, 100, 150, 100, 60)
 
@@ -271,3 +286,26 @@ class TgffRuntimePlatformCoolidge(Platform):
 
         designer.finishElement()
 
+class TgffRuntimePlatformMultiCluster(Platform):
+    def __init__(self, processor_1, processor_2, name='multi_cluster'):
+        super(TgffRuntimePlatformMultiCluster, self).__init__(name)
+
+        designer = PlatformDesigner(self)
+        designer.setSchedulingPolicy('FIFO', 1000)
+        designer.newElement('multi_cluster')
+
+        #add first cluster with L2 cache
+        designer.addPeClusterForProcessor('cluster_0', processor_1.to_pykpn_processor(), 2)
+        designer.addCommunicationResource('cl0_l2', ['cluster_0'], 100, 100, float('inf'), float('inf'),
+                                          frequencyDomain=10000)
+
+        #add second cluster with L2 cache
+        designer.addPeClusterForProcessor('cluster_1', processor_2.to_pykpn_processor(), 2)
+        designer.addCommunicationResource('cl1_l2', ['cluster_1'], 100, 100, float('inf'), float('inf'),
+                                          frequencyDomain=10000)
+
+        #connect both clusters via RAM
+        designer.addCommunicationResource('RAM', ['cluster_0', 'cluster_1'], 1000, 1000, float('inf'), float('inf'),
+                                          frequencyDomain=1000)
+
+        designer.finishElement()

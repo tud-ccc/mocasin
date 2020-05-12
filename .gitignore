@@ -22,13 +22,9 @@ testBench.py
 ontologies/
 *.idea
 outputs
-test_bench.py
-
 outputs/
 multirun/
 tsne.pdf
-
-test_bench.py
 
 # default json dump
 dump.json
