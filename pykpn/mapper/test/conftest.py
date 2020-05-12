@@ -99,7 +99,7 @@ def slx_speaker_recognition_setup():
     platform = SlxPlatform('SlxPlatform', platform_file, '2017.04')
     trace_generator = SlxTraceReader(trace_dir, slx_version, 'SlxKpnGraph.')
 
-    return [kpn, platform, trace_generator, trace_generator]
+    return [kpn, platform, trace_generator]
 
 @pytest.fixture
 def slx_hog_setup():
@@ -112,7 +112,7 @@ def slx_hog_setup():
     platform = SlxPlatform('SlxPlatform', platform_file, '2017.04')
     trace_generator = SlxTraceReader(trace_dir, slx_version, 'SlxKpnGraph.')
 
-    return [kpn, platform, trace_generator, trace_generator]
+    return [kpn, platform, trace_generator]
 
 @pytest.fixture
 def slx_parallella_setup():
@@ -125,7 +125,7 @@ def slx_parallella_setup():
     platform = SlxPlatform('SlxPlatform', platform_file, '2017.04')
     trace_generator = SlxTraceReader(trace_dir, slx_version, 'SlxKpnGraph.')
 
-    return [kpn, platform, trace_generator, trace_generator]
+    return [kpn, platform, trace_generator]
 
 @pytest.fixture
 def slx_multidsp_setup():
@@ -138,5 +138,5 @@ def slx_multidsp_setup():
     platform = SlxPlatform('SlxPlatform', platform_file, '2017.04')
     trace_generator = SlxTraceReader(trace_dir, slx_version, 'SlxKpnGraph.')
 
-    return [kpn, platform, trace_generator, trace_generator]
+    return [kpn, platform, trace_generator]
 
