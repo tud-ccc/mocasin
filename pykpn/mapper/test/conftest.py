@@ -89,6 +89,23 @@ def tgff_coolidge_setup():
     return [kpn, platform, trace_generator]
 
 @pytest.fixture
+def tgff_multi_cluster_setup():
+    file = 'pykpn/tgff/graphs/auto-indust-cords.tgff'
+
+    graph = 'TASK_GRAPH_1'
+
+    processor0 = 'processor_0'
+    processor1 = 'processor_1'
+    processor2 = 'processor_2'
+    processor3 = 'processor_3'
+
+    kpn = KpnGraphFromTgff(file, graph)
+    platform = PlatformFromTgff('multi_cluster', processor0, processor1, processor2, processor3, file)
+    trace_generator = TraceGeneratorWrapper(file)
+
+    return [kpn, platform, trace_generator]
+
+@pytest.fixture
 def slx_speaker_recognition_setup():
     slx_version = '2017.10'
     kpn_file = 'examples/slx/app/speaker_recognition/speaker_recognition.cpn.xml'
@@ -139,4 +156,3 @@ def slx_multidsp_setup():
     trace_generator = SlxTraceReader(trace_dir, slx_version, 'SlxKpnGraph.')
 
     return [kpn, platform, trace_generator]
-
