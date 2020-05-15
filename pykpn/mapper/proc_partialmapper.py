@@ -31,6 +31,7 @@ class ProcPartialMapper(object):
         self.pe_vec_mapping = dict(zip(pes,[n for n in range(0, len(pes))]))
         # build a reverse dict of the pe_vec_mapping dictionary (since it is a one-to-one dict)
         self.vec_pe_mapping = dict([(self.pe_vec_mapping[key],key) for key in self.pe_vec_mapping])
+        self.mapping = None
 
     def get_pe_name_mapping(self):
         """Return the used mapping of PE names to integers"""
@@ -67,7 +68,7 @@ class ProcPartialMapper(object):
          #       'The slx trace reader does not support version %s' % version)
 
         # generate new mapping
-        mapping = Mapping(self.kpn, self.platform)
+        self.mapping = Mapping(self.kpn, self.platform)
 
         # map processes to scheduler and processor
         for i,p in enumerate(self.kpn.processes()):
@@ -81,15 +82,18 @@ class ProcPartialMapper(object):
             priority = 0
             info = ProcessMappingInfo(scheduler, affinity, priority)
             # configure mapping
-            mapping.add_process_info(p, info)
+            self.mapping.add_process_info(p, info)
             log.debug('dc_map: map process %s to scheduler %s and processor %s '
                       '(priority: %d)', p.name, scheduler.name, affinity.name,
                       priority)
-            if mapping in map_history:
-                return None
-            else:
-                return self.fullGenerator.generate_mapping(mapping)
 
+        if self.mapping in map_history:
+            return None
+        else:
+            return self.fullGenerator.generate_mapping(self.mapping)
+    
+    def reset(self):
+        self.mapping = Mapping(self.kpn, self.platform)
         
 
 

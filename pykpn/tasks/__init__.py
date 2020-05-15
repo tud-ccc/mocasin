@@ -26,6 +26,7 @@ from pykpn.tasks.to_dot import kpn_to_dot
 from pykpn.tasks.to_dot import mapping_to_dot
 from pykpn.tasks.to_dot import platform_to_dot
 from pykpn.tasks.visualize import visualize
+from pykpn.tasks.solve_query import solve_query
 
 from pykpn.tgff.tgffSimulation import TgffReferenceError
 
@@ -72,6 +73,10 @@ _tasks = {
     'visualize': (
         visualize,
         "Visualize a mapping in the GUI"),
+    'solve_query' : (
+        solve_query,
+        "Generates a mapping based on constraints expressed in a query language"
+    )
 }
 """A dictionary that maps task names to a callable function."""
 

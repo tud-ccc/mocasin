@@ -18,8 +18,10 @@ third_party_dependencies/pynauty-0.6/nauty/config.*
 testBench.py
 *.png
 .eggs
+*.png
+*.dot
+# pycharm
 .coverage
-ontologies/
 *.idea
 outputs
 test_bench.py

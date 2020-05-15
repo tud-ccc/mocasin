@@ -24,18 +24,18 @@ from pykpn.util import logging
 log = logging.getLogger(__name__)
 
 class MappingRepresentation(type):
-    """Metaclass managing the representation of mappings. 
+    """Metaclass managing the representation of mappings.
        We want to have only one object representing the mapping space,
-       even if we have different mappings in that representation. 
+       even if we have different mappings in that representation.
        Currently, only a single space will be allowed for all
        mappings of a single representation, so this metaclass essentially
        defines a Singleton for every representation type.
-    
+
        This applies on a per kpn/platform combination basis.
        It means that if you have a different combination of kpn/platform,
        a new representation object will be initialized even if
        a representation of that type already exists.
-    
+
        In general, representations work with mapping objects
        and can return something which corresponds to the
        type of the representation. However, it is also possible
@@ -57,10 +57,10 @@ class MappingRepresentation(type):
         instance.platform = platform
         return instance
 
-    def toRepresentation(self,mapping): 
+    def toRepresentation(self,mapping):
         return self.simpleVec2Elem(mapping.to_list())
 
-    def fromRepresentation(self,mapping): 
+    def fromRepresentation(self,mapping):
         log.error(f"Trying to transform to an unknown representation")
         return None
 
@@ -80,13 +80,13 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
     method is applied to encode the channel to communication primitive mapping.
     This is only done if the channels variable is set when intializing the
     repreresentation object.
-    
+
     A visualization of the encoding:
     [ P_1, P_2, ... , P_k, C_1, ..., C_l]
        ^ PE where           ^ Comm. prim.
          process 1            where chan. 1
          is mapped.           is mapped.
-    
+
 
     Methods generally work with objects of the `pykpn.common.mapping.Mapping`
     class. Exceptions are the fromRepresentation method, which takes a vector
@@ -102,34 +102,34 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         self.channels=channels
         self.num_procs = len(list(self.kpn._processes.keys()))
     def _uniform(self):
-      Procs = list(self.kpn._processes.keys())
-      PEs = list(self.platform._processors.keys())
-      pe_mapping = list(randint(0,len(PEs),size=len(Procs)))
-      return SimpleVectorRepresentation.randomPrimitives(self,pe_mapping)
+        Procs = list(self.kpn._processes.keys())
+        PEs = list(self.platform._processors.keys())
+        pe_mapping = list(randint(0,len(PEs),size=len(Procs)))
+        return SimpleVectorRepresentation.randomPrimitives(self,pe_mapping)
     def randomPrimitives(self,pe_mapping):
-      Procs = list(self.kpn._processes.keys())
-      PEs = list(self.platform._processors.keys())
-      CPs = list(self.platform._primitives.keys())
-      res = pe_mapping[:len(Procs)]
-      for c in self.kpn.channels():
-        suitable_primitives = []
-        for p in self.platform.primitives():
-                    #assert: len([..]) list in next line == 1
-          src_proc_idx = [i for i,x in enumerate(Procs) if x == c.source.name][0]
-          src_pe_name = PEs[res[src_proc_idx]]
-          src = self.platform.find_processor(src_pe_name)
-          sink_procs_idxs = [i for i,x in enumerate(Procs) if x in [snk.name for snk in c.sinks]]
-          try:
-            sink_pe_names = [PEs[res[s]] for s in sink_procs_idxs]
-          except:
-            log.error(f"Invalid mapping: {res} \n PEs: {PEs},\n sink_procs_idxs: {sink_procs_idxs}\n")
-          sinks = [self.platform.find_processor(snk) for snk in sink_pe_names]
-          if p.is_suitable(src,sinks):
-            suitable_primitives.append(p)
-        primitive = suitable_primitives[randint(0,len(suitable_primitives))].name
-        primitive_idx = [i for i,x in enumerate(CPs) if x == primitive][0]
-        res.append(primitive_idx)
-      return res
+        Procs = list(self.kpn._processes.keys())
+        PEs = list(self.platform._processors.keys())
+        CPs = list(self.platform._primitives.keys())
+        res = pe_mapping[:len(Procs)]
+        for c in self.kpn.channels():
+            suitable_primitives = []
+            for p in self.platform.primitives():
+                #assert: len([..]) list in next line == 1
+                src_proc_idx = [i for i,x in enumerate(Procs) if x == c.source.name][0]
+                src_pe_name = PEs[res[src_proc_idx]]
+                src = self.platform.find_processor(src_pe_name)
+                sink_procs_idxs = [i for i,x in enumerate(Procs) if x in [snk.name for snk in c.sinks]]
+                try:
+                    sink_pe_names = [PEs[res[s]] for s in sink_procs_idxs]
+                except:
+                    log.error(f"Invalid mapping: {res} \n PEs: {PEs},\n sink_procs_idxs: {sink_procs_idxs}\n")
+                sinks = [self.platform.find_processor(snk) for snk in sink_pe_names]
+                if p.is_suitable(src,sinks):
+                    suitable_primitives.append(p)
+            primitive = suitable_primitives[randint(0,len(suitable_primitives))].name
+            primitive_idx = [i for i,x in enumerate(CPs) if x == primitive][0]
+            res.append(primitive_idx)
+        return res
 
     def uniform(self):
         return self.fromRepresentation(self._uniform())
@@ -149,7 +149,7 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
             m = Mapping(self.kpn,self.platform)
             m.from_list(x)
             return m.to_list(channels=True)
-        
+
     def _elem2SimpleVec(self,x):
         if self.channels:
             return x
@@ -169,7 +169,7 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
             #elif point < 0:
             #  return 0
             #else:
-          
+
         center = p[:len(Procs)]
         for _ in range(npoints):
             if simple:
@@ -180,7 +180,7 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
 
             else:
                 offset = r * lp.uniform_from_p_ball(p=1,n=len(Procs))
-            real_point = (np.array(center) + np.array(offset)).tolist() 
+            real_point = (np.array(center) + np.array(offset)).tolist()
             v = list(map(_round,real_point))
 
         if self.channels:
@@ -190,7 +190,7 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         log.debug(f"uniform from ball: {res}")
         print(f"uniform from ball: {res}")
         return res
-      
+
     def uniformFromBall(self,p,r,npoints=1):
         return self.fromRepresentation(self._uniformFRomBall(p,r,npoints=npoints))
 
@@ -223,8 +223,8 @@ class MetricSpaceRepresentation(FiniteMetricSpaceLP, metaclass=MappingRepresenta
         d = len(kpn.processes())
         init_app_ncs(self,kpn)
         super().__init__(M,d)
-        
-    def _simpleVec2Elem(self,x): 
+
+    def _simpleVec2Elem(self,x):
         return x
 
     def _elem2SimpleVec(self,x):
@@ -240,7 +240,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
     is that the vectors don't correspond to a single mapping, but to an equivalence
     class of mappings. Thus, two mappings that are equivalent through symmetries
     will yield the same vector in this representation. This unique vectors
-    for each equivalent class are called "canonical mappings", because they 
+    for each equivalent class are called "canonical mappings", because they
     are canonical representatives of their orbit. Canonical mappings are the
     lexicographical lowest elements of the equivalence class.
 
@@ -262,8 +262,8 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
     class. Exceptions are the fromRepresentation method, which takes a vector
     and returns a Mapping object, and methods prefixed with an "_".
     Methods prefixed with "_", like _allEquivalent generally work directly
-    with the representation. 
-    
+    with the representation.
+
     In order to work with other mappings in the same class, the methods
     allEquivalent/_allEquivalent returns for a mapping, all mappings in that class.
     """
@@ -279,7 +279,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         for node in self._arch_nc:
             self._arch_nc_inv[self._arch_nc[node]] = node
         #TODO: ensure that nodes_correspondence fits simpleVec
-            
+
         n = len(self.platform.processors())
         nautygraph = pynauty.Graph(num_vertices,True,adjacency_dict, coloring)
         autgrp_edges = pynauty.autgrp(nautygraph)
@@ -287,8 +287,8 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         permutations_lists = map(aut.list_to_tuple_permutation,autgrp)
         permutations = [perm.Permutation(p,n= n) for p in permutations_lists]
         self._G = perm.PermutationGroup(permutations)
-        
-    def _simpleVec2Elem(self,x): 
+
+    def _simpleVec2Elem(self,x):
         return self._G.tuple_normalize(x[:self._d])
     def _elem2SimpleVec(self,x):
         return x
@@ -351,7 +351,7 @@ class MetricSymmetryRepresentation(FiniteMetricSpaceLPSym, metaclass=MappingRepr
         for node in self._arch_nc:
             self._arch_nc_inv[self._arch_nc[node]] = node
         #TODO: ensure that nodes_correspondence fits simpleVec
-            
+
         n = len(self.platform.processors())
         nautygraph = pynauty.Graph(num_vertices,True,adjacency_dict, coloring)
         autgrp_edges = pynauty.autgrp(nautygraph)
@@ -361,13 +361,13 @@ class MetricSymmetryRepresentation(FiniteMetricSpaceLPSym, metaclass=MappingRepr
         self._G = perm.PermutationGroup(permutations)
         FiniteMetricSpaceLPSym.__init__(self,M,self._G,self._d)
         self.p = 1
-        
-        
-    def _simpleVec2Elem(self,x): 
+
+
+    def _simpleVec2Elem(self,x):
         return x
     def _elem2SimpleVec(self,x):
         return x
-      
+
 
 
 
@@ -408,8 +408,8 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
         #    for q in self.iotainv.keys():
         #        print(lp.p_norm(np.array(p)-np.array(q),self.p))
         #        print(self.M.D[self.iotainv[p],self.iotainv[q]])
-        
-    def _simpleVec2Elem(self,x): 
+
+    def _simpleVec2Elem(self,x):
         proc_vec = x[:self._d]
         as_array = np.array(self.i(proc_vec)).flatten()# [value for comp in self.i(x) for value in comp]
         return as_array
@@ -420,29 +420,29 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
     def _uniform(self):
         res = np.array(self.uniformVector()).flatten()
         return res
-    
+
     def uniform(self):
         return self.fromRepresentation(np.array(self.uniformVector()).flatten())
 
     def _uniformFromBall(self,p,r,npoints=1):
-      log.debug(f"Uniform from ball with radius r={r} around point p={p}")
-      #print(f"point of type {type(p)} and shape {p.shape}")
-      point = []
-      for i in range(self._d):
-          val = []
-          point.append(list(p)[self._k*i:self._k*(i+1)])
-      results_raw = MetricSpaceEmbedding.uniformFromBall(self,point,r,npoints)
-      results = list(map(lambda x : np.array(list(np.array(x).flat)),results_raw))
-      #print(f"results uniform from ball: {results}")
-      return results
+        log.debug(f"Uniform from ball with radius r={r} around point p={p}")
+        #print(f"point of type {type(p)} and shape {p.shape}")
+        point = []
+        for i in range(self._d):
+            val = []
+            point.append(list(p)[self._k*i:self._k*(i+1)])
+        results_raw = MetricSpaceEmbedding.uniformFromBall(self,point,r,npoints)
+        results = list(map(lambda x : np.array(list(np.array(x).flat)),results_raw))
+        #print(f"results uniform from ball: {results}")
+        return results
 
     def uniformFromBall(self,p,r,npoints=1):
-      log.debug(f"Uniform from ball with radius r={r} around point p={p}")
-      point = self.toRepresentation(p)
-      uniformpoints = MetricSpaceEmbedding.uniformFromBall(self,point,r,npoints)
-      elements = map(self.fromRepresentation,uniformpoints)
-      return list(elements) #Returns a list not map object. Do we want to change this?
-  
+        log.debug(f"Uniform from ball with radius r={r} around point p={p}")
+        point = self.toRepresentation(p)
+        uniformpoints = MetricSpaceEmbedding.uniformFromBall(self,point,r,npoints)
+        elements = map(self.fromRepresentation,uniformpoints)
+        return list(elements) #Returns a list not map object. Do we want to change this?
+
 
     def toRepresentation(self,mapping):
         return self._simpleVec2Elem(mapping.to_list())
@@ -487,8 +487,8 @@ class SymmetryEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRep
         self._M = FiniteMetricSpaceLPSym(M,self._G,self._d)
         self._M._populateD()
         MetricSpaceEmbedding.__init__(self,self._M,1)
-        
-    def _simpleVec2Elem(self,x): 
+
+    def _simpleVec2Elem(self,x):
         proc_vec = x[:self._d]
         return self.i(proc_vec)# [value for comp in self.i(x) for value in comp]
 
@@ -497,7 +497,7 @@ class SymmetryEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRep
 
     def _uniform(self):
         return self.uniformVector()
-    
+
 class RepresentationType(Enum):
     """Simple enum to store the different types of representations a mapping can have.
     """

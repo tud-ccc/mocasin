@@ -1,0 +1,9 @@
+defaults:
+    - common
+    - hydra/job_logging: pykpn
+    - tgff: default
+    - platform: default
+    - kpn: default
+    - slx: default
+query: ???
+vector: "None"
