@@ -274,11 +274,14 @@ class RoundRobinScheduler(RuntimeScheduler):
     """
     """
     def __init__(self, name, processor, context_switch_mode, scheduling_cycles, env):
-        """Initialize a FIFO scheduler
+        """Initialize a RoundRobin scheduler
 
         Calls :func:`RuntimeScheduler.__init__`.
         """
         super(RoundRobinScheduler, self).__init__(name, processor, context_switch_mode, scheduling_cycles, env)
+
+        #status var, keeps track of position in process list
+        self._queue_position = 0
         
     def schedule(self):
         """Perform the scheduling.
@@ -287,21 +290,27 @@ class RoundRobinScheduler(RuntimeScheduler):
         in the ready queue.
         """
         cp = self.current_process
-        
-        if cp is None:
-            #if no process is loaded yet, skip the append to ready queue phase
-            pass
-        elif cp.check_state(ProcessState.READY):
-            #else append current process at back of ready queue, it it's not already in there
-            if not cp in self._ready_queue:
+
+        #if current process is ready and not currently in ready queue append
+        if cp is not None and cp.check_state(ProcessState.READY):
+            if cp not in self._ready_queue:
                 self._ready_queue.append(cp)
-        
-        if len(self._ready_queue) > 0:
-            #return the first process in the queue and remove it from queue
-            next_process = self._ready_queue[0]
-            return next_process
-        
-        #sleep otherwise
+
+        #start a the position of the last scheduled process in process list
+        check_next = self._queue_position
+
+        while check_next != self._queue_position:
+
+            #first increase, so case check_next == queue_position is covered by loop
+            check_next = (check_next + 1) % len(self._processes)
+
+            #check if process is in ready queue and if so, return it
+            if self._processes[check_next] in self._ready_queue:
+                self._queue_position = (check_next + 1) % len(self._processes)
+                return self._processes[check_next]
+
+
+        #if no process is ready, we sleep and start at same position next time
         return None
 
 def create_scheduler(name, processor, policy, param, env):
@@ -313,7 +322,7 @@ def create_scheduler(name, processor, policy, param, env):
                           policy.scheduling_cycles, env)
     elif policy.name == 'RoundRobin':
         s = RoundRobinScheduler(name, processor, ContextSwitchMode.AFTER_SCHEDULING,
-                          policy.scheduling_cycles, env)
+                                policy.scheduling_cycles, env)
     else:
         raise NotImplementedError(
             'The simulation module does not implement the %s scheduling '
