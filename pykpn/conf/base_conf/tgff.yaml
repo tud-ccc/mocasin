@@ -11,11 +11,17 @@ platform:
   type: 'bus'
   file: ${tgff.directory}/${tgff.file}
   class: pykpn.tgff.tgffSimulation.PlatformFromTgff
+  processor_0: 'processor_0'
+  processor_1: 'processor_1'
+  processor_2: 'processor_2'
+  processor_3: 'processor_3'
   params:
     platform_type: ${platform.type}
-    processor: 'processor_0'
+    processor_1: ${platform.processor_0}
+    processor_2: ${platform.processor_1}
+    processor_3: ${platform.processor_2}
+    processor_4: ${platform.processor_3}
     file_path: ${platform.file}
-    amount: 2
 
 trace:
   file: ${tgff.directory}/${tgff.file}
