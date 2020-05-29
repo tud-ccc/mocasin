@@ -83,12 +83,12 @@ setup(
     packages=find_packages(),
     install_requires=[
         'argparse',
-        'cvxpy<=1.0.0',
+        'cvxpy',
         'cvxopt',
-        'scipy<=1.1.0',
+        'scipy',
         'lxml',
-        'numpy<1.16',
-        'matplotlib<3.0',
+        'numpy',
+        'matplotlib',
         'pint',
         'pydot',
         'pyxb',
@@ -99,7 +99,7 @@ setup(
         'deap',
         'networkx',
     ],
-    setup_requires=['pytest-runner', 'numpy<1.16'],
+    setup_requires=['pytest-runner', 'numpy'],
     tests_require=['pytest', 'pytest_mock'],
     command_options={
         'build_sphinx': {
