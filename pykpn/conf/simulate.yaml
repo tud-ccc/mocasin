@@ -7,3 +7,4 @@ defaults:
   - platform: default
   - mapping: default
   - trace: default
+  - representation: SimpleVector

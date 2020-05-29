@@ -296,6 +296,9 @@ class Scheduler:
     def __repr__(self):
         return self.__str__()
 
+    def __lt__(self, other_scheduler):
+        return self.name.lower() < other_scheduler.name.lower()
+
 
     def find_policy(self, name, throw=False):
         """Lookup a policy by its name.

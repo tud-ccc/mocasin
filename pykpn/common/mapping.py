@@ -361,7 +361,7 @@ class Mapping:
 
         return res
 
-    def from_list(self,list_from):
+    def from_list(self, list_from):
         """
         Deprecated function. Corresponding mappers should be used instead,
         or from_list_random, which is explicit (in its name) in that it is
@@ -374,7 +374,7 @@ class Mapping:
         return self.from_list_random(list_from)
 
 
-    def from_list_random(self,list_from):
+    def from_list_random(self, list_from):
         """Convert from a list (tuple), the simple vector representation.
            Priority and policy chosen at random, and scheduler chosen randomly from the possible ones.
            If list has length # processes + # channels, then channels are chosen as the second part of the list.
@@ -384,9 +384,9 @@ class Mapping:
            TODO: make it possible to give schedulers, too.
            TODO: check if we need to use correspondence of representation to ensure ordering is right
         """
-        processors = sorted(list(self.platform.processors()),key=(lambda p : p.name))
+        processors = sorted(list(self.platform.processors()), key=(lambda p : p.name))
         all_schedulers = sorted(list(self.platform.schedulers()))
-        all_primitives = sorted(list(self.platform.primitives()),key=(lambda p : p.name))
+        all_primitives = sorted(list(self.platform.primitives()), key=(lambda p : p.name))
         #print(list_from)
 
         # configure schedulers

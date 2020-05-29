@@ -44,17 +44,19 @@ class MappingRepresentation(type):
        to work directly with simple vectors, if that is more efficient.
     """
     _instances = {}
+
     def __call__(cls, *args, **kwargs):
-        #print(str(cls) + " is being called")
         kpn = args[0]
         platform = args[1]
         cfg = args[2]
         kpn_names = ";".join(map(lambda x : x.name, kpn.channels()))
-        if (cls,kpn,platform) not in cls._instances:
+
+        if (cls, kpn, platform) not in cls._instances:
             #make hashables of these two
-            cls._instances[(cls,kpn_names,platform.name)] = super(MappingRepresentation,cls).__call__(*args, **kwargs)
+            cls._instances[(cls, kpn_names, platform.name)] = super(MappingRepresentation, cls).__call__(*args, **kwargs)
             log.info(f"Initializing representation {cls} of kpn with processes: {kpn_names} on platform {platform.name}")
-            cls._instances[(cls,kpn_names,platform.name)]._representationType = cls
+            cls._instances[(cls, kpn_names, platform.name)]._representationType = cls
+
         instance = deepcopy(cls._instances[(cls,kpn_names,platform.name)])
         instance.kpn = kpn
         instance.platform = platform
@@ -101,10 +103,10 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
     interface, but they are provided in case they prove useful, when you know
     what you are doing.
     """
-    def __init__(self, kpn, platform,cfg):
+    def __init__(self, kpn, platform, cfg):
         self.kpn = kpn
         self.platform = platform
-        self.channels=cfg['channels']
+        self.channels = cfg['channels']
         self.boundary_conditions = cfg['periodic_boundary_conditions']
         self.config = cfg
         self.p = cfg['norm_p']
@@ -117,6 +119,7 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
       PEs = sorted(list(self.platform._processors.keys()))
       pe_mapping = list(randint(0,len(PEs),size=len(Procs)))
       return SimpleVectorRepresentation.randomPrimitives(self,pe_mapping)
+
     def randomPrimitives(self,pe_mapping):
       Procs = sorted(list(self.kpn._processes.keys()))
       PEs = sorted(list(self.platform._processors.keys()))
