@@ -42,7 +42,7 @@ class RandomMapping(Mapping):
     * How to select channel bounds?
     """
 
-    def __init__(self, kpn, platform, cfg, mapping=None, radius=float("inf"),
+    def __init__(self, kpn, platform, mapping=None, radius=float("inf"),
                  representation_type=RepresentationType['SimpleVector']):
         """Generate a random mapping
 
@@ -61,7 +61,7 @@ class RandomMapping(Mapping):
         """
 
         log.debug('start random mapper for %s on %s', kpn.name, platform.name)
-        representation = representation_type.getClassType()(kpn, platform, cfg)
+        representation = representation_type.getClassType()(kpn, platform)
         super().__init__(kpn, platform)
             
         #elem = None

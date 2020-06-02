@@ -4,6 +4,7 @@
 # Authors: Christian Menard
 
 import hydra
+from pykpn.mapper.rand_partialmapper import RandomFullMapper
 
 
 @hydra.main(config_path='conf/kpn_to_dot.yaml')
@@ -67,5 +68,15 @@ def mapping_to_dot(cfg):
     """
     kpn = hydra.utils.instantiate(cfg['kpn'])
     platform = hydra.utils.instantiate(cfg['platform'])
-    mapping = hydra.utils.instantiate(cfg['mapping'], kpn, platform, cfg)
+
+    try:
+        mapping_type = cfg['maping']['type']
+    except:
+        mapping_type = None
+
+    if mapping_type:
+        mapping = RandomFullMapper(kpn, platform, cfg).generate_mapping()
+    else:
+        mapping = hydra.utils.instantiate(cfg['mapping'], kpn, platform)
+
     mapping.to_pydot().write_raw(cfg['output_file'])

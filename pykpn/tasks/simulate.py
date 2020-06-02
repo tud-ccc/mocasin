@@ -10,6 +10,7 @@ import timeit
 
 from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.simulate.system import RuntimeSystem
+from pykpn.mapper.rand_partialmapper import RandomFullMapper
 
 log = logging.getLogger(__name__)
 
@@ -44,7 +45,12 @@ def simulate(cfg):
     kpn = hydra.utils.instantiate(cfg['kpn'])
 
     platform = hydra.utils.instantiate(cfg['platform'])
-    mapping = hydra.utils.instantiate(cfg['mapping'], kpn, platform, cfg)
+
+    if cfg['mapping']['type'] == 'random_mapping':
+        mapping = RandomFullMapper(kpn, platform, cfg).generate_mapping()
+    else:
+        mapping = hydra.utils.instantiate(cfg['mapping'], kpn, platform)
+
     trace = hydra.utils.instantiate(cfg['trace'])
 
     env = simpy.Environment()
