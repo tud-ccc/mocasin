@@ -96,7 +96,7 @@ setup(
         'simpy',
         'termcolor',
         'tqdm',
-        'hydra-core',
+        'hydra-core<1.0',
         'deap',
     ],
     setup_requires=['pytest-runner', 'sphinx', 'numpy<1.16'],
