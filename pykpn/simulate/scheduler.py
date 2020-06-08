@@ -44,7 +44,7 @@ class RuntimeScheduler(object):
     :type _context_switch_mode: ContextSwitchMode
     :ivar int _scheduling_cycles: number of cycles required to reach a
         scheduling decision
-    :ivar _env: the simpy environment
+    :ivar _system: the runtime system
     :ivar _log: an logger adapter to print messages with simulation context
     :type _log: SimulateLoggerAdapter
     :ivar _processes: list of runtime processes managed by this scheduler
@@ -58,7 +58,7 @@ class RuntimeScheduler(object):
     """
 
     def __init__(self, name, processor, context_switch_mode, scheduling_cycles,
-                 env):
+                 system):
         """Initialize a runtime scheduler.
 
         :param str name: the scheduler name
@@ -68,7 +68,7 @@ class RuntimeScheduler(object):
         :type context_switch_mode: ContextSwitchMode
         :param int scheduling_cycles: number of cycles required to reach a
             scheduling decision
-        :param env: the simpy environment
+        :param system:  the runtime system this scheduler belongs to
         """
         log.debug('Initialize new scheduler (%s)', name)
 
@@ -76,14 +76,19 @@ class RuntimeScheduler(object):
         self._processor = processor
         self._context_switch_mode = context_switch_mode
         self._scheduling_cycles = scheduling_cycles
-        self._env = env
+        self._system = system
 
-        self._log = SimulateLoggerAdapter(log, self.name, env)
+        self._log = SimulateLoggerAdapter(log, self.name, self.env)
 
         self._processes = []
         self._ready_queue = []
 
         self.current_process = None
+
+    @property
+    def env(self):
+        """The simpy environment"""
+        return self._system.env
 
     def add_process(self, process):
         """Add a process to this scheduler.
@@ -94,7 +99,7 @@ class RuntimeScheduler(object):
         :param process: the process to be added
         :type process: RuntimeProcess
         """
-        assert self._env.now == 0
+        assert self.env.now == 0
         self._log.debug('add process %s', process.name)
         if not process.check_state(ProcessState.CREATED):
             raise RuntimeError('Processes that are already started cannot be '
@@ -148,7 +153,7 @@ class RuntimeScheduler(object):
             if np is not None:
                 # pay for the scheduling delay
                 ticks = self._processor.ticks(self._scheduling_cycles)
-                yield self._env.timeout(ticks)
+                yield self.env.timeout(ticks)
 
                 log.debug('schedule process %s next', np.name)
 
@@ -157,35 +162,35 @@ class RuntimeScheduler(object):
                 if mode == ContextSwitchMode.ALWAYS:
                     log.debug('load context of process %s', np.name)
                     ticks = self._processor.context_load_ticks()
-                    yield self._env.timeout(ticks)
+                    yield self.env.timeout(ticks)
                 elif (mode == ContextSwitchMode.AFTER_SCHEDULING and
                       np is not self.current_process):
                     if cp is not None:
                         log.debug('store the context of process %s', cp.name)
                         ticks = self._processor.context_store_ticks()
-                        yield self._env.timeout(ticks)
+                        yield self.env.timeout(ticks)
                     log.debug('load context of process %s', np.name)
                     ticks = self._processor.context_load_ticks()
-                    yield self._env.timeout(ticks)
+                    yield self.env.timeout(ticks)
 
                 # activate the process
                 self.current_process = np
                 self._ready_queue.remove(np)
                 np.activate(self._processor)
                 # wait until the process stops its execution
-                yield self._env.any_of([np.blocked, np.finished])
+                yield self.env.any_of([np.blocked, np.finished])
 
                 # pay for context switching
                 if self._context_switch_mode == ContextSwitchMode.ALWAYS:
                     self._log.debug('store the context of process %s', np.name)
-                    yield self._env.timeout(
+                    yield self.env.timeout(
                         self._processor.context_store_ticks())
             else:
                 # Wait for ready events if the scheduling algorithm did not
                 # find a process that is ready for execution
                 self._log.debug('There is no ready process -> sleep')
                 ready_events = [p.ready for p in self._processes]
-                yield self._env.any_of(ready_events)
+                yield self.env.any_of(ready_events)
 
 
 class DummyScheduler(RuntimeScheduler):

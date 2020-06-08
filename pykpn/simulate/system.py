@@ -52,7 +52,7 @@ class RuntimeSystem:
         for sched in platform.schedulers():
             if len(sched.processors) == 1:
                 scheduler = create_scheduler(sched.name, sched.processors[0],
-                                             sched.policy, env)
+                                             sched.policy, self)
                 self._schedulers.append(scheduler)
 
                 for app in applications:
@@ -64,7 +64,7 @@ class RuntimeSystem:
                             'single-processor schedulers', sched.name)
                 for proc in sched.processors:
                     name = '%s_%s' % (sched.name, proc.name)
-                    scheduler = create_scheduler(name, proc, sched.policy, env)
+                    scheduler = create_scheduler(name, proc, sched.policy, self)
                     self._schedulers.append(scheduler)
 
                     for app in applications:
@@ -118,3 +118,8 @@ class RuntimeSystem:
                                 p.name)
             if some_blocked:
                 log.error('The application %s is deadlocked!', app.name)
+
+    @property
+    def env(self):
+        """The simpy environment"""
+        return self._env
