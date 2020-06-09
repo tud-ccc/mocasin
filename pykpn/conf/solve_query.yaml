@@ -4,7 +4,6 @@ defaults:
     - tgff: default
     - platform: default
     - kpn: default
-    - slx: default
     - representation: SimpleVector
 query: ???
 output_file: "None"

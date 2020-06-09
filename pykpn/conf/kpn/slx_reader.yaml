@@ -5,4 +5,3 @@ kpn:
   params:
     name: ${kpn.name}
     cpngraph: ${kpn.file}
-    slx_version: ${slx.version}
