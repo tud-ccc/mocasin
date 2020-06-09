@@ -245,24 +245,25 @@ class Primitive:
 class SchedulingPolicy:
     """Represents a scheduling policy.
 
-    Each scheduler may implement multiple policies.
-
-    :param str name: the policy name
-    :param int cycles:
-        number of cycles a scheduler using this policy requires to reach a
-        decision
+        Attributes:
+           name (str): the policy name
+           cycles (int): number of cycles a scheduler using this policy
+                         requires to reach a decision
+           param: an optional parameter to the policy
     """
 
     def __init__(self, name, cycles, param=None):
         """Initialize a scheduling policy
 
-        :param str name: the policy name
-        :param int cycles:
-            number of cycles a scheduler using this policy requires to reach a
-            decision
+        Args:
+           name (str): the policy name
+           cycles (int): number of cycles a scheduler using this policy
+                         requires to reach a decision
+           param: an optional parameter to the policy
         """
         self.name = name
         self.scheduling_cycles = cycles
+        self.param = param
 
 
 class Scheduler:
