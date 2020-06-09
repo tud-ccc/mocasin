@@ -33,10 +33,6 @@ def expected_dir(request):
     module_name, _ = os.path.splitext(os.path.basename(request.module.__file__))
     return os.path.join(module_path, "expected_%s" % module_name)
 
-@pytest.fixture(params=["2017.04", "2017.10"])
-def slx_version(request):
-    return request.param
-
 @pytest.fixture(params=["exynos", "multidsp", "parallella"])
 def slx_platform(request):
     return request.param
@@ -45,11 +41,11 @@ def slx_platform(request):
 def slx_kpn(request):
     return request.param
 
-@pytest.fixture(params=[("audio_filter", "exynos", "'2017.10'"),
-                        ("audio_filter", "multidsp", "'2017.10'"),
-                        ("audio_filter", "parallella", "'2017.04'"),
-                        ("hog", "exynos", "'2017.04'"),
-                        ("speaker_recognition", "exynos", "'2017.04'")])
+@pytest.fixture(params=[("audio_filter", "exynos"),
+                        ("audio_filter", "multidsp"),
+                        ("audio_filter", "parallella"),
+                        ("hog", "exynos"),
+                        ("speaker_recognition", "exynos")])
 def slx_kpn_platform_pair(request):
     return request.param
 

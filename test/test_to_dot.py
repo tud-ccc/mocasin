@@ -32,14 +32,13 @@ def test_slx_platform_to_dot(datadir, expected_dir, slx_platform):
 
 
 def test_slx_mapping_to_dot(datadir, expected_dir, slx_kpn_platform_pair):
-    kpn, platform, version = slx_kpn_platform_pair
+    kpn, platform = slx_kpn_platform_pair
     dot_file = "%s_on_%s.dot" % (kpn, platform)
     out_file = os.path.join(datadir, dot_file)
     subprocess.check_call(["pykpn", "mapping_to_dot",
                            "kpn=%s" % kpn,
                            "platform=%s" % platform,
                            "mapper=slx_default",
-                           "slx.version=%s" % version,
                            "output_file=%s" % out_file],
                           cwd=datadir)
     assert filecmp.cmp(os.path.join(expected_dir, dot_file), out_file,

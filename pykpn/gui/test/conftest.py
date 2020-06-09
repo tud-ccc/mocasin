@@ -11,20 +11,17 @@ from pykpn.slx.platform import SlxPlatform
 @pytest.fixture
 def exynos():
     return SlxPlatform('exynos',
-                       'examples/slx/platforms/exynos.platform',
-                       '2017.04')
+                       'examples/slx/platforms/exynos.platform')
 
 
 @pytest.fixture
 def parallella():
     return SlxPlatform('parallella',
-                       'examples/slx/platforms/parallella.platform',
-                       '2017.04')
+                       'examples/slx/platforms/parallella.platform')
 
 
 @pytest.fixture
 def multiDSP():
     return SlxPlatform(
         'multiDSP',
-        'examples/slx/platforms/multidsp.platform',
-        '2017.04')
+        'examples/slx/platforms/multidsp.platform')
