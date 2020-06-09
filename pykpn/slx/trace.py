@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 class SlxTraceReader(TraceGenerator):
     """A TraceGenerator that reads SLX trace files"""
 
-    def __init__(self, trace_dir, slx_version, prefix=None):
+    def __init__(self, trace_dir, prefix=None):
         """Initialize the trace reader
 
         :param str trace_dir: path to the directory containing all trace files
@@ -32,36 +32,23 @@ class SlxTraceReader(TraceGenerator):
             prefix = ""
         self._prefix = prefix
 
-        if slx_version not in ['2017.04', '2017.10']:
-            raise NotImplementedError(
-                'The slx trace reader does not support version %s' %
-                slx_version)
-
-        self._slx_version = slx_version
-
     def _open_trace_file(self, process_name, processor_type):
-        if self._slx_version == '2017.04':
-            assert process_name.startswith(self._prefix)
-            return open('%s/%s.%s.cpntrace' % (self._trace_dir,
-                                               process_name[len(self._prefix):],
-                                               processor_type))
-        else:
-            assert process_name.startswith(self._prefix)
-            trace_files = glob.glob('%s/%s.%s.*cpntrace' % (
-                self._trace_dir,
-                process_name[len(self._prefix):],
-                processor_type))
+        assert process_name.startswith(self._prefix)
+        trace_files = glob.glob('%s/%s.%s.*cpntrace' % (
+            self._trace_dir,
+            process_name[len(self._prefix):],
+            processor_type))
 
-            if len(trace_files) == 0:
-                raise RuntimeError(
-                    'No trace file for process %s on processor type %s found' % (
-                        process_name, processor_type))
-            elif len(trace_files) > 1:
-                log.warning('More than one trace file found for process %s on '
-                            'processor type %s. -> Choose %s' % (
-                                process_name, processor_type, trace_files[0]))
+        if len(trace_files) == 0:
+            raise RuntimeError(
+                'No trace file for process %s on processor type %s found' % (
+                    process_name, processor_type))
+        elif len(trace_files) > 1:
+            log.warning('More than one trace file found for process %s on '
+                        'processor type %s. -> Choose %s' % (
+                            process_name, processor_type, trace_files[0]))
 
-            return open(trace_files[0])
+        return open(trace_files[0])
 
     def next_segment(self, process_name, processor_type):
         """Return the next trace segment.
