@@ -343,24 +343,29 @@ class Platform(object):
 
     def find_scheduler_for_processor(self, processor):
         """Find all schedulers associated to a given processor.
-           
+
            :param processor: a processer of the underlying platform
            :type processor: Processor
-           :raises RuntimeError: if the processor was not found
-           :returns: A set of possible schedulers for the processor.
+           :raises RuntimeError: if the processor or the scheduler was not found
+           :returns: The scheduler object for the given processor
         """
         if processor.name not in self._processors:
             raise RuntimeError('The processor {} is not defined for this '
                                'platform!'.format(processor.name))
-        used_schedulers = set()
+        schedulers = []
 
-        for s in self._schedulers:
-            if processor in self._schedulers[s].processors:
-                used_schedulers.add( self._schedulers[s])
-        
-        #print("Found schedulers: {} for {}".format(used_schedulers, processor.name))
-        return used_schedulers
+        for s in self._schedulers.values():
+            if processor in s.processors:
+                schedulers.append(s)
 
+        if len(schedulers) == 0:
+            raise RuntimeError(
+                f"No scheduler found for processor {processor.name}!")
+        elif len(schedulers) > 1:
+            raise RuntimeError(
+                f"Found multiple schedulers for processor {processor.name}!")
+
+        return schedulers[0]
 
     def find_scheduler(self, name):
         """Search for a scheduler object by its name."""
