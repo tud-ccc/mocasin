@@ -26,7 +26,9 @@ def create_policy(xml_platform, list_ref):
                 name = p.get_schedulingAlgorithm()
                 # there is no scheduling delay in slx
                 cycles = 0
-                policies.append(SchedulingPolicy(name, cycles))
+                time_slice = get_value_in_unit(p, "timeSlice", "ps", None)
+                policies.append(SchedulingPolicy(name, cycles,
+                                                 time_slice=time_slice))
             if len(policies) == 0:
                 raise RuntimeError(f"The SchedulingPolicyList {list_ref} does "
                                    "not define any policies!")

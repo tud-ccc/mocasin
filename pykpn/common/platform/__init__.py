@@ -249,21 +249,22 @@ class SchedulingPolicy:
            name (str): the policy name
            cycles (int): number of cycles a scheduler using this policy
                          requires to reach a decision
-           param: an optional parameter to the policy
+           time_slice (int): Length of a time slice in pico seconds
     """
 
-    def __init__(self, name, cycles, param=None):
+    def __init__(self, name, cycles, time_slice=None):
         """Initialize a scheduling policy
 
         Args:
            name (str): the policy name
            cycles (int): number of cycles a scheduler using this policy
                          requires to reach a decision
-           param(obj, optional): an optional parameter to the policy
+           time_slice (int, optional): Length of a time slice in pico seconds.
+               Defaults to None.
         """
         self.name = name
         self.scheduling_cycles = cycles
-        self.param = param
+        self.time_slice = time_slice
 
 
 class Scheduler:
