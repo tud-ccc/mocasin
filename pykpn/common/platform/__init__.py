@@ -259,7 +259,7 @@ class SchedulingPolicy:
            name (str): the policy name
            cycles (int): number of cycles a scheduler using this policy
                          requires to reach a decision
-           param: an optional parameter to the policy
+           param(obj, optional): an optional parameter to the policy
         """
         self.name = name
         self.scheduling_cycles = cycles
@@ -267,30 +267,35 @@ class SchedulingPolicy:
 
 
 class Scheduler:
-    '''
-    Represents a scheduler provided by the platform. It schedules processes on
-    one or more processors according to a policy. The class defines a list of
-    all supported scheduling policies.
-    '''
+    """Represents a scheduler provided by the platform.
 
-    def __init__(self, name, processors, policies):
-        '''
-        Initialize a Scheduler.
-        :param name: name of the scheduler
-        :param processors: list of Processor objects that are managed by this
-                           scheduler
-        :param policies: list of SchedulingPolicies that are supported by this
-                         scheduler
-        '''
+       It schedules processes on one or more processors according to a policy.
+
+       Attributes:
+           name (str): name of the scheduler
+           processors (list of Processor): list of Processor objects that are
+               managed by this scheduler
+           policy (SchedulingPolicy): the scheduling policy implemented by this
+               scheduler
+    """
+
+    def __init__(self, name, processors, policy):
+        """Initialize a Scheduler.
+
+           Args:
+              name (str): name of the scheduler
+              processors (list of Processor): list of Processor objects that
+                  are managed by this scheduler
+              policy (SchedulingPolicy): the scheduling policy implemented by
+                  this scheduler
+        """
         assert len(processors) > 0, (
             "A scheduler must be associated with at least one processor")
-        assert len(policies) > 0, (
-            "A scheduler must support at least one policy")
 
         self.name = name
         self.processors = processors
-        self.policies = policies
-    
+        self.policy = policy
+
     def __str__(self):
         return self.name
 
@@ -299,22 +304,6 @@ class Scheduler:
 
     def __lt__(self, other_scheduler):
         return self.name.lower() < other_scheduler.name.lower()
-
-
-    def find_policy(self, name, throw=False):
-        """Lookup a policy by its name.
-
-        :param str name: name of the policy to search for
-        :raises RuntimeError: if no processor was found and throw is True
-        :returns: A scheduling policy object or None if no policy was found.
-        """
-        for p in self.policies:
-            if p.name == name:
-                return p
-        if throw:
-            raise RuntimeError('The policy %s is not defined for this '
-                               'scheduler!', name)
-        return None
 
 
 class Platform(object):

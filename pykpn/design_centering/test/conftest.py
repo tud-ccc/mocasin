@@ -80,8 +80,8 @@ def platform(num_procs):
         proc = Processor(('processor' + str(i)), 'proctype', Mock())
         procs.append(proc)
         p.add_processor(proc)
-    policies = [Mock()]
-    sched = Scheduler('name', procs, policies)
+    policy = Mock()
+    sched = Scheduler('name', procs, policy)
     p.add_scheduler(sched)
     return p
 

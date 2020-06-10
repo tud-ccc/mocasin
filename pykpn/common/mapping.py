@@ -392,8 +392,7 @@ class Mapping:
 
         # configure schedulers
         for s in all_schedulers:
-            i = random.randrange(0, len(s.policies))
-            policy = s.policies[i]
+            policy = s.policy
             info = SchedulerMappingInfo(policy, None)
             self.add_scheduler_info(s, info)
             log.debug('configure scheduler %s to use the %s policy',

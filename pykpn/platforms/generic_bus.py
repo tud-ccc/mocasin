@@ -39,7 +39,7 @@ class GenericBusPlatform(Platform):
             processor = Processor(name, 'RISC', fd_pes, 100, 100)
             bus.connect_processor(processor)
             self.add_processor(processor)
-            self.add_scheduler(Scheduler('sp_' + name, [processor], [policy]))
+            self.add_scheduler(Scheduler('sp_' + name, [processor], policy))
 
         primitives = primitives_from_buses([bus])
         for p in primitives:
@@ -97,7 +97,7 @@ class GenericClusteredPlatform(Platform):
                 bus.connect_processor(processor)
                 self.add_processor(processor)
                 self.add_scheduler(Scheduler(
-                    'shared_' + name, [processor], [policy]))
+                    'shared_' + name, [processor], policy))
             mem = Storage('shared_' + cluster_name, fd_pes, 1, 1, 8, 8)
             self.add_communication_resource(mem)
             bus.connect_storage(mem)

@@ -61,12 +61,10 @@ class RandomPartialMapper(object):
 
         # configure policy of schedulers
         for s in self.platform.schedulers():
-            i = random.randrange(0, len(s.policies))
-            policy = s.policies[i]
-            info = SchedulerMappingInfo(policy, None)
+            info = SchedulerMappingInfo(s.policy, None)
             part_mapping.add_scheduler_info(s, info)
             log.debug('rand_map: configure scheduler %s to use the %s policy',
-                      s.name, policy.name)
+                      s.name, s.policy.name)
 
         # map processes
         processes = part_mapping.get_unmapped_processes()

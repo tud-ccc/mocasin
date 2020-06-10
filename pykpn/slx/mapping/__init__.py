@@ -51,7 +51,7 @@ class SlxMapping(Mapping):
 
             # TODO delete policy selection
             # the policy mechanism differs depending on the version
-            policy = scheduler.policies[0]
+            policy = scheduler.policy
             param = None
             log.warning('2017.10 mapping descriptors do not specify the '
                         'scheduling policy. -> Set the policy for %s to the '
