@@ -4,7 +4,7 @@
 # Authors: Gerald Hempel, Andres Goens
 
 from pykpn.util import logging
-from pykpn.common.mapping import ChannelMappingInfo, Mapping, ProcessMappingInfo, SchedulerMappingInfo
+from pykpn.common.mapping import ChannelMappingInfo, Mapping, ProcessMappingInfo
 
 log = logging.getLogger(__name__)
 
@@ -235,11 +235,5 @@ class ComFullMapper(object):
         # configure policy of schedulers
         if part_mapping is None:
             part_mapping = Mapping(self.kpn, self.platform)
-        for s in self.platform.schedulers():
-            policy = s.policies[0]
-            info = SchedulerMappingInfo(policy, None)
-            part_mapping.add_scheduler_info(s, info)
-            log.debug('configure scheduler %s to use the %s policy',
-                      s.name, policy.name)
         return ComPartialMapper.generate_mapping_static(self.kpn, self.platform, part_mapping=part_mapping)
 

@@ -8,7 +8,7 @@ import pint
 
 from pykpn.util import logging
 from pykpn.common.mapping import (ChannelMappingInfo, Mapping,
-    ProcessMappingInfo, SchedulerMappingInfo)
+                                  ProcessMappingInfo)
 from pykpn.slx.mapping import slxmapping
 
 
@@ -48,23 +48,9 @@ class SlxMapping(Mapping):
         for xs in xml_mapping.Scheduler:
             name = xs.id
             scheduler = platform.find_scheduler(name)
-
-            # TODO delete policy selection
-            # the policy mechanism differs depending on the version
-            policy = scheduler.policy
-            param = None
-            log.warning('2017.10 mapping descriptors do not specify the '
-                        'scheduling policy. -> Set the policy for %s to the '
-                        'first policy specified by the platform (%s)' %
-                        (name, policy.name))
-
             for pref in xs.ProcessRef:
                 pname = pref.process
                 process_scheduler[pname] = scheduler
-            info = SchedulerMappingInfo(policy, param)
-            self.add_scheduler_info(scheduler, info)
-            log.debug('configure scheduler %s to use policy %s' %
-                      (name, policy.name))
 
         for xp in xml_mapping.Process:
             name = xp.id
@@ -148,11 +134,10 @@ def export_slx_mapping(mapping, file_name):
         xml_mapping.CommPrimitive.append(xml_primitive)
 
     # export schedulers
-    for name, info in mapping._scheduler_info.items():
+    for scheduler in mapping.platform.schedulers():
         xml_scheduler = slxmapping.SchedulerType()
-        xml_scheduler.id = name
+        xml_scheduler.id = scheduler.name
 
-        scheduler = mapping.platform.find_scheduler(name)
         for p in scheduler.processors:
             xml_processor_ref = slxmapping.ProcessorRefType()
             xml_processor_ref.processor = p.name

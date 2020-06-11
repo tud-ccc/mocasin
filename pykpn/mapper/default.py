@@ -4,7 +4,7 @@
 # Authors: Andrés Goens, Gerald Hempel
 
 from pykpn.util import logging
-from pykpn.common.mapping import ChannelMappingInfo, Mapping, ProcessMappingInfo, SchedulerMappingInfo
+from pykpn.common.mapping import ChannelMappingInfo, Mapping, ProcessMappingInfo
 
 log = logging.getLogger(__name__)
 
@@ -49,15 +49,6 @@ class DefaultFullMapper(object):
                                part_mapping.platform.name, part_mapping.kpn.name,
                                self.platform.name, self.kpn.name)
 
-
-
-        # configure policy of schedulers
-        for s in self.platform.schedulers():
-            info = SchedulerMappingInfo(s.policy, None)
-            part_mapping.add_scheduler_info(s, info)
-            log.debug('rand_map: configure scheduler %s to use the %s policy',
-                      s.name, s.policy.name)
-
         # map processes
         processes = part_mapping.get_unmapped_processes()
         #print("remaining process list: {}".format(processes))
@@ -71,7 +62,7 @@ class DefaultFullMapper(object):
                       '(priority: %d)', p.name, scheduler.name, affinity.name,
                       priority)
 
-            # map channels
+        # map channels
         channels = part_mapping.get_unmapped_channels()
         for c in channels:
             capacity = 4 # fixed channel bound this may cause problems

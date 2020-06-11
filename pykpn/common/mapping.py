@@ -35,19 +35,6 @@ class ProcessMappingInfo:
         self.priority = priority
 
 
-class SchedulerMappingInfo:
-    """Simple record to store mapping infos associated with a Scheduler.
-
-    :ivar list[KpnProcess] processes: a list of processes mapped to this
-                                      scheduler
-    :ivar SchedulingPolicy policy: the policy to be used by the scheduler
-    :ivar param: a parameter that can be used to configure a scheduling policy
-    """
-    def __init__(self, policy, param):
-        self.policy = policy
-        self.param = param
-
-
 class Mapping:
     """Describes the mapping of a KpnGraph to a Platform.
 
@@ -57,8 +44,6 @@ class Mapping:
         dict of channel mapping infos
     :ivar dict[str, ProcessMappingInfo] _process_info:
         dict of process mapping infos
-    :ivar dict[str, SchedulerMappingInfo] _scheduler_info:
-        dict of scheduler mapping infos
     """
 
     def __init__(self, kpn, platform):
@@ -67,23 +52,18 @@ class Mapping:
         :param KpnGraph kpn: the kpn graph
         :param Platform platform: the platform
         """
-        # The ProcessInfo record is not really required as it only has one
-        # item. However, we might want to extend it later
 
         self.kpn = kpn
         self.platform = platform
 
         self._channel_info = {}
         self._process_info = {}
-        self._scheduler_info = {}
 
         # initialize all valid dictionary entries to None
         for p in kpn.processes():
             self._process_info[p.name] = None
         for c in kpn.channels():
             self._channel_info[c.name] = None
-        for s in platform.schedulers():
-            self._scheduler_info[s.name] = None
 
     def channel_info(self, channel):
         """Look up the mapping info of a channel.
@@ -92,7 +72,6 @@ class Mapping:
         :returns: the mapping info if the channel is mapped
         :rtype: ChannelMappingInfo or None
         """
-        # test if return value == None 
         return self._channel_info[channel.name]
 
     def process_info(self, process):
@@ -104,28 +83,9 @@ class Mapping:
         """
         return self._process_info[process.name]
 
-    def scheduler_info(self, scheduler):
-        """Look up the mapping info of a scheduler.
-
-        :param Scheduler scheduler: scheduler to look up
-        :returns: the mapping info if the scheduler is mapped
-        :rtype: SchedulerMappingInfo or None
-        """
-        return self._scheduler_info[scheduler.name]
-# TODO: not clear here
-   # def get_unmapped_schedulers(self):
-   #     """Returns a list of unmapped schedulers
-   #     
-   #     :returns: List of unmapped schedulers
-   #     :rtype: List[Schedulers]
-   #     """
-   #     # filter all channels with name is partof list
-   #     unmapped_schedulers = dict(filter(lambda s: s[1] is None, self._scheduler_info.items())).keys()
-   #     return list(filter(lambda s: s.name in unmapped_schedulerss, self.kpn.schedulers()))
-
     def get_unmapped_channels(self):
         """Returns a list of unmapped channels
-        
+
         :returns: List of unmapped channels
         :rtype: List[Channels]
         """
@@ -134,16 +94,6 @@ class Mapping:
         unmapped_channels = dict(filter(lambda c: c[1] is None, self._channel_info.items())).keys()
         return list(filter(lambda c: c.name in unmapped_channels, self.kpn.channels()))
 
-   # def get_unmapped_schedulers(self):
-   #     """Returns a list of unmapped schedulers
-   #     
-   #     :returns: List of unmapped schedulers
-   #     :rtype: List[Schedulers]
-   #     """
-   #     # filter all channels with name is partof list
-   #     unmapped_schedulers = dict(filter(lambda s: s[1] is None, self._scheduler_info.items())).keys()
-   #     return list(filter(lambda s: s.name in unmapped_schedulerss, self.kpn.schedulers()))
-    
     def get_unmapped_processes(self):
         """Returns a list of unmapped processes
         :returns: List of unmapped processes
@@ -152,8 +102,7 @@ class Mapping:
         log.debug("mapping remaining processes: {}".format(dict(filter(lambda c: c[1] is None, self._process_info.items())).keys()))
         unmapped_processes = dict(filter(lambda p: p[1] is None, self._process_info.items())).keys()
         return list(filter(lambda p: p.name in unmapped_processes, self.kpn.processes()))
-        
-    
+
     def scheduler_processes(self, scheduler):
         """Get a list of processes mapped to a scheduler
 
@@ -180,13 +129,6 @@ class Mapping:
         assert self._process_info[process.name] is None
         self._process_info[process.name] = info
 
-    def add_scheduler_info(self, scheduler, info):
-        """Add a scheduler config"""
-        log.debug("sched info (should be none): {} , {}, {}".format(self._scheduler_info[scheduler.name], scheduler.name, info))
-        assert scheduler.name in self._scheduler_info
-        assert self._scheduler_info[scheduler.name] is None
-        self._scheduler_info[scheduler.name] = info
-
     def affinity(self, process):
         """Returns the affinity of a KPN process
 
@@ -194,14 +136,6 @@ class Mapping:
         :rtype: Processor
         """
         return self._process_info[process.name].affinity
-
-    def scheduler(self, process):
-        """Returns the scheduler that a KPN process is mapped to
-
-        :param KpnProcess process: the KPN process
-        :rtype: Scheduler
-        """
-        return self._process_info[process.name].scheduler
 
     def primitive(self, channel):
         """Returns the primitive that a KPN channel is mapped to
@@ -388,16 +322,7 @@ class Mapping:
         processors = sorted(list(self.platform.processors()), key=(lambda p : p.name))
         all_schedulers = sorted(list(self.platform.schedulers()))
         all_primitives = sorted(list(self.platform.primitives()), key=(lambda p : p.name))
-        #print(list_from)
 
-        # configure schedulers
-        for s in all_schedulers:
-            policy = s.policy
-            info = SchedulerMappingInfo(policy, None)
-            self.add_scheduler_info(s, info)
-            log.debug('configure scheduler %s to use the %s policy',
-                      s.name, policy.name)
-            
         # map processes
         for i,p in enumerate(sorted(self.kpn.processes(),key=(lambda p : p.name))):
             idx = list_from[i]

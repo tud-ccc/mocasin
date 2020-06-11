@@ -47,15 +47,12 @@ class RuntimeSystem:
             if app.mapping.platform != platform:
                 log.error(f"Application {app.name} is mapped into a different platform than the system")
 
-
         # initialize all schedulers
         self._schedulers = []
         for sched in platform.schedulers():
-            policy, policy_param = self._find_scheduler_policy(sched,
-                                                               applications)
             if len(sched.processors) == 1:
                 scheduler = create_scheduler(sched.name, sched.processors[0],
-                                             policy, policy_param, env)
+                                             sched.policy, env)
                 self._schedulers.append(scheduler)
 
                 for app in applications:
@@ -67,8 +64,7 @@ class RuntimeSystem:
                             'single-processor schedulers', sched.name)
                 for proc in sched.processors:
                     name = '%s_%s' % (sched.name, proc.name)
-                    scheduler = create_scheduler(name, proc, policy,
-                                                 policy_param, env)
+                    scheduler = create_scheduler(name, proc, sched.policy, env)
                     self._schedulers.append(scheduler)
 
                     for app in applications:
@@ -99,30 +95,6 @@ class RuntimeSystem:
 
         logging.dec_indent()
         return
-
-    def _find_scheduler_policy(self, scheduler, applications):
-        policy = None
-        policy_param = None
-        for app in applications:
-            mapping_info = app.mapping.scheduler_info(scheduler)
-            if policy is None:
-                policy = mapping_info.policy
-                policy_param = mapping_info.param
-                log.debug('The scheduler %s uses the policy %s',
-                          scheduler.name, policy.name)
-            else:
-                if policy.name != mapping_info.policy.name:
-                    log.warning(
-                        '%s: The scheduling policy was already set' ' to %s '
-                        'but the application %s requested a different policy '
-                        '(%s) -> force old policy', self.name, policy.name,
-                        app.name, mapping_info.policy.name)
-                elif policy_param != mapping_info.param:
-                    log.warning(
-                        '%s: The application %s requested a different '
-                        'scheduling policy parameter than the application '
-                        'before -> use old parameter', self.name, app.name)
-        return policy, policy_param
 
     def simulate(self):
         log.info('Start the simulation')

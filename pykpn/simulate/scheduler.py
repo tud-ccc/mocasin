@@ -313,7 +313,7 @@ class RoundRobinScheduler(RuntimeScheduler):
         #if no process is ready, we sleep and start at same position next time
         return None
 
-def create_scheduler(name, processor, policy, param, env):
+def create_scheduler(name, processor, policy, env):
     if policy.name == 'Dummy':
         s = DummyScheduler(name, processor, ContextSwitchMode.NEVER,
                            policy.scheduling_cycles, env)
