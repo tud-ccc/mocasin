@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 def enumerate_equivalent(cfg):
     kpn = hydra.utils.instantiate(cfg['kpn'])
     platform = hydra.utils.instantiate(cfg['platform'])
-    mapping = hydra.utils.instantiate(cfg['mapping'], kpn, platform)
+    mapping = hydra.utils.instantiate(cfg['mapping'], kpn, platform, cfg['mapping'])
 
     representation = RepresentationType['Symmetries'].getClassType()(kpn,platform)
     log.info(("calculating orbit for mapping:" + str(mapping.to_list())))

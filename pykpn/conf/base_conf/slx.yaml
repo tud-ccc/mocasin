@@ -19,10 +19,9 @@ kpn:
 mapping:
   name: ${kpn.name}_on_${platform.name}
   file: ???
-  class: pykpn.slx.mapping.SlxMapping
-  params:
-    mapping_xml: ${mapping.file}
-    slx_version: ${slx.version}
+  class: pykpn.mapper.slx_read_fullmapper.slx_read_mapper
+  mapping_xml: ${mapping.file}
+  slx_version: ${slx.version}
 
 trace:
   directory: ???

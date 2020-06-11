@@ -46,10 +46,7 @@ def simulate(cfg):
 
     platform = hydra.utils.instantiate(cfg['platform'])
 
-    if cfg['mapping']['type'] == 'random_mapping':
-        mapping = RandomFullMapper(kpn, platform, cfg).generate_mapping()
-    else:
-        mapping = hydra.utils.instantiate(cfg['mapping'], kpn, platform)
+    mapping = hydra.utils.instantiate(cfg['mapping'], kpn, platform, cfg['mapping']).generate_mapping()
 
     trace = hydra.utils.instantiate(cfg['trace'])
 

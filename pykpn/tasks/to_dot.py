@@ -67,16 +67,9 @@ def mapping_to_dot(cfg):
         * **dot:** the output file
     """
     kpn = hydra.utils.instantiate(cfg['kpn'])
+
     platform = hydra.utils.instantiate(cfg['platform'])
 
-    try:
-        mapping_type = cfg['maping']['type']
-    except:
-        mapping_type = None
-
-    if mapping_type:
-        mapping = RandomFullMapper(kpn, platform, cfg).generate_mapping()
-    else:
-        mapping = hydra.utils.instantiate(cfg['mapping'], kpn, platform)
+    mapping = hydra.utils.instantiate(cfg['mapping'], kpn, platform, cfg['mapping']).generate_mapping()
 
     mapping.to_pydot().write_raw(cfg['output_file'])

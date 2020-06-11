@@ -1,7 +1,6 @@
 # Authors: Gerald Hempel, Andres Goens
 
 import random
-import hydra
 
 from pykpn.util import logging
 from pykpn.common.mapping import (ChannelMappingInfo, Mapping,
