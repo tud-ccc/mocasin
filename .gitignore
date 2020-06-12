@@ -32,3 +32,5 @@ tsne.pdf
 
 # default json dump
 dump.json
+
+*.iml
