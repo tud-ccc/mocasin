@@ -12,11 +12,25 @@ from pykpn.simulate.process import RuntimeKpnProcess
 log = logging.getLogger(__name__)
 
 
-class RuntimeKpnApplication:
+class RuntimeApplication(object):
+    """Represents the runtime instance of an application.
+
+    Attributes:
+        name (str): the application name
+    """
+
+    def __init__(self, name):
+        """Initialize a RuntimeApplication
+
+        Args:
+            name (str): the application name
+        """
+        self.name = name
+
+
+class RuntimeKpnApplication(RuntimeApplication):
     """Represents the runtime instance of a kpn application.
 
-    :ivar str name:
-        the application name
     :ivar Mapping mapping:
         mapping object for this application
     :ivar list[RuntimeProcess] _pocesses:
@@ -42,7 +56,7 @@ class RuntimeKpnApplication:
         :param start_at_tick: delay the application start to this tick
         :type start_at_tick: int
         """
-        self.name = name
+        super().__init__(name)
         self.mapping = mapping
         if mapping.kpn != kpn_graph:
             log.error("KPN and mapping incompatible in RuntimeKpnApplication")
