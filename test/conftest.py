@@ -54,6 +54,12 @@ def slx_kpn_platform_pair(request):
 
 
 @pytest.fixture(params=["auto-indust-cords",
-                        "auto-indust-cowls"])
+                        "auto-indust-cowls",
+                        "auto-indust-mocsyn-asic",
+                        "auto-indust-mocsyn",
+                        "consumer-cords",
+                        "networking-cowls",
+                        "office-automation-mocsyn-asic",
+                        "telecom-mocsyn"])
 def tgff(request):
     return request.param

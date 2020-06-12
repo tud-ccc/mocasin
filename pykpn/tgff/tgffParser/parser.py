@@ -9,7 +9,7 @@ from pykpn.util import logging
 from pykpn.tgff.tgffParser import regEx as expr
 from pykpn.tgff.tgffParser.dataStructures import TgffProcessor, TgffGraph, TgffLink
 
-class Parser():
+class Parser:
     """A parser for .tgff files. The information parsed from a file are 
     transfered into intermediate representations which can be found in 
     dataStructures.py
@@ -102,7 +102,7 @@ class Parser():
                     self.logger.debug('Parse unused group')
                     self._parse_unused_scope(file)
                 else:
-                    self._key_missmatch(key, file.tell())
+                    self._key_mismatch(key, file.tell())
                     if not key is None:
                         last_missmatch = (key, match)
                     
@@ -140,7 +140,7 @@ class Parser():
                 self.logger.debug('Reached end of task graph')
                 break
             else:
-                self._key_missmatch(key, file.tell())
+                self._key_mismatch(key, file.tell())
             current_line = file.readline()
         
         self.task_graph_dict.update( {identifier : TgffGraph(identifier, tasks, channels, self.quantity_dict)} )
@@ -159,7 +159,7 @@ class Parser():
                 self.logger.debug('Reached end of commun_quant')
                 break
             else:
-                self._key_missmatch(key, file.tell())
+                self._key_mismatch(key, file.tell())
             current_line = file.readline()
         
         self.logger.info('Added to commun_quant dict: ' + identifier)
@@ -186,7 +186,7 @@ class Parser():
             elif key == 'scope_limiter':
                 self.logger.error('Reached end of scope. Unable to recognize HW component!')
             else:
-                self._key_missmatch(key, file.tell())
+                self._key_mismatch(key, file.tell())
                 lower_last_missmatch = (key, match)
             current_line = file.readline()
         
@@ -209,7 +209,7 @@ class Parser():
             if key == 'scope_limiter':
                 return
             else:
-                self._key_missmatch(key, file.tell())
+                self._key_mismatch(key, file.tell())
         
     
     def _parse_prim_link(self, identifier, file, match):
@@ -227,7 +227,7 @@ class Parser():
                 self.logger.debug("Reached end of primLink")
                 break
             else:
-                self._key_missmatch(key, file.tell())
+                self._key_mismatch(key, file.tell())
             current_line = file.readline()
             
         self.logger.info('Added to link dict: ' + str(identifier))
@@ -264,7 +264,7 @@ class Parser():
                 self.logger.debug('Reached end of processor')
                 break
             else:
-                self._key_missmatch(key, file.tell())
+                self._key_mismatch(key, file.tell())
             current_line = file.readline()
             
         self.logger.info('Added to processor dict: ' + str(identifier))
@@ -297,12 +297,12 @@ class Parser():
         while current_line:
             key, match = self._parse_line(current_line)
             if key == 'unused_statement':
-                self.logger.info.log("Ignored statement")
+                self.logger.info("Ignored statement")
             elif key == 'scope_limiter':
                 self.logger.info("Parsed block which will be ignored")
                 break
             else:
-                self._key_missmatch(key, file.tell())
+                self._key_mismatch(key, file.tell())
             current_line = file.readline()
     
     def _parse_line(self, line, additional_components=None):
@@ -317,7 +317,7 @@ class Parser():
         """Try to match the line to the patterns that can
         occur in the current context.
         """
-        if not additional_components == None:
+        if additional_components:
             for key, rx in additional_components.items():
                 match = rx.fullmatch(line)
                 if match:
@@ -333,7 +333,7 @@ class Parser():
         
         return None, None
     
-    def _key_missmatch(self, key, position):
+    def _key_mismatch(self, key, position):
         if key == 'new_line' or key == 'comment':
             if self._debug:
                 print('Skip empty or comment line')

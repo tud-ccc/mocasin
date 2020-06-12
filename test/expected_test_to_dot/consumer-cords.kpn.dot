@@ -1,0 +1,17 @@
+digraph G {
+process_src [label=src];
+"process_filt-r" [label="filt-r"];
+"process_filt-g" [label="filt-g"];
+"process_filt-b" [label="filt-b"];
+"process_rgb-yiq" [label="rgb-yiq"];
+process_cjpeg [label=cjpeg];
+process_sink [label=sink];
+process_src -> "process_filt-r"  [label=a0_1];
+process_src -> "process_filt-g"  [label=a0_2];
+process_src -> "process_filt-b"  [label=a0_3];
+"process_filt-r" -> "process_rgb-yiq"  [label=a0_4];
+"process_filt-g" -> "process_rgb-yiq"  [label=a0_5];
+"process_filt-b" -> "process_rgb-yiq"  [label=a0_6];
+"process_rgb-yiq" -> process_cjpeg  [label=a0_7];
+process_cjpeg -> process_sink  [label=a0_8];
+}
