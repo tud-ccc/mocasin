@@ -6,4 +6,5 @@ defaults:
     - kpn: default
     - slx: default
 query: ???
+output_file: "None"
 vector: "None"

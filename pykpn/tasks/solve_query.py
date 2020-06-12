@@ -32,4 +32,16 @@ def solve_query(cfg):
     else:
         result = solver.request(query)
 
-    print(result.to_list())
+    if not cfg["output_file"] == 'None':
+        #write result to file in simple vector representation
+        output_file = open(cfg['output_file'], 'w+')
+        output_file.write('[')
+
+        for processor in result.to_list():
+            output_file.write(str(processor) + ', ')
+
+        output_file.write(']')
+        output_file.close()
+
+    else:
+        print(result.to_list())
