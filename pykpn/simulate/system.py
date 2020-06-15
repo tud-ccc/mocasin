@@ -20,59 +20,57 @@ class RuntimeSystem:
     This class contains the simulation environment, the entire platform with
     instances of schedulers, and all applications running on top of it.
 
-    :ivar _env: the simpy environment
-    :ivar schedulers: list of all runtime schedulers
-    :type schedulers: list[RuntimeScheduler]
-    :ivar _applications: list of all applications
-    :type _applications: list[RuntimeKpnApplication]
+    Attributes:
+        platform (Platform): the underlying platform of the system
+        _env: the simpy environment
+        _processes (set(RuntimeProcess)): set of all processes that where
+            executed by the system
+        _schedulers (list(RuntimeScheduler)): list of all runtime schedulers that
+            are part of the system
+        _processors_to_schedulers (dict(Processor, RuntimeScheduler)): mapping
+            of processors to their schedulers
     """
 
-    def __init__(self, platform, applications, env):
+    def __init__(self, platform, env):
         """Initialize a runtime system.
 
         Most importantly, this sets up all the schedulers in the system.
 
-        :param platform: the platform to be simulated
-        :type platform: Platform
-        :param applications: list of applications to be run on the system
-        :type applications: list[RuntimeKpnApplication]
-        :param env: the simpy environment
+        Args:
+            platform (Platform): the platform to be simulated
+            env: the simpy environment
         """
         log.info('Initialize the system')
         logging.inc_indent()
 
         self._env = env
-        self._applications = applications
-        for app in applications:
-            if app.mapping.platform != platform:
-                log.error(f"Application {app.name} is mapped into a different platform than the system")
+        self.platform = platform
+
+        self._processes = set()
 
         # initialize all schedulers
+
+        # list of all schedulers
         self._schedulers = []
+        # a mapping of all processors to their schedulers
+        self._processors_to_schedulers = {}
         for sched in platform.schedulers():
             if len(sched.processors) == 1:
-                scheduler = create_scheduler(sched.name, sched.processors[0],
-                                             sched.policy, self)
+                proc = sched.processors[0]
+                scheduler = create_scheduler(sched.name, proc, sched.policy,
+                                             self)
                 self._schedulers.append(scheduler)
-
-                for app in applications:
-                    for p in app.mapping.scheduler_processes(sched):
-                        scheduler.add_process(app.find_process(p.name))
+                self._processors_to_schedulers[proc] = scheduler
             else:
                 log.warning('True multi-processor scheduling is not supported '
                             'yet! -> split the %s scheduler into multiple '
                             'single-processor schedulers', sched.name)
                 for proc in sched.processors:
                     name = '%s_%s' % (sched.name, proc.name)
-                    scheduler = create_scheduler(name, proc, sched.policy, self)
+                    scheduler = create_scheduler(name, proc, sched.policy,
+                                                 self)
                     self._schedulers.append(scheduler)
-
-                    for app in applications:
-                        for p in app.mapping.scheduler_processes(sched):
-                            affinity = app.mapping.affinity(p)
-                            assert affinity in sched.processors
-                            if affinity == proc:
-                                scheduler.add_process(app.find_process(p.name))
+                    self._processors_to_schedulers[proc] = scheduler
 
         # Since the platform classes are designed such that they are
         # independent of the simulation implementation, the communication
@@ -96,6 +94,24 @@ class RuntimeSystem:
         logging.dec_indent()
         return
 
+    def start_process(self, process, mapping_info):
+        """Start execution of a process.
+
+        This should only be called by a RuntimeApplication.
+
+        Args:
+            process (RuntimeProcess): the runtime process to be started
+            mapping_info (ProcessMappingInfo): object that specifies where to
+                start the process
+        """
+        if process in self._processes:
+            raise RuntimeError(
+                f"The process {process.name} was already started!")
+        self._processes.add(process)
+        processor = mapping_info.affinity
+        scheduler = self._processors_to_schedulers[processor]
+        scheduler.add_process(process)
+
     def simulate(self):
         log.info('Start the simulation')
 
@@ -107,17 +123,16 @@ class RuntimeSystem:
         log.info('Simulation done')
 
     def check_errors(self):
-        for app in self._applications:
-            some_blocked = False
-            for p in app.processes():
-                if p.check_state(ProcessState.BLOCKED):
-                    log.error('The process %s is blocked', p.name)
-                    some_blocked = True
-                elif not p.check_state(ProcessState.FINISHED):
-                    log.warning('The process %s did not finish its execution!',
-                                p.name)
-            if some_blocked:
-                log.error('The application %s is deadlocked!', app.name)
+        some_blocked = False
+        for p in self._processes:
+            if p.check_state(ProcessState.BLOCKED):
+                log.error('The process %s is blocked', p.name)
+                some_blocked = True
+            elif not p.check_state(ProcessState.FINISHED):
+                log.warning('The process %s did not finish its execution!',
+                            p.name)
+        if some_blocked:
+            log.error('There is a deadlock!')
 
     @property
     def env(self):

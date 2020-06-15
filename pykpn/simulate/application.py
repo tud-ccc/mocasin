@@ -17,15 +17,25 @@ class RuntimeApplication(object):
 
     Attributes:
         name (str): the application name
+        system (System): the system the application is supposed to be
+            executed on
     """
 
-    def __init__(self, name):
+    def __init__(self, name, system):
         """Initialize a RuntimeApplication
 
         Args:
             name (str): the application name
+            system (System): the system the application is supposed to be
+                executed on
         """
         self.name = name
+        self.system = system
+
+    @property
+    def env(self):
+        """The simpy environment"""
+        return self.system.env
 
 
 class RuntimeKpnApplication(RuntimeApplication):
@@ -39,27 +49,24 @@ class RuntimeKpnApplication(RuntimeApplication):
         a list of runtime channels that belong to this application
     """
 
-    def __init__(self, name, kpn_graph, mapping, trace_generator, env,
-                 start_at_tick=0):
+    def __init__(self, name, kpn_graph, mapping, trace_generator, system):
         """Initialize a RuntimeKpnApplication.
 
-        :param name: name of the application
-        :type name: str
-        :param kpn_graph: the corresponding KpnGraph object
-        :type kpn_graph: KpnGraph
-        :param mapping: the corresponding Mapping object
-        :type mapping: Mapping
-        :param trace_generator: the trace generator object to be used by the
-            processes belonging to this application
-        :type trace_generator: TraceGenerator
-        :param env: the simpy environment object
-        :param start_at_tick: delay the application start to this tick
-        :type start_at_tick: int
+        Args:
+            name (str): the application name
+            kpn_graph (KpnGraph): the graph denoting the KPN application
+            mapping (Mapping): a mapping to the platform implemented by system
+            trace_generator (TraceGenerator): the trace generator that
+                represents the execution trace of the application trace
+            system (System): the system the application is supposed to be
+                executed on
         """
-        super().__init__(name)
+        super(RuntimeKpnApplication, self).__init__(name, system)
         self.mapping = mapping
         if mapping.kpn != kpn_graph:
-            log.error("KPN and mapping incompatible in RuntimeKpnApplication")
+            raise RuntimeError("KPN and mapping incompatible")
+        if mapping.platform != system.platform:
+            raise RuntimeError(f"Mapping {name} to an incompatible platform")
 
         log.info('initialize new runtime application: %s', name)
         logging.inc_indent()
@@ -70,16 +77,17 @@ class RuntimeKpnApplication(RuntimeApplication):
             c_name = '%s.%s' % (name, c.name)
             mapping_info = mapping.channel_info(c)
             self._channels[c.name] = RuntimeChannel(
-                c_name, mapping_info, c.token_size, env)
+                c_name, mapping_info, c.token_size, self.env)
 
         # Instantiate all processes
         self._processes = {}
+        self._mapping_infos = {}
         for p in kpn_graph.processes():
             p_name = '%s.%s' % (name, p.name)
             mapping_info = mapping.process_info(p)
-            proc = RuntimeKpnProcess(p_name, trace_generator, env,
-                                     start_at_tick)
+            proc = RuntimeKpnProcess(p_name, trace_generator, self.env, 0)
             self._processes[p.name] = proc
+            self._mapping_infos[proc] = mapping_info
             logging.inc_indent()
             for c in p.incoming_channels:
                 rc = self._channels[c.name]
@@ -116,3 +124,8 @@ class RuntimeKpnApplication(RuntimeApplication):
     def find_channel(self, channel_name):
         """Find a channel by name"""
         return self._channeles[channel_name]
+
+    def start(self):
+        """Start execution of this application"""
+        for process, mapping_info in self._mapping_infos.items():
+            self.system.start_process(process, mapping_info)

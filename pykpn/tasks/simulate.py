@@ -50,12 +50,13 @@ def simulate(cfg):
     trace = hydra.utils.instantiate(cfg['trace'])
 
     env = simpy.Environment()
+    system = RuntimeSystem(platform, env)
     app = RuntimeKpnApplication(name=kpn.name,
                                 kpn_graph=kpn,
                                 mapping=mapping,
                                 trace_generator=trace,
-                                env=env,)
-    system = RuntimeSystem(platform, [app], env)
+                                system=system)
+    app.start()
 
     start = timeit.default_timer()
     system.simulate()
