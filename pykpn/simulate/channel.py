@@ -100,7 +100,7 @@ class RuntimeChannel(object):
             RuntimeError: if no source is registered to the channel
         """
         if process not in self._sinks:
-            raise ValueError('Process %s is not a sink' % process.name)
+            raise ValueError('Process %s is not a sink' % process.full_name)
         if (not isinstance(num, int)) or num < 1:
             raise ValueError('num must be an integer greater than 0')
         if self._src is None:
@@ -121,7 +121,7 @@ class RuntimeChannel(object):
             RuntimeError: if no sinks are registered to the channel
         """
         if process is not self._src:
-            raise ValueError('Process %s is not the source' % process.name)
+            raise ValueError(f"Process {process.full_name} is not the source")
         if (not isinstance(num, int)) or num < 1:
             raise ValueError('num must be an integer greater than 0')
         if len(self._sinks) == 0:
@@ -149,15 +149,16 @@ class RuntimeChannel(object):
         """
         assert process.check_state(ProcessState.BLOCKED)
 
-        self._log.debug('wait until %s can consume %d tokens', process.name,
-                        num)
+        self._log.debug('wait until %s can consume %d tokens',
+                        process.full_name, num)
 
         while True:
             yield self.tokens_produced
             if self.can_consume(process, num):
                 break
 
-        self._log.debug('enough tokens available -> unblock %s', process.name)
+        self._log.debug('enough tokens available -> unblock %s',
+                        process.full_name)
         process.unblock()
 
     def wait_for_slots(self, process, num):
@@ -180,15 +181,16 @@ class RuntimeChannel(object):
         """
         assert process.check_state(ProcessState.BLOCKED)
 
-        self._log.debug('wait until %s can produce %d tokens', process.name,
-                        num)
+        self._log.debug('wait until %s can produce %d tokens',
+                        process.full_name, num)
 
         while True:
             yield self.tokens_consumed
             if self.can_produce(process, num):
                 break
 
-        self._log.debug('enough slots available -> unblock %s', process.name)
+        self._log.debug('enough slots available -> unblock %s',
+                        process.full_name)
         process.unblock()
 
     def consume(self, process, num):

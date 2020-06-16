@@ -83,19 +83,20 @@ class RuntimeKpnApplication(RuntimeApplication):
         self._processes = {}
         self._mapping_infos = {}
         for p in kpn_graph.processes():
-            p_name = '%s.%s' % (name, p.name)
             mapping_info = mapping.process_info(p)
-            proc = RuntimeKpnProcess(p_name, trace_generator, self.env, 0)
+            proc = RuntimeKpnProcess(p.name, trace_generator, self)
             self._processes[p.name] = proc
             self._mapping_infos[proc] = mapping_info
             logging.inc_indent()
             for c in p.incoming_channels:
                 rc = self._channels[c.name]
-                log.debug('make process %s a sink to %s', p_name, rc.name)
+                log.debug('make process %s a sink to %s', proc.full_name,
+                          rc.name)
                 proc.connect_to_incomming_channel(rc)
             for c in p.outgoing_channels:
                 rc = self._channels[c.name]
-                log.debug('make process %s a source to %s', p_name, rc.name)
+                log.debug('make process %s a source to %s', proc.full_name,
+                          rc.name)
                 proc.connect_to_outgoing_channel(rc)
             logging.dec_indent()
 

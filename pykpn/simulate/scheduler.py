@@ -100,7 +100,7 @@ class RuntimeScheduler(object):
         :type process: RuntimeProcess
         """
         assert self.env.now == 0
-        self._log.debug('add process %s', process.name)
+        self._log.debug('add process %s', process.full_name)
         if not process.check_state(ProcessState.CREATED):
             raise RuntimeError('Processes that are already started cannot be '
                                'added to a scheduler')
@@ -155,21 +155,22 @@ class RuntimeScheduler(object):
                 ticks = self._processor.ticks(self._scheduling_cycles)
                 yield self.env.timeout(ticks)
 
-                log.debug('schedule process %s next', np.name)
+                log.debug('schedule process %s next', np.full_name)
 
                 # pay for context switching
                 mode = self._context_switch_mode
                 if mode == ContextSwitchMode.ALWAYS:
-                    log.debug('load context of process %s', np.name)
+                    log.debug('load context of process %s', np.full_name)
                     ticks = self._processor.context_load_ticks()
                     yield self.env.timeout(ticks)
                 elif (mode == ContextSwitchMode.AFTER_SCHEDULING and
                       np is not self.current_process):
                     if cp is not None:
-                        log.debug('store the context of process %s', cp.name)
+                        log.debug('store the context of process %s',
+                                  cp.full_name)
                         ticks = self._processor.context_store_ticks()
                         yield self.env.timeout(ticks)
-                    log.debug('load context of process %s', np.name)
+                    log.debug('load context of process %s', np.full_name)
                     ticks = self._processor.context_load_ticks()
                     yield self.env.timeout(ticks)
 
@@ -182,7 +183,8 @@ class RuntimeScheduler(object):
 
                 # pay for context switching
                 if self._context_switch_mode == ContextSwitchMode.ALWAYS:
-                    self._log.debug('store the context of process %s', np.name)
+                    self._log.debug('store the context of process %s',
+                                    np.full_name)
                     yield self.env.timeout(
                         self._processor.context_store_ticks())
             else:

@@ -56,6 +56,7 @@ def simulate(cfg):
                                 mapping=mapping,
                                 trace_generator=trace,
                                 system=system)
+
     app.start()
 
     start = timeit.default_timer()

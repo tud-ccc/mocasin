@@ -4,15 +4,13 @@
 # Authors: Christian Menard
 
 
-from unittest.mock import Mock
-
 import pytest
 from pykpn.common.trace import TraceGenerator, TraceSegment
 from pykpn.simulate.process import ProcessState, RuntimeProcess
 
 
 @pytest.fixture(params=['base', 'kpn'])
-def process(request, base_process, kpn_process):
+def process(request, base_process, kpn_process, mocker):
     if request.param == 'base':
         proc = base_process
     elif request.param == 'kpn':
@@ -20,7 +18,7 @@ def process(request, base_process, kpn_process):
     else:
         raise ValueError('Unexpected fixture parameter')
 
-    proc.workload = Mock()
+    proc.workload = mocker.Mock()
     return proc
 
 
@@ -36,41 +34,45 @@ class TestRuntimeProcess(object):
         assert process.processor is None
         assert process._state == ProcessState.CREATED
 
-    def test_transitions(self, process, state):
-        callback = Mock()
+    def test_transitions(self, process, state, mocker):
+        process.env.run(1)  # start simulation to initialze the process
+
+        callback = mocker.Mock()
         event = getattr(process, state.lower())
         event.callbacks.append(callback)
 
         process._transition(state)
         assert process._state == getattr(ProcessState, state)
 
-        process._env.run(1)  # start simulation so that callback is called
+        process.env.run(2)  # continue simulation so that callback is called
         callback.assert_called_once_with(event)
 
     def test_transition_invalid(self, process):
         with pytest.raises(RuntimeError):
             process._transition('INVALID')
 
-    def test_start(self, process, state):
+    def test_start(self, process, state, mocker):
+        process.env.run(1)  # start simulation to initialze the process
         process._transition(state)
-        process._env.run(1)
+        process.env.run(2)
         if state == 'CREATED':
-            process.processor = Mock()
+            process.processor = mocker.Mock()
             process.start()
-            process._env.run(2)
+            process.env.run(3)
             assert process._state == ProcessState.READY
             assert process.processor is None
         else:
             with pytest.raises(AssertionError):
                 process.start()
 
-    def test_activate(self, process, state):
+    def test_activate(self, process, state, mocker):
+        process.env.run(1)  # start simulation to initialze the process
         process._transition(state)
-        process._env.run(1)
-        processor = Mock()
+        process.env.run(2)
+        processor = mocker.Mock()
         if state == 'READY':
             process.activate(processor)
-            process._env.run(2)
+            process.env.run(3)
             assert process._state == ProcessState.RUNNING
             assert process.processor is processor
             process.workload.assert_called_once()
@@ -78,39 +80,42 @@ class TestRuntimeProcess(object):
             with pytest.raises(AssertionError):
                 process.activate(processor)
 
-    def test_finish(self, process, state):
+    def test_finish(self, process, state, mocker):
+        process.env.run(1)  # start simulation to initialze the process
         process._transition(state)
-        process._env.run(1)
+        process.env.run(2)
         if state == 'RUNNING':
-            process.processor = Mock()
+            process.processor = mocker.Mock()
             process.finish()
-            process._env.run(2)
+            process.env.run(3)
             assert process._state == ProcessState.FINISHED
             assert process.processor is None
         else:
             with pytest.raises(AssertionError):
                 process.finish()
 
-    def test_block(self, process, state):
+    def test_block(self, process, state, mocker):
+        process.env.run(1)  # start simulation to initialze the process
         process._transition(state)
-        process._env.run(1)
+        process.env.run(2)
         if state == 'RUNNING':
-            process.processor = Mock()
+            process.processor = mocker.Mock()
             process.block()
-            process._env.run(2)
+            process.env.run(3)
             assert process._state == ProcessState.BLOCKED
             assert process.processor is None
         else:
             with pytest.raises(AssertionError):
                 process.block()
 
-    def test_unblock(self, process, state):
+    def test_unblock(self, process, state, mocker):
+        process.env.run(1)  # start simulation to initialze the process
         process._transition(state)
-        process._env.run(1)
+        process.env.run(2)
         if state == 'BLOCKED':
-            process.processor = Mock()
+            process.processor = mocker.Mock()
             process.unblock()
-            process._env.run(2)
+            process.env.run(3)
             assert process._state == ProcessState.READY
             assert process.processor is None
         else:
@@ -119,8 +124,8 @@ class TestRuntimeProcess(object):
 
 
 @pytest.fixture
-def full_channel(env):
-    channel = Mock()
+def full_channel(env, mocker):
+    channel = mocker.Mock()
     channel.can_consume = lambda x, y: True
     channel.can_produce = lambda x, y: False
     channel.consume = lambda x, y: (yield env.timeout(100))
@@ -129,8 +134,8 @@ def full_channel(env):
 
 
 @pytest.fixture
-def empty_channel(env):
-    channel = Mock()
+def empty_channel(env, mocker):
+    channel = mocker.Mock()
     channel.can_consume = lambda x, y: False
     channel.can_produce = lambda x, y: True
     channel.consume = lambda x, y: (yield env.timeout(100))
@@ -215,32 +220,32 @@ class TestRuntimeKpnProcess:
         assert kpn_process.check_state(ProcessState.READY)
         assert event.ok
 
-    def test_workload_execution(self, env, kpn_process, processor):
-        kpn_process.workload = Mock()
+    def test_workload_execution(self, env, kpn_process, processor, mocker):
+        kpn_process.workload = mocker.Mock()
         self._run(env, kpn_process, processor)
         kpn_process.workload.assert_called_once()
 
     def test_workload_terminate(self, env, kpn_process, processor):
         self._run(env, kpn_process, processor, self.TerminateTraceGenerator())
         assert kpn_process._state == ProcessState.FINISHED
-        assert env.now == 1000
+        assert env.now == 0
 
     def test_workload_processing(self, env, kpn_process, processor):
         self._run(env, kpn_process, processor, self.ProcessingTraceGenerator())
         assert kpn_process._state == ProcessState.FINISHED
-        assert env.now == 1015
+        assert env.now == 15
 
     def test_workload_read(self, env, kpn_process, processor, full_channel):
         self._run(env, kpn_process, processor, self.ReadTraceGenerator(),
                   full_channel)
         assert kpn_process._state == ProcessState.FINISHED
-        assert env.now == 1515
+        assert env.now == 515
 
     def test_workload_write(self, env, kpn_process, processor, empty_channel):
         self._run(env, kpn_process, processor, self.WriteTraceGenerator(),
                   empty_channel)
         assert kpn_process._state == ProcessState.FINISHED
-        assert env.now == 6015
+        assert env.now == 5015
 
     def test_workload_read_block(self, env, kpn_process, processor,
                                  empty_channel):
@@ -250,14 +255,14 @@ class TestRuntimeKpnProcess:
         kpn_process.activate(processor)
         env.run()
         assert kpn_process._state == ProcessState.BLOCKED
-        assert env.now == 1001
+        assert env.now == 1
 
     def test_workload_write_block(self, env, kpn_process, processor,
                                   full_channel):
         self._run(env, kpn_process, processor, self.WriteTraceGenerator(),
                   full_channel)
         assert kpn_process._state == ProcessState.BLOCKED
-        assert env.now == 1001
+        assert env.now == 1
 
     def _run_after_block(self, env, kpn_process, processor):
         kpn_process.unblock()
@@ -272,7 +277,7 @@ class TestRuntimeKpnProcess:
         kpn_process._channels['chan'] = full_channel
         self._run_after_block(env, kpn_process, processor)
         assert kpn_process._state == ProcessState.FINISHED
-        assert env.now == 1515
+        assert env.now == 515
 
     def test_workload_write_resume(self, env, kpn_process, processor,
                                    empty_channel, full_channel):
@@ -281,32 +286,32 @@ class TestRuntimeKpnProcess:
         kpn_process._channels['chan'] = empty_channel
         self._run_after_block(env, kpn_process, processor)
         assert kpn_process._state == ProcessState.FINISHED
-        assert env.now == 6015
+        assert env.now == 5015
 
     def test_workload_invalid(self, env, kpn_process, processor):
         with pytest.raises(RuntimeError):
             self._run(env, kpn_process, processor,
                       self.InvalidTraceGenerator())
 
-    def test_connect_to_incomming_channel(self, kpn_process):
-        channel = Mock()
+    def test_connect_to_incomming_channel(self, kpn_process, mocker):
+        channel = mocker.Mock()
         channel.name = 'test'
         kpn_process.connect_to_incomming_channel(channel)
         assert kpn_process._channels['test'] is channel
         channel.add_sink.assert_called_once_with(kpn_process)
 
-    def test_connect_to_outgoing_channel(self, kpn_process):
-        channel = Mock()
+    def test_connect_to_outgoing_channel(self, kpn_process, mocker):
+        channel = mocker.Mock()
         channel.name = 'test'
         kpn_process.connect_to_outgoing_channel(channel)
         assert kpn_process._channels['test'] is channel
         channel.set_src.assert_called_once_with(kpn_process)
 
 
-def test_default_workload(env):
-    process = RuntimeProcess('test', env)
+def test_default_workload(app, mocker):
+    process = RuntimeProcess('test', app)
     process.start()
-    env.run()
-    process.activate(Mock())
+    app.env.run()
+    process.activate(mocker.Mock())
     with pytest.raises(NotImplementedError):
-        env.run()
+        app.env.run()
