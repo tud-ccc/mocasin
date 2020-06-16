@@ -51,7 +51,7 @@ class RuntimeChannel(object):
         self.name = name
         self.app = app
 
-        log.debug("initialize new runtime channel: ({self.full_name})")
+        log.debug(f"initialize new runtime channel: ({self.full_name})")
 
         self._log = SimulateLoggerAdapter(log, name, self.env)
         self._src = None

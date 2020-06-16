@@ -101,12 +101,12 @@ class TgffGraph():
                 read_from.append(name)
                 
         for channel_name in read_from:
-            execution_order.append(('r',self.identifier+"."+channel_name))
+            execution_order.append(('r', channel_name))
         
         execution_order.append(('e', self.tasks[task_name]))
         
         for channel_name in write_to:
-            execution_order.append(('w', self.identifier+"."+channel_name))
+            execution_order.append(('w', channel_name))
             
         return execution_order
     

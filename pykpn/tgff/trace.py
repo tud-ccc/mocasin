@@ -15,9 +15,8 @@ class TgffTraceGenerator(TraceGenerator):
         :param processor_list: a list of all processors a
                                 trace is available for.
         :type processor_list: list[TgffProcessor]
-        :param tgff_graphs: A dictionary of TgffGraphs for which 
-                            traces should be yielded.
-        :type tgff_graphs: dict{string : TgffGraph}
+        :param tgff_graph: A TgffGraph for which traces should be yielded.
+        :type tgff_graph: TgffGraph}
         :param repetition: The amount of times the process is
                             executed before it terminates.
         """
@@ -25,8 +24,7 @@ class TgffTraceGenerator(TraceGenerator):
         self._repetition = repetition
         self._trace_dict = {}
         self._tgff_graph = tgff_graph
-        for graph in tgff_graph.values():
-            self._initialize_trace_dict(graph)
+        self._initialize_trace_dict(tgff_graph)
     
     def next_segment(self, process_name, processor_type):
         """Returns the next trace segment
@@ -78,8 +76,7 @@ class TgffTraceGenerator(TraceGenerator):
         if a trace has to be calculated twice.
         """
         self._trace_dict = {}
-        for graph in self._tgff_graph.values():
-            self._initialize_trace_dict(graph)
+        self._initialize_trace_dict(self._tgff_graph)
         
     
     def _initialize_trace_dict(self, tgff_graph):
@@ -87,7 +84,4 @@ class TgffTraceGenerator(TraceGenerator):
         of the current status for each trace.
         """
         for task in tgff_graph.tasks:
-            self._trace_dict.update({tgff_graph.identifier+"."+task : [self._repetition, 0, tgff_graph.get_execution_order(task)]})
-            
-    
-    
+            self._trace_dict.update({task : [self._repetition, 0, tgff_graph.get_execution_order(task)]})
