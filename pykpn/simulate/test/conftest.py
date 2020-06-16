@@ -41,9 +41,9 @@ def kpn_process(app, mocker):
 
 
 @pytest.fixture
-def channel(env, mocker):
+def channel(app, mocker):
     info = ChannelMappingInfo(mocker.Mock(), 4)
-    return RuntimeChannel('test_chan', info, 8, env)
+    return RuntimeChannel('test_chan', info, 8, app)
 
 
 @pytest.fixture

@@ -77,7 +77,7 @@ class RuntimeKpnApplication(RuntimeApplication):
             c_name = '%s.%s' % (name, c.name)
             mapping_info = mapping.channel_info(c)
             self._channels[c.name] = RuntimeChannel(
-                c_name, mapping_info, c.token_size, self.env)
+                c_name, mapping_info, c.token_size, self)
 
         # Instantiate all processes
         self._processes = {}

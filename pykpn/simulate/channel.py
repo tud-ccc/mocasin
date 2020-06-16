@@ -32,7 +32,7 @@ class RuntimeChannel(object):
             tokens where read from the channel
         tokens_produced (~simpy.events.Event): a simpy event triggered when new
             tokens where written to this channel
-        _env (~simpy.core.Environment): the simpy Environment
+        app (RuntimeApplication): the application this process is part of
         _src (RuntimeProcess): the source process
         _sinks (list[RuntimeProcess]): the sink processes
         _fifo_state (dict[str, int]): A dictionary of sink process names (keys)
@@ -45,15 +45,15 @@ class RuntimeChannel(object):
         name (str): the channel name
         mapping_info (ChannelMappingInfo): a channel mapping info object
         token_size(int): size of one data token in bytes
-        env(~simpy.core.Environment): the simpy environment
+        app (RuntimeApplication): the application this process is part of
     """
-    def __init__(self, name, mapping_info, token_size, env):
-        log.debug('initialize new runtime channel: (%s)', name)
-
-        self._log = SimulateLoggerAdapter(log, name, env)
-
+    def __init__(self, name, mapping_info, token_size, app):
         self.name = name
-        self._env = env
+        self.app = app
+
+        log.debug("initialize new runtime channel: ({self.full_name})")
+
+        self._log = SimulateLoggerAdapter(log, name, self.env)
         self._src = None
         self._sinks = []
         self._fifo_state = {}
@@ -61,8 +61,18 @@ class RuntimeChannel(object):
         self._primitive = mapping_info.primitive
         self._token_size = token_size
 
-        self.tokens_produced = env.event()
-        self.tokens_consumed = env.event()
+        self.tokens_produced = self.env.event()
+        self.tokens_consumed = self.env.event()
+
+    @property
+    def env(self):
+        """The simpy environment"""
+        return self.app.env
+
+    @property
+    def full_name(self):
+        """Full name including the application name"""
+        return f"{self.app.name}.{self.name}"
 
     def set_src(self, process):
         """Set the source process.
@@ -256,7 +266,7 @@ class RuntimeChannel(object):
             # pay for the delay
             size = num * self._token_size
             ticks = phase.get_costs(size)
-            yield self._env.timeout(ticks)
+            yield self.env.timeout(ticks)
 
             # release all resources that we requested before
             for (res, req) in zip(phase.resources, requests):
@@ -270,7 +280,7 @@ class RuntimeChannel(object):
 
         # notify waiting processes
         self.tokens_consumed.succeed()
-        self.tokens_consumed = self._env.event()
+        self.tokens_consumed = self.env.event()
 
     def produce(self, process, num):
         """An event generator that models a produce operation.
@@ -335,7 +345,7 @@ class RuntimeChannel(object):
             # pay for the delay
             size = num * self._token_size
             ticks = phase.get_costs(size)
-            yield self._env.timeout(ticks)
+            yield self.env.timeout(ticks)
 
             # release all resources that we requested before
             for (res, req) in zip(phase.resources, requests):
@@ -349,4 +359,4 @@ class RuntimeChannel(object):
 
         # notify waiting processes
         self.tokens_produced.succeed()
-        self.tokens_produced = self._env.event()
+        self.tokens_produced = self.env.event()

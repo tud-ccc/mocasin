@@ -402,7 +402,7 @@ class RuntimeKpnProcess(RuntimeProcess):
             if s.read_from_channel is not None:
                 c = self._channels[s.read_from_channel]
                 self._log.debug('read %d tokens from channel %s', s.n_tokens,
-                                c.name)
+                                c.full_name)
                 if not c.can_consume(self, s.n_tokens):
                     self._log.debug('not enough tokens available -> block')
                     self.block()
@@ -414,7 +414,7 @@ class RuntimeKpnProcess(RuntimeProcess):
             if s.write_to_channel is not None:
                 c = self._channels[s.write_to_channel]
                 self._log.debug('write %d tokens to channel %s', s.n_tokens,
-                                c.name)
+                                c.full_name)
                 if not c.can_produce(self, s.n_tokens):
                     self._log.debug('not enough slots available -> block')
                     self.block()
