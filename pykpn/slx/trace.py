@@ -16,27 +16,20 @@ log = logging.getLogger(__name__)
 class SlxTraceReader(TraceGenerator):
     """A TraceGenerator that reads SLX trace files"""
 
-    def __init__(self, trace_dir, prefix=None):
+    def __init__(self, trace_dir):
         """Initialize the trace reader
 
         :param str trace_dir: path to the directory containing all trace files
-        :param str prefix: the prefix that is used for channel and process
-            names
         """
         self._trace_dir = trace_dir
 
         self._trace_files = {}
         self._processor_types = {}
 
-        if prefix is None:
-            prefix = ""
-        self._prefix = prefix
-
     def _open_trace_file(self, process_name, processor_type):
-        assert process_name.startswith(self._prefix)
         trace_files = glob.glob('%s/%s.%s.*cpntrace' % (
             self._trace_dir,
-            process_name[len(self._prefix):],
+            process_name,
             processor_type))
 
         if len(trace_files) == 0:
@@ -85,11 +78,11 @@ class SlxTraceReader(TraceGenerator):
             segment.processing_cycles = int(traceline[2])
         elif traceline[0] == 'r':
             segment.processing_cycles = int(traceline[4])
-            segment.read_from_channel = self._prefix + traceline[1]
+            segment.read_from_channel = traceline[1]
             segment.n_tokens = int(traceline[3])
         elif traceline[0] == 'w':
             segment.processing_cycles = int(traceline[3])
-            segment.write_to_channel = self._prefix + traceline[1]
+            segment.write_to_channel = traceline[1]
             segment.n_tokens = int(traceline[2])
         elif traceline[0] == 'e':
             segment.terminate = True

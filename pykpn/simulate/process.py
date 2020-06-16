@@ -390,7 +390,7 @@ class RuntimeKpnProcess(RuntimeProcess):
         while True:
             if self._current_segment is None:
                 self._current_segment = self._trace_generator.next_segment(
-                    self.full_name, self.processor.type)
+                    self.name, self.processor.type)
             s = self._current_segment
             s.sanity_check()
             if s.processing_cycles is not None:
