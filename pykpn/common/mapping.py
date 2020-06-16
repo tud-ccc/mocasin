@@ -182,24 +182,20 @@ class Mapping:
         """Returns the number of processes in the mapping
         """
         return len(self.kpn.processes())
-    
-    def change_affinity(self, processName, processorName):
+
+    def change_affinity(self, process_name, processor_name):
         """Changes the affinity of a process to a processing element
-        :param string processName: the name of the process for which the affinity should be changed
-        :param string processorName: the name of the processor to which the process should be applied 
+
+        Args:
+            process_name (str): the name of the process for which the affinity
+                should be changed
+            processor_name (str): the name of the processor to which the
+                process should be applied
         """
-        newProcessor = None
-        for processor in self._platform.processors():
-            if processor.name == processorName:
-                newProcessor = processor
-                break
-        if newProcessor != None:
-            priority = self._process_info[processName].priority
-            scheduler = self._process_info[processName].scheduler
-            del self._process_info[processName]
-            self._process_info.update({processName : ProcessMappingInfo(scheduler, newProcessor, priority)})
-        return
-    
+        processor = self.platform.find_processor(processor_name)
+        assert processor in self._process_info[process_name].scheduler.processors
+        self._process_info[process_name].affinity = processor
+
     def to_string(self):
         """Convert mapping to a simple readable string 
         :rtype: string 
