@@ -101,6 +101,9 @@ class RuntimeKpnApplication(RuntimeApplication):
 
         logging.dec_indent()
 
+        # auto start the application
+        self.start()
+
     def processes(self):
         """Get a list of all processes
 

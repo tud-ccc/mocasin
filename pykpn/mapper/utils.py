@@ -136,14 +136,9 @@ def run_simulation(sim_context):
     system = RuntimeSystem(sim_context.platform, env)
 
     # create the applications
-    applications = []
-    mappings = {}
     for ac in sim_context.app_contexts:
         app = RuntimeKpnApplication(ac.name, ac.kpn, ac.mapping,
                                     ac.trace_reader, system)
-        applications.append(app)
-        mappings[ac.name] = ac.mapping
-        app.start()
 
     # run the simulation
     system.simulate()
