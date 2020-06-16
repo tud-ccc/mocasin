@@ -31,8 +31,8 @@ def test_slx_platform_to_dot(datadir, expected_dir, slx_platform):
                        shallow=False)
 
 
-def test_slx_mapping_to_dot(datadir, expected_dir, slx_kpn_platform_pair):
-    kpn, platform = slx_kpn_platform_pair
+def test_slx_mapping_to_dot(datadir, expected_dir, slx_kpn_platform_tuple):
+    kpn, platform, _ = slx_kpn_platform_tuple
     dot_file = "%s_on_%s.dot" % (kpn, platform)
     out_file = os.path.join(datadir, dot_file)
     subprocess.check_call(["pykpn", "mapping_to_dot",
