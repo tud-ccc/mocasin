@@ -130,15 +130,12 @@ class RandomWalkMapper(object):
         outdir = cfg['outdir']
 
         if cfg['export_all']:
-
             for r in results:
-
                 for ac in r.app_contexts:
                     mapping_name = '%s.rnd_%08d.mapping' % (ac.name, idx)
                     # FIXME: We assume an slx output here, this should be configured
                     export_slx_mapping(ac.mapping,
-                                       os.path.join(outdir, mapping_name),
-                                       '2017.10')
+                                       os.path.join(outdir, mapping_name))
                 idx += 1
 
         # plot result distribution
