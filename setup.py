@@ -31,8 +31,9 @@ if sys.version_info > (3, 8):
         'tqdm',
         'hydra-core<1.0',
         'deap',
-        'arpeggio',
-        'networkx',]
+        'networkx',
+        'recordclass',
+    ]
     setup_requirements = ['pytest-runner', 'sphinx', 'numpy']
 
 else:
@@ -53,8 +54,9 @@ else:
         'tqdm',
         'hydra-core<1.0',
         'deap',
-        'arpeggio',
-        'networkx',]
+        'networkx',
+        'recordclass',
+    ]
     setup_requirements = ['pytest-runner', 'sphinx', 'numpy<1.16']
 
 class InstallPynautyCommand(distutils.cmd.Command):

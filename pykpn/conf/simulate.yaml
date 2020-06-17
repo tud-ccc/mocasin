@@ -7,3 +7,5 @@ defaults:
   - mapper: default
   - trace: default
   - representation: SimpleVector
+
+simulation_trace: "trace.json"

@@ -9,6 +9,7 @@ from simpy.resources.resource import Resource
 from pykpn.util import logging
 from pykpn.simulate.process import ProcessState
 from pykpn.simulate.scheduler import create_scheduler
+from pykpn.simulate.trace_writer import TraceWriter
 
 
 log = logging.getLogger(__name__)
@@ -26,6 +27,7 @@ class RuntimeSystem:
 
     Attributes:
         platform (Platform): the underlying platform of the system
+        trace_writer (TraceWriter): a trace writer to record simulation traces
         _env: the simpy environment
         _processes (set(RuntimeProcess)): set of all processes that where
             executed by the system
@@ -51,6 +53,8 @@ class RuntimeSystem:
         self.platform = platform
 
         self._processes = set()
+
+        self.trace_writer = TraceWriter(env)
 
         # initialize all schedulers
 
