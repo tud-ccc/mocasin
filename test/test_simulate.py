@@ -29,9 +29,8 @@ def test_slx_simulate(datadir, slx_kpn_platform_pair, slx_expected_sim_time):
                           "mapping=slx_default",
                           "trace=slx_default"],
                          cwd=datadir,
-                         capture_output=True)
-
-    assert res.returncode == 0
+                         check=True,
+                         stdout=subprocess.PIPE)
 
     found_line = False
     stdout = res.stdout.decode()
