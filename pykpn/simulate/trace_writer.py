@@ -178,6 +178,33 @@ class TraceWriter:
 
         self._trace.append(event)
 
+    def update_counter(self, process, counter, data, category=None):
+        """Generate a counter event.
+
+        This updates the data of a counter. Each counter may provide data form
+        multiple series. Be sure to copy the data passed to this method in case
+        your program modifies the data later on.
+
+        Args:
+            process (str): name of the process this counter is generated for
+            name (str): name of the counter event to be generated
+            data (dict(str, int)): a data dictionary, each entry represents one
+                data series.
+            category (str, optional): an optional category
+        """
+        pid = self._get_pid(process)
+        event = {
+            "name": counter,
+            "ph": "C",
+            "ts": self._env.now / 1000000.0,
+            "pid": pid,
+            "args": data
+        }
+        if category is not None:
+            event["cat"] = category
+
+        self._trace.append(event)
+
     def write_trace(self, path):
         """Write the trace to a file
 
