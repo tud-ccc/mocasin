@@ -15,7 +15,7 @@ def slx_expected_sim_time(slx_kpn_platform_pair):
         "audio_filter": {"exynos": "19.841971309 ms",
                          "multidsp": "95.811217897 ms",
                          "parallella": "193.346008966 ms"},
-        "hog": {"exynos": "520.331958848 ms"},
+        "hog": {"exynos": "520.992726205 ms"},
         "speaker_recognition": {"exynos": "22.637929077 ms"},
     }
     return expected[kpn][platform]
