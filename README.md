@@ -129,6 +129,15 @@ the command above is quite redundant, we provide a shortcut:
 pykpn simulate base_conf=tgff
 ```
 
+#### Trace Viewer
+
+The simulation task also produce a simulation trace that can be viewed in
+Google Chrome`s built-in trace viewer. On default, the generated trace is
+called `trace.json` and placed in the output directory
+`outputs/<date>/<time>/`. This can be overwritten using the hydra parameter
+`simulation_trace`. To view the trace, open `about://tracing` in Google Chrome
+and load the previously generated trace file
+
 Documentation
 -------------
 
