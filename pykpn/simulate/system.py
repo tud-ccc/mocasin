@@ -14,6 +14,10 @@ from pykpn.simulate.scheduler import create_scheduler
 log = logging.getLogger(__name__)
 
 
+class SimulationError(Exception):
+    pass
+
+
 class RuntimeSystem:
     """The central class for managing a simulation.
 
@@ -120,6 +124,8 @@ class RuntimeSystem:
 
         self._env.run()
 
+        self.check_errors()
+
         log.info('Simulation done')
 
     def check_errors(self):
@@ -132,7 +138,7 @@ class RuntimeSystem:
                 log.warning('The process %s did not finish its execution!',
                             p.name)
         if some_blocked:
-            log.error('There is a deadlock!')
+            raise SimulationError('There is a deadlock!')
 
     @property
     def env(self):
