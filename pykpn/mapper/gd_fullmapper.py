@@ -57,64 +57,67 @@ class GradientDescentFullMapper(object):
         mapping_obj = self.random_mapper.generate_mapping()
         mapping = self.representation.toRepresentation(mapping_obj)
 
-        dim = len(mapping)
+        self.dim = len(mapping)
         cur_exec_time = self.mapping_cache.evaluate_mapping(mapping)
-        best_mapping = mapping
-        best_exec_time = cur_exec_time
+        self.best_mapping = mapping
+        self.best_exec_time = cur_exec_time
 
         for _ in range(self.gd_iterations):
-            grad = np.zeros(dim)
+            grad = self.calculate_gradient(mapping,cur_exec_time)
 
-            for i in range(dim):
-                evec = np.zeros(dim)
-                if mapping[i] == 0:
-                    evec[i] = 1.
-                    exec_time = self.mapping_cache.evaluate_mapping(mapping+evec)
-                    if exec_time < best_exec_time:
-                        best_exec_time = exec_time
-                        best_mapping = mapping + evec
-                    gr = exec_time - cur_exec_time
-                    grad[i] = max(gr,0) #can go below 0 here
-                elif mapping[i] == self.num_PEs - 1:
-                    evec[i] = -1.
-                    exec_time = self.mapping_cache.evaluate_mapping(mapping+evec)
-                    if exec_time < best_exec_time:
-                        best_exec_time = exec_time
-                        best_mapping = mapping + evec
-                    gr = cur_exec_time - exec_time# because of the -h in the denominator of the difference quotient
-                    grad[i] = min(gr,0) #can't go above self.num_PEs-1 here
-
-                else:
-                    evec[i] = 1.
-                    exec_time = self.mapping_cache.evaluate_mapping(mapping+evec)
-                    if exec_time < best_exec_time:
-                        best_exec_time = exec_time
-                        best_mapping = mapping+evec
-                    diff_plus = exec_time - cur_exec_time
-                    evec[i] = -1.
-                    exec_time = self.mapping_cache.evaluate_mapping(mapping+evec)
-                    if exec_time < best_exec_time:
-                        best_exec_time = exec_time
-                        best_mapping = mapping+evec
-                    diff_minus = cur_exec_time - exec_time # because of the -h in the denominator of the difference quotient
-                    grad[i] = (diff_plus + diff_minus)/2
-
-            if np.allclose(grad,np.zeros(dim)): #found local minimum
+            if np.allclose(grad,np.zeros(self.dim)): #found local minimum
                 break
-            mapping = mapping + (self.stepsize / best_exec_time) * (-grad)
+            mapping = mapping + (self.stepsize / self.best_exec_time) * (-grad)
             mapping = self.representation.approximate(np.array(mapping))
 
             cur_exec_time = self.mapping_cache.evaluate_mapping(mapping)
 
-            if cur_exec_time < best_exec_time:
-                best_exec_time = cur_exec_time
-                best_mapping = mapping
+            if cur_exec_time < self.best_exec_time:
+                self.best_exec_time = cur_exec_time
+                self.best_mapping = mapping
 
-        best_mapping = np.array(self.representation.approximate(np.array(best_mapping)))
+        self.best_mapping = np.array(self.representation.approximate(np.array(self.best_mapping)))
         self.statistics.log_statistics()
         self.statistics.to_file()
 
-        return self.representation.fromRepresentation(best_mapping)
+        return self.representation.fromRepresentation(self.best_mapping)
 
+
+    def calculate_gradient(self,mapping,cur_exec_time):
+        grad = np.zeros(self.dim)
+        for i in range(self.dim):
+            evec = np.zeros(self.dim)
+            if mapping[i] == 0:
+                evec[i] = 1.
+                exec_time = self.mapping_cache.evaluate_mapping(mapping + evec)
+                if exec_time < self.best_exec_time:
+                    self.best_exec_time = exec_time
+                    self.best_mapping = mapping + evec
+                gr = exec_time - cur_exec_time
+                grad[i] = max(gr, 0)  # can go below 0 here
+            elif mapping[i] == self.num_PEs - 1:
+                evec[i] = -1.
+                exec_time = self.mapping_cache.evaluate_mapping(mapping + evec)
+                if exec_time < self.best_exec_time:
+                    self.best_exec_time = exec_time
+                    self.best_mapping = mapping + evec
+                gr = cur_exec_time - exec_time  # because of the -h in the denominator of the difference quotient
+                grad[i] = min(gr, 0)  # can't go above self.num_PEs-1 here
+
+            else:
+                evec[i] = 1.
+                exec_time = self.mapping_cache.evaluate_mapping(mapping + evec)
+                if exec_time < self.best_exec_time:
+                    self.best_exec_time = exec_time
+                    self.best_mapping = mapping + evec
+                diff_plus = exec_time - cur_exec_time
+                evec[i] = -1.
+                exec_time = self.mapping_cache.evaluate_mapping(mapping + evec)
+                if exec_time < self.best_exec_time:
+                    self.best_exec_time = exec_time
+                    self.best_mapping = mapping + evec
+                diff_minus = cur_exec_time - exec_time  # because of the -h in the denominator of the difference quotient
+                grad[i] = (diff_plus + diff_minus) / 2
+        return grad
 
 
