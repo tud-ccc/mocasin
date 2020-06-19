@@ -1,7 +1,7 @@
 # Copyright (C) 2020 TU Dresden
 # All Rights Reserved
 #
-# Authors: Christian Menard
+# Authors: Christian Menard, Felix Teweleit
 
 
 import pytest
@@ -23,6 +23,8 @@ def datadir(tmpdir):
                os.path.join(tmpdir, "slx"))
     os.symlink(os.path.join(examples_path, "tgff"),
                os.path.join(tmpdir, "tgff"))
+    os.symlink(os.path.join(examples_path, "csv"),
+               os.path.join(tmpdir, "csv"))
 
     return tmpdir
 
@@ -89,7 +91,7 @@ def audio_filter_parallella_query(request):
                         ("EXISTS ARM07 PROCESSING", 1),
                         ("EXISTS RUNNING TOGETHER [DETECTION_WORKER_0, DETECTION_WORKER_1, DETECTION_WORKER_2 ]", 2),
                         ("EXISTS RUNNING TOGETHER [DETECTION_WORKER_1, DETECTION_WORKER_2 ] AND DETECTION_WORKER_5 \
-MAPPED ARM07 AND ARM04 PROCESSING", 3)])
+                        MAPPED ARM07 AND ARM04 PROCESSING", 3)])
 def hog_query(request):
     return request.param
 
@@ -101,3 +103,6 @@ def hog_query(request):
 def speaker_recognition_query(request):
     return request.param
 
+@pytest.fixture
+def csv_file_path():
+    return "csv/test_values.csv"

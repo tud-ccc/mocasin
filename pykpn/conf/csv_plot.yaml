@@ -7,6 +7,8 @@ defaults:
   - kpn: default
 
 csv_file: ???
+output_file: mapping_properties.txt
+log_to_file: False
 property: "wall_clock_time"
 prefix: 't_'
 suffix: ''
