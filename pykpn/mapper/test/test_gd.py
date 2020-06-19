@@ -18,8 +18,8 @@ def evaluation_function():
 
 @pytest.fixture
 def evaluation_function_gradient():
-    return lambda m : [-np.sin(m[0]-m[1])*np.sin(m[1]*2-1) + 2*np.cos(m[0]-m[1])*np.cos(m[1]*2-1),
-                       np.sin(m[0] - m[1]) * np.sin(m[1] * 2 - 1)] #I did the derivation by hand, hope it's correct...
+    return lambda m : [np.sin(1 - 2*m[1])*np.sin(m[0] - m[1]), 1/2*(3*np.cos(1 + m[0] - 3*m[1]) + np.cos(1 - m[0] - m[1]))]
+
 @pytest.fixture
 def mapper(kpn,platform,conf,evaluation_function):
     m =  GradientDescentFullMapper(kpn,platform,conf)
@@ -35,11 +35,25 @@ def test_gd(mapper,evaluation_function):
 
 def test_gradient(mapper,evaluation_function,evaluation_function_gradient):
     mapper.dim = 2
+    good = 0
+    bad = 0
     for (x,y) in product(range(1,6),range(1,6)):
         mapper.best_exec_time = 3 #> max(evaluation_function)
         mapper.best_mapping = np.zeros(mapper.dim)
         actual_grad = np.array(evaluation_function_gradient([x,y]))
         calculated_grad = mapper.calculate_gradient([x,y],evaluation_function([x,y]))
-        assert(np.allclose(actual_grad, calculated_grad,atol=0.3))
+        if not np.allclose(actual_grad,np.zeros(mapper.dim)):
+            actual_grad_normed = actual_grad * 1/np.linalg.norm(actual_grad)
+        else:
+            actual_grad_normed = actual_grad
+        if not np.allclose(calculated_grad,np.zeros(mapper.dim)):
+            calculated_grad_normed = calculated_grad * 1/np.linalg.norm(calculated_grad)
+        else:
+            calculated_grad_normed = calculated_grad
+        if  np.allclose(actual_grad_normed, calculated_grad_normed,atol=0.4):
+            good += 1
+        else:
+            bad += 1
+    assert(good > bad)
 
 
