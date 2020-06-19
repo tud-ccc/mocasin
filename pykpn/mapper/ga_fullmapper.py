@@ -81,7 +81,7 @@ class GeneticFullMapper(object):
         stats.register("max", np.max)
         self.evolutionary_stats = stats
 
-        if config.initials == 'random':
+        if config['initials'] == 'random':
             self.population = toolbox.population(n=self.config['pop_size'])
         else:
             log.error("Initials not supported yet")
@@ -130,7 +130,7 @@ class GeneticFullMapper(object):
 
         population = self.population
 
-        if self.config.mupluslambda:
+        if self.config['mupluslambda']:
             population, logbook = deap.algorithms.eaMuPlusLambda(population,toolbox,mu=pop_size,lambda_=3*pop_size,
                                                   cxpb=cxpb, mutpb=mutpb, ngen=num_gens, stats=stats, halloffame=hof,verbose=False)
             log.info(logbook.stream)
