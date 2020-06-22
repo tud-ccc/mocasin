@@ -1,0 +1,2280 @@
+
+ mapping 0:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 1:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 2:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 3:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 4:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 5:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 6:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 7:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 8:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 9:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 10:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 11:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 12:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 13:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 14:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 15:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 16:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 17:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 18:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 19:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 20:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 21:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 22:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 23:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 24:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 25:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 26:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 27:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 28:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 29:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 30:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 31:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 32:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 33:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 34:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 35:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 36:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 37:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 38:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 39:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 40:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 41:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 42:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 43:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 44:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 45:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 46:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 47:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 48:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 49:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 50:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 51:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 52:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 53:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 54:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 55:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 56:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 57:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 58:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 59:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 60:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 61:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 62:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 63:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 64:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 65:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 66:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 67:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 68:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 69:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 70:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 71:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 72:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 73:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 74:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 75:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 76:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 77:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 78:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 79:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 80:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 81:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 82:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 83:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 84:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 85:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 86:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 87:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 88:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 89:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 90:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 91:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 92:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 93:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 94:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 95:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 96:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 97:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 98:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 99:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 100:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 101:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 102:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 103:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 104:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 105:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 106:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 107:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 108:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 109:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 110:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 111:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 112:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 113:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 114:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 115:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 116:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 117:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 118:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
+
+ mapping 119:
+
+Core Mapping: 
+    dsp0 ['ifft_l']
+    dsp1 ['ifft_r']
+    dsp2 ['src', 'filter_l', 'filter_r', 'sink']
+    dsp3 ['fft_r']
+    dsp4 ['fft_l']
+Channels:
+    fft_coef_left       dsp4 - comm_cp_shared_shared_memory
+    fft_coef_right      dsp3 - comm_cp_shared_shared_memory
+    filtered_coef_left  dsp2 - comm_cp_shared_shared_memory
+    filtered_coef_right dsp2 - comm_cp_shared_shared_memory
+    sink_left           dsp0 - comm_cp_shared_shared_memory
+    sink_right          dsp1 - comm_cp_shared_shared_memory
+    src_left            dsp2 - comm_cp_shared_shared_memory
+    src_right           dsp2 - comm_cp_shared_shared_memory
+    wave_param_chan     dsp2 - comm_cp_shared_shared_memory
