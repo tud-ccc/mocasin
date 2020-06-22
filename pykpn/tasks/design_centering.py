@@ -141,7 +141,8 @@ def dc_task(cfg):
             json_dc_dump['rand mapping' + str(i)]['pert'] = c
             json_dc_dump['rand mapping' + str(i)]['passed'] = s
 
-        tp.plot_perturbations(pert_res,cfg['perturbations_out'])
+        if bool(cfg['visualize_mappings']) and not os.environ.get('DISPLAY', '') == '':
+            tp.plot_perturbations(pert_res,cfg['perturbations_out'])
         log.info("==== Perturbation Test done ====")
 
     if not os.path.exists(cfg['out_dir']):

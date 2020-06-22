@@ -16,7 +16,8 @@ def test_dc_audio_filter_exynos(datadir):
                            "platform=%s" % platform,
                            "trace=slx_reader",
                            "trace.directory=%s" % trace_dir,
-                           "out_dir=%s" % datadir],
+                           "out_dir=%s" % datadir,
+                           "visualize_mappings=false"],
                           cwd=datadir)
 
     #TODO: check if generated json is actually parsable
@@ -32,7 +33,8 @@ def test_dc_audio_filter_parallella(datadir):
                            "platform=%s" % platform,
                            "trace=slx_reader",
                            "trace.directory=%s" % trace_dir,
-                           "out_dir=%s" % datadir],
+                           "out_dir=%s" % datadir,
+                           "visualize_mappings=false"],
                           cwd=datadir)
 
     #TODO: check if generated json is actually parsable
@@ -48,7 +50,8 @@ def test_dc_audio_filter_multidsp(datadir):
                            "platform=%s" % platform,
                            "trace=slx_reader",
                            "trace.directory=%s" % trace_dir,
-                           "out_dir=%s" % datadir],
+                           "out_dir=%s" % datadir,
+                           "visualize_mappings=false"],
                           cwd=datadir)
 
     #TODO: check if generated json is actually parsable
@@ -64,7 +67,8 @@ def test_dc_hog_exynos(datadir):
                            "platform=%s" % platform,
                            "trace=slx_reader",
                            "trace.directory=%s" % trace_dir,
-                           "out_dir=%s" % datadir],
+                           "out_dir=%s" % datadir,
+                           "visualize_mappings=false"],
                           cwd=datadir)
 
     #TODO: check if generated json is actually parsable
@@ -80,7 +84,8 @@ def test_dc_speaker_recognition_exynos(datadir):
                            "platform=%s" % platform,
                            "trace=slx_reader",
                            "trace.directory=%s" % trace_dir,
-                           "out_dir=%s" % datadir],
+                           "out_dir=%s" % datadir,
+                           "visualize_mappings=false"],
                           cwd=datadir)
 
     #TODO: check if generated json is actually parsable
