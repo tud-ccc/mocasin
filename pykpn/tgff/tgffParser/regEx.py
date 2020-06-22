@@ -48,7 +48,7 @@ def std_link_value():
             r'\s+(?P<contact_price>\d+(\.\d+)?)'
             r'\s+(?P<packet_size>\d+)'
             r'\s+(?P<bit_time>\d+(\.\d+)?(e|E)-\d+)'
-            r'#\s+(?P<power>\d+(\.\d+)?((e|E)-\d+)?)'
+            r'\s+(?P<power>\d+(\.\d+)?((e|E)-\d+)?)'
             r'\s+(?P<contacts>\d+)\n')
     return re.compile(expr)
 
