@@ -2,12 +2,15 @@
 # All Rights Reserved
 #
 # Authors: Andrés Goens, Felix Teweleit
+
 import timeit
 import simpy
 import hydra
+import numpy as np
+
+
 from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.simulate.system import RuntimeSystem
-import numpy as np
 
 from pykpn.util.logging import getLogger
 log = getLogger(__name__)
@@ -52,8 +55,7 @@ class Statistics(object):
 
 
 class MappingCache(object):
-
-    def __init__(self,representation,config):
+    def __init__(self, representation, config):
         self._cache = {}
         self.representation = representation
         self.config = config
@@ -104,4 +106,89 @@ class MappingCache(object):
             self.statistics.mapping_evaluated(time)
             log.info(f"... from simulation: {exec_time}.")
             return exec_time
+
+
+class ApplicationContext(object):
+    def __init__(self, name=None, kpn=None, mapping=None, trace_reader=None,
+                 start_time=None):
+        self.name = name
+        self.kpn = kpn
+        self.mapping = mapping
+        self.trace_reader = trace_reader
+        self.start_time = start_time
+
+
+class SimulationContext(object):
+    def __init__(self, platform=None, app_contexts=None):
+        self.platform = platform
+        if app_contexts is None:
+            self.app_contexts = []
+        else:
+            self.app_contexts = app_contexts
+        self.exec_time = None
+
+
+def run_simulation(sim_context):
+    # Create simulation environment
+    env = simpy.Environment()
+
+    # create the applications
+    applications = []
+    mappings = {}
+    for ac in sim_context.app_contexts:
+        app = RuntimeKpnApplication(ac.name, ac.kpn, ac.mapping,
+                                    ac.trace_reader, env, ac.start_time)
+        applications.append(app)
+        mappings[ac.name] = ac.mapping
+
+    # Create the system
+    system = RuntimeSystem(sim_context.platform, applications, env)
+
+    # run the simulation
+    system.simulate()
+    system.check_errors()
+
+    sim_context.exec_time = env.now
+
+    return sim_context
+
+
+class DerivedPrimitive:
+    """Representing communication from one single processor to another one.
+
+    This class represents a further abstraction from the common pykpn primitive and
+    only covers the communication between one specific source and one specific sink
+    processor.
+
+    Attributes:
+        name (string): Name of the primitive. A combination of source and target name.
+        source (pykpn.common.platform.Processor): The source processor, capable of sending data
+            via this primitive.
+        sink (pykpn.common.platform.Processor): The sink processor, which should receive the data
+            send via the primitive.
+        write_cost (int): The amount of ticks it costs to write via this primitive.
+        read_cost (int): The amount if ticks it costs to read from this primitive.
+        cost (int): Complete static cost for one token, send via this primitive.
+        ref_primitive (pykpn.common.platform.Primitive): The pykpn primitive, this primitive was
+            derived from.
+    """
+    def __init__(self, source, sink, ref_prim):
+        """Constructor of a derived primitive
+
+        Args:
+            source (pykpn.common.platform.Processor): The source processor.
+            target (pykpn.common.platform.Processor): The target processor.
+            ref_prim (pykpn.commom.platform.Primitive): The pykpn primitive this primitive was
+                derived from.
+        """
+        self.name = "prim_{}_{}".format(source.name, sink.name)
+
+        self.source = source
+        self.sink = sink
+
+        self.write_cost = ref_prim.static_produce_costs(source)
+        self.read_cost = ref_prim.static_consume_costs(sink)
+        self.cost = self.write_cost + self.read_cost
+
+        self.ref_primitive = ref_prim
 

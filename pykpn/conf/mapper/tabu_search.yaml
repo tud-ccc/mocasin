@@ -1,6 +1,6 @@
 mapper:
    class:
-      pykpn.mapper.ts_fullmapper.TabuSearchFullMapper
+      pykpn.mapper.algorithms.TabuSearchFullMapper
 random_seed : 42
 record_statistics: true
 

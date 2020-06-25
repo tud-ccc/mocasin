@@ -1,3 +1,2 @@
 mapper:
-  class: pykpn.mapper.ff_fullmapper.FromFileMapper
-  file: ???
+  class: pykpn.mapper.from_file.FromFileMapper

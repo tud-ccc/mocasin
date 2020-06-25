@@ -10,10 +10,8 @@ import numpy as np
 
 from pykpn.design_centering import sample as dc_sample
 from pykpn.design_centering import oracle
-from pykpn.mapper import rand_partialmapper as rand_pm
-from pykpn.simulate.application import RuntimeKpnApplication
-from pykpn.mapper.proc_partialmapper import ProcPartialMapper
-from pykpn.mapper.rand_partialmapper import RandomPartialMapper
+from pykpn.mapper.partial import ProcPartialMapper
+from pykpn.mapper.random import RandomPartialMapper
 from pykpn.representations import representations as reps
 
 
@@ -43,7 +41,7 @@ class PerturbationManager(object):
         """ Creates a defined number of unique random mappings """
         mapping_set = set([])
         while len(mapping_set) < self.num_mappings:
-            mg = rand_pm.RandomPartialMapper(self.kpn, self.platform)
+            mg = RandomPartialMapper(self.kpn, self.platform)
             mapping_set.add(mg.generate_mapping())
         return mapping_set
 

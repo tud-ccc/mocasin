@@ -14,8 +14,7 @@ try:
 except:
     pass
 
-from pykpn.mapper.com_partialmapper import ComFullMapper
-from pykpn.mapper.proc_partialmapper import ProcPartialMapper
+from pykpn.mapper.partial import ProcPartialMapper, ComFullMapper
 
 from .metric_spaces import FiniteMetricSpace, FiniteMetricSpaceSym, FiniteMetricSpaceLP, FiniteMetricSpaceLPSym, arch_graph_to_distance_metric
 from .embeddings import MetricSpaceEmbedding

@@ -5,7 +5,7 @@
 
 import pytest
 from pykpn.tgff.tgffSimulation import KpnGraphFromTgff, TraceGeneratorWrapper, PlatformFromTgff
-from pykpn.mapper.gbm_fullmapper import DerivedPrimitive
+from pykpn.mapper.utils import DerivedPrimitive
 
 tgff_file = 'pykpn/tgff/graphs/auto-indust-cords.tgff'
 tgff_graph = 'TASK_GRAPH_1'

@@ -3,28 +3,17 @@
 #
 # Authors: Gerald Hempel, Andres Goens
 
-import os
-import timeit
 import simpy
 import traceback
 import pint
 import hydra
 
-#import multiprocessing as mp
-#Multiprocessing stuff (dill and pickle)
-#from pathos.multiprocessing import ProcessPool
-from pykpn.common.mapping import Mapping
 from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.simulate.system import RuntimeSystem
-from pykpn.mapper.proc_partialmapper import ProcPartialMapper
-from pykpn.mapper.rand_partialmapper import RandomPartialMapper
-from pykpn.mapper.com_partialmapper import ComPartialMapper
-from pykpn.mapper.random_mapper import RandomMapping
-from pykpn.design_centering import sample
-
+from pykpn.mapper.partial import ProcPartialMapper, ComPartialMapper
+from pykpn.mapper.random import RandomPartialMapper
 from sys import exit
 
-#import pickle as pk #TODO remove later
 
 from pykpn.util import logging
 

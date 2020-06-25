@@ -10,7 +10,6 @@ import timeit
 
 from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.simulate.system import RuntimeSystem
-from pykpn.mapper.rand_partialmapper import RandomFullMapper
 
 log = logging.getLogger(__name__)
 

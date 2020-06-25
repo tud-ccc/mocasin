@@ -1,5 +1,5 @@
 from pykpn.mapper.test.mock_cache import MockMappingCache
-from pykpn.mapper.ts_fullmapper import TabuSearchFullMapper
+from pykpn.mapper.algorithms import TabuSearchFullMapper
 import pytest
 import numpy as np
 from itertools import product

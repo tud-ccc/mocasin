@@ -4,7 +4,6 @@
 # Authors: Christian Menard
 
 import hydra
-from pykpn.mapper.rand_partialmapper import RandomFullMapper
 
 
 @hydra.main(config_path='conf/kpn_to_dot.yaml')

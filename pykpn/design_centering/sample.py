@@ -10,7 +10,8 @@ from pykpn.design_centering import volume
 from pykpn.design_centering import oracle
 from pykpn.representations.metric_spaces import FiniteMetricSpace
 from pykpn.common.mapping import Mapping
-from pykpn.representations.representations import RepresentationType, MetricSpaceRepresentation, MetricEmbeddingRepresentation, SimpleVectorRepresentation, SymmetryRepresentation
+from pykpn.representations.representations import RepresentationType, MetricSpaceRepresentation,\
+    MetricEmbeddingRepresentation, SimpleVectorRepresentation, SymmetryRepresentation
 import pykpn.util.random_distributions.lp as lp
 
 from sys import exit

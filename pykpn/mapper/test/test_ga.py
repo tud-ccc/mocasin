@@ -1,5 +1,5 @@
 from pykpn.mapper.test.mock_cache import MockMappingCache
-from pykpn.mapper.ga_fullmapper import GeneticFullMapper
+from pykpn.mapper.algorithms import GeneticFullMapper
 import pytest
 import numpy as np
 
