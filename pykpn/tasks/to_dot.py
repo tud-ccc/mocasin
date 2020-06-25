@@ -70,6 +70,6 @@ def mapping_to_dot(cfg):
 
     platform = hydra.utils.instantiate(cfg['platform'])
 
-    mapping = hydra.utils.instantiate(cfg['mapping'], kpn, platform, cfg['mapping']).generate_mapping()
+    mapping = hydra.utils.instantiate(cfg['mapper'], kpn, platform, cfg).generate_mapping()
 
     mapping.to_pydot().write_raw(cfg['output_file'])

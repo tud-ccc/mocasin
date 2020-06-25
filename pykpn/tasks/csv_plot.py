@@ -13,20 +13,20 @@ from pykpn.util.csv_reader import DataReader
 def csv_plot(cfg):
     platform = hydra.utils.instantiate(cfg['platform'])
     kpn = hydra.utils.instantiate(cfg['kpn'])
-    dataReader = DataReader(platform,
-                            cfg['csv_file'],
-                            kpn,
-                            cfg['property'],
-                            cfg['prefix'],
-                            cfg['suffix'])
+    data_reader = DataReader(platform,
+                             cfg['csv_file'],
+                             kpn,
+                             cfg['property'],
+                             cfg['prefix'],
+                             cfg['suffix'])
 
-    mappings = dataReader.formMappings()
+    mappings = data_reader.formMappings()
 
-    compareProperty = []
-    mappingList = []
+    compare_property = []
+    mapping_list = []
 
     for key in mappings:
-        mappingList.append(mappings[key][0])
-        compareProperty.append(float(mappings[key][1]))
+        mapping_list.append(mappings[key][0])
+        compare_property.append(float(mappings[key][1]))
 
-    plot.visualize_mapping_space(mappingList, compareProperty)
+    plot.visualize_mapping_space(mapping_list, compare_property)

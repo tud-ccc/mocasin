@@ -11,7 +11,7 @@ class slx_read_mapper:
     common mapper interface.
     """
     def __init__(self, kpn, platform, cfg):
-        self.mapping = SlxMapping(kpn, platform, cfg['mapping_xml'], cfg['slx_version'])
+        self.mapping = SlxMapping(kpn, platform, cfg['source']['mapping_xml'], cfg['slx']['version'])
 
     def generate_mapping(self):
         return self.mapping
