@@ -24,3 +24,19 @@ def test_enumerate_equivalent_exynos(datadir, expected_dir, platform):
 
     assert filecmp.cmp(os.path.join(expected_dir, file_name), out_file)
 
+def test_enumerate_equivalent_tgff(datadir, tgff):
+    file_name = "mappings_%s.txt" % tgff
+    out_file = os.path.join(datadir, file_name)
+    tgff_directory = os.path.join(datadir, 'tgff/e3s-0.9')
+
+    subprocess.check_call(["pykpn", "enumerate_equivalent",
+                           "kpn=tgff_reader",
+                           "platform=tgff_reader",
+                           "tgff.directory=%s" % tgff_directory,
+                           "tgff.file=%s.tgff" % tgff,
+                           "mapping=random_mapping",
+                           "output_file=%s" % out_file],
+                          cwd=datadir)
+
+    #Todo: compare with expected result after merge with gbm_mapper branch
+    assert os.stat(os.path.join(datadir, out_file)).st_size > 0

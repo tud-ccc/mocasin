@@ -91,3 +91,19 @@ def test_dc_speaker_recognition_exynos(datadir):
     #TODO: check if generated json is actually parsable
     assert os.stat(os.path.join(datadir, "dc_out.json")).st_size > 0
 
+def test_dc_tgff(datadir, tgff):
+    tgff_directory = os.path.join(datadir, 'tgff/e3s-0.9')
+
+    subprocess.check_call(["pykpn", "design_centering",
+                           "kpn=tgff_reader",
+                           "platform=tgff_reader",
+                           "trace=tgff_reader",
+                           "tgff.directory=%s" % tgff_directory,
+                           "tgff.file=%s.tgff" % tgff,
+                           "out_dir=%s" % datadir,
+                           "visualize_mappings=false"],
+                          cwd=datadir)
+
+    #TODO: check if generated json is actually parsable
+    assert os.stat(os.path.join(datadir, "dc_out.json")).st_size > 0
+

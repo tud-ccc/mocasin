@@ -304,10 +304,11 @@ class Mapping:
             chan2prim.update({c.name:(self.channel_source(c).name,
                                       self.primitive(c).name)})
 
-        max_width = max(map(len,chan2prim))
-        for key in sorted(chan2prim):
-            s = ("{0}    {1:{4}} {2} - {3}\n".format(s,key,chan2prim[key][0],
-                                                     chan2prim[key][1],max_width))
+        if len(chans_list) > 0:
+            max_width = max(map(len, chan2prim))
+            for key in sorted(chan2prim):
+                s = ("{0}    {1:{4}} {2} - {3}\n".format(s,key,chan2prim[key][0],
+                                                        chan2prim[key][1],max_width))
 
         return s
     
