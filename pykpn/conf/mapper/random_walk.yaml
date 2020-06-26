@@ -1,6 +1,6 @@
 mapper:
    class:
-      pykpn.mapper.random.RandomWalkFullMapper
+      pykpn.mapper.random_walk.RandomWalkMapper
 
 num_iterations : 100
 jobs : 1
