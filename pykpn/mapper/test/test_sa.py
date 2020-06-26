@@ -1,5 +1,5 @@
 from pykpn.mapper.test.mock_cache import MockMappingCache
-from pykpn.mapper.algorithms import SimulatedAnnealingFullMapper
+from pykpn.mapper.sa import SimulatedAnnealingMapper
 from itertools import product
 import pytest
 import numpy as np
@@ -19,7 +19,7 @@ def evaluation_function():
     return lambda m : 1+ np.cos(m[0]-m[1])*np.sin(m[1]*2-1)
 @pytest.fixture
 def mapper(kpn,platform,conf,evaluation_function):
-    m =  SimulatedAnnealingFullMapper(kpn,platform,conf)
+    m =  SimulatedAnnealingMapper(kpn,platform,conf)
     m.mapping_cache = MockMappingCache(evaluation_function)
     return m
 

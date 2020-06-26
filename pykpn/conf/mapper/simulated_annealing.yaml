@@ -1,6 +1,6 @@
 mapper:
    class:
-      pykpn.mapper.algorithms.SimulatedAnnealingFullMapper
+      pykpn.mapper.sa.SimulatedAnnealingMapper
 random_seed : 42
 record_statistics: true
 
