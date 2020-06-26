@@ -24,8 +24,6 @@ testBench.py
 .coverage
 *.idea
 outputs
-test_bench.py
-
 outputs/
 multirun/
 tsne.pdf

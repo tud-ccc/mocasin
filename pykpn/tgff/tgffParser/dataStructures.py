@@ -11,7 +11,7 @@ class TgffProcessor():
     """Represents the relevant information about a processor, included in a .tgff file.
     The processor can be transfered into the pykpn representation.
     """
-    def __init__(self, name, operations, processor_type=None):
+    def __init__(self, name, operations, processor_type):
         self.name = name
         self.type = processor_type
         self.operations = {}
@@ -101,12 +101,12 @@ class TgffGraph():
                 read_from.append(name)
                 
         for channel_name in read_from:
-            execution_order.append(('r',self.identifier + '.' + channel_name))
+            execution_order.append(('r',self.identifier+"."+channel_name))
         
         execution_order.append(('e', self.tasks[task_name]))
         
         for channel_name in write_to:
-            execution_order.append(('w', self.identifier + '.' + channel_name))
+            execution_order.append(('w', self.identifier+"."+channel_name))
             
         return execution_order
     

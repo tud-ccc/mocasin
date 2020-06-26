@@ -5,5 +5,7 @@ defaults:
   - tgff: default
   - kpn: default
   - platform: default
-  - mapping: default
+  - mapper: from_file
+  - source: slx
   - trace: default
+  - representation: SimpleVector

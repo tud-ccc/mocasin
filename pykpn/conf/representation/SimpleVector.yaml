@@ -1,2 +1,4 @@
 representation: SimpleVector
-norm_p : 1
+channels : false
+norm_p : 2
+periodic_boundary_conditions: false

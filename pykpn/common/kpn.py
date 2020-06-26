@@ -103,6 +103,9 @@ class KpnGraph(object):
 
     def processes(self):
         return self._processes.values()
+    
+    def process_names(self):
+        return list(self._processes.keys())
 
     def channels(self):
         return self._channels.values()
@@ -118,6 +121,10 @@ class KpnGraph(object):
             raise RuntimeError(
                 'Channel %s was already added to the graph' % (x.name))
         self._channels[x.name] = x
+
+    def sort(self):
+        """Sort process list in topological order"""
+        pass
 
     def to_pydot(self):
         """Convert the KPN graph to a dot graph."""

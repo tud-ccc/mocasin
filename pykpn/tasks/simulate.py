@@ -41,11 +41,12 @@ def simulate(cfg):
           that can be instantiated to a
           :class:`~pykpn.common.trace.TraceGenerator` object.
     """
-
     kpn = hydra.utils.instantiate(cfg['kpn'])
 
     platform = hydra.utils.instantiate(cfg['platform'])
-    mapping = hydra.utils.instantiate(cfg['mapping'], kpn, platform)
+
+    mapping = hydra.utils.instantiate(cfg['mapper'], kpn, platform, cfg).generate_mapping()
+
     trace = hydra.utils.instantiate(cfg['trace'])
 
     env = simpy.Environment()

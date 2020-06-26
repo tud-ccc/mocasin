@@ -19,6 +19,8 @@ _ur = pint.UnitRegistry()
 
 class SlxMapping(Mapping):
 
+    #config parameter is not needed but still added to remain the interface of other mappings types in order
+    #to ensure instantiation via hydra
     def __init__(self, kpn, platform, mapping_xml, slx_version):
         super().__init__(kpn, platform)
 

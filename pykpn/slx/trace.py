@@ -113,3 +113,16 @@ class SlxTraceReader(TraceGenerator):
             raise RuntimeError('Unexpected trace entry ' + traceline[0])
 
         return segment
+    
+    def reset(self):
+        """Resets the generator.
+        
+        This method resets the generator to its initial state. 
+        Therefore it is not needed to instantiate a new generator
+        if a trace has to be calculated twice.
+        """
+        for fh in self._trace_files.values():
+            if not fh == None:
+                fh.close()
+        self._trace_files = {}
+        self._processor_types = {}

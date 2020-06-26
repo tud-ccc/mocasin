@@ -20,18 +20,18 @@ from pykpn.tasks.csv_plot import csv_plot
 from pykpn.tasks.design_centering import dc_task
 from pykpn.tasks.enumerate_equivalent import enumerate_equivalent
 from pykpn.tasks.platform_to_autgrp import platform_to_autgrp
-from pykpn.tasks.random_walk import random_walk
+from pykpn.tasks.generate_mapping import generate_mapping
 from pykpn.tasks.simulate import simulate
 from pykpn.tasks.to_dot import kpn_to_dot
 from pykpn.tasks.to_dot import mapping_to_dot
 from pykpn.tasks.to_dot import platform_to_dot
 from pykpn.tasks.visualize import visualize
 from pykpn.tasks.solve_query import solve_query
+from pykpn.tasks.generate_yaml import generate_yaml
 
 from pykpn.tgff.tgffSimulation import TgffReferenceError
 
 log = logging.getLogger(__name__)
-
 
 @hydra.main(config_path='conf/help.yaml')
 def print_help(cfg=None):
@@ -47,7 +47,7 @@ _tasks = {
         "generate a mapping using the design centering algorityh"),
     'enumerate_equivalent': (
         enumerate_equivalent,
-        "???"),
+        "ennumerate all mappings equivalent to the given mapping"),
     'help': (
         print_help,
         "Print a help message"),
@@ -63,9 +63,9 @@ _tasks = {
     'platform_to_dot': (
         platform_to_dot,
         "Visualize a platform as a dot graph"),
-    'random_walk_mapping': (
-        random_walk,
-        "Generate a mapping using the random walk algorithm"),
+    'generate_mapping': (
+        generate_mapping,
+        "Generate a mapping."),
     'simulate': (
         simulate,
         "Replay traces to simulate the execution of a KPN application on a "
@@ -75,8 +75,10 @@ _tasks = {
         "Visualize a mapping in the GUI"),
     'solve_query' : (
         solve_query,
-        "Generates a mapping based on constraints expressed in a query language"
-    )
+        "Generates a mapping based on constraints expressed in a query language"),
+    'generate_yaml': (
+        generate_yaml,
+        "Generates a bunch of yaml files"),
 }
 """A dictionary that maps task names to a callable function."""
 

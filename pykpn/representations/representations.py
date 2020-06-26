@@ -1,4 +1,4 @@
-# Copyright (C) 2018-2019 TU Dresden
+# Copyright (C) 2018-2020 TU Dresden
 # All Rights Reserved
 #
 # Author: Andres Goens
@@ -7,13 +7,14 @@ from enum import Enum
 import numpy as np
 from numpy.random import randint
 from copy import deepcopy
+import random
 
 try:
     import pynauty as pynauty
 except:
     pass
 
-from pykpn.common.mapping import Mapping
+from pykpn.mapper.partial import ProcPartialMapper, ComFullMapper
 
 from .metric_spaces import FiniteMetricSpace, FiniteMetricSpaceSym, FiniteMetricSpaceLP, FiniteMetricSpaceLPSym, arch_graph_to_distance_metric
 from .embeddings import MetricSpaceEmbedding
@@ -42,19 +43,24 @@ class MappingRepresentation(type):
        to work directly with simple vectors, if that is more efficient.
     """
     _instances = {}
+
     def __call__(cls, *args, **kwargs):
-        #print(str(cls) + " is being called")
         kpn = args[0]
         platform = args[1]
+        cfg = args[2]
         kpn_names = ";".join(map(lambda x : x.name, kpn.channels()))
-        if (cls,kpn,platform) not in cls._instances:
+
+        if (cls, kpn, platform) not in cls._instances:
             #make hashables of these two
-            cls._instances[(cls,kpn_names,platform.name)] = super(MappingRepresentation,cls).__call__(*args, **kwargs)
+            cls._instances[(cls, kpn_names, platform.name)] = super(MappingRepresentation, cls).__call__(*args, **kwargs)
             log.info(f"Initializing representation {cls} of kpn with processes: {kpn_names} on platform {platform.name}")
-            cls._instances[(cls,kpn_names,platform.name)]._representationType = cls
+            cls._instances[(cls, kpn_names, platform.name)]._representationType = cls
+
         instance = deepcopy(cls._instances[(cls,kpn_names,platform.name)])
         instance.kpn = kpn
         instance.platform = platform
+        com_mapper = ComFullMapper(kpn,platform,cfg)
+        instance.list_mapper = ProcPartialMapper(kpn,platform,com_mapper)
         return instance
 
     def toRepresentation(self,mapping):
@@ -96,20 +102,26 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
     interface, but they are provided in case they prove useful, when you know
     what you are doing.
     """
-    def __init__(self, kpn, platform,channels=False):
+    def __init__(self, kpn, platform, cfg):
         self.kpn = kpn
         self.platform = platform
-        self.channels=channels
+        self.channels = cfg['channels']
+        self.boundary_conditions = cfg['periodic_boundary_conditions']
+        self.config = cfg
+        self.p = cfg['norm_p']
         self.num_procs = len(list(self.kpn._processes.keys()))
+        com_mapper = ComFullMapper(kpn,platform,cfg)
+        self.list_mapper = ProcPartialMapper(kpn,platform,com_mapper)
+
     def _uniform(self):
-        Procs = list(self.kpn._processes.keys())
-        PEs = list(self.platform._processors.keys())
+        Procs = sorted(list(self.kpn._processes.keys()))
+        PEs = sorted(list(self.platform._processors.keys()))
         pe_mapping = list(randint(0,len(PEs),size=len(Procs)))
         return SimpleVectorRepresentation.randomPrimitives(self,pe_mapping)
     def randomPrimitives(self,pe_mapping):
-        Procs = list(self.kpn._processes.keys())
-        PEs = list(self.platform._processors.keys())
-        CPs = list(self.platform._primitives.keys())
+        Procs = sorted(list(self.kpn._processes.keys()))
+        PEs = sorted(list(self.platform._processors.keys()))
+        CPs = sorted(list(self.platform._primitives.keys()))
         res = pe_mapping[:len(Procs)]
         for c in self.kpn.channels():
             suitable_primitives = []
@@ -138,16 +150,16 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         return mapping.to_list(channels=self.channels)
 
     def fromRepresentation(self,mapping):
-        mapping_obj = Mapping(self.kpn,self.platform)
-        mapping_obj.from_list(mapping)
+        if type(mapping) == np.ndarray:
+            mapping = mapping.astype(int)
+        mapping_obj = self.list_mapper.generate_mapping(mapping)
         return mapping_obj
 
     def _simpleVec2Elem(self,x):
         if not self.channels:
             return x
         else:
-            m = Mapping(self.kpn,self.platform)
-            m.from_list(x)
+            m = self.list_mapper.generate_mapping(x)
             return m.to_list(channels=True)
 
     def _elem2SimpleVec(self,x):
@@ -163,12 +175,16 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         res = []
         def _round(point):
             #perodic boundary conditions
-            return int(round(point) % P)
-            #if point > P-1:
-            #  return P-1
-            #elif point < 0:
-            #  return 0
-            #else:
+            rounded = int(round(point) % P)
+            if self.boundary_conditions:
+                return rounded
+            else:
+                if point > P-1:
+                    return P-1
+                elif point < 0:
+                   return 0
+                else:
+                    return rounded
 
         center = p[:len(Procs)]
         for _ in range(npoints):
@@ -179,31 +195,51 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
                     offset.append(randint(-radius,radius))
 
             else:
-                offset = r * lp.uniform_from_p_ball(p=1,n=len(Procs))
-            real_point = (np.array(center) + np.array(offset)).tolist()
+                offset = r * lp.uniform_from_p_ball(p=self.p,n=len(Procs))
+            real_point = (np.array(center) + np.array(offset)).tolist() 
             v = list(map(_round,real_point))
 
-        if self.channels:
-            res.append(self.randomPrimitives(v))
-        else:
-            res.append(v)
+            if self.channels:
+                res.append(self.randomPrimitives(v))
+            else:
+                res.append(v)
         log.debug(f"uniform from ball: {res}")
-        print(f"uniform from ball: {res}")
         return res
 
     def uniformFromBall(self,p,r,npoints=1):
-        return self.fromRepresentation(self._uniformFRomBall(p,r,npoints=npoints))
+        return self.fromRepresentation(self._uniformFromBall(p,r,npoints=npoints))
 
     def distance(self,x,y):
         a = np.array(x)
         b = np.array(y)
-        return numpy.linalg.norm(a-b)
+        return np.linalg.norm(a-b)
+
+    def _distance(self,x,y):
+        return self.distance(x,y)
 
     def approximate(self,x):
         approx = np.around(x)
         P = len(list(self.platform._processors.keys()))
-        corr_boundaries = list(map(lambda t : t % P,approx))
-        return corr_boundaries
+        if self.config['periodic_boundary_conditions']:
+            res = list(map(lambda t : t % P,approx))
+        else:
+            res = list(map(lambda t: max(0,min(t , P-1)), approx))
+        return res
+
+    def crossover(self,m1,m2,k):
+        return self._crossover(self.toRepresentation(m1),self.toRepresentation(m2),k)
+
+    def _crossover(self,m1,m2,k):
+        assert len(m1) == len(m2)
+        crossover_points = random.sample(range(len(m1)),k)
+        swap = False
+        for i in range(len(m1)):
+            if i in crossover_points:
+                swap = not swap
+            if swap:
+                m1[i] = m2[i]
+                m2[i] = m2[i]
+        return m1,m2
 
 
 #FIXME: UNTESTED!!
@@ -214,12 +250,13 @@ class MetricSpaceRepresentation(FiniteMetricSpaceLP, metaclass=MappingRepresenta
     (slightly better) tested and documented.
     """
 
-    def __init__(self,kpn, platform, cfg=None):
+    def __init__(self,kpn, platform, cfg):
         self._topologyGraph = platform.to_adjacency_dict()
         M_list, self._arch_nc, self._arch_nc_inv = arch_graph_to_distance_metric(self._topologyGraph)
         M = FiniteMetricSpace(M_list)
         self.kpn = kpn
         self.platform = platform
+        self.cfg = cfg
         d = len(kpn.processes())
         init_app_ncs(self,kpn)
         super().__init__(M,d)
@@ -267,7 +304,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
     In order to work with other mappings in the same class, the methods
     allEquivalent/_allEquivalent returns for a mapping, all mappings in that class.
     """
-    def __init__(self,kpn, platform,cfg=None):
+    def __init__(self,kpn, platform,cfg):
         self._topologyGraph = platform.to_adjacency_dict()
         self.kpn = kpn
         self.platform = platform
@@ -276,6 +313,10 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         init_app_ncs(self,kpn)
         self._arch_nc_inv = {}
         self.channels=False
+        self.cfg = cfg
+        com_mapper = ComFullMapper(kpn,platform,cfg)
+        self.list_mapper = ProcPartialMapper(kpn,platform,com_mapper)
+
         for node in self._arch_nc:
             self._arch_nc_inv[self._arch_nc[node]] = node
         #TODO: ensure that nodes_correspondence fits simpleVec
@@ -306,8 +347,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         orbit = self._allEquivalent(x)
         res = []
         for elem in orbit:
-            mapping = Mapping(self.kpn, self.platform)
-            mapping.from_list(list(elem))
+            mapping = self.list_mapper.generate_mapping(list(elem))
             res.append(mapping)
         return res
 
@@ -316,8 +356,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
 
     def fromRepresentation(self,mapping):
         #Does not check if canonical. This is deliberate.
-        mapping_obj = Mapping(self.kpn,self.platform)
-        mapping_obj.from_list(mapping)
+        mapping_obj = self.list_mapper.generate_mapping(mapping)
         return mapping_obj
 
     def _uniformFromBall(self,p,r,npoints=1):
@@ -380,24 +419,23 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
 
     Elements in this representation are real vectors, the meaning of the components
     does not have a concrete interpretation. However, they do have a particular
-    structure. For multiple processes, a single embedding for the archticeture is
+    structure. For multiple processes, a single embedding for the architecture is
     calculated. The multi-process vector space is the orthogonal sum of copies of a vector
     space emebedding for the single-process case. This provably preserves the distortion
     and makes calculations much more efficient.
 
     """
-    def __init__(self,kpn, platform, cfg=None):
-        if cfg is None:
-            p = 2
-        else:
-            p = cfg['norm_p']
+    def __init__(self,kpn, platform, cfg):
         self._topologyGraph = platform.to_adjacency_dict()
         M_matrix, self._arch_nc, self._arch_nc_inv = arch_graph_to_distance_metric(self._topologyGraph)
         self._M = FiniteMetricSpace(M_matrix)
         self.kpn = kpn
         self.platform = platform
         self._d = len(kpn.processes())
-        self.p = p
+        self.cfg = cfg
+        self.p = cfg['norm_p']
+        com_mapper = ComFullMapper(kpn,platform,cfg)
+        self.list_mapper = ProcPartialMapper(kpn,platform,com_mapper)
         init_app_ncs(self,kpn)
         if self.p != 2:
             log.error(f"Metric space embeddings only supports p = 2. For p = 1, for example, finding such an embedding is NP-hard (See Matousek, J.,  Lectures on Discrete Geometry, Chap. 15.5)")
@@ -448,20 +486,33 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
         return self._simpleVec2Elem(mapping.to_list())
 
     def fromRepresentation(self,mapping):
-        mapping_obj = Mapping(self.kpn,self.platform)
-        mapping_obj.from_list(self._elem2SimpleVec(mapping))
+        mapping_obj = self.list_mapper.generate_mapping(self._elem2SimpleVec(mapping))
         return mapping_obj
 
     def _distance(self,x,y):
-        x_np = self._simpleVec2Elem(x)
-        y_np = self._simpleVec2Elem(y)
-        return np.linalg.norm(x_np - y_np)
+        return lp.p_norm(x-y,self.p)
 
     def distance(self,x,y):
         return self._distance(x.to_list(),y.to_list())
 
     def approximate(self,x):
         return np.array(self.approx(x)).flatten()
+
+    def crossover(self, m1, m2, k):
+        return self._crossover(self.toRepresentation(m1), self.toRepresentation(m2), k)
+
+    def _crossover(self, m1, m2, k):
+        assert len(m1) == len(m2)
+        crossover_points = np.array(random.sample(range(self._d), k)) * self.k
+        swap = False
+        for i in range(len(m1)):
+            if i in crossover_points:
+                swap = not swap
+            if swap:
+                m1[i] = m2[i]
+                m2[i] = m2[i]
+        return m1, m2
+
 
 class SymmetryEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepresentation):
     """Symmetry Embedding Representation

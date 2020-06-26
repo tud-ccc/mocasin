@@ -63,7 +63,6 @@ class CommunicationResource(object):
     This is a base class that can be specialized to model more complex
     resources like caches.
     '''
-    #resource Type attribute added by Felix Teweleit 10.08.2018
 
     def __init__(self, name, frequency_domain, resource_type, read_latency, write_latency,
                  read_throughput=float('inf'), write_throughput=float('inf'),
@@ -94,6 +93,9 @@ class CommunicationResource(object):
     def write_throughput(self):
         return (self._write_throughput /
                 self._frequency_domain.cycles_to_ticks(1))
+        
+    def frequency_domain_name(self):
+        return self._frequency_domain.name
 
     def __str__(self):
         return self.name
@@ -294,6 +296,9 @@ class Scheduler:
     def __repr__(self):
         return self.__str__()
 
+    def __lt__(self, other_scheduler):
+        return self.name.lower() < other_scheduler.name.lower()
+
 
     def find_policy(self, name, throw=False):
         """Lookup a policy by its name.
@@ -483,12 +488,9 @@ class Platform(object):
                         adjacency_dict[x.name][y.name] = cost 
                     #here we should decide what to do with the different primitive
                     #I dediced to just take the minimum for now.
-                    adjacency_dict[x.name][y.name] = min(adjacency_dict[x.name][y.name],cost)
-                    if precision < 0 or cost == 0:
-                        pass
                     else:
-                        cost = round(cost, precision-1-int(math.floor(math.log10(abs(cost)))))
-                    
+                        adjacency_dict[x.name][y.name] = min(adjacency_dict[x.name][y.name],cost)
+
         res = {}
         for elem in adjacency_dict:
             res[elem] = [(adjacent, adjacency_dict[elem][adjacent]) for adjacent in adjacency_dict[elem]]

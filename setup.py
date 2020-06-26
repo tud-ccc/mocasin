@@ -5,10 +5,55 @@ from setuptools.command.install import install
 from setuptools.command.develop import develop
 from doc.build_doc import BuildDocCommand
 import subprocess
+import sys
 
 project_name = "pykpn"
 version = "0.1"
 
+install_requirements = []
+setup_requirements = []
+
+if sys.version_info > (3, 8):
+    install_requirements = [
+        'argparse',
+        'arpeggio',
+        'cvxpy',
+        'cvxopt',
+        'scipy',
+        'lxml',
+        'numpy',
+        'matplotlib',
+        'pint',
+        'pydot',
+        'pyxb',
+        'simpy',
+        'termcolor',
+        'tqdm',
+        'hydra-core<1.0',
+        'deap',
+        'networkx',]
+    setup_requirements = ['pytest-runner', 'sphinx', 'numpy']
+
+else:
+    install_requirements = [
+        'argparse',
+        'arpeggio',
+        'cvxpy<=1.0.0',
+        'cvxopt',
+        'scipy<=1.1.0',
+        'lxml',
+        'numpy<1.16',
+        'matplotlib<3.0',
+        'pint',
+        'pydot',
+        'pyxb',
+        'simpy',
+        'termcolor',
+        'tqdm',
+        'hydra-core<1.0',
+        'deap',
+        'networkx',]
+    setup_requirements = ['pytest-runner', 'sphinx', 'numpy<1.16']
 
 class InstallPynautyCommand(distutils.cmd.Command):
     """A custom command to install the pynauty dependency"""
@@ -81,25 +126,8 @@ setup(
     name=project_name,
     version=version,
     packages=find_packages(),
-    install_requires=[
-        'argparse',
-        'arpeggio',
-        'cvxpy<=1.0.0',
-        'cvxopt',
-        'scipy<=1.1.0',
-        'lxml',
-        'numpy<1.16',
-        'matplotlib<3.0',
-        'pint',
-        'pydot',
-        'pyxb',
-        'simpy',
-        'termcolor',
-        'tqdm',
-        'hydra-core<1.0',
-        'deap',
-    ],
-    setup_requires=['pytest-runner', 'sphinx', 'numpy<1.16'],
+    install_requires=install_requirements,
+    setup_requires=setup_requirements,
     tests_require=['pytest', 'pytest_mock'],
     command_options={
         'build_sphinx': {

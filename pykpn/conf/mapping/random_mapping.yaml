@@ -1,3 +1,5 @@
 mapping:
+  type: 'random_mapping'
   name: ${kpn.name}_on_${platform.name}
-  class: pykpn.mapper.random.RandomMapping
+  class: pykpn.mapper.random_mapper.RandomMapping
+random_seed: None
