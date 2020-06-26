@@ -1,5 +1,5 @@
 from pykpn.mapper.test.mock_cache import MockMappingCache
-from pykpn.mapper.algorithms import GradientDescentFullMapper
+from pykpn.mapper.gd import GradientDescentMapper
 import pytest
 import numpy as np
 from itertools import product
@@ -22,7 +22,7 @@ def evaluation_function_gradient():
 
 @pytest.fixture
 def mapper(kpn,platform,conf,evaluation_function):
-    m =  GradientDescentFullMapper(kpn,platform,conf)
+    m =  GradientDescentMapper(kpn,platform,conf)
     m.mapping_cache = MockMappingCache(evaluation_function)
     return m
 
