@@ -16,7 +16,7 @@ from pykpn.mapper.utils import Statistics
 log = logging.getLogger(__name__)
 
 
-class TabuSearchFullMapper(object):
+class TabuSearchMapper(object):
     """Generates a full mapping by using a tabu search on the mapping space.
 
     """

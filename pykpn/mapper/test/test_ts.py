@@ -1,5 +1,5 @@
 from pykpn.mapper.test.mock_cache import MockMappingCache
-from pykpn.mapper.algorithms import TabuSearchFullMapper
+from pykpn.mapper.ts import TabuSearchMapper
 import pytest
 import numpy as np
 from itertools import product
@@ -19,7 +19,7 @@ def evaluation_function():
 
 @pytest.fixture
 def mapper(kpn,platform,conf,evaluation_function):
-    m =  TabuSearchFullMapper(kpn,platform,conf)
+    m =  TabuSearchMapper(kpn,platform,conf)
     m.mapping_cache = MockMappingCache(evaluation_function)
     return m
 
