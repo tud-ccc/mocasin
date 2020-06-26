@@ -121,7 +121,7 @@ def dc_task(cfg):
 
 
     # config = args.configFile
-    dc = DesignCentering(v, cfg['distr'], oracle, representation,cfg['record_samples'],cfg['hitting_probability_threshold'])
+    dc = DesignCentering(v, oracle, representation, cfg)
 
     center,history = dc.ds_explore()
     centers = history['centers']

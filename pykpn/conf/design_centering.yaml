@@ -7,7 +7,6 @@ defaults:
   - platform: default
   - trace: default
   - representation: default
-  - app_platform_combination: ${defaults.3.kpn}_${defaults.4.platform}
 
 threads : 1
 max_samples : 50
@@ -43,3 +42,4 @@ perturbation_type : representation
 perturbation_max_iters : 1000
 perturbation_ball_num : 20
 perturbation_radius : 2
+threshold : null
