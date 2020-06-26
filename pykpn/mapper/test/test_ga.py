@@ -1,5 +1,5 @@
 from pykpn.mapper.test.mock_cache import MockMappingCache
-from pykpn.mapper.algorithms import GeneticFullMapper
+from pykpn.mapper.genetic import GeneticMapper
 import pytest
 import numpy as np
 
@@ -18,7 +18,7 @@ def evaluation_function():
     return lambda m : 1+ np.cos(m[0]-m[1])*np.sin(m[1]*2-1)
 @pytest.fixture
 def mapper(kpn,platform,conf,evaluation_function):
-    m =  GeneticFullMapper(kpn,platform,conf)
+    m =  GeneticMapper(kpn,platform,conf)
     m.mapping_cache = MockMappingCache(evaluation_function)
     return m
 

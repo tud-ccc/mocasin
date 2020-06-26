@@ -1,6 +1,6 @@
 mapper:
    class:
-      pykpn.mapper.algorithms.GeneticFullMapper
+      pykpn.mapper.genetic.GeneticMapper
 pop_size : 10
 num_gens : 25
 cxpb : 0.35
