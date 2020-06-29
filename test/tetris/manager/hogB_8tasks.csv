@@ -1,4 +1,4 @@
-# RUN: %pytetris --scenario %s -s DAC -l INFO 2>&1 | %check %s --check-prefix=CHECK-DAC
+# RUN: %pytetris scenario=%s scheduler=DAC log_level=INFO mode=trace 2>&1 | %check %s --check-prefix=CHECK-DAC
 app,arrival,deadline
 hog.B,0,100
 hog.B,0,133.29

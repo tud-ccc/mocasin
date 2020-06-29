@@ -1,7 +1,7 @@
 # Both DAC and DAC-2 produce the same output
-# RUN: %pytetris --scenario %s -s DAC  --mode=single | %check %s --check-prefix=CHECK-DAC
-# RUN: %pytetris --scenario %s -s DAC-2  --mode=single | %check %s --check-prefix=CHECK-DAC
-# RUN: %pytetris --scenario %s -s FAST  --mode=single | %check %s --check-prefix=CHECK-FAST
+# RUN: %pytetris scenario=%s scheduler=DAC  mode=single | %check %s --check-prefix=CHECK-DAC
+# RUN: %pytetris scenario=%s scheduler=DAC-2  mode=single | %check %s --check-prefix=CHECK-DAC
+# RUN: %pytetris scenario=%s scheduler=FAST  mode=single | %check %s --check-prefix=CHECK-FAST
 app,start_time,deadline
 hog.B,0,51.91
 hog.B,0,51.91

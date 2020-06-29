@@ -1,4 +1,4 @@
-# RUN: %pytetris --scenario %s -s DAC  --mode=single | %check %s --check-prefix=CHECK-DAC
+# RUN: %pytetris scenario=%s scheduler=DAC  mode=single | %check %s --check-prefix=CHECK-DAC
 app,start_time,deadline
 hog.B,0,133.29
 hog.B,0,133.29

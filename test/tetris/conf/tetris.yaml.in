@@ -11,8 +11,7 @@ defaults:
     #  - mapper: default
 
 # Base directory
-# The base directory should include 'apps' directory
-tetris_base: ???
+tetris_base: PYKPN_ROOT/test/tetris
 
 # Scenario to schedule
 scenario: ???

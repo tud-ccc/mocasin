@@ -153,8 +153,7 @@ def tetris(cfg):
     # Suppress logs from pykpn module
     init_logging()
 
-    BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                            "../tetris/tetris")
+    tetris_base = cfg['tetris_base']
 
     # Set the platform
     platform = Platform("exynos", hydra.utils.instantiate(cfg['platform']))
@@ -164,7 +163,7 @@ def tetris(cfg):
 
     # Initialize application table
     app_table = AppTable(platform, allow_idle=idle)
-    app_table.read_applications(os.path.join(BASE_DIR, "apps"))
+    app_table.read_applications(os.path.join(tetris_base, "apps"))
 
     # Save reference to table in Context
     Context().req_table = req_table
