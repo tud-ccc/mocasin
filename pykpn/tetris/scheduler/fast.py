@@ -3,6 +3,7 @@
 from pykpn.tetris.context import Context
 from pykpn.tetris.mapping import SegmentMapping, JobSegmentMapping
 from pykpn.tetris.scheduler.base import SingleVariantSegmentMapper, SingleVariantSegmentizedScheduler
+from pykpn.tetris.extra import NamedDimensionalNumber
 import math
 import logging
 
@@ -83,7 +84,7 @@ class FastSegmentMapper(SingleVariantSegmentMapper):
         self.__start_time = job_table.time
 
         mapping = [None] * len(self.__job_table)
-        avl_core_types = self.platform.core_types()
+        avl_core_types = NamedDimensionalNumber(self.platform.core_types())
 
         while None in mapping:
             # List of mappings to finish the applications
@@ -97,7 +98,7 @@ class FastSegmentMapper(SingleVariantSegmentMapper):
                 c = self.__job_table[i].cratio
                 app = Context().req_table[rid].app()
                 to_finish[i] = self.__select_app_mappings_fit_deadline_resources(app, d - self.__start_time, avl_core_types, completion = c)
-                log.debug("{}: {}".format(i, to_finish[i]))
+                log.debug("to_finish[{}]: {}".format(i, to_finish[i]))
                 if len(to_finish[i]) == 0:
                     mapping[i] = '__idle__'
                     continue

@@ -14,7 +14,7 @@ from pykpn.tetris.reqtable import ReqTable
 from pykpn.tetris.apptable import AppTable
 from pykpn.tetris.job import JobTable
 
-from pykpn.tetris.tplatform import Platform
+from pykpn.common.platform import Platform
 
 from pykpn.tetris.scheduler.bruteforce import BruteforceScheduler
 from pykpn.tetris.scheduler.fast import FastScheduler
@@ -156,7 +156,7 @@ def tetris(cfg):
     tetris_base = cfg['tetris_base']
 
     # Set the platform
-    platform = Platform("exynos", hydra.utils.instantiate(cfg['platform']))
+    platform = hydra.utils.instantiate(cfg['platform'])
 
     # Initialize request table, and fill it by requests from the file
     req_table = ReqTable()

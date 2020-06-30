@@ -8,9 +8,10 @@ Real-Time Distributed Computing Workshops, April 2015, pp. 103–110.
 
 from pykpn.tetris.scheduler.base import SingleVariantSegmentMapper, SingleVariantSegmentizedScheduler
 from pykpn.tetris.scheduler.lr_solver import LRSolver, LRConstraint
-from pykpn.tetris.tplatform import Platform
+from pykpn.common.platform import Platform
 from pykpn.tetris.job import Job, JobTable
 from pykpn.tetris.mapping import SegmentMapping, JobSegmentMapping
+from pykpn.tetris.extra import NamedDimensionalNumber
 
 import math
 from enum import Enum
@@ -78,7 +79,7 @@ class WWT15SegmentMapper(SingleVariantSegmentMapper):
 
 
         # Empty resource
-        resources = self.platform.core_types(only_types = True)
+        resources = NamedDimensionalNumber(self.platform.core_types(), init_only_names = True)
 
         # Empty segment mapping
         segment_mapping = SegmentMapping(self.platform)
@@ -100,7 +101,7 @@ class WWT15SegmentMapper(SingleVariantSegmentMapper):
             added = False
             for cm_id, can_mapping, _ in clist:
                 # Try to map in this order
-                if resources + can_mapping.core_types <= self.platform.core_types():
+                if resources + can_mapping.core_types <= NamedDimensionalNumber(self.platform.core_types()):
                     # It is possible to map on the available resources, check whether it satisfies its deadline condition.
                     if can_mapping.time(start_cratio = cratio) > job.deadline:
                         # This mapping cannot fit deadline condition.

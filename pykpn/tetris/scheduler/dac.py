@@ -6,7 +6,9 @@ import logging
 from pykpn.tetris.mapping import Mapping, SegmentMapping, JobSegmentMapping
 from pykpn.tetris.scheduler.base import SchedulerBase
 
-from pykpn.tetris.tplatform import Platform
+from pykpn.common.platform import Platform
+
+from pykpn.tetris.extra import NamedDimensionalNumber
 
 log = logging.getLogger(__name__)
 
@@ -66,7 +68,7 @@ class DacScheduler(SchedulerBase):
 
         # First try to put the job into segments
         for index, segment in enumerate(scheduling):
-            if segment.used_core_types + mapping.core_types <= platform.core_types():
+            if segment.used_core_types + mapping.core_types <= NamedDimensionalNumber(platform.core_types()):
                 # This segment has enough resource available for the mapping
                 duration = segment.duration
                 if cur_rem_time >= duration - EPS:
@@ -177,7 +179,7 @@ class DacScheduler(SchedulerBase):
 
         to_be_scheduled = set([i for i, x in enumerate(tt) if x.deadline != math.inf])
         max_deadline = max([tt[x].deadline for x in to_be_scheduled])
-        core_type_jars = self.__platform.core_types() * max_deadline
+        core_type_jars = NamedDimensionalNumber(self.__platform.core_types()) * max_deadline
         log.debug(to_be_scheduled)
 
         while len(to_be_scheduled) != 0:
@@ -238,7 +240,7 @@ class DacScheduler(SchedulerBase):
 
         to_be_scheduled = set([i for i, x in enumerate(tt) if x.deadline != math.inf])
         max_deadline = max([tt[x].deadline for x in to_be_scheduled])
-        core_type_jars = self.__platform.core_types() * max_deadline
+        core_type_jars = NamedDimensionalNumber(self.__platform.core_types()) * max_deadline
         log.debug(to_be_scheduled)
 
         while len(to_be_scheduled) != 0:

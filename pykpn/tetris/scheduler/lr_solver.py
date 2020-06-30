@@ -1,5 +1,5 @@
 
-from pykpn.tetris.tplatform import Platform
+from pykpn.common.platform import Platform
 from pykpn.tetris.job import Job, JobTable
 from pykpn.tetris.extra import NamedDimensionalNumber
 from pykpn.tetris.apptable import CanonicalMapping
@@ -150,9 +150,9 @@ class LRSolver:
         l_rdp = None
         l_d = None
         if self.__relax_r:
-            l_r = NamedDimensionalNumber(self.__platform.core_types(only_types = True))
+            l_r = NamedDimensionalNumber(self.__platform.core_types(), init_only_names = True)
         if self.__relax_rdp:
-            l_rdp = NamedDimensionalNumber(self.__platform.core_types(only_types = True))
+            l_rdp = NamedDimensionalNumber(self.__platform.core_types(), init_only_names = True)
         if self.__relax_d:
             l_d = {}
             for j in jobs:
@@ -213,8 +213,8 @@ class LRSolver:
             # Calculate subgradient of resource coefficients
             if self.__relax_r:
                 delta = sum([LRSolver.__job_config_resource(job, config) for job, _, config in min_configs],
-                        NamedDimensionalNumber(self.__platform.core_types(only_types = True))) \
-                                - self.__platform.core_types()
+                        NamedDimensionalNumber(self.__platform.core_types(), init_only_names = True)) \
+                                - NamedDimensionalNumber(self.__platform.core_types())
                 new_l_r = NamedDimensionalNumber.max_per_dim(l[1] + delta * self.__step_size_resource(t), 0.0)
                 if l[1] != new_l_r:
                     changed = True
@@ -222,8 +222,8 @@ class LRSolver:
             # Calculate subgradient of rdp coefficients
             if self.__relax_rdp:
                 delta = sum([LRSolver.__job_config_rdp(job, config) for job, _, config in min_configs if job.deadline != math.inf],
-                        NamedDimensionalNumber(self.__platform.core_types(only_types = True))) \
-                                - (self.__platform.core_types() * window)
+                        NamedDimensionalNumber(self.__platform.core_types(), init_only_names = True)) \
+                                - (NamedDimensionalNumber(self.__platform.core_types()) * window)
                 new_l_rdp = NamedDimensionalNumber.max_per_dim(l[2] + delta * self.__step_size_rdp(t), 0.0)
                 if l[2] != new_l_rdp:
                     changed = True

@@ -10,6 +10,7 @@ from pykpn.tetris.scheduler.base import SchedulerBase
 from pykpn.tetris.context import Context
 from pykpn.tetris.mapping import Mapping, SegmentMapping, JobSegmentMapping
 from pykpn.tetris.job import JobTable
+from pykpn.tetris.extra import NamedDimensionalNumber
 
 EPS = 0.00001
 
@@ -88,7 +89,7 @@ class BruteforceStepScheduler:
 
     def __schedule_calc_values(self, clist):
         energy = 0
-        core_types = self.__parent._platform.core_types(only_types = True)
+        core_types = NamedDimensionalNumber(self.__parent._platform.core_types(), init_only_names = True)
         for ts, m in zip(self.__job_table, clist):
             cratio = ts.cratio
             app = ts.app
@@ -193,7 +194,7 @@ class BruteforceStepScheduler:
 
         (core_types, e) = self.__schedule_calc_values(clist)
 
-        if not( core_types <= self.__parent._platform.core_types()):
+        if not( core_types <= NamedDimensionalNumber(self.__parent._platform.core_types())):
             return
 
         # Check current energy

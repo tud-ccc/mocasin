@@ -12,7 +12,8 @@ import math
 from functools import reduce
 
 from pykpn.tetris.context import Context
-from pykpn.tetris.tplatform import Platform
+from pykpn.common.platform import Platform
+from pykpn.tetris.extra import NamedDimensionalNumber
 
 EPS = 0.00001
 
@@ -269,7 +270,7 @@ class SegmentMapping:
         """NamedDimensionalNumber: Number of used cores per type."""
         cores_used = reduce((lambda x, y: x + y),
                             [x.can_mapping.core_types for x in self.jobs()],
-                            self.__platform.core_types(only_types = True))
+                            NamedDimensionalNumber(self.__platform.core_types(), init_only_names = True))
         return cores_used
 
     def jobs(self):
@@ -312,7 +313,7 @@ class SegmentMapping:
             assert job.end_time <= self.end_time + EPS, "Job's end_time ({}) must be not larger than the segment's end_time ({})".format(job.end_time, self.end_time)
 
 
-        if cores_used <= self.__platform.core_types():
+        if cores_used <= NamedDimensionalNumber(self.__platform.core_types()):
             self.__jobs.append(job)
         else:
             #print([ str(x) for x in self.__job_mappings])

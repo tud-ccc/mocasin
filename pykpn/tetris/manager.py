@@ -1,5 +1,5 @@
 from pykpn.tetris.scheduler.base import SchedulerBase
-from pykpn.tetris.tplatform import Platform
+from pykpn.common.platform import Platform
 from pykpn.tetris.mapping import Mapping
 from pykpn.tetris.context import Context
 from pykpn.tetris.job import JobTable

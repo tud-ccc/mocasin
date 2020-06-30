@@ -9,7 +9,7 @@ import logging
 import random
 
 from pykpn.tetris.extra import NamedDimensionalNumber
-from pykpn.tetris.tplatform import Platform
+from pykpn.common.platform import Platform
 from pykpn.slx.kpn import SlxKpnGraph
 
 from pykpn.common.mapping import Mapping as KpnMapping, SchedulerMappingInfo,ProcessMappingInfo, ChannelMappingInfo
@@ -40,7 +40,7 @@ class CanonicalMapping:
             self.__mapping = None
         else:
             assert isinstance(mapping, dict)
-            self.__mapping = CanonicalMapping.__create_kpn_mapping(kpn_graph, platform.kpn_platform(), mapping)
+            self.__mapping = CanonicalMapping.__create_kpn_mapping(kpn_graph, platform, mapping)
 
         self.__core_types = {}
         assert platform is not None

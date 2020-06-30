@@ -1,4 +1,4 @@
-from pykpn.tetris.tplatform import Platform
+from pykpn.common.platform import Platform
 from pykpn.tetris.mapping import Mapping, SegmentMapping
 from pykpn.tetris.job import JobTable
 
