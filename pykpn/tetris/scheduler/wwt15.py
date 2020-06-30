@@ -6,11 +6,11 @@ in 2015 IEEE International Symposium on Object/Component/Service-Oriented
 Real-Time Distributed Computing Workshops, April 2015, pp. 103–110.
 """
 
-from pykpn.tetris.tetris.scheduler.base import SingleVariantSegmentMapper, SingleVariantSegmentizedScheduler
-from pykpn.tetris.tetris.scheduler.lr_solver import LRSolver, LRConstraint
-from pykpn.tetris.tetris.tplatform import Platform
-from pykpn.tetris.tetris.job import Job, JobTable
-from pykpn.tetris.tetris.mapping import SegmentMapping, JobSegmentMapping
+from pykpn.tetris.scheduler.base import SingleVariantSegmentMapper, SingleVariantSegmentizedScheduler
+from pykpn.tetris.scheduler.lr_solver import LRSolver, LRConstraint
+from pykpn.tetris.tplatform import Platform
+from pykpn.tetris.job import Job, JobTable
+from pykpn.tetris.mapping import SegmentMapping, JobSegmentMapping
 
 import math
 from enum import Enum

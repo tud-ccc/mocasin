@@ -1,8 +1,8 @@
 
-from pykpn.tetris.tetris.tplatform import Platform
-from pykpn.tetris.tetris.job import Job, JobTable
-from pykpn.tetris.tetris.extra import NamedDimensionalNumber
-from pykpn.tetris.tetris.apptable import CanonicalMapping
+from pykpn.tetris.tplatform import Platform
+from pykpn.tetris.job import Job, JobTable
+from pykpn.tetris.extra import NamedDimensionalNumber
+from pykpn.tetris.apptable import CanonicalMapping
 
 import logging
 log = logging.getLogger(__name__)

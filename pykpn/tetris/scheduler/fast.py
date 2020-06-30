@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
-from pykpn.tetris.tetris.context import Context
-from pykpn.tetris.tetris.mapping import SegmentMapping, JobSegmentMapping
-from pykpn.tetris.tetris.scheduler.base import SingleVariantSegmentMapper, SingleVariantSegmentizedScheduler
+from pykpn.tetris.context import Context
+from pykpn.tetris.mapping import SegmentMapping, JobSegmentMapping
+from pykpn.tetris.scheduler.base import SingleVariantSegmentMapper, SingleVariantSegmentizedScheduler
 import math
 import logging
 

@@ -6,10 +6,10 @@ import time
 
 import copy
 
-from pykpn.tetris.tetris.scheduler.base import SchedulerBase
-from pykpn.tetris.tetris.context import Context
-from pykpn.tetris.tetris.mapping import Mapping, SegmentMapping, JobSegmentMapping
-from pykpn.tetris.tetris.job import JobTable
+from pykpn.tetris.scheduler.base import SchedulerBase
+from pykpn.tetris.context import Context
+from pykpn.tetris.mapping import Mapping, SegmentMapping, JobSegmentMapping
+from pykpn.tetris.job import JobTable
 
 EPS = 0.00001
 

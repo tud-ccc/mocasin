@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import time
 
-from pykpn.tetris.tetris.manager import ResourceManager
+from pykpn.tetris.manager import ResourceManager
 
 import logging
 log = logging.getLogger(__name__)

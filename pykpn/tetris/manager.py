@@ -1,9 +1,9 @@
-from pykpn.tetris.tetris.scheduler.base import SchedulerBase
-from pykpn.tetris.tetris.tplatform import Platform
-from pykpn.tetris.tetris.mapping import Mapping
-from pykpn.tetris.tetris.context import Context
-from pykpn.tetris.tetris.job import JobTable
-from pykpn.tetris.tetris.reqtable import RequestStatus
+from pykpn.tetris.scheduler.base import SchedulerBase
+from pykpn.tetris.tplatform import Platform
+from pykpn.tetris.mapping import Mapping
+from pykpn.tetris.context import Context
+from pykpn.tetris.job import JobTable
+from pykpn.tetris.reqtable import RequestStatus
 
 import logging
 log = logging.getLogger(__name__)

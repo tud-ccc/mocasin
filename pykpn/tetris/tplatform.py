@@ -2,7 +2,7 @@
 #
 # Author: Robert Khasanov
 from pykpn.common.platform import Platform as KpnPlatform
-from pykpn.tetris.tetris.extra import NamedDimensionalNumber
+from pykpn.tetris.extra import NamedDimensionalNumber
 
 class Platform:
     """This class wraps the class pykpn.slx.platform.Platform class.

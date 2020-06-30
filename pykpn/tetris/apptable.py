@@ -8,8 +8,8 @@ import math
 import logging
 import random
 
-from pykpn.tetris.tetris.extra import NamedDimensionalNumber
-from pykpn.tetris.tetris.tplatform import Platform
+from pykpn.tetris.extra import NamedDimensionalNumber
+from pykpn.tetris.tplatform import Platform
 from pykpn.slx.kpn import SlxKpnGraph
 
 from pykpn.common.mapping import Mapping as KpnMapping, SchedulerMappingInfo,ProcessMappingInfo, ChannelMappingInfo

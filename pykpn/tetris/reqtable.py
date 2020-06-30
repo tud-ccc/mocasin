@@ -3,7 +3,7 @@ import pandas as pd
 import math
 from enum import Enum
 
-from pykpn.tetris.tetris.context import Context
+from pykpn.tetris.context import Context
 
 import logging
 log = logging.getLogger(__name__)

@@ -1,12 +1,12 @@
 
-from pykpn.tetris.tetris.job import JobTable, Job
+from pykpn.tetris.job import JobTable, Job
 import math
 import logging
 
-from pykpn.tetris.tetris.mapping import Mapping, SegmentMapping, JobSegmentMapping
-from pykpn.tetris.tetris.scheduler.base import SchedulerBase
+from pykpn.tetris.mapping import Mapping, SegmentMapping, JobSegmentMapping
+from pykpn.tetris.scheduler.base import SchedulerBase
 
-from pykpn.tetris.tetris.tplatform import Platform
+from pykpn.tetris.tplatform import Platform
 
 log = logging.getLogger(__name__)
 

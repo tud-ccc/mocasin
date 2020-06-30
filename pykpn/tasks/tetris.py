@@ -9,25 +9,25 @@ import time
 import logging
 import hydra
 
-from pykpn.tetris.tetris.context import Context
-from pykpn.tetris.tetris.reqtable import ReqTable
-from pykpn.tetris.tetris.apptable import AppTable
-from pykpn.tetris.tetris.job import JobTable
+from pykpn.tetris.context import Context
+from pykpn.tetris.reqtable import ReqTable
+from pykpn.tetris.apptable import AppTable
+from pykpn.tetris.job import JobTable
 
-from pykpn.tetris.tetris.tplatform import Platform
+from pykpn.tetris.tplatform import Platform
 
-from pykpn.tetris.tetris.scheduler.bruteforce import BruteforceScheduler
-from pykpn.tetris.tetris.scheduler.fast import FastScheduler
-from pykpn.tetris.tetris.scheduler.dac import DacScheduler
-from pykpn.tetris.tetris.scheduler.wwt15 import (
+from pykpn.tetris.scheduler.bruteforce import BruteforceScheduler
+from pykpn.tetris.scheduler.fast import FastScheduler
+from pykpn.tetris.scheduler.dac import DacScheduler
+from pykpn.tetris.scheduler.wwt15 import (
     WWT15Scheduler,
     WWT15SortingKey,
     WWT15ExploreMode,
 )
-from pykpn.tetris.tetris.scheduler.lr_solver import LRConstraint
+from pykpn.tetris.scheduler.lr_solver import LRConstraint
 
-from pykpn.tetris.tetris.manager import ResourceManager
-from pykpn.tetris.tetris.tracer import TracePlayer
+from pykpn.tetris.manager import ResourceManager
+from pykpn.tetris.tracer import TracePlayer
 
 log = logging.getLogger(__name__)
 

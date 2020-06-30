@@ -11,8 +11,8 @@ import math
 
 from functools import reduce
 
-from pykpn.tetris.tetris.context import Context
-from pykpn.tetris.tetris.tplatform import Platform
+from pykpn.tetris.context import Context
+from pykpn.tetris.tplatform import Platform
 
 EPS = 0.00001
 

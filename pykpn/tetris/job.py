@@ -1,5 +1,5 @@
-from pykpn.tetris.tetris.context import Context
-from pykpn.tetris.tetris.mapping import Mapping
+from pykpn.tetris.context import Context
+from pykpn.tetris.mapping import Mapping
 
 import logging
 log = logging.getLogger(__name__)
