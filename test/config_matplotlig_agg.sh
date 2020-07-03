@@ -1,2 +1,2 @@
 #!/bin/bash
-echo "backend: Agg" \> ~/.config/matplotlib/matplotlibrc
+echo "backend: Agg" > ~/.config/matplotlib/matplotlibrc
