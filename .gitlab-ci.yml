@@ -1,3 +1,9 @@
+default:
+  before_script:
+  - apt-get update
+  - apt-get -y install libblas-dev liblapack-dev
+  - ./.config_matplotlib_agg.sh
+
 stages:
   - test
 
@@ -7,9 +13,6 @@ test-python3.7-develop:
   tags:
     - python3.7
   script:
-  - apt-get update
-  - apt-get -y install libblas-dev liblapack-dev
-  - echo "backend: Agg" > ~/.config/matplotlib/matplotlibrc  
   - python setup.py develop
   - python setup.py test
 
@@ -19,9 +22,6 @@ test-python3.6-develop:
   tags:
     - python3.6
   script:
-  - apt-get update
-  - apt-get -y install libblas-dev liblapack-dev
-  - echo "backend: Agg" > ~/.config/matplotlib/matplotlibrc  
   - python setup.py develop
   - python setup.py test
 
@@ -31,9 +31,6 @@ test-python3.7-install:
   tags:
     - python3.7
   script:
-  - apt-get update
-  - apt-get -y install libblas-dev liblapack-dev
-  - echo "backend: Agg" > ~/.config/matplotlib/matplotlibrc  
   - python setup.py install
   - python setup.py test
 
@@ -43,8 +40,5 @@ test-python3.6-install:
   tags:
     - python3.6
   script:
-  - apt-get update
-  - apt-get -y install libblas-dev liblapack-dev
-  - echo "backend: Agg" > ~/.config/matplotlib/matplotlibrc  
   - python setup.py install
   - python setup.py test
