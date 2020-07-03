@@ -4,6 +4,7 @@ from pykpn.tetris.job import JobTable
 
 import abc
 
+
 class SegmentMapperBase(abc.ABC):
     def __init__(self, parent_scheduler, platform):
         assert isinstance(parent_scheduler, SchedulerBase)
@@ -18,6 +19,7 @@ class SegmentMapperBase(abc.ABC):
     @abc.abstractmethod
     def schedule(self, jobs):
         pass
+
 
 class SchedulerBase(abc.ABC):
     def __init__(self, platform):
@@ -38,6 +40,7 @@ class SchedulerBase(abc.ABC):
     def schedule(self, jobs):
         pass
 
+
 class SingleVariantSegmentMapper(SegmentMapperBase):
     def __init__(self, parent_scheduler, platform):
         assert isinstance(parent_scheduler, SingleVariantSegmentizedScheduler)
@@ -47,14 +50,13 @@ class SingleVariantSegmentMapper(SegmentMapperBase):
 class SingleVariantSegmentizedScheduler(SchedulerBase):
     """Greedy scheduler.
 
-    The scheduler generates the mapping segment by segment by invocating a segment mapper.
-    The segment mapper returns a single mapping segment.
+    The scheduler generates the mapping segment by segment by invocating
+    a segment mapper. The segment mapper returns a single mapping segment.
 
     Args:
         platform (Platform): A platform
         segment_mapper: A segment mapper
     """
-
     def __init__(self, platform, segment_mapper):
         assert isinstance(segment_mapper, SingleVariantSegmentMapper)
         self.__segment_mapper = segment_mapper
@@ -99,4 +101,3 @@ class SingleVariantSegmentizedScheduler(SchedulerBase):
             return False, None, True
         else:
             return True, scheduling, True
-

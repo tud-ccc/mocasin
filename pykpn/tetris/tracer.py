@@ -7,11 +7,12 @@ from pykpn.tetris.manager import ResourceManager
 import logging
 log = logging.getLogger(__name__)
 
+
 class TracePlayer:
     """Trace player.
 
-    This class simulates a trace scenario, which consists of events of applications arrival.
-    The trace is read from CSV file.
+    This class simulates a trace scenario, which consists of events of
+    applications arrival. The trace is read from CSV file.
 
     Args:
         manager (ResourceManager): A resource manager
@@ -19,7 +20,7 @@ class TracePlayer:
         dump_summary (bool): A flag to dump the summary (default: False)
         dump_path (str): A path to summary file
     """
-    def __init__(self, manager, scenario, dump_summary= False, dump_path =""):
+    def __init__(self, manager, scenario, dump_summary=False, dump_path=""):
         assert isinstance(manager, ResourceManager)
         self.__manager = manager
 
@@ -32,7 +33,8 @@ class TracePlayer:
         # Check that table has specified columns
         assert {'app', 'arrival', 'deadline'} == set(df.columns)
         # Check that all events are sorted in the arrival order
-        assert all(el[i]['arrival'] <= el[i+1]['arrival'] for i in range(len(el)-1))
+        assert all(el[i]['arrival'] <= el[i + 1]['arrival']
+                   for i in range(len(el) - 1))
         assert all(x['arrival'] >= 0.0 for x in el)
         self.__events = el
 
@@ -62,7 +64,8 @@ class TracePlayer:
         for event in self.__events:
             arr = event['arrival']
             self.__simulate_to(event['arrival'])
-            self.__manager.new_request(arrival = arr, app = event['app'], deadline = event['deadline'])
+            self.__manager.new_request(arrival=arr, app=event['app'],
+                                       deadline=event['deadline'])
 
         new_time = self.__manager.finish()
         self.__time = new_time
@@ -77,10 +80,13 @@ class TracePlayer:
         log.info("==================================")
         log.info("Results:")
         log.info("Total requests: {}".format(stats['requests']))
-        log.info("Accepted requests (rate): {} ({:.2f}%)".format(stats['accepted'], 100*stats['accepted']/stats['requests']))
+        log.info("Accepted requests (rate): {} ({:.2f}%)".format(
+            stats['accepted'], 100 * stats['accepted'] / stats['requests']))
         log.info("Energy consumption: {:.3f}J".format(stats['energy']))
         log.info("Simulated time: {:.2f}s".format(self.__time))
-        log.info("Simulation time: {:.2f}s".format(self.__simulation_end_time - self.__simulation_start_time))
+        log.info(
+            "Simulation time: {:.2f}s".format(self.__simulation_end_time -
+                                              self.__simulation_start_time))
 
     def __dump_stats(self):
         if not self.__dump_summary:
@@ -95,7 +101,12 @@ class TracePlayer:
 
         with open(self.__dump_path, mod) as f:
             if mod == 'w':
-                print("input_scenario,scheduler,requests,accepted,energy,time_simulated,time_simulation", file=f)
-            print("{},{},{},{},{},{},{}".format(self.__scenario,stats['scheduler'],stats['requests'],stats['accepted'],stats['energy'],self.__time,self.__simulation_end_time - self.__simulation_start_time), file=f)
-
-
+                print(
+                    "input_scenario,scheduler,requests,accepted,energy,"
+                    "time_simulated,time_simulation", file=f)
+            print(
+                "{},{},{},{},{},{},{}".format(
+                    self.__scenario, stats['scheduler'], stats['requests'],
+                    stats['accepted'], stats['energy'], self.__time,
+                    self.__simulation_end_time - self.__simulation_start_time),
+                file=f)

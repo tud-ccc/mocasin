@@ -8,14 +8,17 @@ from pykpn.tetris.context import Context
 import logging
 log = logging.getLogger(__name__)
 
+
 class RequestStatus(Enum):
     NEW = 1
     ACCEPTED = 2
     FINISHED = 3
     REFUSED = 4
 
+
 class Request:
-    def __init__(self, rid, app, arrival, deadline, start_completion_rate = 0.0, status = RequestStatus.NEW):
+    def __init__(self, rid, app, arrival, deadline, start_completion_rate=0.0,
+                 status=RequestStatus.NEW):
         self.__rid = rid
         self.__app = app
         self.__arrival = arrival
@@ -54,7 +57,9 @@ class Request:
 
     @status.setter
     def status(self, status):
-        """Set a new request status. This setter ensures that the new status is a valid transition of the old status"""
+        """Set a new request status. This setter ensures that the new status is
+        a valid transition of the old status.
+        """
         if self.status == status:
             log.warning("Attempt to set the same request status")
         if self.status == RequestStatus.NEW:
@@ -68,20 +73,24 @@ class Request:
             assert status == RequestStatus.Finished
         self.__status = status
 
-    def dump(self, outf = sys.stdout, prefix = "", end='\n'):
+    def dump(self, outf=sys.stdout, prefix="", end='\n'):
         print(self.dump_str(prefix=prefix), file=outf, end=end)
 
-    def dump_str(self, prefix = ""):
-        res = prefix + "Request {} [{}], arrival = {}, deadline (abs) = {} ({})".format(
-            self.rid(), self.app_name(), self.arrival_time(), self.deadline(), self.abs_deadline())
+    def dump_str(self, prefix=""):
+        res = prefix
+        res += "Request {} [{}], arrival = {}, deadline (abs) = {} ({})".format(
+            self.rid(), self.app_name(), self.arrival_time(), self.deadline(),
+            self.abs_deadline())
         return res
+
 
 class ReqTable:
     def __init__(self):
         self.__reqs = []
         self.__next_rid = 0
 
-    def add(self, app_name, arrival, deadline, completion_rate = 0.0, status = RequestStatus.NEW):
+    def add(self, app_name, arrival, deadline, completion_rate=0.0,
+            status=RequestStatus.NEW):
         rid = self.__next_rid
         r = Request(rid, app_name, arrival, deadline, completion_rate, status)
         self.__next_rid += 1
@@ -108,7 +117,8 @@ class ReqTable:
         for r in self.__reqs:
             if r.rid() == key:
                 return r
-        assert False, "No request with id '{}'. ReqTable: {}".format(key, self.dump_str())
+        assert False, "No request with id '{}'. ReqTable: {}".format(
+            key, self.dump_str())
 
     def __iter__(self):
         yield from self.__reqs
@@ -120,15 +130,16 @@ class ReqTable:
         """Returns the number of accepted requests."""
         res = 0
         for r in self:
-            if r.status == RequestStatus.ACCEPTED or r.status == RequestStatus.FINISHED:
+            if (r.status == RequestStatus.ACCEPTED
+                    or r.status == RequestStatus.FINISHED):
                 res += 1
         return res
 
-    def dump(self, outf = sys.stdout, prefix = ""):
+    def dump(self, outf=sys.stdout, prefix=""):
         print(self.dump_str(prefix=prefix, file=outf))
 
-    def dump_str(self, prefix = ""):
+    def dump_str(self, prefix=""):
         res = prefix + "Request table:\n"
         for r in self.__reqs:
-            res += r.dump_str(prefix = prefix + "  ") + "\n"
+            res += r.dump_str(prefix=prefix + "  ") + "\n"
         return res

@@ -4,16 +4,20 @@ from pykpn.tetris.mapping import Mapping
 import logging
 log = logging.getLogger(__name__)
 
+
 class Job:
     """Job state.
 
-    Job state is defined by its request id and completion ratio. The instance of job is created for each request, and updated during the trace simulation. The instances may be copied by schedulers for internal simulation.
+    Job state is defined by its request id and completion ratio.
+    The instance of job is created for each request, and updated during
+    the trace simulation. The instances may be copied by schedulers for
+    internal simulation.
 
     Args:
         rid (int): Request id
         cratio (float): Completion ratio
     """
-    def __init__(self, table, rid, cratio = 0.0):
+    def __init__(self, table, rid, cratio=0.0):
         assert isinstance(cratio, float)
         self.__table = table
         # TODO: make a property
@@ -43,22 +47,27 @@ class Job:
         """Application."""
         return Context().req_table[self.rid].app()
 
+
 class JobTable:
     """Table of jobs.
 
-    Job table is created at the beginning of simulation. It keeps current statuses of jobs.
-    Some schedulers may create their own version of job tables.
+    Job table is created at the beginning of simulation. It keeps current
+    statuses of jobs. Some schedulers may create their own version of job
+    tables.
 
     Args:
         time (float): Current time
     """
-    def __init__(self, time = 0.0):
+    def __init__(self, time=0.0):
         assert time >= 0.0
         self.__jobs = []
         self.time = time
 
     def init_by_req_table(self):
-        assert len(self.__jobs) == 0, "There should be no task in the state table"
+        # yapf: disable
+        assert len(self.__jobs) == 0, (
+                "There should be no task in the state table")
+        # yapf: enable
         for r in Context().req_table:
             self.add(r.rid(), r.start_completion_rate())
 
@@ -69,7 +78,7 @@ class JobTable:
         if len(mapping) == 0:
             return cls()
 
-        new_obj = cls(time = mapping.end_time)
+        new_obj = cls(time=mapping.end_time)
         for sm in mapping.last:
             finished = sm.finished
             rid = sm.rid
@@ -80,13 +89,12 @@ class JobTable:
 
     def copy(self):
         """Copy the job table."""
-        new_jt = JobTable(time = self.time)
+        new_jt = JobTable(time=self.time)
         for j in self:
             new_jt.add(j.rid, j.cratio)
         return new_jt
 
-
-    def add(self, rid, cratio = 0.0):
+    def add(self, rid, cratio=0.0):
         """Add a job into the job table."""
         self.__jobs.append(Job(self, rid, cratio))
 
@@ -114,4 +122,3 @@ class JobTable:
 
     def __iter__(self):
         yield from self.__jobs
-

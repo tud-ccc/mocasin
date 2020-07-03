@@ -1,4 +1,3 @@
-
 from pykpn.tetris.job import JobTable, Job
 import math
 import logging
@@ -14,9 +13,9 @@ log = logging.getLogger(__name__)
 
 EPS = 0.00001
 
-class DacScheduler(SchedulerBase):
 
-    def __init__(self, platform, version = "original"):
+class DacScheduler(SchedulerBase):
+    def __init__(self, platform, version="original"):
         assert isinstance(platform, Platform)
         self.__platform = platform
         self.__start_energy = 0.0
@@ -27,19 +26,20 @@ class DacScheduler(SchedulerBase):
     def name(self):
         return "NUEP19'"
 
-    def __select_app_mappings_fit_jars(self, app, deadline, core_type_jars, completion = 0.0):
+    def __select_app_mappings_fit_jars(self, app, deadline, core_type_jars,
+                                       completion=0.0):
         res = []
         for mid, mapping in app.mappings.items():
             if mid == '__idle__':
                 continue
-            rem_time = mapping.time(start_cratio = completion)
+            rem_time = mapping.time(start_cratio=completion)
             if rem_time > deadline:
                 continue
 
             if not (mapping.core_types * rem_time <= core_type_jars):
                 continue
 
-            rem_energy = mapping.energy(start_cratio = completion)
+            rem_energy = mapping.energy(start_cratio=completion)
             res.append((mid, rem_energy))
         res.sort(key=lambda tup: tup[1])
         return res
@@ -52,7 +52,8 @@ class DacScheduler(SchedulerBase):
             scheduling (Mapping): Current scheduling
             job (Job): A job to add
             mid: The mapping id
-            start_time (float): A start time of scheduling (used if scheduling is empty)
+            start_time (float): A start time of scheduling (used if scheduling
+                is empty)
             platform (Platform): Target platform
         """
         assert scheduling is not None
@@ -62,22 +63,24 @@ class DacScheduler(SchedulerBase):
 
         cur_cratio = job.cratio
         mapping = job.app.mappings[mid]
-        cur_rem_time = mapping.time(start_cratio = cur_cratio)
+        cur_rem_time = mapping.time(start_cratio=cur_cratio)
         finished = False
         finish_time = None
 
         # First try to put the job into segments
         for index, segment in enumerate(scheduling):
-            if segment.used_core_types + mapping.core_types <= NamedDimensionalNumber(platform.core_types()):
+            if (segment.used_core_types + mapping.core_types <=
+                    NamedDimensionalNumber(platform.core_types())):
                 # This segment has enough resource available for the mapping
                 duration = segment.duration
                 if cur_rem_time >= duration - EPS:
                     # This segment is small to finish the job.
-                    # Schedule here, the rest will be scheduled in the next segments.
+                    # Schedule here, the rest will be scheduled in the next
+                    # segments.
                     jm = JobSegmentMapping(job.rid, mid,
-                        start_time = segment.start_time,
-                        start_cratio = cur_cratio,
-                        end_time = segment.end_time)
+                                           start_time=segment.start_time,
+                                           start_cratio=cur_cratio,
+                                           end_time=segment.end_time)
                     segment.append_job(jm)
                     if jm.finished:
                         # If the segment is a right fit for a job
@@ -85,15 +88,16 @@ class DacScheduler(SchedulerBase):
                         finish_time = jm.end_time
                     # Update current values
                     cur_cratio = jm.end_cratio
-                    cur_rem_time = mapping.time(start_cratio = cur_cratio)
+                    cur_rem_time = mapping.time(start_cratio=cur_cratio)
                 else:
                     # This segment is larger than the remaining time.
                     # Split the segment into two parts
-                    s1, s2 = segment.split_at_time(segment.start_time + cur_rem_time)
+                    s1, s2 = segment.split_at_time(segment.start_time +
+                                                   cur_rem_time)
                     jm = JobSegmentMapping(job.rid, mid,
-                        start_time = s1.start_time,
-                        start_cratio = cur_cratio,
-                        end_time = s1.end_time)
+                                           start_time=s1.start_time,
+                                           start_cratio=cur_cratio,
+                                           end_time=s1.end_time)
                     s1.append_job(jm)
 
                     #Remove old segment, insert new two segments
@@ -113,9 +117,9 @@ class DacScheduler(SchedulerBase):
             else:
                 # If not enough resources, insert `idle` mappings
                 idle_mapping = JobSegmentMapping(job.rid, '__idle__',
-                    start_time = segment.start_time,
-                    start_cratio = cur_cratio,
-                    end_time = segment.end_time)
+                                                 start_time=segment.start_time,
+                                                 start_cratio=cur_cratio,
+                                                 end_time=segment.end_time)
                 segment.append_job(idle_mapping)
 
         if not finished:
@@ -124,9 +128,9 @@ class DacScheduler(SchedulerBase):
                 segment_start = start_time
             else:
                 segment_start = scheduling.end_time
-            jm = JobSegmentMapping(job.rid, mid, start_time = segment_start,
-                    start_cratio = cur_cratio, finished = True)
-            new_segment = SegmentMapping(platform, jobs = [jm])
+            jm = JobSegmentMapping(job.rid, mid, start_time=segment_start,
+                                   start_cratio=cur_cratio, finished=True)
+            new_segment = SegmentMapping(platform, jobs=[jm])
             scheduling.append_segment(new_segment)
             finished = True
             finish_time = jm.end_time
@@ -139,13 +143,15 @@ class DacScheduler(SchedulerBase):
         return res
 
     def __schedule_mapping(self, mapping):
-        to_schedule = [(ts, m) for ts, m in zip(self.__job_table, mapping) if m is not None]
+        to_schedule = [(ts, m) for ts, m in zip(self.__job_table, mapping)
+                       if m is not None]
         to_schedule.sort(key=lambda x: x[0].deadline)
 
         scheduling = Mapping()
 
         for ts, m in to_schedule:
-            schedulable = DacScheduler.__add_job_to_scheduling(scheduling, ts, m, self.__job_table.time, self.__platform)
+            schedulable = DacScheduler.__add_job_to_scheduling(
+                scheduling, ts, m, self.__job_table.time, self.__platform)
             assert scheduling is not None
             if not schedulable:
                 return None
@@ -160,7 +166,7 @@ class DacScheduler(SchedulerBase):
                 e = math.inf
                 mid = None
                 for k, m in t.app.mappings.items():
-                    if k != "__idle__" and  m.energy() < e:
+                    if k != "__idle__" and m.energy() < e:
                         e = m.energy()
                         mid = k
                 assert mid is not None
@@ -176,10 +182,11 @@ class DacScheduler(SchedulerBase):
             assert res_scheduling is not None
             return res_scheduling
 
-
-        to_be_scheduled = set([i for i, x in enumerate(tt) if x.deadline != math.inf])
+        to_be_scheduled = set(
+            [i for i, x in enumerate(tt) if x.deadline != math.inf])
         max_deadline = max([tt[x].deadline for x in to_be_scheduled])
-        core_type_jars = NamedDimensionalNumber(self.__platform.core_types()) * max_deadline
+        core_type_jars = NamedDimensionalNumber(
+            self.__platform.core_types()) * max_deadline
         log.debug(to_be_scheduled)
 
         while len(to_be_scheduled) != 0:
@@ -192,7 +199,8 @@ class DacScheduler(SchedulerBase):
                 d = ts.deadline
                 c = ts.cratio
                 app = ts.app
-                to_finish[tid] = self.__select_app_mappings_fit_jars(app, d, core_type_jars, completion = c)
+                to_finish[tid] = self.__select_app_mappings_fit_jars(
+                    app, d, core_type_jars, completion=c)
                 log.debug("{}: {}".format(tid, to_finish[tid]))
                 if len(to_finish[tid]) == 0:
                     continue
@@ -237,10 +245,11 @@ class DacScheduler(SchedulerBase):
             assert res_scheduling is not None
             return res_scheduling
 
-
-        to_be_scheduled = set([i for i, x in enumerate(tt) if x.deadline != math.inf])
+        to_be_scheduled = set(
+            [i for i, x in enumerate(tt) if x.deadline != math.inf])
         max_deadline = max([tt[x].deadline for x in to_be_scheduled])
-        core_type_jars = NamedDimensionalNumber(self.__platform.core_types()) * max_deadline
+        core_type_jars = NamedDimensionalNumber(
+            self.__platform.core_types()) * max_deadline
         log.debug(to_be_scheduled)
 
         while len(to_be_scheduled) != 0:
@@ -252,13 +261,16 @@ class DacScheduler(SchedulerBase):
                 d = ts.deadline
                 c = ts.cratio
                 app = ts.app
-                to_finish[tid] = self.__select_app_mappings_fit_jars(app, d, core_type_jars, completion = c)
+                to_finish[tid] = self.__select_app_mappings_fit_jars(
+                    app, d, core_type_jars, completion=c)
                 log.debug("{}: {}".format(tid, to_finish[tid]))
 
             while True:
                 i_md, diff = None, -math.inf
                 for tid in to_be_scheduled:
-                    log.debug("Canonical mappings in list (to_finish), job {}: {}".format(tid, to_finish[tid]))
+                    log.debug(
+                        "Canonical mappings in list (to_finish), job {}: {}"
+                        .format(tid, to_finish[tid]))
                     if len(to_finish[tid]) == 0:
                         continue
                     if len(to_finish[tid]) == 1:

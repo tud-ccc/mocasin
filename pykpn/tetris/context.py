@@ -2,6 +2,7 @@
 #
 #Author: Robert Khasanov
 
+
 class Context(object):
     """A singleton class for keeping `static` objects in one place.
 
@@ -20,5 +21,3 @@ class Context(object):
     def __init(self):
         self.req_table = None
         self.app_table = None
-
-
