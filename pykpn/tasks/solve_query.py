@@ -22,7 +22,7 @@ def solve_query(cfg):
     vector = cfg['vector']
     representation = RepresentationType['SimpleVector'].getClassType()(kpn,platform,cfg)
 
-    solver = Solver(kpn, platform)
+    solver = Solver(kpn, platform,cfg)
 
     if not vector == 'None':
         starting_vector = []

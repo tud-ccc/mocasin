@@ -148,8 +148,8 @@ class MappingCompletionWrapper():
     
     def completeMappingBestEffort(self, processMappingVector):
         mapping = self.__processMapper.generate_mapping(processMappingVector)
-        mapping = self.__fullMapper.generate_mapping(seed=None, part_mapping=mapping)
-        self.__processMapper.reset()
+        mapping = self.__fullMapper.generate_mapping(part_mapping=mapping)
+        #self.__processMapper.reset() #not sure what this is supposed to do
         return mapping
         
     def generate_mapping(self, mapping):
