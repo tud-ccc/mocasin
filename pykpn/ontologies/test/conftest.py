@@ -45,3 +45,7 @@ def mapDictSolver():
     
     mapDict = {'map_one' : firstMapping, 'map_two' : secondMapping}
     return Solver(kpn, platform, cfg, mappingDict=mapDict)
+
+@pytest.fixture
+def cfg():
+    return {}

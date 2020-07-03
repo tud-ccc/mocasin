@@ -32,7 +32,8 @@ class Solver():
         
     def request(self, queryString, vec=None):
         parse_tree = self.__parser.parse(queryString)
-        constraints = visit_parse_tree(parse_tree, SemanticAnalysis(self.__kpn, self.__platform, self.__mappingDict, debug=self.__debug))
+        sema = SemanticAnalysis(self.__kpn, self.__platform, self.__cfg, self.__mappingDict, debug=self.__debug)
+        constraints = visit_parse_tree(parse_tree, sema)
         threadQueue = queue.Queue()
         
         """Creation of individual threads for each constraint set
@@ -67,7 +68,8 @@ class Solver():
     
     def parseString(self, queryString):
         parse_tree = self.__parser.parse(queryString)
-        return visit_parse_tree(parse_tree, SemanticAnalysis(self.__kpn, self.__platform, self.__mappingDict, debug=self.__debug))
+        sema = SemanticAnalysis(self.__kpn, self.__platform, self.__cfg, self.__mappingDict, debug=self.__debug)
+        return visit_parse_tree(parse_tree, sema)
         
     def exploreMappingSpace(self, constraintSet, returnBuffer, vec, threadIdentifier):
         mappingConstraints = []
@@ -157,8 +159,8 @@ class Solver():
                             return
             
                 remaining = remaining + mappingConstraints + sharedCoreConstraints
-                symmetryLense = RepresentationType['Symmetries'].getClassType()(self.__kpn, self.__platform,cfg)
-                generator = MappingGeneratorOrbit(symmetryLense, genMapping)
+                symmetryLens = RepresentationType['Symmetries'].getClassType()(self.__kpn, self.__platform,self.__cfg)
+                generator = MappingGeneratorOrbit(symmetryLens, genMapping)
             else:
                 generator = MappingGeneratorSimvec(self.__kpn, self.__platform, mappingConstraints, sharedCoreConstraints, processingConstraints, vec)
         

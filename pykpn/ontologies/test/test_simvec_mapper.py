@@ -1,7 +1,7 @@
-#Copyright (C) 2019 TU Dresden
+#Copyright (C) 2019-2020 TU Dresden
 #All Rights Reserved
 #
-#Authors: Felix Teweleit
+#Authors: Felix Teweleit, Andrés Goens
 
 import pytest
 
@@ -15,19 +15,24 @@ class TestSimvecMapper(object):
     
     def testMappingGeneration1(self, solver):
         inputQuery = "EXISTS src MAPPED ARM00 AND fft_l MAPPED ARM01"
-        result = [0, 1, 0, 0, 0, 0, 0, 0]
-        assert(solver.request(inputQuery).to_list() == result)
-        
+        result = solver.request(inputQuery).to_list()
+        assert result[0] == 0
+        assert result[1] == 1
+
     def testMappingGeneration2(self, solver):
         inputQuery = "EXISTS src MAPPED ARM00 AND fft_l MAPPED ARM01 AND sink MAPPED ARM02"
-        result = [0, 1, 0, 0, 0, 0, 0, 2]
-        assert(solver.request(inputQuery).to_list() == result)
-        
+        result = solver.request(inputQuery).to_list()
+        assert result[0] == 0
+        assert result[1] == 1
+        assert result[7] == 2
+
     def testMappingGeneration3(self, solver):
         inputQuery = "EXISTS src MAPPED ARM03 AND fft_l MAPPED ARM04 AND RUNNING TOGETHER [src, filter_l ]"
-        result = [3, 4, 3, 0, 0, 0, 0, 0]
-        assert(solver.request(inputQuery).to_list() == result)
-        
+        result = solver.request(inputQuery).to_list()
+        assert result[0] == 3
+        assert result[1] == 4
+        assert result[2] == 3
+
     def testMappingGeneration4(self, solver):
         inputQuery = "EXISTS src MAPPED ARM03 AND ARM05 PROCESSING AND ARM06 PROCESSING"
         result = solver.request(inputQuery).to_list()

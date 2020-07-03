@@ -68,7 +68,7 @@ class Grammar():
     def logicLanguage(): return ("EXISTS "), Grammar.__expression, EOF
     
 class SemanticAnalysis(PTNodeVisitor): 
-    def __init__(self, kpnGraph, platform, mappingDict={}, defaults=True, **kwargs):
+    def __init__(self, kpnGraph, platform, cfg, mappingDict={}, defaults=True, **kwargs):
         '''Map processors and processes to integer values
         '''
         self.__processors = {}
@@ -81,6 +81,7 @@ class SemanticAnalysis(PTNodeVisitor):
         self.__mappingDict = mappingDict
         self.__kpn = kpnGraph
         self.__platform = platform
+        self.__cfg = cfg
         super(SemanticAnalysis, self).__init__(defaults, **kwargs)
         
     def visit_logicLanguage(self, node, children):
@@ -185,7 +186,7 @@ class SemanticAnalysis(PTNodeVisitor):
         else:
             negate = True
             mappingName = children[1]
-        return [[EqualsConstraint(negate, self.__mappingDict[mappingName], self.__kpn, self.__platform)]]
+        return [[EqualsConstraint(negate, self.__mappingDict[mappingName], self.__kpn, self.__platform,self.__cfg)]]
     
     def visit___mappingIdentifier(self, node, children):
         name = str(node)
@@ -301,14 +302,14 @@ class SharedCoreUsageConstraint(Constraint):
         return self.negate
         
 class EqualsConstraint(Constraint):
-    def __init__(self, negate, mappingObject, kpn, platform):
+    def __init__(self, negate, mappingObject, kpn, platform,cfg):
         self.negate = negate
         self.mapping = mappingObject
-        self.lense = RepresentationType['Symmetries'].getClassType()(kpn, platform)
+        self.lens = RepresentationType['Symmetries'].getClassType()(kpn, platform,cfg)
         
     def isFulfilled(self, mapping):
         if isinstance(mapping, Mapping):
-            allEquivalent = self.lense.allEquivalentGen(mapping)
+            allEquivalent = self.lens.allEquivalentGen(mapping)
             for equivalent in allEquivalent:
                 if equivalent.to_list() == mapping.to_list():
                     if self.negate:
