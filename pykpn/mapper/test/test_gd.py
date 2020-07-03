@@ -1,5 +1,5 @@
 from pykpn.mapper.test.mock_cache import MockMappingCache
-from pykpn.mapper.gd import GradientDescentMapper
+from pykpn.mapper.gradient_descent import GradientDescentMapper
 import pytest
 import numpy as np
 from itertools import product

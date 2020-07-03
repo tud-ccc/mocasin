@@ -31,6 +31,7 @@ if sys.version_info > (3, 8):
         'tqdm',
         'hydra-core<1.0',
         'deap',
+        'arpeggio',
         'networkx',]
     setup_requirements = ['pytest-runner', 'sphinx', 'numpy']
 
@@ -52,6 +53,7 @@ else:
         'tqdm',
         'hydra-core<1.0',
         'deap',
+        'arpeggio',
         'networkx',]
     setup_requirements = ['pytest-runner', 'sphinx', 'numpy<1.16']
 

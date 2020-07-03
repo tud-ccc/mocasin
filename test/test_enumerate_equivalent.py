@@ -18,7 +18,7 @@ def test_enumerate_equivalent_exynos(datadir, expected_dir, platform):
     subprocess.check_call(["pykpn", "enumerate_equivalent",
                            "kpn=audio_filter",
                            "platform=%s" % platform,
-                           "mapping=slx_default",
+                           "mapper=default",
                            "output_file=%s" % out_file],
                           cwd=datadir)
 
@@ -34,7 +34,7 @@ def test_enumerate_equivalent_tgff(datadir, tgff):
                            "platform=tgff_reader",
                            "tgff.directory=%s" % tgff_directory,
                            "tgff.file=%s.tgff" % tgff,
-                           "mapping=random_mapping",
+                           "mapper=random",
                            "output_file=%s" % out_file],
                           cwd=datadir)
 
