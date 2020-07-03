@@ -2,7 +2,7 @@ default:
   before_script:
   - apt-get update
   - apt-get -y install libblas-dev liblapack-dev
-  - ./.config_matplotlib_agg.sh
+  - ./config_matplotlig_agg.sh
 
 stages:
   - test
