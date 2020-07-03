@@ -9,6 +9,7 @@ test-python3.7-develop:
   script:
   - apt-get update
   - apt-get -y install libblas-dev liblapack-dev
+  - echo "backend: Agg" > ~/.config/matplotlib/matplotlibrc  
   - python setup.py develop
   - python setup.py test
 
@@ -20,6 +21,7 @@ test-python3.6-develop:
   script:
   - apt-get update
   - apt-get -y install libblas-dev liblapack-dev
+  - echo "backend: Agg" > ~/.config/matplotlib/matplotlibrc  
   - python setup.py develop
   - python setup.py test
 
@@ -31,6 +33,7 @@ test-python3.7-install:
   script:
   - apt-get update
   - apt-get -y install libblas-dev liblapack-dev
+  - echo "backend: Agg" > ~/.config/matplotlib/matplotlibrc  
   - python setup.py install
   - python setup.py test
 
@@ -42,5 +45,6 @@ test-python3.6-install:
   script:
   - apt-get update
   - apt-get -y install libblas-dev liblapack-dev
+  - echo "backend: Agg" > ~/.config/matplotlib/matplotlibrc  
   - python setup.py install
   - python setup.py test
