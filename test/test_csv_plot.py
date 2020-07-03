@@ -17,6 +17,7 @@ def test_csv_plot(datadir, expected_dir, csv_file_path):
                            "csv_file=%s" % file_path,
                            "log_to_file=True",
                            "output_file=%s" % out_file,
+                           "show_plot=False",
                            "prefix=default",
                            "suffix=default",
                            "property=wall_clock_time"],
