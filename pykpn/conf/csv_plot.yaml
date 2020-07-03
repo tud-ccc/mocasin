@@ -5,6 +5,7 @@ defaults:
   - tgff: default
   - platform: default
   - kpn: default
+  - representation: SimpleVector
 
 csv_file: ???
 output_file: mapping_properties.txt
@@ -12,3 +13,8 @@ log_to_file: False
 property: "wall_clock_time"
 prefix: 't_'
 suffix: ''
+
+#plot
+show_plot : True
+tick : 0
+history : 0

@@ -38,4 +38,4 @@ def csv_plot(cfg):
 
         file.close()
 
-    plot.visualize_mapping_space(mapping_list, compare_property)
+    plot.visualize_mapping_space(mapping_list, compare_property,cfg)
