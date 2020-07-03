@@ -34,7 +34,7 @@ def test_enumerate_equivalent_tgff(datadir, tgff):
                            "platform=tgff_reader",
                            "tgff.directory=%s" % tgff_directory,
                            "tgff.file=%s.tgff" % tgff,
-                           "mapper=random",
+                           "mapper=default",
                            "output_file=%s" % out_file],
                           cwd=datadir)
 
