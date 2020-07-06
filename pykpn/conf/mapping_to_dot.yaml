@@ -7,4 +7,5 @@ defaults:
   - platform: default
   - mapper: from_file
   - source: slx
-  - mapping_to_dot_inc
+
+output_file: "${kpn.name}_on_${platform.name}.dot"
