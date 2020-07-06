@@ -342,7 +342,7 @@ class Platform(object):
         return self._communication_resources.values()
 
     def find_scheduler_for_processor(self, processor):
-        """Find all schedulers associated to a given processor.
+        """Find the scheduler for a given processor.
 
            :param processor: a processer of the underlying platform
            :type processor: Processor

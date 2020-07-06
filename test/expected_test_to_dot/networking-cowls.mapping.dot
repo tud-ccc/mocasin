@@ -4,6 +4,7 @@ label=sched00;
 subgraph cluster_processor_processor_0 {
 label=processor_0;
 dummy_processor_0 [style=invis];
+process_ospf [label=ospf];
 }
 
 }
@@ -13,7 +14,6 @@ label=sched01;
 subgraph cluster_processor_processor_1 {
 label=processor_1;
 dummy_processor_1 [style=invis];
-process_ospf [label=ospf];
 }
 
 }

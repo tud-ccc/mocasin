@@ -4,8 +4,10 @@ label=sched00;
 subgraph cluster_processor_processor_0 {
 label=processor_0;
 dummy_processor_0 [style=invis];
-"process_filt-r" [label="filt-r"];
+process_src [label=src];
 "process_filt-g" [label="filt-g"];
+"process_rgb-yiq" [label="rgb-yiq"];
+process_cjpeg [label=cjpeg];
 }
 
 }
@@ -15,10 +17,7 @@ label=sched01;
 subgraph cluster_processor_processor_1 {
 label=processor_1;
 dummy_processor_1 [style=invis];
-process_src [label=src];
-"process_filt-b" [label="filt-b"];
-"process_rgb-yiq" [label="rgb-yiq"];
-process_sink [label=sink];
+"process_filt-r" [label="filt-r"];
 }
 
 }
@@ -37,7 +36,8 @@ label=sched03;
 subgraph cluster_processor_processor_3 {
 label=processor_3;
 dummy_processor_3 [style=invis];
-process_cjpeg [label=cjpeg];
+"process_filt-b" [label="filt-b"];
+process_sink [label=sink];
 }
 
 }

@@ -157,7 +157,7 @@ class ProcPartialMapper(object):
             # choose the desired processor from list
             pe = vec_pe_mapping[vec[i]]
             # choose the first scheduler from list
-            scheduler = list(platform.find_scheduler_for_processor(pe))[0]
+            scheduler = platform.find_scheduler_for_processor(pe)
             # set the affinity of the scheduler to the choosen PE
             affinity = pe
             # always set priority to 0

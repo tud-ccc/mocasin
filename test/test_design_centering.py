@@ -19,7 +19,7 @@ thresholds = {
 
 
 def test_dc_slx(datadir, slx_kpn_platform_pair):
-    kpn, platform, version = slx_kpn_platform_pair
+    kpn, platform = slx_kpn_platform_pair
 
     subprocess.check_call(["pykpn", "design_centering",
                            "kpn=%s" % kpn,
