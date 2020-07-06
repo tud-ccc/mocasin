@@ -19,7 +19,6 @@ testBench.py
 *.png
 .eggs
 *.png
-*.dot
 # pycharm
 .coverage
 *.idea
