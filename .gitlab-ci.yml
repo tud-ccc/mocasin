@@ -7,6 +7,15 @@ default:
 stages:
   - test
 
+test-python3.8-develop:
+  stage: test
+  image: python:3.8
+  tags:
+    - python3.8
+  script:
+  - python setup.py develop
+  - python setup.py test
+
 test-python3.7-develop:
   stage: test
   image: python:3.7
@@ -23,6 +32,15 @@ test-python3.6-develop:
     - python3.6
   script:
   - python setup.py develop
+  - python setup.py test
+
+test-python3.8-install:
+  stage: test
+  image: python:3.8
+  tags:
+    - python3.8
+  script:
+  - python setup.py install
   - python setup.py test
 
 test-python3.7-install:
