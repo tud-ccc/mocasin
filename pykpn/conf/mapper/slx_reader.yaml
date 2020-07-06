@@ -1,0 +1,6 @@
+mapper:
+  slx_input_file: ???
+  class: pykpn.slx.mapping.SlxMapper
+  params:
+    mapping_xml: ${slx_input_file}
+    slx_version: ${slx.version}
