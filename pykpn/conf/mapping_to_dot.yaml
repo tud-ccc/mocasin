@@ -5,7 +5,6 @@ defaults:
   - tgff: default
   - kpn: default
   - platform: default
-  - mapper: from_file
-  - source: slx
+  - mapper: default
 
 output_file: "${kpn.name}_on_${platform.name}.dot"

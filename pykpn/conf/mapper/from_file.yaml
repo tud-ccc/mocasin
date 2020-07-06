@@ -1,2 +1,0 @@
-mapper:
-  class: pykpn.mapper.from_file.FromFileMapper

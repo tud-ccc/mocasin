@@ -5,8 +5,7 @@ defaults:
   - tgff: default
   - kpn: default
   - platform: default
-  - mapper: from_file
-  - source: slx
+  - mapper: default
 
 task_names: True
 width: 800
