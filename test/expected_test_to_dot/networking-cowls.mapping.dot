@@ -1,0 +1,40 @@
+digraph G {
+subgraph cluster_scheduler_sched00 {
+label=sched00;
+subgraph cluster_processor_processor_0 {
+label=processor_0;
+dummy_processor_0 [style=invis];
+}
+
+}
+
+subgraph cluster_scheduler_sched01 {
+label=sched01;
+subgraph cluster_processor_processor_1 {
+label=processor_1;
+dummy_processor_1 [style=invis];
+process_ospf [label=ospf];
+}
+
+}
+
+subgraph cluster_scheduler_sched02 {
+label=sched02;
+subgraph cluster_processor_processor_2 {
+label=processor_2;
+dummy_processor_2 [style=invis];
+}
+
+}
+
+subgraph cluster_scheduler_sched03 {
+label=sched03;
+subgraph cluster_processor_processor_3 {
+label=processor_3;
+dummy_processor_3 [style=invis];
+}
+
+}
+
+primitive_prim_test_chip_shared_memory_1 [label=prim_test_chip_shared_memory_1];
+}

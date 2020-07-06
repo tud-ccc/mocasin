@@ -70,11 +70,12 @@ def test_tgff_platform_to_dot(datadir, expected_dir, tgff):
 def test_tgff_mapping_to_dot(datadir, expected_dir, tgff):
     dot_file = "%s.mapping.dot" % tgff
     out_file = os.path.join(datadir, dot_file)
-    subprocess.check_call(["pykpn", "platform_to_dot",
+    subprocess.check_call(["pykpn", "mapping_to_dot",
                            "platform=tgff_reader",
                            "kpn=tgff_reader",
-                           "mapping=random_mapping",
+                           "mapper=random",
+                           "random_seed=42",
                            "tgff.file=%s.tgff" % tgff,
                            "output_file=%s" % out_file],
                           cwd=datadir)
-    # Cannot validate random mappings
+    assert filecmp.cmp(os.path.join(expected_dir, dot_file), out_file)
