@@ -4,7 +4,6 @@
 # Authors: Felix Teweleit
 
 import subprocess
-import filecmp
 import os
 
 def test_audio_filter_exynos(datadir, expected_dir, audio_filter_exynos_query):

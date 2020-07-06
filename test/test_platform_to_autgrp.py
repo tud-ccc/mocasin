@@ -17,7 +17,8 @@ def test_platform_to_autgrp_slx(datadir, expected_dir, slx_version, slx_platform
                            "out_file=%s" % out_file],
                           cwd=datadir)
 
-    assert filecmp.cmp(os.path.join(expected_dir, file_name), out_file)
+    assert filecmp.cmp(os.path.join(expected_dir, file_name), out_file,
+                       shallow=False)
 
 def test_platform_to_autgrp_tgff(datadir, expected_dir, tgff):
     file_name = "%s.autgrp.out" % tgff
@@ -31,5 +32,6 @@ def test_platform_to_autgrp_tgff(datadir, expected_dir, tgff):
                            "out_file=%s" % out_file],
                           cwd=datadir)
 
-    assert filecmp.cmp(os.path.join(expected_dir, file_name), out_file)
+    assert filecmp.cmp(os.path.join(expected_dir, file_name), out_file,
+                       shallow=False)
 

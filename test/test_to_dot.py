@@ -16,7 +16,8 @@ def test_slx_kpn_to_dot(datadir, expected_dir, slx_kpn):
                            "kpn=%s" % slx_kpn,
                            "output_file=%s" % out_file],
                           cwd=datadir)
-    assert filecmp.cmp(os.path.join(expected_dir, dot_file), out_file)
+    assert filecmp.cmp(os.path.join(expected_dir, dot_file), out_file,
+                       shallow=False)
 
 
 def test_slx_platform_to_dot(datadir, expected_dir, slx_platform):
@@ -26,7 +27,8 @@ def test_slx_platform_to_dot(datadir, expected_dir, slx_platform):
                            "platform=%s" % slx_platform,
                            "output_file=%s" % out_file],
                           cwd=datadir)
-    assert filecmp.cmp(os.path.join(expected_dir, dot_file), out_file)
+    assert filecmp.cmp(os.path.join(expected_dir, dot_file), out_file,
+                       shallow=False)
 
 
 def test_slx_mapping_to_dot(datadir, expected_dir, slx_kpn_platform_pair):
@@ -40,7 +42,8 @@ def test_slx_mapping_to_dot(datadir, expected_dir, slx_kpn_platform_pair):
                            "slx.version=%s" % version,
                            "output_file=%s" % out_file],
                           cwd=datadir)
-    assert filecmp.cmp(os.path.join(expected_dir, dot_file), out_file)
+    assert filecmp.cmp(os.path.join(expected_dir, dot_file), out_file,
+                       shallow=False)
 
 
 def test_tgff_kpn_to_dot(datadir, expected_dir, tgff):
@@ -51,7 +54,8 @@ def test_tgff_kpn_to_dot(datadir, expected_dir, tgff):
                            "tgff.file=%s.tgff" % tgff,
                            "output_file=%s" % out_file],
                           cwd=datadir)
-    assert filecmp.cmp(os.path.join(expected_dir, dot_file), out_file)
+    assert filecmp.cmp(os.path.join(expected_dir, dot_file), out_file,
+                       shallow=False)
 
 
 def test_tgff_platform_to_dot(datadir, expected_dir, tgff):
@@ -62,7 +66,8 @@ def test_tgff_platform_to_dot(datadir, expected_dir, tgff):
                            "tgff.file=%s.tgff" % tgff,
                            "output_file=%s" % out_file],
                           cwd=datadir)
-    assert filecmp.cmp(os.path.join(expected_dir, dot_file), out_file)
+    assert filecmp.cmp(os.path.join(expected_dir, dot_file), out_file,
+                       shallow=False)
 
 
 def test_tgff_mapping_to_dot(datadir, expected_dir, tgff):
@@ -76,4 +81,5 @@ def test_tgff_mapping_to_dot(datadir, expected_dir, tgff):
                            "tgff.file=%s.tgff" % tgff,
                            "output_file=%s" % out_file],
                           cwd=datadir)
-    assert filecmp.cmp(os.path.join(expected_dir, dot_file), out_file)
+    assert filecmp.cmp(os.path.join(expected_dir, dot_file), out_file,
+                       shallow=False)

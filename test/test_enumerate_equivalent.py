@@ -22,7 +22,8 @@ def test_enumerate_equivalent_exynos(datadir, expected_dir, platform):
                            "output_file=%s" % out_file],
                           cwd=datadir)
 
-    assert filecmp.cmp(os.path.join(expected_dir, file_name), out_file)
+    assert filecmp.cmp(os.path.join(expected_dir, file_name), out_file,
+                       shallow=False)
 
 def test_enumerate_equivalent_tgff(datadir, tgff):
     file_name = "mappings_%s.txt" % tgff

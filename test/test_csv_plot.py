@@ -4,7 +4,6 @@
 # Authors: Felix Teweleit, Andrés Goens
 
 import subprocess
-import filecmp
 import os
 
 def test_csv_plot(datadir, expected_dir, csv_file_path):
