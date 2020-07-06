@@ -1,0 +1,2 @@
+mapper:
+  class: pykpn.mapper.default.DefaultFullMapper

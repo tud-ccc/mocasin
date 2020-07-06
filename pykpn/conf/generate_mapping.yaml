@@ -1,0 +1,20 @@
+defaults:
+  - common
+  - hydra/job_logging: pykpn
+  - slx: default
+  - tgff: default
+  - kpn: default
+  - platform: default
+  - trace: default
+  - representation: default
+  - mapper: default
+
+simulate_best : true
+objective : runtime
+outdir : ./
+jobs : 4
+progress :  true
+plot_distribution: false
+visualize : false
+rep_type_str : SimpleVector
+show_plots : false

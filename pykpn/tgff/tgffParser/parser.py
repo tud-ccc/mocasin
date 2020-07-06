@@ -82,9 +82,8 @@ class Parser:
                     dict{int : dict{int : float}})
     """
     def parse_file(self, file_path):
-        print(os.getcwd())
         with open(file_path, 'r') as file:
-            last_missmatch = None
+            last_mismatch = None
             current_line  = file.readline()
             
             while current_line:
@@ -97,14 +96,14 @@ class Parser:
                     self._parse_commun_quant(file, match)
                 elif key == 'hw_component':
                     self.logger.debug('Parse HW component')
-                    self._parse_hw_component(file, match, last_missmatch)
+                    self._parse_hw_component(file, match, last_mismatch)
                 elif key == 'unused_scope':
                     self.logger.debug('Parse unused group')
                     self._parse_unused_scope(file)
                 else:
                     self._key_mismatch(key, file.tell())
                     if not key is None:
-                        last_missmatch = (key, match)
+                        last_mismatch = (key, match)
                     
                 current_line = file.readline()
         
@@ -269,7 +268,9 @@ class Parser:
             
         self.logger.info('Added to processor dict: ' + str(identifier))
         
-        self.processor_list.append(TgffProcessor(identifier, operations, processor_type=len(self.processor_list)))
+        self.processor_list.append(TgffProcessor(identifier,
+                                                 operations,
+                                                 processor_type=("processor_" + str(len(self.processor_list)))))
     
     def _add_properties(self, properties, match):
         self.logger.debug('Parsed processor properties')
@@ -317,7 +318,7 @@ class Parser:
         """Try to match the line to the patterns that can
         occur in the current context.
         """
-        if additional_components:
+        if additional_components is not None:
             for key, rx in additional_components.items():
                 match = rx.fullmatch(line)
                 if match:
@@ -337,22 +338,8 @@ class Parser:
         if key == 'new_line' or key == 'comment':
             if self._debug:
                 print('Skip empty or comment line')
-        elif not key == None:
+        elif key is not None:
             self.logger.warning('Parsed unhandled group: <' + key + '> at position: ' + str(position))
         else:
             self.logger.error('Parse error on position: ' + str(position))
-                
-def main():
-    argument_parser = argparse.ArgumentParser()
-    argument_parser.add_argument('path',metavar='P', type=str)
-    argument_parser.add_argument('--debug', metavar='D', const=True, nargs='?')
-    args = argument_parser.parse_args()
 
-    mParser = Parser(debug=args.debug)
-    mParser.parseFile(args.path)
-    
-    
-if __name__ == "__main__":
-    main()
-    
-    

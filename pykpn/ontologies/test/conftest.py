@@ -27,7 +27,8 @@ def platform():
 def solver():
     kpn = SlxKpnGraph('SlxKpnGraph',  'examples/slx/app/audio_filter/audio_filter.cpn.xml','2017.04')
     platform = SlxPlatform('SlxPlatform', 'examples/slx/platforms/exynos.platform', '2017.04')
-    return Solver(kpn, platform)
+    cfg = {}
+    return Solver(kpn, platform, cfg)
 
 @pytest.fixture
 def mapDictSolver():
@@ -40,6 +41,11 @@ def mapDictSolver():
     
     processMappingVec = [1, 1, 1, 1, 1, 1, 1, 1]
     secondMapping = fullMapper.completeMappingBestEffort(processMappingVec)
+    cfg = {}
     
     mapDict = {'map_one' : firstMapping, 'map_two' : secondMapping}
-    return Solver(kpn, platform, mappingDict=mapDict)
+    return Solver(kpn, platform, cfg, mappingDict=mapDict)
+
+@pytest.fixture
+def cfg():
+    return {}

@@ -1,7 +1,7 @@
-#Copyright (C) 2019 TU Dresden
+#Copyright (C) 2019-2020 TU Dresden
 #All Rights Reserved
 #
-#Authors: Felix Teweleit
+#Authors: Felix Teweleit, Andrés Goens
 
 
 from threading import Thread
@@ -13,21 +13,27 @@ from pykpn.ontologies.logicLanguage import Grammar, SemanticAnalysis, MappingCon
 
 import sys
 import queue
+import traceback
+
+from pykpn.util import logging
+log = logging.getLogger(__name__)
 
 #GLOBAL DEFINITION
 RUN_THREADS = True
 
 class Solver():
-    def __init__(self, kpnGraph, platform, mappingDict={}, debug=False):
+    def __init__(self, kpnGraph, platform, cfg, mappingDict={}, debug=False):
         self.__kpn = kpnGraph
         self.__platform = platform
         self.__mappingDict = mappingDict
         self.__parser = ParserPython(Grammar.logicLanguage, reduce_tree=True, debug=debug)
         self.__debug = debug
+        self.__cfg = cfg
         
     def request(self, queryString, vec=None):
         parse_tree = self.__parser.parse(queryString)
-        constraints = visit_parse_tree(parse_tree, SemanticAnalysis(self.__kpn, self.__platform, self.__mappingDict, debug=self.__debug))
+        sema = SemanticAnalysis(self.__kpn, self.__platform, self.__cfg, self.__mappingDict, debug=self.__debug)
+        constraints = visit_parse_tree(parse_tree, sema)
         threadQueue = queue.Queue()
         
         """Creation of individual threads for each constraint set
@@ -56,13 +62,14 @@ class Solver():
                 break
         for thread in threadPool:
             thread.join(1)
-        print("All threads terminated")
+        log.info("All threads terminated")
         
         return result
     
     def parseString(self, queryString):
         parse_tree = self.__parser.parse(queryString)
-        return visit_parse_tree(parse_tree, SemanticAnalysis(self.__kpn, self.__platform, self.__mappingDict, debug=self.__debug))
+        sema = SemanticAnalysis(self.__kpn, self.__platform, self.__cfg, self.__mappingDict, debug=self.__debug)
+        return visit_parse_tree(parse_tree, sema)
         
     def exploreMappingSpace(self, constraintSet, returnBuffer, vec, threadIdentifier):
         mappingConstraints = []
@@ -152,8 +159,8 @@ class Solver():
                             return
             
                 remaining = remaining + mappingConstraints + sharedCoreConstraints
-                symmetryLense = RepresentationType['Symmetries'].getClassType()(self.__kpn, self.__platform)
-                generator = MappingGeneratorOrbit(symmetryLense, genMapping)
+                symmetryLens = RepresentationType['Symmetries'].getClassType()(self.__kpn, self.__platform,self.__cfg)
+                generator = MappingGeneratorOrbit(symmetryLens, genMapping)
             else:
                 generator = MappingGeneratorSimvec(self.__kpn, self.__platform, mappingConstraints, sharedCoreConstraints, processingConstraints, vec)
         
@@ -175,7 +182,9 @@ class Solver():
                         return
         except:
             print("Exception occurred: ", sys.exc_info()[0])
+            traceback.print_exc()
             returnBuffer.put((threadIdentifier, False))
+
             
         returnBuffer.put((threadIdentifier, False))
 

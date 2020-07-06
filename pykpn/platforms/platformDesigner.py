@@ -183,7 +183,8 @@ class PlatformDesigner():
                        readLatency, 
                        writeLatency, 
                        readThroughput, 
-                       writeThroughput, 
+                       writeThroughput,
+                       frequencyDomain=100000, #TODO: this should be added to tests
                        name='default'):
         """Adds a level 1 cache to each PE of the given cluster.
         :param identifier: The identifier of the cluster to which the cache will be added. 
@@ -213,11 +214,13 @@ class PlatformDesigner():
         else:
             nameToGive = 'L1_'
         peList = self.__elementDict[self.__activeScope][identifier]
-        
+
+        fd = FrequencyDomain('fd_' + name, frequencyDomain)
+
         try:
             for pe in peList:
                 communicationRessource = Storage(nameToGive + pe[0].name,
-                                                 self.__schedulingPolicy,
+                                                 frequency_domain= fd,
                                                  read_latency = readLatency,
                                                  write_latency = writeLatency,
                                                  read_throughput = readThroughput,
@@ -259,13 +262,13 @@ class PlatformDesigner():
         :param writeThroughput: The write throughput of the communication resource.
         :type writeThroughput: int
         """
-        if self.__schedulingPolicy == None:
+        if not self.__schedulingPolicy:
             return
-        if self.__activeScope == None:
+        if not self.__activeScope:
             return
         
         for clusterId in clusterIds:
-            if not clusterId in self.__elementDict[self.__activeScope]:
+            if clusterId not in self.__elementDict[self.__activeScope]:
                 return
         
         clusterDict = self.__elementDict[self.__activeScope]
@@ -274,14 +277,14 @@ class PlatformDesigner():
         
         try:
             if resourceType == CommunicationResourceType.Storage:
-                communicationRessource = Storage(nameToGive, 
+                com_resource = Storage(nameToGive,
                                                  fd,
                                                  readLatency,
                                                  writeLatency,
                                                  readThroughput, 
                                                  writeThroughput)
             else:
-                communicationRessource = CommunicationResource(nameToGive,
+                com_resource = CommunicationResource(nameToGive,
                                                                resourceType,
                                                                fd,
                                                                readLatency,
@@ -289,14 +292,14 @@ class PlatformDesigner():
                                                                readThroughput,
                                                                writeThroughput)
 
-            self.__platform.add_communication_resource(communicationRessource)
+            self.__platform.add_communication_resource(com_resource)
             prim = Primitive('prim_' + nameToGive)
 
             for clusterId in clusterIds:
                 for pe in clusterDict[clusterId]:
-                    pe[1].append(communicationRessource)
-                    produce = CommunicationPhase('produce', pe[1], 'write')
-                    consume = CommunicationPhase('consume', pe[1], 'read')
+                    pe[1].append(com_resource)
+                    produce = CommunicationPhase('produce', [com_resource], 'write')
+                    consume = CommunicationPhase('consume', [com_resource], 'read')
                     prim.add_producer(pe[0], [produce])
                     prim.add_consumer(pe[0], [consume])        
             
@@ -343,10 +346,9 @@ class PlatformDesigner():
         :param writeThroughput: The write throughput of the physical links and network routers.
         :type writeThroughput: int
         """
-        
         fd = FrequencyDomain('fd_' + networkName, frequencyDomain)
         
-        if self.__activeScope != None:
+        if self.__activeScope is not None:
             processorList = self.__elementDict[self.__activeScope][clusterIdentifier]
             
             '''Adding physical links and NOC memories according to the adjacency list
@@ -373,7 +375,7 @@ class PlatformDesigner():
                     self.__platform.add_communication_resource(communicationResource)
                     
             for processor in processorList:
-                if  adjacencyList[processor[0].name] == []:
+                if not adjacencyList[processor[0].name]:
                     continue
                 else:
                     prim = Primitive(networkName + "_" + processor[0].name)
@@ -381,7 +383,7 @@ class PlatformDesigner():
                     memory = self.__platform.find_communication_resource(memoryName)
                     
                     for innerProcessor in processorList:
-                        if adjacencyList[innerProcessor[0].name] == []:
+                        if not adjacencyList[innerProcessor[0].name]:
                             continue
                             
                         resourceList = [memory]
@@ -398,14 +400,14 @@ class PlatformDesigner():
                                 lastPoint = point
                             
                             produce = CommunicationPhase('produce', resourceList, 'write')
-                            consume = CommunicationPhase('consume', resourceList, 'read')
+                            consume = CommunicationPhase('consume', reversed(resourceList), 'read')
                                         
                             prim.add_producer(innerProcessor[0], [produce])
                             prim.add_consumer(innerProcessor[0], [consume])
                         
                         else:
                             produce = CommunicationPhase('produce', resourceList, 'write')
-                            consume = CommunicationPhase('consume', resourceList, 'read')
+                            consume = CommunicationPhase('consume', reversed(resourceList), 'read')
                                         
                             prim.add_producer(innerProcessor[0], [produce])
                             prim.add_consumer(innerProcessor[0], [consume])

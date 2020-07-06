@@ -17,9 +17,24 @@ log = logging.getLogger(__name__)
 _ur = pint.UnitRegistry()
 
 
+class SlxMapper:
+    """
+    Reads a SLX mapping from a file. The actual mapping is returned when
+    calling the generate_mapping method.  This implements the common mapper
+    interface.
+    """
+    def __init__(self, kpn, platform, cfg, mapping_xml=None, slx_version=None):
+        self.mapping = SlxMapping(kpn, platform, mapping_xml, slx_version)
+
+    def generate_mapping(self):
+        return self.mapping
+
+
 class SlxMapping(Mapping):
 
-    def __init__(self, kpn, platform, mapping_xml, slx_version):
+    #config parameter is not needed but still added to remain the interface of other mappings types in order
+    #to ensure instantiation via hydra
+    def __init__(self, kpn, platform, mapping_xml=None, slx_version=None):
         super().__init__(kpn, platform)
 
         log.info('Start parsing the SLX mapping ' + mapping_xml)

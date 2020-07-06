@@ -17,13 +17,13 @@ log = logging.getLogger(__name__)
 def enumerate_equivalent(cfg):
     kpn = hydra.utils.instantiate(cfg['kpn'])
     platform = hydra.utils.instantiate(cfg['platform'])
-    mapping = hydra.utils.instantiate(cfg['mapping'], kpn, platform)
+    mapping = hydra.utils.instantiate(cfg['mapper'], kpn, platform, cfg).generate_mapping()
 
-    representation = RepresentationType['Symmetries'].getClassType()(kpn,platform)
+    representation = RepresentationType['Symmetries'].getClassType()(kpn,platform,cfg)
     log.info(("calculating orbit for mapping:" + str(mapping.to_list())))
     orbit = representation.allEquivalent(mapping.to_list())
     log.info("orbit of size: " + str(len(orbit)))
     with open(cfg['output_file'],'w') as output_file:
         for i,elem in enumerate(orbit):
             output_file.write(f"\n mapping {i}:\n")
-            output_file.write(mapping.to_string())
+            output_file.write(elem.to_string())

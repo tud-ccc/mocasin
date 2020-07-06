@@ -6,15 +6,16 @@ from _collections import OrderedDict
 from pykpn.common.mapping import Mapping
 from pykpn.common.platform import Platform
 from pykpn.common.kpn import KpnGraph
+from pykpn.mapper.partial import ComFullMapper, ProcPartialMapper
+
 
 class DataReader():
-    def __init__(self, platform,
-                    filePath,
-                    kpnGraph,
-                    attribute='default',
-                    processPrefix='default',
-                    processSuffix='default'):
-        
+    def __init__(self, platform, kpnGraph, cfg):
+
+        filePath = cfg['csv_file']
+        attribute = cfg['property']
+        processPrefix = cfg['prefix']
+        processSuffix = cfg['suffix']
         if not isinstance(platform, Platform):
             raise RuntimeError("Platform object is not valid")
         
@@ -26,7 +27,9 @@ class DataReader():
         self._mMappingDict  = OrderedDict()
         self._mPlatform = platform
         self._mKpnInstance = kpnGraph
-        
+        self._mComMapper = ComFullMapper(kpnGraph,platform,cfg)
+        self._mMapper = ProcPartialMapper(kpnGraph,platform,self._mComMapper)
+
         for process in self._mKpnInstance.processes():
             self._mProcessNames.append(process.name)
         
@@ -76,7 +79,6 @@ class DataReader():
     
     def formMappings(self):
         for entry in self._mDataDict:
-            mapping = Mapping(self._mKpnInstance, self._mPlatform)
             fromList = []
             
             for key in self._mDataDict[entry]:
@@ -97,7 +99,9 @@ class DataReader():
                     fromList.append(asNumber)
             
             if fromList != []:
-                mapping.from_list(fromList)
+                mapping = self._mMapper.generate_mapping(fromList)
+            else:
+                mapping = Mapping(self._mKpnInstance,self._mPlatform)
             self._mMappingDict.update({entry : (mapping, self._mDataDict[entry][self._desiredProperty])})
         return self._mMappingDict
     

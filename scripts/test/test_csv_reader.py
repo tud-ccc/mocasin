@@ -48,13 +48,17 @@ class test_CSVReader(unittest.TestCase):
     
         if platform == None or kpns[applicationString] == None:
             raise RuntimeError("Platform or KpnGraph not successfully initialized")
-    
+
+        cfg = {
+        'filePath' : csvFilePath,
+        'property' : "default",
+        'prefix' : "default",
+        'suffix' : "default"
+        }
+
         dataReader = DataReader(platform,
-                            csvFilePath,
                             kpns[applicationString],
-                            "default",
-                            "default",
-                            "default")
+                            cfg)
     
         mappings = dataReader.formMappings()
     

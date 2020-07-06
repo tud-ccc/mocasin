@@ -15,12 +15,7 @@ def csv_plot(cfg):
     kpn = hydra.utils.instantiate(cfg['kpn'])
     out_file = cfg['output_file']
     only_log = bool(cfg['log_to_file'])
-    data_reader = DataReader(platform,
-                             cfg['csv_file'],
-                             kpn,
-                             cfg['property'],
-                             cfg['prefix'],
-                             cfg['suffix'])
+    data_reader = DataReader(platform, kpn, cfg)
 
     mappings = data_reader.formMappings()
 
@@ -43,4 +38,4 @@ def csv_plot(cfg):
 
         file.close()
 
-
+    plot.visualize_mapping_space(mapping_list, compare_property,cfg)

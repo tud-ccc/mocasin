@@ -8,7 +8,6 @@ import pydot
 import random
 from pykpn.util import logging
 
-
 log = logging.getLogger(__name__)
 
 class ChannelMappingInfo:
@@ -42,7 +41,7 @@ class SchedulerMappingInfo:
     :ivar list[KpnProcess] processes: a list of processes mapped to this
                                       scheduler
     :ivar SchedulingPolicy policy: the policy to be used by the scheduler
-    :ivar param: a paramter that can be used to configure a scheduling policy
+    :ivar param: a parameter that can be used to configure a scheduling policy
     """
     def __init__(self, policy, param):
         self.policy = policy
@@ -144,17 +143,6 @@ class Mapping:
    #     # filter all channels with name is partof list
    #     unmapped_schedulers = dict(filter(lambda s: s[1] is None, self._scheduler_info.items())).keys()
    #     return list(filter(lambda s: s.name in unmapped_schedulerss, self.kpn.schedulers()))
-
-    def get_unmapped_channels(self):
-        """Returns a list of unmapped channels
-        
-        :returns: List of unmapped channels
-        :rtype: List[Channels]
-        """
-        log.debug("mapping remaining channels: {}".format(dict(filter(lambda c: c[1] is None, self._channel_info.items())).keys()))
-        # filter all channels with name is partof list
-        unmapped_channels = dict(filter(lambda c: c[1] is None, self._channel_info.items())).keys()
-        return list(filter(lambda c: c.name in unmapped_channels, self.kpn.channels()))
     
     def get_unmapped_processes(self):
         """Returns a list of unmapped processes
@@ -337,14 +325,15 @@ class Mapping:
         pes_list = self.platform.processors()
         prim_list = self.platform.primitives()
 
-        # map PEs to an integer
+        # map PEs to an integer in alphabetic order
         pes = {}
-        for i, pe in enumerate(pes_list):
-            pes[pe.name] = i
+        pe_names = sorted([pe.name for pe in pes_list])
+        for i, pe in enumerate(pe_names):
+            pes[pe] = i
         res = []
 
         # add one result entry for each process mapping
-        for proc in procs_list:
+        for proc in sorted(procs_list,key=(lambda p : p.name)):
             res.append(pes[self.affinity(proc).name])
 
         #if flag set,
@@ -353,9 +342,10 @@ class Mapping:
         if channels:
             # map chans to an integer
             prims = {}
-            for j, prim in enumerate(prim_list):
+            prim_names = sorted([prim.name for prim in prim_list])
+            for j, prim in enumerate(prim_names):
                 prims[prim.name] = j+i
-            for chan in chans_list:
+            for chan in sorted(chans_list,key=(lambda c : c.name)):
                 prim = self.primitive(chan)
                 res.append(prims[prim.name])
 
@@ -372,7 +362,20 @@ class Mapping:
 
         return res
 
-    def from_list(self,list_from):
+    def from_list(self, list_from):
+        """
+        Deprecated function. Corresponding mappers should be used instead,
+        or from_list_random, which is explicit (in its name) in that it is
+        non-deterministic.
+           """
+        log.warning("Mapping.from_list is deprecated. Use either Mapping.from_list_random," +
+                    "if determinism is not important. Better however is to use the classes" +
+                    "from the pykpn.mapper module.")
+
+        return self.from_list_random(list_from)
+
+
+    def from_list_random(self, list_from):
         """Convert from a list (tuple), the simple vector representation.
            Priority and policy chosen at random, and scheduler chosen randomly from the possible ones.
            If list has length # processes + # channels, then channels are chosen as the second part of the list.
@@ -382,9 +385,9 @@ class Mapping:
            TODO: make it possible to give schedulers, too.
            TODO: check if we need to use correspondence of representation to ensure ordering is right
         """
-        processors = list(self.platform.processors())
-        all_schedulers = list(self.platform.schedulers())
-        all_primitives = list(self.platform.primitives())
+        processors = sorted(list(self.platform.processors()), key=(lambda p : p.name))
+        all_schedulers = sorted(list(self.platform.schedulers()))
+        all_primitives = sorted(list(self.platform.primitives()), key=(lambda p : p.name))
         #print(list_from)
 
         # configure schedulers
@@ -397,7 +400,7 @@ class Mapping:
                       s.name, policy.name)
             
         # map processes
-        for i,p in enumerate(self.kpn.processes()):
+        for i,p in enumerate(sorted(self.kpn.processes(),key=(lambda p : p.name))):
             idx = list_from[i]
             schedulers = [ sched for sched in all_schedulers if processors[idx] in sched.processors]
             j = random.randrange(0, len(schedulers))

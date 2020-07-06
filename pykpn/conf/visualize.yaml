@@ -5,7 +5,7 @@ defaults:
   - tgff: default
   - kpn: default
   - platform: default
-  - mapping: default
+  - mapper: default
 
 task_names: True
 width: 800

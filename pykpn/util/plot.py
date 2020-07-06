@@ -19,10 +19,10 @@ from matplotlib import collections as coll
 #import networkx.drawing.nx_pydot as nx
 #import networkx as nwx
 
+from pykpn.util import logging
+log = logging.getLogger(__name__)
 
-def visualize_mapping_space(mappings, exec_times, show_plot=False,
-                            representation_type=RepresentationType['SimpleVector'],
-                            tick=0, history=0):
+def visualize_mapping_space(mappings, exec_times, cfg):
     """Visualize a multi-dimensional mapping space using t-SNE
 
     Args:
@@ -36,7 +36,21 @@ def visualize_mapping_space(mappings, exec_times, show_plot=False,
     """
     assert len(mappings) == len(exec_times)
 
-    mapping_tuples = np.array(list(map(lambda o: o.to_list(), mappings)))
+
+    show_plot = cfg['show_plot']
+    tick = cfg['tick']
+    history = cfg['history']
+    rep_type_str = cfg['representation']
+    if rep_type_str not in dir(RepresentationType):
+        log.exception("Representation " + rep_type_str + " not recognized. Available: " + ", ".join(
+            dir(RepresentationType)))
+        raise RuntimeError('Unrecognized representation.')
+    else:
+        representation_type = RepresentationType[rep_type_str]
+        log.info(f"initializing representation ({rep_type_str})")
+
+        representation = (representation_type.getClassType())(mappings[0].kpn, mappings[0].platform, cfg)
+    mapping_tuples = np.array(list(map(representation.toRepresentation, mappings)))
 
     #Code to derive mapping from dot graph:
     #Unfortunately with embarrising results :( 
@@ -52,7 +66,6 @@ def visualize_mapping_space(mappings, exec_times, show_plot=False,
         annotes.append(a)
 
 
-    representation = representation_type.getClassType()(mappings[0].kpn,mappings[0].platform)
     #print(mapping_tuples)
     # print("MAPPING TUPLES: {}".format(mapping_tuples[0]))
     X = tsne.tsne(mapping_tuples,

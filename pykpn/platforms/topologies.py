@@ -1,7 +1,7 @@
-# Copyright (C) 2019 TU Dresden
+# Copyright (C) 2019-2020 TU Dresden
 # All Rights Reserved
 #
-# Authors: Felix Teweleit
+# Authors: Felix Teweleit, Andrés Goens
 
 from pykpn.gui.utils import listOperations
 import math
@@ -24,10 +24,51 @@ def ringTopology(elementList):
             adjacencyList.update({ elementList[position] : [elementList[position - 1], elementList[position + 1]] })
     
     return adjacencyList
-        
+
+
+def starTopology(elementList):
+    """Creates a the adjacency list for a star topology out of a linear list of
+    all elements in the network. The first element is the center.
+    :param list[string] elementList: A list of all elements in the network.
+    """
+    adjacencyList = {}
+    adjacent_to_first = []
+    for position in range(1,len(elementList)):
+        adjacent_to_first.append(elementList[position])
+        adjacencyList.update({elementList[position]: [elementList[0]]})
+    adjacencyList.update({elementList[0]: adjacent_to_first})
+    return adjacencyList
+
 
 def meshTopology(elementList):
-    """Creates a the adjacency list for a full meshed topology out of a linear
+    """Creates a the adjacency list for a mesh topology out of a linear
+    list of all elements in the network. A mesh topology is a regular
+    rectangular structure where every element except the border elements has
+    exactly four neigbors (N,E,S,W). Number of elements must be a square.
+    :param list[string] elementList: A list of all elements in the network.
+    """
+    n_squared = len(elementList)
+    n = math.sqrt(n_squared)
+    assert n.is_integer()
+    n = int(n)
+    adjacencyList = {}
+    for x in range(n):
+        for y in range(n):
+            adjacent = []
+            if x%n != 0:
+                adjacent.append(elementList[y*n+(x-1)])
+            if x%n != (n-1):
+                adjacent.append(elementList[y*n+(x+1)])
+            if y%n != 0:
+                adjacent.append(elementList[(y-1)*n+x])
+            if y%n != (n-1):
+                adjacent.append(elementList[(y+1)*n+x])
+            adjacencyList.update({elementList[y*n+x] : adjacent})
+    return adjacencyList
+
+
+def fullyConnectedTopology(elementList):
+    """Creates a the adjacency list for a fully conected topology out of a linear
     list of all elements in the network.
     :param list[string] elementList: A list of all elements in the network.
     """

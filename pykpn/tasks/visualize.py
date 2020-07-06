@@ -13,7 +13,7 @@ from pykpn.gui.drawAPI import drawAPI
 def visualize(cfg):
     kpn = hydra.utils.instantiate(cfg['kpn'])
     platform = hydra.utils.instantiate(cfg['platform'])
-    mapping = hydra.utils.instantiate(cfg['mapping'], kpn, platform)
+    mapping = hydra.utils.instantiate(cfg['mapper'], kpn, platform, cfg).generate_mapping()
     task_names = cfg['task_names']
     width = cfg['width']
     height = cfg['height']

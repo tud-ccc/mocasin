@@ -4,9 +4,8 @@
 #Authors: Felix Teweleit
 
 from pykpn.common.mapping import Mapping
-from pykpn.mapper.com_partialmapper import ComPartialMapper
-from pykpn.mapper.rand_partialmapper import RandomPartialMapper
-from pykpn.mapper.proc_partialmapper import ProcPartialMapper
+from pykpn.mapper.partial import ComPartialMapper, ProcPartialMapper
+from pykpn.mapper.random import RandomPartialMapper
 from builtins import StopIteration
 
 class SimpleVectorMapper():
@@ -149,8 +148,8 @@ class MappingCompletionWrapper():
     
     def completeMappingBestEffort(self, processMappingVector):
         mapping = self.__processMapper.generate_mapping(processMappingVector)
-        mapping = self.__fullMapper.generate_mapping(seed=None, part_mapping=mapping)
-        self.__processMapper.reset()
+        mapping = self.__fullMapper.generate_mapping(part_mapping=mapping)
+        #self.__processMapper.reset() #not sure what this is supposed to do
         return mapping
         
     def generate_mapping(self, mapping):

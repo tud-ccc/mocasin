@@ -4,6 +4,8 @@
 #Authors: Felix Teweleit
 
 import hydra
+
+from pykpn.representations.representations import RepresentationType
 from pykpn.util.logging import getLogger
 from pykpn.ontologies.solver import Solver
 
@@ -18,8 +20,9 @@ def solve_query(cfg):
     platform = hydra.utils.instantiate(cfg['platform'])
     query = cfg['query']
     vector = cfg['vector']
+    representation = RepresentationType['SimpleVector'].getClassType()(kpn,platform,cfg)
 
-    solver = Solver(kpn, platform)
+    solver = Solver(kpn, platform,cfg)
 
     if not vector == 'None':
         starting_vector = []
@@ -35,13 +38,19 @@ def solve_query(cfg):
     if not cfg["output_file"] == 'None':
         #write result to file in simple vector representation
         output_file = open(cfg['output_file'], 'w+')
-        output_file.write('[')
+        if result == False:
+            output_file.write("False")
+        else:
+            output_file.write('[')
 
-        for processor in result.to_list():
-            output_file.write(str(processor) + ', ')
+            for processor in representation.toRepresentation(result):
+                output_file.write(str(processor) + ', ')
 
-        output_file.write(']')
+            output_file.write(']')
         output_file.close()
 
     else:
-        print(result.to_list())
+       if result == False:
+           print("No result found.")
+       else:
+            print(representation.toRepresentation(result))
