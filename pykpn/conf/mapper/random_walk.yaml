@@ -10,5 +10,5 @@ plot_distribution: false
 visualize : false
 show_plots : false
 radius : 5
-random_seed : None
+random_seed : null
 record_statistics: true
