@@ -1,6 +1,7 @@
 defaults:
   - common
   - hydra/job_logging: pykpn
+  - tgff: default
   - kpn: default
   - platform: default
   - mapper: default

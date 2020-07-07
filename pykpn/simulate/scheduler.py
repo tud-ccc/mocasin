@@ -44,7 +44,7 @@ class RuntimeScheduler(object):
     :type _context_switch_mode: ContextSwitchMode
     :ivar int _scheduling_cycles: number of cycles required to reach a
         scheduling decision
-    :ivar _env: the simpy environment
+    :ivar _system: the runtime system
     :ivar _log: an logger adapter to print messages with simulation context
     :type _log: SimulateLoggerAdapter
     :ivar _processes: list of runtime processes managed by this scheduler
@@ -58,7 +58,7 @@ class RuntimeScheduler(object):
     """
 
     def __init__(self, name, processor, context_switch_mode, scheduling_cycles,
-                 env):
+                 system):
         """Initialize a runtime scheduler.
 
         :param str name: the scheduler name
@@ -68,7 +68,7 @@ class RuntimeScheduler(object):
         :type context_switch_mode: ContextSwitchMode
         :param int scheduling_cycles: number of cycles required to reach a
             scheduling decision
-        :param env: the simpy environment
+        :param system:  the runtime system this scheduler belongs to
         """
         log.debug('Initialize new scheduler (%s)', name)
 
@@ -76,14 +76,19 @@ class RuntimeScheduler(object):
         self._processor = processor
         self._context_switch_mode = context_switch_mode
         self._scheduling_cycles = scheduling_cycles
-        self._env = env
+        self._system = system
 
-        self._log = SimulateLoggerAdapter(log, self.name, env)
+        self._log = SimulateLoggerAdapter(log, self.name, self.env)
 
         self._processes = []
         self._ready_queue = []
 
         self.current_process = None
+
+    @property
+    def env(self):
+        """The simpy environment"""
+        return self._system.env
 
     def add_process(self, process):
         """Add a process to this scheduler.
@@ -94,8 +99,8 @@ class RuntimeScheduler(object):
         :param process: the process to be added
         :type process: RuntimeProcess
         """
-        assert self._env.now == 0
-        self._log.debug('add process %s', process.name)
+        assert self.env.now == 0
+        self._log.debug('add process %s', process.full_name)
         if not process.check_state(ProcessState.CREATED):
             raise RuntimeError('Processes that are already started cannot be '
                                'added to a scheduler')
@@ -148,44 +153,46 @@ class RuntimeScheduler(object):
             if np is not None:
                 # pay for the scheduling delay
                 ticks = self._processor.ticks(self._scheduling_cycles)
-                yield self._env.timeout(ticks)
+                yield self.env.timeout(ticks)
 
-                log.debug('schedule process %s next', np.name)
+                log.debug('schedule process %s next', np.full_name)
 
                 # pay for context switching
                 mode = self._context_switch_mode
                 if mode == ContextSwitchMode.ALWAYS:
-                    log.debug('load context of process %s', np.name)
+                    log.debug('load context of process %s', np.full_name)
                     ticks = self._processor.context_load_ticks()
-                    yield self._env.timeout(ticks)
+                    yield self.env.timeout(ticks)
                 elif (mode == ContextSwitchMode.AFTER_SCHEDULING and
                       np is not self.current_process):
                     if cp is not None:
-                        log.debug('store the context of process %s', cp.name)
+                        log.debug('store the context of process %s',
+                                  cp.full_name)
                         ticks = self._processor.context_store_ticks()
-                        yield self._env.timeout(ticks)
-                    log.debug('load context of process %s', np.name)
+                        yield self.env.timeout(ticks)
+                    log.debug('load context of process %s', np.full_name)
                     ticks = self._processor.context_load_ticks()
-                    yield self._env.timeout(ticks)
+                    yield self.env.timeout(ticks)
 
                 # activate the process
                 self.current_process = np
                 self._ready_queue.remove(np)
                 np.activate(self._processor)
                 # wait until the process stops its execution
-                yield self._env.any_of([np.blocked, np.finished])
+                yield self.env.any_of([np.blocked, np.finished])
 
                 # pay for context switching
                 if self._context_switch_mode == ContextSwitchMode.ALWAYS:
-                    self._log.debug('store the context of process %s', np.name)
-                    yield self._env.timeout(
+                    self._log.debug('store the context of process %s',
+                                    np.full_name)
+                    yield self.env.timeout(
                         self._processor.context_store_ticks())
             else:
                 # Wait for ready events if the scheduling algorithm did not
                 # find a process that is ready for execution
                 self._log.debug('There is no ready process -> sleep')
                 ready_events = [p.ready for p in self._processes]
-                yield self._env.any_of(ready_events)
+                yield self.env.any_of(ready_events)
 
 
 class DummyScheduler(RuntimeScheduler):
@@ -283,12 +290,9 @@ class RoundRobinScheduler(RuntimeScheduler):
 
         #status var, keeps track of position in process list
         self._queue_position = 0
-        
+
     def schedule(self):
         """Perform the scheduling.
-        
-        Appends the current process at the end of the ready queue, if its ready. Then pops and returns the first process
-        in the ready queue.
         """
         cp = self.current_process
 
@@ -297,19 +301,22 @@ class RoundRobinScheduler(RuntimeScheduler):
             if cp not in self._ready_queue:
                 self._ready_queue.append(cp)
 
-        #start a the position of the last scheduled process in process list
+        # start at the position of the last scheduled process in process list
         check_next = self._queue_position
+        # increment by one
+        check_next = (check_next + 1) % len(self._processes)
+        stop_at = check_next
 
-        while check_next != self._queue_position:
-
-            #first increase, so case check_next == queue_position is covered by loop
-            check_next = (check_next + 1) % len(self._processes)
-
+        while True:
             #check if process is in ready queue and if so, return it
             if self._processes[check_next] in self._ready_queue:
-                self._queue_position = (check_next + 1) % len(self._processes)
+                self._queue_position = check_next
                 return self._processes[check_next]
 
+            # increment
+            check_next = (check_next + 1) % len(self._processes)
+            if check_next == stop_at:
+                break
 
         #if no process is ready, we sleep and start at same position next time
         return None

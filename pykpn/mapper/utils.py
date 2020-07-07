@@ -132,17 +132,13 @@ def run_simulation(sim_context):
     # Create simulation environment
     env = simpy.Environment()
 
+    # Create the system
+    system = RuntimeSystem(sim_context.platform, env)
+
     # create the applications
-    applications = []
-    mappings = {}
     for ac in sim_context.app_contexts:
         app = RuntimeKpnApplication(ac.name, ac.kpn, ac.mapping,
-                                    ac.trace_reader, env, ac.start_time)
-        applications.append(app)
-        mappings[ac.name] = ac.mapping
-
-    # Create the system
-    system = RuntimeSystem(sim_context.platform, applications, env)
+                                    ac.trace_reader, system)
 
     # run the simulation
     system.simulate()

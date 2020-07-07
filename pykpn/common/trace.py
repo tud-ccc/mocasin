@@ -149,7 +149,7 @@ class TraceGraph(nx.DiGraph):
                 processor = self._determine_slowest_processor(process_name, process_mapping, processor_groups)
                 
                 try:
-                    current_segment = trace_generator.next_segment(kpn.name + "." + process_name, processor.type)
+                    current_segment = trace_generator.next_segment(process_name, processor.type)
                 except AttributeError:
                     continue
                 last_segment_index = process_dict[process_name][0]
@@ -187,7 +187,7 @@ class TraceGraph(nx.DiGraph):
 
                 #Adding unblock read dependencies
                 if last_segment and last_segment.write_to_channel is not None:
-                    name = last_segment.write_to_channel.split('.')[1]
+                    name = last_segment.write_to_channel
                     read_time = self._determine_slowest_access(name,
                                                                channel_mapping,
                                                                primitive_groups,
@@ -203,7 +203,7 @@ class TraceGraph(nx.DiGraph):
                  
                 #Adding block read dependencies
                 if current_segment.write_to_channel is not None:
-                    name = current_segment.write_to_channel.split('.')[1]
+                    name = current_segment.write_to_channel
                     write_time = self._determine_slowest_access(name,
                                                                 channel_mapping,
                                                                 primitive_groups,
@@ -221,7 +221,7 @@ class TraceGraph(nx.DiGraph):
                 
                 #Adding read after compute dependencies
                 if current_segment.read_from_channel is not None:
-                    name = current_segment.read_from_channel.split('.')[1]
+                    name = current_segment.read_from_channel
                     write_time = self._determine_slowest_access(name,
                                                                 channel_mapping,
                                                                 primitive_groups,

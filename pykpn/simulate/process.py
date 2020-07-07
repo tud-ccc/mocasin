@@ -85,7 +85,7 @@ class RuntimeProcess(object):
         that overrides :func:`workload` should be defined.
     Attributes:
         name (str): the process name
-        _env (~simpy.core.Environment): the simpy environment
+        app (RuntimeApplication): the application this process is part of
         _state (ProcessState): The current process state.
         _log (SimulateLoggerAdapter): an logger adapter to print messages with
             simulation context
@@ -104,27 +104,37 @@ class RuntimeProcess(object):
             :const:`~ProcessState.BLOCKED` state.
     Args:
         name (str): The process name (should be unique within the system)
-        env (~simpy.core.Environment): the simpy environment
+        app (RuntimeApplication): the application this process is part of
     """
 
-    def __init__(self, name, env):
+    def __init__(self, name, app):
         self.name = name
-        self._env = env
+        self.app = app
         self._state = ProcessState.CREATED
         self.processor = None
-        self._log = SimulateLoggerAdapter(log, name, env)
+        self._log = SimulateLoggerAdapter(log, self.full_name, self.env)
 
         # setup the events
-        self.created = self._env.event()
+        self.created = self.env.event()
         self.created.callbacks.append(self._cb_created)
-        self.ready = self._env.event()
+        self.ready = self.env.event()
         self.ready.callbacks.append(self._cb_ready)
-        self.running = self._env.event()
+        self.running = self.env.event()
         self.running.callbacks.append(self._cb_running)
-        self.finished = self._env.event()
+        self.finished = self.env.event()
         self.finished.callbacks.append(self._cb_finished)
-        self.blocked = self._env.event()
+        self.blocked = self.env.event()
         self.blocked.callbacks.append(self._cb_blocked)
+
+    @property
+    def env(self):
+        """The simpy environment"""
+        return self.app.env
+
+    @property
+    def full_name(self):
+        """Full name including the application name"""
+        return f"{self.app.name}.{self.name}"
 
     def _transition(self, state_name):
         """Helper function for convenient state transitions.
@@ -150,7 +160,7 @@ class RuntimeProcess(object):
         old_event = getattr(self, event_name)
         old_event.succeed(self)
 
-        new_event = self._env.event()
+        new_event = self.env.event()
         new_event.callbacks.append(getattr(self, '_cb_' + event_name))
         setattr(self, event_name, new_event)
 
@@ -259,7 +269,7 @@ class RuntimeProcess(object):
         """
         assert(self._state == ProcessState.RUNNING)
         self._log.debug('Entered RUNNING state')
-        self._env.process(self.workload())
+        self.env.process(self.workload())
 
     def _cb_finished(self, event):
         """Callback invoked upon entering the :const:`~ProcessState.FINISHED`
@@ -325,19 +335,17 @@ class RuntimeKpnProcess(RuntimeProcess):
         name (str): The process name. This should be unique across applications
             within the same system.
         trace_generator (TraceGenerator): a trace generator object
-        env (~simpy.core.Environment): the simpy environment
-        start_at_tick (int): tick at which the process execution should start
+        app (RuntimeApplication): the application this process is part of
     """
 
-    def __init__(self, name, trace_generator, env, start_at_tick=0):
-        log.debug('initialize new KPN runtime process (%s)', name)
-
-        super().__init__(name, env)
+    def __init__(self, name, trace_generator, app):
+        super().__init__(name, app)
+        log.debug('initialize new KPN runtime process (%s)', self.full_name)
 
         self._channels = {}
         self._trace_generator = trace_generator
 
-        self._start = env.timeout(start_at_tick)
+        self._start = self.env.timeout(0)
         self._start.callbacks.append(self.start)
 
         self._current_segment = None
@@ -390,31 +398,31 @@ class RuntimeKpnProcess(RuntimeProcess):
                 self._log.debug('process for %d cycles', cycles)
                 ticks = self.processor.ticks(cycles)
                 s.processing_cycles = None
-                yield self._env.timeout(ticks)
+                yield self.env.timeout(ticks)
             if s.read_from_channel is not None:
                 c = self._channels[s.read_from_channel]
                 self._log.debug('read %d tokens from channel %s', s.n_tokens,
-                                c.name)
+                                c.full_name)
                 if not c.can_consume(self, s.n_tokens):
                     self._log.debug('not enough tokens available -> block')
                     self.block()
-                    self._env.process(c.wait_for_tokens(self, s.n_tokens))
+                    self.env.process(c.wait_for_tokens(self, s.n_tokens))
                     return
                 else:
                     s.read_from_channel = None
-                    yield self._env.process(c.consume(self, s.n_tokens))
+                    yield self.env.process(c.consume(self, s.n_tokens))
             if s.write_to_channel is not None:
                 c = self._channels[s.write_to_channel]
                 self._log.debug('write %d tokens to channel %s', s.n_tokens,
-                                c.name)
+                                c.full_name)
                 if not c.can_produce(self, s.n_tokens):
                     self._log.debug('not enough slots available -> block')
                     self.block()
-                    self._env.process(c.wait_for_slots(self, s.n_tokens))
+                    self.env.process(c.wait_for_slots(self, s.n_tokens))
                     return
                 else:
                     s.write_to_channel = None
-                    yield self._env.process(c.produce(self, s.n_tokens))
+                    yield self.env.process(c.produce(self, s.n_tokens))
             if s.terminate:
                 self._log.debug('process terminates')
                 break

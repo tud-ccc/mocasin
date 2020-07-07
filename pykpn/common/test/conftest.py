@@ -22,7 +22,7 @@ def kpn():
 
 @pytest.fixture
 def trace_generator():
-    return TraceGeneratorWrapper(tgff_file)
+    return TraceGeneratorWrapper(tgff_file, tgff_graph)
 
 @pytest.fixture
 def process_mapping():

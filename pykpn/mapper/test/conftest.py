@@ -48,7 +48,7 @@ def tgff_parallella_setup():
 
     kpn = KpnGraphFromTgff(file, graph)
     platform = PlatformFromTgff(platform_type, processor0, processor1, processor2, processor3, file)
-    trace_generator = TraceGeneratorWrapper(file)
+    trace_generator = TraceGeneratorWrapper(file, graph)
 
     return [kpn, platform, trace_generator]
 
@@ -66,7 +66,7 @@ def tgff_exynos_setup():
 
     kpn = KpnGraphFromTgff(file, graph)
     platform = PlatformFromTgff(platform_type, processor0, processor1, processor2, processor3, file)
-    trace_generator = TraceGeneratorWrapper(file)
+    trace_generator = TraceGeneratorWrapper(file, graph)
 
     return [kpn, platform, trace_generator]
 
@@ -84,7 +84,7 @@ def tgff_coolidge_setup():
 
     kpn = KpnGraphFromTgff(file, graph)
     platform = PlatformFromTgff(platform_type, processor0, processor1, processor2, processor3, file)
-    trace_generator = TraceGeneratorWrapper(file)
+    trace_generator = TraceGeneratorWrapper(file, graph)
 
     return [kpn, platform, trace_generator]
 
@@ -101,7 +101,7 @@ def tgff_multi_cluster_setup():
 
     kpn = KpnGraphFromTgff(file, graph)
     platform = PlatformFromTgff('multi_cluster', processor0, processor1, processor2, processor3, file)
-    trace_generator = TraceGeneratorWrapper(file)
+    trace_generator = TraceGeneratorWrapper(file, graph)
 
     return [kpn, platform, trace_generator]
 
@@ -113,7 +113,7 @@ def slx_speaker_recognition_setup():
 
     kpn = SlxKpnGraph('SlxKpnGraph',  kpn_file)
     platform = SlxPlatform('SlxPlatform', platform_file)
-    trace_generator = SlxTraceReader(trace_dir, 'SlxKpnGraph.')
+    trace_generator = SlxTraceReader(trace_dir)
 
     return [kpn, platform, trace_generator]
 
@@ -125,7 +125,7 @@ def slx_hog_setup():
 
     kpn = SlxKpnGraph('SlxKpnGraph',  kpn_file)
     platform = SlxPlatform('SlxPlatform', platform_file)
-    trace_generator = SlxTraceReader(trace_dir, 'SlxKpnGraph.')
+    trace_generator = SlxTraceReader(trace_dir)
 
     return [kpn, platform, trace_generator]
 
@@ -137,7 +137,7 @@ def slx_parallella_setup():
 
     kpn = SlxKpnGraph('SlxKpnGraph',  kpn_file)
     platform = SlxPlatform('SlxPlatform', platform_file)
-    trace_generator = SlxTraceReader(trace_dir, 'SlxKpnGraph.')
+    trace_generator = SlxTraceReader(trace_dir)
 
     return [kpn, platform, trace_generator]
 
@@ -149,6 +149,6 @@ def slx_multidsp_setup():
 
     kpn = SlxKpnGraph('SlxKpnGraph',  kpn_file)
     platform = SlxPlatform('SlxPlatform', platform_file)
-    trace_generator = SlxTraceReader(trace_dir, 'SlxKpnGraph.')
+    trace_generator = SlxTraceReader(trace_dir)
 
     return [kpn, platform, trace_generator]

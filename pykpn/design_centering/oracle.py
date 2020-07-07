@@ -3,15 +3,13 @@
 #
 # Authors: Gerald Hempel, Andres Goens
 
-import simpy
 import traceback
 import pint
 import hydra
 
-from pykpn.simulate.application import RuntimeKpnApplication
-from pykpn.simulate.system import RuntimeSystem
 from pykpn.mapper.partial import ProcPartialMapper, ComPartialMapper
 from pykpn.mapper.random import RandomPartialMapper
+from pykpn.mapper import utils
 from sys import exit
 
 
@@ -175,31 +173,12 @@ class Simulation(object):
             self.total_cached += 1
             return sample
         try:
-            # Create simulation environment
-            env = simpy.Environment()
-    
-            # create the applications
-            applications = []
-            mappings = {}
-            assert sample.sim_context is not None
-            for ac in sample.sim_context.app_contexts:
-                app = RuntimeKpnApplication(ac.name, ac.kpn, ac.mapping,
-                                            ac.trace_reader, env, ac.start_time)
-                applications.append(app)
-                mappings[ac.name] = ac.mapping
-    
-            # Create the system
-            system = RuntimeSystem(sample.sim_context.platform, applications, env)
-    
-            # run the simulation
-            system.simulate()
-            system.check_errors()
-            sample.sim_context.exec_time = env.now
+            utils.run_simulation(sample.sim_context)
 
             #add to cache
             mapping = tuple(sample.getMapping(0).to_list())
-            self.cache[mapping] = env.now
-            
+            self.cache[mapping] = sample.sim_context.exec_time
+
         except Exception as e:
             log.debug("Exception in Simulation: {}".format(str(e)))
             traceback.print_exc()
