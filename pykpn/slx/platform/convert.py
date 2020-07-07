@@ -119,7 +119,7 @@ def convert(platform, xml_platform):
         policy = create_policy(xml_platform, xs.get_schedulingPolicyList())
         s = Scheduler(name, schedulers_to_processors[name], policy)
         log.debug('Found scheduler %s for %s supporting %s',
-                  name, schedulers_to_processors[name], policy)
+                  name, schedulers_to_processors[name], policy.name)
         platform.add_scheduler(s)
 
     # Initialize all Memories, Caches, and Fifos as CommunicationResources

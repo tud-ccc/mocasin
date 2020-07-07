@@ -290,12 +290,9 @@ class RoundRobinScheduler(RuntimeScheduler):
 
         #status var, keeps track of position in process list
         self._queue_position = 0
-        
+
     def schedule(self):
         """Perform the scheduling.
-        
-        Appends the current process at the end of the ready queue, if its ready. Then pops and returns the first process
-        in the ready queue.
         """
         cp = self.current_process
 
@@ -304,19 +301,22 @@ class RoundRobinScheduler(RuntimeScheduler):
             if cp not in self._ready_queue:
                 self._ready_queue.append(cp)
 
-        #start a the position of the last scheduled process in process list
+        # start at the position of the last scheduled process in process list
         check_next = self._queue_position
+        # increment by one
+        check_next = (check_next + 1) % len(self._processes)
+        stop_at = check_next
 
-        while check_next != self._queue_position:
-
-            #first increase, so case check_next == queue_position is covered by loop
-            check_next = (check_next + 1) % len(self._processes)
-
+        while True:
             #check if process is in ready queue and if so, return it
             if self._processes[check_next] in self._ready_queue:
-                self._queue_position = (check_next + 1) % len(self._processes)
+                self._queue_position = check_next
                 return self._processes[check_next]
 
+            # increment
+            check_next = (check_next + 1) % len(self._processes)
+            if check_next == stop_at:
+                break
 
         #if no process is ready, we sleep and start at same position next time
         return None
