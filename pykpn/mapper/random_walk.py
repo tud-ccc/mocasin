@@ -16,7 +16,7 @@ from pykpn.mapper.random import RandomMapper
 from pykpn.util import logging, plot
 from pykpn.slx.mapping import export_slx_mapping
 from pykpn.representations.representations import RepresentationType
-from pykpn.common.mapping import ChannelMappingInfo, Mapping, ProcessMappingInfo, SchedulerMappingInfo
+from pykpn.common.mapping import ChannelMappingInfo, Mapping, ProcessMappingInfo
 
 log = logging.getLogger(__name__)
 
@@ -218,17 +218,6 @@ class RandomPartialMapper(object):
             raise RuntimeError('rand_map: Try to map partial mapping of platform,KPN %s,%s to %s,%s',
                                part_mapping.platform.name, part_mapping.kpn.name,
                                self.platform.name, self.kpn.name)
-
-
-
-        # configure policy of schedulers
-        for s in self.platform.schedulers():
-            i = random.randrange(0, len(s.policies))
-            policy = s.policies[i]
-            info = SchedulerMappingInfo(policy, None)
-            part_mapping.add_scheduler_info(s, info)
-            log.debug('rand_map: configure scheduler %s to use the %s policy',
-                      s.name, policy.name)
 
         # map processes
         processes = part_mapping.get_unmapped_processes()

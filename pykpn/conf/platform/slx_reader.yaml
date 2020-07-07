@@ -5,4 +5,3 @@ platform:
   params:
     name: ${platform.name}
     platform_xml: ${platform.file}
-    slx_version: ${slx.version}

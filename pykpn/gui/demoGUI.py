@@ -31,7 +31,7 @@ class controlPanel(tk.Frame):
             self.__path = sys.path[2] + "/apps"
         else:
             self.__path = sys.path[1] + "/apps"
-        self.__kpnInstance = SlxKpnGraph('SlxKpnGraph',  "apps/audio_filter/audio_filter.cpn.xml",'2017.04')
+        self.__kpnInstance = SlxKpnGraph('SlxKpnGraph',  "apps/audio_filter/audio_filter.cpn.xml")
         self.__platform = None      
         self.__mappingIDs = []
         
@@ -55,7 +55,7 @@ class controlPanel(tk.Frame):
         self.exitButton.grid(sticky='EW',row = 8)
     
     def __loadExynos(self):
-        #platform =  SlxPlatform('SlxPlatform', 'apps/audio_filter/exynos/exynos.platform', '2017.04')
+        #platform =  SlxPlatform('SlxPlatform', 'apps/audio_filter/exynos/exynos.platform')
         platform = TestPlatform()
         self.__platform = platform
         self.parent.drawPanel.drawDevice.setPlatform(platform)
@@ -64,7 +64,7 @@ class controlPanel(tk.Frame):
         self.addMappingButton['state'] = 'normal'
                   
     def __loadParallella(self):
-        platform = SlxPlatform('SlxPlatform', 'apps/audio_filter/parallella/parallella.platform', '2017.04')
+        platform = SlxPlatform('SlxPlatform', 'apps/audio_filter/parallella/parallella.platform')
         self.__platform = platform
         self.parent.drawPanel.drawDevice.setPlatform(platform)
         self.loadExButton['state'] = 'disabled'
@@ -72,7 +72,7 @@ class controlPanel(tk.Frame):
         self.addMappingButton['state'] = 'normal'
     
     def __loadMultiDSP(self):
-        platform =  SlxPlatform('SlxPlatform', 'apps/audio_filter/multidsp/multidsp.platform', '2017.04')
+        platform =  SlxPlatform('SlxPlatform', 'apps/audio_filter/multidsp/multidsp.platform')
         self.__platform = platform
         self.parent.drawPanel.drawDevice.setPlatform(platform)
         self.loadExButton['state'] = 'disabled'

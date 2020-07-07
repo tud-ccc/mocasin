@@ -270,6 +270,7 @@ class FifoScheduler(RuntimeScheduler):
         # sleep otherwise
         return None
 
+
 class RoundRobinScheduler(RuntimeScheduler):
     """
     """
@@ -313,7 +314,20 @@ class RoundRobinScheduler(RuntimeScheduler):
         #if no process is ready, we sleep and start at same position next time
         return None
 
-def create_scheduler(name, processor, policy, param, env):
+
+def create_scheduler(name, processor, policy, env):
+    """Factory method for RuntimeScheduler
+
+    Creates a RuntimeScheduler depending on the policy passed to this function.
+
+    Args:
+        name (str): name of the new scheduler
+        processor (Processor): the processor that the scheduler manages
+        policy (SchedulingPolicy): the policy implemented by the new scheduler
+
+    Returns:
+        RuntimeScheduler: a runtime scheduler object
+    """
     if policy.name == 'Dummy':
         s = DummyScheduler(name, processor, ContextSwitchMode.NEVER,
                            policy.scheduling_cycles, env)

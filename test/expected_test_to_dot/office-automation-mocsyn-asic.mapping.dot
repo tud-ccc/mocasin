@@ -4,8 +4,9 @@ label=sched00;
 subgraph cluster_processor_processor_0 {
 label=processor_0;
 dummy_processor_0 [style=invis];
-process_text [label=text];
+process_src [label=src];
 process_sink [label=sink];
+process_dith [label=dith];
 }
 
 }
@@ -15,9 +16,7 @@ label=sched01;
 subgraph cluster_processor_processor_1 {
 label=processor_1;
 dummy_processor_1 [style=invis];
-process_src [label=src];
-process_rotate [label=rotate];
-process_dith [label=dith];
+process_text [label=text];
 }
 
 }
@@ -36,6 +35,7 @@ label=sched03;
 subgraph cluster_processor_processor_3 {
 label=processor_3;
 dummy_processor_3 [style=invis];
+process_rotate [label=rotate];
 }
 
 }

@@ -17,7 +17,7 @@ ur = UnitRegistry()
 log = logging.getLogger(__name__)
 
 
-def create_policy_list(xml_platform, list_ref):
+def create_policy(xml_platform, list_ref):
     log.warning('SLX platforms do not define scheduling delays. -> default to 0')
     policies = []
     for pl in xml_platform.get_SchedulingPolicyList():
@@ -26,8 +26,16 @@ def create_policy_list(xml_platform, list_ref):
                 name = p.get_schedulingAlgorithm()
                 # there is no scheduling delay in slx
                 cycles = 0
-                policies.append(SchedulingPolicy(name, cycles))
-            return policies
+                time_slice = get_value_in_unit(p, "timeSlice", "ps", None)
+                policies.append(SchedulingPolicy(name, cycles,
+                                                 time_slice=time_slice))
+            if len(policies) == 0:
+                raise RuntimeError(f"The SchedulingPolicyList {list_ref} does "
+                                   "not define any policies!")
+            elif len(policies) > 1:
+                raise RuntimeError(f"The SchedulingPolicyList {list_ref} "
+                                   "defines multiple policies!")
+            return policies[0]
     raise RuntimeError('Could not find the SchedulingPolicyList %s', list_ref)
 
 
@@ -108,11 +116,10 @@ def convert(platform, xml_platform):
     # Initialize all Schedulers
     for xs in xml_platform.get_Scheduler():
         name = xs.get_id()
-        policies = create_policy_list(xml_platform,
-                                      xs.get_schedulingPolicyList())
-        s = Scheduler(name, schedulers_to_processors[name], policies)
+        policy = create_policy(xml_platform, xs.get_schedulingPolicyList())
+        s = Scheduler(name, schedulers_to_processors[name], policy)
         log.debug('Found scheduler %s for %s supporting %s',
-                  name, schedulers_to_processors[name], policies)
+                  name, schedulers_to_processors[name], policy)
         platform.add_scheduler(s)
 
     # Initialize all Memories, Caches, and Fifos as CommunicationResources

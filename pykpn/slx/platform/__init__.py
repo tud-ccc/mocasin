@@ -4,8 +4,8 @@
 # Authors: Christian Menard
 
 
-from .convert_2017_04 import convert as convert_2017_04
-from .parse_2017_04 import parse as parse_2017_04
+from .convert import convert
+from .parse import parse
 from pykpn.util import logging
 from pykpn.common.platform import Platform
 
@@ -15,12 +15,9 @@ log = logging.getLogger(__name__)
 
 class SlxPlatform(Platform):
 
-    def __init__(self, name, platform_xml, slx_version):
+    def __init__(self, name, platform_xml):
         super().__init__(name)
         log.info('start parsing the platform description')
-        if (slx_version == '2017.04' or slx_version == '2017.10'):
-            xml_platform = parse_2017_04(platform_xml, True)
-            convert_2017_04(self, xml_platform)
-        else:
-            raise RuntimeError('SLX version %s is not supported!' % slx_version)
+        xml_platform = parse(platform_xml, True)
+        convert(self, xml_platform)
         log.info('done parsing the platform description')

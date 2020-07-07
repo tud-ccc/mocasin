@@ -5,7 +5,6 @@ platform:
   params:
     name: ${platform.name}
     platform_xml: ${platform.file}
-    slx_version: ${slx.version}
 
 kpn:
   name: ???
@@ -14,14 +13,13 @@ kpn:
   params:
     name: ${kpn.name}
     cpngraph: ${kpn.file}
-    slx_version: ${slx.version}
 
 mapping:
   name: ${kpn.name}_on_${platform.name}
   file: ???
-  class: pykpn.slx.mapping.slx_read_fullmapper.slx_read_mapper
-  mapping_xml: ${mapping.file}
-  slx_version: ${slx.version}
+  class: pykpn.slx.mapping.SlxMapping
+  params:
+    mapping_xml: ${mapping.file}
 
 trace:
   directory: ???
@@ -29,4 +27,3 @@ trace:
   params:
     trace_dir: ${trace.directory}
     prefix: ${kpn.name}.
-    slx_version: ${slx.version}

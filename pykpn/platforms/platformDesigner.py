@@ -118,7 +118,7 @@ class PlatformDesigner():
             for i in range (start, end):
                 processor = Processor('PE%02d' % i, name, fd)
                 self.__platform.add_processor(processor)
-                self.__platform.add_scheduler(Scheduler('sched%02d' % i, [processor], [self.__schedulingPolicy]))
+                self.__platform.add_scheduler(Scheduler('sched%02d' % i, [processor], self.__schedulingPolicy))
                 processors.append((processor,[]))
                 self.__peAmount += 1
                 
@@ -152,7 +152,7 @@ class PlatformDesigner():
                                           processor.context_store_cycles)
                 
                 self.__platform.add_processor(new_processor)
-                self.__platform.add_scheduler(Scheduler('sched%02d' % i, [new_processor], [self.__schedulingPolicy]))
+                self.__platform.add_scheduler(Scheduler('sched%02d' % i, [new_processor], self.__schedulingPolicy))
                 processors.append((new_processor,[]))
                 self.__peAmount += 1
                 

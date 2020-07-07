@@ -245,51 +245,58 @@ class Primitive:
 class SchedulingPolicy:
     """Represents a scheduling policy.
 
-    Each scheduler may implement multiple policies.
-
-    :param str name: the policy name
-    :param int cycles:
-        number of cycles a scheduler using this policy requires to reach a
-        decision
+        Attributes:
+           name (str): the policy name
+           cycles (int): number of cycles a scheduler using this policy
+                         requires to reach a decision
+           time_slice (int): Length of a time slice in pico seconds
     """
 
-    def __init__(self, name, cycles, param=None):
+    def __init__(self, name, cycles, time_slice=None):
         """Initialize a scheduling policy
 
-        :param str name: the policy name
-        :param int cycles:
-            number of cycles a scheduler using this policy requires to reach a
-            decision
+        Args:
+           name (str): the policy name
+           cycles (int): number of cycles a scheduler using this policy
+                         requires to reach a decision
+           time_slice (int, optional): Length of a time slice in pico seconds.
+               Defaults to None.
         """
         self.name = name
         self.scheduling_cycles = cycles
+        self.time_slice = time_slice
 
 
 class Scheduler:
-    '''
-    Represents a scheduler provided by the platform. It schedules processes on
-    one or more processors according to a policy. The class defines a list of
-    all supported scheduling policies.
-    '''
+    """Represents a scheduler provided by the platform.
 
-    def __init__(self, name, processors, policies):
-        '''
-        Initialize a Scheduler.
-        :param name: name of the scheduler
-        :param processors: list of Processor objects that are managed by this
-                           scheduler
-        :param policies: list of SchedulingPolicies that are supported by this
-                         scheduler
-        '''
+       It schedules processes on one or more processors according to a policy.
+
+       Attributes:
+           name (str): name of the scheduler
+           processors (list of Processor): list of Processor objects that are
+               managed by this scheduler
+           policy (SchedulingPolicy): the scheduling policy implemented by this
+               scheduler
+    """
+
+    def __init__(self, name, processors, policy):
+        """Initialize a Scheduler.
+
+           Args:
+              name (str): name of the scheduler
+              processors (list of Processor): list of Processor objects that
+                  are managed by this scheduler
+              policy (SchedulingPolicy): the scheduling policy implemented by
+                  this scheduler
+        """
         assert len(processors) > 0, (
             "A scheduler must be associated with at least one processor")
-        assert len(policies) > 0, (
-            "A scheduler must support at least one policy")
 
         self.name = name
         self.processors = processors
-        self.policies = policies
-    
+        self.policy = policy
+
     def __str__(self):
         return self.name
 
@@ -298,22 +305,6 @@ class Scheduler:
 
     def __lt__(self, other_scheduler):
         return self.name.lower() < other_scheduler.name.lower()
-
-
-    def find_policy(self, name, throw=False):
-        """Lookup a policy by its name.
-
-        :param str name: name of the policy to search for
-        :raises RuntimeError: if no processor was found and throw is True
-        :returns: A scheduling policy object or None if no policy was found.
-        """
-        for p in self.policies:
-            if p.name == name:
-                return p
-        if throw:
-            raise RuntimeError('The policy %s is not defined for this '
-                               'scheduler!', name)
-        return None
 
 
 class Platform(object):
@@ -351,25 +342,30 @@ class Platform(object):
         return self._communication_resources.values()
 
     def find_scheduler_for_processor(self, processor):
-        """Find all schedulers associated to a given processor.
-           
+        """Find the scheduler for a given processor.
+
            :param processor: a processer of the underlying platform
            :type processor: Processor
-           :raises RuntimeError: if the processor was not found
-           :returns: A set of possible schedulers for the processor.
+           :raises RuntimeError: if the processor or the scheduler was not found
+           :returns: The scheduler object for the given processor
         """
         if processor.name not in self._processors:
             raise RuntimeError('The processor {} is not defined for this '
                                'platform!'.format(processor.name))
-        used_schedulers = set()
+        schedulers = []
 
-        for s in self._schedulers:
-            if processor in self._schedulers[s].processors:
-                used_schedulers.add( self._schedulers[s])
-        
-        #print("Found schedulers: {} for {}".format(used_schedulers, processor.name))
-        return used_schedulers
+        for s in self._schedulers.values():
+            if processor in s.processors:
+                schedulers.append(s)
 
+        if len(schedulers) == 0:
+            raise RuntimeError(
+                f"No scheduler found for processor {processor.name}!")
+        elif len(schedulers) > 1:
+            raise RuntimeError(
+                f"Found multiple schedulers for processor {processor.name}!")
+
+        return schedulers[0]
 
     def find_scheduler(self, name):
         """Search for a scheduler object by its name."""

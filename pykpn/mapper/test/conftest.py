@@ -107,52 +107,48 @@ def tgff_multi_cluster_setup():
 
 @pytest.fixture
 def slx_speaker_recognition_setup():
-    slx_version = '2017.10'
     kpn_file = 'examples/slx/app/speaker_recognition/speaker_recognition.cpn.xml'
     platform_file = 'examples/slx/platforms/exynos.platform'
     trace_dir = 'examples/slx/app/speaker_recognition/exynos/traces'
-    
-    kpn = SlxKpnGraph('SlxKpnGraph',  kpn_file, slx_version)
-    platform = SlxPlatform('SlxPlatform', platform_file, '2017.04')
-    trace_generator = SlxTraceReader(trace_dir, slx_version, 'SlxKpnGraph.')
+
+    kpn = SlxKpnGraph('SlxKpnGraph',  kpn_file)
+    platform = SlxPlatform('SlxPlatform', platform_file)
+    trace_generator = SlxTraceReader(trace_dir, 'SlxKpnGraph.')
 
     return [kpn, platform, trace_generator]
 
 @pytest.fixture
 def slx_hog_setup():
-    slx_version = '2017.10'
     kpn_file = 'examples/slx/app/hog/hog.cpn.xml'
     platform_file = 'examples/slx/platforms/exynos.platform'
     trace_dir = 'examples/slx/app/hog/exynos/traces'
 
-    kpn = SlxKpnGraph('SlxKpnGraph',  kpn_file, slx_version)
-    platform = SlxPlatform('SlxPlatform', platform_file, '2017.04')
-    trace_generator = SlxTraceReader(trace_dir, slx_version, 'SlxKpnGraph.')
+    kpn = SlxKpnGraph('SlxKpnGraph',  kpn_file)
+    platform = SlxPlatform('SlxPlatform', platform_file)
+    trace_generator = SlxTraceReader(trace_dir, 'SlxKpnGraph.')
 
     return [kpn, platform, trace_generator]
 
 @pytest.fixture
 def slx_parallella_setup():
-    slx_version = '2017.10'
     kpn_file = 'examples/slx/app/audio_filter/audio_filter.cpn.xml'
     platform_file = 'examples/slx/platforms/parallella.platform'
     trace_dir = 'examples/slx/app/audio_filter/parallella/traces'
 
-    kpn = SlxKpnGraph('SlxKpnGraph',  kpn_file, slx_version)
-    platform = SlxPlatform('SlxPlatform', platform_file, '2017.04')
-    trace_generator = SlxTraceReader(trace_dir, slx_version, 'SlxKpnGraph.')
+    kpn = SlxKpnGraph('SlxKpnGraph',  kpn_file)
+    platform = SlxPlatform('SlxPlatform', platform_file)
+    trace_generator = SlxTraceReader(trace_dir, 'SlxKpnGraph.')
 
     return [kpn, platform, trace_generator]
 
 @pytest.fixture
 def slx_multidsp_setup():
-    slx_version = '2017.10'
     kpn_file = 'examples/slx/app/audio_filter/audio_filter.cpn.xml'
     platform_file = 'examples/slx/platforms/multidsp.platform'
     trace_dir = 'examples/slx/app/audio_filter/multidsp/traces'
 
-    kpn = SlxKpnGraph('SlxKpnGraph',  kpn_file, slx_version)
-    platform = SlxPlatform('SlxPlatform', platform_file, '2017.04')
-    trace_generator = SlxTraceReader(trace_dir, slx_version, 'SlxKpnGraph.')
+    kpn = SlxKpnGraph('SlxKpnGraph',  kpn_file)
+    platform = SlxPlatform('SlxPlatform', platform_file)
+    trace_generator = SlxTraceReader(trace_dir, 'SlxKpnGraph.')
 
     return [kpn, platform, trace_generator]
