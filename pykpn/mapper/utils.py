@@ -93,12 +93,12 @@ class MappingCache(object):
             m_obj = self.representation.fromRepresentation(np.array(tup))
             trace = hydra.utils.instantiate(self.config['trace'])
             env = simpy.Environment()
+            system = RuntimeSystem(self.platform, env)
             app = RuntimeKpnApplication(name=self.kpn.name,
                                         kpn_graph=self.kpn,
                                         mapping=m_obj,
                                         trace_generator=trace,
-                                        env=env,)
-            system = RuntimeSystem(self.platform, [app], env)
+                                        system=system,)
             system.simulate()
             exec_time = float(env.now) / 1000000000.0
             self.add_time(exec_time)

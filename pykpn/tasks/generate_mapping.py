@@ -84,12 +84,12 @@ def generate_mapping(cfg):
         platform = result.platform
         trace = hydra.utils.instantiate(cfg['trace'])
         env = simpy.Environment()
+        system = RuntimeSystem(platform,env)
         app = RuntimeKpnApplication(name=kpn.name,
                                     kpn_graph=kpn,
                                     mapping=result,
                                     trace_generator=trace,
-                                    env=env,)
-        system = RuntimeSystem(platform, [app], env)
+                                    system=system,)
         system.simulate()
 
 
