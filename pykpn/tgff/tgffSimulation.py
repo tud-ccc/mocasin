@@ -1,7 +1,7 @@
 # Copyright (C) 2020 TU Dresden
 # All Rights Reserved
 #
-# Authors: Felix Teweleit
+# Authors: Felix Teweleit, Andres Goens
 
 from pykpn.common.platform import Platform
 from pykpn.platforms.topologies import meshTopology, fullyConnectedTopology
@@ -77,6 +77,17 @@ class PlatformFromTgff:
                 raise TgffReferenceError()
 
             return TgffRuntimePlatformMesh(processor_dict[processor_1], processor_dict[processor_2])
+
+        elif platform_type == 'odroid':
+
+            if int(processor_1.split('_')[1]) >= len(tgff_processors):
+                raise TgffReferenceError()
+
+            if int(processor_2.split('_')[1]) >= len(tgff_processors):
+                raise TgffReferenceError()
+
+            return TgffRuntimePlatformOdroid(processor_dict[processor_1],
+                                                processor_dict[processor_2])
 
         elif platform_type == 'exynos990':
 
@@ -169,6 +180,54 @@ class TgffRuntimePlatformMesh(Platform):
                                           float('inf'),
                                           frequencyDomain=6000000.0)
         designer.finishElement()
+
+
+class TgffRuntimePlatformOdroid(Platform):
+    def __init__(self, processor_1, processor_2, name="odroid"):
+        super(TgffRuntimePlatformOdroid, self).__init__(name)
+        designer = PlatformDesigner(self)
+
+        designer.setSchedulingPolicy('FIFO', 1000)
+        designer.newElement("exynos5422")
+
+        # cluster 0 with l2 cache
+        designer.addPeClusterForProcessor("cluster_a7",
+                                          processor_1.to_pykpn_processor(),
+                                          4)
+        # Add L1/L2 caches
+        designer.addCacheForPEs("cluster_a7", 1, 0, 8.0, float('inf'), frequencyDomain=1400000000.0, name='L1_A7')
+        designer.addCommunicationResource("L2_A7",
+                                          ["cluster_a7"],
+                                          250,
+                                          250,
+                                          float('inf'),
+                                          float('inf'),
+                                          frequencyDomain=1400000000.0)
+
+        # cluster 1, with l2 cache
+        designer.addPeClusterForProcessor("cluster_a15",
+                                          processor_2.to_pykpn_processor(),
+                                          4)
+        # Add L1/L2 caches
+        designer.addCacheForPEs("cluster_a15", 1, 4, 8.0, 8.0, frequencyDomain=2000000000.0, name='L1_A15')
+        designer.addCommunicationResource("L2_A15",
+                                          ["cluster_a15"],
+                                          250,
+                                          250,
+                                          float('inf'),
+                                          float('inf'),
+                                          frequencyDomain=2000000000.0)
+
+        # RAM connecting all clusters
+        designer.addCommunicationResource("DRAM",
+                                          ["cluster_a7", "cluster_a15"],
+                                          120,
+                                          120,
+                                          8.0,
+                                          8.0,
+                                          frequencyDomain=933000000.0)
+        designer.finishElement()
+
 
 class TgffRuntimePlatformExynos990(Platform):
     def __init__(self, processor_1, processor_2, processor_3, processor_4, name="exynos-990"):
