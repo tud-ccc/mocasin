@@ -18,9 +18,13 @@ def main():
     This script is the universal pykpn launcher, which replaces
     individual scripts for different tasks.
 
-    The idea is for this script to manage different tasks that are
-    available to do with the pykpn framework, using the different
-    configuration capabilities allowed by the hydra framework.
+    The idea for this script is to manage the execution of tasks that are
+    provided by the pykpn framework in combination with the configuration
+    capabilities provided by the hydra framework.
+
+    When running pykpn, it expects the task name to be the first command line
+    argument and calls the appropriate task. Any further arguments are
+    processed by hydra and then handed to the task.
 
     See :module:`pykpn.tasks` for a description of how new tasks can be added.
     """

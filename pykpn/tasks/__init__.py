@@ -6,9 +6,13 @@
 
 """This module manages the executable tasks that are available within pykpn
 
-To add a new task, write a function within this package and add an entry to the
-:attr:`pykpn_tasks` dict pointing to this function. Each task function should
-expect precisely one parameter, the Omniconf object as created by hydra.
+To add a new task, write a function within a module within this package and add
+a descriptor tuple to the :attr:`_tasks` dict. The tuple should have three
+entries. The first is the name of the module that defines the task function,
+the second is the name of the task function and the third is a description of
+the task that is printed when running ``pykpn help``.  Each task function
+should be annotated with ``@hydra.main`` and expect precisely one parameter,
+the Omniconf object as created by hydra.
 """
 
 import hydra
@@ -39,6 +43,14 @@ _tasks = {
         'enumerate_equivalent',
         'enumerate_equivalent',
         "ennumerate all mappings equivalent to the given mapping"),
+    'generate_mapping': (
+        'generate_mapping',
+        'generate_mapping',
+        "Generate a mapping."),
+    'generate_yaml': (
+        'generate_yaml',
+        'generate_yaml',
+        "Generates a bunch of yaml files"),
     'help': (
         None,
         None,
@@ -59,29 +71,21 @@ _tasks = {
         'to_dot',
         'platform_to_dot',
         "Visualize a platform as a dot graph"),
-    'generate_mapping': (
-        'generate_mapping',
-        'generate_mapping',
-        "Generate a mapping."),
     'simulate': (
         'simulate',
         'simulate',
         "Replay traces to simulate the execution of a KPN application on a "
         "given platform"),
-    'visualize': (
-        'visualize',
-        'visualize',
-        "Visualize a mapping in the GUI"),
     'solve_query' : (
         'solve_query',
         'solve_query',
         "Generates a mapping based on constraints expressed in a query language"),
-    'generate_yaml': (
-        'generate_yaml',
-        'generate_yaml',
-        "Generates a bunch of yaml files"),
+    'visualize': (
+        'visualize',
+        'visualize',
+        "Visualize a mapping in the GUI"),
 }
-"""A dictionary that maps task names to a callable function."""
+"""A dictionary that maps task names to descriptors of callable functions."""
 
 
 def _print_help_impl():
@@ -103,9 +107,9 @@ def _print_help_impl():
 
 
 def execute_task(task):
-    """Executes an individual task as specified in the configuration
+    """Executes an individual task.
 
-    :param cfg: Omniconf object created by hydra decorator
+    :param task: name of the task to be executed
     :return:
     """
 
