@@ -34,11 +34,20 @@ def main():
         task = sys.argv[1]
         del sys.argv[1]
 
+    # Normally we want pykpn to fail and exit with an error code when an
+    # exception occurs. However, in the case of hydra multirun, we usually want
+    # to continue running other jobs even if a single one of them
+    # fails. Therefore, calling exit() is prevented in the case of multirun
+    fail_on_exception = True
+    if ('-m' in sys.argv or '--multirun' in sys.argv):
+        fail_on_exception = False
+
     try:
         execute_task(task)
     except Exception:
         log.error(traceback.format_exc())
-        sys.exit(-1)
+        if fail_on_exception:
+            sys.exit(1)
 
 
 if __name__ == "__main__":

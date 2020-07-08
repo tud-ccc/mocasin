@@ -18,10 +18,8 @@ import textwrap
 
 from importlib import import_module
 
-
-from pykpn.tgff.tgffSimulation import TgffReferenceError
-
 log = logging.getLogger(__name__)
+
 
 @hydra.main(config_path='conf/help.yaml')
 def print_help(cfg=None):
@@ -124,16 +122,10 @@ def execute_task(task):
     if task == 'help':
         print_help()
     else:
-        try:
-            # load the task
-            module_name = _tasks[task][0]
-            function_name = _tasks[task][1]
-            module = import_module(f"pykpn.tasks.{module_name}")
-            function = getattr(module, function_name)
-            # execute the task
-            function()
-        except TgffReferenceError:
-            # Special exception indicates a bad combination of tgff components
-            # can be thrown during multiruns and should not stop the hydra
-            # execution
-            log.warning("Referenced non existing tgff component!")
+        # load the task
+        module_name = _tasks[task][0]
+        function_name = _tasks[task][1]
+        module = import_module(f"pykpn.tasks.{module_name}")
+        function = getattr(module, function_name)
+        # execute the task
+        function()
