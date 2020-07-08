@@ -65,4 +65,4 @@ def simulate(cfg):
     print('Total simulated time: ' + str(exec_time) + ' ms')
     print('Total simulation time: ' + str(stop - start) + ' s')
 
-    system.check_errors()
+    system.trace_writer.write_trace(cfg['simulation_trace'])

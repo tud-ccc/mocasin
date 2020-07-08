@@ -74,6 +74,11 @@ class RuntimeChannel(object):
         """Full name including the application name"""
         return f"{self.app.name}.{self.name}"
 
+    @property
+    def trace_writer(self):
+        """The system's trace writer"""
+        return self.app.system.trace_writer
+
     def set_src(self, process):
         """Set the source process.
 
@@ -95,6 +100,12 @@ class RuntimeChannel(object):
         """
         self._sinks.append(process)
         self._fifo_state[process.name] = 0
+
+        # record the channel creation in the simulation trace
+        self.trace_writer.update_counter(self.app.name,
+                                         self.name,
+                                         self._fifo_state.copy(),
+                                         category="Channel")
 
     def can_consume(self, process, num):
         """Check if a process can consume a number of tokens.
@@ -248,6 +259,12 @@ class RuntimeChannel(object):
         new_state = self._fifo_state[process.name] - num
         self._fifo_state[process.name] = new_state
 
+        # record the consume operation in the simulation trace
+        self.trace_writer.update_counter(self.app.name,
+                                         self.name,
+                                         self._fifo_state.copy(),
+                                         category="Channel")
+
         for phase in prim.consume_phases[sink.name]:
             log.debug('start communication phase "%s"', phase.name)
 
@@ -326,6 +343,13 @@ class RuntimeChannel(object):
         # update the state
         for p in self._fifo_state:
             self._fifo_state[p] += num
+
+        # record the produce operation in the simulation trace
+        self.trace_writer.update_counter(self.app.name,
+                                         self.name,
+                                         self._fifo_state.copy(),
+                                         category="Channel")
+        print(self._fifo_state)
 
         for phase in prim.produce_phases[src.name]:
             log.debug('start communication phase "%s"', phase.name)

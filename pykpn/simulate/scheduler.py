@@ -90,6 +90,11 @@ class RuntimeScheduler(object):
         """The simpy environment"""
         return self._system.env
 
+    @property
+    def trace_writer(self):
+        """The system's trace writer"""
+        return self._system.trace_writer
+
     def add_process(self, process):
         """Add a process to this scheduler.
 
@@ -178,8 +183,20 @@ class RuntimeScheduler(object):
                 self.current_process = np
                 self._ready_queue.remove(np)
                 np.activate(self._processor)
+                # record the process activation in the simulation trace
+                self.trace_writer.begin_duration(self._system.platform.name,
+                                                 self._processor.name,
+                                                 np.full_name,
+                                                 category="Schedule")
+
                 # wait until the process stops its execution
                 yield self.env.any_of([np.blocked, np.finished])
+
+                # record the process halting in the simulation trace
+                self.trace_writer.end_duration(self._system.platform.name,
+                                               self._processor.name,
+                                               np.full_name,
+                                               category="Schedule")
 
                 # pay for context switching
                 if self._context_switch_mode == ContextSwitchMode.ALWAYS:

@@ -126,6 +126,10 @@ class RuntimeProcess(object):
         self.blocked = self.env.event()
         self.blocked.callbacks.append(self._cb_blocked)
 
+        # record the process creation int the simulation trace
+        self.trace_writer.begin_duration(self.app.name, self.name,
+                                         'CREATED', category="Process")
+
     @property
     def env(self):
         """The simpy environment"""
@@ -135,6 +139,11 @@ class RuntimeProcess(object):
     def full_name(self):
         """Full name including the application name"""
         return f"{self.app.name}.{self.name}"
+
+    @property
+    def trace_writer(self):
+        """The system's trace writer"""
+        return self.app.system.trace_writer
 
     def _transition(self, state_name):
         """Helper function for convenient state transitions.
@@ -154,6 +163,12 @@ class RuntimeProcess(object):
         assert hasattr(self, event_name)
         assert hasattr(self, cb_name)
 
+        # record the transition in the simulation trace
+        self.trace_writer.end_duration(self.app.name, self.name,
+                                       self._state.name, category="Process")
+        self.trace_writer.begin_duration(self.app.name, self.name,
+                                         state_name, category="Process")
+
         # update the state
         self._state = getattr(ProcessState, state_name)
 
@@ -163,6 +178,7 @@ class RuntimeProcess(object):
         new_event = self.env.event()
         new_event.callbacks.append(getattr(self, '_cb_' + event_name))
         setattr(self, event_name, new_event)
+
 
     def check_state(self, state):
         """Compare to internal state
