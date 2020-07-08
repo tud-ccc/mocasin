@@ -319,7 +319,6 @@ class RuntimeProcess(object):
         """
         assert(self._state == ProcessState.CREATED)
         self._log.debug('Entered CREATED state')
-        print('created')
 
     def workload(self):
         """Implements the process functionality.

@@ -349,7 +349,6 @@ class RuntimeChannel(object):
                                          self.name,
                                          self._fifo_state.copy(),
                                          category="Channel")
-        print(self._fifo_state)
 
         for phase in prim.produce_phases[src.name]:
             log.debug('start communication phase "%s"', phase.name)
