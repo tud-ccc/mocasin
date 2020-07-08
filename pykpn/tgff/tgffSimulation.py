@@ -3,12 +3,15 @@
 #
 # Authors: Felix Teweleit, Andres Goens
 
-from pykpn.common.platform import Platform
+from pykpn.common.platform import Platform, FrequencyDomain
 from pykpn.platforms.topologies import meshTopology, fullyConnectedTopology
 from pykpn.platforms.platformDesigner import PlatformDesigner
 from pykpn.platforms.utils import simpleDijkstra as sd
 from pykpn.tgff.trace import TgffTraceGenerator
 from pykpn.tgff.tgffParser.parser import Parser
+
+import logging
+log = logging.getLogger(__name__)
 
 _parsed_tgff_files = {}
 
@@ -185,14 +188,25 @@ class TgffRuntimePlatformMesh(Platform):
 class TgffRuntimePlatformOdroid(Platform):
     def __init__(self, processor_1, processor_2, name="odroid"):
         super(TgffRuntimePlatformOdroid, self).__init__(name)
+        processor1 = processor_1.to_pykpn_processor()
+        if processor1.frequency_domain.frequency != 1400000000.0:
+            log.warning(f"Rescaling processor {processor_1.name} to fit Odroid frequency")
+            fd_a7 = FrequencyDomain('fd_a7', 1400000000.0)
+            processor1.frequency_domain = fd_a7
+
+        processor2 = processor_2.to_pykpn_processor()
         designer = PlatformDesigner(self)
+        if processor2.frequency_domain.frequency != 2000000000.0:
+            log.warning(f"Rescaling processor {processor_2.name} to fit Odroid frequency")
+            fd_a15 = FrequencyDomain('fd_a15', 2000000000.0)
+            processor2.frequency_domain = fd_a15
 
         designer.setSchedulingPolicy('FIFO', 1000)
         designer.newElement("exynos5422")
 
         # cluster 0 with l2 cache
         designer.addPeClusterForProcessor("cluster_a7",
-                                          processor_1.to_pykpn_processor(),
+                                          processor1,
                                           4)
         # Add L1/L2 caches
         designer.addCacheForPEs("cluster_a7", 1, 0, 8.0, float('inf'), frequencyDomain=1400000000.0, name='L1_A7')
@@ -206,7 +220,7 @@ class TgffRuntimePlatformOdroid(Platform):
 
         # cluster 1, with l2 cache
         designer.addPeClusterForProcessor("cluster_a15",
-                                          processor_2.to_pykpn_processor(),
+                                          processor2,
                                           4)
         # Add L1/L2 caches
         designer.addCacheForPEs("cluster_a15", 1, 4, 8.0, 8.0, frequencyDomain=2000000000.0, name='L1_A15')
