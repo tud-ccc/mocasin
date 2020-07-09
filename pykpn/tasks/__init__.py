@@ -92,11 +92,12 @@ def _print_help_impl():
     print("pykpn is a framework for modeling KPN applications and their")
     print("execution on MPSoC platforms.")
     print("")
-    print("Usage: pykpn TASK [HYDRA OPTIONS]")
+    print("Usage: pykpn TASK [PYKPN OPTIONS] [HYDRA OPTIONS]")
     print("")
     print("pykpn can perform one of several tasks. It expects the first ")
-    print("argument to specify the task to be executed. Choose one of:")
+    print("argument to specify the task to be executed.")
     print("")
+    print("Available pykpn tasks:")
     for kv in _tasks.items():
         desc = kv[1][2]
         desc_lines = textwrap.wrap(desc, width=41)
@@ -104,6 +105,13 @@ def _print_help_impl():
         print("%s%s" % ("{:<24}".format(task), desc_lines[0]))
         for line in desc_lines[1:]:
             print("%s%s" % ("{:<24}".format(''), line))
+    print("")
+    print("Optional arguments:")
+    print(" --no-fail-on-exception If this flag is given, pykpn does not exit")
+    print("                        with an error code in case of an internal")
+    print("                        exception. This is useful in combination")
+    print("                        with hydra mutlirun if execution should")
+    print("                        continue even when one job failed.")
 
 
 def execute_task(task):

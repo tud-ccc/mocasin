@@ -39,11 +39,13 @@ def main():
         del sys.argv[1]
 
     # Normally we want pykpn to fail and exit with an error code when an
-    # exception occurs. However, in the case of hydra multirun, we usually want
+    # exception occurs. However, in the case of hydra multirun, we might want
     # to continue running other jobs even if a single one of them
-    # fails. Therefore, calling exit() is prevented in the case of multirun
+    # fails. Therefore, calling exit() is prevented if the
+    # '--no-fail-on-exception' flag is given.
     fail_on_exception = True
-    if ('-m' in sys.argv or '--multirun' in sys.argv):
+    if '--no-fail-on-exception' in sys.argv:
+        sys.argv.remove('--no-fail-on-exception')
         fail_on_exception = False
 
     try:
