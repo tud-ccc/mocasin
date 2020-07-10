@@ -29,7 +29,7 @@ class MetricSpaceEmbeddingBase():
     def __init__(self,M):
         assert( isinstance(M,metric.FiniteMetricSpace))
         self.M = M
-        self.k = M.n
+        self._k = M.n
 
         #First: calculate a good embedding by solving an optimization problem
         E,self.distortion = self.calculateEmbeddingMatrix(np.array(M.D))
@@ -164,13 +164,13 @@ class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
         else:
             log.error(f"approx: Type error, unrecognized type ({type(i_vec)})")
             raise RuntimeError("unrecognized type.")
-        assert( len(vec) == self.k * self._d or log.error(f"length of vector ({len(vec)}) does not fit to dimensions ({self.k} * {self._d})"))
+        assert( len(vec) == self._k * self._d or log.error(f"length of vector ({len(vec)}) does not fit to dimensions ({self._k} * {self._d})"))
 
         res = []
         for i in range(0,self._d):
             comp = []
-            for j in range(0,self.k):
-                comp.append(vec[self.k*i +j])
+            for j in range(0,self._k):
+                comp.append(vec[self._k*i +j])
 
             res.append(MetricSpaceEmbeddingBase.approx(self,tuple(comp)))
 
@@ -196,7 +196,7 @@ class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
         for _ in range(npoints):
             p_flat = [item for sublist in map(list,p) for item in sublist]
             #print(f"k : {self.k}, shape p: {np.array(p).shape},\n p: {p} \n p_flat: {p_flat}")
-            v = (np.array(p_flat)+ np.array(r*lp.uniform_from_p_ball(p=self.p,n=self.k*self._d))).tolist()
+            v = (np.array(p_flat)+ np.array(r*lp.uniform_from_p_ball(p=self.p,n=self._k*self._d))).tolist()
             vecs.append(self.approx(v))
             
         return vecs
