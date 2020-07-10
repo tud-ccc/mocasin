@@ -98,11 +98,7 @@ class RuntimeKpnApplication(RuntimeApplication):
                           rc.name)
                 proc.connect_to_outgoing_channel(rc)
             logging.dec_indent()
-
         logging.dec_indent()
-
-        # auto start the application
-        self.start()
 
     def processes(self):
         """Get a list of all processes
@@ -128,7 +124,13 @@ class RuntimeKpnApplication(RuntimeApplication):
         """Find a channel by name"""
         return self._channeles[channel_name]
 
-    def start(self):
-        """Start execution of this application"""
+    def run(self):
+        """Start execution of this application
+
+        Returns:
+            ~simpy.events.Event: an event that is triggered when the
+                application finishes execution.
+        """
         for process, mapping_info in self._mapping_infos.items():
             self.system.start_process(process, mapping_info)
+        return self.env.all_of([p.finished for p in self.processes()])

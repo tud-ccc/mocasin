@@ -85,6 +85,8 @@ class RuntimeScheduler(object):
 
         self.current_process = None
 
+        self.process_ready = self.env.event()
+
     @property
     def env(self):
         """The simpy environment"""
@@ -104,7 +106,6 @@ class RuntimeScheduler(object):
         :param process: the process to be added
         :type process: RuntimeProcess
         """
-        assert self.env.now == 0
         self._log.debug('add process %s', process.full_name)
         if not process.check_state(ProcessState.CREATED):
             raise RuntimeError('Processes that are already started cannot be '
@@ -127,6 +128,10 @@ class RuntimeScheduler(object):
         self._ready_queue.append(event.value)
         process.ready.callbacks.append(self._cb_process_ready)
 
+        # notify the process created event
+        self.process_ready.succeed()
+        self.process_ready = self.env.event()
+
     def schedule(self):
         """Perform the scheduling.
 
@@ -143,10 +148,6 @@ class RuntimeScheduler(object):
         log = self._log
 
         log.debug('scheduler starts')
-
-        if len(self._processes) == 0:
-            log.debug('Scheduler has no assigned processes -> terminate')
-            return
 
         while True:
             log.debug('run scheduling algorithm')
@@ -208,8 +209,7 @@ class RuntimeScheduler(object):
                 # Wait for ready events if the scheduling algorithm did not
                 # find a process that is ready for execution
                 self._log.debug('There is no ready process -> sleep')
-                ready_events = [p.ready for p in self._processes]
-                yield self.env.any_of(ready_events)
+                yield self.process_ready
 
 
 class DummyScheduler(RuntimeScheduler):
@@ -317,6 +317,9 @@ class RoundRobinScheduler(RuntimeScheduler):
         if cp is not None and cp.check_state(ProcessState.READY):
             if cp not in self._ready_queue:
                 self._ready_queue.append(cp)
+
+        if len(self._ready_queue) == 0:
+            return None
 
         # start at the position of the last scheduled process in process list
         check_next = self._queue_position

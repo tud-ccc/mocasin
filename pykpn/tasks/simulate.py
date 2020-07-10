@@ -41,21 +41,13 @@ def simulate(cfg):
           that can be instantiated to a
           :class:`~pykpn.common.trace.TraceGenerator` object.
     """
-    kpn = hydra.utils.instantiate(cfg['kpn'])
 
     platform = hydra.utils.instantiate(cfg['platform'])
 
-    mapping = hydra.utils.instantiate(cfg['mapper'], kpn, platform, cfg).generate_mapping()
-
-    trace = hydra.utils.instantiate(cfg['trace'])
-
     env = simpy.Environment()
     system = RuntimeSystem(platform, env)
-    app = RuntimeKpnApplication(name=kpn.name,
-                                kpn_graph=kpn,
-                                mapping=mapping,
-                                trace_generator=trace,
-                                system=system)
+
+    system._env.process(single_kpn_simulation(system, env, cfg))
 
     start = timeit.default_timer()
     system.simulate()
@@ -66,3 +58,16 @@ def simulate(cfg):
     print('Total simulation time: ' + str(stop - start) + ' s')
 
     system.trace_writer.write_trace(cfg['simulation_trace'])
+
+
+def single_kpn_simulation(system, env, cfg):
+    kpn = hydra.utils.instantiate(cfg['kpn'])
+    mapper = hydra.utils.instantiate(cfg['mapper'], kpn, system.platform, cfg)
+    mapping = mapper.generate_mapping()
+    trace = hydra.utils.instantiate(cfg['trace'])
+    app = RuntimeKpnApplication(name=kpn.name,
+                                kpn_graph=kpn,
+                                mapping=mapping,
+                                trace_generator=trace,
+                                system=system)
+    yield app.run()

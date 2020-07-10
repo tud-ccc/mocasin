@@ -119,6 +119,7 @@ class RuntimeSystem:
         processor = mapping_info.affinity
         scheduler = self._processors_to_schedulers[processor]
         scheduler.add_process(process)
+        process.start()
 
     def simulate(self):
         log.info('Start the simulation')

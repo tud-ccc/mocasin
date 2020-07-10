@@ -342,8 +342,6 @@ class RuntimeKpnProcess(RuntimeProcess):
             there corresponding runtime object. This only includes channels
             that may be accessed by this process.
         _trace_generator (TraceGenerator): a trace generator object
-        _start (~simpy.events.Timeout): a timeout event that triggers the start
-            of this process
         _current_segment (TraceSegment): The trace segment that is currently
             processed
     Args:
@@ -359,9 +357,6 @@ class RuntimeKpnProcess(RuntimeProcess):
 
         self._channels = {}
         self._trace_generator = trace_generator
-
-        self._start = self.env.timeout(0)
-        self._start.callbacks.append(self.start)
 
         self._current_segment = None
 
