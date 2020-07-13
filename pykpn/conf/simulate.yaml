@@ -7,5 +7,6 @@ defaults:
   - mapper: default
   - trace: default
   - representation: SimpleVector
+  - simulation_type: single_kpn
 
 simulation_trace: "trace.json"
