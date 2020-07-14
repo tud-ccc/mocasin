@@ -83,6 +83,8 @@ class GradientDescentMapper(object):
         self.best_mapping = np.array(self.representation.approximate(np.array(self.best_mapping)))
         self.statistics.log_statistics()
         self.statistics.to_file()
+        if self.config['dump_cache']:
+            self.mapping_cache.dump('mapping_cache.csv')
 
         return self.representation.fromRepresentation(self.best_mapping)
 

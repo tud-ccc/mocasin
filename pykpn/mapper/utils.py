@@ -53,7 +53,6 @@ class Statistics(object):
         file.write("Representation time: " + str(self._representation_time) + "\n")
         file.close()
 
-
 class MappingCache(object):
     def __init__(self, representation, config):
         self._cache = {}
@@ -106,6 +105,15 @@ class MappingCache(object):
             self.statistics.mapping_evaluated(time)
             log.info(f"... from simulation: {exec_time}.")
             return exec_time
+
+    def dump(self,filename):
+        log.info(f"dumping cache to {filename}")
+        file = open(filename,'x')
+        file.write("mapping,runtime")
+        for mapping in self._cache:
+            file.write(f"{mapping},{self._cache[mapping]}")
+        file.close()
+        log.info("cache dumped.")
 
 
 class ApplicationContext(object):

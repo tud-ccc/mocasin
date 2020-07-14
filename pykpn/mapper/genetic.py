@@ -156,6 +156,8 @@ class GeneticMapper(object):
             pickle.dump(logbook,f)
         result = self.representation.fromRepresentation(np.array(mapping))
         self.mapping_cache.statistics.to_file()
+        if self.config['dump_cache']:
+            self.mapping_cache.dump('mapping_cache.csv')
         self.cleanup()
         return result
 

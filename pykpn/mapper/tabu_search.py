@@ -141,6 +141,8 @@ class TabuSearchMapper(object):
 
         self.statistics.log_statistics()
         self.statistics.to_file()
+        if self.config['dump_cache']:
+            self.mapping_cache.dump('mapping_cache.csv')
 
         return self.representation.fromRepresentation(np.array(best_mapping))
 

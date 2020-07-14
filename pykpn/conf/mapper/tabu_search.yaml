@@ -9,3 +9,4 @@ iteration_size : 10
 tabu_tenure : 10
 move_set_size :  20
 radius : 2
+dump_cache: false
