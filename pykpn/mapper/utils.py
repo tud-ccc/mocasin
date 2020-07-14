@@ -111,7 +111,7 @@ class MappingCache(object):
         file = open(filename,'x')
         file.write("mapping,runtime")
         for mapping in self._cache:
-            file.write(f"{mapping},{self._cache[mapping]}")
+            file.write(f"{mapping},{self._cache[mapping]}\n")
         file.close()
         log.info("cache dumped.")
 
