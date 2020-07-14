@@ -184,14 +184,17 @@ class RuntimeScheduler(object):
                 self.current_process = np
                 self._ready_queue.remove(np)
                 np.activate(self._processor)
+                # make sure the activation is processed completely before
+                # continuing
+                yield self.env.timeout(0)
                 # record the process activation in the simulation trace
                 self.trace_writer.begin_duration(self._system.platform.name,
                                                  self._processor.name,
                                                  np.full_name,
                                                  category="Schedule")
 
-                # wait until the process stops its execution
-                yield self.env.any_of([np.blocked, np.finished])
+                # execute the process workload
+                yield self.env.process(self.current_process.workload())
 
                 # record the process halting in the simulation trace
                 self.trace_writer.end_duration(self._system.platform.name,
