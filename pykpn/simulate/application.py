@@ -127,10 +127,10 @@ class RuntimeKpnApplication(RuntimeApplication):
     def run(self):
         """Start execution of this application
 
-        Returns:
+        Yields:
             ~simpy.events.Event: an event that is triggered when the
                 application finishes execution.
         """
         for process, mapping_info in self._mapping_infos.items():
             self.system.start_process(process, mapping_info)
-        return self.env.all_of([p.finished for p in self.processes()])
+        yield self.env.all_of([p.finished for p in self.processes()])
