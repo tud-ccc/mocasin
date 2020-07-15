@@ -48,9 +48,9 @@ class KpnSimulation(BaseSimulation):
         # start all schedulers
         self.system.start_schedulers()
         # start the application
-        self.env.process(self._run_app())
-        # start the actual simulation
-        self.env.run()
+        finished = self.env.process(self._run_app())
+        # run the actual simulation until the application finishes
+        self.env.run(finished)
         # check if all kpn processes finished execution
         self.system.check_errors()
         # save the execution time

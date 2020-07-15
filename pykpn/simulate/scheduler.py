@@ -58,7 +58,7 @@ class RuntimeScheduler(object):
     """
 
     def __init__(self, name, processor, context_switch_mode, scheduling_cycles,
-                 system):
+                 time_slice, system):
         """Initialize a runtime scheduler.
 
         :param str name: the scheduler name
@@ -76,6 +76,7 @@ class RuntimeScheduler(object):
         self._processor = processor
         self._context_switch_mode = context_switch_mode
         self._scheduling_cycles = scheduling_cycles
+        self._time_slice = time_slice
         self._system = system
 
         self._log = SimulateLoggerAdapter(log, self.name, self.env)
@@ -194,7 +195,11 @@ class RuntimeScheduler(object):
                                                  category="Schedule")
 
                 # execute the process workload
-                yield self.env.process(self.current_process.workload())
+                if self._time_slice is not None:
+                    timeout = self.env.timeout(self._time_slice)
+                else:
+                    timeout = None
+                yield self.env.process(self.current_process.workload(timeout))
 
                 # record the process halting in the simulation trace
                 self.trace_writer.end_duration(self._system.platform.name,
@@ -231,7 +236,7 @@ class DummyScheduler(RuntimeScheduler):
         Calls :func:`RuntimeScheduler.__init__`.
         """
         super().__init__(name, processor, context_switch_mode,
-                         scheduling_cycles, env)
+                         scheduling_cycles, None, env)
 
     def schedule(self):
         """Perform the scheduling.
@@ -271,7 +276,7 @@ class FifoScheduler(RuntimeScheduler):
         Calls :func:`RuntimeScheduler.__init__`.
         """
         super().__init__(name, processor, context_switch_mode,
-                         scheduling_cycles, env)
+                         scheduling_cycles, None, env)
 
     def schedule(self):
         """Perform the scheduling.
@@ -301,12 +306,21 @@ class FifoScheduler(RuntimeScheduler):
 class RoundRobinScheduler(RuntimeScheduler):
     """
     """
-    def __init__(self, name, processor, context_switch_mode, scheduling_cycles, env):
+    def __init__(self, name, processor, context_switch_mode, scheduling_cycles,
+                 time_slice, env):
         """Initialize a RoundRobin scheduler
 
         Calls :func:`RuntimeScheduler.__init__`.
         """
-        super(RoundRobinScheduler, self).__init__(name, processor, context_switch_mode, scheduling_cycles, env)
+        if time_slice is None:
+            raise RuntimeError("time_slice must be defined for a RoundRobin "
+                               "scheduler")
+        super(RoundRobinScheduler, self).__init__(name,
+                                                  processor,
+                                                  context_switch_mode,
+                                                  scheduling_cycles,
+                                                  time_slice,
+                                                  env)
 
         #status var, keeps track of position in process list
         self._queue_position = 0
@@ -365,8 +379,11 @@ def create_scheduler(name, processor, policy, env):
         s = FifoScheduler(name, processor, ContextSwitchMode.AFTER_SCHEDULING,
                           policy.scheduling_cycles, env)
     elif policy.name == 'RoundRobin':
-        s = RoundRobinScheduler(name, processor, ContextSwitchMode.AFTER_SCHEDULING,
-                                policy.scheduling_cycles, env)
+        s = RoundRobinScheduler(name, processor,
+                                ContextSwitchMode.AFTER_SCHEDULING,
+                                policy.scheduling_cycles,
+                                policy.time_slice,
+                                env)
     else:
         raise NotImplementedError(
             'The simulation module does not implement the %s scheduling '
