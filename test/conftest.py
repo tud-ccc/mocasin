@@ -41,6 +41,11 @@ def slx_platform(request):
 def slx_kpn(request):
     return request.param
 
+@pytest.fixture(params=["random_walk", "default", "random", "gbm", "genetic", "simulated_annealing",
+                        "gradient_descent"])
+def mapper(request):
+    return request.param
+
 @pytest.fixture(params=[("audio_filter", "exynos"),
                         ("audio_filter", "multidsp"),
                         ("audio_filter", "parallella"),
