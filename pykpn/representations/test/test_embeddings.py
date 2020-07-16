@@ -22,7 +22,7 @@ class TestEmbeddings(object):
         E = MetricSpaceEmbeddingBase(M)
 
         for _ in range(N):
-            result = E.approx(np.random.random(E.k))
+            result = E.approx(np.random.random(E._k))
             found = False
             for vec in E.iotainv.keys():
                 if np.allclose(vec,result):
@@ -59,7 +59,7 @@ class TestEmbeddings(object):
         E = MetricSpaceEmbeddingBase(M)
         Evec = MetricSpaceEmbedding(M, dimension)
         
-        result = Evec.invapprox(np.random.random((dimension*E.k)).flatten())
+        result = Evec.invapprox(np.random.random((dimension*E._k)).flatten())
         
         for value in result:
             assert(value >= 0 and value < 16)
@@ -67,7 +67,7 @@ class TestEmbeddings(object):
     def test_Par_invapprox(self, exampleParallella16, dimension):
         Par = MetricSpaceEmbedding(exampleParallella16, dimension)
         
-        result = Par.invapprox((10*np.random.random((dimension,Par.k))).flatten())
+        result = Par.invapprox((10*np.random.random((dimension,Par._k))).flatten())
         for value in result:
             assert(value >= 0 and value < 16)
     
