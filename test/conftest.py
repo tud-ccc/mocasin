@@ -89,7 +89,7 @@ def audio_filter_parallella_query(request):
 def hog_query(request):
     return request.param
 
-@pytest.fixture(params=[("EXISTS NOT readwave_stage1 MAPPED ARM00", 0),
+@pytest.fixture(params=[("EXISTS NOT DCT_stage5 MAPPED ARM00", 0),
                         ("EXISTS ARM05 PROCESSING", 1),
                         ("EXISTS RUNNING TOGETHER [Worker_0, Worker_1, Worker_2 ]", 2),
                         ("EXISTS RUNNING TOGETHER [hamming_stage2, ShifterDLP, sink ] OR \
@@ -100,3 +100,4 @@ def speaker_recognition_query(request):
 @pytest.fixture
 def csv_file_path():
     return "csv/test_values.csv"
+

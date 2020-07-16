@@ -3,8 +3,6 @@
 #
 #Authors: Felix Teweleit, Andrés Goens
 
-from pykpn.ontologies.test.conftest import solver
-
 def testMappingGeneration1(solver):
     input_query = "EXISTS src MAPPED ARM00 AND fft_l MAPPED ARM01"
     result = solver.request(input_query)
