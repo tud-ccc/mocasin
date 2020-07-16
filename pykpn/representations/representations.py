@@ -503,7 +503,7 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
 
     def _crossover(self, m1, m2, k):
         assert len(m1) == len(m2)
-        crossover_points = np.array(random.sample(range(self._d), k)) * self.k
+        crossover_points = np.array(random.sample(range(self._d), k)) * self._k
         swap = False
         for i in range(len(m1)):
             if i in crossover_points:
