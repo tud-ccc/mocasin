@@ -31,7 +31,7 @@ def solver():
     return Solver(kpn, platform, cfg)
 
 @pytest.fixture
-def mapDictSolver():
+def map_dict_solver():
     kpn = SlxKpnGraph('SlxKpnGraph',  'examples/slx/app/audio_filter/audio_filter.cpn.xml')
     platform = SlxPlatform('SlxPlatform', 'examples/slx/platforms/exynos.platform')
     fullMapper = MappingCompletionWrapper(kpn, platform)
