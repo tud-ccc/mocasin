@@ -109,9 +109,9 @@ class MappingCache(object):
     def dump(self,filename):
         log.info(f"dumping cache to {filename}")
         file = open(filename,'x')
-        file.write("mapping,runtime")
+        file.write("mapping,runtime\n")
         for mapping in self._cache:
-            file.write(f"{mapping},{self._cache[mapping]}\n")
+            file.write(f"\"{str(mapping).replace('(','').replace(')','')}\",{self._cache[mapping]}\n")
         file.close()
         log.info("cache dumped.")
 
