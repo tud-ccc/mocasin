@@ -37,13 +37,20 @@ def expected_dir(request):
 def slx_platform(request):
     return request.param
 
-@pytest.fixture(params=["audio_filter", "hog", "speaker_recognition"])
-def slx_kpn(request):
+@pytest.fixture(params=["slx_default", "random", "random_walk", "tabu_search", "gradient_descent", "genetic",  "simulated_annealing", "gbm"])
+def slx_mapper(request):
     return request.param
 
-@pytest.fixture(params=["random_walk", "default", "random", "gbm", "genetic", "simulated_annealing",
-                        "gradient_descent"])
-def mapper(request):
+@pytest.fixture(params=["random", "random_walk", "tabu_search", "gradient_descent", "genetic",  "simulated_annealing", "gbm"])
+def tgff_mapper(request):
+    return request.param
+
+@pytest.fixture(params=["SimpleVector", "MetricSpaceEmbedding"])
+def representation(request):
+    return request.param
+
+@pytest.fixture(params=["audio_filter", "hog", "speaker_recognition"])
+def slx_kpn(request):
     return request.param
 
 @pytest.fixture(params=[("audio_filter", "exynos"),
