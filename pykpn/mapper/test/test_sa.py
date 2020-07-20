@@ -1,5 +1,5 @@
 from pykpn.mapper.test.mock_cache import MockMappingCache
-from pykpn.mapper.simmulated_annealing import SimulatedAnnealingMapper
+from pykpn.mapper.simulated_annealing import SimulatedAnnealingMapper
 from itertools import product
 import pytest
 import numpy as np
