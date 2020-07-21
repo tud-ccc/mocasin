@@ -6,10 +6,10 @@
 import pytest
 from arpeggio import ParserPython
 from pykpn.slx.kpn import SlxKpnGraph
-from pykpn.ontologies.solver import Solver
 from pykpn.slx.platform import SlxPlatform
+from pykpn.ontologies.solver import Solver
 from pykpn.ontologies.logicLanguage import Grammar
-from pykpn.mapper.simvec_mapper import MappingCompletionWrapper
+from pykpn.ontologies.simvec_mapper import MappingCompletionWrapper
 
 @pytest.fixture
 def parser():
