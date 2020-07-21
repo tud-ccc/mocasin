@@ -6,11 +6,12 @@
 import subprocess
 import os
 
-def test_generate_mapping_slx(datadir, mapper, slx_kpn):
+def test_generate_mapping_slx(datadir, slx_mapper, slx_kpn,representation):
     subprocess.check_call(["pykpn", "generate_mapping",
                            "kpn=%s" % slx_kpn,
                            "platform=exynos",
-                           "mapper=%s" % mapper,
+                           "representation=%s" % representation,
+                           "mapper=%s" % slx_mapper,
                            "outdir=../../../",
                            "trace=slx_default"],
                           cwd=datadir)
@@ -22,12 +23,13 @@ def test_generate_mapping_slx(datadir, mapper, slx_kpn):
     except FileNotFoundError:
         assert False
 
-def test_generate_mapping_tgff(datadir, mapper, tgff):
+def test_generate_mapping_tgff(datadir, tgff_mapper, tgff,representation):
     tgff_dir = os.path.join(datadir, 'tgff/e3s-0.9')
     subprocess.check_call(["pykpn", "generate_mapping",
                            "kpn=tgff_reader",
                            "platform=tgff_reader",
-                           "mapper=%s" % mapper,
+                           "representation=%s" % representation,
+                           "mapper=%s" % tgff_mapper,
                            "tgff.directory=%s" % tgff_dir,
                            "tgff.file=%s.tgff" % tgff,
                            "outdir=../../../",
