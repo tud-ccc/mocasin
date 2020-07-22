@@ -9,7 +9,8 @@ from pykpn.common.mapping import Mapping
 from arpeggio import ParserPython, visit_parse_tree
 from pykpn.representations.representations import RepresentationType
 from pykpn.mapper.mapgen import MappingGeneratorOrbit, MappingGeneratorSimvec
-from pykpn.ontologies.logicLanguage import Grammar, SemanticAnalysis, MappingConstraint, EqualsConstraint, SharedCoreUsageConstraint, ProcessingConstraint
+from pykpn.ontologies.logicLanguage import Grammar, SemanticAnalysis, MappingConstraint, EqualsConstraint,\
+                                            SharedCoreUsageConstraint, ProcessingConstraint
 
 import sys
 import queue

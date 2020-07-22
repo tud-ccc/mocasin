@@ -6,10 +6,10 @@
 import pytest
 from arpeggio import ParserPython
 from pykpn.slx.kpn import SlxKpnGraph
-from pykpn.ontologies.solver import Solver
 from pykpn.slx.platform import SlxPlatform
+from pykpn.ontologies.solver import Solver
 from pykpn.ontologies.logicLanguage import Grammar
-from pykpn.mapper.simvec_mapper import MappingCompletionWrapper
+from pykpn.ontologies.simvec_mapper import MappingCompletionWrapper
 
 @pytest.fixture
 def parser():
@@ -31,7 +31,7 @@ def solver():
     return Solver(kpn, platform, cfg)
 
 @pytest.fixture
-def mapDictSolver():
+def map_dict_solver():
     kpn = SlxKpnGraph('SlxKpnGraph',  'examples/slx/app/audio_filter/audio_filter.cpn.xml')
     platform = SlxPlatform('SlxPlatform', 'examples/slx/platforms/exynos.platform')
     fullMapper = MappingCompletionWrapper(kpn, platform)
