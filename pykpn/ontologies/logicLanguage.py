@@ -75,7 +75,8 @@ class SemanticAnalysis(PTNodeVisitor):
         for i, pe in enumerate(platform.processors()):
             self.__processors[pe.name] = i
         self.__processes = {}
-        for i, process in enumerate(kpnGraph.processes()):
+
+        for i, process in enumerate(sorted(kpnGraph.processes(), key=(lambda p : p.name))):
             self.__processes[process.name] = i
         
         self.__mappingDict = mappingDict
