@@ -523,8 +523,12 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
     space emebedding for the single-process case. This provably preserves the distortion
     and makes calculations much more efficient.
 
+    The additional option, extra_dims, adds additional dimensions for each PE to count
+    when multiple processes are mapped to the same PE. The scaling factor for those extra
+    dimensions is controlled by the value of extra_dims_factor.
+
     """
-    def __init__(self,kpn, platform, norm_p):
+    def __init__(self,kpn, platform, norm_p,extra_dims=True,extra_dims_factor=3):
         self._topologyGraph = platform.to_adjacency_dict()
         M_matrix, self._arch_nc, self._arch_nc_inv = arch_graph_to_distance_metric(self._topologyGraph)
         self._M = FiniteMetricSpace(M_matrix)
@@ -533,6 +537,8 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
         self._d = len(kpn.processes())
         self.p = norm_p
         com_mapper = ComFullMapper(kpn,platform)
+        self.extra_dims = extra_dims
+        self.extra_dims_factor = extra_dims_factor
         self.list_mapper = ProcPartialMapper(kpn,platform,com_mapper)
         init_app_ncs(self,kpn)
         if self.p != 2:
@@ -546,10 +552,17 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
     def _simpleVec2Elem(self,x):
         proc_vec = x[:self._d]
         as_array = np.array(self.i(proc_vec)).flatten()# [value for comp in self.i(x) for value in comp]
+
+        if self.extra_dims:
+            extra_dims = np.zeros(self._k)
+            for idx in proc_vec:
+                extra_dims[idx] += self.extra_dims_factor
+            as_array = np.append(as_array,extra_dims)
+
         return as_array
 
     def _elem2SimpleVec(self,x):
-        return self.inv(self.approx(x))
+        return self.inv(self.approx(x[:(self._k*self._d)]))
 
     def _uniform(self):
         res = np.array(self.uniformVector()).flatten()
@@ -592,7 +605,12 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
         return self._distance(x.to_list(),y.to_list())
 
     def approximate(self,x):
-        return np.array(self.approx(x)).flatten()
+        res = np.array(self.approx(x[:(self._d*self._k)])).flatten()
+        if self.extra_dims:
+            extra_dims = x.flatten()[self._d*self._k:]
+            np.rint(extra_dims/self.extra_dims_factor)*self.extra_dims_factor
+            res = np.append(res,extra_dims)
+        return res
 
     def crossover(self, m1, m2, k):
         return self._crossover(self.toRepresentation(m1), self.toRepresentation(m2), k)
