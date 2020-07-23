@@ -10,7 +10,7 @@ def conf():
             'norm_p' : 2, 'periodic_boundary_conditions' : False,
             'final_temperature'  : 0.01, 'record_statistics' : False,
            'temperature_proportionality_constant' : 0.5, 'radius' : 2,
-            'periodic_boundary_conditions' : False,
+            'periodic_boundary_conditions' : False, 'dump_cache' : False,
            'representation' : 'SimpleVector', 'channels' : False,
             }
 

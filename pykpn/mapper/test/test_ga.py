@@ -10,7 +10,7 @@ def conf():
     'mupluslambda': True, 'initials' : 'random',
     'radius' : 5, 'random_seed': 42, 'channels' : False,
     'representation' : 'SimpleVector', 'norm_p' : 2,
-    'periodic_boundary_conditions' : False,
+    'periodic_boundary_conditions' : False, 'dump_cache' : False,
     'crossover_rate' : 1, 'record_statistics' : False}
 
 @pytest.fixture
