@@ -39,7 +39,6 @@ class SimulatedAnnealingMapper(object):
         self.platform = platform
         self.config = config
         self.random_mapper = RandomPartialMapper(self.kpn,self.platform,config,seed=None)
-        self.statistics = Statistics(log, len(self.kpn.processes()),config['record_statistics'])
         self.initial_temperature = config['initial_temperature']
         self.final_temperature = config['final_temperature']
         self.max_rejections = len(self.kpn.processes()) * (len(self.platform.processors()) - 1) #R_max = L
@@ -124,8 +123,8 @@ class SimulatedAnnealingMapper(object):
                 if temperature <= self.final_temperature:
                     rejections += 1
             iter += 1
-        self.statistics.log_statistics()
-        self.statistics.to_file()
+        self.mapping_cache.statistics.log_statistics()
+        self.mapping_cache.statistics.to_file()
         if self.config['dump_cache']:
             self.mapping_cache.dump('mapping_cache.csv')
 

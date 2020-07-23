@@ -43,7 +43,6 @@ class TabuSearchMapper(object):
         self.move_set_size = config['move_set_size']
         self.radius = config['radius']
         self.tabu_moves = dict()
-        self.statistics = Statistics(log, len(self.kpn.processes()), config['record_statistics'])
         rep_type_str = config['representation']
 
         if rep_type_str not in dir(RepresentationType):
@@ -139,8 +138,8 @@ class TabuSearchMapper(object):
             move, cur_exec_time = self.diversify(cur_mapping)
             cur_mapping = cur_mapping + np.array(move)
 
-        self.statistics.log_statistics()
-        self.statistics.to_file()
+        self.mapping_cache.statistics.log_statistics()
+        self.mapping_cache.statistics.to_file()
         if self.config['dump_cache']:
             self.mapping_cache.dump('mapping_cache.csv')
 

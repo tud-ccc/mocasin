@@ -25,6 +25,7 @@ class Statistics(object):
         self._mappings_evaluated = 0
         self._simulation_time = 0
         self._representation_time = 0
+        self._representation_init_time = 0
 
     def mapping_cached(self):
         self._mappings_cached += 1
@@ -35,6 +36,12 @@ class Statistics(object):
 
     def add_offset(self, time):
         self._simulation_time += time
+
+    def add_rep_time(self,time):
+        self._representation_time += time
+
+    def set_rep_init_time(self,time):
+        self._representation_init_time = time
 
     def log_statistics(self):
         self._log.info(f"Amount of processes in task:  {self._processes}")
@@ -51,6 +58,7 @@ class Statistics(object):
         file.write("Mappings evaluated: " + str(self._mappings_evaluated) + "\n")
         file.write("Time spent simulating: " + str(self._simulation_time) + "\n")
         file.write("Representation time: " + str(self._representation_time) + "\n")
+        file.write("Representation initialization time: " + str(self._representation_init_time) + "\n")
         file.close()
 
 class MappingCache(object):
@@ -61,6 +69,7 @@ class MappingCache(object):
         self.kpn = representation.kpn
         self.platform = representation.platform
         self.statistics = Statistics(log, len(self.kpn.processes()), config['record_statistics'])
+        self.statistics.set_rep_init_time(representation.init_time)
         self._last_added = None
 
     def lookup(self, mapping):
@@ -79,7 +88,9 @@ class MappingCache(object):
         self._last_added = None
 
     def evaluate_mapping(self,mapping):
+        time = timeit.default_timer()
         tup = tuple(self.representation.approximate(np.array(mapping)))
+        self.statistics.add_rep_time(timeit.default_timer() - time)
         log.info(f"evaluating mapping: {tup}...")
 
         runtime = self.lookup(tup)
@@ -90,6 +101,9 @@ class MappingCache(object):
         else:
             time = timeit.default_timer()
             m_obj = self.representation.fromRepresentation(np.array(tup))
+            self.statistics.add_rep_time(timeit.default_timer() - time)
+
+            time = timeit.default_timer()
             trace = hydra.utils.instantiate(self.config['trace'])
             env = simpy.Environment()
             system = RuntimeSystem(self.platform, env)

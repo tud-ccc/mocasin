@@ -39,7 +39,6 @@ class GradientDescentMapper(object):
         self.random_mapper = RandomPartialMapper(self.kpn,self.platform,config,seed=None)
         self.gd_iterations = config['gd_iterations']
         self.stepsize = config['stepsize']
-        self.statistics = Statistics(log, len(self.kpn.processes()), config['record_statistics'])
         rep_type_str = config['representation']
 
         if rep_type_str not in dir(RepresentationType):
@@ -81,8 +80,8 @@ class GradientDescentMapper(object):
                 self.best_mapping = mapping
 
         self.best_mapping = np.array(self.representation.approximate(np.array(self.best_mapping)))
-        self.statistics.log_statistics()
-        self.statistics.to_file()
+        self.mapping_cache.statistics.log_statistics()
+        self.mapping_cache.statistics.to_file()
         if self.config['dump_cache']:
             self.mapping_cache.dump('mapping_cache.csv')
 
