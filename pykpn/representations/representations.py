@@ -580,6 +580,9 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
             point.append(list(p)[self._k*i:self._k*(i+1)])
         results_raw = MetricSpaceEmbedding.uniformFromBall(self,point,r,npoints)
         results = list(map(lambda x : np.array(list(np.array(x).flat)),results_raw))
+        if self.extra_dims:
+            results = list(map(lambda x : self._simpleVec2Elem(self._elem2SimpleVec(x)),results))
+
         #print(f"results uniform from ball: {results}")
         return results
 
