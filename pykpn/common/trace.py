@@ -32,13 +32,14 @@ class TraceSegment(object):
         If True, this is the last segment of the execution trace.
     """
 
-    def __init__(self):
-        """Initialize a neutral (does not do anything) trace segment)"""
-        self.processing_cycles = None
-        self.read_from_channel = None
-        self.write_to_channel = None
-        self.n_tokens = None
-        self.terminate = False
+    def __init__(self, process_cycles=None, read_from_channel=None,
+                 write_to_channel=None, n_tokens=None, terminate=False):
+        """Initialize a trace segment)"""
+        self.processing_cycles = process_cycles
+        self.read_from_channel = read_from_channel
+        self.write_to_channel = write_to_channel
+        self.n_tokens = n_tokens
+        self.terminate = terminate
 
     def sanity_check(self):
         """Perform a series of sanity checks on the object"""
