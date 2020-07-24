@@ -20,7 +20,7 @@ def evaluation_function():
 @pytest.fixture
 def mapper(kpn,platform,conf,evaluation_function):
     m =  TabuSearchMapper(kpn,platform,conf)
-    m.mapping_cache = MockMappingCache(evaluation_function)
+    m.simulation_manager = MockMappingCache(evaluation_function)
     return m
 
 def test_ts(mapper,evaluation_function):

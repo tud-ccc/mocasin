@@ -11,7 +11,7 @@ import random
 import numpy as np
 import os
 
-from pykpn.mapper.utils import Statistics, ApplicationContext, SimulationContext, run_simulation, MappingCache
+from pykpn.mapper.utils import Statistics, ApplicationContext, SimulationContext, run_simulation, SimulationManager
 from pykpn.mapper.random import RandomMapper
 from pykpn.util import logging, plot
 from pykpn.slx.mapping import export_slx_mapping
@@ -67,7 +67,7 @@ class RandomWalkMapper(object):
 
         self.representation = representation
 
-        self.mapping_cache = MappingCache(representation,config)
+        self.simulation_manager = SimulationManager(representation, config)
 
     def generate_mapping(self):
         """ Generates a mapping via a random walk
@@ -100,7 +100,7 @@ class RandomWalkMapper(object):
                 app_context.mapping = mapping
 
                 # since mappings are simulated in parallel, whole simulation time is added later as offset
-                self.mapping_cache.statistics.mapping_evaluated(0)
+                self.simulation_manager.statistics.mapping_evaluated(0)
 
                 # create the trace reader
                 app_context.trace_reader = hydra.utils.instantiate(cfg['trace'])
@@ -136,7 +136,7 @@ class RandomWalkMapper(object):
 
             for mapping in mappings:
                 m = self.representation.toRepresentation(mapping)
-                cur_time = self.mapping_cache.evaluate_mapping(m)
+                cur_time = self.simulation_manager.simulate(m)
                 if cur_time < exec_time:
                     exec_time = cur_time
                     best_result = mapping
@@ -147,7 +147,7 @@ class RandomWalkMapper(object):
         stop = timeit.default_timer()
         log.info('Tried %d random mappings in %0.1fs' %
                  (len(exec_times), stop - start))
-        self.mapping_cache.statistics.add_offset(stop - start)
+        self.simulation_manager.statistics.add_offset(stop - start)
         log.info('Best simulated execution time: %0.1fms' % (exec_time))
         # export all mappings if requested
         idx = 1
@@ -188,8 +188,8 @@ class RandomWalkMapper(object):
                                          representation_type=self.rep_type,
                                          show_plot=cfg['show_plots'], )
 
-        self.mapping_cache.statistics.to_file()
+        self.simulation_manager.statistics.to_file()
         if self.config['dump_cache']:
-            self.mapping_cache.dump('mapping_cache.csv')
+            self.simulation_manager.dump('mapping_cache.csv')
 
         return best_result

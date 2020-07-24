@@ -23,7 +23,7 @@ def evaluation_function_gradient():
 @pytest.fixture
 def mapper(kpn,platform,conf,evaluation_function):
     m =  GradientDescentMapper(kpn,platform,conf)
-    m.mapping_cache = MockMappingCache(evaluation_function)
+    m.simulation_manager = MockMappingCache(evaluation_function)
     return m
 
 

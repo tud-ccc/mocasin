@@ -61,7 +61,7 @@ class Statistics(object):
         file.write("Representation initialization time: " + str(self._representation_init_time) + "\n")
         file.close()
 
-class MappingCache(object):
+class SimulationManager(object):
     def __init__(self, representation, config):
         self._cache = {}
         self.representation = representation
@@ -87,7 +87,7 @@ class MappingCache(object):
         self._cache[self._last_added] = time
         self._last_added = None
 
-    def evaluate_mapping(self,mapping):
+    def simulate(self, mapping):
         time = timeit.default_timer()
         tup = tuple(self.representation.approximate(np.array(mapping)))
         self.statistics.add_rep_time(timeit.default_timer() - time)
