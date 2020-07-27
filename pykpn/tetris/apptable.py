@@ -12,8 +12,8 @@ from pykpn.tetris.extra import NamedDimensionalNumber
 from pykpn.common.platform import Platform
 from pykpn.slx.kpn import SlxKpnGraph
 
-from pykpn.common.mapping import (Mapping as KpnMapping, SchedulerMappingInfo,
-                                  ProcessMappingInfo, ChannelMappingInfo)
+from pykpn.common.mapping import (Mapping as KpnMapping, ProcessMappingInfo,
+                                  ChannelMappingInfo)
 
 log = logging.getLogger(__name__)
 
@@ -71,15 +71,6 @@ class CanonicalMapping:
         all_schedulers = list(platform.schedulers())
         all_primitives = list(platform.primitives())
 
-        # configure schedulers
-        for s in all_schedulers:
-            i = random.randrange(0, len(s.policies))
-            policy = s.policies[i]
-            info = SchedulerMappingInfo(policy, None)
-            kpn_mapping.add_scheduler_info(s, info)
-            #log.debug('configure scheduler %s to use the %s policy', s.name,
-            #          policy.name)
-
         # map processes
         for p in kpn_graph.processes():
             assert p.name in mapping, (
@@ -101,7 +92,7 @@ class CanonicalMapping:
             #    priority)
 
         # map channels
-        for i, c in enumerate(kpn_graph.channels(), start=i + 1):
+        for i, c in enumerate(kpn_graph.channels()):
             capacity = 4
             suitable_primitives = []
             for p in all_primitives:
@@ -175,7 +166,7 @@ class Application:
         cpn_path = os.path.join(path, Application.CPN_FILENAME)
         mappings_path = os.path.join(
             path, platform.name + Application.MAPPINGS_SUFFIX)
-        self.__kpn_graph = SlxKpnGraph('SlxKpnGraph', cpn_path, '2017.04')
+        self.__kpn_graph = SlxKpnGraph('SlxKpnGraph', cpn_path)
 
         # Read mappings file
         mdf = pd.read_csv(mappings_path)

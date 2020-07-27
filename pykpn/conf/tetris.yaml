@@ -1,14 +1,8 @@
 defaults:
   - common
   - hydra/job_logging: pykpn
-  - slx: default
-    #  - tgff: default
-    #  - kpn: default
     # Set the platform
-  - platform: exynos
-    #  - trace: default
-    #  - representation: default
-    #  - mapper: default
+  - platform: default
 
 # Base directory
 # The base directory should include 'apps' directory
