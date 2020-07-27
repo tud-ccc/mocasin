@@ -1,3 +1,3 @@
-source:
-  class: pykpn.slx.mapping.slx_read_fullmapper.slx_read_mapper
-  mapping_xml: ???
+# @package _group_
+target: pykpn.slx.mapping.slx_read_fullmapper.slx_read_mapper
+mapping_xml: ???

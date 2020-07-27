@@ -32,18 +32,18 @@ class SimulatedAnnealingMapper(object):
         :param config: the hyrda configuration
         :type config: OmniConf
         """
-        random.seed(config['random_seed'])
-        np.random.seed(config['random_seed'])
+        random.seed(config['mapper']['random_seed'])
+        np.random.seed(config['mapper']['random_seed'])
         self.full_mapper = True # flag indicating the mapper type
         self.kpn = kpn
         self.platform = platform
         self.config = config
-        self.random_mapper = RandomPartialMapper(self.kpn,self.platform,config,seed=None)
-        self.statistics = Statistics(log, len(self.kpn.processes()),config['record_statistics'])
-        self.initial_temperature = config['initial_temperature']
-        self.final_temperature = config['final_temperature']
+        self.random_mapper = RandomPartialMapper(self.kpn, self.platform, config, seed=None)
+        self.statistics = Statistics(log, len(self.kpn.processes()),config['mapper']['record_statistics'])
+        self.initial_temperature = config['mapper']['initial_temperature']
+        self.final_temperature = config['mapper']['final_temperature']
         self.max_rejections = len(self.kpn.processes()) * (len(self.platform.processors()) - 1) #R_max = L
-        self.p = config['temperature_proportionality_constant']
+        self.p = config['mapper']['temperature_proportionality_constant']
         if not (self.p < 1 and self.p > 0):
             log.error(f"Temperature proportionality constant {self.p} not suitable, "
                       f"it should be close to, but smaller than 1 (algorithm probably won't terminate).")
@@ -72,14 +72,14 @@ class SimulatedAnnealingMapper(object):
         return normalized_probability
 
     def move(self,mapping,temperature):
-        radius = self.config['radius']
+        radius = self.config['mapper']['radius']
         while(1):
             new_mappings = self.representation._uniformFromBall(mapping,radius,20)
             for m in new_mappings:
                 if list(m) != list(mapping):
                     return m
             radius *= 1.1
-            if radius > 10000 * self.config['radius']:
+            if radius > 10000 * self.config['mapper']['radius']:
                 log.error("Could not mutate mapping")
                 raise RuntimeError("Could not mutate mapping")
 

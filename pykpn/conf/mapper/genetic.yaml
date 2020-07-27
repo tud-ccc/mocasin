@@ -1,6 +1,7 @@
-mapper:
-   class:
-      pykpn.mapper.genetic.GeneticMapper
+# @package _group_
+target:
+  pykpn.mapper.genetic.GeneticMapper
+
 pop_size : 10
 num_gens : 5
 cxpb : 0.35

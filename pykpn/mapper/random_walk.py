@@ -43,12 +43,12 @@ class RandomWalkMapper(object):
         self.full_mapper = True
         self.kpn = hydra.utils.instantiate(config['kpn'])
         self.platform = hydra.utils.instantiate(config['platform'])
-        self.random_mapper = RandomMapper(self.kpn,self.platform,config)
+        self.random_mapper = RandomMapper(self.kpn, self.platform, config)
         self.config = config
-        self.statistics = Statistics(log, len(self.kpn.processes()), config['record_statistics'])
+        self.statistics = Statistics(log, len(self.kpn.processes()), config['mapper']['record_statistics'])
         rep_type_str = config['representation']
 
-        self.seed = config['random_seed']
+        self.seed = config['mapper']['random_seed']
         if self.seed == 'None':
             self.seed = None
         if self.seed is not None:
@@ -56,7 +56,8 @@ class RandomWalkMapper(object):
             np.random.seed(self.seed)
 
         if rep_type_str not in dir(RepresentationType):
-            log.exception("Representation " + rep_type_str + " not recognized. Available: " + ", ".join(dir(RepresentationType)))
+            log.exception("Representation " + rep_type_str + " not recognized. Available: " +
+                          ", ".join(dir(RepresentationType)))
             raise RuntimeError('Unrecognized representation.')
         self.rep_type = RepresentationType[rep_type_str]
 
@@ -65,14 +66,14 @@ class RandomWalkMapper(object):
         """ Generates a mapping via a random walk
         """
         cfg = self.config
-        num_iterations = cfg['num_iterations']
+        num_iterations = cfg['mapper']['num_iterations']
 
         start = timeit.default_timer()
         # Create a list of 'simulations'. These are later executed by multiple
         # worker processes.
         simulations = []
 
-        for i in range(0, self.config['num_iterations']):
+        for i in range(0, self.config['mapper']['num_iterations']):
             # create a simulation context
             sim_context = SimulationContext(self.platform)
 
@@ -97,10 +98,10 @@ class RandomWalkMapper(object):
             simulations.append(sim_context)
 
         # run the simulations and search for the best mapping
-        pool = mp.Pool(processes=cfg['jobs'])
+        pool = mp.Pool(processes=cfg['mapper']['jobs'])
 
         # execute the simulations in parallel
-        if cfg['progress']:
+        if cfg['mapper']['progress']:
             import tqdm
             results = list(tqdm.tqdm(pool.imap(run_simulation, simulations,
                                                chunksize=10),
@@ -129,7 +130,7 @@ class RandomWalkMapper(object):
         idx = 1
         outdir = cfg['outdir']
 
-        if cfg['export_all']:
+        if cfg['mapper']['export_all']:
             for r in results:
                 for ac in r.app_contexts:
                     mapping_name = '%s.rnd_%08d.mapping' % (ac.name, idx)
@@ -139,7 +140,7 @@ class RandomWalkMapper(object):
                 idx += 1
 
         # plot result distribution
-        if cfg['plot_distribution']:
+        if cfg['mapper']['plot_distribution']:
             import matplotlib.pyplot as plt
             # exec time in milliseconds
             plt.hist(exec_times, bins=int(cfg['num_iterations'] / 20), density=True)
@@ -148,13 +149,13 @@ class RandomWalkMapper(object):
             plt.xlabel("Execution Time [ms]")
             plt.ylabel("Probability")
 
-            if cfg['show_plots']:
+            if cfg['mapper']['show_plots']:
                 plt.show()
 
             plt.savefig("distribution.pdf")
 
         # visualize searched space
-        if cfg['visualize']:
+        if cfg['mapper']['visualize']:
 
             if len(results[0].app_contexts) > 1:
                 raise RuntimeError('Search space visualization only works '
@@ -164,7 +165,7 @@ class RandomWalkMapper(object):
             plot.visualize_mapping_space(mappings,
                                          exec_times,
                                          representation_type=self.rep_type,
-                                         show_plot=cfg['show_plots'], )
+                                         show_plot=cfg['mapper']['show_plots'], )
 
         self.statistics.to_file()
         return best_result.app_contexts[0].mapping

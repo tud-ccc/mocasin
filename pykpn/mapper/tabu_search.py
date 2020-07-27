@@ -20,7 +20,7 @@ class TabuSearchMapper(object):
     """Generates a full mapping by using a tabu search on the mapping space.
 
     """
-    def __init__(self, kpn,platform,config):
+    def __init__(self, kpn, platform, config):
         """Generates a full mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
@@ -30,20 +30,20 @@ class TabuSearchMapper(object):
         :param config: the hyrda configuration
         :type config: OmniConf
         """
-        random.seed(config['random_seed'])
-        np.random.seed(config['random_seed'])
+        random.seed(config['mapper']['random_seed'])
+        np.random.seed(config['mapper']['random_seed'])
         self.full_mapper = True # flag indicating the mapper type
         self.kpn = kpn
         self.platform = platform
         self.config = config
-        self.random_mapper = RandomPartialMapper(self.kpn,self.platform,config,seed=None)
-        self.max_iterations = config['max_iterations']
-        self.iteration_size = config['iteration_size']
-        self.tabu_tenure = config['tabu_tenure']
-        self.move_set_size = config['move_set_size']
-        self.radius = config['radius']
+        self.random_mapper = RandomPartialMapper(self.kpn, self.platform, config, seed=None)
+        self.max_iterations = config['mapper']['max_iterations']
+        self.iteration_size = config['mapper']['iteration_size']
+        self.tabu_tenure = config['mapper']['tabu_tenure']
+        self.move_set_size = config['mapper']['move_set_size']
+        self.radius = config['mapper']['radius']
         self.tabu_moves = dict()
-        self.statistics = Statistics(log, len(self.kpn.processes()), config['record_statistics'])
+        self.statistics = Statistics(log, len(self.kpn.processes()), config['mapper']['record_statistics'])
         rep_type_str = config['representation']
 
         if rep_type_str not in dir(RepresentationType):

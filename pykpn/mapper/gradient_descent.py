@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 class GradientDescentMapper(object):
     """Generates a full mapping by using a gradient descent on the mapping space.
     """
-    def __init__(self, kpn,platform,config):
+    def __init__(self, kpn, platform, config):
         """Generates a full mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
@@ -29,17 +29,17 @@ class GradientDescentMapper(object):
         :param config: the hyrda configuration
         :type config: OmniConf
         """
-        random.seed(config['random_seed'])
-        np.random.seed(config['random_seed'])
+        random.seed(config['mapper']['random_seed'])
+        np.random.seed(config['mapper']['random_seed'])
         self.full_mapper = True # flag indicating the mapper type
         self.kpn = kpn
         self.platform = platform
         self.num_PEs = len(platform.processors())
         self.config = config
         self.random_mapper = RandomPartialMapper(self.kpn,self.platform,config,seed=None)
-        self.gd_iterations = config['gd_iterations']
-        self.stepsize = config['stepsize']
-        self.statistics = Statistics(log, len(self.kpn.processes()), config['record_statistics'])
+        self.gd_iterations = config['mapper']['gd_iterations']
+        self.stepsize = config['mapper']['stepsize']
+        self.statistics = Statistics(log, len(self.kpn.processes()), config['mapper']['record_statistics'])
         rep_type_str = config['representation']
 
         if rep_type_str not in dir(RepresentationType):

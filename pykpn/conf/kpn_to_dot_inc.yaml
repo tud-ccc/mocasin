@@ -1,3 +1,4 @@
+# @package _global_
 # XXX: This is required as a workaround.
 # Placing this directly in kpn_to_dot.yaml leads to a recursion error...
 

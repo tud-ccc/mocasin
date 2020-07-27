@@ -84,6 +84,10 @@ _tasks = {
         'visualize',
         'visualize',
         "Visualize a mapping in the GUI"),
+    'remove_me' : (
+        'remove_me',
+        'remove_me',
+        "Please remove when read"),
 }
 """A dictionary that maps task names to descriptors of callable functions."""
 

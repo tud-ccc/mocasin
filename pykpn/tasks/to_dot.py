@@ -6,7 +6,7 @@
 import hydra
 
 
-@hydra.main(config_path='conf/kpn_to_dot.yaml')
+@hydra.main(config_path='../conf', config_name='kpn_to_dot')
 def kpn_to_dot(cfg):
     """Generate a dot graph from a KPN
 
@@ -26,7 +26,7 @@ def kpn_to_dot(cfg):
     kpn.to_pydot().write_raw(cfg['output_file'])
 
 
-@hydra.main(config_path='conf/platform_to_dot.yaml')
+@hydra.main(config_path='../conf', config_name='platform_to_dot.yaml')
 def platform_to_dot(cfg):
     """Generate a dot graph from a Platform
 
@@ -46,7 +46,7 @@ def platform_to_dot(cfg):
     platform.to_pydot().write_raw(cfg['output_file'])
 
 
-@hydra.main(config_path='conf/mapping_to_dot.yaml')
+@hydra.main(config_path='../conf', config_name='mapping_to_dot.yaml')
 def mapping_to_dot(cfg):
     """Generate a dot graph representing the mapping of a KPN application to a
     platform

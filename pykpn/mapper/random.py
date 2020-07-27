@@ -106,4 +106,4 @@ class RandomMapper(RandomPartialMapper):
     for RandomPartialMapper.
     """
     def __init__(self, kpn, platform, config):
-        super().__init__(kpn, platform, config, seed=config['random_seed'])
+        super().__init__(kpn, platform, config, seed=config['mapper']['random_seed'])

@@ -13,7 +13,7 @@ import pykpn.representations.automorphisms as aut
 
 log = logging.getLogger(__name__)
 
-@hydra.main(config_path='conf/platform_to_autgrp.yaml')
+@hydra.main(config_path='../conf', config_name='platform_to_autgrp')
 def platform_to_autgrp(cfg):
     """Calculate the Automorphism Group of a Platform Graph
 

@@ -9,7 +9,7 @@ import os
 from pykpn.util import plot
 from pykpn.util.csv_reader import DataReader
 
-@hydra.main(config_path='conf/csv_plot.yaml')
+@hydra.main(config_path='../conf', config_name='csv_plot')
 def csv_plot(cfg):
     platform = hydra.utils.instantiate(cfg['platform'])
     kpn = hydra.utils.instantiate(cfg['kpn'])

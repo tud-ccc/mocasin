@@ -1,9 +1,9 @@
-mapper:
-   class:
-      pykpn.mapper.tabu_search.TabuSearchMapper
+# @package _group_
+target:
+  pykpn.mapper.tabu_search.TabuSearchMapper
+
 random_seed : 42
 record_statistics: true
-
 max_iterations : 10
 iteration_size : 5
 tabu_tenure : 5

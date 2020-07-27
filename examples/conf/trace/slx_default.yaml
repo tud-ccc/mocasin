@@ -1,5 +1,5 @@
-trace:
-  directory: "../../../slx/app/${kpn.name}/${platform.name}/traces"
-  class: pykpn.slx.trace.SlxTraceReader
-  params:
-    trace_dir: ${trace.directory}
+# @package _group_
+directory: "../../../slx/app/${kpn.name}/${platform.name}/traces"
+target: pykpn.slx.trace.SlxTraceReader
+params:
+  trace_dir: ${trace.directory}

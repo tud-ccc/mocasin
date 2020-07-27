@@ -1,6 +1,6 @@
-kpn:
-  name: audio_filter
-  class: pykpn.slx.kpn.SlxKpnGraph
-  params:
-    name: ${kpn.name}
-    cpngraph: ../../../slx/app/${kpn.name}/${kpn.name}.cpn.xml
+# @package _group_
+name: audio_filter
+target: pykpn.slx.kpn.SlxKpnGraph
+params:
+  name: ${kpn.name}
+  cpngraph: ../../../slx/app/${kpn.name}/${kpn.name}.cpn.xml

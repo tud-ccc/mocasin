@@ -31,14 +31,14 @@ class GeneticMapper(object):
         :param config: the hyrda configuration
         :type fullGererator: OmniConf
         """
-        random.seed(config['random_seed'])
-        np.random.seed(config['random_seed'])
+        random.seed(config['mapper']['random_seed'])
+        np.random.seed(config['mapper']['random_seed'])
         self.full_mapper = True # flag indicating the mapper type
         self.kpn = kpn
         self.platform = platform
         self.config = config
         self.random_mapper = RandomPartialMapper(self.kpn, self.platform, config, seed=None)
-        self.crossover_rate = self.config['crossover_rate']
+        self.crossover_rate = self.config['mapper']['crossover_rate']
 
         if self.crossover_rate > len(self.kpn.processes()):
             log.error("Crossover rate cannot be higher than number of processes in application")
@@ -73,7 +73,7 @@ class GeneticMapper(object):
         toolbox.register("mate", self.mapping_crossover)
         toolbox.register("mutate", self.mapping_mutation)
         toolbox.register("evaluate", self.evaluate_mapping)
-        toolbox.register("select", deap.tools.selTournament, tournsize=self.config['tournsize'])
+        toolbox.register("select", deap.tools.selTournament, tournsize=self.config['mapper']['tournsize'])
 
         self.evolutionary_toolbox = toolbox
         self.hof = deap.tools.HallOfFame(1)
@@ -84,8 +84,8 @@ class GeneticMapper(object):
         stats.register("max", np.max)
         self.evolutionary_stats = stats
 
-        if config['initials'] == 'random':
-            self.population = toolbox.population(n=self.config['pop_size'])
+        if config['mapper']['initials'] == 'random':
+            self.population = toolbox.population(n=self.config['mapper']['pop_size'])
         else:
             log.error("Initials not supported yet")
             raise RuntimeError('GeneticMapper: Initials not supported')
@@ -107,7 +107,7 @@ class GeneticMapper(object):
 
     def mapping_mutation(self,mapping):
         #m_obj = self.representation.fromRepresentation(list((mapping)))
-        radius = self.config['radius']
+        radius = self.config['mapper']['radius']
         while(1):
             new_mappings = self.representation._uniformFromBall(mapping,radius,20)
             for m in new_mappings:
@@ -117,7 +117,7 @@ class GeneticMapper(object):
                         mapping[i] = m[i]
                     return mapping,
             radius *= 1.1
-            if radius > 10000 * self.config['radius']:
+            if radius > 10000 * self.config['mapper']['radius']:
                 log.error("Could not mutate mapping")
                 raise RuntimeError("Could not mutate mapping")
 
@@ -126,14 +126,14 @@ class GeneticMapper(object):
         toolbox = self.evolutionary_toolbox
         stats = self.evolutionary_stats
         hof = self.hof
-        pop_size = self.config['pop_size']
-        num_gens = self.config['num_gens']
-        cxpb = self.config['cxpb']
-        mutpb = self.config['mutpb']
+        pop_size = self.config['mapper']['pop_size']
+        num_gens = self.config['mapper']['num_gens']
+        cxpb = self.config['mapper']['cxpb']
+        mutpb = self.config['mapper']['mutpb']
 
         population = self.population
 
-        if self.config['mupluslambda']:
+        if self.config['mapper']['mupluslambda']:
             population, logbook = deap.algorithms.eaMuPlusLambda(population, toolbox, mu=pop_size, lambda_=3*pop_size,
                                                                  cxpb=cxpb, mutpb=mutpb, ngen=num_gens, stats=stats,
                                                                  halloffame=hof, verbose=False)

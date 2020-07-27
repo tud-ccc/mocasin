@@ -61,7 +61,7 @@ class MappingCache(object):
         self.config = config
         self.kpn = representation.kpn
         self.platform = representation.platform
-        self.statistics = Statistics(log, len(self.kpn.processes()), config['record_statistics'])
+        self.statistics = Statistics(log, len(self.kpn.processes()), config['mapper']['record_statistics'])
         self._last_added = None
 
     def lookup(self, mapping):

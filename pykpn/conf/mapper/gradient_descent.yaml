@@ -1,6 +1,7 @@
-mapper:
-   class:
-      pykpn.mapper.gradient_descent.GradientDescentMapper
+# @package _group_
+target:
+  pykpn.mapper.gradient_descent.GradientDescentMapper
+
 gd_iterations : 100
 stepsize : 2
 random_seed : 42

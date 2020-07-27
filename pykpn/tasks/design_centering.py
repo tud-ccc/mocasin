@@ -24,7 +24,7 @@ from pykpn.representations import representations as reps
 log = logging.getLogger(__name__)
 
 
-@hydra.main(config_path='conf/design_centering.yaml')
+@hydra.main(config_path='../conf', config_name='design_centering')
 def dc_task(cfg):
     json_dc_dump = {
         'config' : {
