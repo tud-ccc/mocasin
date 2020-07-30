@@ -27,6 +27,28 @@ def tetris_wwt15_opt_test(request):
     return request.param
 
 
+@pytest.fixture(params=[
+    "hog-1-1.csv",
+    "hog-1-2.csv",
+    "hog-1-3.csv",
+    "hog-1-4.csv",
+    "hog-1-5.csv",
+    "hog-1.csv",
+    "hog-big-1.csv",
+    "hog-big-1-d.csv",
+    "hog-2.csv",
+    "hog-big-2.csv",
+    "hog-big-2-d.csv",
+    "hogA-2tasks-not_fisible.csv",
+    "hog-big-3.csv",
+    "hog-big-3-d.csv",
+    "hog-mixed-3-d.csv",
+    "hog-mixed-3-d-man.csv",
+])
+def tetris_bf_test(request):
+    return request.param
+
+
 @pytest.fixture(params=["wwt15_lr=['R','D','RDP']"])
 def tetris_wwt15_option(request):
     return request.param
@@ -34,7 +56,6 @@ def tetris_wwt15_option(request):
 
 def run_tetris(datadir, expected_dir, scheduler, scenario, mode, options="",
                file_suffix=""):
-    print("Scenario: ", scenario)
     testname = os.path.splitext(scenario)[0]
     sched_l = scheduler.lower()
     input_scn = os.path.join(datadir, "tetris", "scenarios", "scheduler",
@@ -71,3 +92,11 @@ def test_tetris_wwt15(datadir, expected_dir, tetris_scheduler_test):
 def test_tetris_wwt15_rdp(datadir, expected_dir, tetris_wwt15_opt_test):
     run_tetris(datadir, expected_dir, "WWT15", tetris_wwt15_opt_test, 'single',
                options="wwt15_lr=['R','D','RDP']", file_suffix="_rdp")
+
+
+def test_tetris_bf(datadir, expected_dir, tetris_bf_test):
+    run_tetris(datadir, expected_dir, "BF", tetris_bf_test, 'single')
+
+
+def test_tetris_bf_mem(datadir, expected_dir, tetris_bf_test):
+    run_tetris(datadir, expected_dir, "BF-MEM", tetris_bf_test, 'single')
