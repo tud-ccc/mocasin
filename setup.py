@@ -132,7 +132,7 @@ setup(
     packages=find_packages(),
     install_requires=install_requirements,
     setup_requires=setup_requirements,
-    tests_require=['pytest', 'pytest_mock', 'lit', 'OutputCheck'],
+    tests_require=['pytest', 'pytest_mock'],
     command_options={
         'build_sphinx': {
             'project': ('setup.py', project_name),
