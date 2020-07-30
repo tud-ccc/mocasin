@@ -45,3 +45,6 @@ def test_tetris_dac(datadir, expected_dir, tetris_scheduler_test):
 
 def test_tetris_dac_2(datadir, expected_dir, tetris_scheduler_test):
     run_tetris(datadir, expected_dir, "DAC-2", tetris_scheduler_test, 'single')
+
+def test_tetris_fast(datadir, expected_dir, tetris_scheduler_test):
+    run_tetris(datadir, expected_dir, "FAST", tetris_scheduler_test, 'single')
