@@ -49,6 +49,13 @@ def tetris_bf_test(request):
     return request.param
 
 
+@pytest.fixture(params=[
+    "hog-big-8-d-online.csv",
+])
+def tetris_manager_test(request):
+    return request.param
+
+
 @pytest.fixture(params=["wwt15_lr=['R','D','RDP']"])
 def tetris_wwt15_option(request):
     return request.param
@@ -100,3 +107,19 @@ def test_tetris_bf(datadir, expected_dir, tetris_bf_test):
 
 def test_tetris_bf_mem(datadir, expected_dir, tetris_bf_test):
     run_tetris(datadir, expected_dir, "BF-MEM", tetris_bf_test, 'single')
+
+
+def test_tetris_manager(datadir, expected_dir, tetris_manager_test):
+    testname = os.path.splitext(tetris_manager_test)[0]
+    input_scn = os.path.join(datadir, "tetris", "scenarios", "manager",
+                             "{}.csv".format(testname))
+    out_name = "{}_{}.out".format("manager", testname)
+    out_path = os.path.join(datadir, out_name)
+    tetris_base = os.path.join(datadir, "tetris")
+    cmd = ("pykpn " + "tetris " + "tetris_base={} ".format(tetris_base) +
+           "scenario={} ".format(input_scn) + "scheduler={} ".format("DAC") +
+           "mode=trace " + "platform=exynos " + "log_level=INFO " +
+           "output={} ".format(out_path))
+    subprocess.check_call(cmd.split(), cwd=datadir)
+
+    # TODO: Add output
