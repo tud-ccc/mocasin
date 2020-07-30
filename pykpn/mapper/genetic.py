@@ -7,6 +7,7 @@ import deap
 import random
 import numpy as np
 import pickle
+import hydra
 
 from pykpn.util import logging
 from pykpn.representations.representations import RepresentationType
@@ -17,6 +18,7 @@ from deap import creator, tools, base, algorithms
 
 log = logging.getLogger(__name__)
 
+#TODO: Skip this cause representation object is needed?
 
 class GeneticMapper(object):
     """Generates a full mapping by using genetic algorithms.
@@ -37,7 +39,8 @@ class GeneticMapper(object):
         self.kpn = kpn
         self.platform = platform
         self.config = config
-        self.random_mapper = RandomPartialMapper(self.kpn, self.platform, config, seed=None)
+
+        self.random_mapper = RandomPartialMapper(self.kpn, self.platform, seed=None)
         self.crossover_rate = self.config['mapper']['crossover_rate']
 
         if self.crossover_rate > len(self.kpn.processes()):
@@ -57,7 +60,10 @@ class GeneticMapper(object):
             representation = (representation_type.getClassType())(self.kpn, self.platform,self.config)
 
         self.representation = representation
-        self.mapping_cache = MappingCache(self.representation,config)
+
+        statistics = self.config['mapper']['record_statistics']
+        trace_generator = hydra.utils.instantiate(self.config['trace'])
+        self.mapping_cache = MappingCache(self.representation, trace_generator, statistics)
 
         if 'FitnessMin' not in deap.creator.__dict__:
             deap.creator.create("FitnessMin", deap.base.Fitness, weights=(-1.0,))

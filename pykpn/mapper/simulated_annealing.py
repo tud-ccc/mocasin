@@ -5,6 +5,7 @@
 
 import random
 import numpy as np
+import hydra
 
 from pykpn.util import logging
 from pykpn.representations.representations import RepresentationType
@@ -15,6 +16,7 @@ from pykpn.mapper.utils import Statistics
 
 log = logging.getLogger(__name__)
 
+#TODO: Skip this cause representation object is needed?
 
 class SimulatedAnnealingMapper(object):
     """Generates a full mapping by using a simulated annealing algorithm from:
@@ -22,7 +24,7 @@ class SimulatedAnnealingMapper(object):
     Automated memory-aware application distribution for multi-processor system-on-chips.
     Journal of Systems Architecture, 53(11), 795-815.e.
     """
-    def __init__(self, kpn,platform,config):
+    def __init__(self, kpn, platform, config):
         """Generates a full mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
@@ -38,7 +40,7 @@ class SimulatedAnnealingMapper(object):
         self.kpn = kpn
         self.platform = platform
         self.config = config
-        self.random_mapper = RandomPartialMapper(self.kpn, self.platform, config, seed=None)
+        self.random_mapper = RandomPartialMapper(self.kpn, self.platform, seed=None)
         self.statistics = Statistics(log, len(self.kpn.processes()),config['mapper']['record_statistics'])
         self.initial_temperature = config['mapper']['initial_temperature']
         self.final_temperature = config['mapper']['final_temperature']
@@ -62,7 +64,10 @@ class SimulatedAnnealingMapper(object):
             representation = (representation_type.getClassType())(self.kpn, self.platform,self.config)
 
         self.representation = representation
-        self.mapping_cache = MappingCache(representation,config)
+
+        trace_generator = hydra.utils.instantiate(config['trace'])
+
+        self.mapping_cache = MappingCache(representation, trace_generator)
 
     def temperature_cooling(self,temperature,iter):
         return self.initial_temperature*self.p**np.floor(iter/self.max_rejections)

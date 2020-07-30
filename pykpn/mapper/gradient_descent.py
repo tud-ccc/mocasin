@@ -4,6 +4,7 @@
 # Authors: Andrés Goens
 
 import random
+import hydra
 import numpy as np
 
 from pykpn.util import logging
@@ -15,6 +16,7 @@ from pykpn.mapper.utils import Statistics
 
 log = logging.getLogger(__name__)
 
+#TODO: Skip this cause representation object is needed?
 
 class GradientDescentMapper(object):
     """Generates a full mapping by using a gradient descent on the mapping space.
@@ -36,7 +38,7 @@ class GradientDescentMapper(object):
         self.platform = platform
         self.num_PEs = len(platform.processors())
         self.config = config
-        self.random_mapper = RandomPartialMapper(self.kpn,self.platform,config,seed=None)
+        self.random_mapper = RandomPartialMapper(self.kpn, self.platform, seed=None)
         self.gd_iterations = config['mapper']['gd_iterations']
         self.stepsize = config['mapper']['stepsize']
         self.statistics = Statistics(log, len(self.kpn.processes()), config['mapper']['record_statistics'])
@@ -50,10 +52,12 @@ class GradientDescentMapper(object):
             representation_type = RepresentationType[rep_type_str]
             log.info(f"initializing representation ({rep_type_str})")
 
-            representation = (representation_type.getClassType())(self.kpn, self.platform,self.config)
+            representation = (representation_type.getClassType())(self.kpn, self.platform, self.config)
 
         self.representation = representation
-        self.mapping_cache = MappingCache(representation,config)
+
+        trace_generator = hydra.utils.instantiate(self.config['trace'])
+        self.mapping_cache = MappingCache(representation, trace_generator, self.config['mapper']['record_statistics'])
 
     def generate_mapping(self):
         """ Generates a full mapping using gradient descent
@@ -69,7 +73,7 @@ class GradientDescentMapper(object):
         for _ in range(self.gd_iterations):
             grad = self.calculate_gradient(mapping,cur_exec_time)
 
-            if np.allclose(grad,np.zeros(self.dim)): #found local minimum
+            if np.allclose(grad, np.zeros(self.dim)): #found local minimum
                 break
             mapping = mapping + (self.stepsize / self.best_exec_time) * (-grad)
             mapping = self.representation.approximate(np.array(mapping))
@@ -87,7 +91,7 @@ class GradientDescentMapper(object):
         return self.representation.fromRepresentation(self.best_mapping)
 
 
-    def calculate_gradient(self,mapping,cur_exec_time):
+    def calculate_gradient(self, mapping, cur_exec_time):
         grad = np.zeros(self.dim)
         for i in range(self.dim):
             evec = np.zeros(self.dim)

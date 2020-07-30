@@ -55,13 +55,13 @@ class Statistics(object):
 
 
 class MappingCache(object):
-    def __init__(self, representation, config):
+    def __init__(self, representation, trace_generator, record_statistics=False):
         self._cache = {}
         self.representation = representation
-        self.config = config
+        self.trace_generator = trace_generator
         self.kpn = representation.kpn
         self.platform = representation.platform
-        self.statistics = Statistics(log, len(self.kpn.processes()), config['mapper']['record_statistics'])
+        self.statistics = Statistics(log, len(self.kpn.processes()), record_statistics)
         self._last_added = None
 
     def lookup(self, mapping):
@@ -91,13 +91,12 @@ class MappingCache(object):
         else:
             time = timeit.default_timer()
             m_obj = self.representation.fromRepresentation(np.array(tup))
-            trace = hydra.utils.instantiate(self.config['trace'])
             env = simpy.Environment()
             system = RuntimeSystem(self.platform, env)
             app = RuntimeKpnApplication(name=self.kpn.name,
                                         kpn_graph=self.kpn,
                                         mapping=m_obj,
-                                        trace_generator=trace,
+                                        trace_generator=self.trace_generator,
                                         system=system,)
             system.simulate()
             exec_time = float(env.now) / 1000000000.0
@@ -105,6 +104,7 @@ class MappingCache(object):
             time = timeit.default_timer() - time
             self.statistics.mapping_evaluated(time)
             log.info(f"... from simulation: {exec_time}.")
+            self.trace_generator.reset()
             return exec_time
 
 

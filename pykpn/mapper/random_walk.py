@@ -20,6 +20,7 @@ from pykpn.common.mapping import ChannelMappingInfo, Mapping, ProcessMappingInfo
 
 log = logging.getLogger(__name__)
 
+#TODO: Skip this cause representation object is needed?
 
 class RandomWalkMapper(object):
     """Generates a full mapping via a random walk
@@ -41,9 +42,9 @@ class RandomWalkMapper(object):
            cfg(~omegaconf.dictconfig.DictConfig): the hydra configuration object
         """
         self.full_mapper = True
-        self.kpn = hydra.utils.instantiate(config['kpn'])
-        self.platform = hydra.utils.instantiate(config['platform'])
-        self.random_mapper = RandomMapper(self.kpn, self.platform, config)
+        self.kpn = kpn
+        self.platform = platform
+        self.random_mapper = RandomMapper(self.kpn, self.platform, random_seed=None)
         self.config = config
         self.statistics = Statistics(log, len(self.kpn.processes()), config['mapper']['record_statistics'])
         rep_type_str = config['representation']

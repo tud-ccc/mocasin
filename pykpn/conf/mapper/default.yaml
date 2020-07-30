@@ -1,2 +1,3 @@
 # @package _group_
-target: pykpn.mapper.default.DefaultFullMapper
+target: pykpn.mapper.default.DefaultFullMapperHydra
+seed: 42
