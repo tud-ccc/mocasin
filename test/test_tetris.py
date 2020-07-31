@@ -28,24 +28,24 @@ def tetris_wwt15_opt_test(request):
 
 
 @pytest.fixture(params=[
-    "hog-1-1.csv",
-    "hog-1-2.csv",
-    "hog-1-3.csv",
-    "hog-1-4.csv",
-    "hog-1-5.csv",
-    "hog-1.csv",
-    "hog-big-1.csv",
-    "hog-big-1-d.csv",
-    "hog-2.csv",
-    "hog-big-2.csv",
-    "hog-big-2-d.csv",
-    "hogA-2tasks-not_fisible.csv",
-    "hog-big-3.csv",
-    "hog-big-3-d.csv",
-    "hog-mixed-3-d.csv",
-    "hog-mixed-3-d-man.csv",
+    ("hog-1-1.csv", True),
+    ("hog-1-2.csv", True),
+    ("hog-1-3.csv", True),
+    ("hog-1-4.csv", True),
+    ("hog-1-5.csv", True),
+    ("hog-1.csv", True),
+    ("hog-big-1.csv", True),
+    ("hog-big-1-d.csv", True),
+    ("hog-2.csv", True),
+    ("hog-big-2.csv", True),
+    ("hog-big-2-d.csv", True),
+    ("hogA-2tasks-not_fisible.csv", True),
+    ("hog-big-3.csv", False),
+    ("hog-big-3-d.csv", True),
+    ("hog-mixed-3-d.csv", True),
+    ("hog-mixed-3-d-man.csv", True),
 ])
-def tetris_bf_test(request):
+def tetris_bf_test_check_pair(request):
     return request.param
 
 
@@ -62,7 +62,7 @@ def tetris_wwt15_option(request):
 
 
 def run_tetris(datadir, expected_dir, scheduler, scenario, mode, options="",
-               file_suffix=""):
+               file_suffix="", filecheck=True):
     testname = os.path.splitext(scenario)[0]
     sched_l = scheduler.lower()
     input_scn = os.path.join(datadir, "tetris", "scenarios", "scheduler",
@@ -76,8 +76,9 @@ def run_tetris(datadir, expected_dir, scheduler, scenario, mode, options="",
            "platform=exynos " + options + " " + "output={} ".format(out_path))
     subprocess.check_call(cmd.split(), cwd=datadir)
 
-    assert filecmp.cmp(os.path.join(expected_dir, out_name), out_path,
-                       shallow=False)
+    if filecheck:
+        assert filecmp.cmp(os.path.join(expected_dir, out_name), out_path,
+                           shallow=False)
 
 
 def test_tetris_dac(datadir, expected_dir, tetris_scheduler_test):
@@ -101,12 +102,14 @@ def test_tetris_wwt15_rdp(datadir, expected_dir, tetris_wwt15_opt_test):
                options="wwt15_lr=['R','D','RDP']", file_suffix="_rdp")
 
 
-def test_tetris_bf(datadir, expected_dir, tetris_bf_test):
-    run_tetris(datadir, expected_dir, "BF", tetris_bf_test, 'single')
+def test_tetris_bf(datadir, expected_dir, tetris_bf_test_check_pair):
+    run_tetris(datadir, expected_dir, "BF", tetris_bf_test_check_pair[0],
+               'single', filecheck=tetris_bf_test_check_pair[1])
 
 
-def test_tetris_bf_mem(datadir, expected_dir, tetris_bf_test):
-    run_tetris(datadir, expected_dir, "BF-MEM", tetris_bf_test, 'single')
+def test_tetris_bf_mem(datadir, expected_dir, tetris_bf_test_check_pair):
+    run_tetris(datadir, expected_dir, "BF-MEM", tetris_bf_test_check_pair[0],
+               'single', filecheck=tetris_bf_test_check_pair[1])
 
 
 def test_tetris_manager(datadir, expected_dir, tetris_manager_test):
