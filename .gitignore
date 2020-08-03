@@ -31,3 +31,6 @@ tsne.pdf
 dump.json
 
 *.iml
+
+# yapf
+.style.yapf

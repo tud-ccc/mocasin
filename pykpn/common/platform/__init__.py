@@ -408,6 +408,19 @@ class Platform(object):
                 'Primitive %s was already added to the platform' % (x.name))
         self._primitives[x.name] = x
 
+    def core_types(self):
+        """
+        Returns the key-value pairs of processor types and the number of
+        processors of such type.
+        """
+        res = {}
+        for p in self.processors():
+            if p.type not in res:
+                res[p.type] = 1
+            else:
+                res[p.type] += 1
+        return res.items()
+
     def to_pydot(self):
         """
         Convert the platform to a dot graph.
