@@ -59,7 +59,7 @@ class MappingRepresentation(type):
         instance = deepcopy(cls._instances[(cls,kpn_names,platform.name)])
         instance.kpn = kpn
         instance.platform = platform
-        com_mapper = ComFullMapper(kpn,platform,cfg)
+        com_mapper = ComFullMapper(kpn,platform)
         instance.list_mapper = ProcPartialMapper(kpn,platform,com_mapper)
         return instance
 
@@ -110,7 +110,7 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         self.config = cfg
         self.p = cfg['norm_p']
         self.num_procs = len(list(self.kpn._processes.keys()))
-        com_mapper = ComFullMapper(kpn,platform,cfg)
+        com_mapper = ComFullMapper(kpn,platform)
         self.list_mapper = ProcPartialMapper(kpn,platform,com_mapper)
 
     def _uniform(self):
