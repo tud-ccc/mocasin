@@ -80,10 +80,10 @@ class SampleGeneratorBase():
     def __init__(self, conf):
         self.conf = conf
 
-    def gen_samples_in_ball(self,vol,distr,nsamples=1):
+    def gen_samples_in_ball(self, vol, distr, nsamples=1):
         res = []
         for _ in range(nsamples):
-            s = self.gen_sample_in_vol(vol,distr)
+            s = self.gen_sample_in_vol(vol, distr)
             res.append(Sample(s))
         return res
 
@@ -96,20 +96,24 @@ class GeometricSample(Sample):
 
 class SampleGeometricGen(SampleGeneratorBase):
 
-    def __init__(self, conf):
-        super().__init__(conf)
+    def __init__(self, max_pe):
+        super().__init__(None)
+        self.max_pe = max_pe
 
-    def gen_samples_in_ball(self,vol,distr,nsamples=1):
+    def gen_samples_in_ball(self, vol, distr, nsamples=1):
         res = []
+
         for _ in range(nsamples):
-            s = self.gen_sample_in_vol(vol,distr)
+            s = self.gen_sample_in_vol(vol, distr)
             res.append(GeometricSample(s))
+
         log.debug("\ngen sample in ball\n {}\n".format(res[0].sample2tuple()))
+
         return res
 
     def gen_random_sample(self):
         for _d in vol.center:
-            rand_val = self.uniform_distribution(0, self.conf[1].max_pe)
+            rand_val = self.uniform_distribution(0, self.max_pe)
             self.sample.append(rand_val)
 
 
@@ -172,31 +176,34 @@ class VectorSpaceSample(Sample):
         return tuple(self.representation.int2Tuple(int(self.sample)))
 
 class MetricSpaceSampleGen(SampleGeneratorBase):
-    def __init__(self,representation, conf):
-        super().__init__(conf)
+    def __init__(self, representation):
+        super().__init__(None)
         self.representation = representation
 
-    def gen_sample_in_vol(self,vol,distr):
-        return self.gen_samples_in_ball(vol,distr,nsamples=1)
+    def gen_sample_in_vol(self, vol, distr):
+        return self.gen_samples_in_ball(vol, distr, nsamples=1)
 
     #TODO: this seems it would be better housed in volume than here.
-    def gen_samples_in_ball(self,vol,distr,nsamples=1):
+    def gen_samples_in_ball(self, vol, distr, nsamples=1):
         if distr != "uniform":
             log.error("Error!, distribution '" + str(distr) + "' not supported (yet).")
             exit(1)
         sample_list = []
         for _ in range(nsamples):
-            lp_random_vector = lp.uniform_from_p_ball(p=vol.norm_p,n=vol.dim)
+            lp_random_vector = lp.uniform_from_p_ball(p=vol.norm_p, n=vol.dim)
             scaled_vector = vol.radius * lp_random_vector
             transformed_vector = vol.covariance @ scaled_vector
             new_sample_vector = vol.center + transformed_vector
             sample_ints = self.representation.approximate(new_sample_vector)
-            new_sample = MetricSpaceSample(self.representation,sample_ints)
+            new_sample = MetricSpaceSample(self.representation, sample_ints)
             sample_list.append(new_sample)
-            distance = self.representation._distance(sample_ints,vol.center)
+            distance = self.representation._distance(sample_ints, vol.center)
+
             if distance > vol.radius:
                 log.warning(f"Generated vector with distance ({distance}) greater than radius ({vol.radius}).")
+
             log.debug(f"Generated sample (distance: {distance}):\n {sample_ints}")
+
         return sample_list
 
 
@@ -248,18 +255,18 @@ class SampleSet(object):
                 infeasible_samples.append(_s)
         return infeasible_samples
 
-def SampleGen(representation, conf):
+def SampleGen(representation, max_pe=None):
     if representation == "GeomDummy":
-        return SampleGeometricGen(conf)
-    elif isinstance(representation,MetricSpaceRepresentation):
-        return MetricSpaceSampleGen(representation, conf)
-    elif isinstance(representation,MetricEmbeddingRepresentation):
-        return MetricSpaceSampleGen(representation, conf)
-    elif isinstance(representation,SimpleVectorRepresentation):
-        return MetricSpaceSampleGen(representation, conf)
-    elif isinstance(representation,SymmetryRepresentation):
-        return MetricSpaceSampleGen(representation, conf)
+        return SampleGeometricGen(max_pe)
+    elif isinstance(representation, MetricSpaceRepresentation):
+        return MetricSpaceSampleGen(representation)
+    elif isinstance(representation, MetricEmbeddingRepresentation):
+        return MetricSpaceSampleGen(representation)
+    elif isinstance(representation, SimpleVectorRepresentation):
+        return MetricSpaceSampleGen(representation)
+    elif isinstance(representation, SymmetryRepresentation):
+        return MetricSpaceSampleGen(representation)
     else:
-        log.error(f"Sample generator type not found:{generator_type}")
+        log.error(f"Sample generator type not found:{representation}")
         exit(1)
-    
+

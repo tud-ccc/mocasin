@@ -7,6 +7,7 @@ import traceback
 import pint
 import hydra
 
+from copy import deepcopy
 from pykpn.mapper.partial import ProcPartialMapper, ComPartialMapper
 from pykpn.mapper.random import RandomPartialMapper
 from pykpn.mapper import utils
@@ -49,16 +50,24 @@ class AttrDict(dict):
 
 
 class Oracle(object):
-    def __init__(self, config, kpn = None, platform = None, trace_reader_gen = None):
-        self.config = AttrDict(config)
-        if self.config.oracle == "TestSet":
-             type(self).oracle = TestSet()
-        elif self.config.oracle == "TestTwoPrKPN":
-             type(self).oracle = TestTwoPrKPN()
-        elif self.config.oracle == "simulation":
-            type(self).oracle = Simulation(config)
+    def __init__(self, oracle_type, kpn=None,
+                                    platform=None,
+                                    trace_generator=None,
+                                    threshold=None,
+                                    threads=None,
+                                    seed=None):
+
+        #self.config = AttrDict(config)
+        self.oracle_type = oracle_type
+
+        if oracle_type == "TestSet":
+            type(self).oracle = TestSet()
+        elif oracle_type == "TestTwoPrKPN":
+            type(self).oracle = TestTwoPrKPN()
+        elif oracle_type == "simulation":
+            type(self).oracle = Simulation(kpn, platform, trace_generator, threshold, threads, seed)
         else:
-             log.error("Error, unknown oracle:" + config.oracle)
+             log.error("Error, unknown oracle:" + oracle_type)
              exit(1)
 
     def validate(self, sample):
@@ -77,7 +86,7 @@ class Oracle(object):
                 log.debug(f"skipping simulation for mapping {mapping}: cached.")
                 s.sim_context.exec_time = self.oracle.cache[mapping]
 
-        if self.config.oracle != "simulation":
+        if self.oracle_type != "simulation":
             for s in samples:
                 res.append(type(self).oracle.is_feasible(s.sample2simpleTuple))
         else:
@@ -85,16 +94,41 @@ class Oracle(object):
 
         return res
 
+class OracleFromHydra(Oracle):
+    def __init__(self, config, kpn=None, platform=None, trace_generator=None, threshold=None, threads=None, seed=None):
+        oracle_type = config['oracle']
+
+        if not kpn:
+            kpn = hydra.utils.instantiate(config['kpn'])
+
+        if not platform:
+            platform = hydra.utils.instantiate(config['platform'])
+
+        if not trace_generator:
+            trace_generator = hydra.utils.instantiate(config['trace'])
+
+        if not threshold:
+            threshold = config['threshold']
+
+        if not threads:
+            threads = config['threads']
+
+        if not seed:
+            seed = config['random_seed']
+
+        super(OracleFromHydra, self).__init__(oracle_type, kpn, platform, trace_generator, threshold, threads, seed)
+
 class Simulation(object):
     """ simulation code """
-    def __init__(self, config):
-        self.sim_config = AttrDict(config)
-        self.kpn = hydra.utils.instantiate(config['kpn'])
-        self.platform = hydra.utils.instantiate(config['platform'])
-        self.randMapGen = RandomPartialMapper(self.kpn, self.platform, config)
+    def __init__(self, kpn, platform, trace_generator, threshold, threads, seed):
+        self.kpn = kpn
+        self.platform = platform
+        self.trace_generator = trace_generator
+        self.randMapGen = RandomPartialMapper(self.kpn, self.platform, seed)
         self.comMapGen = ComPartialMapper(self.kpn, self.platform, self.randMapGen)
         self.dcMapGen = ProcPartialMapper(self.kpn, self.platform, self.comMapGen)
-        self.threads = config['threads']
+        self.threads = threads
+        self.threshold = threshold
         self.cache = {}
         self.total_cached = 0
 
@@ -106,23 +140,31 @@ class Simulation(object):
         simulation_contexts = []
 
         for i in range(0, len(samples)):
-            log.debug("Using simcontext no.: {} {}".format(i,samples[i]))
+            log.debug("Using simcontext no.: {} {}".format(i, samples[i]))
             # create a simulation context
-            mapping = self.dcMapGen.generate_mapping(list(map(int,samples[i].sample2simpleTuple())))
+            mapping = self.dcMapGen.generate_mapping(list(map(int, samples[i].sample2simpleTuple())))
             sim_context = self.prepare_sim_context(mapping)
             samples[i].setSimContext(sim_context)
 
-    def prepare_sim_context(self,mapping):
+    def prepare_sim_context(self, mapping):
         sim_context = SimulationContext(self.platform)
+
         # create the application contexts
         app_context = ApplicationContext(self.kpn)
         app_context.start_time = 0
+
         # generate a mapping for the given sample
         app_context.mapping = self.dcMapGen.generate_mapping(mapping.to_list())
-        # generate trace reader
-        app_context.trace_reader = hydra.utils.instantiate(self.sim_config['trace'])
+
+
+        #reset and copy trace generator to ensure that each sim_context has its own
+        #fresh generator object
+        self.trace_generator.reset()
+        app_context.trace_reader = deepcopy(self.trace_generator)
+
         log.debug("Mapping toList: {}".format(app_context.mapping.to_list()))
         sim_context.app_contexts.append(app_context)
+
         return sim_context
 
     def is_feasible(self, samples):
@@ -137,7 +179,7 @@ class Simulation(object):
             # run parallel simulation for more than one sample in samples list
             from multiprocessing import Pool
             log.debug("Running parallel simulation for {} samples".format(len(samples)))
-            pool = Pool(processes=self.threads,maxtasksperchild=100)
+            pool = Pool(processes=self.threads, maxtasksperchild=100)
             results = list(pool.map(self.run_simulation, samples, chunksize=self.threads))
         else:
             # results list of simulation contexts
@@ -153,9 +195,9 @@ class Simulation(object):
         for r in results:
             assert r.sim_context.exec_time is not None
             ureg = pint.UnitRegistry()
-            threshold = ureg(self.sim_config.threshold).to(ureg.ps).magnitude
+            threshold = ureg(self.threshold).to(ureg.ps).magnitude
 
-            if (r.sim_context.exec_time > threshold):
+            if r.sim_context.exec_time > threshold:
                 r.setFeasibility(False)
                 feasible.append(False)
             else:
@@ -166,9 +208,8 @@ class Simulation(object):
         # return samples with the according sim context 
         return results
 
-    
-    #do simulation requires sim_context,
     def run_simulation(self, sample):
+        #do simulation requires sim_context
         if sample.sim_context.exec_time is not None:
             self.total_cached += 1
             return sample

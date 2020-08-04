@@ -6,27 +6,18 @@
 from unittest.mock import Mock
 
 #imports to run DC
-from pykpn.design_centering import DesignCentering
-from pykpn.design_centering import volume
+from pykpn.design_centering import DesignCenteringFromHydra, volume
 from pykpn.representations import representations as reps
 
-def test_dc_holistic(monkeypatch, kpn, platform, conf, oracle):
-   def mock_p_values():
-       return [0.9, 0.9, 0.9, 0.9]
-
-   def mock_adapt_poly():
-       pass
+def test_dc_holistic(kpn, platform, conf, oracle):
+    #Mapping
+    representation_type = reps.RepresentationType['SimpleVector']
+    print("--- Generate DC Test ---")
+    representation = (representation_type.getClassType())(kpn, platform, conf)
+    starting_center = representation.uniform()
    
-   #Mapping
-   representation_type = reps.RepresentationType['SimpleVector']
-   print("--- Generate DC Test ---")
-   representation = (representation_type.getClassType())(kpn, platform, conf)
-   starting_center = representation.uniform()
-   
-   #print(oracle.validate_set())
-   v = volume.LPVolume(starting_center, starting_center.get_numProcs(),kpn,platform,conf,representation_type)
-   dc = DesignCentering(v, oracle, representation, conf)
-   center,history = dc.ds_explore()
-   #print("center: {} history: {}".format(center, history))
-
-
+    #print(oracle.validate_set())
+    v = volume.LPVolume(starting_center, starting_center.get_numProcs(), kpn, platform, conf, representation_type)
+    dc = DesignCenteringFromHydra(v, oracle, representation, conf)
+    center, history = dc.ds_explore()
+    #TODO: inserting some kind of assert statement? What is actually tested here?

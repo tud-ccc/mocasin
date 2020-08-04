@@ -4,8 +4,9 @@
 # Authors: Gerald Hempel, Andres Goens
 
 import sys
-import random as rand
 import pint
+import hydra
+import random as rand
 import numpy as np
 
 from pykpn.design_centering import sample as dc_sample
@@ -14,26 +15,34 @@ from pykpn.mapper.partial import ProcPartialMapper
 from pykpn.mapper.random import RandomPartialMapper
 from pykpn.representations import representations as reps
 
-
 from pykpn.util import logging
 
 log = logging.getLogger(__name__)
 
 class PerturbationManager(object):
 
-    def __init__(self, config ,num_mappings=0, num_tests=0):
+    def __init__(self, config, num_mappings=0, num_tests=0):
         self.config = config
+
+        self.platform = hydra.utils.instantiate(config['platform'])
+        self.kpn = hydra.utils.instantiate(config['kpn'])
+        trace_generator = hydra.utils.instantiate(config['trace'])
+        threshold = config['threshold']
+        threads = config['threads']
+        seed = config['random_seed']
+
+        self.sim = oracle.Simulation(self.kpn, self.platform, trace_generator, threshold, threads, seed)
+
         self.num_mappings = num_mappings
         self.num_perturbations = num_tests
-        self.sim = oracle.Simulation(config)
-        self.platform = self.sim.platform
-        self.kpn = self.sim.kpn
         self.perturbation_ball_num = config['perturbation_ball_num']
         self.iteration_max = config['perturbation_max_iters']
         self.radius = config['perturbation_radius']
+
         if config['representation'] != "GeomDummy":
             representation_type = reps.RepresentationType[config['representation']]
             self.representation = (representation_type.getClassType())(self.kpn,self.platform,config)
+
         #TODO: (FIXME) Perturbation manager only works in simple vector representation (for now)
         #self.representation = (reps.RepresentationType['SimpleVector'].getClassType())(self.kpn, self.platform)
 
@@ -75,7 +84,7 @@ class PerturbationManager(object):
         while timeout < iteration_max:
             perturbated_mapping = proc_part_mapper.generate_mapping(vec, history)
             if perturbated_mapping:
-                break;
+                break
             else:
                 pe = rand.randint(0, len(list(self.platform.processors()))-1)
                 process = rand.randint(0, len(list(self.kpn.processes()))-1)
@@ -99,7 +108,7 @@ class PerturbationManager(object):
         radius = self.radius
         timeout = 0
         while timeout < iteration_max:
-            perturbation_ball = self.representation._uniformFromBall(mapping,radius,self.perturbation_ball_num)
+            perturbation_ball = self.representation._uniformFromBall(mapping, radius, self.perturbation_ball_num)
             for m in perturbation_ball:
                 #TODO: this should be handled in the representations too (with an _equal function or something)
                 if not (m == mapping).all():
@@ -147,7 +156,7 @@ class PerturbationManager(object):
         for e in exec_times:
             ureg = pint.UnitRegistry()
             threshold = ureg(self.config.threshold).to(ureg.ps).magnitude
-            if (e > threshold):
+            if e > threshold:
                 feasible.append(False)
             else:
                 feasible.append(True)
@@ -162,5 +171,17 @@ class PerturbationManager(object):
             complex_res['p' + str(i)]['runtime'] = exec_times[i] / 1000000000.0
             complex_res['p' + str(i)]['feasible'] = feasible[i]
 
-        return simple_res,complex_res
+        return simple_res, complex_res
 
+class PerturbationManagerFromHydra(PerturbationManager):
+    def __init__(self, config, num_mappings=0, num_tests=0):
+        kpn = hydra.utils.instantiate(config['kpn'])
+        platform = hydra.utils.instantiate(config['platform'])
+        trace_generator = hydra.utils.instantiate(config['trace'])
+
+
+        perturbation_ball_num = config['perturbation_ball_num']
+        perturbation_max_iters = config['perturbation_max_iters']
+        perturbation_radius =config['perturbation_radius']
+
+        super(PerturbationManagerFromHydra, self).__init__()
