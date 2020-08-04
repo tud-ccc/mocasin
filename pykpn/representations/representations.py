@@ -314,7 +314,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         self._arch_nc_inv = {}
         self.channels=False
         self.cfg = cfg
-        com_mapper = ComFullMapper(kpn,platform,cfg)
+        com_mapper = ComFullMapper(kpn,platform)
         self.list_mapper = ProcPartialMapper(kpn,platform,com_mapper)
 
         for node in self._arch_nc:
@@ -434,7 +434,7 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
         self._d = len(kpn.processes())
         self.cfg = cfg
         self.p = cfg['norm_p']
-        com_mapper = ComFullMapper(kpn,platform,cfg)
+        com_mapper = ComFullMapper(kpn,platform)
         self.list_mapper = ProcPartialMapper(kpn,platform,com_mapper)
         init_app_ncs(self,kpn)
         if self.p != 2:
