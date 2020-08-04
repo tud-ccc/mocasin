@@ -1,5 +1,6 @@
 from pykpn.mapper.test.mock_cache import MockMappingCache
 from pykpn.mapper.simulated_annealing import SimulatedAnnealingMapper
+from pykpn.mapper.utils import TraceGeneratorMock
 from itertools import product
 import pytest
 import numpy as np
@@ -25,7 +26,8 @@ def evaluation_function():
 
 @pytest.fixture
 def mapper(kpn, platform, conf, evaluation_function):
-    m = SimulatedAnnealingMapper(kpn, platform, conf)
+    trace_generator = TraceGeneratorMock()
+    m = SimulatedAnnealingMapper(kpn, platform, conf, trace_generator=trace_generator)
     m.mapping_cache = MockMappingCache(evaluation_function)
     return m
 

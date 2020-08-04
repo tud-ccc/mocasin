@@ -17,7 +17,7 @@ def conf():
             'norm_p' : 2,
             'representation' : 'SimpleVector',
             'channels' : False,
-            'periodic_boundary_conditions' : False
+            'periodic_boundary_conditions' : False,
             }
 
 @pytest.fixture
@@ -26,7 +26,8 @@ def evaluation_function():
 
 @pytest.fixture
 def mapper(kpn, platform, conf, evaluation_function):
-    m = TabuSearchMapper(kpn, platform, conf)
+    trace_generator = TraceGeneratorMock()
+    m = TabuSearchMapper(kpn, platform, conf, trace_generator=trace_generator)
     m.mapping_cache = MockMappingCache(evaluation_function)
     return m
 

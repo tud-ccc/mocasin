@@ -24,7 +24,7 @@ class SimulatedAnnealingMapper(object):
     Automated memory-aware application distribution for multi-processor system-on-chips.
     Journal of Systems Architecture, 53(11), 795-815.e.
     """
-    def __init__(self, kpn, platform, config):
+    def __init__(self, kpn, platform, config, trace_generator=None):
         """Generates a full mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
@@ -65,7 +65,8 @@ class SimulatedAnnealingMapper(object):
 
         self.representation = representation
 
-        trace_generator = hydra.utils.instantiate(config['trace'])
+        if not trace_generator:
+            trace_generator = hydra.utils.instantiate(config['trace'])
 
         self.mapping_cache = MappingCache(representation, trace_generator)
 

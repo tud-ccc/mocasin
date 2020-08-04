@@ -22,7 +22,7 @@ class TabuSearchMapper(object):
     """Generates a full mapping by using a tabu search on the mapping space.
 
     """
-    def __init__(self, kpn, platform, config):
+    def __init__(self, kpn, platform, config, trace_generator=None):
         """Generates a full mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
@@ -60,7 +60,10 @@ class TabuSearchMapper(object):
 
         self.representation = representation
 
-        trace_generator = hydra.utils.instantiate(self.config['trace'])
+        #workaround to get tests running. feel free to remove for better solution
+        if not trace_generator:
+            trace_generator = hydra.utils.instantiate(self.config['trace'])
+
         self.mapping_cache = MappingCache(representation, trace_generator, self.config['mapper']['record_statistics'])
 
     def update_candidate_moves(self,mapping):

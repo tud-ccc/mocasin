@@ -23,7 +23,7 @@ log = logging.getLogger(__name__)
 class GeneticMapper(object):
     """Generates a full mapping by using genetic algorithms.
     """
-    def __init__(self, kpn,platform, config):
+    def __init__(self, kpn, platform, config, trace_generator=None):
         """Generates a partial mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
@@ -62,7 +62,9 @@ class GeneticMapper(object):
         self.representation = representation
 
         statistics = self.config['mapper']['record_statistics']
-        trace_generator = hydra.utils.instantiate(self.config['trace'])
+
+        if not trace_generator:
+            trace_generator = hydra.utils.instantiate(self.config['trace'])
         self.mapping_cache = MappingCache(self.representation, trace_generator, statistics)
 
         if 'FitnessMin' not in deap.creator.__dict__:

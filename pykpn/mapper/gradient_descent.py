@@ -21,7 +21,7 @@ log = logging.getLogger(__name__)
 class GradientDescentMapper(object):
     """Generates a full mapping by using a gradient descent on the mapping space.
     """
-    def __init__(self, kpn, platform, config):
+    def __init__(self, kpn, platform, config, trace_generator=None):
         """Generates a full mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
@@ -56,7 +56,8 @@ class GradientDescentMapper(object):
 
         self.representation = representation
 
-        trace_generator = hydra.utils.instantiate(self.config['trace'])
+        if not trace_generator:
+            trace_generator = hydra.utils.instantiate(self.config['trace'])
         self.mapping_cache = MappingCache(representation, trace_generator, self.config['mapper']['record_statistics'])
 
     def generate_mapping(self):
