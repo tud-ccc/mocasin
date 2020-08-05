@@ -82,11 +82,11 @@ def run_tetris(datadir, expected_dir, scheduler, scenario, mode, options="",
 
 
 def test_tetris_dac(datadir, expected_dir, tetris_scheduler_test):
-    run_tetris(datadir, expected_dir, "DAC", tetris_scheduler_test, 'single')
+    run_tetris(datadir, expected_dir, "DAC", tetris_scheduler_test, 'single', options='resource_manager=dac')
 
 
 def test_tetris_dac_2(datadir, expected_dir, tetris_scheduler_test):
-    run_tetris(datadir, expected_dir, "DAC-2", tetris_scheduler_test, 'single')
+    run_tetris(datadir, expected_dir, "DAC-2", tetris_scheduler_test, 'single', options='resource_manager=dac-2')
 
 
 def test_tetris_fast(datadir, expected_dir, tetris_scheduler_test):
@@ -122,7 +122,7 @@ def test_tetris_manager(datadir, expected_dir, tetris_manager_test):
     cmd = ("pykpn " + "tetris " + "tetris_base={} ".format(tetris_base) +
            "scenario={} ".format(input_scn) + "scheduler={} ".format("DAC") +
            "mode=trace " + "platform=exynos " + "log_level=INFO " +
-           "output={} ".format(out_path))
+           "output={} ".format(out_path) + "resource_manager=dac")
     subprocess.check_call(cmd.split(), cwd=datadir)
 
     # TODO: Add output

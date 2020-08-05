@@ -192,11 +192,8 @@ def tetris(cfg):
         scheduler = hydra.utils.instantiate(cfg['resource_manager'], app_table,
                                             platform, cfg)
     elif scheduler_name.startswith("DAC"):
-        if scheduler_name == "DAC":
-            scheduler = DacScheduler(app_table, platform)
-        else:
-            v = scheduler_name[4:]
-            scheduler = DacScheduler(app_table, platform, version=v)
+        scheduler = hydra.utils.instantiate(cfg['resource_manager'], app_table,
+                                            platform, cfg)
     elif scheduler_name.startswith("WWT15"):
         # Parse WWT15 related arguments
         scheduler_type = cfg["wwt15_type"]

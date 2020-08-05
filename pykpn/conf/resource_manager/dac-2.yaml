@@ -1,0 +1,6 @@
+resource_manager:
+  name: DacScheduler
+  class: pykpn.tetris.scheduler.dac.DacScheduler
+
+dac_version: '2'
+
