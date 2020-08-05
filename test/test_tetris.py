@@ -90,7 +90,7 @@ def test_tetris_dac_2(datadir, expected_dir, tetris_scheduler_test):
 
 
 def test_tetris_fast(datadir, expected_dir, tetris_scheduler_test):
-    run_tetris(datadir, expected_dir, "FAST", tetris_scheduler_test, 'single')
+    run_tetris(datadir, expected_dir, "FAST", tetris_scheduler_test, 'single', options='resource_manager=fast')
 
 
 def test_tetris_wwt15(datadir, expected_dir, tetris_scheduler_test):

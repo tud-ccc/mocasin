@@ -189,7 +189,8 @@ def tetris(cfg):
             prune_mem_table=opt_prune_mem_table,
         )
     elif scheduler_name == "FAST":
-        scheduler = FastScheduler(app_table, platform)
+        scheduler = hydra.utils.instantiate(cfg['resource_manager'], app_table,
+                                            platform, cfg)
     elif scheduler_name.startswith("DAC"):
         if scheduler_name == "DAC":
             scheduler = DacScheduler(app_table, platform)

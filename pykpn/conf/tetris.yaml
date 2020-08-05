@@ -3,6 +3,7 @@ defaults:
   - hydra/job_logging: pykpn
     # Set the platform
   - platform: default
+  - resource_manager: default
 
 # Base directory
 # The base directory should include 'apps' directory
