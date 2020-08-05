@@ -165,29 +165,9 @@ def tetris(cfg):
     Context().req_table = req_table
 
     # Initialize scheduler
-    opt_bf_drop = cfg["bf_drop"]
-    opt_reschedule = cfg["reschedule"]
-    opt_bf_dump_steps = cfg["bf_dump_steps"]
-    opt_time_limit = cfg["time_limit"]
-    opt_dump_mem_table = cfg["dump_mem_table"]
-    opt_prune_mem_table = cfg["prune_mem_table"]
     if scheduler_name == "BF" or scheduler_name == "BF-MEM":
-        drop_high = opt_bf_drop
-        if scheduler_name == "BF-MEM":
-            memorization = True
-        else:
-            memorization = False
-        scheduler = BruteforceScheduler(
-            app_table,
-            platform,
-            rescheduling=opt_reschedule,
-            drop_high=drop_high,
-            dump_steps=opt_bf_dump_steps,
-            time_limit=opt_time_limit,
-            memorization=memorization,
-            dump_mem_table=opt_dump_mem_table,
-            prune_mem_table=opt_prune_mem_table,
-        )
+        scheduler = hydra.utils.instantiate(cfg['resource_manager'], app_table,
+                                            platform, cfg)
     elif scheduler_name == "FAST":
         scheduler = hydra.utils.instantiate(cfg['resource_manager'], app_table,
                                             platform, cfg)
@@ -247,13 +227,15 @@ def tetris(cfg):
 
     opt_summary = cfg["summary"]
     opt_summary_append = cfg["summary_append"]
+    opt_time_limit = cfg.get("time_limit", 'None')
+    opt_reschedule = cfg.get("reschedule", True)
     if mode == "single":
         res, scheduling, schedule_time = single_mode_scheduler(
             scheduler, scenario)
         if res:
             scheduling.legacy_dump(outf=outf)
             # scheduling.legacy_dump_jobs_info(outf=outf)
-        if opt_time_limit is not None:
+        if opt_time_limit != 'None':
             within_time = schedule_time <= opt_time_limit
         else:
             within_time = True

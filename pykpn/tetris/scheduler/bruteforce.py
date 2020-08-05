@@ -341,25 +341,23 @@ class StateMemoryTable:
 
 
 class BruteforceScheduler(SchedulerBase):
-    def __init__(self, app_table, platform, rescheduling=True, drop_high=0.0,
-                 dump_steps=1000, time_limit=None, memorization=False,
-                 dump_mem_table=False, prune_mem_table=False):
+    def __init__(self, app_table, platform, config):
         super().__init__(app_table, platform)
         self._platform = platform
-        self.__rescheduling = rescheduling
-        self.__drop_high = drop_high
-        self.__dump_steps = dump_steps
+        self.__rescheduling = config['reschedule']
+        self.__drop_high = config["bf_drop"]
+        self.__dump_steps = config["bf_dump_steps"]
 
-        self.__time_limit = time_limit
+        self.__time_limit = config["time_limit"]
 
         self.__scheduled_on_time = True
-        self.__memorization = memorization
-        self.__dump_mem_table = dump_mem_table
-        self.__prune_mem_table = prune_mem_table
+        self.__memoization = config["memoization"]
+        self.__dump_mem_table = config["dump_mem_table"]
+        self.__prune_mem_table = config["prune_mem_table"]
 
     @property
     def name(self):
-        if not self.__memorization:
+        if not self.__memoization:
             res = "Exact"
         else:
             res = "Exact-Memo"
@@ -439,8 +437,8 @@ class BruteforceScheduler(SchedulerBase):
         self.__clear()
         self.__jobs = jobs_start
 
-        if self.__memorization:
-            return self.__schedule_memorization()
+        if self.__memoization:
+            return self.__schedule_memoization()
 
         # Generate the empty mapping
         m = None
@@ -506,18 +504,18 @@ class BruteforceScheduler(SchedulerBase):
         return (self.__best_energy != math.inf, self.__best_scheduling,
                 self.__scheduled_on_time)
 
-    # Run scheduler with memorization
-    def __schedule_memorization(self):
+    # Run scheduler with memoization
+    def __schedule_memoization(self):
         self.__mem_step_counter = 0
         self.__mem_state_table = StateMemoryTable(len(self.__jobs),
                                                   self.__prune_mem_table)
         self.__force_return = False
-        self.__schedule_memorization_step(None)
+        self.__schedule_memoization_step(None)
         return (self.__best_energy != math.inf, self.__best_scheduling,
                 self.__scheduled_on_time)
 
     # Returns (min energy to finish)
-    def __schedule_memorization_step(self, mapping):
+    def __schedule_memoization_step(self, mapping):
         if not self._within_time_limit():
             self.__force_return = True
             log.debug("Reached time limit, returning")
@@ -594,7 +592,7 @@ class BruteforceScheduler(SchedulerBase):
                 if e - prev_e < child_min_energy:
                     child_min_energy = e - prev_e
                 continue
-            (child_e) = self.__schedule_memorization_step(m)
+            (child_e) = self.__schedule_memoization_step(m)
             if e + child_e - prev_e < child_min_energy:
                 child_min_energy = e + child_e - prev_e
 

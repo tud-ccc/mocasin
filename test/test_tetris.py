@@ -104,12 +104,12 @@ def test_tetris_wwt15_rdp(datadir, expected_dir, tetris_wwt15_opt_test):
 
 def test_tetris_bf(datadir, expected_dir, tetris_bf_test_check_pair):
     run_tetris(datadir, expected_dir, "BF", tetris_bf_test_check_pair[0],
-               'single', filecheck=tetris_bf_test_check_pair[1])
+               'single', filecheck=tetris_bf_test_check_pair[1], options='resource_manager=bf')
 
 
 def test_tetris_bf_mem(datadir, expected_dir, tetris_bf_test_check_pair):
     run_tetris(datadir, expected_dir, "BF-MEM", tetris_bf_test_check_pair[0],
-               'single', filecheck=tetris_bf_test_check_pair[1])
+               'single', filecheck=tetris_bf_test_check_pair[1], options='resource_manager=bf-mem')
 
 
 def test_tetris_manager(datadir, expected_dir, tetris_manager_test):
