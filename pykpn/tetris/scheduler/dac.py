@@ -15,8 +15,8 @@ EPS = 0.00001
 
 
 class DacScheduler(SchedulerBase):
-    def __init__(self, platform, version="original"):
-        assert isinstance(platform, Platform)
+    def __init__(self, app_table, platform, version="original"):
+        super().__init__(app_table, platform)
         self.__platform = platform
         self.__start_energy = 0.0
         self.__start_time = 0.0

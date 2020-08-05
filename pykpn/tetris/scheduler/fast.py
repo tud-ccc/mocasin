@@ -142,9 +142,9 @@ class FastScheduler(SingleVariantSegmentizedScheduler):
 
     TODO: Add a description
     """
-    def __init__(self, platform):
+    def __init__(self, app_table, platform):
         segment_mapper = FastSegmentMapper(self, platform)
-        super().__init__(platform, segment_mapper)
+        super().__init__(app_table, platform, segment_mapper)
 
     @property
     def name(self):

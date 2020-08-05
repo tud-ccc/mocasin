@@ -341,9 +341,10 @@ class StateMemoryTable:
 
 
 class BruteforceScheduler(SchedulerBase):
-    def __init__(self, platform, rescheduling=True, drop_high=0.0,
+    def __init__(self, app_table, platform, rescheduling=True, drop_high=0.0,
                  dump_steps=1000, time_limit=None, memorization=False,
                  dump_mem_table=False, prune_mem_table=False):
+        super().__init__(app_table, platform)
         self._platform = platform
         self.__rescheduling = rescheduling
         self.__drop_high = drop_high

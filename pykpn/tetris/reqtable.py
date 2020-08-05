@@ -3,6 +3,7 @@ import pandas as pd
 import math
 from enum import Enum
 
+from pykpn.tetris.apptable import AppTable
 from pykpn.tetris.context import Context
 
 import logging
@@ -17,8 +18,9 @@ class RequestStatus(Enum):
 
 
 class Request:
-    def __init__(self, rid, app, arrival, deadline, start_completion_rate=0.0,
+    def __init__(self, parent, rid, app, arrival, deadline, start_completion_rate=0.0,
                  status=RequestStatus.NEW):
+        self.__parent = parent
         self.__rid = rid
         self.__app = app
         self.__arrival = arrival
@@ -36,7 +38,7 @@ class Request:
         return self.__app
 
     def app(self):
-        return Context().app_table[self.app_name()]
+        return self.__parent._app_table[self.app_name()]
 
     def arrival_time(self):
         return self.__arrival
@@ -85,14 +87,16 @@ class Request:
 
 
 class ReqTable:
-    def __init__(self):
+    def __init__(self, app_table):
+        assert isinstance(app_table, AppTable)
+        self._app_table = app_table
         self.__reqs = []
         self.__next_rid = 0
 
     def add(self, app_name, arrival, deadline, completion_rate=0.0,
             status=RequestStatus.NEW):
         rid = self.__next_rid
-        r = Request(rid, app_name, arrival, deadline, completion_rate, status)
+        r = Request(self, rid, app_name, arrival, deadline, completion_rate, status)
         self.__next_rid += 1
         self.__reqs.append(r)
         return rid

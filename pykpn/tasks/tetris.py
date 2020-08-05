@@ -158,16 +158,15 @@ def tetris(cfg):
     # Set the platform
     platform = hydra.utils.instantiate(cfg['platform'])
 
-    # Initialize request table, and fill it by requests from the file
-    req_table = ReqTable()
-
     # Initialize application table
-    app_table = AppTable(platform, allow_idle=idle)
-    app_table.read_applications(os.path.join(tetris_base, "apps"))
+    app_table = AppTable(platform, os.path.join(tetris_base, "apps"),
+                         allow_idle=idle)
+
+    # Initialize request table, and fill it by requests from the file
+    req_table = ReqTable(app_table)
 
     # Save reference to table in Context
     Context().req_table = req_table
-    Context().app_table = app_table
 
     # Initialize scheduler
     opt_bf_drop = cfg["bf_drop"]
@@ -183,6 +182,7 @@ def tetris(cfg):
         else:
             memorization = False
         scheduler = BruteforceScheduler(
+            app_table,
             platform,
             rescheduling=opt_reschedule,
             drop_high=drop_high,
@@ -193,13 +193,13 @@ def tetris(cfg):
             prune_mem_table=opt_prune_mem_table,
         )
     elif scheduler_name == "FAST":
-        scheduler = FastScheduler(platform)
+        scheduler = FastScheduler(app_table, platform)
     elif scheduler_name.startswith("DAC"):
         if scheduler_name == "DAC":
-            scheduler = DacScheduler(platform)
+            scheduler = DacScheduler(app_table, platform)
         else:
             v = scheduler_name[4:]
-            scheduler = DacScheduler(platform, version=v)
+            scheduler = DacScheduler(app_table, platform, version=v)
     elif scheduler_name.startswith("WWT15"):
         # Parse WWT15 related arguments
         scheduler_type = cfg["wwt15_type"]
@@ -239,6 +239,7 @@ def tetris(cfg):
         if scheduler_type == "SEG":
             # Using segmentized scheduler
             scheduler = WWT15Scheduler(
+                app_table,
                 platform,
                 sorting=sorting_key,
                 explore_mode=explore_mode,

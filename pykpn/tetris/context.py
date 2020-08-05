@@ -20,4 +20,3 @@ class Context(object):
 
     def __init(self):
         self.req_table = None
-        self.app_table = None

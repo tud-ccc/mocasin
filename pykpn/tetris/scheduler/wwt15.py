@@ -186,7 +186,7 @@ class WWT15SegmentMapper(SingleVariantSegmentMapper):
 
 
 class WWT15Scheduler(SingleVariantSegmentizedScheduler):
-    def __init__(self, platform, sorting=WWT15SortingKey.MINCOST,
+    def __init__(self, app_table, platform, sorting=WWT15SortingKey.MINCOST,
                  explore_mode=WWT15ExploreMode.ALL,
                  lr_constraints=LRConstraint.RESOURCE, lr_rounds=1000):
         segment_mapper = WWT15SegmentMapper(self, platform,
@@ -194,7 +194,7 @@ class WWT15Scheduler(SingleVariantSegmentizedScheduler):
                                             explore_mode=explore_mode,
                                             lr_constraints=lr_constraints,
                                             lr_rounds=lr_rounds)
-        super().__init__(platform, segment_mapper)
+        super().__init__(app_table, platform, segment_mapper)
 
         self.__name = self.__generate_name(sorting, explore_mode,
                                            lr_constraints, lr_rounds)

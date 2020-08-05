@@ -1,6 +1,7 @@
 from pykpn.common.platform import Platform
-from pykpn.tetris.mapping import Mapping, SegmentMapping
+from pykpn.tetris.apptable import AppTable
 from pykpn.tetris.job import JobTable
+from pykpn.tetris.mapping import Mapping, SegmentMapping
 
 import abc
 
@@ -22,9 +23,18 @@ class SegmentMapperBase(abc.ABC):
 
 
 class SchedulerBase(abc.ABC):
-    def __init__(self, platform):
+    def __init__(self, app_table, platform):
+        """Generates a schedule.
+
+        :param app_table: a table with applications
+        :type app_table: AppTable
+        :param platform: a platform
+        :type platform: Platform
+        """
+        assert isinstance(app_table, AppTable)
         assert isinstance(platform, Platform)
         self.__platform = platform
+        self.__app_table = app_table
         super().__init__()
 
     @property
@@ -57,10 +67,10 @@ class SingleVariantSegmentizedScheduler(SchedulerBase):
         platform (Platform): A platform
         segment_mapper: A segment mapper
     """
-    def __init__(self, platform, segment_mapper):
+    def __init__(self, app_table, platform, segment_mapper):
+        super().__init__(app_table, platform)
         assert isinstance(segment_mapper, SingleVariantSegmentMapper)
         self.__segment_mapper = segment_mapper
-        super().__init__(platform)
 
     def schedule(self, start_jobs):
         """Run a segmentized scheduler"""
