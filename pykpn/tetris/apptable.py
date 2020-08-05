@@ -201,11 +201,8 @@ class AppTable:
     This class contains information about all registered applications,
     their mappings and energy-utility metadata.
     """
-    def __init__(self, platform, path=None, allow_idle=False):
-        # TODO: Remove allow_idle, move it to scheduler
+    def __init__(self, platform, path=None):
         self.__apps = []
-        self.__allow_idle = allow_idle
-
         self.__platform = platform
 
         if path is not None:
@@ -213,8 +210,7 @@ class AppTable:
 
     def add(self, app):
         assert isinstance(app, Application)
-        if self.__allow_idle:
-            app.add_idle(self.__platform)
+        app.add_idle(self.__platform)
         self.__apps.append(app)
 
     def __getitem__(self, name):

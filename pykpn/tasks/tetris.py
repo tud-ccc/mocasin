@@ -40,8 +40,7 @@ def init_logging():
 
 
 def print_summary(scenario, res, scheduling, schedule_time, within_time,
-                  opt_summary, opt_summary_append, scheduler, opt_reschedule,
-                  opt_allow_idle):
+                  opt_summary, opt_summary_append, scheduler, opt_reschedule):
     # TODO: Take the name of scheduler from scheduler
     summary_file = opt_summary
     if summary_file is None:
@@ -59,7 +58,7 @@ def print_summary(scenario, res, scheduling, schedule_time, within_time,
             new_file = True
     if new_file:
         print(
-            "input_state,scheduler,reschedule,allow_idle,search_time,scheduled"
+            "input_state,scheduler,reschedule,search_time,scheduled"
             ",energy,longest_time,time_segments,within_TL",
             file=outf,
         )
@@ -76,11 +75,10 @@ def print_summary(scenario, res, scheduling, schedule_time, within_time,
         num_segments = None
 
     print(
-        "{},{},{},{},{},{},{},{},{},{}".format(
+        "{},{},{},{},{},{},{},{},{}".format(
             scenario,
             scheduler_str,
             opt_reschedule,
-            opt_allow_idle,
             schedule_time,
             res,
             energy,
@@ -141,7 +139,6 @@ def tetris(cfg):
             os.path.join(os.getcwd(), "..", "..", "..", cfg["scenario"]))
 
     mapping_dir = cfg["mapping_dir"]
-    idle = cfg["allow_idle_job_segments"]
     out_fn = cfg["output"]
     if out_fn != None:
         outf = open(out_fn, mode="w")
@@ -159,8 +156,7 @@ def tetris(cfg):
     platform = hydra.utils.instantiate(cfg['platform'])
 
     # Initialize application table
-    app_table = AppTable(platform, os.path.join(tetris_base, "apps"),
-                         allow_idle=idle)
+    app_table = AppTable(platform, os.path.join(tetris_base, "apps"))
 
     # Initialize request table, and fill it by requests from the file
     req_table = ReqTable(app_table)
@@ -273,7 +269,6 @@ def tetris(cfg):
             opt_summary_append,
             scheduler,
             opt_reschedule,
-            idle,
         )
     elif mode == "trace":
         dump_summary = False

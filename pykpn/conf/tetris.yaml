@@ -14,8 +14,6 @@ scenario: ???
 # Folder contanings pareto configurations of all applications
 mapping_dir: mappings
 
-allow_idle_job_segments: true
-
 # Output file for scheduling
 output:
 
