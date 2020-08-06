@@ -27,8 +27,8 @@ class Statistics(object):
         self._representation_time = 0
         self._representation_init_time = 0
 
-    def mapping_cached(self):
-        self._mappings_cached += 1
+    def mappings_cached(self,num=1):
+        self._mappings_cached += num
 
     def mapping_evaluated(self, simulation_time):
         self._mappings_evaluated += 1
@@ -71,6 +71,10 @@ class SimulationManager(object):
         self.statistics = Statistics(log, len(self.kpn.processes()), config['record_statistics'])
         self.statistics.set_rep_init_time(representation.init_time)
         self._last_added = None
+        self.jobs = config['jobs']
+        self.parallel = config['parallel']
+        self.progress = config['progress']
+        self.chunk_size = config['chunk_size']
 
     def lookup(self, mapping):
         if mapping not in self._cache:
@@ -87,38 +91,107 @@ class SimulationManager(object):
         self._cache[self._last_added] = time
         self._last_added = None
 
-    def simulate(self, mapping):
+    def add_time_mapping(self, mapping, time):
+        self._cache[mapping] = time
+        self._last_added = None
+
+    def simulate(self, mappings):
+
+        #transform into tuples
         time = timeit.default_timer()
-        tup = tuple(self.representation.approximate(np.array(mapping)))
+        tup = [tuple(self.representation.approximate(np.array(m))) for m in mappings]
         self.statistics.add_rep_time(timeit.default_timer() - time)
-        log.info(f"evaluating mapping: {tup}...")
 
-        runtime = self.lookup(tup)
-        if runtime:
-            log.info(f"... from cache: {runtime}")
-            self.statistics.mapping_cached()
-            return runtime
-        else:
-            time = timeit.default_timer()
-            m_obj = self.representation.fromRepresentation(np.array(tup))
-            self.statistics.add_rep_time(timeit.default_timer() - time)
+        # first look up as many as possible:
+        lookups = [self.lookup(t) for t in tup]
+        num = len([m for m in lookups if m])
+        log.info(f"{num} from cache.")
+
+        #if all were already cached, return them
+        if num == len(tup):
+            return lookups
+
+        if self.parallel:
+            import multiprocessing as mp
+            simulations = []
+
+            #results = mp.Array() #Do we need thread-safe data structure?
+            for i,mapping in enumerate(mappings):
+                if not lookups[i]:
+                    continue
+                # create a simulation context
+                sim_context = SimulationContext(self.platform)
+
+                # create the application context
+                name = self.kpn.name
+                app_context = ApplicationContext(name, self.kpn)
+                app_context.start_time = 0
+                app_context.representation = self.rep_type
+                app_context.mapping = mapping
+
+                # since mappings are simulated in parallel, whole simulation time is added later as offset
+                self.simulation_manager.statistics.mapping_evaluated(0)
+
+                # create the trace reader
+                app_context.trace_reader = hydra.utils.instantiate(self.config['trace'])
+                sim_context.app_contexts.append(app_context)
+                simulations.append(sim_context)
+
+            # run the simulations and search for the best mapping
+            pool = mp.Pool(processes=self.jobs)
 
             time = timeit.default_timer()
-            trace = hydra.utils.instantiate(self.config['trace'])
-            env = simpy.Environment()
-            system = RuntimeSystem(self.platform, env)
-            app = RuntimeKpnApplication(name=self.kpn.name,
-                                        kpn_graph=self.kpn,
-                                        mapping=m_obj,
-                                        trace_generator=trace,
-                                        system=system,)
-            system.simulate()
-            exec_time = float(env.now) / 1000000000.0
-            self.add_time(exec_time)
-            time = timeit.default_timer() - time
-            self.statistics.mapping_evaluated(time)
-            log.info(f"... from simulation: {exec_time}.")
-            return exec_time
+            # execute the simulations in parallel
+            if self.progress:
+                import tqdm
+                results = list(tqdm.tqdm(pool.imap(run_simulation, simulations,
+                                                   chunksize = self.chunk_size), total =len(mappings)))
+            else:
+                results = list(pool.map(run_simulation, simulations, chunksize=10))
+            self.statistics.add_offset(timeit.default_timer() - time)
+
+            # calculate the execution times in milliseconds and store them
+            exec_times = []  # keep a list of exec_times for later
+            res_iter = iter(results)
+            for i,mapping in enumerate(mappings):
+                exec_time = lookups[i]
+                if exec_time:
+                    exec_times.append(exec_time)
+                else:
+                    r = res_iter(next)
+                    exec_time = float(r.exec_time / 1000000000.0)
+                    exec_times.append(exec_time)
+                    self.add_time_mapping(tup[i],exec_time)
+            return exec_times
+
+        else: #sequential
+            exec_times = []
+            for i,mapping in enumerate(mappings):
+                if not lookups[i]:
+                    exec_times.append(lookups[i])
+                # create a simulation context
+                sim_context = SimulationContext(self.platform)
+
+                # create the application context
+                name = self.kpn.name
+                app_context = ApplicationContext(name, self.kpn)
+                app_context.start_time = 0
+                app_context.representation = self.rep_type
+                app_context.mapping = mapping
+
+
+                # create the trace reader
+                app_context.trace_reader = hydra.utils.instantiate(self.config['trace'])
+                sim_context.app_contexts.append(app_context)
+
+                time = timeit.default_timer()
+                r = run_simulation(sim_context)
+                self.statistics.mapping_evaluated(timeit.default_timer() - time)
+
+                exec_time = float(r.exec_time / 1000000000.0)
+                self.add_time_mapping(tup[i], exec_time)
+                exec_times.append(exec_time)
+            return exec_times
 
     def dump(self,filename):
         log.info(f"dumping cache to {filename}")
