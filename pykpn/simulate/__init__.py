@@ -53,6 +53,14 @@ class BaseSimulation:
         """
         self.system.trace_writer.write_trace(path)
 
+    def enable_tracing(self):
+        """Enable simulation trace generation"""
+        self.system.trace_writer.enable()
+
+    def disable_tracing(self):
+        """Disable simulation trace generation"""
+        self.system.trace_writer.disable()
+
 
 class KpnSimulation(BaseSimulation):
     """Handles the simulation of a single KPN application
