@@ -60,15 +60,15 @@ class TabuSearchMapper(object):
 
     def update_candidate_moves(self,mapping):
         new_mappings = self.representation._uniformFromBall(mapping, self.radius, self.move_set_size)
-        new_mappings = map(np.array, new_mappings)
+        new_mappings = list(map(np.array, new_mappings))
         sim_results = self.simulation_manager.simulate(new_mappings)
-        moves = set(zip([new_mapping - np.array(mapping) for new_mapping in new_mappings],sim_results))
+        moves = set(zip([tuple(new_mapping - np.array(mapping)) for new_mapping in new_mappings],sim_results))
         missing = self.move_set_size - len(moves)
         retries = 0
         while missing > 0 and retries < 10:
             new_mappings = self.representation._uniformFromBall(mapping, self.radius, missing)
             sim_results = self.simulation_manager.simulate(new_mappings)
-            new_moves = set(zip([new_mapping - np.array(mapping) for new_mapping in new_mappings], sim_results))
+            new_moves = set(zip([tuple(new_mapping - np.array(mapping)) for new_mapping in new_mappings], sim_results))
             moves = moves.union(new_moves)
             missing = self.move_set_size - len(moves)
             retries += 1
@@ -107,9 +107,9 @@ class TabuSearchMapper(object):
 
     def diversify(self,mapping):
         new_mappings = self.representation._uniformFromBall(mapping, 3*self.radius, self.move_set_size)
-        new_mappings = map(np.array, new_mappings)
+        new_mappings = list(map(np.array, new_mappings))
         sim_results = self.simulation_manager.simulate(new_mappings)
-        moves = set(zip([new_mapping - np.array(mapping) for new_mapping in new_mappings],sim_results))
+        moves = set(zip([tuple(new_mapping - np.array(mapping)) for new_mapping in new_mappings],sim_results))
         return(sorted(moves,key= lambda x : x[1])[0])
 
 
