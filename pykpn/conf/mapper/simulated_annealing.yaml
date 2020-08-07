@@ -9,3 +9,6 @@ final_temperature : 0.01
 temperature_proportionality_constant : 0.5
 radius : 3
 dump_cache: false
+chunk_size : 10
+progress : false
+parallel : true

@@ -83,72 +83,13 @@ class RandomWalkMapper(object):
         for i in range(0, self.config['num_iterations']):
             mapping = self.random_mapper.generate_mapping()
             mappings.append(mapping)
-
-        if cfg['parallel']:
-            simulations = []
-            for mapping in mappings:
-                # create a simulation context
-                sim_context = SimulationContext(self.platform)
-
-                # create the application context
-                name = self.kpn.name
-                app_context = ApplicationContext(name, self.kpn)
-                app_context.start_time = 0
-
-                # generate a random mapping
-                app_context.representation = self.rep_type
-                app_context.mapping = mapping
-
-                # since mappings are simulated in parallel, whole simulation time is added later as offset
-                self.simulation_manager.statistics.mapping_evaluated(0)
-
-                # create the trace reader
-                app_context.trace_reader = hydra.utils.instantiate(cfg['trace'])
-                sim_context.app_contexts.append(app_context)
-                simulations.append(sim_context)
-
-            # run the simulations and search for the best mapping
-            pool = mp.Pool(processes=cfg['jobs'])
-
-            # execute the simulations in parallel
-            if cfg['progress']:
-                 import tqdm
-                 results = list(tqdm.tqdm(pool.imap(run_simulation, simulations,
-                                                    chunksize = 10), total = num_iterations))
-            else:
-                 results = list(pool.map(run_simulation, simulations, chunksize=10))
-            # calculate the execution times in milliseconds and look for the best
-            # result
-            best_result = results[0]
-            exec_times = []  # keep a list of exec_times for later
-            for r in results:
-                exec_times.append(float(r.exec_time / 1000000000.0))
-                if r.exec_time < best_result.exec_time:
-                    best_result = r
-
-            exec_time = float(best_result.exec_time / 1000000000.0)
-            best_result = best_result.app_contexts[0].mapping
-            # When we reach this point, all simulations completed
-
-        else: #sequential
-            exec_times = []
-            exec_time = np.inf
-
-            for mapping in mappings:
-                m = self.representation.toRepresentation(mapping)
-                cur_time = self.simulation_manager.simulate(m)
-                if cur_time < exec_time:
-                    exec_time = cur_time
-                    best_result = mapping
-                exec_times.append(cur_time)
-
-
-
+        tup = list(map(self.representation.toRepresentation,mappings))
+        exec_times = self.simulation_manager.simulate(tup)
+        best_result_idx = exec_times.index(min(exec_times))
+        best_result = mappings[best_result_idx]
         stop = timeit.default_timer()
         log.info('Tried %d random mappings in %0.1fs' %
                  (len(exec_times), stop - start))
-        self.simulation_manager.statistics.add_offset(stop - start)
-        log.info('Best simulated execution time: %0.1fms' % (exec_time))
         # export all mappings if requested
         idx = 1
         outdir = cfg['outdir']
@@ -178,10 +119,6 @@ class RandomWalkMapper(object):
 
         # visualize searched space
         if cfg['visualize']:
-
-            if cfg['parallel'] and len(results[0].app_contexts) > 1:
-                raise RuntimeError('Search space visualization only works '
-                                   'for single application mappings')
 
             plot.visualize_mapping_space(mappings,
                                          exec_times,

@@ -61,15 +61,15 @@ class TabuSearchMapper(object):
     def update_candidate_moves(self,mapping):
         new_mappings = self.representation._uniformFromBall(mapping, self.radius, self.move_set_size)
         new_mappings = map(np.array, new_mappings)
-        moves = set([(tuple(new_mapping - np.array(mapping)),
-                      self.simulation_manager.simulate(new_mapping)) for new_mapping in new_mappings])
+        sim_results = self.simulation_manager.simulate(new_mappings)
+        moves = set(zip([new_mapping - np.array(mapping) for new_mapping in new_mappings],sim_results))
         missing = self.move_set_size - len(moves)
         retries = 0
         while missing > 0 and retries < 10:
             new_mappings = self.representation._uniformFromBall(mapping, self.radius, missing)
-            moves = moves.union( set([(tuple(np.array(new_mapping)-np.array(mapping)),
-                                       self.simulation_manager.simulate(new_mapping))
-                                      for new_mapping in new_mappings]) )
+            sim_results = self.simulation_manager.simulate(new_mappings)
+            new_moves = set(zip([new_mapping - np.array(mapping) for new_mapping in new_mappings], sim_results))
+            moves = moves.union(new_moves)
             missing = self.move_set_size - len(moves)
             retries += 1
         if missing > 0:
@@ -108,7 +108,8 @@ class TabuSearchMapper(object):
     def diversify(self,mapping):
         new_mappings = self.representation._uniformFromBall(mapping, 3*self.radius, self.move_set_size)
         new_mappings = map(np.array, new_mappings)
-        moves = [(tuple(mapping - new_mapping),self.simulation_manager.simulate(new_mapping)) for new_mapping in new_mappings]
+        sim_results = self.simulation_manager.simulate(new_mappings)
+        moves = set(zip([new_mapping - np.array(mapping) for new_mapping in new_mappings],sim_results))
         return(sorted(moves,key= lambda x : x[1])[0])
 
 
@@ -120,7 +121,7 @@ class TabuSearchMapper(object):
         cur_mapping = self.representation.toRepresentation(mapping_obj)
 
         best_mapping = cur_mapping
-        best_exec_time = self.simulation_manager.simulate(cur_mapping)
+        best_exec_time = self.simulation_manager.simulate([cur_mapping])[0]
         since_last_improvement = 0
 
         for iter in range(self.max_iterations):

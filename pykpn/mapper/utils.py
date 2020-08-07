@@ -8,9 +8,9 @@ import simpy
 import hydra
 import numpy as np
 
-
 from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.simulate.system import RuntimeSystem
+from pykpn.common.mapping import Mapping
 
 from pykpn.util.logging import getLogger
 log = getLogger(__name__)
@@ -95,12 +95,24 @@ class SimulationManager(object):
         self._cache[mapping] = time
         self._last_added = None
 
-    def simulate(self, mappings):
+    def simulate(self, input_mappings):
 
-        #transform into tuples
-        time = timeit.default_timer()
-        tup = [tuple(self.representation.approximate(np.array(m))) for m in mappings]
-        self.statistics.add_rep_time(timeit.default_timer() - time)
+        #check inputs
+        if len(input_mappings) == 0:
+            log.warning("Trying to simulate an empty mapping list")
+            return []
+        else:
+            if isinstance(input_mappings[0],Mapping):
+                time = timeit.default_timer()
+                tup = [tuple(self.representation.toRepresentation(m)) for m in input_mappings]
+                self.statistics.add_rep_time(timeit.default_timer() - time)
+                mappings = input_mappings
+            else: #assume mappings are list type then
+                #transform into tuples
+                time = timeit.default_timer()
+                tup = [tuple(self.representation.approximate(np.array(m))) for m in input_mappings]
+                mappings = [self.representation.fromRepresentation(m) for m in input_mappings]
+                self.statistics.add_rep_time(timeit.default_timer() - time)
 
         # first look up as many as possible:
         lookups = [self.lookup(t) for t in tup]
@@ -117,7 +129,7 @@ class SimulationManager(object):
 
             #results = mp.Array() #Do we need thread-safe data structure?
             for i,mapping in enumerate(mappings):
-                if not lookups[i]:
+                if lookups[i]:
                     continue
                 # create a simulation context
                 sim_context = SimulationContext(self.platform)
@@ -126,11 +138,11 @@ class SimulationManager(object):
                 name = self.kpn.name
                 app_context = ApplicationContext(name, self.kpn)
                 app_context.start_time = 0
-                app_context.representation = self.rep_type
+                app_context.representation = self.representation
                 app_context.mapping = mapping
 
                 # since mappings are simulated in parallel, whole simulation time is added later as offset
-                self.simulation_manager.statistics.mapping_evaluated(0)
+                self.statistics.mapping_evaluated(0)
 
                 # create the trace reader
                 app_context.trace_reader = hydra.utils.instantiate(self.config['trace'])
@@ -147,7 +159,7 @@ class SimulationManager(object):
                 results = list(tqdm.tqdm(pool.imap(run_simulation, simulations,
                                                    chunksize = self.chunk_size), total =len(mappings)))
             else:
-                results = list(pool.map(run_simulation, simulations, chunksize=10))
+                results = list(pool.map(run_simulation, simulations, chunksize = self.chunk_size))
             self.statistics.add_offset(timeit.default_timer() - time)
 
             # calculate the execution times in milliseconds and store them
@@ -158,7 +170,7 @@ class SimulationManager(object):
                 if exec_time:
                     exec_times.append(exec_time)
                 else:
-                    r = res_iter(next)
+                    r = next(res_iter)
                     exec_time = float(r.exec_time / 1000000000.0)
                     exec_times.append(exec_time)
                     self.add_time_mapping(tup[i],exec_time)

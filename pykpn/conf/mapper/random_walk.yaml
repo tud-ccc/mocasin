@@ -12,5 +12,6 @@ show_plots : false
 radius : 5
 random_seed : null
 record_statistics: true
-parallel : true #Note that enabling parallelism disables the mapping cache.
+parallel : true
 dump_cache : false
+chunk_size : 10

@@ -95,7 +95,7 @@ class GeneticMapper(object):
 
     def evaluate_mapping(self,mapping):
         #wrapper to make it into a 1-tuple because DEAP needs that
-        return self.simulation_manager.simulate(mapping),
+        return self.simulation_manager.simulate([mapping])[0],
 
     def random_mapping(self):
         mapping = self.random_mapper.generate_mapping()

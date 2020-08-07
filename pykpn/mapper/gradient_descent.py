@@ -61,7 +61,7 @@ class GradientDescentMapper(object):
         mapping = self.representation.toRepresentation(mapping_obj)
 
         self.dim = len(mapping)
-        cur_exec_time = self.simulation_manager.simulate(mapping)
+        cur_exec_time = self.simulation_manager.simulate([mapping])[0]
         self.best_mapping = mapping
         self.best_exec_time = cur_exec_time
 
@@ -73,7 +73,7 @@ class GradientDescentMapper(object):
             mapping = mapping + (self.stepsize / self.best_exec_time) * (-grad)
             mapping = self.representation.approximate(np.array(mapping))
 
-            cur_exec_time = self.simulation_manager.simulate(mapping)
+            cur_exec_time = self.simulation_manager.simulate([mapping])[0]
 
             if cur_exec_time < self.best_exec_time:
                 self.best_exec_time = cur_exec_time
@@ -94,7 +94,7 @@ class GradientDescentMapper(object):
             evec = np.zeros(self.dim)
             if mapping[i] == 0:
                 evec[i] = 1.
-                exec_time = self.simulation_manager.simulate(mapping + evec)
+                exec_time = self.simulation_manager.simulate([mapping + evec])[0]
                 if exec_time < self.best_exec_time:
                     self.best_exec_time = exec_time
                     self.best_mapping = mapping + evec
@@ -102,7 +102,7 @@ class GradientDescentMapper(object):
                 grad[i] = max(gr, 0)  # can go below 0 here
             elif mapping[i] == self.num_PEs - 1:
                 evec[i] = -1.
-                exec_time = self.simulation_manager.simulate(mapping + evec)
+                exec_time = self.simulation_manager.simulate([mapping + evec])[0]
                 if exec_time < self.best_exec_time:
                     self.best_exec_time = exec_time
                     self.best_mapping = mapping + evec
@@ -111,13 +111,13 @@ class GradientDescentMapper(object):
 
             else:
                 evec[i] = 1.
-                exec_time = self.simulation_manager.simulate(mapping + evec)
+                exec_time = self.simulation_manager.simulate([mapping + evec])[0]
                 if exec_time < self.best_exec_time:
                     self.best_exec_time = exec_time
                     self.best_mapping = mapping + evec
                 diff_plus = exec_time - cur_exec_time
                 evec[i] = -1.
-                exec_time = self.simulation_manager.simulate(mapping + evec)
+                exec_time = self.simulation_manager.simulate([mapping + evec])[0]
                 if exec_time < self.best_exec_time:
                     self.best_exec_time = exec_time
                     self.best_mapping = mapping + evec

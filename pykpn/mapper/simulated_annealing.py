@@ -90,7 +90,7 @@ class SimulatedAnnealingMapper(object):
         mapping = self.representation.toRepresentation(mapping_obj)
 
         last_mapping = mapping
-        last_exec_time = self.simulation_manager.simulate(mapping)
+        last_exec_time = self.simulation_manager.simulate([mapping])[0]
         self.initial_cost = last_exec_time
         best_mapping = mapping
         best_exec_time = last_exec_time
@@ -102,7 +102,7 @@ class SimulatedAnnealingMapper(object):
             temperature = self.temperature_cooling(temperature,iter)
             log.info(f"Current temperature {temperature}")
             mapping = self.move(last_mapping,temperature)
-            cur_exec_time = self.simulation_manager.simulate(mapping)
+            cur_exec_time = self.simulation_manager.simulate([mapping])[0]
             faster = cur_exec_time < last_exec_time
             if not faster and cur_exec_time != last_exec_time:
                 prob = self.query_accept(cur_exec_time - last_exec_time, temperature)
