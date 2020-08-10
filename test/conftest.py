@@ -41,7 +41,7 @@ def slx_platform(request):
 def slx_mapper(request):
     return request.param
 
-@pytest.fixture(params=["random", "random_walk", "tabu_search", "gradient_descent", "genetic",  "simulated_annealing", "gbm"])
+@pytest.fixture(params=["random", "random_walk", "gbm"])
 def tgff_mapper(request):
     return request.param
 

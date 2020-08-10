@@ -23,12 +23,11 @@ def test_generate_mapping_slx(datadir, slx_mapper, slx_kpn,representation):
     except FileNotFoundError:
         assert False
 
-def test_generate_mapping_tgff(datadir, tgff_mapper, tgff,representation):
+def test_generate_mapping_tgff(datadir, tgff_mapper, tgff):
     tgff_dir = os.path.join(datadir, 'tgff/e3s-0.9')
     subprocess.check_call(["pykpn", "generate_mapping",
                            "kpn=tgff_reader",
                            "platform=tgff_reader",
-                           "representation=%s" % representation,
                            "mapper=%s" % tgff_mapper,
                            "tgff.directory=%s" % tgff_dir,
                            "tgff.file=%s.tgff" % tgff,
