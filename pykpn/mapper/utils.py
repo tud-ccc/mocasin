@@ -4,14 +4,12 @@
 # Authors: Andrés Goens, Felix Teweleit
 
 import timeit
-import simpy
 import hydra
 import multiprocessing as mp
 import numpy as np
 
-from pykpn.simulate.application import RuntimeKpnApplication
-from pykpn.simulate.system import RuntimeSystem
 from pykpn.common.mapping import Mapping
+from pykpn.simulate import KpnSimulation
 
 from pykpn.util.logging import getLogger
 log = getLogger(__name__)
@@ -100,8 +98,7 @@ class SimulationManager(object):
         self._last_added = None
 
     def simulate(self, input_mappings):
-
-        #check inputs
+        # check inputs
         if len(input_mappings) == 0:
             log.warning("Trying to simulate an empty mapping list")
             return []
@@ -188,29 +185,9 @@ class SimulationManager(object):
         log.info("cache dumped.")
 
 
-class ApplicationContext(object):
-    def __init__(self, name=None, kpn=None, mapping=None, trace_reader=None,
-                 start_time=None):
-        self.name = name
-        self.kpn = kpn
-        self.mapping = mapping
-        self.trace_reader = trace_reader
-        self.start_time = start_time
-
-
-class SimulationContext(object):
-    def __init__(self, platform=None, app_contexts=None):
-        self.platform = platform
-        if app_contexts is None:
-            self.app_contexts = []
-        else:
-            self.app_contexts = app_contexts
-        self.exec_time = None
-
-
-def run_simulation(sim_context):
-    sim_context.simulate()
-    return sim_context
+def run_simulation(simulation):
+    simulation.run()
+    return simulation
 
 
 class DerivedPrimitive:
