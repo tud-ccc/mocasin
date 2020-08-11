@@ -1,10 +1,14 @@
 mapper:
    class:
-      pykpn.mapper.simmulated_annealing.SimulatedAnnealingMapper
+      pykpn.mapper.simulated_annealing.SimulatedAnnealingMapper
 random_seed : 42
 record_statistics: true
 
 initial_temperature : 1.0
-final_temperature : 0.0001
-temperature_proportionality_constant : 0.1
+final_temperature : 0.1
+temperature_proportionality_constant : 0.5
 radius : 3
+dump_cache: false
+chunk_size : 10
+progress : false
+parallel : true

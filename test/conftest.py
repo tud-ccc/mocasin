@@ -37,26 +37,29 @@ def expected_dir(request):
 def slx_platform(request):
     return request.param
 
-@pytest.fixture(params=["audio_filter", "hog", "speaker_recognition"])
+@pytest.fixture(params=["slx_default", "random", "random_walk", "tabu_search", "gradient_descent", "genetic",  "simulated_annealing", "gbm"])
+def slx_mapper(request):
+    return request.param
+
+@pytest.fixture(params=["random", "random_walk", "gbm"])
+def tgff_mapper(request):
+    return request.param
+
+@pytest.fixture(params=["SimpleVector", "MetricSpaceEmbedding"])
+def representation(request):
+    return request.param
+
+@pytest.fixture(params=["audio_filter"])
 def slx_kpn(request):
     return request.param
 
 @pytest.fixture(params=[("audio_filter", "exynos"),
                         ("audio_filter", "multidsp"),
-                        ("audio_filter", "parallella"),
-                        ("hog", "exynos"),
-                        ("speaker_recognition", "exynos")])
+                        ("audio_filter", "parallella")])
 def slx_kpn_platform_pair(request):
     return request.param
 
-@pytest.fixture(params=["auto-indust-cords",
-                        "auto-indust-cowls",
-                        "auto-indust-mocsyn-asic",
-                        "auto-indust-mocsyn",
-                        "consumer-cords",
-                        "networking-cowls",
-                        "office-automation-mocsyn-asic",
-                        "telecom-mocsyn"])
+@pytest.fixture(params=["auto-indust-cords"])
 def tgff(request):
     return request.param
 
@@ -89,7 +92,7 @@ def audio_filter_parallella_query(request):
 def hog_query(request):
     return request.param
 
-@pytest.fixture(params=[("EXISTS NOT readwave_stage1 MAPPED ARM00", 0),
+@pytest.fixture(params=[("EXISTS NOT DCT_stage5 MAPPED ARM00", 0),
                         ("EXISTS ARM05 PROCESSING", 1),
                         ("EXISTS RUNNING TOGETHER [Worker_0, Worker_1, Worker_2 ]", 2),
                         ("EXISTS RUNNING TOGETHER [hamming_stage2, ShifterDLP, sink ] OR \
@@ -100,3 +103,4 @@ def speaker_recognition_query(request):
 @pytest.fixture
 def csv_file_path():
     return "csv/test_values.csv"
+

@@ -1,5 +1,5 @@
 from pykpn.mapper.test.mock_cache import MockMappingCache
-from pykpn.mapper.simmulated_annealing import SimulatedAnnealingMapper
+from pykpn.mapper.simulated_annealing import SimulatedAnnealingMapper
 from itertools import product
 import pytest
 import numpy as np
@@ -8,9 +8,10 @@ import numpy as np
 def conf():
     return {'random_seed' : 42, 'initial_temperature' : 1.0,
             'norm_p' : 2, 'periodic_boundary_conditions' : False,
+            'jobs': 8, 'chunk_size': 10, 'parallel': True, 'progress': False,
             'final_temperature'  : 0.01, 'record_statistics' : False,
            'temperature_proportionality_constant' : 0.5, 'radius' : 2,
-            'periodic_boundary_conditions' : False,
+            'periodic_boundary_conditions' : False, 'dump_cache' : False,
            'representation' : 'SimpleVector', 'channels' : False,
             }
 
@@ -20,7 +21,7 @@ def evaluation_function():
 @pytest.fixture
 def mapper(kpn,platform,conf,evaluation_function):
     m =  SimulatedAnnealingMapper(kpn,platform,conf)
-    m.mapping_cache = MockMappingCache(evaluation_function)
+    m.simulation_manager = MockMappingCache(evaluation_function)
     return m
 
 

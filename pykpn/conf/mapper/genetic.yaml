@@ -2,7 +2,7 @@ mapper:
    class:
       pykpn.mapper.genetic.GeneticMapper
 pop_size : 10
-num_gens : 25
+num_gens : 5
 cxpb : 0.35
 mutpb : 0.5
 tournsize : 4
@@ -12,3 +12,7 @@ radius : 5
 random_seed: 42
 crossover_rate : 1
 record_statistics: true
+dump_cache: false
+chunk_size : 10
+progress : false
+parallel : true

@@ -153,7 +153,7 @@ class ProcPartialMapper(object):
         mapping = Mapping(kpn, platform)
 
         # map processes to scheduler and processor
-        for i, p in enumerate(kpn.processes()):
+        for i, p in enumerate(sorted(kpn.processes(), key=(lambda pr : pr.name))):
             # choose the desired processor from list
             pe = vec_pe_mapping[vec[i]]
             # choose the first scheduler from list

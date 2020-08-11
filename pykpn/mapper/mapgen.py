@@ -3,7 +3,7 @@
 #
 #Authors: Andrés Goens, Felix Teweleit
 
-from pykpn.mapper.simvec_mapper import SimpleVectorMapper
+from pykpn.ontologies.simvec_mapper import SimpleVectorMapper
 
 """
 MappingGenerator Base Class
