@@ -127,84 +127,67 @@ class SimulationManager(object):
         if num == len(tup):
             return lookups
 
-        if self.parallel:
-            simulations = []
+        # create a list of simulations to be run
+        simulations = []
+        for i, mapping in enumerate(mappings):
+            # skip if this particular mapping is in the cache
+            if lookups[i]:
+                continue
 
-            #results = mp.Array() #Do we need thread-safe data structure?
-            for i,mapping in enumerate(mappings):
-                if lookups[i]:
-                    continue
-                # create a simulation context
-                sim_context = SimulationContext(self.platform)
+            # create a simulation context
+            sim_context = SimulationContext(self.platform)
 
-                # create the application context
-                name = self.kpn.name
-                app_context = ApplicationContext(name, self.kpn)
-                app_context.start_time = 0
-                app_context.representation = self.representation
-                app_context.mapping = mapping
+            # create the application context
+            name = self.kpn.name
+            app_context = ApplicationContext(name, self.kpn)
+            app_context.start_time = 0
+            app_context.representation = self.representation
+            app_context.mapping = mapping
 
-                # since mappings are simulated in parallel, whole simulation time is added later as offset
-                self.statistics.mapping_evaluated(0)
+            # since mappings are simulated in parallel, whole simulation time is added later as offset
+            self.statistics.mapping_evaluated(0)
 
-                # create the trace reader
-                app_context.trace_reader = hydra.utils.instantiate(self.config['trace'])
-                sim_context.app_contexts.append(app_context)
-                simulations.append(sim_context)
+            # create the trace reader
+            app_context.trace_reader = hydra.utils.instantiate(self.config['trace'])
+            sim_context.app_contexts.append(app_context)
+            simulations.append(sim_context)
 
-            # run the simulations and search for the best mapping
+        if self.parallel and len(simulations) > self.chunk_size:
+            # run the simulations in parallel
             time = timeit.default_timer()
-            # execute the simulations in parallel
             if self.progress:
                 import tqdm
-                results = list(tqdm.tqdm(self.pool.imap(run_simulation, simulations,
-                                                   chunksize = self.chunk_size), total =len(mappings)))
+                results = list(tqdm.tqdm(self.pool.imap(run_simulation,
+                                                        simulations,
+                                                        chunksize=self.chunk_size),
+                                         total=len(mappings)))
             else:
-                results = list(self.pool.map(run_simulation, simulations, chunksize = self.chunk_size))
+                results = list(self.pool.map(run_simulation,
+                                             simulations,
+                                             chunksize=self.chunk_size))
             self.statistics.add_offset(timeit.default_timer() - time)
-
-            # calculate the execution times in milliseconds and store them
-            exec_times = []  # keep a list of exec_times for later
-            res_iter = iter(results)
-            for i,mapping in enumerate(mappings):
-                exec_time = lookups[i]
-                if exec_time:
-                    exec_times.append(exec_time)
-                else:
-                    r = next(res_iter)
-                    exec_time = float(r.exec_time / 1000000000.0)
-                    exec_times.append(exec_time)
-                    self.add_time_mapping(tup[i],exec_time)
-            return exec_times
-
-        else: #sequential
-            exec_times = []
-            for i,mapping in enumerate(mappings):
-                if not lookups[i]:
-                    exec_times.append(lookups[i])
-                # create a simulation context
-                sim_context = SimulationContext(self.platform)
-
-                # create the application context
-                name = self.kpn.name
-                app_context = ApplicationContext(name, self.kpn)
-                app_context.start_time = 0
-                app_context.representation = self.rep_type
-                app_context.mapping = mapping
-
-
-                # create the trace reader
-                app_context.trace_reader = hydra.utils.instantiate(self.config['trace'])
-                sim_context.app_contexts.append(app_context)
-
+        else:
+            results = []
+            # run the simulations sequentially
+            for s in simulations:
                 time = timeit.default_timer()
-                r = run_simulation(sim_context)
+                r = run_simulation(s)
+                results.append(r)
                 self.statistics.mapping_evaluated(timeit.default_timer() - time)
 
-                exec_time = float(r.exec_time / 1000000000.0)
-                self.add_time_mapping(tup[i], exec_time)
+        # calculate the execution times in milliseconds and store them
+        exec_times = []  # keep a list of exec_times for later
+        res_iter = iter(results)
+        for i, mapping in enumerate(mappings):
+            exec_time = lookups[i]
+            if exec_time:
                 exec_times.append(exec_time)
-            return exec_times
+            else:
+                r = next(res_iter)
+                exec_time = float(r.exec_time / 1000000000.0)
+                exec_times.append(exec_time)
+                self.add_time_mapping(tup[i],exec_time)
+        return exec_times
 
     def dump(self,filename):
         log.info(f"dumping cache to {filename}")

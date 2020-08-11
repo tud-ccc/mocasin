@@ -3,7 +3,6 @@ mapper:
       pykpn.mapper.random_walk.RandomWalkMapper
 
 num_iterations : 100
-jobs : 1
 progress :  false
 export_all : false
 plot_distribution: false
