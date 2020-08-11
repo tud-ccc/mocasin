@@ -1,4 +1,4 @@
-# Copyright (C) 2019 TU Dresden
+# Copyright (C) 2019-2020 TU Dresden
 # All Rights Reserved
 #
 # Authors: Andrés Goens, Felix Teweleit
@@ -134,23 +134,12 @@ class SimulationManager(object):
             if lookups[i]:
                 continue
 
-            # create a simulation context
-            sim_context = SimulationContext(self.platform)
-
-            # create the application context
-            name = self.kpn.name
-            app_context = ApplicationContext(name, self.kpn)
-            app_context.start_time = 0
-            app_context.representation = self.representation
-            app_context.mapping = mapping
+            trace = hydra.utils.instantiate(self.config['trace'])
+            simulation = KpnSimulation(self.platform, self.kpn, mapping, trace)
 
             # since mappings are simulated in parallel, whole simulation time is added later as offset
             self.statistics.mapping_evaluated(0)
-
-            # create the trace reader
-            app_context.trace_reader = hydra.utils.instantiate(self.config['trace'])
-            sim_context.app_contexts.append(app_context)
-            simulations.append(sim_context)
+            simulations.append(simulation)
 
         if self.parallel and len(simulations) > self.chunk_size:
             # run the simulations in parallel
@@ -220,23 +209,7 @@ class SimulationContext(object):
 
 
 def run_simulation(sim_context):
-    # Create simulation environment
-    env = simpy.Environment()
-
-    # Create the system
-    system = RuntimeSystem(sim_context.platform, env)
-
-    # create the applications
-    for ac in sim_context.app_contexts:
-        app = RuntimeKpnApplication(ac.name, ac.kpn, ac.mapping,
-                                    ac.trace_reader, system)
-
-    # run the simulation
-    system.simulate()
-    system.check_errors()
-
-    sim_context.exec_time = env.now
-
+    sim_context.simulate()
     return sim_context
 
 
