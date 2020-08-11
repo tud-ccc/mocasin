@@ -6,6 +6,7 @@
 import timeit
 import simpy
 import hydra
+import multiprocessing as mp
 import numpy as np
 
 from pykpn.simulate.application import RuntimeKpnApplication
@@ -76,6 +77,9 @@ class SimulationManager(object):
         self.progress = config['progress']
         self.chunk_size = config['chunk_size']
 
+        if self.parallel:
+            self.pool = mp.Pool(processes=2)
+
     def lookup(self, mapping):
         if mapping not in self._cache:
             self._cache.update({mapping : None})
@@ -124,7 +128,6 @@ class SimulationManager(object):
             return lookups
 
         if self.parallel:
-            import multiprocessing as mp
             simulations = []
 
             #results = mp.Array() #Do we need thread-safe data structure?
@@ -150,16 +153,14 @@ class SimulationManager(object):
                 simulations.append(sim_context)
 
             # run the simulations and search for the best mapping
-            pool = mp.Pool(processes=self.jobs)
-
             time = timeit.default_timer()
             # execute the simulations in parallel
             if self.progress:
                 import tqdm
-                results = list(tqdm.tqdm(pool.imap(run_simulation, simulations,
+                results = list(tqdm.tqdm(self.pool.imap(run_simulation, simulations,
                                                    chunksize = self.chunk_size), total =len(mappings)))
             else:
-                results = list(pool.map(run_simulation, simulations, chunksize = self.chunk_size))
+                results = list(self.pool.map(run_simulation, simulations, chunksize = self.chunk_size))
             self.statistics.add_offset(timeit.default_timer() - time)
 
             # calculate the execution times in milliseconds and store them
