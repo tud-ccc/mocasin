@@ -8,7 +8,8 @@ from itertools import product
 def conf():
     return {'random_seed' : 42, 'gd_iterations' : 100,
             'stepsize' : 2, 'norm_p' : 2, 'record_statistics' : False,
-            'periodic_boundary_conditions' : True,
+            'jobs': 8, 'chunk_size': 10, 'parallel': True, 'progress': False,
+            'periodic_boundary_conditions' : True, 'dump_cache' : False,
             'representation' : 'SimpleVector', 'channels' : False
             }
 
@@ -23,7 +24,7 @@ def evaluation_function_gradient():
 @pytest.fixture
 def mapper(kpn,platform,conf,evaluation_function):
     m =  GradientDescentMapper(kpn,platform,conf)
-    m.mapping_cache = MockMappingCache(evaluation_function)
+    m.simulation_manager = MockMappingCache(evaluation_function)
     return m
 
 

@@ -9,7 +9,7 @@ import numpy as np
 from pykpn.util import logging
 from pykpn.representations.representations import RepresentationType
 from pykpn.mapper.random import RandomPartialMapper
-from pykpn.mapper.utils import MappingCache
+from pykpn.mapper.utils import SimulationManager
 from pykpn.mapper.utils import Statistics
 
 
@@ -39,7 +39,6 @@ class SimulatedAnnealingMapper(object):
         self.platform = platform
         self.config = config
         self.random_mapper = RandomPartialMapper(self.kpn,self.platform,config,seed=None)
-        self.statistics = Statistics(log, len(self.kpn.processes()),config['record_statistics'])
         self.initial_temperature = config['initial_temperature']
         self.final_temperature = config['final_temperature']
         self.max_rejections = len(self.kpn.processes()) * (len(self.platform.processors()) - 1) #R_max = L
@@ -62,7 +61,7 @@ class SimulatedAnnealingMapper(object):
             representation = (representation_type.getClassType())(self.kpn, self.platform,self.config)
 
         self.representation = representation
-        self.mapping_cache = MappingCache(representation,config)
+        self.simulation_manager = SimulationManager(representation, config)
 
     def temperature_cooling(self,temperature,iter):
         return self.initial_temperature*self.p**np.floor(iter/self.max_rejections)
@@ -91,7 +90,7 @@ class SimulatedAnnealingMapper(object):
         mapping = self.representation.toRepresentation(mapping_obj)
 
         last_mapping = mapping
-        last_exec_time = self.mapping_cache.evaluate_mapping(mapping)
+        last_exec_time = self.simulation_manager.simulate([mapping])[0]
         self.initial_cost = last_exec_time
         best_mapping = mapping
         best_exec_time = last_exec_time
@@ -103,7 +102,7 @@ class SimulatedAnnealingMapper(object):
             temperature = self.temperature_cooling(temperature,iter)
             log.info(f"Current temperature {temperature}")
             mapping = self.move(last_mapping,temperature)
-            cur_exec_time = self.mapping_cache.evaluate_mapping(mapping)
+            cur_exec_time = self.simulation_manager.simulate([mapping])[0]
             faster = cur_exec_time < last_exec_time
             if not faster and cur_exec_time != last_exec_time:
                 prob = self.query_accept(cur_exec_time - last_exec_time, temperature)
@@ -124,7 +123,9 @@ class SimulatedAnnealingMapper(object):
                 if temperature <= self.final_temperature:
                     rejections += 1
             iter += 1
-        self.statistics.log_statistics()
-        self.statistics.to_file()
+        self.simulation_manager.statistics.log_statistics()
+        self.simulation_manager.statistics.to_file()
+        if self.config['dump_cache']:
+            self.simulation_manager.dump('mapping_cache.csv')
 
         return self.representation.fromRepresentation(best_mapping)

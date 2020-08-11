@@ -10,7 +10,8 @@ def conf():
     'mupluslambda': True, 'initials' : 'random',
     'radius' : 5, 'random_seed': 42, 'channels' : False,
     'representation' : 'SimpleVector', 'norm_p' : 2,
-    'periodic_boundary_conditions' : False,
+    'jobs' : 8, 'chunk_size' : 10, 'parallel' : True, 'progress' : False,
+    'periodic_boundary_conditions' : False, 'dump_cache' : False,
     'crossover_rate' : 1, 'record_statistics' : False}
 
 @pytest.fixture
@@ -19,7 +20,7 @@ def evaluation_function():
 @pytest.fixture
 def mapper(kpn,platform,conf,evaluation_function):
     m =  GeneticMapper(kpn,platform,conf)
-    m.mapping_cache = MockMappingCache(evaluation_function)
+    m.simulation_manager = MockMappingCache(evaluation_function)
     return m
 
 

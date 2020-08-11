@@ -10,7 +10,7 @@ import pickle
 
 from pykpn.util import logging
 from pykpn.representations.representations import RepresentationType
-from pykpn.mapper.utils import MappingCache
+from pykpn.mapper.utils import SimulationManager
 from pykpn.mapper.random import RandomPartialMapper
 
 from deap import creator, tools, base, algorithms
@@ -57,7 +57,7 @@ class GeneticMapper(object):
             representation = (representation_type.getClassType())(self.kpn, self.platform,self.config)
 
         self.representation = representation
-        self.mapping_cache = MappingCache(self.representation,config)
+        self.simulation_manager = SimulationManager(self.representation, config)
 
         if 'FitnessMin' not in deap.creator.__dict__:
             deap.creator.create("FitnessMin", deap.base.Fitness, weights=(-1.0,))
@@ -95,7 +95,7 @@ class GeneticMapper(object):
 
     def evaluate_mapping(self,mapping):
         #wrapper to make it into a 1-tuple because DEAP needs that
-        return self.mapping_cache.evaluate_mapping(mapping),
+        return self.simulation_manager.simulate([list(mapping)])[0],
 
     def random_mapping(self):
         mapping = self.random_mapper.generate_mapping()
@@ -151,11 +151,13 @@ class GeneticMapper(object):
         """
         _,logbook,hof = self.run_genetic_algorithm()
         mapping = hof[0]
-        self.mapping_cache.statistics.log_statistics()
+        self.simulation_manager.statistics.log_statistics()
         with open('evolutionary_logbook.pickle','wb') as f:
             pickle.dump(logbook,f)
         result = self.representation.fromRepresentation(np.array(mapping))
-        self.mapping_cache.statistics.to_file()
+        self.simulation_manager.statistics.to_file()
+        if self.config['dump_cache']:
+            self.simulation_manager.dump('mapping_cache.csv')
         self.cleanup()
         return result
 

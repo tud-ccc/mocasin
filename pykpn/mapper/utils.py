@@ -6,11 +6,12 @@
 import timeit
 import simpy
 import hydra
+import multiprocessing as mp
 import numpy as np
-
 
 from pykpn.simulate.application import RuntimeKpnApplication
 from pykpn.simulate.system import RuntimeSystem
+from pykpn.common.mapping import Mapping
 
 from pykpn.util.logging import getLogger
 log = getLogger(__name__)
@@ -25,9 +26,10 @@ class Statistics(object):
         self._mappings_evaluated = 0
         self._simulation_time = 0
         self._representation_time = 0
+        self._representation_init_time = 0
 
-    def mapping_cached(self):
-        self._mappings_cached += 1
+    def mappings_cached(self,num=1):
+        self._mappings_cached += num
 
     def mapping_evaluated(self, simulation_time):
         self._mappings_evaluated += 1
@@ -35,6 +37,12 @@ class Statistics(object):
 
     def add_offset(self, time):
         self._simulation_time += time
+
+    def add_rep_time(self,time):
+        self._representation_time += time
+
+    def set_rep_init_time(self,time):
+        self._representation_init_time = time
 
     def log_statistics(self):
         self._log.info(f"Amount of processes in task:  {self._processes}")
@@ -51,10 +59,10 @@ class Statistics(object):
         file.write("Mappings evaluated: " + str(self._mappings_evaluated) + "\n")
         file.write("Time spent simulating: " + str(self._simulation_time) + "\n")
         file.write("Representation time: " + str(self._representation_time) + "\n")
+        file.write("Representation initialization time: " + str(self._representation_init_time) + "\n")
         file.close()
 
-
-class MappingCache(object):
+class SimulationManager(object):
     def __init__(self, representation, config):
         self._cache = {}
         self.representation = representation
@@ -62,7 +70,15 @@ class MappingCache(object):
         self.kpn = representation.kpn
         self.platform = representation.platform
         self.statistics = Statistics(log, len(self.kpn.processes()), config['record_statistics'])
+        self.statistics.set_rep_init_time(representation.init_time)
         self._last_added = None
+        self.jobs = config['jobs']
+        self.parallel = config['parallel']
+        self.progress = config['progress']
+        self.chunk_size = config['chunk_size']
+
+        if self.parallel:
+            self.pool = mp.Pool(processes=2)
 
     def lookup(self, mapping):
         if mapping not in self._cache:
@@ -79,33 +95,108 @@ class MappingCache(object):
         self._cache[self._last_added] = time
         self._last_added = None
 
-    def evaluate_mapping(self,mapping):
-        tup = tuple(self.representation.approximate(np.array(mapping)))
-        log.info(f"evaluating mapping: {tup}...")
+    def add_time_mapping(self, mapping, time):
+        self._cache[mapping] = time
+        self._last_added = None
 
-        runtime = self.lookup(tup)
-        if runtime:
-            log.info(f"... from cache: {runtime}")
-            self.statistics.mapping_cached()
-            return runtime
+    def simulate(self, input_mappings):
+
+        #check inputs
+        if len(input_mappings) == 0:
+            log.warning("Trying to simulate an empty mapping list")
+            return []
         else:
+            if isinstance(input_mappings[0],Mapping):
+                time = timeit.default_timer()
+                tup = [tuple(self.representation.toRepresentation(m)) for m in input_mappings]
+                self.statistics.add_rep_time(timeit.default_timer() - time)
+                mappings = input_mappings
+            else: #assume mappings are list type then
+                #transform into tuples
+                time = timeit.default_timer()
+                tup = [tuple(self.representation.approximate(np.array(m))) for m in input_mappings]
+                mappings = [self.representation.fromRepresentation(m) for m in input_mappings]
+                self.statistics.add_rep_time(timeit.default_timer() - time)
+
+        # first look up as many as possible:
+        lookups = [self.lookup(t) for t in tup]
+        num = len([m for m in lookups if m])
+        log.info(f"{num} from cache.")
+
+        #if all were already cached, return them
+        if num == len(tup):
+            return lookups
+
+        # create a list of simulations to be run
+        simulations = []
+        for i, mapping in enumerate(mappings):
+            # skip if this particular mapping is in the cache
+            if lookups[i]:
+                continue
+
+            # create a simulation context
+            sim_context = SimulationContext(self.platform)
+
+            # create the application context
+            name = self.kpn.name
+            app_context = ApplicationContext(name, self.kpn)
+            app_context.start_time = 0
+            app_context.representation = self.representation
+            app_context.mapping = mapping
+
+            # since mappings are simulated in parallel, whole simulation time is added later as offset
+            self.statistics.mapping_evaluated(0)
+
+            # create the trace reader
+            app_context.trace_reader = hydra.utils.instantiate(self.config['trace'])
+            sim_context.app_contexts.append(app_context)
+            simulations.append(sim_context)
+
+        if self.parallel and len(simulations) > self.chunk_size:
+            # run the simulations in parallel
             time = timeit.default_timer()
-            m_obj = self.representation.fromRepresentation(np.array(tup))
-            trace = hydra.utils.instantiate(self.config['trace'])
-            env = simpy.Environment()
-            system = RuntimeSystem(self.platform, env)
-            app = RuntimeKpnApplication(name=self.kpn.name,
-                                        kpn_graph=self.kpn,
-                                        mapping=m_obj,
-                                        trace_generator=trace,
-                                        system=system,)
-            system.simulate()
-            exec_time = float(env.now) / 1000000000.0
-            self.add_time(exec_time)
-            time = timeit.default_timer() - time
-            self.statistics.mapping_evaluated(time)
-            log.info(f"... from simulation: {exec_time}.")
-            return exec_time
+            if self.progress:
+                import tqdm
+                results = list(tqdm.tqdm(self.pool.imap(run_simulation,
+                                                        simulations,
+                                                        chunksize=self.chunk_size),
+                                         total=len(mappings)))
+            else:
+                results = list(self.pool.map(run_simulation,
+                                             simulations,
+                                             chunksize=self.chunk_size))
+            self.statistics.add_offset(timeit.default_timer() - time)
+        else:
+            results = []
+            # run the simulations sequentially
+            for s in simulations:
+                time = timeit.default_timer()
+                r = run_simulation(s)
+                results.append(r)
+                self.statistics.mapping_evaluated(timeit.default_timer() - time)
+
+        # calculate the execution times in milliseconds and store them
+        exec_times = []  # keep a list of exec_times for later
+        res_iter = iter(results)
+        for i, mapping in enumerate(mappings):
+            exec_time = lookups[i]
+            if exec_time:
+                exec_times.append(exec_time)
+            else:
+                r = next(res_iter)
+                exec_time = float(r.exec_time / 1000000000.0)
+                exec_times.append(exec_time)
+                self.add_time_mapping(tup[i],exec_time)
+        return exec_times
+
+    def dump(self,filename):
+        log.info(f"dumping cache to {filename}")
+        file = open(filename,'x')
+        file.write("mapping,runtime\n")
+        for mapping in self._cache:
+            file.write(f"\"{str(mapping).replace('(','').replace(')','')}\",{self._cache[mapping]}\n")
+        file.close()
+        log.info("cache dumped.")
 
 
 class ApplicationContext(object):

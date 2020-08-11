@@ -9,7 +9,7 @@ import numpy as np
 from pykpn.util import logging
 from pykpn.representations.representations import RepresentationType
 from pykpn.mapper.random import RandomPartialMapper
-from pykpn.mapper.utils import MappingCache
+from pykpn.mapper.utils import SimulationManager
 from pykpn.mapper.utils import Statistics
 
 
@@ -39,7 +39,6 @@ class GradientDescentMapper(object):
         self.random_mapper = RandomPartialMapper(self.kpn,self.platform,config,seed=None)
         self.gd_iterations = config['gd_iterations']
         self.stepsize = config['stepsize']
-        self.statistics = Statistics(log, len(self.kpn.processes()), config['record_statistics'])
         rep_type_str = config['representation']
 
         if rep_type_str not in dir(RepresentationType):
@@ -53,7 +52,7 @@ class GradientDescentMapper(object):
             representation = (representation_type.getClassType())(self.kpn, self.platform,self.config)
 
         self.representation = representation
-        self.mapping_cache = MappingCache(representation,config)
+        self.simulation_manager = SimulationManager(representation, config)
 
     def generate_mapping(self):
         """ Generates a full mapping using gradient descent
@@ -62,7 +61,7 @@ class GradientDescentMapper(object):
         mapping = self.representation.toRepresentation(mapping_obj)
 
         self.dim = len(mapping)
-        cur_exec_time = self.mapping_cache.evaluate_mapping(mapping)
+        cur_exec_time = self.simulation_manager.simulate([mapping])[0]
         self.best_mapping = mapping
         self.best_exec_time = cur_exec_time
 
@@ -74,15 +73,17 @@ class GradientDescentMapper(object):
             mapping = mapping + (self.stepsize / self.best_exec_time) * (-grad)
             mapping = self.representation.approximate(np.array(mapping))
 
-            cur_exec_time = self.mapping_cache.evaluate_mapping(mapping)
+            cur_exec_time = self.simulation_manager.simulate([mapping])[0]
 
             if cur_exec_time < self.best_exec_time:
                 self.best_exec_time = cur_exec_time
                 self.best_mapping = mapping
 
         self.best_mapping = np.array(self.representation.approximate(np.array(self.best_mapping)))
-        self.statistics.log_statistics()
-        self.statistics.to_file()
+        self.simulation_manager.statistics.log_statistics()
+        self.simulation_manager.statistics.to_file()
+        if self.config['dump_cache']:
+            self.simulation_manager.dump('mapping_cache.csv')
 
         return self.representation.fromRepresentation(self.best_mapping)
 
@@ -93,7 +94,7 @@ class GradientDescentMapper(object):
             evec = np.zeros(self.dim)
             if mapping[i] == 0:
                 evec[i] = 1.
-                exec_time = self.mapping_cache.evaluate_mapping(mapping + evec)
+                exec_time = self.simulation_manager.simulate([mapping + evec])[0]
                 if exec_time < self.best_exec_time:
                     self.best_exec_time = exec_time
                     self.best_mapping = mapping + evec
@@ -101,7 +102,7 @@ class GradientDescentMapper(object):
                 grad[i] = max(gr, 0)  # can go below 0 here
             elif mapping[i] == self.num_PEs - 1:
                 evec[i] = -1.
-                exec_time = self.mapping_cache.evaluate_mapping(mapping + evec)
+                exec_time = self.simulation_manager.simulate([mapping + evec])[0]
                 if exec_time < self.best_exec_time:
                     self.best_exec_time = exec_time
                     self.best_mapping = mapping + evec
@@ -110,13 +111,13 @@ class GradientDescentMapper(object):
 
             else:
                 evec[i] = 1.
-                exec_time = self.mapping_cache.evaluate_mapping(mapping + evec)
+                exec_time = self.simulation_manager.simulate([mapping + evec])[0]
                 if exec_time < self.best_exec_time:
                     self.best_exec_time = exec_time
                     self.best_mapping = mapping + evec
                 diff_plus = exec_time - cur_exec_time
                 evec[i] = -1.
-                exec_time = self.mapping_cache.evaluate_mapping(mapping + evec)
+                exec_time = self.simulation_manager.simulate([mapping + evec])[0]
                 if exec_time < self.best_exec_time:
                     self.best_exec_time = exec_time
                     self.best_mapping = mapping + evec

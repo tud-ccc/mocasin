@@ -8,8 +8,9 @@ from itertools import product
 def conf():
     return {'random_seed' : 42, 'max_iterations' : 100,
             'norm_p' : 2, 'periodic_boundary_conditions' : False,
+            'jobs': 8, 'chunk_size': 10, 'parallel': True, 'progress': False,
             'iteration_size'  : 10, 'tabu_tenure' : 10,
-            'move_set_size' : 10, 'radius' : 2, 'record_statistics' : False,
+            'move_set_size' : 10, 'radius' : 2, 'record_statistics' : False, 'dump_cache' : False,
            'representation' : 'SimpleVector', 'channels' : False, 'periodic_boundary_conditions' : False,
             }
 
@@ -20,7 +21,7 @@ def evaluation_function():
 @pytest.fixture
 def mapper(kpn,platform,conf,evaluation_function):
     m =  TabuSearchMapper(kpn,platform,conf)
-    m.mapping_cache = MockMappingCache(evaluation_function)
+    m.simulation_manager = MockMappingCache(evaluation_function)
     return m
 
 def test_ts(mapper,evaluation_function):
