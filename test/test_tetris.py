@@ -41,7 +41,7 @@ def tetris_wwt15_opt_test(request):
     ("hog-big-2-d.csv", False),
     ("hogA-2tasks-not_fisible.csv", True),
     ("hog-big-3.csv", False),
-    ("hog-big-3-d.csv", True),
+    ("hog-big-3-d.csv", False),
     ("hog-mixed-3-d.csv", True),
     ("hog-mixed-3-d-man.csv", True),
 ])
