@@ -10,6 +10,7 @@ def conf():
     'mupluslambda': True, 'initials' : 'random',
     'radius' : 5, 'random_seed': 42, 'channels' : False,
     'representation' : 'SimpleVector', 'norm_p' : 2,
+    'jobs' : 8, 'chunk_size' : 10, 'parallel' : True, 'progress' : False,
     'periodic_boundary_conditions' : False, 'dump_cache' : False,
     'crossover_rate' : 1, 'record_statistics' : False}
 

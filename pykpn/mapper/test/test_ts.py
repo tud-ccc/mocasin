@@ -8,6 +8,7 @@ from itertools import product
 def conf():
     return {'random_seed' : 42, 'max_iterations' : 100,
             'norm_p' : 2, 'periodic_boundary_conditions' : False,
+            'jobs': 8, 'chunk_size': 10, 'parallel': True, 'progress': False,
             'iteration_size'  : 10, 'tabu_tenure' : 10,
             'move_set_size' : 10, 'radius' : 2, 'record_statistics' : False, 'dump_cache' : False,
            'representation' : 'SimpleVector', 'channels' : False, 'periodic_boundary_conditions' : False,
