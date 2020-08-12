@@ -186,45 +186,70 @@ class WWT15SegmentMapper(SingleVariantSegmentMapper):
 
 
 class WWT15Scheduler(SingleVariantSegmentizedScheduler):
-    def __init__(self, app_table, platform, sorting=WWT15SortingKey.MINCOST,
-                 explore_mode=WWT15ExploreMode.ALL,
-                 lr_constraints=LRConstraint.RESOURCE, lr_rounds=1000):
-        segment_mapper = WWT15SegmentMapper(self, platform,
-                                            sorting_key=sorting,
-                                            explore_mode=explore_mode,
-                                            lr_constraints=lr_constraints,
-                                            lr_rounds=lr_rounds)
+    def __init__(self, app_table, platform, config):
+        sorting_arg = config["wwt15_sorting"]
+        if sorting_arg == "COST":
+            self.__sorting_key = WWT15SortingKey.MINCOST
+        elif sorting_arg == "DEADLINE":
+            self.__sorting_key = WWT15SortingKey.DEADLINE
+        elif sorting_arg == "CDP":
+            self.__sorting_key = WWT15SortingKey.CDP
+        else:
+            assert False, "Unknown sorting key"
+
+        explore_arg = config["wwt15_seg_explore"]
+        if explore_arg == "ALL":
+            self.__explore_mode = WWT15ExploreMode.ALL
+        elif explore_arg == "BEST":
+            self.__explore_mode = WWT15ExploreMode.BEST
+        else:
+            assert False, "Unknown explore mode"
+
+        lr_constraints_arg = config["wwt15_lr"]
+        if len(lr_constraints_arg) == 0:
+            lr_constraints_arg.append("R")
+        self.__lr_constraints = LRConstraint.NULL
+        if "R" in lr_constraints_arg:
+            self.__lr_constraints |= LRConstraint.RESOURCE
+        if "D" in lr_constraints_arg:
+            self.__lr_constraints |= LRConstraint.DELAY
+        if "RDP" in lr_constraints_arg:
+            self.__lr_constraints |= LRConstraint.RDP
+
+        self.__lr_rounds = config["wwt15_lr_rounds"]
+        segment_mapper = WWT15SegmentMapper(
+            self, platform, sorting_key=self.__sorting_key,
+            explore_mode=self.__explore_mode,
+            lr_constraints=self.__lr_constraints, lr_rounds=self.__lr_rounds)
         super().__init__(app_table, platform, segment_mapper)
 
-        self.__name = self.__generate_name(sorting, explore_mode,
-                                           lr_constraints, lr_rounds)
+        self.__name = self.__generate_name()
 
-    def __generate_name(self, sorting_key, explore_mode, lr_constraints,
-                        lr_rounds):
+    def __generate_name(self):
         res = "WWT15-SEG-"
-        if sorting_key == WWT15SortingKey.MINCOST:
+        if self.__sorting_key == WWT15SortingKey.MINCOST:
             res += "C-"
-        elif sorting_key == WWT15SortingKey.DEADLINE:
+        elif self.__sorting_key == WWT15SortingKey.DEADLINE:
             res += "D-"
-        elif sorting_key == WWT15SortingKey.CDP:
+        elif self.__sorting_key == WWT15SortingKey.CDP:
             res += "CDP-"
         else:
             assert False, "Unknown sorting key"
-        if explore_mode == WWT15ExploreMode.ALL:
+        if self.__explore_mode == WWT15ExploreMode.ALL:
             res += "EA-"
-        elif explore_mode == WWT15ExploreMode.BEST:
+        elif self.__explore_mode == WWT15ExploreMode.BEST:
             res += "EB-"
         else:
             assert False, "Unknown explore mode"
         res += "LR"
-        if bool(lr_constraints & LRConstraint.RESOURCE):
+        if bool(self.__lr_constraints & LRConstraint.RESOURCE):
             res += "R"
-        if bool(lr_constraints & LRConstraint.DELAY):
+        if bool(self.__lr_constraints & LRConstraint.DELAY):
             res += "D"
-        if bool(lr_constraints & LRConstraint.RDP):
+        if bool(self.__lr_constraints & LRConstraint.RDP):
             res += "P"
         res += "-"
-        res += "R{}".format(lr_rounds)
+        res += "R{}".format(self.__lr_rounds)
 
         return res
 

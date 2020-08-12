@@ -72,7 +72,7 @@ def run_tetris(datadir, expected_dir, scheduler, scenario, mode, options="",
     tetris_base = os.path.join(datadir, "tetris")
     cmd = ("pykpn " + "tetris " + "tetris_base={} ".format(tetris_base) +
            "scenario={} ".format(input_scn) +
-           "scheduler={} ".format(scheduler) + "mode={} ".format(mode) +
+           "resource_manager={} ".format(scheduler) + "mode={} ".format(mode) +
            "platform=exynos " + options + " " + "output={} ".format(out_path))
     subprocess.check_call(cmd.split(), cwd=datadir)
 
@@ -82,34 +82,34 @@ def run_tetris(datadir, expected_dir, scheduler, scenario, mode, options="",
 
 
 def test_tetris_dac(datadir, expected_dir, tetris_scheduler_test):
-    run_tetris(datadir, expected_dir, "DAC", tetris_scheduler_test, 'single', options='resource_manager=dac')
+    run_tetris(datadir, expected_dir, "dac", tetris_scheduler_test, 'single')
 
 
 def test_tetris_dac_2(datadir, expected_dir, tetris_scheduler_test):
-    run_tetris(datadir, expected_dir, "DAC-2", tetris_scheduler_test, 'single', options='resource_manager=dac-2')
+    run_tetris(datadir, expected_dir, "dac-2", tetris_scheduler_test, 'single')
 
 
 def test_tetris_fast(datadir, expected_dir, tetris_scheduler_test):
-    run_tetris(datadir, expected_dir, "FAST", tetris_scheduler_test, 'single', options='resource_manager=fast')
+    run_tetris(datadir, expected_dir, "fast", tetris_scheduler_test, 'single')
 
 
 def test_tetris_wwt15(datadir, expected_dir, tetris_scheduler_test):
-    run_tetris(datadir, expected_dir, "WWT15", tetris_scheduler_test, 'single')
+    run_tetris(datadir, expected_dir, "wwt15", tetris_scheduler_test, 'single')
 
 
 def test_tetris_wwt15_rdp(datadir, expected_dir, tetris_wwt15_opt_test):
-    run_tetris(datadir, expected_dir, "WWT15", tetris_wwt15_opt_test, 'single',
+    run_tetris(datadir, expected_dir, "wwt15", tetris_wwt15_opt_test, 'single',
                options="wwt15_lr=['R','D','RDP']", file_suffix="_rdp")
 
 
 def test_tetris_bf(datadir, expected_dir, tetris_bf_test_check_pair):
-    run_tetris(datadir, expected_dir, "BF", tetris_bf_test_check_pair[0],
-               'single', filecheck=tetris_bf_test_check_pair[1], options='resource_manager=bf')
+    run_tetris(datadir, expected_dir, "bf", tetris_bf_test_check_pair[0],
+               'single', filecheck=tetris_bf_test_check_pair[1])
 
 
 def test_tetris_bf_mem(datadir, expected_dir, tetris_bf_test_check_pair):
-    run_tetris(datadir, expected_dir, "BF-MEM", tetris_bf_test_check_pair[0],
-               'single', filecheck=tetris_bf_test_check_pair[1], options='resource_manager=bf-mem')
+    run_tetris(datadir, expected_dir, "bf-mem", tetris_bf_test_check_pair[0],
+               'single', filecheck=tetris_bf_test_check_pair[1])
 
 
 def test_tetris_manager(datadir, expected_dir, tetris_manager_test):
@@ -120,9 +120,10 @@ def test_tetris_manager(datadir, expected_dir, tetris_manager_test):
     out_path = os.path.join(datadir, out_name)
     tetris_base = os.path.join(datadir, "tetris")
     cmd = ("pykpn " + "tetris " + "tetris_base={} ".format(tetris_base) +
-           "scenario={} ".format(input_scn) + "scheduler={} ".format("DAC") +
-           "mode=trace " + "platform=exynos " + "log_level=INFO " +
-           "output={} ".format(out_path) + "resource_manager=dac")
+           "scenario={} ".format(input_scn) +
+           "resource_manager={} ".format("dac") + "mode=trace " +
+           "platform=exynos " + "log_level=INFO " +
+           "output={} ".format(out_path))
     subprocess.check_call(cmd.split(), cwd=datadir)
 
     # TODO: Add output

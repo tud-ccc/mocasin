@@ -144,7 +144,6 @@ def tetris(cfg):
         outf = open(out_fn, mode="w")
     else:
         outf = sys.stdout
-    scheduler_name = cfg["scheduler"]
     mode = cfg["mode"]
 
     # Suppress logs from pykpn module
@@ -165,65 +164,8 @@ def tetris(cfg):
     Context().req_table = req_table
 
     # Initialize scheduler
-    if scheduler_name == "BF" or scheduler_name == "BF-MEM":
-        scheduler = hydra.utils.instantiate(cfg['resource_manager'], app_table,
-                                            platform, cfg)
-    elif scheduler_name == "FAST":
-        scheduler = hydra.utils.instantiate(cfg['resource_manager'], app_table,
-                                            platform, cfg)
-    elif scheduler_name.startswith("DAC"):
-        scheduler = hydra.utils.instantiate(cfg['resource_manager'], app_table,
-                                            platform, cfg)
-    elif scheduler_name.startswith("WWT15"):
-        # Parse WWT15 related arguments
-        scheduler_type = cfg["wwt15_type"]
-
-        sorting_arg = cfg["wwt15_sorting"]
-        if sorting_arg == "COST":
-            sorting_key = WWT15SortingKey.MINCOST
-        elif sorting_arg == "DEADLINE":
-            sorting_key = WWT15SortingKey.DEADLINE
-        elif sorting_arg == "CDP":
-            sorting_key = WWT15SortingKey.CDP
-        else:
-            assert False, "Unknown sorting key"
-
-        explore_arg = cfg["wwt15_seg_explore"]
-        if explore_arg == "ALL":
-            explore_mode = WWT15ExploreMode.ALL
-        elif explore_arg == "BEST":
-            explore_mode = WWT15ExploreMode.BEST
-        else:
-            assert False, "Unknown explore mode"
-
-        lr_constraints_arg = cfg["wwt15_lr"]
-        if len(lr_constraints_arg) == 0:
-            lr_constraints_arg.append("R")
-        lr_constraints = LRConstraint.NULL
-        if "R" in lr_constraints_arg:
-            lr_constraints |= LRConstraint.RESOURCE
-        if "D" in lr_constraints_arg:
-            lr_constraints |= LRConstraint.DELAY
-        if "RDP" in lr_constraints_arg:
-            lr_constraints |= LRConstraint.RDP
-
-        lr_rounds = cfg["wwt15_lr_rounds"]
-
-        # Instantiate scheduler
-        if scheduler_type == "SEG":
-            # Using segmentized scheduler
-            scheduler = WWT15Scheduler(
-                app_table,
-                platform,
-                sorting=sorting_key,
-                explore_mode=explore_mode,
-                lr_constraints=lr_constraints,
-                lr_rounds=lr_rounds,
-            )
-        else:
-            assert False, "NYI"
-    else:
-        assert False, "Unknown scheduler"
+    scheduler = hydra.utils.instantiate(cfg['resource_manager'], app_table,
+                                        platform, cfg)
 
     opt_summary = cfg["summary"]
     opt_summary_append = cfg["summary_append"]
