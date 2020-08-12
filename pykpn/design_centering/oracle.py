@@ -6,39 +6,17 @@
 import traceback
 import pint
 import hydra
+from sys import exit
 
 from pykpn.mapper.partial import ProcPartialMapper, ComPartialMapper
 from pykpn.mapper.random import RandomPartialMapper
 from pykpn.mapper import utils
-from sys import exit
+from pykpn.simulate import KpnSimulation
 
 
 from pykpn.util import logging
 
 log = logging.getLogger(__name__)
-
-class ApplicationContext(object):
-    def __init__(self, kpn, start_time=None):
-        self.name = kpn.name
-        self.kpn = kpn
-
-        #parse time
-        if not start_time is None:
-            ureg = pint.UnitRegistry()
-            start_at_tick = ureg(start_time).to(ureg.ps).magnitude
-            self.start_time = start_at_tick
-        else:
-            self.start_time = 0
-
-
-class SimulationContext(object):
-    def __init__(self, platform, app_contexts=None):
-        self.platform = platform
-        if app_contexts is None:
-            self.app_contexts = []
-        else:
-            self.app_contexts = app_contexts
-        self.exec_time = None
 
 
 # https://stackoverflow.com/questions/4984647/accessing-dict-keys-like-an-attribute
@@ -72,7 +50,7 @@ class Oracle(object):
         self.oracle.prepare_sim_contexts_for_samples(samples)
 
         for s in samples:
-            mapping = tuple(s.getMapping(0).to_list())
+            mapping = tuple(s.getMapping().to_list())
             if mapping in self.oracle.cache:
                 log.debug(f"skipping simulation for mapping {mapping}: cached.")
                 s.sim_context.exec_time = self.oracle.cache[mapping]
@@ -113,16 +91,10 @@ class Simulation(object):
             samples[i].setSimContext(sim_context)
 
     def prepare_sim_context(self,mapping):
-        sim_context = SimulationContext(self.platform)
-        # create the application contexts
-        app_context = ApplicationContext(self.kpn)
-        app_context.start_time = 0
-        # generate a mapping for the given sample
-        app_context.mapping = self.dcMapGen.generate_mapping(mapping.to_list())
-        # generate trace reader
-        app_context.trace_reader = hydra.utils.instantiate(self.sim_config['trace'])
-        log.debug("Mapping toList: {}".format(app_context.mapping.to_list()))
-        sim_context.app_contexts.append(app_context)
+        sim_mapping = self.dcMapGen.generate_mapping(mapping.to_list())
+        trace = hydra.utils.instantiate(self.sim_config['trace'])
+        sim_context = KpnSimulation(self.platform, self.kpn, sim_mapping, trace)
+        log.debug("Mapping toList: {}".format(sim_mapping.to_list()))
         return sim_context
 
     def is_feasible(self, samples):
@@ -176,7 +148,7 @@ class Simulation(object):
             utils.run_simulation(sample.sim_context)
 
             #add to cache
-            mapping = tuple(sample.getMapping(0).to_list())
+            mapping = tuple(sample.getMapping().to_list())
             self.cache[mapping] = sample.sim_context.exec_time
 
         except Exception as e:

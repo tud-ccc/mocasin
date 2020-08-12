@@ -48,8 +48,8 @@ class Sample(list):
     def setSimContext(self,sim_context):
         self.sim_context = sim_context
     
-    def getMapping(self, idx):
-        return self.sim_context.app_contexts[idx].mapping
+    def getMapping(self):
+        return self.sim_context.mapping
 
     def getFeasibility(self):
         return self.feasible

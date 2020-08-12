@@ -135,7 +135,7 @@ def dc_task(cfg):
 
 
     json_dc_dump['center'] = {}
-    json_dc_dump['center']['mapping'] = center.getMapping(0).to_list()
+    json_dc_dump['center']['mapping'] = center.getMapping().to_list()
     json_dc_dump['center']['feasible'] = center.getFeasibility()
     json_dc_dump['center']['runtime'] = center.getSimContext().exec_time / 1000000000.0
     # FIXME: This crashs with index out of range:
@@ -144,7 +144,7 @@ def dc_task(cfg):
         json_dc_dump['samples'] = {}
         for cent_idx,cent in enumerate(centers):
             json_dc_dump['samples'][cent_idx] = { 'center' : {}}
-            json_dc_dump['samples'][cent_idx]['center']['mapping'] = cent.getMapping(0).to_list()
+            json_dc_dump['samples'][cent_idx]['center']['mapping'] = cent.getMapping().to_list()
             json_dc_dump['samples'][cent_idx]['center']['feasible'] = cent.getFeasibility()
             json_dc_dump['samples'][cent_idx]['center']['runtime'] = cent.getSimContext().exec_time / 1000000000.0
             json_dc_dump['samples'][cent_idx]['center']['radius'] = radii[cent_idx]
@@ -153,7 +153,7 @@ def dc_task(cfg):
         n = cfg['adapt_samples']
         for i,sample in enumerate(samples):
             idx = int(i/n)
-            json_dc_dump['samples'][idx][i%n] = { 'mapping' : sample.getMapping(0).to_list()}
+            json_dc_dump['samples'][idx][i%n] = { 'mapping' : sample.getMapping().to_list()}
             json_dc_dump['samples'][idx][i%n]['feasible'] = sample.getFeasibility()
             json_dc_dump['samples'][idx][i%n]['runtime'] = sample.getSimContext().exec_time / 1000000000.0
 
@@ -173,7 +173,7 @@ def dc_task(cfg):
         map_set = pm.create_randomMappings()
 
         pert_res = []
-        s,c = pm.run_perturbation(center.getMapping(0), pert_func)
+        s,c = pm.run_perturbation(center.getMapping(), pert_func)
         pert_res.append(s)
 
         json_dc_dump['center']['pert'] = c
