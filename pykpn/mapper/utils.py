@@ -186,7 +186,8 @@ class SimulationManager(object):
 
 
 def run_simulation(simulation):
-    simulation.run()
+    with simulation:
+        simulation.run()
     return simulation
 
 

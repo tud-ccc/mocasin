@@ -78,7 +78,8 @@ def generate_mapping(cfg):
     if cfg['simulate_best']:
         trace = hydra.utils.instantiate(cfg['trace'])
         simulation = KpnSimulation(result.platform, result.kpn, result, trace)
-        simulation.run()
+        with simulation as s:
+            s.run()
 
         exec_time = float(simulation.exec_time) / 1000000000.0
         log.info('Best mapping simulated time: ' + str(exec_time) + ' ms')

@@ -41,18 +41,20 @@ def simulate(cfg):
 
     trace_file = cfg['simulation_trace']
     simulation = hydra.utils.instantiate(cfg.simulation_type, cfg)
-    if trace_file is not None:
-        simulation.enable_tracing()
 
-    log.info('Start the simulation')
-    start = timeit.default_timer()
-    simulation.run()
-    stop = timeit.default_timer()
-    log.info('Simulation done')
+    with simulation:
+        if trace_file is not None:
+            simulation.enable_tracing()
 
-    exec_time = float(simulation.exec_time) / 1000000000.0
-    print('Total simulated time: ' + str(exec_time) + ' ms')
-    print('Total simulation time: ' + str(stop - start) + ' s')
+        log.info('Start the simulation')
+        start = timeit.default_timer()
+        simulation.run()
+        stop = timeit.default_timer()
+        log.info('Simulation done')
 
-    if trace_file is not None:
-        simulation.write_simulation_trace(trace_file)
+        exec_time = float(simulation.exec_time) / 1000000000.0
+        print('Total simulated time: ' + str(exec_time) + ' ms')
+        print('Total simulation time: ' + str(stop - start) + ' s')
+
+        if trace_file is not None:
+            simulation.write_simulation_trace(trace_file)

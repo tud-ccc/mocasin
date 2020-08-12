@@ -13,24 +13,71 @@ from pykpn.simulate.system import RuntimeSystem
 class BaseSimulation:
     """A base class for handling a simulation
 
+    Note that the ``run()`` method can only be called when
+    the simulation object is used within a with block.
+    Use something like the following example:
+
+    .. code-block:: python
+
+    with simulation:
+        simulation.run()
+
+    'with' is required in order to ensure that the simulation is setup properly
+    before calling ``run()`` and finalized afterwards. These additional steps
+    of setup and finalization are required in order for this class to be
+    picklable. This, in turn, is required to allow parrallel execution
+    of multiple simulations via multiprocessing. Now the problem is,
+    that the simpy Environment is not picklable. Thus it cannot be a permanent
+    attribute of this class. Therefore, the environment and also the runtime
+    system are created during the setup phase (``__enter__``) and deleted
+    again during finalization (``__exit__``).
+
     Attributes:
-        env (~simpy.core.Environment): the simpy environment
+        env (~simpy.core.Environment): The simpy environment. This is only
+            valid inside a with block and is ``None`` otherwise.
         platform (Platform): the platform that is simulated by this object
-        system (RuntimeSystem): runtime representation of the simulated system
+        system (RuntimeSystem): The runtime representation of the simulated
+            system. This is only valid inside a with block and is ``None``
+            otherwise.
         exec_time (int): total simulated time in ps. This is initial to
             ``None`` and only set after a call to :func:`run`.
+        run: A callable object that triggers the actual simulation. If called
+            outside of a with block, calling ``run()`` will raise a
+            ``RuntimeError`` .
 
     Args:
         platform (Platform): the platform that is simulated by this object
     """
 
     def __init__(self, platform):
-        self.env = simpy.Environment()
+        self.env = None
         self.platform = platform
-        self.system = RuntimeSystem(platform, self.env)
+        self.system = None
         self.exec_time = None
+        self.run = self._default_run
 
-    def run(self):
+    def __enter__(self):
+        """Setup the simulation
+
+        Creates the simpy environment ``env`` and the
+        RuntimeSystem instance ``system``.
+        """
+        self.env = simpy.Environment()
+        self.system = RuntimeSystem(self.platform, self.env)
+        self.run = self._run
+        return self
+
+    def __exit__(self, type, value, traceback):
+        """Finalize the simulation
+
+        Resets ``env`` and ``system`` to ``None`` and ``run`` to
+        ``_default_run``.
+        """
+        self.env = None
+        self.system = None
+        self.run = self._default_run
+
+    def _run(self):
         """Run the simulation
 
         This needs to be overridden by a  subclass
@@ -39,6 +86,18 @@ class BaseSimulation:
             NotImplementedError
         """
         raise NotImplementedError()
+
+    def _default_run(self):
+        """Invalid implementation of run.
+
+        Raises an RuntimeError notifying the caller of ``run()`` that
+        ``run()`` may only be triggered within a with statement.
+
+        Raises:
+            RuntimeError
+        """
+        raise RuntimeError("run() may only be called on a simulation object "
+                           "that is used in a with statement")
 
     def write_simulation_trace(self, path):
         """Write a json trace of the simulated system to ``path``
@@ -66,6 +125,9 @@ class KpnSimulation(BaseSimulation):
     """Handles the simulation of a single KPN application
 
     Attributes:
+        app (RuntimeApplication): Runtime instance of the application to be
+            simulated. This is only valid inside a with block and is
+            ``None`` otherwise.
 
     Args:
         platform (Platform): the platform that is simulated by this object
@@ -80,13 +142,31 @@ class KpnSimulation(BaseSimulation):
         self.kpn = kpn
         self.mapping = mapping
         self.trace = trace
-        self.app = RuntimeKpnApplication(name=kpn.name,
-                                         kpn_graph=kpn,
-                                         mapping=mapping,
-                                         trace_generator=trace,
-                                         system=self.system)
+        self.app = None
 
-    def run(self):
+    def __enter__(self):
+        """Setup the simulation
+
+        Calls `~BaseSimulation.__enter__()` and creates the kpn application
+        ``app``
+        """
+        super().__enter__()
+        self.app = RuntimeKpnApplication(name=self.kpn.name,
+                                         kpn_graph=self.kpn,
+                                         mapping=self.mapping,
+                                         trace_generator=self.trace,
+                                         system=self.system)
+        return self
+
+    def __exit__(self, type, value, traceback):
+        """Finalize the simulation
+
+        Calls `~BaseSimulation.__exit__()` and resets ``app`` to to ``None``.
+        """
+        super().__exit__(type, value, traceback)
+        self.app = None
+
+    def _run(self):
         """Run the simulation.
 
         May only be called once. Updates the :attr:`exec_time` attribute.
