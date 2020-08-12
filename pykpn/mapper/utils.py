@@ -76,7 +76,7 @@ class SimulationManager(object):
         self.chunk_size = config['chunk_size']
 
         if self.parallel:
-            self.pool = mp.Pool(processes=2)
+            self.pool = mp.Pool(processes=self.jobs)
 
     def lookup(self, mapping):
         if mapping not in self._cache:
