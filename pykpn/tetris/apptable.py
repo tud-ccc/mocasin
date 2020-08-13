@@ -196,16 +196,21 @@ class Application:
 
 
 class AppTable:
-    def __init__(self, platform, allow_idle=False):
-        self.__apps = []
-        self.__allow_idle = allow_idle
+    """Application Table
 
+    This class contains information about all registered applications,
+    their mappings and energy-utility metadata.
+    """
+    def __init__(self, platform, path=None):
+        self.__apps = []
         self.__platform = platform
+
+        if path is not None:
+            self.__read_applications(path)
 
     def add(self, app):
         assert isinstance(app, Application)
-        if self.__allow_idle:
-            app.add_idle(self.__platform)
+        app.add_idle(self.__platform)
         self.__apps.append(app)
 
     def __getitem__(self, name):
@@ -215,7 +220,7 @@ class AppTable:
                 return a
         assert False, "No application with name '{}'".format(name)
 
-    def read_applications(self, path):
+    def __read_applications(self, path):
         assert os.path.isdir(path), (
             "The folder '{}' does not exist".format(path))
         log.info("Reading applications:")

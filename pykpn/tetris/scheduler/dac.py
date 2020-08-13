@@ -15,12 +15,12 @@ EPS = 0.00001
 
 
 class DacScheduler(SchedulerBase):
-    def __init__(self, platform, version="original"):
-        assert isinstance(platform, Platform)
+    def __init__(self, app_table, platform, config):
+        super().__init__(app_table, platform)
         self.__platform = platform
         self.__start_energy = 0.0
         self.__start_time = 0.0
-        self.__version = version
+        self.__version = config["dac_version"]
 
     @property
     def name(self):
@@ -310,4 +310,6 @@ class DacScheduler(SchedulerBase):
             scheduling = self.__schedule_original()
         elif self.__version == "2":
             scheduling = self.__schedule_2()
+        else:
+            assert False
         return scheduling is not None, scheduling, True

@@ -40,8 +40,7 @@ def init_logging():
 
 
 def print_summary(scenario, res, scheduling, schedule_time, within_time,
-                  opt_summary, opt_summary_append, scheduler, opt_reschedule,
-                  opt_allow_idle):
+                  opt_summary, opt_summary_append, scheduler, opt_reschedule):
     # TODO: Take the name of scheduler from scheduler
     summary_file = opt_summary
     if summary_file is None:
@@ -59,7 +58,7 @@ def print_summary(scenario, res, scheduling, schedule_time, within_time,
             new_file = True
     if new_file:
         print(
-            "input_state,scheduler,reschedule,allow_idle,search_time,scheduled"
+            "input_state,scheduler,reschedule,search_time,scheduled"
             ",energy,longest_time,time_segments,within_TL",
             file=outf,
         )
@@ -76,11 +75,10 @@ def print_summary(scenario, res, scheduling, schedule_time, within_time,
         num_segments = None
 
     print(
-        "{},{},{},{},{},{},{},{},{},{}".format(
+        "{},{},{},{},{},{},{},{},{}".format(
             scenario,
             scheduler_str,
             opt_reschedule,
-            opt_allow_idle,
             schedule_time,
             res,
             energy,
@@ -141,13 +139,11 @@ def tetris(cfg):
             os.path.join(os.getcwd(), "..", "..", "..", cfg["scenario"]))
 
     mapping_dir = cfg["mapping_dir"]
-    idle = cfg["allow_idle_job_segments"]
     out_fn = cfg["output"]
     if out_fn != None:
         outf = open(out_fn, mode="w")
     else:
         outf = sys.stdout
-    scheduler_name = cfg["scheduler"]
     mode = cfg["mode"]
 
     # Suppress logs from pykpn module
@@ -158,107 +154,30 @@ def tetris(cfg):
     # Set the platform
     platform = hydra.utils.instantiate(cfg['platform'])
 
-    # Initialize request table, and fill it by requests from the file
-    req_table = ReqTable()
-
     # Initialize application table
-    app_table = AppTable(platform, allow_idle=idle)
-    app_table.read_applications(os.path.join(tetris_base, "apps"))
+    app_table = AppTable(platform, os.path.join(tetris_base, "apps"))
+
+    # Initialize request table, and fill it by requests from the file
+    req_table = ReqTable(app_table)
 
     # Save reference to table in Context
     Context().req_table = req_table
-    Context().app_table = app_table
 
     # Initialize scheduler
-    opt_bf_drop = cfg["bf_drop"]
-    opt_reschedule = cfg["reschedule"]
-    opt_bf_dump_steps = cfg["bf_dump_steps"]
-    opt_time_limit = cfg["time_limit"]
-    opt_dump_mem_table = cfg["dump_mem_table"]
-    opt_prune_mem_table = cfg["prune_mem_table"]
-    if scheduler_name == "BF" or scheduler_name == "BF-MEM":
-        drop_high = opt_bf_drop
-        if scheduler_name == "BF-MEM":
-            memorization = True
-        else:
-            memorization = False
-        scheduler = BruteforceScheduler(
-            platform,
-            rescheduling=opt_reschedule,
-            drop_high=drop_high,
-            dump_steps=opt_bf_dump_steps,
-            time_limit=opt_time_limit,
-            memorization=memorization,
-            dump_mem_table=opt_dump_mem_table,
-            prune_mem_table=opt_prune_mem_table,
-        )
-    elif scheduler_name == "FAST":
-        scheduler = FastScheduler(platform)
-    elif scheduler_name.startswith("DAC"):
-        if scheduler_name == "DAC":
-            scheduler = DacScheduler(platform)
-        else:
-            v = scheduler_name[4:]
-            scheduler = DacScheduler(platform, version=v)
-    elif scheduler_name.startswith("WWT15"):
-        # Parse WWT15 related arguments
-        scheduler_type = cfg["wwt15_type"]
-
-        sorting_arg = cfg["wwt15_sorting"]
-        if sorting_arg == "COST":
-            sorting_key = WWT15SortingKey.MINCOST
-        elif sorting_arg == "DEADLINE":
-            sorting_key = WWT15SortingKey.DEADLINE
-        elif sorting_arg == "CDP":
-            sorting_key = WWT15SortingKey.CDP
-        else:
-            assert False, "Unknown sorting key"
-
-        explore_arg = cfg["wwt15_seg_explore"]
-        if explore_arg == "ALL":
-            explore_mode = WWT15ExploreMode.ALL
-        elif explore_arg == "BEST":
-            explore_mode = WWT15ExploreMode.BEST
-        else:
-            assert False, "Unknown explore mode"
-
-        lr_constraints_arg = cfg["wwt15_lr"]
-        if len(lr_constraints_arg) == 0:
-            lr_constraints_arg.append("R")
-        lr_constraints = LRConstraint.NULL
-        if "R" in lr_constraints_arg:
-            lr_constraints |= LRConstraint.RESOURCE
-        if "D" in lr_constraints_arg:
-            lr_constraints |= LRConstraint.DELAY
-        if "RDP" in lr_constraints_arg:
-            lr_constraints |= LRConstraint.RDP
-
-        lr_rounds = cfg["wwt15_lr_rounds"]
-
-        # Instantiate scheduler
-        if scheduler_type == "SEG":
-            # Using segmentized scheduler
-            scheduler = WWT15Scheduler(
-                platform,
-                sorting=sorting_key,
-                explore_mode=explore_mode,
-                lr_constraints=lr_constraints,
-                lr_rounds=lr_rounds,
-            )
-        else:
-            assert False, "NYI"
-    else:
-        assert False, "Unknown scheduler"
+    scheduler = hydra.utils.instantiate(cfg['resource_manager'], app_table,
+                                        platform, cfg)
 
     opt_summary = cfg["summary"]
     opt_summary_append = cfg["summary_append"]
+    opt_time_limit = cfg.get("time_limit", 'None')
+    opt_reschedule = cfg.get("reschedule", True)
     if mode == "single":
         res, scheduling, schedule_time = single_mode_scheduler(
             scheduler, scenario)
         if res:
             scheduling.legacy_dump(outf=outf)
             # scheduling.legacy_dump_jobs_info(outf=outf)
-        if opt_time_limit is not None:
+        if opt_time_limit != 'None':
             within_time = schedule_time <= opt_time_limit
         else:
             within_time = True
@@ -272,7 +191,6 @@ def tetris(cfg):
             opt_summary_append,
             scheduler,
             opt_reschedule,
-            idle,
         )
     elif mode == "trace":
         dump_summary = False
