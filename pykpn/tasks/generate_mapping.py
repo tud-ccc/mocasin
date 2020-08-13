@@ -8,13 +8,10 @@
 import logging
 import hydra
 import os
-import simpy
 import pickle
-from pykpn.simulate.application import RuntimeKpnApplication
-from pykpn.simulate.system import RuntimeSystem
 
 from pykpn.slx.mapping import export_slx_mapping
-
+from pykpn.simulate import KpnSimulation
 from pykpn.tgff.tgffSimulation import TgffReferenceError
 
 log = logging.getLogger(__name__)
@@ -78,28 +75,16 @@ def generate_mapping(cfg):
             p = pickle.Pickler(f)
             p.dump(result)
 
-
     if cfg['simulate_best']:
-        kpn = result.kpn
-        platform = result.platform
         trace = hydra.utils.instantiate(cfg['trace'])
-        env = simpy.Environment()
-        system = RuntimeSystem(platform,env)
-        app = RuntimeKpnApplication(name=kpn.name,
-                                    kpn_graph=kpn,
-                                    mapping=result,
-                                    trace_generator=trace,
-                                    system=system,)
-        system.simulate()
+        simulation = KpnSimulation(result.platform, result.kpn, result, trace)
+        with simulation as s:
+            s.run()
 
-
-        exec_time = float(env.now) / 1000000000.0
+        exec_time = float(simulation.exec_time) / 1000000000.0
         log.info('Best mapping simulated time: ' + str(exec_time) + ' ms')
         with open(outdir + 'best_time.txt','w') as f:
             f.write(str(exec_time))
-        del kpn
-        del platform
-        del trace
 
     if not cfg['kpn']['class'] == 'pykpn.tgff.tgffSimulation.KpnGraphFromTgff':
         export_slx_mapping(result,

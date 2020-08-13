@@ -1,17 +1,15 @@
-# Copyright (C) 2019 TU Dresden
+# Copyright (C) 2019-2020 TU Dresden
 # All Rights Reserved
 #
 # Authors: Andrés Goens, Felix Teweleit
 
 import timeit
-import simpy
 import hydra
 import multiprocessing as mp
 import numpy as np
 
-from pykpn.simulate.application import RuntimeKpnApplication
-from pykpn.simulate.system import RuntimeSystem
 from pykpn.common.mapping import Mapping
+from pykpn.simulate import KpnSimulation
 
 from pykpn.util.logging import getLogger
 log = getLogger(__name__)
@@ -78,7 +76,7 @@ class SimulationManager(object):
         self.chunk_size = config['chunk_size']
 
         if self.parallel:
-            self.pool = mp.Pool(processes=2)
+            self.pool = mp.Pool(processes=self.jobs)
 
     def lookup(self, mapping):
         if mapping not in self._cache:
@@ -100,8 +98,7 @@ class SimulationManager(object):
         self._last_added = None
 
     def simulate(self, input_mappings):
-
-        #check inputs
+        # check inputs
         if len(input_mappings) == 0:
             log.warning("Trying to simulate an empty mapping list")
             return []
@@ -134,23 +131,12 @@ class SimulationManager(object):
             if lookups[i]:
                 continue
 
-            # create a simulation context
-            sim_context = SimulationContext(self.platform)
-
-            # create the application context
-            name = self.kpn.name
-            app_context = ApplicationContext(name, self.kpn)
-            app_context.start_time = 0
-            app_context.representation = self.representation
-            app_context.mapping = mapping
+            trace = hydra.utils.instantiate(self.config['trace'])
+            simulation = KpnSimulation(self.platform, self.kpn, mapping, trace)
 
             # since mappings are simulated in parallel, whole simulation time is added later as offset
             self.statistics.mapping_evaluated(0)
-
-            # create the trace reader
-            app_context.trace_reader = hydra.utils.instantiate(self.config['trace'])
-            sim_context.app_contexts.append(app_context)
-            simulations.append(sim_context)
+            simulations.append(simulation)
 
         if self.parallel and len(simulations) > self.chunk_size:
             # run the simulations in parallel
@@ -199,45 +185,10 @@ class SimulationManager(object):
         log.info("cache dumped.")
 
 
-class ApplicationContext(object):
-    def __init__(self, name=None, kpn=None, mapping=None, trace_reader=None,
-                 start_time=None):
-        self.name = name
-        self.kpn = kpn
-        self.mapping = mapping
-        self.trace_reader = trace_reader
-        self.start_time = start_time
-
-
-class SimulationContext(object):
-    def __init__(self, platform=None, app_contexts=None):
-        self.platform = platform
-        if app_contexts is None:
-            self.app_contexts = []
-        else:
-            self.app_contexts = app_contexts
-        self.exec_time = None
-
-
-def run_simulation(sim_context):
-    # Create simulation environment
-    env = simpy.Environment()
-
-    # Create the system
-    system = RuntimeSystem(sim_context.platform, env)
-
-    # create the applications
-    for ac in sim_context.app_contexts:
-        app = RuntimeKpnApplication(ac.name, ac.kpn, ac.mapping,
-                                    ac.trace_reader, system)
-
-    # run the simulation
-    system.simulate()
-    system.check_errors()
-
-    sim_context.exec_time = env.now
-
-    return sim_context
+def run_simulation(simulation):
+    with simulation:
+        simulation.run()
+    return simulation
 
 
 class DerivedPrimitive:

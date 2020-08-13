@@ -73,6 +73,8 @@ class RuntimeProcess(object):
             :const:`~ProcessState.READY`
           * :func:`activate`: Transition from :const:`~ProcessState.READY` to
             :const:`~ProcessState.RUNNING`
+          * :func:`deactivate`: Transition from :const:`~ProcessState.RUNNING`
+            to :const:`~ProcessState.READY`
           * :func:`finish`: Transition from :const:`~ProcessState.RUNNING` to
             :const:`~ProcessState.FINISHED`
           * :func:`block`: Transition from :const:`~ProcessState.RUNNING` to
@@ -179,7 +181,6 @@ class RuntimeProcess(object):
         new_event.callbacks.append(getattr(self, '_cb_' + event_name))
         setattr(self, event_name, new_event)
 
-
     def check_state(self, state):
         """Compare to internal state
 
@@ -224,6 +225,21 @@ class RuntimeProcess(object):
                         processor.name)
         self.processor = processor
         self._transition('RUNNING')
+
+    def deactivate(self):
+        """Halt the process execution.
+
+        Transition to the :const:`~ProcessState.READY` state and update
+        :attr:`processor`.
+
+        Raises:
+            AssertionError: if not in :const:`ProcessState.RUNNING` state
+        """
+        assert(self._state == ProcessState.RUNNING)
+        self._log.debug('Stop workload execution on processor %s',
+                        self.processor.name)
+        self.processor = None
+        self._transition('READY')
 
     def finish(self):
         """Terminate the process.
@@ -277,15 +293,12 @@ class RuntimeProcess(object):
         """Callback invoked upon entering the :const:`~ProcessState.RUNNING`
         state.
 
-        Starts a simpy process that executes :func:`workload`
-
         Args:
             event (~simpy.events.event): unused (only required to provide the
                 callback interface)
         """
         assert(self._state == ProcessState.RUNNING)
         self._log.debug('Entered RUNNING state')
-        self.env.process(self.workload())
 
     def _cb_finished(self, event):
         """Callback invoked upon entering the :const:`~ProcessState.FINISHED`
@@ -320,11 +333,15 @@ class RuntimeProcess(object):
         assert(self._state == ProcessState.CREATED)
         self._log.debug('Entered CREATED state')
 
-    def workload(self):
+    def workload(self, interrupt=None):
         """Implements the process functionality.
 
         This is just a stub and may not be called. This has to be overridden by
         a subclass.
+
+        Args:
+            interrupt (~simpy.events.event): an optional event that interrupts
+                the workload execution when triggered.
 
         Raises:
             NotImplementedError
@@ -342,8 +359,6 @@ class RuntimeKpnProcess(RuntimeProcess):
             there corresponding runtime object. This only includes channels
             that may be accessed by this process.
         _trace_generator (TraceGenerator): a trace generator object
-        _start (~simpy.events.Timeout): a timeout event that triggers the start
-            of this process
         _current_segment (TraceSegment): The trace segment that is currently
             processed
     Args:
@@ -359,9 +374,6 @@ class RuntimeKpnProcess(RuntimeProcess):
 
         self._channels = {}
         self._trace_generator = trace_generator
-
-        self._start = self.env.timeout(0)
-        self._start.callbacks.append(self.start)
 
         self._current_segment = None
 
@@ -387,7 +399,7 @@ class RuntimeKpnProcess(RuntimeProcess):
         self._channels[channel.name] = channel
         channel.set_src(self)
 
-    def workload(self):
+    def workload(self, interrupt=None):
         """Replay a KPN execution trace
 
         Iterates over all segments in the execution trace and performs actions
@@ -395,7 +407,17 @@ class RuntimeKpnProcess(RuntimeProcess):
         terminates. However, this does not mean that it is actually complete. A
         process may also return when it blocks. Then the execution is resumed
         on the next call of this method.
+
+        Args:
+            interrupt (~simpy.events.event): an optional event that interrupts
+                the workload execution when triggered.
         """
+
+        assert self.check_state(ProcessState.RUNNING)
+
+        if interrupt is None:
+            # create an interrupt event that is never triggered
+            interrupt = self.env.event()
 
         if self._current_segment is None:
             self._log.debug('start workload execution')
@@ -412,9 +434,54 @@ class RuntimeKpnProcess(RuntimeProcess):
                 cycles = s.processing_cycles
                 self._log.debug('process for %d cycles', cycles)
                 ticks = self.processor.ticks(cycles)
-                s.processing_cycles = None
-                yield self.env.timeout(ticks)
+
+                timeout = self.env.timeout(ticks)
+                start = self.env.now
+
+                # process until computation completes (timeout) or until their
+                # is an interrupt
+                yield self.env.any_of([timeout, interrupt])
+
+                # if the timeout was processed, the computation completed
+                if timeout.processed:
+                    s.processing_cycles = None
+                else:
+                    assert interrupt.processed
+                    # Calculate how many cycles where executed until the
+                    # triggering of the interrupt. Note that the interrupt
+                    # can occur in between full cycles in our simulation. We
+                    # lose a bit of precision here, by allowing interrupts in
+                    # between cycles and rounding the number of processed
+                    # cycles to an integer number. However, the introduced
+                    # error should be marginal.
+                    ticks_processed = self.env.now - start
+                    ratio = float(ticks_processed) / float(ticks)
+                    cycles_processed = int(round(float(cycles) * ratio))
+
+                    s.processing_cycles = cycles - cycles_processed
+                    assert s.processing_cycles > 0
+                    self._log.debug("process interrupted after "
+                                    f"{cycles_processed} cycles")
+
+                # deactivate if interrupted, even if interrupt and timeout
+                # occur simultaneously
+                if interrupt.processed:
+                    self.deactivate()
+                    return
             if s.read_from_channel is not None:
+                # Consume tokens from a channel. Unlike the processing, this
+                # operation cannot easily be interrupted. There are two
+                # problems here.  First, consume and produce are considered
+                # atomic operations by our algorithm. If they could be
+                # interrupted, both operations would need to implement a
+                # synchronization strategy.  Second, it is unclear what
+                # interrupting a consume or produce operation means. The
+                # simulation does not know Which part of the consume/produce
+                # costs is actual processing by a CPU and which part is due to
+                # asynchronous operations (e.g., a DMA or the memory
+                # architecture) that would not be affected by an interrupt.
+                # Therefore, both consume and produce ignore any interrupts
+                # and process it only after the operation completes.
                 c = self._channels[s.read_from_channel]
                 self._log.debug('read %d tokens from channel %s', s.n_tokens,
                                 c.full_name)
@@ -426,7 +493,15 @@ class RuntimeKpnProcess(RuntimeProcess):
                 else:
                     s.read_from_channel = None
                     yield self.env.process(c.consume(self, s.n_tokens))
+
+                # deactivate if interrupted
+                if interrupt.processed:
+                    self.deactivate()
+                    return
             if s.write_to_channel is not None:
+                # Produce tokens on a channel. Similar to consume above, this
+                # is considered as an atomic operation and an interrupt is only
+                # processed after this operation completes.
                 c = self._channels[s.write_to_channel]
                 self._log.debug('write %d tokens to channel %s', s.n_tokens,
                                 c.full_name)
@@ -438,6 +513,11 @@ class RuntimeKpnProcess(RuntimeProcess):
                 else:
                     s.write_to_channel = None
                     yield self.env.process(c.produce(self, s.n_tokens))
+
+                # deactivate if interrupted
+                if interrupt.processed:
+                    self.deactivate()
+                    return
             if s.terminate:
                 self._log.debug('process terminates')
                 break

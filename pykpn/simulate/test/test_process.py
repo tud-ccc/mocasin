@@ -46,6 +46,7 @@ class TestRuntimeProcess(object):
 
         process.env.run(2)  # continue simulation so that callback is called
         callback.assert_called_once_with(event)
+        assert event.ok and event.processed
 
     def test_transition_invalid(self, process):
         with pytest.raises(RuntimeError):
@@ -75,7 +76,6 @@ class TestRuntimeProcess(object):
             process.env.run(3)
             assert process._state == ProcessState.RUNNING
             assert process.processor is processor
-            process.workload.assert_called_once()
         else:
             with pytest.raises(AssertionError):
                 process.activate(processor)
@@ -211,19 +211,12 @@ class TestRuntimeKpnProcess:
         kpn_process._trace_generator = trace_generator
         env.run()
         kpn_process._channels['chan'] = channel
+        kpn_process.start()
+        env.run()
         kpn_process.activate(processor)
         env.run()
-
-    def test_auto_start(self, env, kpn_process):
-        event = kpn_process.ready
-        env.run()
-        assert kpn_process.check_state(ProcessState.READY)
-        assert event.ok
-
-    def test_workload_execution(self, env, kpn_process, processor, mocker):
-        kpn_process.workload = mocker.Mock()
-        self._run(env, kpn_process, processor)
-        kpn_process.workload.assert_called_once()
+        finished = env.process(kpn_process.workload())
+        env.run(finished)
 
     def test_workload_terminate(self, env, kpn_process, processor):
         self._run(env, kpn_process, processor, self.TerminateTraceGenerator())
@@ -252,8 +245,12 @@ class TestRuntimeKpnProcess:
         kpn_process._trace_generator = self.ReadTraceGenerator()
         env.run()
         kpn_process._channels['chan'] = empty_channel
+        kpn_process.start()
+        env.run()
         kpn_process.activate(processor)
         env.run()
+        finished = env.process(kpn_process.workload())
+        env.run(finished)
         assert kpn_process._state == ProcessState.BLOCKED
         assert env.now == 1
 
@@ -269,6 +266,8 @@ class TestRuntimeKpnProcess:
         env.run()
         kpn_process.activate(processor)
         env.run()
+        finished = env.process(kpn_process.workload())
+        env.run(finished)
 
     def test_workload_read_resume(self, env, kpn_process, processor,
                                   empty_channel, full_channel):
@@ -314,4 +313,5 @@ def test_default_workload(app, mocker):
     app.env.run()
     process.activate(mocker.Mock())
     with pytest.raises(NotImplementedError):
+        app.env.process(process.workload())
         app.env.run()

@@ -16,8 +16,11 @@ from pykpn.simulate.process import ProcessState
 @pytest.fixture
 def running_process(env, kpn_process, processor):
     kpn_process.workload = Mock()  # disable the normal workload
-    env.run()  # start the kpn_process
+    kpn_process.start()
+    env.run()
     kpn_process.activate(processor)
+    env.run()
+    env.process(kpn_process.workload())
     env.run()
     return kpn_process
 

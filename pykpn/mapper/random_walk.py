@@ -5,18 +5,16 @@
 
 
 import timeit
-import multiprocessing as mp
 import hydra
 import random
 import numpy as np
 import os
 
-from pykpn.mapper.utils import Statistics, ApplicationContext, SimulationContext, run_simulation, SimulationManager
+from pykpn.mapper.utils import SimulationManager
 from pykpn.mapper.random import RandomMapper
 from pykpn.util import logging, plot
 from pykpn.slx.mapping import export_slx_mapping
 from pykpn.representations.representations import RepresentationType
-from pykpn.common.mapping import ChannelMappingInfo, Mapping, ProcessMappingInfo
 
 log = logging.getLogger(__name__)
 
@@ -73,7 +71,6 @@ class RandomWalkMapper(object):
         """ Generates a mapping via a random walk
         """
         cfg = self.config
-        num_iterations = cfg['num_iterations']
 
         start = timeit.default_timer()
         # Create a list of 'simulations'. These are later executed by multiple
