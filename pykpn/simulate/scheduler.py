@@ -4,6 +4,7 @@
 # Authors: Christian Menard, Felix Teweleit
 
 
+from collections import deque
 from enum import Enum
 
 from pykpn.util import logging
@@ -12,6 +13,9 @@ from pykpn.simulate.process import ProcessState, RuntimeProcess
 
 
 log = logging.getLogger(__name__)
+
+
+_MAX_DEQUE_LEN = 1000
 
 
 class ContextSwitchMode(Enum):
@@ -88,6 +92,10 @@ class RuntimeScheduler(object):
 
         self.process_ready = self.env.event()
 
+        # keep track of processor load, maxlen ensures that memory does not
+        # grow arbitrarily large
+        self._load_trace = deque(maxlen=_MAX_DEQUE_LEN)
+
     @property
     def env(self):
         """The simpy environment"""
@@ -97,6 +105,41 @@ class RuntimeScheduler(object):
     def trace_writer(self):
         """The system's trace writer"""
         return self._system.trace_writer
+
+    def average_load(self, time_frame):
+        """Calculate the average load over a given time frame.
+
+        This will analyse the execution trace and process all events between
+        now and ``time_frame`` pico seconds in the past to determine the
+        average load in this time_frame. Note that ``_load_trace`` only
+        keeps a total of 1000 entries. Thus, ``time_frame`` cannot be
+        arbitrarily large.
+
+        Args:
+            time_frame (int): size of the time frame to consider in pico
+                seconds
+        """
+        if len(self._load_trace) == 0:
+            return 0.0
+
+        active_time = 0
+        now = self.env.now
+        stop = now - time_frame
+        reached_stop = False
+        for timestamp, event in self._load_trace:
+            if timestamp < stop:
+                if event == 1:
+                    active_time += now - stop
+                reached_stop = True
+                break
+            else:
+                if event == 1:
+                    active_time += now - timestamp
+            now = timestamp
+        if not reached_stop and len(self._load_trace) == _MAX_DEQUE_LEN:
+            log.warn("Cannot calculate load accurately as the trace data is "
+                     "not long enough.")
+        return float(active_time)/float(time_frame)
 
     def add_process(self, process):
         """Add a process to this scheduler.
@@ -158,6 +201,9 @@ class RuntimeScheduler(object):
 
             # Found a process to be scheduled?
             if np is not None:
+                # record the activation event in our internal load trace
+                if len(self._load_trace) == 0 or self._load_trace[0][1] == 0:
+                    self._load_trace.appendleft((self.env.now, 1))
                 # pay for the scheduling delay
                 ticks = self._processor.ticks(self._scheduling_cycles)
                 yield self.env.timeout(ticks)
@@ -217,7 +263,14 @@ class RuntimeScheduler(object):
                 # Wait for ready events if the scheduling algorithm did not
                 # find a process that is ready for execution
                 self._log.debug('There is no ready process -> sleep')
+                # Record the idle event in our internal load trace
+                if len(self._load_trace) == 0 or self._load_trace[0][1] == 1:
+                    self._load_trace.appendleft((self.env.now, 0))
                 yield self.process_ready
+
+    def ready_queue_length(self):
+        """Get the current length of the ready queue"""
+        return len(self._ready_queue)
 
 
 class DummyScheduler(RuntimeScheduler):
