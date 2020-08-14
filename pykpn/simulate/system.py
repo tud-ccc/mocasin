@@ -125,9 +125,6 @@ class RuntimeSystem:
         for s in self._schedulers:
             self._env.process(s.run())
 
-        self._env.run()
-
-        self.check_errors()
 
     def check_errors(self):
         some_blocked = False
