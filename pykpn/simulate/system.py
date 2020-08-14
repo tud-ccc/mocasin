@@ -55,6 +55,8 @@ class RuntimeSystem:
         self._processes = set()
 
         self.trace_writer = TraceWriter(env)
+        self.app_trace_enabled = False
+        self.platform_trace_enabled = False
 
         # initialize all schedulers
 
@@ -153,3 +155,13 @@ class RuntimeSystem:
     def env(self):
         """The simpy environment"""
         return self._env
+
+    def write_simulation_trace(self, path):
+        """Write a json trace of the simulated system to ``path``
+
+        The generated trace can be opened with Chrome's or Chromiums builtin
+        trace viewer at ``about://tracing/``.
+        Args:
+            path (str): path to the file that should be generated
+        """
+        self.trace_writer.write_trace(path)

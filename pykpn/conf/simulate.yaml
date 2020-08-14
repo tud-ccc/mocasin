@@ -9,4 +9,7 @@ defaults:
   - representation: SimpleVector
   - simulation_type: single_kpn
 
-simulation_trace: "trace.json"
+simtrace:
+  file: "trace.json"
+  app: True
+  platform: True

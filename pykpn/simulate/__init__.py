@@ -99,27 +99,6 @@ class BaseSimulation:
         raise RuntimeError("run() may only be called on a simulation object "
                            "that is used in a with statement")
 
-    def write_simulation_trace(self, path):
-        """Write a json trace of the simulated system to ``path``
-
-        The generated trace can be opened with Chrome's or Chromiums builtin
-        trace viewer at ``about://tracing/``.
-
-        This should only be called after calling func:`run`.
-
-        Args:
-            path (str): path to the file that should be generated
-        """
-        self.system.trace_writer.write_trace(path)
-
-    def enable_tracing(self):
-        """Enable simulation trace generation"""
-        self.system.trace_writer.enable()
-
-    def disable_tracing(self):
-        """Disable simulation trace generation"""
-        self.system.trace_writer.disable()
-
 
 class KpnSimulation(BaseSimulation):
     """Handles the simulation of a single KPN application

@@ -39,12 +39,13 @@ def simulate(cfg):
           :class:`~pykpn.common.trace.TraceGenerator` object.
     """
 
-    trace_file = cfg['simulation_trace']
+    trace_cfg = cfg['simtrace']
     simulation = hydra.utils.instantiate(cfg.simulation_type, cfg)
 
     with simulation:
-        if trace_file is not None:
-            simulation.enable_tracing()
+        if trace_cfg is not None and trace_cfg['file'] is not None:
+            simulation.system.app_trace_enabled = trace_cfg['app']
+            simulation.system.platform_trace_enabled = trace_cfg['platform']
 
         log.info('Start the simulation')
         start = timeit.default_timer()
@@ -56,5 +57,5 @@ def simulate(cfg):
         print('Total simulated time: ' + str(exec_time) + ' ms')
         print('Total simulation time: ' + str(stop - start) + ' s')
 
-        if trace_file is not None:
-            simulation.write_simulation_trace(trace_file)
+        if trace_cfg is not None and trace_cfg['file'] is not None:
+            simulation.system.write_simulation_trace(trace_cfg['file'])

@@ -235,10 +235,11 @@ class RuntimeScheduler(object):
                 # continuing
                 yield self.env.timeout(0)
                 # record the process activation in the simulation trace
-                self.trace_writer.begin_duration(self._system.platform.name,
-                                                 self._processor.name,
-                                                 np.full_name,
-                                                 category="Schedule")
+                if self._system.platform_trace_enabled:
+                    self.trace_writer.begin_duration(self._system.platform.name,
+                                                     self._processor.name,
+                                                     np.full_name,
+                                                     category="Schedule")
 
                 # execute the process workload
                 if self._time_slice is not None:
@@ -248,10 +249,11 @@ class RuntimeScheduler(object):
                 yield self.env.process(self.current_process.workload(timeout))
 
                 # record the process halting in the simulation trace
-                self.trace_writer.end_duration(self._system.platform.name,
-                                               self._processor.name,
-                                               np.full_name,
-                                               category="Schedule")
+                if self._system.platform_trace_enabled:
+                    self.trace_writer.end_duration(self._system.platform.name,
+                                                   self._processor.name,
+                                                   np.full_name,
+                                                   category="Schedule")
 
                 # pay for context switching
                 if self._context_switch_mode == ContextSwitchMode.ALWAYS:
