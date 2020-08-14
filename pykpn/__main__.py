@@ -41,6 +41,8 @@ def main():
 
     if len(sys.argv) > 1:
         for i in range(1, len(sys.argv)):
+            if list(sys.argv[i])[0] == '-':
+                continue
             if len(sys.argv[i].split('=')) != 2:
                 log.error("{0} is no valid hydra argument!".format(sys.argv[i]))
                 sys.exit(1)
