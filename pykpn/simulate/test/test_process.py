@@ -9,24 +9,6 @@ from pykpn.common.trace import TraceGenerator, TraceSegment
 from pykpn.simulate.process import ProcessState, RuntimeProcess
 
 
-@pytest.fixture(params=['base', 'kpn'])
-def process(request, base_process, kpn_process, mocker):
-    if request.param == 'base':
-        proc = base_process
-    elif request.param == 'kpn':
-        proc = kpn_process
-    else:
-        raise ValueError('Unexpected fixture parameter')
-
-    proc.workload = mocker.Mock()
-    return proc
-
-
-@pytest.fixture(params=ProcessState.__members__)
-def state(request):
-    return request.param
-
-
 class TestRuntimeProcess(object):
 
     def test_init_process_state(self, process):
