@@ -46,6 +46,10 @@ def simulate(cfg):
         if trace_cfg is not None and trace_cfg['file'] is not None:
             simulation.system.app_trace_enabled = trace_cfg['app']
             simulation.system.platform_trace_enabled = trace_cfg['platform']
+            load_cfg = trace_cfg['load']
+            if load_cfg is not None:
+                simulation.system.load_trace_cfg = (
+                    load_cfg['granularity'], load_cfg['time_frame'])
 
         log.info('Start the simulation')
         start = timeit.default_timer()

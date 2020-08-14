@@ -13,3 +13,6 @@ simtrace:
   file: "trace.json"
   app: True
   platform: True
+  load:
+    granularity: 100000000  # every 100us
+    time_frame: 1000000000  # consider the load of the last 1ms

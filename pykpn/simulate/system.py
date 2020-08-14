@@ -57,6 +57,7 @@ class RuntimeSystem:
         self.trace_writer = TraceWriter(env)
         self.app_trace_enabled = False
         self.platform_trace_enabled = False
+        self.load_trace_cfg = None
 
         # initialize all schedulers
 
@@ -123,10 +124,31 @@ class RuntimeSystem:
         scheduler.add_process(process)
         process.start()
 
+    def record_system_load(self):
+        # create an init event in order to give the trace viewer a hint
+        # on the maximum value
+        for s in self._schedulers:
+            self.trace_writer.update_counter("load",
+                                             s._processor.name,
+                                             [1.0],
+                                             category="Load")
+
+        granularity, time_frame = self.load_trace_cfg
+        while True:
+            for s in self._schedulers:
+                load = s.average_load(time_frame),
+                self.trace_writer.update_counter("load",
+                                                 s._processor.name,
+                                                 load,
+                                                 category="Load")
+            yield self.env.timeout(granularity)
+
     def start_schedulers(self):
         for s in self._schedulers:
             self._env.process(s.run())
-
+        # trace the system load
+        if self.load_trace_cfg is not None:
+            self._env.process(self.record_system_load())
 
     def check_errors(self):
         some_blocked = False
