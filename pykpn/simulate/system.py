@@ -138,6 +138,17 @@ class RuntimeSystem:
         if some_blocked:
             raise SimulationError('There is a deadlock!')
 
+    def get_scheduler(self, processor):
+        """Look up the scheduler for a given processor
+
+        Args:
+            processor (Processor): the processor to find the scheduler foreach
+
+        Returns:
+            (Scheduler) A scheduler object
+        """
+        return self._processors_to_schedulers[processor]
+
     @property
     def env(self):
         """The simpy environment"""
