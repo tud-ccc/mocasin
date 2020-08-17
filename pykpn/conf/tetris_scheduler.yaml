@@ -1,0 +1,20 @@
+# @package _global_
+defaults:
+  - common
+  - hydra/job_logging: pykpn
+    # Set the platform
+  - platform: default
+  - resource_manager: default
+
+# Base directory
+# The base directory should include 'apps' directory
+tetris_base: ???
+
+# Scenario to schedule
+job_table: ???
+
+# Output file for scheduling
+output_schedule:
+
+# Output file for summary
+summary_csv:

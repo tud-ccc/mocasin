@@ -84,10 +84,14 @@ _tasks = {
         'solve_query',
         'solve_query',
         "Generates a mapping based on constraints expressed in a query language"),
-    'tetris' : (
+    'tetris_manager' : (
         'tetris',
+        'tetris_manager',
+        "Run the Tetris manager"),
+    'tetris_scheduler' : (
         'tetris',
-        "Run TETRiS scheduler"),
+        'tetris_scheduler',
+        "Run the Tetris scheduler for a single input state"),
     'visualize': (
         'visualize',
         'visualize',

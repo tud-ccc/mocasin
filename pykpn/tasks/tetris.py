@@ -40,28 +40,17 @@ def init_logging():
 
 
 def print_summary(scenario, res, scheduling, schedule_time, within_time,
-                  opt_summary, opt_summary_append, scheduler, opt_reschedule):
+                  opt_summary, scheduler, opt_reschedule):
     # TODO: Take the name of scheduler from scheduler
     summary_file = opt_summary
     if summary_file is None:
-        outf = sys.stdout
-        new_file = True
-    else:
-        if os.path.isfile(summary_file):
-            new_file = False
-        else:
-            new_file = True
-        if opt_summary_append:
-            outf = open(summary_file, "a+")
-        else:
-            outf = open(summary_file, "w")
-            new_file = True
-    if new_file:
-        print(
-            "input_state,scheduler,reschedule,search_time,scheduled"
-            ",energy,longest_time,time_segments,within_TL",
-            file=outf,
-        )
+        return
+    outf = open(summary_file, "w")
+    print(
+        "input_state,scheduler,reschedule,search_time,scheduled"
+        ",energy,longest_time,time_segments,within_TL",
+        file=outf,
+    )
 
     scheduler_str = scheduler.name
 
@@ -115,11 +104,11 @@ def single_mode_scheduler(scheduler, scenario):
     return res, scheduling, schedule_time
 
 
-@hydra.main(config_path='../conf', config_name='tetris')
-def tetris(cfg):
-    """TETRiS
+@hydra.main(config_path='../conf', config_name='tetris_scheduler')
+def tetris_scheduler(cfg):
+    """Tetris scheduler
 
-    This task runs tetris scheduler using the table of operating points.
+    This task runs tetris scheduler for a single request table.
 
     Args:
         cfg(~omegaconf.dictconfig.DictConfig): the hydra configuration object
@@ -130,21 +119,17 @@ def tetris(cfg):
           :class:`~pykpn.common.platform.Platform` object.
         TODO: Write down 
     """
-    print(cfg.pretty())
-
-    if os.path.isabs(cfg["scenario"]):
-        scenario = cfg["scenario"]
+    if os.path.isabs(cfg["job_table"]):
+        scenario = cfg["job_table"]
     else:
         scenario = os.path.abspath(
-            os.path.join(os.getcwd(), "..", "..", "..", cfg["scenario"]))
+            os.path.join(os.getcwd(), "..", "..", "..", cfg["job_table"]))
 
-    mapping_dir = cfg["mapping_dir"]
-    out_fn = cfg["output"]
+    out_fn = cfg["output_schedule"]
     if out_fn != None:
         outf = open(out_fn, mode="w")
     else:
         outf = sys.stdout
-    mode = cfg["mode"]
 
     # Suppress logs from pykpn module
     init_logging()
@@ -166,40 +151,86 @@ def tetris(cfg):
     # Initialize scheduler
     scheduler = hydra.utils.instantiate(cfg['resource_manager'], app_table, platform)
 
-    opt_summary = cfg["summary"]
-    opt_summary_append = cfg["summary_append"]
+    opt_summary = cfg["summary_csv"]
     opt_time_limit = cfg.get("time_limit", 'None')
     opt_reschedule = cfg.get("reschedule", True)
-    if mode == "single":
-        res, scheduling, schedule_time = single_mode_scheduler(
-            scheduler, scenario)
-        if res:
-            scheduling.legacy_dump(outf=outf)
-            # scheduling.legacy_dump_jobs_info(outf=outf)
-        if opt_time_limit != 'None':
-            within_time = schedule_time <= opt_time_limit
-        else:
-            within_time = True
-        print_summary(
-            scenario,
-            res,
-            scheduling,
-            schedule_time,
-            within_time,
-            opt_summary,
-            opt_summary_append,
-            scheduler,
-            opt_reschedule,
-        )
-    elif mode == "trace":
-        dump_summary = False
-        dump_path = ""
-        if opt_summary is not None:
-            dump_summary = True
-            dump_path = opt_summary
-
-        manager = ResourceManager(scheduler, platform)
-        tracer = TracePlayer(manager, scenario, dump_summary, dump_path)
-        tracer.run()
+    res, scheduling, schedule_time = single_mode_scheduler(scheduler, scenario)
+    if res:
+        scheduling.legacy_dump(outf=outf)
+        # scheduling.legacy_dump_jobs_info(outf=outf)
+    if opt_time_limit != 'None':
+        within_time = schedule_time <= opt_time_limit
     else:
-        assert False, "Unknown scheduler"
+        within_time = True
+    print_summary(
+        scenario,
+        res,
+        scheduling,
+        schedule_time,
+        within_time,
+        opt_summary,
+        scheduler,
+        opt_reschedule,
+    )
+
+
+@hydra.main(config_path='../conf', config_name='tetris_manager')
+def tetris_manager(cfg):
+    """Tetris manager
+
+    This task runs tetris manager for the input trace of jobs
+
+    Args:
+        cfg(~omegaconf.dictconfig.DictConfig): the hydra configuration object
+
+    **Hydra Parameters**:
+        * **platform:** the input platform. The task expects a configuration
+          dict that can be instantiated to a
+          :class:`~pykpn.common.platform.Platform` object.
+        TODO: Write down 
+    """
+    if os.path.isabs(cfg["input_jobs"]):
+        scenario = cfg["input_jobs"]
+    else:
+        scenario = os.path.abspath(
+            os.path.join(os.getcwd(), "..", "..", "..", cfg["input_jobs"]))
+
+    out_fn = cfg["output_trace"]
+    if out_fn != None:
+        outf = open(out_fn, mode="w")
+    else:
+        outf = sys.stdout
+
+    # Suppress logs from pykpn module
+    init_logging()
+
+    tetris_base = cfg['tetris_base']
+
+    # Set the platform
+    platform = hydra.utils.instantiate(cfg['platform'])
+
+    # Initialize application table
+    app_table = AppTable(platform, os.path.join(tetris_base, "apps"))
+
+    # Initialize request table, and fill it by requests from the file
+    req_table = ReqTable(app_table)
+
+    # Save reference to table in Context
+    Context().req_table = req_table
+
+    # Initialize scheduler
+    scheduler = hydra.utils.instantiate(cfg['resource_manager'], app_table,
+                                        platform, cfg)
+
+    opt_summary = cfg["summary_csv"]
+    opt_time_limit = cfg.get("time_limit", 'None')
+    opt_reschedule = cfg.get("reschedule", True)
+    dump_summary = False
+    dump_path = ""
+    if opt_summary is not None:
+        dump_summary = True
+        dump_path = opt_summary
+
+    manager = ResourceManager(scheduler, platform)
+    tracer = TracePlayer(manager, scenario, dump_summary, dump_path)
+    tracer.run()
