@@ -12,3 +12,4 @@ dump_cache: false
 chunk_size : 10
 progress : false
 parallel : true
+jobs : 4
