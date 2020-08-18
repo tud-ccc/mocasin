@@ -6,6 +6,7 @@ from setuptools.command.develop import develop
 from doc.build_doc import BuildDocCommand
 import subprocess
 import sys
+import os
 
 project_name = "pykpn"
 version = "0.1"
@@ -84,6 +85,27 @@ class InstallPynautyCommand(distutils.cmd.Command):
         subprocess.check_call(["python", "setup.py", "install"],
                               cwd="third_party_dependencies/pynauty-0.6")
 
+class InstallMpsymCommand(distutils.cmd.Command):
+    """A custom command to install the pynauty dependency"""
+
+    description = "install the mpsym dependency"
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        """Run the command.
+
+        First, run ``make pynauty`` to build the c library. Then, run ``python
+        setup.py install`` to install pynauty.
+        """
+        subprocess.check_call(["python", "setup.py", "install"],
+                              cwd="third_party_dependencies/mpsym")
+
 
 class InstallTsneCommand(distutils.cmd.Command):
     """A custom command to install the tsne dependency"""
@@ -110,6 +132,7 @@ class InstallCommand(install):
 
     def run(self):
         self.run_command('pynauty')
+        self.run_command('mpsym')
         self.run_command('tsne')
         # XXX Actually install.run(self) should be used here. But there seems
         # to be a bug in setuptools that skips installing the required
@@ -123,6 +146,7 @@ class DevelopCommand(develop):
     def run(self):
         develop.run(self)
         self.run_command('pynauty')
+        self.run_command('mpsym')
         self.run_command('tsne')
 
 #All version restrictions stem from numpy causing issues, it seems with CI:
@@ -147,6 +171,7 @@ setup(
     cmdclass={
         'doc': BuildDocCommand,
         'pynauty': InstallPynautyCommand,
+        'mpsym': InstallMpsymCommand,
         'tsne': InstallTsneCommand,
         'install': InstallCommand,
         'develop': DevelopCommand,
