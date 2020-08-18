@@ -15,12 +15,17 @@ try:
 except:
     pass
 
+try:
+    import mpsym
+except:
+    import pykpn.representations.permutations as perm
+
+
 from pykpn.mapper.partial import ProcPartialMapper, ComFullMapper
 
 from .metric_spaces import FiniteMetricSpace, FiniteMetricSpaceSym, FiniteMetricSpaceLP, FiniteMetricSpaceLPSym, arch_graph_to_distance_metric
 from .embeddings import MetricSpaceEmbedding
 import pykpn.representations.automorphisms as aut
-import pykpn.representations.permutations as perm
 import pykpn.util.random_distributions.lp as lp
 from pykpn.util import logging
 log = logging.getLogger(__name__)
@@ -325,27 +330,42 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         #TODO: ensure that nodes_correspondence fits simpleVec
 
         n = len(self.platform.processors())
-        nautygraph = pynauty.Graph(num_vertices,True,adjacency_dict, coloring)
-        autgrp_edges = pynauty.autgrp(nautygraph)
-        autgrp, new_nodes_correspondence = aut.edge_to_node_autgrp(autgrp_edges[0],self._arch_nc)
-        permutations_lists = map(aut.list_to_tuple_permutation,autgrp)
-        permutations = [perm.Permutation(p,n= n) for p in permutations_lists]
-        self._G = perm.PermutationGroup(permutations)
+        try:
+            mpsym
+        except NameError:
+            self.sym_library = False
+            nautygraph = pynauty.Graph(num_vertices,True,adjacency_dict, coloring)
+            autgrp_edges = pynauty.autgrp(nautygraph)
+            autgrp, new_nodes_correspondence = aut.edge_to_node_autgrp(autgrp_edges[0],self._arch_nc)
+            permutations_lists = map(aut.list_to_tuple_permutation,autgrp)
+            permutations = [perm.Permutation(p,n= n) for p in permutations_lists]
+            self._G = perm.PermutationGroup(permutations)
+        else:
+            self.sym_library = True
 
     def _simpleVec2Elem(self,x):
-        return self._G.tuple_normalize(x[:self._d])
+        if self.sym_library:
+            pass #TODO: add
+        else:
+            return self._G.tuple_normalize(x[:self._d])
     def _elem2SimpleVec(self,x):
         return x
 
     def _uniform(self):
         procs_only = SimpleVectorRepresentation._uniform(self)[:self._d]
-        return self._G.tuple_normalize(procs_only)
+        if self.sym_library:
+            pass #TODO: add
+        else:
+            return self._G.tuple_normalize(procs_only)
 
     def uniform(self):
         return self.fromRepresentation(self._uniform())
 
     def _allEquivalent(self,x):
-        return self._G.tuple_orbit(x[:self._d])
+        if self.sym_library:
+            pass
+        else:
+            return self._G.tuple_orbit(x[:self._d])
     def allEquivalent(self,x):
         orbit = self._allEquivalent(x)
         res = []
@@ -531,6 +551,7 @@ class SymmetryEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRep
         n = len(self.platform.processors())
         M_matrix, self._arch_nc, self._arch_nc_inv = arch_graph_to_distance_metric(self._topologyGraph)
         adjacency_dict, num_vertices, coloring, self._arch_nc = aut.to_labeled_edge_graph(self._topologyGraph)
+        #TODO: change cases to include mpsym
         nautygraph = pynauty.Graph(num_vertices,True,adjacency_dict, coloring)
         autgrp_edges = pynauty.autgrp(nautygraph)
         autgrp, new_nodes_correspondence = aut.edge_to_node_autgrp(autgrp_edges[0],self._arch_nc)
