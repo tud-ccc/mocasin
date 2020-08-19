@@ -18,8 +18,8 @@ class RequestStatus(Enum):
 
 
 class Request:
-    def __init__(self, parent, rid, app, arrival, deadline, start_completion_rate=0.0,
-                 status=RequestStatus.NEW):
+    def __init__(self, parent, rid, app, arrival, deadline,
+                 start_completion_rate=0.0, status=RequestStatus.NEW):
         self.__parent = parent
         self.__rid = rid
         self.__app = app
@@ -96,7 +96,8 @@ class ReqTable:
     def add(self, app_name, arrival, deadline, completion_rate=0.0,
             status=RequestStatus.NEW):
         rid = self.__next_rid
-        r = Request(self, rid, app_name, arrival, deadline, completion_rate, status)
+        r = Request(self, rid, app_name, arrival, deadline, completion_rate,
+                    status)
         self.__next_rid += 1
         self.__reqs.append(r)
         return rid

@@ -3,9 +3,8 @@
 # Author: Robert Khasanov
 
 import sys, os
-import argparse
-import re
 import time
+import timeit
 import logging
 import hydra
 
@@ -16,18 +15,10 @@ from pykpn.tetris.job import JobTable
 
 from pykpn.common.platform import Platform
 
-from pykpn.tetris.scheduler.bruteforce import BruteforceScheduler
-from pykpn.tetris.scheduler.fast import FastScheduler
-from pykpn.tetris.scheduler.dac import DacScheduler
-from pykpn.tetris.scheduler.wwt15 import (
-    WWT15Scheduler,
-    WWT15SortingKey,
-    WWT15ExploreMode,
-)
-from pykpn.tetris.scheduler.lr_solver import LRConstraint
-
 from pykpn.tetris.manager import ResourceManager
 from pykpn.tetris.tracer import TracePlayer
+
+from pykpn.tetris import TetrisScheduling
 
 log = logging.getLogger(__name__)
 
@@ -79,31 +70,6 @@ def print_summary(scenario, res, scheduling, schedule_time, within_time,
     )
 
 
-def single_mode_scheduler(scheduler, scenario):
-    """Schedule all applications at once.
-
-    The scheduler takes all requests and attempts to schedule them.
-
-    Args:
-        scheduler (SchedulerBase): Scheduler instance
-    """
-    Context().req_table.read_from_file(scenario)
-    log.info("Read requests from the file")
-    log.info(Context().req_table.dump_str().rstrip())
-
-    # Job table
-    job_table = JobTable()
-    job_table.init_by_req_table()
-
-    log.info("Starting scheduling")
-    start_time = time.time()
-    res, scheduling, within_time = scheduler.schedule(job_table)
-    stop_time = time.time()
-    log.info("Finished scheduling")
-    schedule_time = stop_time - start_time
-    return res, scheduling, schedule_time
-
-
 @hydra.main(config_path='../conf', config_name='tetris_scheduler')
 def tetris_scheduler(cfg):
     """Tetris scheduler
@@ -119,11 +85,8 @@ def tetris_scheduler(cfg):
           :class:`~pykpn.common.platform.Platform` object.
         TODO: Write down 
     """
-    if os.path.isabs(cfg["job_table"]):
-        scenario = cfg["job_table"]
-    else:
-        scenario = os.path.abspath(
-            os.path.join(os.getcwd(), "..", "..", "..", cfg["job_table"]))
+    # Suppress logs from pykpn module
+    init_logging()
 
     out_fn = cfg["output_schedule"]
     if out_fn != None:
@@ -131,45 +94,32 @@ def tetris_scheduler(cfg):
     else:
         outf = sys.stdout
 
-    # Suppress logs from pykpn module
-    init_logging()
+    scheduling = TetrisScheduling.from_hydra(cfg)
 
-    tetris_base = cfg['tetris_base']
-
-    # Set the platform
-    platform = hydra.utils.instantiate(cfg['platform'])
-
-    # Initialize application table
-    app_table = AppTable(platform, os.path.join(tetris_base, "apps"))
-
-    # Initialize request table, and fill it by requests from the file
-    req_table = ReqTable(app_table)
-
-    # Save reference to table in Context
-    Context().req_table = req_table
-
-    # Initialize scheduler
-    scheduler = hydra.utils.instantiate(cfg['resource_manager'], app_table, platform)
+    log.info('Start the scheduling')
+    start = timeit.default_timer()
+    scheduling.run()
+    stop = timeit.default_timer()
+    log.info('Scheduling done')
 
     opt_summary = cfg["summary_csv"]
     opt_time_limit = cfg.get("time_limit", 'None')
     opt_reschedule = cfg.get("reschedule", True)
-    res, scheduling, schedule_time = single_mode_scheduler(scheduler, scenario)
-    if res:
-        scheduling.legacy_dump(outf=outf)
+    if scheduling.found_schedule:
+        scheduling.schedule.legacy_dump(outf=outf)
         # scheduling.legacy_dump_jobs_info(outf=outf)
     if opt_time_limit != 'None':
         within_time = schedule_time <= opt_time_limit
     else:
         within_time = True
     print_summary(
-        scenario,
-        res,
-        scheduling,
-        schedule_time,
-        within_time,
+        cfg['job_table'],
+        scheduling.found_schedule,
+        scheduling.schedule,
+        stop - start,
+        scheduling.within_time_limit,
         opt_summary,
-        scheduler,
+        scheduling.scheduler,
         opt_reschedule,
     )
 
@@ -204,13 +154,13 @@ def tetris_manager(cfg):
     # Suppress logs from pykpn module
     init_logging()
 
-    tetris_base = cfg['tetris_base']
+    tetris_apps_dir = cfg['tetris_apps_dir']
 
     # Set the platform
     platform = hydra.utils.instantiate(cfg['platform'])
 
     # Initialize application table
-    app_table = AppTable(platform, os.path.join(tetris_base, "apps"))
+    app_table = AppTable(platform, tetris_apps_dir)
 
     # Initialize request table, and fill it by requests from the file
     req_table = ReqTable(app_table)

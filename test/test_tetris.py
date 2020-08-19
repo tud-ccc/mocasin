@@ -69,9 +69,9 @@ def run_tetris_scheduler(datadir, expected_dir, scheduler, scenario,
                              "{}.csv".format(testname))
     out_name = "{}_{}{}.out".format(sched_l, testname, file_suffix)
     out_path = os.path.join(datadir, out_name)
-    tetris_base = os.path.join(datadir, "tetris")
+    tetris_base = os.path.join(datadir, "tetris", "apps")
     cmd = ("pykpn " + "tetris_scheduler " +
-           "tetris_base={} ".format(tetris_base) +
+           "tetris_apps_dir={} ".format(tetris_base) +
            "job_table={} ".format(input_scn) +
            "resource_manager={} ".format(scheduler) + "platform=exynos " +
            options + " " + "output_schedule={} ".format(out_path))
@@ -122,9 +122,9 @@ def test_tetris_manager(datadir, expected_dir, tetris_manager_test):
                              "{}.csv".format(testname))
     out_name = "{}_{}.out".format("manager", testname)
     out_path = os.path.join(datadir, out_name)
-    tetris_base = os.path.join(datadir, "tetris")
+    tetris_base = os.path.join(datadir, "tetris", "apps")
     cmd = ("pykpn " + "tetris_manager " +
-           "tetris_base={} ".format(tetris_base) +
+           "tetris_apps_dir={} ".format(tetris_base) +
            "input_jobs={} ".format(input_scn) +
            "resource_manager={} ".format("dac") + "platform=exynos " +
            "log_level=INFO " + "output_trace={} ".format(out_path))

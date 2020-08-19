@@ -6,9 +6,8 @@ defaults:
   - platform: default
   - resource_manager: default
 
-# Base directory
-# The base directory should include 'apps' directory
-tetris_base: ???
+# Base directory with applications and mappings info
+tetris_apps_dir: ???
 
 # Scenario to schedule
 job_table: ???

@@ -1,5 +1,6 @@
 from pykpn.tetris.context import Context
 from pykpn.tetris.mapping import Mapping
+from pykpn.tetris.reqtable import ReqTable
 
 import logging
 log = logging.getLogger(__name__)
@@ -63,12 +64,14 @@ class JobTable:
         self.__jobs = []
         self.time = time
 
-    def init_by_req_table(self):
+    def init_by_req_table(self, req_table):
         # yapf: disable
         assert len(self.__jobs) == 0, (
                 "There should be no task in the state table")
         # yapf: enable
-        for r in Context().req_table:
+        assert isinstance(req_table, ReqTable)
+
+        for r in req_table:
             self.add(r.rid(), r.start_completion_rate())
 
     @classmethod
