@@ -2,23 +2,12 @@
 #
 # Author: Robert Khasanov
 
-import sys, os
-import time
+import sys
 import timeit
 import logging
 import hydra
 
-from pykpn.tetris.context import Context
-from pykpn.tetris.reqtable import ReqTable
-from pykpn.tetris.apptable import AppTable
-from pykpn.tetris.job import JobTable
-
-from pykpn.common.platform import Platform
-
-from pykpn.tetris.manager import ResourceManager
-from pykpn.tetris.tracer import TracePlayer
-
-from pykpn.tetris import TetrisScheduling
+from pykpn.tetris import (TetrisScheduling, TetrisManagement)
 
 log = logging.getLogger(__name__)
 
@@ -139,48 +128,13 @@ def tetris_manager(cfg):
           :class:`~pykpn.common.platform.Platform` object.
         TODO: Write down 
     """
-    if os.path.isabs(cfg["input_jobs"]):
-        scenario = cfg["input_jobs"]
-    else:
-        scenario = os.path.abspath(
-            os.path.join(os.getcwd(), "..", "..", "..", cfg["input_jobs"]))
-
-    out_fn = cfg["output_trace"]
-    if out_fn != None:
-        outf = open(out_fn, mode="w")
-    else:
-        outf = sys.stdout
-
     # Suppress logs from pykpn module
     init_logging()
 
-    tetris_apps_dir = cfg['tetris_apps_dir']
+    management = TetrisManagement.from_hydra(cfg)
 
-    # Set the platform
-    platform = hydra.utils.instantiate(cfg['platform'])
-
-    # Initialize application table
-    app_table = AppTable(platform, tetris_apps_dir)
-
-    # Initialize request table, and fill it by requests from the file
-    req_table = ReqTable(app_table)
-
-    # Save reference to table in Context
-    Context().req_table = req_table
-
-    # Initialize scheduler
-    scheduler = hydra.utils.instantiate(cfg['resource_manager'], app_table,
-                                        platform, cfg)
-
-    opt_summary = cfg["summary_csv"]
-    opt_time_limit = cfg.get("time_limit", 'None')
-    opt_reschedule = cfg.get("reschedule", True)
-    dump_summary = False
-    dump_path = ""
-    if opt_summary is not None:
-        dump_summary = True
-        dump_path = opt_summary
-
-    manager = ResourceManager(scheduler, platform)
-    tracer = TracePlayer(manager, scenario, dump_summary, dump_path)
-    tracer.run()
+    log.info('Start the tetris management')
+    start = timeit.default_timer()
+    management.run()
+    stop = timeit.default_timer()
+    log.info('Tetris management done')

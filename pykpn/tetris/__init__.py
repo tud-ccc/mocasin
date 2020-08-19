@@ -8,21 +8,19 @@ import hydra
 from pykpn.tetris.apptable import AppTable
 from pykpn.tetris.context import Context
 from pykpn.tetris.job import JobTable
+from pykpn.tetris.manager import ResourceManager
 from pykpn.tetris.reqtable import ReqTable
+from pykpn.tetris.tracer import TracePlayer
 
 
 class TetrisScheduling:
-    """Class for handlind tetris scheduling.
+    """Class for handling tetris scheduling.
 
     This class serves for handling the scheduling for a given job table,
     platform. While this class is called from hydra tasks, we dedicate a static
-    method to handle hydra configuration object. At the same time we cannot
-    fully decouple hydra configration object from it, since schedulers use a
-    config for initializing parameters.
+    method to handle hydra configuration object.
     """
-    def __init__(self, platform, app_table, scheduler, req_table):
-        self.platform = platform
-        self.app_table = app_table
+    def __init__(self, scheduler, req_table):
         self.scheduler = scheduler
         self.req_table = req_table
         Context().req_table = self.req_table
@@ -65,6 +63,63 @@ class TetrisScheduling:
         scheduler = hydra.utils.instantiate(cfg['resource_manager'], app_table,
                                             platform)
 
-        scheduling = TetrisScheduling(platform, app_table, scheduler,
-                                      req_table)
+        scheduling = TetrisScheduling(scheduler, req_table)
         return scheduling
+
+
+class TetrisManagement:
+    """Class for handling tetris management.
+
+    This class serves for handling the runtime resource management for a given
+    input job request trace and platform. While this class is called from hydra
+    tasks, we dedicate a static method to handle hydra configuration object.
+    """
+    def __init__(self, manager, tracer, req_table):
+        self.manager = manager
+        self.tracer = tracer
+        self.req_table = req_table
+        Context().req_table = self.req_table
+
+        # Scheduling results
+
+    def run(self):
+        self.tracer.run()
+
+    @staticmethod
+    def from_hydra(cfg):
+        """Factory method.
+
+        Instantiates :class:`TetrisScheduling` from a hydra configuration object.
+
+        Args:
+            cfg: a hydra configuration object
+        """
+        # Set the platform
+        platform = hydra.utils.instantiate(cfg['platform'])
+
+        # Initialize application table
+        base_apps_dir = cfg['tetris_apps_dir']
+        app_table = AppTable(platform, base_apps_dir)
+
+        # Initialize a job table, and fill it by job infos from the file
+        req_table = ReqTable(app_table)
+
+        scenario = cfg['input_jobs']
+
+        # Initialize tetris scheduler
+        scheduler = hydra.utils.instantiate(cfg['resource_manager'], app_table,
+                                            platform)
+
+        manager = ResourceManager(scheduler, platform)
+
+        # TODO: Check whether we really need to supplu dump_summary and dump_path
+        opt_summary = cfg["summary_csv"]
+        dump_summary = False
+        dump_path = ""
+        if opt_summary is not None:
+            dump_summary = True
+            dump_path = opt_summary
+        tracer = TracePlayer(manager, scenario, dump_summary, dump_path)
+
+        management = TetrisManagement(manager, tracer, req_table)
+        return management
