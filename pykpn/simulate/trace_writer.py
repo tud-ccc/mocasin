@@ -38,7 +38,6 @@ class TraceWriter:
         self._trace = []
         self._processes = {}
         self._pid_counter = 0
-        self._enabled = False
 
     def _add_new_process(self, name):
         """Register a new process and assign an ID
@@ -119,12 +118,6 @@ class TraceWriter:
             self._add_new_thread(process_info, thread)
         return process_info.tids[thread]
 
-    def enable(self):
-        self._enabled = True
-
-    def disable(self):
-        self._enabled = False
-
     def begin_duration(self, process, thread, name, category=None, args=None):
         """Generate a begin duration event.
 
@@ -139,9 +132,6 @@ class TraceWriter:
             args (dict(str, str)): an optional dictionary of additional
                 arguments that the event should be annotated with
         """
-        if not self._enabled:
-            return
-
         pid = self._get_pid(process)
         tid = self._get_tid(process, thread)
         event = {
@@ -172,9 +162,6 @@ class TraceWriter:
             args (dict(str, str)): an optional dictionary of additional
                 arguments that the event should be annotated with
         """
-        if not self._enabled:
-            return
-
         pid = self._get_pid(process)
         tid = self._get_tid(process, thread)
         event = {
@@ -205,9 +192,6 @@ class TraceWriter:
                 data series.
             category (str, optional): an optional category
         """
-        if not self._enabled:
-            return
-
         pid = self._get_pid(process)
         event = {
             "name": counter,
