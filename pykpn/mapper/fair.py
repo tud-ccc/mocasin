@@ -18,7 +18,7 @@ from pykpn.mapper.utils import Statistics
 log = logging.getLogger(__name__)
 
 
-def trace_summary(kpn, platform, trace):
+def gen_trace_summary(kpn, platform, trace):
     summary = {}
     p_types = set()
     for p in platform.processors():
@@ -52,7 +52,7 @@ class StaticCFS(object):
         self.config = config
         #self.statistics = Statistics()
 
-    def generate_mapping_dict(self,kpns,load = None, restricted = None):
+    def generate_mapping_dict(self,kpns,trace_summary,load = None, restricted = None):
         """ Generates a full mapping using a static algorithm
         inspired by Linux' GBM
         """
@@ -69,7 +69,7 @@ class StaticCFS(object):
         #use best time at first and update depending on the proc. that is next
             for kpn in kpns:
                 for p in kpn.processes():
-                    processes[type].add( (self.trace_summary[(p,type)], kpn.name + p.name))
+                    processes[type].add( (trace_summary[(p,type)], kpn.name + p.name))
 
         finished = False #to avoid converting the lists every time
         while not finished:
@@ -120,19 +120,44 @@ class StaticCFSMapper(StaticCFS):
         super().__init__(platform,config)
         self.full_mapper = True # flag indicating the mapper type
         self.kpn = kpn
-        self.random_mapper = RandomPartialMapper(self.kpn, self.platform, config, seed=None)
         self.randMapGen = RandomPartialMapper(self.kpn, self.platform, config)
         self.comMapGen = ComPartialMapper(self.kpn, self.platform, self.randMapGen)
 
     def generate_mapping(self,load = None, restricted = None):
         trace_generator = hydra.utils.instantiate(self.config['trace'])
-        self.trace_summary = trace_summary(self.kpn,self.platform,trace_generator)
+        trace_summary = gen_trace_summary(self.kpn,self.platform,trace_generator)
+        trace_generator.reset()
         mapping = Mapping(self.kpn,self.platform)
-        mapping_dict = self.generate_mapping_dict([self.kpn],load = load, restricted = restricted)
+        mapping_dict = self.generate_mapping_dict([self.kpn],trace_summary,load = load, restricted = restricted)
         for proc in self.kpn.processes():
             self.map_to_core(mapping,proc,mapping_dict[proc])
         return self.comMapGen.generate_mapping(mapping)
 
-#class StaticCFSMapperMultiApp(StaticCFS):
-#    def __init__(self,platform,config):
-#        super().__init__(platform,config)
+class StaticCFSMapperMultiApp(StaticCFS):
+    def __init__(self,platform,config):
+        super().__init__(platform,config)
+
+    def generate_mappings(self,kpns,traces,load = None, restricted = None):
+        comMapGen = {}
+        for kpn in kpns:
+            randMapGen = RandomPartialMapper(kpn, self.platform, self.config)
+            comMapGen[kpn] = ComPartialMapper(kpn, self.platform, randMapGen)
+
+        trace_summaries = {}
+        mappings = {}
+        for kpn,trace in zip(kpns,traces):
+            trace_summaries.update(gen_trace_summary(kpn,self.platform,trace))
+            mappings[kpn] = Mapping(kpn,self.platform)
+            trace.reset()
+        mapping_dict = self.generate_mapping_dict(kpns,trace_summaries,load = load, restricted = restricted)
+        for kpn in kpns:
+            for proc in kpn.processes():
+                self.map_to_core(mappings[kpn],proc,mapping_dict[proc])
+
+        res = []
+        for kpn in mappings:
+            res.append( comMapGen[kpn].generate_mapping(mappings[kpn]))
+        return res
+
+
+
