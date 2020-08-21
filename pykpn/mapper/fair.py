@@ -31,14 +31,14 @@ def trace_summary(kpn, platform, trace):
             while not seg.terminate:
                 tot += seg.processing_cycles
                 seg = trace.next_segment(proc.name, p_type)
-            summary[(proc.name,p_type)] = tot
+            summary[(proc,p_type)] = tot
     return summary
 
-class StaticCFSMapper(object):
-    """Generates a full mapping by using a static method similar to the Linux CFS scheduler.
+class StaticCFS(object):
+    """Base class for mapping using a static method similar to the Linux CFS scheduler.
     See: http://people.redhat.com/mingo/cfs-scheduler/sched-design-CFS.txt
     """
-    def __init__(self, kpn,platform,config):
+    def __init__(self, platform,config):
         """Generates a full mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
@@ -48,37 +48,28 @@ class StaticCFSMapper(object):
         :param config: the hyrda configuration
         :type config: OmniConf
         """
-        random.seed(config['random_seed'])
-        np.random.seed(config['random_seed'])
-        self.full_mapper = True # flag indicating the mapper type
-        self.kpn = kpn
         self.platform = platform
-        self.num_PEs = len(platform.processors())
         self.config = config
-        self.random_mapper = RandomPartialMapper(self.kpn,self.platform,config,seed=None)
-        self.gd_iterations = config['gd_iterations']
-        self.stepsize = config['stepsize']
-        trace_generator = hydra.utils.instantiate(config['trace'])
-        self.trace_summary = trace_summary(kpn,platform,trace_generator)
-        self.randMapGen = RandomPartialMapper(self.kpn, self.platform, config)
-        self.comMapGen = ComPartialMapper(self.kpn, self.platform, self.randMapGen)
         #self.statistics = Statistics()
 
-    def generate_mapping(self,restricted = None):
+    def generate_mapping_dict(self,kpns,load = None, restricted = None):
         """ Generates a full mapping using a static algorithm
         inspired by Linux' GBM
         """
-        mapping = Mapping(self.kpn,self.platform)
         core_types = dict(self.platform.core_types())
         processes = {}
+        mappings = {}
         if restricted is None:
+            restricted = []
+        if load is None:
             restricted = []
 
         for type in core_types:
             processes[type] = SortedList()
         #use best time at first and update depending on the proc. that is next
-            for p in self.kpn.processes():
-              processes[type].add( (self.trace_summary[(p.name,type)], p.name ))
+            for kpn in kpns:
+                for p in kpn.processes():
+                    processes[type].add( (self.trace_summary[(p,type)], kpn.name + p.name))
 
         finished = False #to avoid converting the lists every time
         while not finished:
@@ -86,21 +77,24 @@ class StaticCFSMapper(object):
             for core in self.platform.processors():
                 if core.name in restricted:
                     continue
-                _,p = processes[core.type].pop()
+                _,pr = processes[core.type].pop()
+                process = None
+                for kpn in kpns:
+                    for proc in kpn.processes():
+                        if kpn.name + proc.name == pr:
+                            process = proc
+                            break
+                    if process is not None:
+                        break
 
                 #map process to core
-                scheduler = list(self.platform.schedulers())[0]
-                affinity = core
-                process = [pr for pr in self.kpn.processes() if pr.name == p][0]
-                priority = 0
-                info = ProcessMappingInfo(scheduler, affinity, priority)
-                mapping.add_process_info(process, info)
+                mappings[process] = core
 
                 #remove process from the other lists
                 for type in core_types:
                     if core.type == type:
                         continue
-                    to_remove = [(time,p) for (time,p) in processes[type] if p == process.name]
+                    to_remove = [(time,p) for (time,p) in processes[type] if p == pr]
                     assert(len(to_remove)) == 1
                     processes[type].remove(to_remove[0])
 
@@ -109,5 +103,36 @@ class StaticCFSMapper(object):
                     break
 
         #finish mapping
+        return mappings
+
+    def map_to_core(self,mapping,process,core):
+        scheduler = list(self.platform.schedulers())[0]
+        affinity = core
+        priority = 0
+        info = ProcessMappingInfo(scheduler, affinity, priority)
+        mapping.add_process_info(process, info)
+
+class StaticCFSMapper(StaticCFS):
+    """
+    Generates a full mapping by using the static CFS method.
+    """
+    def __init__(self,kpn,platform,config):
+        super().__init__(platform,config)
+        self.full_mapper = True # flag indicating the mapper type
+        self.kpn = kpn
+        self.random_mapper = RandomPartialMapper(self.kpn, self.platform, config, seed=None)
+        self.randMapGen = RandomPartialMapper(self.kpn, self.platform, config)
+        self.comMapGen = ComPartialMapper(self.kpn, self.platform, self.randMapGen)
+
+    def generate_mapping(self,load = None, restricted = None):
+        trace_generator = hydra.utils.instantiate(self.config['trace'])
+        self.trace_summary = trace_summary(self.kpn,self.platform,trace_generator)
+        mapping = Mapping(self.kpn,self.platform)
+        mapping_dict = self.generate_mapping_dict([self.kpn],load = load, restricted = restricted)
+        for proc in self.kpn.processes():
+            self.map_to_core(mapping,proc,mapping_dict[proc])
         return self.comMapGen.generate_mapping(mapping)
 
+#class StaticCFSMapperMultiApp(StaticCFS):
+#    def __init__(self,platform,config):
+#        super().__init__(platform,config)
