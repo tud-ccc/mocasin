@@ -19,46 +19,6 @@ def init_logging():
     logging.getLogger("pykpn.slx.kpn").setLevel(logging.WARNING)
 
 
-def print_summary(scenario, res, scheduling, schedule_time, within_time,
-                  opt_summary, scheduler, opt_reschedule):
-    # TODO: Take the name of scheduler from scheduler
-    summary_file = opt_summary
-    if summary_file is None:
-        return
-    outf = open(summary_file, "w")
-    print(
-        "input_state,scheduler,reschedule,search_time,scheduled"
-        ",energy,longest_time,time_segments,within_TL",
-        file=outf,
-    )
-
-    scheduler_str = scheduler.name
-
-    if res:
-        energy = scheduling.energy
-        longest_time = scheduling.end_time
-        num_segments = len(scheduling)
-    else:
-        energy = None
-        longest_time = None
-        num_segments = None
-
-    print(
-        "{},{},{},{},{},{},{},{},{}".format(
-            scenario,
-            scheduler_str,
-            opt_reschedule,
-            schedule_time,
-            res,
-            energy,
-            longest_time,
-            num_segments,
-            within_time,
-        ),
-        file=outf,
-    )
-
-
 @hydra.main(config_path='../conf', config_name='tetris_scheduler')
 def tetris_scheduler(cfg):
     """Tetris scheduler
@@ -72,16 +32,13 @@ def tetris_scheduler(cfg):
         * **platform:** the input platform. The task expects a configuration
           dict that can be instantiated to a
           :class:`~pykpn.common.platform.Platform` object.
-        TODO: Write down 
+        * **tetris_apps_dir:** the base directory with applications and mappings
+          info
+        * **job_table:** the job table
+        * **output_schedule:** the output file with the generated schedule
     """
     # Suppress logs from pykpn module
     init_logging()
-
-    out_fn = cfg["output_schedule"]
-    if out_fn != None:
-        outf = open(out_fn, mode="w")
-    else:
-        outf = sys.stdout
 
     scheduling = TetrisScheduling.from_hydra(cfg)
 
@@ -90,27 +47,19 @@ def tetris_scheduler(cfg):
     scheduling.run()
     stop = timeit.default_timer()
     log.info('Scheduling done')
+    scheduling_time = stop - start
 
-    opt_summary = cfg["summary_csv"]
-    opt_time_limit = cfg.get("time_limit", 'None')
-    opt_reschedule = cfg.get("reschedule", True)
+    print("Job table file: " + str(cfg['job_table']))
+    print("Scheduler: " + str(scheduling.scheduler.name))
+    print("Scheduling time: {:.5} s".format(scheduling_time))
+    print("Found schedule: {}".format(scheduling.found_schedule))
     if scheduling.found_schedule:
-        scheduling.schedule.legacy_dump(outf=outf)
-        # scheduling.legacy_dump_jobs_info(outf=outf)
-    if opt_time_limit != 'None':
-        within_time = schedule_time <= opt_time_limit
-    else:
-        within_time = True
-    print_summary(
-        cfg['job_table'],
-        scheduling.found_schedule,
-        scheduling.schedule,
-        stop - start,
-        scheduling.within_time_limit,
-        opt_summary,
-        scheduling.scheduler,
-        opt_reschedule,
-    )
+        print("Schedule time: {} s".format(scheduling.schedule.end_time))
+        print("Energy consumption: {:.5} J".format(scheduling.schedule.energy))
+        print("Number of segments: {}".format(len(scheduling.schedule)))
+        if cfg["output_schedule"] is not None:
+            with open(cfg["output_schedule"], mode="w") as f:
+                scheduling.schedule.legacy_dump(outf=f)
 
 
 @hydra.main(config_path='../conf', config_name='tetris_manager')

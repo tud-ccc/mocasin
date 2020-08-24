@@ -15,5 +15,5 @@ job_table: ???
 # Output file for scheduling
 output_schedule:
 
-# Output file for summary
+# Output file for summary (to be supported)
 summary_csv:
