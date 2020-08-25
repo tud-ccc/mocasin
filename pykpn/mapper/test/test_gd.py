@@ -1,6 +1,5 @@
 from pykpn.mapper.test.mock_cache import MockMappingCache
 from pykpn.mapper.gradient_descent import GradientDescentMapper
-from pykpn.mapper.utils import TraceGeneratorMock
 import pytest
 import numpy as np
 from itertools import product
@@ -10,7 +9,12 @@ def conf():
     return {'mapper' : {'gd_iterations' : 100,
                         'stepsize' : 2,
                         'random_seed' : 42,
-                        'record_statistics' : 'False'
+                        'record_statistics' : 'False',
+                        'dump_cache' : False,
+                        'chunk_size' : 10,
+                        'progress' : False,
+                        'parallel' : True,
+                        'jobs' : 4,
                         },
             'norm_p' : 2,
             'periodic_boundary_conditions' : True,
@@ -29,11 +33,9 @@ def evaluation_function_gradient():
 
 @pytest.fixture
 def mapper(kpn, platform, conf, evaluation_function):
-    trace_generator = TraceGeneratorMock()
-    m = GradientDescentMapper(kpn, platform, conf, trace_generator=trace_generator)
-    m.mapping_cache = MockMappingCache(evaluation_function)
+    m = GradientDescentMapper(kpn, platform, conf)
+    m.simulation_manager = MockMappingCache(evaluation_function)
     return m
-
 
 def test_gd(mapper, evaluation_function):
     result_mapper = mapper.generate_mapping()

@@ -29,7 +29,6 @@ def test_generate_mapping_tgff(datadir, tgff_mapper, tgff, representation):
     subprocess.check_call(["pykpn", "generate_mapping",
                            "kpn=tgff_reader",
                            "platform=tgff_reader",
-                           "representation=%s" % representation,
                            "mapper=%s" % tgff_mapper,
                            "tgff.directory=%s" % tgff_dir,
                            "tgff.file=%s.tgff" % tgff,

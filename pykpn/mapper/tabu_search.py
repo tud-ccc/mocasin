@@ -10,7 +10,7 @@ import numpy as np
 from pykpn.util import logging
 from pykpn.representations.representations import RepresentationType
 from pykpn.mapper.random import RandomPartialMapper
-from pykpn.mapper.utils import MappingCache
+from pykpn.mapper.utils import SimulationManager
 from pykpn.mapper.utils import Statistics
 
 
@@ -22,7 +22,7 @@ class TabuSearchMapper(object):
     """Generates a full mapping by using a tabu search on the mapping space.
 
     """
-    def __init__(self, kpn, platform, config, trace_generator=None):
+    def __init__(self, kpn, platform, config):
         """Generates a full mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
@@ -45,7 +45,6 @@ class TabuSearchMapper(object):
         self.move_set_size = config['mapper']['move_set_size']
         self.radius = config['mapper']['radius']
         self.tabu_moves = dict()
-        self.statistics = Statistics(log, len(self.kpn.processes()), config['mapper']['record_statistics'])
         rep_type_str = config['representation']
 
         if rep_type_str not in dir(RepresentationType):
@@ -60,24 +59,20 @@ class TabuSearchMapper(object):
 
         self.representation = representation
 
-        #workaround to get tests running. feel free to remove for better solution
-        if not trace_generator:
-            trace_generator = hydra.utils.instantiate(self.config['trace'])
-
-        self.mapping_cache = MappingCache(representation, trace_generator, self.config['mapper']['record_statistics'])
+        self.simulation_manager = SimulationManager(representation, config)
 
     def update_candidate_moves(self,mapping):
         new_mappings = self.representation._uniformFromBall(mapping, self.radius, self.move_set_size)
-        new_mappings = map(np.array, new_mappings)
-        moves = set([(tuple(new_mapping - np.array(mapping)),
-                      self.mapping_cache.evaluate_mapping(new_mapping)) for new_mapping in new_mappings])
+        new_mappings = list(map(np.array, new_mappings))
+        sim_results = self.simulation_manager.simulate(new_mappings)
+        moves = set(zip([tuple(new_mapping - np.array(mapping)) for new_mapping in new_mappings],sim_results))
         missing = self.move_set_size - len(moves)
         retries = 0
         while missing > 0 and retries < 10:
             new_mappings = self.representation._uniformFromBall(mapping, self.radius, missing)
-            moves = moves.union( set([(tuple(np.array(new_mapping)-np.array(mapping)),
-                                       self.mapping_cache.evaluate_mapping(new_mapping))
-                                      for new_mapping in new_mappings]) )
+            sim_results = self.simulation_manager.simulate(new_mappings)
+            new_moves = set(zip([tuple(new_mapping - np.array(mapping)) for new_mapping in new_mappings], sim_results))
+            moves = moves.union(new_moves)
             missing = self.move_set_size - len(moves)
             retries += 1
         if missing > 0:
@@ -115,8 +110,9 @@ class TabuSearchMapper(object):
 
     def diversify(self,mapping):
         new_mappings = self.representation._uniformFromBall(mapping, 3*self.radius, self.move_set_size)
-        new_mappings = map(np.array, new_mappings)
-        moves = [(tuple(mapping - new_mapping),self.mapping_cache.evaluate_mapping(new_mapping)) for new_mapping in new_mappings]
+        new_mappings = list(map(np.array, new_mappings))
+        sim_results = self.simulation_manager.simulate(new_mappings)
+        moves = set(zip([tuple(new_mapping - np.array(mapping)) for new_mapping in new_mappings],sim_results))
         return(sorted(moves,key= lambda x : x[1])[0])
 
 
@@ -128,7 +124,7 @@ class TabuSearchMapper(object):
         cur_mapping = self.representation.toRepresentation(mapping_obj)
 
         best_mapping = cur_mapping
-        best_exec_time = self.mapping_cache.evaluate_mapping(cur_mapping)
+        best_exec_time = self.simulation_manager.simulate([cur_mapping])[0]
         since_last_improvement = 0
 
         for iter in range(self.max_iterations):
@@ -146,8 +142,10 @@ class TabuSearchMapper(object):
             move, cur_exec_time = self.diversify(cur_mapping)
             cur_mapping = cur_mapping + np.array(move)
 
-        self.statistics.log_statistics()
-        self.statistics.to_file()
+        self.simulation_manager.statistics.log_statistics()
+        self.simulation_manager.statistics.to_file()
+        if self.config['mapper']['dump_cache']:
+            self.simulation_manager.dump('mapping_cache.csv')
 
         return self.representation.fromRepresentation(np.array(best_mapping))
 

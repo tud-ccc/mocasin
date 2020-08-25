@@ -24,6 +24,9 @@ def datadir(tmpdir):
                os.path.join(tmpdir, "tgff"))
     os.symlink(os.path.join(examples_path, "csv"),
                os.path.join(tmpdir, "csv"))
+    os.symlink(os.path.join(examples_path, "tetris"),
+               os.path.join(tmpdir, "tetris"))
+
 
     return tmpdir
 
@@ -41,7 +44,7 @@ def slx_platform(request):
 def slx_mapper(request):
     return request.param
 
-@pytest.fixture(params=["random", "random_walk", "tabu_search", "gradient_descent", "genetic",  "simulated_annealing", "gbm"])
+@pytest.fixture(params=["random", "random_walk", "gbm"])
 def tgff_mapper(request):
     return request.param
 
@@ -49,26 +52,17 @@ def tgff_mapper(request):
 def representation(request):
     return request.param
 
-@pytest.fixture(params=["audio_filter", "hog", "speaker_recognition"])
+@pytest.fixture(params=["audio_filter"])
 def slx_kpn(request):
     return request.param
 
 @pytest.fixture(params=[("audio_filter", "exynos"),
                         ("audio_filter", "multidsp"),
-                        ("audio_filter", "parallella"),
-                        ("hog", "exynos"),
-                        ("speaker_recognition", "exynos")])
+                        ("audio_filter", "parallella")])
 def slx_kpn_platform_pair(request):
     return request.param
 
-@pytest.fixture(params=["auto-indust-cords",
-                        "auto-indust-cowls",
-                        "auto-indust-mocsyn-asic",
-                        "auto-indust-mocsyn",
-                        "consumer-cords",
-                        "networking-cowls",
-                        "office-automation-mocsyn-asic",
-                        "telecom-mocsyn"])
+@pytest.fixture(params=["auto-indust-cords"])
 def tgff(request):
     return request.param
 

@@ -7,16 +7,21 @@ import numpy as np
 @pytest.fixture
 def conf():
     return {'mapper' : {'pop_size' : 10,
-                         'num_gens' : 5,
-                         'cxpb' : 0.35,
-                         'mutpb' : 0.5,
-                         'tournsize' : 4,
-                         'mupluslambda': True,
-                         'initials' : 'random',
-                         'radius' : 5,
-                         'random_seed': 42,
-                         'crossover_rate' : 1,
-                         'record_statistics' : False
+                        'num_gens' : 5,
+                        'cxpb' : 0.35,
+                        'mutpb' : 0.5,
+                        'tournsize' : 4,
+                        'mupluslambda': True,
+                        'initials' : 'random',
+                        'radius' : 5,
+                        'random_seed': 42,
+                        'crossover_rate' : 1,
+                        'record_statistics' : False,
+                        'dump_cache' : False,
+                        'chunk_size' : 10,
+                        'progress' : False,
+                        'parallel' : True,
+                        'jobs' : 4,
                         },
             'channels' : False,
             'representation' : 'SimpleVector',
@@ -30,9 +35,8 @@ def evaluation_function():
 
 @pytest.fixture
 def mapper(kpn, platform, conf, evaluation_function):
-    trace_generator = TraceGeneratorMock()
-    m = GeneticMapper(kpn, platform, conf, trace_generator=trace_generator)
-    m.mapping_cache = MockMappingCache(evaluation_function)
+    m = GeneticMapper(kpn, platform, conf)
+    m.simulation_manager = MockMappingCache(evaluation_function)
     return m
 
 def test_ga(mapper):

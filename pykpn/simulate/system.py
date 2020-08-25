@@ -55,6 +55,9 @@ class RuntimeSystem:
         self._processes = set()
 
         self.trace_writer = TraceWriter(env)
+        self.app_trace_enabled = False
+        self.platform_trace_enabled = False
+        self.load_trace_cfg = None
 
         # initialize all schedulers
 
@@ -119,18 +122,33 @@ class RuntimeSystem:
         processor = mapping_info.affinity
         scheduler = self._processors_to_schedulers[processor]
         scheduler.add_process(process)
+        process.start()
 
-    def simulate(self):
-        log.info('Start the simulation')
+    def record_system_load(self):
+        # create an init event in order to give the trace viewer a hint
+        # on the maximum value
+        for s in self._schedulers:
+            self.trace_writer.update_counter("load",
+                                             s._processor.name,
+                                             [1.0],
+                                             category="Load")
 
+        granularity, time_frame = self.load_trace_cfg
+        while True:
+            for s in self._schedulers:
+                load = s.average_load(time_frame),
+                self.trace_writer.update_counter("load",
+                                                 s._processor.name,
+                                                 load,
+                                                 category="Load")
+            yield self.env.timeout(granularity)
+
+    def start_schedulers(self):
         for s in self._schedulers:
             self._env.process(s.run())
-
-        self._env.run()
-
-        self.check_errors()
-
-        log.info('Simulation done')
+        # trace the system load
+        if self.load_trace_cfg is not None:
+            self._env.process(self.record_system_load())
 
     def check_errors(self):
         some_blocked = False
@@ -144,7 +162,28 @@ class RuntimeSystem:
         if some_blocked:
             raise SimulationError('There is a deadlock!')
 
+    def get_scheduler(self, processor):
+        """Look up the scheduler for a given processor
+
+        Args:
+            processor (Processor): the processor to find the scheduler foreach
+
+        Returns:
+            (Scheduler) A scheduler object
+        """
+        return self._processors_to_schedulers[processor]
+
     @property
     def env(self):
         """The simpy environment"""
         return self._env
+
+    def write_simulation_trace(self, path):
+        """Write a json trace of the simulated system to ``path``
+
+        The generated trace can be opened with Chrome's or Chromiums builtin
+        trace viewer at ``about://tracing/``.
+        Args:
+            path (str): path to the file that should be generated
+        """
+        self.trace_writer.write_trace(path)

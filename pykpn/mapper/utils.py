@@ -1,16 +1,15 @@
-# Copyright (C) 2019 TU Dresden
+# Copyright (C) 2019-2020 TU Dresden
 # All Rights Reserved
 #
 # Authors: Andrés Goens, Felix Teweleit
 
 import timeit
-import simpy
 import hydra
+import multiprocessing as mp
 import numpy as np
 
-
-from pykpn.simulate.application import RuntimeKpnApplication
-from pykpn.simulate.system import RuntimeSystem
+from pykpn.common.mapping import Mapping
+from pykpn.simulate import KpnSimulation
 
 from pykpn.util.logging import getLogger
 log = getLogger(__name__)
@@ -25,9 +24,10 @@ class Statistics(object):
         self._mappings_evaluated = 0
         self._simulation_time = 0
         self._representation_time = 0
+        self._representation_init_time = 0
 
-    def mapping_cached(self):
-        self._mappings_cached += 1
+    def mappings_cached(self,num=1):
+        self._mappings_cached += num
 
     def mapping_evaluated(self, simulation_time):
         self._mappings_evaluated += 1
@@ -35,6 +35,12 @@ class Statistics(object):
 
     def add_offset(self, time):
         self._simulation_time += time
+
+    def add_rep_time(self,time):
+        self._representation_time += time
+
+    def set_rep_init_time(self,time):
+        self._representation_init_time = time
 
     def log_statistics(self):
         self._log.info(f"Amount of processes in task:  {self._processes}")
@@ -51,18 +57,27 @@ class Statistics(object):
         file.write("Mappings evaluated: " + str(self._mappings_evaluated) + "\n")
         file.write("Time spent simulating: " + str(self._simulation_time) + "\n")
         file.write("Representation time: " + str(self._representation_time) + "\n")
+        file.write("Representation initialization time: " + str(self._representation_init_time) + "\n")
         file.close()
 
 
-class MappingCache(object):
-    def __init__(self, representation, trace_generator, record_statistics=False):
+class SimulationManager(object):
+    def __init__(self, representation, config):
         self._cache = {}
+        self.config = config
         self.representation = representation
-        self.trace_generator = trace_generator
         self.kpn = representation.kpn
         self.platform = representation.platform
-        self.statistics = Statistics(log, len(self.kpn.processes()), record_statistics)
+        self.statistics = Statistics(log, len(self.kpn.processes()), config['mapper']['record_statistics'])
+        self.statistics.set_rep_init_time(representation.init_time)
         self._last_added = None
+        self.jobs = config['mapper']['jobs']
+        self.parallel = config['mapper']['parallel']
+        self.progress = config['mapper']['progress']
+        self.chunk_size = config['mapper']['chunk_size']
+
+        if self.parallel:
+            self.pool = mp.Pool(processes=self.jobs)
 
     def lookup(self, mapping):
         if mapping not in self._cache:
@@ -79,74 +94,102 @@ class MappingCache(object):
         self._cache[self._last_added] = time
         self._last_added = None
 
-    def evaluate_mapping(self,mapping):
-        tup = tuple(self.representation.approximate(np.array(mapping)))
-        log.info(f"evaluating mapping: {tup}...")
+    def add_time_mapping(self, mapping, time):
+        self._cache[mapping] = time
+        self._last_added = None
 
-        runtime = self.lookup(tup)
-        if runtime:
-            log.info(f"... from cache: {runtime}")
-            self.statistics.mapping_cached()
-            return runtime
+    def simulate(self, input_mappings):
+        # check inputs
+        if len(input_mappings) == 0:
+            log.warning("Trying to simulate an empty mapping list")
+            return []
         else:
+            if isinstance(input_mappings[0],Mapping):
+                time = timeit.default_timer()
+                tup = [tuple(self.representation.toRepresentation(m)) for m in input_mappings]
+                self.statistics.add_rep_time(timeit.default_timer() - time)
+                mappings = input_mappings
+            else: #assume mappings are list type then
+                #transform into tuples
+                time = timeit.default_timer()
+                tup = [tuple(self.representation.approximate(np.array(m))) for m in input_mappings]
+                mappings = [self.representation.fromRepresentation(m) for m in input_mappings]
+                self.statistics.add_rep_time(timeit.default_timer() - time)
+
+        # first look up as many as possible:
+        lookups = [self.lookup(t) for t in tup]
+        num = len([m for m in lookups if m])
+        log.info(f"{num} from cache.")
+
+        #if all were already cached, return them
+        if num == len(tup):
+            return lookups
+
+        # create a list of simulations to be run
+        simulations = []
+        for i, mapping in enumerate(mappings):
+            # skip if this particular mapping is in the cache
+            if lookups[i]:
+                continue
+
+            trace = hydra.utils.instantiate(self.config['trace'])
+            simulation = KpnSimulation(self.platform, self.kpn, mapping, trace)
+
+            # since mappings are simulated in parallel, whole simulation time is added later as offset
+            self.statistics.mapping_evaluated(0)
+            simulations.append(simulation)
+
+        if self.parallel and len(simulations) > self.chunk_size:
+            # run the simulations in parallel
             time = timeit.default_timer()
-            m_obj = self.representation.fromRepresentation(np.array(tup))
-            env = simpy.Environment()
-            system = RuntimeSystem(self.platform, env)
-            app = RuntimeKpnApplication(name=self.kpn.name,
-                                        kpn_graph=self.kpn,
-                                        mapping=m_obj,
-                                        trace_generator=self.trace_generator,
-                                        system=system,)
-            system.simulate()
-            exec_time = float(env.now) / 1000000000.0
-            self.add_time(exec_time)
-            time = timeit.default_timer() - time
-            self.statistics.mapping_evaluated(time)
-            log.info(f"... from simulation: {exec_time}.")
-            self.trace_generator.reset()
-            return exec_time
-
-
-class ApplicationContext(object):
-    def __init__(self, name=None, kpn=None, mapping=None, trace_reader=None,
-                 start_time=None):
-        self.name = name
-        self.kpn = kpn
-        self.mapping = mapping
-        self.trace_reader = trace_reader
-        self.start_time = start_time
-
-
-class SimulationContext(object):
-    def __init__(self, platform=None, app_contexts=None):
-        self.platform = platform
-        if app_contexts is None:
-            self.app_contexts = []
+            if self.progress:
+                import tqdm
+                results = list(tqdm.tqdm(self.pool.imap(run_simulation,
+                                                        simulations,
+                                                        chunksize=self.chunk_size),
+                                         total=len(mappings)))
+            else:
+                results = list(self.pool.map(run_simulation,
+                                             simulations,
+                                             chunksize=self.chunk_size))
+            self.statistics.add_offset(timeit.default_timer() - time)
         else:
-            self.app_contexts = app_contexts
-        self.exec_time = None
+            results = []
+            # run the simulations sequentially
+            for s in simulations:
+                time = timeit.default_timer()
+                r = run_simulation(s)
+                results.append(r)
+                self.statistics.mapping_evaluated(timeit.default_timer() - time)
+
+        # calculate the execution times in milliseconds and store them
+        exec_times = []  # keep a list of exec_times for later
+        res_iter = iter(results)
+        for i, mapping in enumerate(mappings):
+            exec_time = lookups[i]
+            if exec_time:
+                exec_times.append(exec_time)
+            else:
+                r = next(res_iter)
+                exec_time = float(r.exec_time / 1000000000.0)
+                exec_times.append(exec_time)
+                self.add_time_mapping(tup[i],exec_time)
+        return exec_times
+
+    def dump(self,filename):
+        log.info(f"dumping cache to {filename}")
+        file = open(filename,'x')
+        file.write("mapping,runtime\n")
+        for mapping in self._cache:
+            file.write(f"\"{str(mapping).replace('(','').replace(')','')}\",{self._cache[mapping]}\n")
+        file.close()
+        log.info("cache dumped.")
 
 
-def run_simulation(sim_context):
-    # Create simulation environment
-    env = simpy.Environment()
-
-    # Create the system
-    system = RuntimeSystem(sim_context.platform, env)
-
-    # create the applications
-    for ac in sim_context.app_contexts:
-        app = RuntimeKpnApplication(ac.name, ac.kpn, ac.mapping,
-                                    ac.trace_reader, system)
-
-    # run the simulation
-    system.simulate()
-    system.check_errors()
-
-    sim_context.exec_time = env.now
-
-    return sim_context
+def run_simulation(simulation):
+    with simulation:
+        simulation.run()
+    return simulation
 
 
 class DerivedPrimitive:

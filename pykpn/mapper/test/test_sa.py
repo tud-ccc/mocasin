@@ -12,7 +12,12 @@ def conf():
                         'initial_temperature' : 1.0,
                         'final_temperature'  : 0.01,
                         'temperature_proportionality_constant' : 0.5,
-                        'radius' : 2
+                        'radius' : 2,
+                        'dump_cache' : False,
+                        'chunk_size' : 10,
+                        'progress' : False,
+                        'parallel' : True,
+                        'jobs' : 4,
                         },
             'norm_p' : 2,
             'periodic_boundary_conditions' : False,
@@ -26,9 +31,8 @@ def evaluation_function():
 
 @pytest.fixture
 def mapper(kpn, platform, conf, evaluation_function):
-    trace_generator = TraceGeneratorMock()
-    m = SimulatedAnnealingMapper(kpn, platform, conf, trace_generator=trace_generator)
-    m.mapping_cache = MockMappingCache(evaluation_function)
+    m = SimulatedAnnealingMapper(kpn, platform, conf)
+    m.simulation_manager = MockMappingCache(evaluation_function)
     return m
 
 def test_ts(mapper, evaluation_function):

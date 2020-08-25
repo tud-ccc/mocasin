@@ -7,6 +7,7 @@
 from pykpn.util import logging
 from pykpn.simulate.channel import RuntimeChannel
 from pykpn.simulate.process import RuntimeKpnProcess
+from pykpn.simulate.adapter import SimulateLoggerAdapter
 
 
 log = logging.getLogger(__name__)
@@ -68,7 +69,7 @@ class RuntimeKpnApplication(RuntimeApplication):
         if mapping.platform != system.platform:
             raise RuntimeError(f"Mapping {name} to an incompatible platform")
 
-        log.info('initialize new runtime application: %s', name)
+        log.debug('initialize new runtime application: %s', name)
         logging.inc_indent()
 
         # Instantiate all channels
@@ -98,11 +99,9 @@ class RuntimeKpnApplication(RuntimeApplication):
                           rc.name)
                 proc.connect_to_outgoing_channel(rc)
             logging.dec_indent()
-
         logging.dec_indent()
 
-        # auto start the application
-        self.start()
+        self._log = SimulateLoggerAdapter(log, self.name, self.env)
 
     def processes(self):
         """Get a list of all processes
@@ -128,7 +127,17 @@ class RuntimeKpnApplication(RuntimeApplication):
         """Find a channel by name"""
         return self._channeles[channel_name]
 
-    def start(self):
-        """Start execution of this application"""
+    def run(self):
+        """Start execution of this application
+
+        Yields:
+            ~simpy.events.Event: an event that is triggered when the
+                application finishes execution.
+        """
+        self._log.info(f"Application {self.name} starts")
         for process, mapping_info in self._mapping_infos.items():
             self.system.start_process(process, mapping_info)
+        finished = self.env.all_of([p.finished for p in self.processes()])
+        finished.callbacks.append(lambda _: self._log.info(
+            f"Application {self.name} terminates"))
+        yield finished

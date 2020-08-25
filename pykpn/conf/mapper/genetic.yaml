@@ -13,3 +13,8 @@ radius : 5
 random_seed: 42
 crossover_rate : 1
 record_statistics: true
+dump_cache: false
+chunk_size : 10
+progress : false
+parallel : true
+jobs : 4

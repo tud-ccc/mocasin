@@ -9,10 +9,10 @@ import subprocess
 
 slx_expected_sim_time = {
     "audio_filter": {"exynos": "19.844971309 ms",
-                     "multidsp": "95.812060002 ms",
+                     "multidsp": "95.812062675 ms",
                      "parallella": "193.346008966 ms"},
-    "hog": {"exynos": "521.000341428 ms"},
-    "speaker_recognition": {"exynos": "22.650786219 ms"},
+    "hog": {"exynos": "506.852794637 ms"},
+    "speaker_recognition": {"exynos": "22.650786172 ms"},
 }
 
 

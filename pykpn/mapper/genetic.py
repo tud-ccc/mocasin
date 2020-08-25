@@ -11,7 +11,7 @@ import hydra
 
 from pykpn.util import logging
 from pykpn.representations.representations import RepresentationType
-from pykpn.mapper.utils import MappingCache
+from pykpn.mapper.utils import SimulationManager
 from pykpn.mapper.random import RandomPartialMapper
 
 from deap import creator, tools, base, algorithms
@@ -23,7 +23,7 @@ log = logging.getLogger(__name__)
 class GeneticMapper(object):
     """Generates a full mapping by using genetic algorithms.
     """
-    def __init__(self, kpn, platform, config, trace_generator=None):
+    def __init__(self, kpn, platform, config):
         """Generates a partial mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
@@ -61,11 +61,8 @@ class GeneticMapper(object):
 
         self.representation = representation
 
-        statistics = self.config['mapper']['record_statistics']
 
-        if not trace_generator:
-            trace_generator = hydra.utils.instantiate(self.config['trace'])
-        self.mapping_cache = MappingCache(self.representation, trace_generator, statistics)
+        self.simulation_manager = SimulationManager(self.representation, config)
 
         if 'FitnessMin' not in deap.creator.__dict__:
             deap.creator.create("FitnessMin", deap.base.Fitness, weights=(-1.0,))
@@ -103,7 +100,7 @@ class GeneticMapper(object):
 
     def evaluate_mapping(self,mapping):
         #wrapper to make it into a 1-tuple because DEAP needs that
-        return self.mapping_cache.evaluate_mapping(mapping),
+        return self.simulation_manager.simulate([list(mapping)])[0],
 
     def random_mapping(self):
         mapping = self.random_mapper.generate_mapping()
@@ -157,13 +154,15 @@ class GeneticMapper(object):
     def generate_mapping(self):
         """ Generates a full mapping using a genetic algorithm
         """
-        _,logbook,hof = self.run_genetic_algorithm()
+        _, logbook, hof = self.run_genetic_algorithm()
         mapping = hof[0]
-        self.mapping_cache.statistics.log_statistics()
-        with open('evolutionary_logbook.pickle','wb') as f:
-            pickle.dump(logbook,f)
+        self.simulation_manager.statistics.log_statistics()
+        with open('evolutionary_logbook.pickle', 'wb') as f:
+            pickle.dump(logbook, f)
         result = self.representation.fromRepresentation(np.array(mapping))
-        self.mapping_cache.statistics.to_file()
+        self.simulation_manager.statistics.to_file()
+        if self.config['mapper']['dump_cache']:
+            self.simulation_manager.dump('mapping_cache.csv')
         self.cleanup()
         return result
 

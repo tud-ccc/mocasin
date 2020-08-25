@@ -13,7 +13,12 @@ def conf():
                         'iteration_size'  : 10,
                         'tabu_tenure' : 10,
                         'move_set_size' : 10,
-                        'radius' : 2
+                        'radius' : 2,
+                        'dump_cache' : False,
+                        'chunk_size' : 10,
+                        'progress' : False,
+                        'parallel' : True,
+                        'jobs' : 4,
                         },
             'norm_p' : 2,
             'representation' : 'SimpleVector',
@@ -27,9 +32,8 @@ def evaluation_function():
 
 @pytest.fixture
 def mapper(kpn, platform, conf, evaluation_function):
-    trace_generator = TraceGeneratorMock()
-    m = TabuSearchMapper(kpn, platform, conf, trace_generator=trace_generator)
-    m.mapping_cache = MockMappingCache(evaluation_function)
+    m = TabuSearchMapper(kpn, platform, conf)
+    m.simulation_manager = MockMappingCache(evaluation_function)
     return m
 
 def test_ts(mapper, evaluation_function):

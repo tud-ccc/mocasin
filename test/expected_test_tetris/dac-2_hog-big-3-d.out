@@ -1,0 +1,11 @@
+Time window: [0.000, 41.922), Energy (Total): 220.309 (MISSED)
+  Job: 0 [hog.B], mapping: 4 [ARM_CORTEX_A7: 3, ARM_CORTEX_A15: 0], start = 0.000 [0.00], end = 41.922 [1.00F], energy = 38.244
+  Job: 1 [hog.B], mapping: 25 [ARM_CORTEX_A7: 1, ARM_CORTEX_A15: 2], start = 0.000 [0.00], end = 41.922 [0.97], energy = 73.232
+  Job: 2 [hog.B], mapping: 30 [ARM_CORTEX_A7: 0, ARM_CORTEX_A15: 2], start = 0.000 [0.00], end = 41.922 [0.99], energy = 108.833
+
+Time window: [41.922, 42.465), Energy (Total): 2.360 (MISSED)
+  Job: 1 [hog.B], mapping: 25 [ARM_CORTEX_A7: 1, ARM_CORTEX_A15: 2], start = 41.922 [0.97], end = 42.465 [0.99], energy = 0.949
+  Job: 2 [hog.B], mapping: 30 [ARM_CORTEX_A7: 0, ARM_CORTEX_A15: 2], start = 41.922 [0.99], end = 42.465 [1.00F], energy = 1.411
+
+Time window: [42.465, 43.076), Energy (Total): 1.067 (MISSED)
+  Job: 1 [hog.B], mapping: 25 [ARM_CORTEX_A7: 1, ARM_CORTEX_A15: 2], start = 42.465 [0.99], end = 43.076 [1.00F], energy = 1.067

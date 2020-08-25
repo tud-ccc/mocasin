@@ -8,6 +8,7 @@ import numpy as np
 from numpy.random import randint
 from copy import deepcopy
 import random
+import timeit
 
 try:
     import pynauty as pynauty
@@ -45,6 +46,7 @@ class MappingRepresentation(type):
     _instances = {}
 
     def __call__(cls, *args, **kwargs):
+        time = timeit.default_timer()
         kpn = args[0]
         platform = args[1]
         cfg = args[2]
@@ -61,6 +63,7 @@ class MappingRepresentation(type):
         instance.platform = platform
         com_mapper = ComFullMapper(kpn,platform)
         instance.list_mapper = ProcPartialMapper(kpn,platform,com_mapper)
+        instance.init_time = timeit.default_timer() - time
         return instance
 
     def toRepresentation(self,mapping):
