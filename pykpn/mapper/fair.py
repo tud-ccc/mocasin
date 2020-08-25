@@ -140,6 +140,8 @@ class StaticCFSMapperMultiApp(StaticCFS):
     def generate_mappings(self,kpns,traces,load = None, restricted = None):
         if len(kpns) == 0:
             return []
+        else:
+            log.info(f"generating fair mapping for {len(kpns)} apps")
         comMapGen = {}
         for kpn in kpns:
             randMapGen = RandomPartialMapper(kpn, self.platform, self.config)

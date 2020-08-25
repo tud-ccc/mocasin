@@ -2,11 +2,3 @@ mapper:
    class:
      pykpn.mapper.fair.StaticCFSMapper
 
-gd_iterations : 100
-stepsize : 2
-random_seed : 42
-record_statistics: true
-dump_cache: false
-chunk_size : 10
-progress : false
-parallel : true
