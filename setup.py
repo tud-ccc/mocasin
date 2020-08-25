@@ -32,6 +32,7 @@ if sys.version_info > (3, 8):
         'tqdm',
         'hydra-core<1.0',
         'deap',
+        'sortedcontainers',
         'networkx',
         'recordclass',
     ]
@@ -56,6 +57,7 @@ else:
         'tqdm',
         'hydra-core<1.0',
         'deap',
+        'sortedcontainers',
         'networkx',
         'recordclass',
     ]

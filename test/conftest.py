@@ -40,7 +40,7 @@ def expected_dir(request):
 def slx_platform(request):
     return request.param
 
-@pytest.fixture(params=["slx_default", "random", "random_walk", "tabu_search", "gradient_descent", "genetic",  "simulated_annealing", "gbm"])
+@pytest.fixture(params=["slx_default", "random", "static_cfs", "random_walk", "tabu_search", "gradient_descent", "genetic",  "simulated_annealing", "gbm"])
 def slx_mapper(request):
     return request.param
 
