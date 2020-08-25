@@ -143,6 +143,8 @@ class StaticCFSMapperMultiApp(StaticCFS):
         else:
             log.info(f"generating fair mapping for {len(kpns)} apps")
         comMapGen = {}
+        if len(traces) != len(kpns):
+            raise RuntimeError(f"Mapper received unbalanced number of traces ({len(traces)}) and applications ({len(kpns)})")
         for kpn in kpns:
             randMapGen = RandomPartialMapper(kpn, self.platform, self.config)
             comMapGen[kpn] = ComPartialMapper(kpn, self.platform, randMapGen)
