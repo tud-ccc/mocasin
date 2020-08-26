@@ -56,7 +56,7 @@ def test_tgff_simulate(datadir, tgff):
                           "kpn=tgff_reader",
                           "trace=tgff_reader",
                           "mapper=random",
-                          "mapper.random_seed=42",
+                          "mapper.params.random_seed=42",
                           f"tgff.file={tgff}.tgff"],
                          cwd=datadir,
                          check=True,

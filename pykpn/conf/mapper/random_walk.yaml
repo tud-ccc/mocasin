@@ -1,17 +1,18 @@
 # @package _group_
+
 target:
   pykpn.mapper.random_walk.RandomWalkMapper
-
-num_iterations : 100
-progress :  false
-export_all : false
-plot_distribution: false
-visualize : false
-show_plots : false
-radius : 5
-random_seed : null
-record_statistics: true
-parallel : true
-dump_cache : false
-chunk_size : 10
-jobs : 4
+params:
+        num_iterations : 100
+        progress :  false
+        export_all : false
+        plot_distribution: false
+        visualize : false
+        show_plots : false
+        radius : 5
+        random_seed : null
+        record_statistics: true
+        parallel : true
+        dump_cache : false
+        chunk_size : 10
+        jobs : 4

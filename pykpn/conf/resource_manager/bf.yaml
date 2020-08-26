@@ -1,6 +1,8 @@
-resource_manager:
-  name: BruteforceScheduler
-  class: pykpn.tetris.scheduler.bruteforce.BruteforceScheduler
+# @package _group_
+
+target: pykpn.tetris.scheduler.bruteforce.BruteforceScheduler
+params:
+        name: BruteForceScheduler
 
 reschedule: true
 

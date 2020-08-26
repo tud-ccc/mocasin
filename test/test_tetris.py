@@ -56,7 +56,7 @@ def tetris_manager_test(request):
     return request.param
 
 
-@pytest.fixture(params=["wwt15_lr=['R','D','RDP']"])
+@pytest.fixture(params=["resource_manager.wwt15_lr=['R','D','RDP']"])
 def tetris_wwt15_option(request):
     return request.param
 
@@ -99,7 +99,7 @@ def test_tetris_wwt15(datadir, expected_dir, tetris_scheduler_test):
 
 def test_tetris_wwt15_rdp(datadir, expected_dir, tetris_wwt15_opt_test):
     run_tetris(datadir, expected_dir, "wwt15", tetris_wwt15_opt_test, 'single',
-               options="wwt15_lr=['R','D','RDP']", file_suffix="_rdp")
+               options="resource_manager.wwt15_lr=['R','D','RDP']", file_suffix="_rdp")
 
 
 def test_tetris_bf(datadir, expected_dir, tetris_bf_test_check_pair):

@@ -344,16 +344,16 @@ class BruteforceScheduler(SchedulerBase):
     def __init__(self, app_table, platform, config, name):
         super().__init__(app_table, platform)
         self._platform = platform
-        self.__rescheduling = config['reschedule']
-        self.__drop_high = config["bf_drop"]
-        self.__dump_steps = config["bf_dump_steps"]
+        self.__rescheduling = config['resource_manager']['reschedule']
+        self.__drop_high = config['resource_manager']["bf_drop"]
+        self.__dump_steps = config['resource_manager']["bf_dump_steps"]
 
-        self.__time_limit = config["time_limit"]
+        self.__time_limit = config['resource_manager']["time_limit"]
 
         self.__scheduled_on_time = True
-        self.__memoization = config["memoization"]
-        self.__dump_mem_table = config["dump_mem_table"]
-        self.__prune_mem_table = config["prune_mem_table"]
+        self.__memoization = config['resource_manager']["memoization"]
+        self.__dump_mem_table = config['resource_manager']["dump_mem_table"]
+        self.__prune_mem_table = config['resource_manager']["prune_mem_table"]
 
     @property
     def name(self):

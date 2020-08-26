@@ -122,6 +122,4 @@ class RandomMapperHydra(RandomMapper):
     config file.
     """
     def __init__(self, kpn, platform, config, random_seed=None):
-        if not random_seed:
-            random_seed = config['mapper']['random_seed']
         super(RandomMapperHydra, self).__init__(kpn, platform, random_seed=random_seed)

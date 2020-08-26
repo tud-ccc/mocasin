@@ -1,6 +1,7 @@
 # @package _group_
 
-_target_: pykpn.tetris.scheduler.dac.DacScheduler
-name: DacScheduler
-dac_version: original
+target: pykpn.tetris.scheduler.dac.DacScheduler
+params:
+        name: DacScheduler
+        dac_version: original
 

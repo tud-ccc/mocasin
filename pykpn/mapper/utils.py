@@ -68,13 +68,13 @@ class SimulationManager(object):
         self.representation = representation
         self.kpn = representation.kpn
         self.platform = representation.platform
-        self.statistics = Statistics(log, len(self.kpn.processes()), config['mapper']['record_statistics'])
+        self.statistics = Statistics(log, len(self.kpn.processes()), config['mapper']['params']['record_statistics'])
         self.statistics.set_rep_init_time(representation.init_time)
         self._last_added = None
-        self.jobs = config['mapper']['jobs']
-        self.parallel = config['mapper']['parallel']
-        self.progress = config['mapper']['progress']
-        self.chunk_size = config['mapper']['chunk_size']
+        self.jobs = config['mapper']['params']['jobs']
+        self.parallel = config['mapper']['params']['parallel']
+        self.progress = config['mapper']['params']['progress']
+        self.chunk_size = config['mapper']['params']['chunk_size']
 
         if self.parallel:
             self.pool = mp.Pool(processes=self.jobs)

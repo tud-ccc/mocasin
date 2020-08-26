@@ -6,15 +6,16 @@ from itertools import product
 
 @pytest.fixture
 def conf():
-    return {'mapper' : {'gd_iterations' : 100,
-                        'stepsize' : 2,
-                        'random_seed' : 42,
-                        'record_statistics' : 'False',
-                        'dump_cache' : False,
-                        'chunk_size' : 10,
-                        'progress' : False,
-                        'parallel' : True,
-                        'jobs' : 4,
+    return {'mapper' : {'params' : {'gd_iterations' : 100,
+                                    'stepsize' : 2,
+                                    'random_seed' : 42,
+                                    'record_statistics' : False,
+                                    'dump_cache' : False,
+                                    'chunk_size' : 10,
+                                    'progress' : False,
+                                    'parallel' : True,
+                                    'jobs' : 4,
+                                    },
                         },
             'norm_p' : 2,
             'periodic_boundary_conditions' : True,
@@ -33,7 +34,7 @@ def evaluation_function_gradient():
 
 @pytest.fixture
 def mapper(kpn, platform, conf, evaluation_function):
-    m = GradientDescentMapper(kpn, platform, conf)
+    m = GradientDescentMapper(kpn, platform, conf, 100, 2, 42, False, False, 10, False, True, 4)
     m.simulation_manager = MockMappingCache(evaluation_function)
     return m
 
