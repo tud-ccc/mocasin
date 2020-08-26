@@ -121,6 +121,7 @@ class RandomMapperHydra(RandomMapper):
     This class implements a new constructor for the random mapper in order to handle the instantiation via an hydra
     config file.
     """
-    def __init__(self, kpn, platform, config):
-        random_seed = config['mapper']['random_seed']
+    def __init__(self, kpn, platform, config, random_seed=None):
+        if not random_seed:
+            random_seed = config['mapper']['random_seed']
         super(RandomMapperHydra, self).__init__(kpn, platform, random_seed=random_seed)

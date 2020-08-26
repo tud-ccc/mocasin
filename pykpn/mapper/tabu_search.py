@@ -22,7 +22,8 @@ class TabuSearchMapper(object):
     """Generates a full mapping by using a tabu search on the mapping space.
 
     """
-    def __init__(self, kpn, platform, config):
+    def __init__(self, kpn, platform, config, random_seed, record_statistics, max_iterations, iteration_size,
+                 tabu_tenure, move_set_size, radius, dump_cache, chunk_size, progress, parallel, jobs):
         """Generates a full mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
@@ -32,18 +33,19 @@ class TabuSearchMapper(object):
         :param config: the hyrda configuration
         :type config: OmniConf
         """
-        random.seed(config['mapper']['random_seed'])
-        np.random.seed(config['mapper']['random_seed'])
+        random.seed(random_seed)
+        np.random.seed(random_seed)
         self.full_mapper = True # flag indicating the mapper type
         self.kpn = kpn
         self.platform = platform
         self.config = config
         self.random_mapper = RandomPartialMapper(self.kpn, self.platform, seed=None)
-        self.max_iterations = config['mapper']['max_iterations']
-        self.iteration_size = config['mapper']['iteration_size']
-        self.tabu_tenure = config['mapper']['tabu_tenure']
-        self.move_set_size = config['mapper']['move_set_size']
-        self.radius = config['mapper']['radius']
+        self.max_iterations = max_iterations
+        self.iteration_size = iteration_size
+        self.tabu_tenure = tabu_tenure
+        self.move_set_size = move_set_size
+        self.dump_cache = dump_cache
+        self.radius = radius
         self.tabu_moves = dict()
         rep_type_str = config['representation']
 
@@ -144,7 +146,7 @@ class TabuSearchMapper(object):
 
         self.simulation_manager.statistics.log_statistics()
         self.simulation_manager.statistics.to_file()
-        if self.config['mapper']['dump_cache']:
+        if self.dump_cache:
             self.simulation_manager.dump('mapping_cache.csv')
 
         return self.representation.fromRepresentation(np.array(best_mapping))

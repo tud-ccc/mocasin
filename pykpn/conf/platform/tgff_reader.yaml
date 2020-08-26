@@ -2,7 +2,7 @@
 name: 'tgff'
 type: 'bus'
 file: ${tgff.directory}/${tgff.file}
-target: pykpn.tgff.tgffSimulation.PlatformFromTgff
+_target_: pykpn.tgff.tgffSimulation.PlatformFromTgff
 params:
   platform_type: ${platform.type}
   processor_1: 'processor_0'

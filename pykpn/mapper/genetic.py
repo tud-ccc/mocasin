@@ -23,7 +23,8 @@ log = logging.getLogger(__name__)
 class GeneticMapper(object):
     """Generates a full mapping by using genetic algorithms.
     """
-    def __init__(self, kpn, platform, config):
+    def __init__(self, kpn, platform, config, pop_size, num_gens, cxpb, mutpb, tournsize, mupluslambda, initials,
+                 radius, random_seed, crossover_rate, record_statistics, dump_cache, chunk_size, progress, parallel, jobs):
         """Generates a partial mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
@@ -33,15 +34,24 @@ class GeneticMapper(object):
         :param config: the hyrda configuration
         :type fullGererator: OmniConf
         """
-        random.seed(config['mapper']['random_seed'])
-        np.random.seed(config['mapper']['random_seed'])
+        random.seed(random_seed)
+        np.random.seed(random_seed)
         self.full_mapper = True # flag indicating the mapper type
         self.kpn = kpn
         self.platform = platform
         self.config = config
 
         self.random_mapper = RandomPartialMapper(self.kpn, self.platform, seed=None)
-        self.crossover_rate = self.config['mapper']['crossover_rate']
+        self.crossover_rate = crossover_rate
+        self.tournsize = tournsize
+        self.pop_size = pop_size
+        self.initials = initials
+        self.radius = radius
+        self.num_gens = num_gens
+        self.cxpb = cxpb
+        self.mutb = mutpb
+        self.dump_cache = dump_cache
+        self.mupluslambda = mupluslambda
 
         if self.crossover_rate > len(self.kpn.processes()):
             log.error("Crossover rate cannot be higher than number of processes in application")
@@ -57,7 +67,7 @@ class GeneticMapper(object):
             representation_type = RepresentationType[rep_type_str]
             log.info(f"initializing representation ({rep_type_str})")
 
-            representation = (representation_type.getClassType())(self.kpn, self.platform,self.config)
+            representation = (representation_type.getClassType())(self.kpn, self.platform, self.config)
 
         self.representation = representation
 
@@ -78,7 +88,7 @@ class GeneticMapper(object):
         toolbox.register("mate", self.mapping_crossover)
         toolbox.register("mutate", self.mapping_mutation)
         toolbox.register("evaluate", self.evaluate_mapping)
-        toolbox.register("select", deap.tools.selTournament, tournsize=self.config['mapper']['tournsize'])
+        toolbox.register("select", deap.tools.selTournament, tournsize=self.tournsize)
 
         self.evolutionary_toolbox = toolbox
         self.hof = deap.tools.HallOfFame(1)
@@ -89,8 +99,8 @@ class GeneticMapper(object):
         stats.register("max", np.max)
         self.evolutionary_stats = stats
 
-        if config['mapper']['initials'] == 'random':
-            self.population = toolbox.population(n=self.config['mapper']['pop_size'])
+        if self.initials:
+            self.population = toolbox.population(n=self.pop_size)
         else:
             log.error("Initials not supported yet")
             raise RuntimeError('GeneticMapper: Initials not supported')
@@ -98,7 +108,7 @@ class GeneticMapper(object):
             #toolbox.register("population_guess", self.initPopulation, list, toolbox.individual_guess, initials,pop_size)
             #population = toolbox.population_guess()
 
-    def evaluate_mapping(self,mapping):
+    def evaluate_mapping(self, mapping):
         #wrapper to make it into a 1-tuple because DEAP needs that
         return self.simulation_manager.simulate([list(mapping)])[0],
 
@@ -107,12 +117,12 @@ class GeneticMapper(object):
         as_rep = self.representation.toRepresentation(mapping)
         return list(as_rep)
 
-    def mapping_crossover(self,m1,m2):
-        return self.representation._crossover(m1,m2,self.crossover_rate)
+    def mapping_crossover(self, m1, m2):
+        return self.representation._crossover(m1, m2, self.crossover_rate)
 
     def mapping_mutation(self,mapping):
         #m_obj = self.representation.fromRepresentation(list((mapping)))
-        radius = self.config['mapper']['radius']
+        radius = self.radius
         while(1):
             new_mappings = self.representation._uniformFromBall(mapping,radius,20)
             for m in new_mappings:
@@ -122,7 +132,7 @@ class GeneticMapper(object):
                         mapping[i] = m[i]
                     return mapping,
             radius *= 1.1
-            if radius > 10000 * self.config['mapper']['radius']:
+            if radius > 10000 * self.radius:
                 log.error("Could not mutate mapping")
                 raise RuntimeError("Could not mutate mapping")
 
@@ -131,14 +141,14 @@ class GeneticMapper(object):
         toolbox = self.evolutionary_toolbox
         stats = self.evolutionary_stats
         hof = self.hof
-        pop_size = self.config['mapper']['pop_size']
-        num_gens = self.config['mapper']['num_gens']
-        cxpb = self.config['mapper']['cxpb']
-        mutpb = self.config['mapper']['mutpb']
+        pop_size = self.pop_size
+        num_gens = self.num_gens
+        cxpb = self.cxpb
+        mutpb = self.mutb
 
         population = self.population
 
-        if self.config['mapper']['mupluslambda']:
+        if self.mupluslambda:
             population, logbook = deap.algorithms.eaMuPlusLambda(population, toolbox, mu=pop_size, lambda_=3*pop_size,
                                                                  cxpb=cxpb, mutpb=mutpb, ngen=num_gens, stats=stats,
                                                                  halloffame=hof, verbose=False)
@@ -149,7 +159,7 @@ class GeneticMapper(object):
                                                                   halloffame=hof, verbose=False)
             log.info(logbook.stream)
 
-        return population,logbook,hof
+        return population, logbook, hof
 
     def generate_mapping(self):
         """ Generates a full mapping using a genetic algorithm
@@ -161,7 +171,7 @@ class GeneticMapper(object):
             pickle.dump(logbook, f)
         result = self.representation.fromRepresentation(np.array(mapping))
         self.simulation_manager.statistics.to_file()
-        if self.config['mapper']['dump_cache']:
+        if self.dump_cache:
             self.simulation_manager.dump('mapping_cache.csv')
         self.cleanup()
         return result

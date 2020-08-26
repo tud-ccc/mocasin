@@ -13,7 +13,7 @@ class DefaultFullMapper:
     """Generates a default mapping by selecting the first available option everywhere
     """
 
-    def __init__(self, kpn, platform, seed=None):
+    def __init__(self, kpn, platform):
         """Generates a default mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
@@ -93,5 +93,4 @@ class DefaultFullMapperHydra(DefaultFullMapper):
     config file.
     """
     def __init__(self, kpn, platform, config):
-        seed = config['mapper']['seed']
-        super(DefaultFullMapperHydra, self).__init__(kpn, platform, seed)
+        super(DefaultFullMapperHydra, self).__init__(kpn, platform)
