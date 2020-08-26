@@ -1,0 +1,4 @@
+mapper:
+   class:
+     pykpn.mapper.fair.StaticCFSMapper
+
