@@ -1,6 +1,6 @@
 resource_manager:
   name: BruteforceScheduler
-  class: pykpn.tetris.scheduler.bruteforce.BruteforceScheduler
+  _target_: pykpn.tetris.scheduler.bruteforce.BruteforceScheduler
 
 reschedule: true
 

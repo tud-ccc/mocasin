@@ -164,8 +164,7 @@ def tetris(cfg):
     Context().req_table = req_table
 
     # Initialize scheduler
-    scheduler = hydra.utils.instantiate(cfg['resource_manager'], app_table,
-                                        platform, cfg)
+    scheduler = hydra.utils.instantiate(cfg['resource_manager'], app_table, platform, cfg)
 
     opt_summary = cfg["summary"]
     opt_summary_append = cfg["summary_append"]
