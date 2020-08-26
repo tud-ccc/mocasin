@@ -62,7 +62,7 @@ class StaticCFS(object):
         if restricted is None:
             restricted = []
         if load is None:
-            restricted = []
+            load = []
 
         for type in core_types:
             processes[type] = SortedList()
