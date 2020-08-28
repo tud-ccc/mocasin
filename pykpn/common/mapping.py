@@ -252,11 +252,17 @@ class Mapping:
         """
         resource_dict = {}
         #make sure that all core types are included in the dict
+        counted_cores = []
         for core in self.platform.processors():
             if core.type not in resource_dict:
                 resource_dict[core.type] = 0
         for proc in self.kpn.processes():
-            resource_dict[self.affinity(proc).type] += 1
+            core = self.affinity(proc)
+            if core.name in counted_cores:
+                continue
+            else:
+                counted_cores.append(core.name)
+                resource_dict[core.type] += 1
         return resource_dict
 
     def to_list(self,channels=False):
