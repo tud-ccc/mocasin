@@ -39,6 +39,10 @@ class GeneticMapper(object):
         self.config = config
         self.random_mapper = RandomPartialMapper(self.kpn, self.platform, config, seed=None)
         self.crossover_rate = self.config['crossover_rate']
+        self.exec_time = config['objective_exec_time']
+        self.num_resources = config['objective_num_resources']
+        if not self.exec_time and not self.num_resources:
+            raise RuntimeError("Trying to initalize genetic algorithm without objectives")
 
         if self.crossover_rate > len(self.kpn.processes()):
             log.error("Crossover rate cannot be higher than number of processes in application")
@@ -60,7 +64,13 @@ class GeneticMapper(object):
         self.simulation_manager = SimulationManager(self.representation, config)
 
         if 'FitnessMin' not in deap.creator.__dict__:
-            deap.creator.create("FitnessMin", deap.base.Fitness, weights=(-1.0,))
+            num_params = 0
+            if self.exec_time:
+                num_params += 1
+            if self.num_resources:
+                num_params += len(self.platform.core_types())
+            #this will weight a milisecond as equivalent to an additional core
+            deap.creator.create("FitnessMin", deap.base.Fitness, weights=num_params*(-1.0,))
 
         if 'Individual' not in deap.creator.__dict__:
             deap.creator.create("Individual", list, fitness=deap.creator.FitnessMin)
@@ -76,7 +86,7 @@ class GeneticMapper(object):
         toolbox.register("select", deap.tools.selTournament, tournsize=self.config['tournsize'])
 
         self.evolutionary_toolbox = toolbox
-        self.hof = deap.tools.HallOfFame(1)
+        self.hof = deap.tools.ParetoFront() #todo: we could add symmetry comparison (or other similarity) here
         stats = deap.tools.Statistics(lambda ind: ind.fitness.values)
         stats.register("avg", np.mean)
         stats.register("std", np.std)
@@ -94,8 +104,15 @@ class GeneticMapper(object):
             #population = toolbox.population_guess()
 
     def evaluate_mapping(self,mapping):
-        #wrapper to make it into a 1-tuple because DEAP needs that
-        return self.simulation_manager.simulate([list(mapping)])[0],
+        result = []
+        if self.exec_time:
+            exec_time = self.simulation_manager.simulate([list(mapping)])[0]
+            result.append(exec_time)
+        if self.num_resources:
+            resource_dict = self.representation.fromRepresentation(mapping).to_resourceDict()
+            for core_type in resource_dict:
+                result.append(resource_dict[core_type])
+        return tuple(result)
 
     def random_mapping(self):
         mapping = self.random_mapper.generate_mapping()
@@ -160,6 +177,24 @@ class GeneticMapper(object):
             self.simulation_manager.dump('mapping_cache.csv')
         self.cleanup()
         return result
+
+    def generate_pareto_front(self):
+        """ Generates a pareto front of (full) mappings using a genetic algorithm
+            the input parameters determine the criteria with which the pareto
+            front is going to be built.
+        """
+        _,logbook,hof = self.run_genetic_algorithm()
+        results = []
+        self.simulation_manager.statistics.log_statistics()
+        with open('evolutionary_logbook.pickle','wb') as f:
+            pickle.dump(logbook,f)
+        for mapping in hof:
+            results.append(self.representation.fromRepresentation(np.array(mapping)))
+        self.simulation_manager.statistics.to_file()
+        if self.config['dump_cache']:
+            self.simulation_manager.dump('mapping_cache.csv')
+        self.cleanup()
+        return results
 
     def cleanup(self):
         print("cleaning up")
