@@ -109,7 +109,8 @@ class GeneticMapper(object):
             exec_time = self.simulation_manager.simulate([list(mapping)])[0]
             result.append(exec_time)
         if self.num_resources:
-            resource_dict = self.representation.fromRepresentation(mapping).to_resourceDict()
+            mapping_obj = self.representation.fromRepresentation(list(mapping))
+            resource_dict = mapping_obj.to_resourceDict()
             for core_type in resource_dict:
                 result.append(resource_dict[core_type])
         return tuple(result)
@@ -197,7 +198,7 @@ class GeneticMapper(object):
         return results
 
     def cleanup(self):
-        print("cleaning up")
+        log.info("cleaning up")
         toolbox = self.evolutionary_toolbox
         toolbox.unregister("attribute")
         toolbox.unregister("mapping")

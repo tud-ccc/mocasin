@@ -61,10 +61,10 @@ def pareto_front(cfg):
     outdir = cfg['outdir']
     if not os.path.exists(outdir):
         os.makedirs(outdir)
-        for i,result in enumerate(results):
-            with open(outdir + f"/mapping{i}.pickle" ,'wb') as f:
-                p = pickle.Pickler(f)
-                p.dump(result)
+    for i,result in enumerate(results):
+        with open(outdir + f"/mapping{i}.pickle" ,'wb') as f:
+            p = pickle.Pickler(f)
+            p.dump(result)
 
     for i,result in enumerate(results):
         with open(outdir + f"results{i}.txt",'w') as f:
