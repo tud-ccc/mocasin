@@ -43,7 +43,7 @@ class RandomWalkMapper(object):
         self.full_mapper = True
         self.kpn = kpn
         self.platform = platform
-        self.random_mapper = RandomMapper(self.kpn, self.platform, random_seed=None)
+        self.random_mapper = RandomMapper(self.kpn, self.platform, config, random_seed=None)
         self.statistics = Statistics(log, len(self.kpn.processes()), record_statistics)
         self.out_dir = config['outdir']
 

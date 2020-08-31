@@ -1,6 +1,6 @@
 # @package _group_
 
 target:
-  pykpn.mapper.random.RandomMapperHydra
+  pykpn.mapper.random.RandomMapper
 params:
         random_seed : null

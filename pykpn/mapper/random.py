@@ -113,13 +113,5 @@ class RandomMapper(RandomPartialMapper):
     This class is a FullMapper wrapper
     for RandomPartialMapper.
     """
-    def __init__(self, kpn, platform, random_seed=None):
-        super().__init__(kpn, platform, seed=random_seed)
-
-class RandomMapperHydra(RandomMapper):
-    """
-    This class implements a new constructor for the random mapper in order to handle the instantiation via an hydra
-    config file.
-    """
     def __init__(self, kpn, platform, config, random_seed=None):
-        super(RandomMapperHydra, self).__init__(kpn, platform, random_seed=random_seed)
+        super().__init__(kpn, platform, seed=random_seed)

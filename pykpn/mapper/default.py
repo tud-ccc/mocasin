@@ -13,7 +13,7 @@ class DefaultFullMapper:
     """Generates a default mapping by selecting the first available option everywhere
     """
 
-    def __init__(self, kpn, platform):
+    def __init__(self, kpn, platform, config):
         """Generates a default mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
@@ -87,10 +87,3 @@ class DefaultFullMapper:
         assert not part_mapping.get_unmapped_channels()
         return part_mapping
 
-class DefaultFullMapperHydra(DefaultFullMapper):
-    """
-    This class implements a new constructor for the default mapper in order to handle the instantiation via an hydra
-    config file.
-    """
-    def __init__(self, kpn, platform, config):
-        super(DefaultFullMapperHydra, self).__init__(kpn, platform)
