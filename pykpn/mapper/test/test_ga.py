@@ -1,6 +1,5 @@
 from pykpn.mapper.test.mock_cache import MockMappingCache
 from pykpn.mapper.genetic import GeneticMapper
-from pykpn.mapper.utils import TraceGeneratorMock
 import pytest
 import numpy as np
 

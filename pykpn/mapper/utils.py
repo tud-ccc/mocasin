@@ -230,10 +230,3 @@ class DerivedPrimitive:
         self.cost = self.write_cost + self.read_cost
 
         self.ref_primitive = ref_prim
-
-class TraceGeneratorMock:
-    def __init__(self):
-        pass
-
-    def next_segment(self, param_1, param_2):
-        return None
