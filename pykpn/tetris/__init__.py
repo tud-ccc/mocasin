@@ -110,16 +110,10 @@ class TetrisManagement:
         scheduler = hydra.utils.instantiate(cfg['resource_manager'], app_table,
                                             platform)
 
-        manager = ResourceManager(scheduler, platform)
+        manager = ResourceManager(app_table, platform, scheduler,
+                                  cfg['allow_migration'])
 
-        # TODO: Check whether we really need to supplu dump_summary and dump_path
-        opt_summary = cfg["summary_csv"]
-        dump_summary = False
-        dump_path = ""
-        if opt_summary is not None:
-            dump_summary = True
-            dump_path = opt_summary
-        tracer = TracePlayer(manager, scenario, dump_summary, dump_path)
+        tracer = TracePlayer(manager, scenario)
 
         management = TetrisManagement(manager, tracer, req_table)
         return management
