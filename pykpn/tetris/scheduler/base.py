@@ -23,7 +23,8 @@ class SegmentMapperBase(abc.ABC):
 
 
 class SchedulerBase(abc.ABC):
-    def __init__(self, app_table, platform):
+    def __init__(self, app_table, platform, allow_migrations=True,
+                 allow_preemptions=True):
         """Generates a schedule.
 
         :param app_table: a table with applications
@@ -34,7 +35,9 @@ class SchedulerBase(abc.ABC):
         assert isinstance(app_table, AppTable)
         assert isinstance(platform, Platform)
         self.__platform = platform
-        self.__app_table = app_table
+        self.__app_table = app_table  # check whether we really need that
+        self.__allow_migrations = allow_migrations
+        self.__allow_preemptions = allow_preemptions
         super().__init__()
 
     @property
@@ -45,6 +48,14 @@ class SchedulerBase(abc.ABC):
     @property
     def platform(self):
         return self.__platform
+
+    @property
+    def allow_migrations(self):
+        return self.__allow_migrations
+
+    @property
+    def allow_preemptions(self):
+        return self.__allow_preemptions
 
     @abc.abstractmethod
     def schedule(self, jobs):
