@@ -1,7 +1,4 @@
 # @package _group_
-name: ???
-file: ???
 _target_: pykpn.slx.kpn.SlxKpnGraph
-params:
-  name: ${kpn.name}
-  cpngraph: ${kpn.file}
+name: ???
+cpngraph: ???

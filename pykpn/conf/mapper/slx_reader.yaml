@@ -1,4 +1,3 @@
 # @package _group_
 _target_: pykpn.slx.mapping.SlxMapper
-params:
-  mapping_xml : ? 
+mapping_xml : ???

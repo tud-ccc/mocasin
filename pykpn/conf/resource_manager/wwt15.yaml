@@ -1,8 +1,7 @@
 # @package _group_
 
 _target_: pykpn.tetris.scheduler.wwt15.WWT15Scheduler
-params:
-        name: WW15Scheduler
+name: WW15Scheduler
 # A high-level mapper algorithm: segmentized (SEG), joint-fixed (JF),
 # joint-dynamic (JD)
 # wwt15_type: SEG

@@ -1,7 +1,4 @@
 # @package _group_
+_target_: pykpn.slx.platform.SlxPlatform
 name: slx_platform
 file: ???
-_target_: pykpn.slx.platform.SlxPlatform
-params:
-  name: ${platform.name}
-  platform_xml: ${platform.file}

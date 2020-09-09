@@ -1,8 +1,7 @@
 # @package _group_
 
 _target_: pykpn.tetris.scheduler.bruteforce.BruteforceScheduler
-params:
-        name: BruteForceScheduler
+name: BruteForceScheduler
 
 reschedule: true
 

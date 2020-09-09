@@ -1,14 +1,12 @@
 # @package _group_
 
-_target_:
-  pykpn.mapper.gradient_descent.GradientDescentMapper
-params:
-        gd_iterations : 100
-        stepsize : 2
-        random_seed : 42
-        record_statistics: true
-        dump_cache: false
-        chunk_size : 10
-        progress : false
-        parallel : true
-        jobs : 2
+_target_: pykpn.mapper.gradient_descent.GradientDescentMapper
+gd_iterations : 100
+stepsize : 2
+random_seed : 42
+record_statistics: true
+dump_cache: false
+chunk_size : 10
+progress : false
+parallel : true
+jobs : 2
