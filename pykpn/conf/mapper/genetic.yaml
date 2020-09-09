@@ -1,6 +1,6 @@
 # @package _group_
 
-target:
+_target_:
   pykpn.mapper.genetic.GeneticMapper
 params:
         pop_size : 10

@@ -1,6 +1,6 @@
 # @package _group_
 
-target:
+_target_:
   pykpn.mapper.gradient_descent.GradientDescentMapper
 params:
         gd_iterations : 100

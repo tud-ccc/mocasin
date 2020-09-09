@@ -1,6 +1,6 @@
 # @package _group_
 
-target:
+_target_:
   pykpn.mapper.random.RandomMapper
 params:
         random_seed : null

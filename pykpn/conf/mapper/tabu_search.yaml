@@ -1,5 +1,5 @@
 # @package _group_
-target: pykpn.mapper.tabu_search.TabuSearchMapper
+_target_: pykpn.mapper.tabu_search.TabuSearchMapper
 params:
         random_seed : 42
         record_statistics: true

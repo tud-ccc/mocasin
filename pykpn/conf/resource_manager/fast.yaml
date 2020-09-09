@@ -1,5 +1,5 @@
 # @package _group_
 
-target: pykpn.tetris.scheduler.fast.FastScheduler
+_target_: pykpn.tetris.scheduler.fast.FastScheduler
 params:
         name: FastScheduler

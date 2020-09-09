@@ -1,6 +1,6 @@
 # @package _group_
 directory: ???
-target: pykpn.slx.trace.SlxTraceReader
+_target_: pykpn.slx.trace.SlxTraceReader
 params:
   trace_dir: ${trace.directory}
   prefix: ${kpn.name}.

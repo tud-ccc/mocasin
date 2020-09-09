@@ -2,7 +2,7 @@
 platform:
   name: test
   file: ???
-  target: pykpn.slx.platform.SlxPlatform
+  _target_: pykpn.slx.platform.SlxPlatform
   params:
     name: ${platform.name}
     platform_xml: ${platform.file}
@@ -10,7 +10,7 @@ platform:
 kpn:
   name: ???
   file: ???
-  target: pykpn.slx.kpn.SlxKpnGraph
+  _target_: pykpn.slx.kpn.SlxKpnGraph
   params:
     name: ${kpn.name}
     cpngraph: ${kpn.file}
@@ -18,13 +18,13 @@ kpn:
 mapping:
   name: ${kpn.name}_on_${platform.name}
   file: ???
-  target: pykpn.slx.mapping.SlxMapping
+  _target_: pykpn.slx.mapping.SlxMapping
   params:
     mapping_xml: ${mapping.file}
 
 trace:
   directory: ???
-  target: pykpn.slx.trace.SlxTraceReader
+  _target_: pykpn.slx.trace.SlxTraceReader
   params:
     trace_dir: ${trace.directory}
     prefix: ${kpn.name}.
