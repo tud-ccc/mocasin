@@ -1,4 +1,7 @@
-# Author: Robert Khasanov
+# Copyright (C) 2020 TU Dresden
+# All Rights Reserved
+#
+# Authors: Robert Khasanov
 
 from pykpn.common.mapping import Mapping
 from enum import Enum
@@ -6,12 +9,14 @@ from enum import Enum
 import logging
 log = logging.getLogger(__name__)
 
+
 class JobStateEnum(Enum):
-    NOT_STARTED = 0
-    RUNNING = 1
-    PAUSED = 2
-    CANCELLED = 3
-    FINISHED = 4
+    NOT_STARTED = 1
+    RUNNING = 2
+    PAUSED = 3
+    CANCELLED = 4
+    FINISHED = 5
+
 
 class JobStateInfo:
     """Job state info
