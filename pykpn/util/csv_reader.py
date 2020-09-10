@@ -8,6 +8,7 @@ from pykpn.common.platform import Platform
 from pykpn.common.kpn import KpnGraph
 from pykpn.mapper.partial import ComFullMapper, ProcPartialMapper
 
+# TODO(RK): Make a unit test which checks a case with multiple objectives
 
 class DataReader:
     def __init__(self, platform, kpn, file_path, attribute, process_prefix, process_suffix):
@@ -16,7 +17,7 @@ class DataReader:
         
         if not isinstance(kpn, KpnGraph):
             raise RuntimeError("KpnGraph object is not valid")
-        
+
         self._mProcessNames = []
         self._mDataDict = {}
         self._mMappingDict = OrderedDict()
@@ -27,11 +28,14 @@ class DataReader:
 
         for process in self._mKpnInstance.processes():
             self._mProcessNames.append(process.name)
-        
+
         if attribute == 'default':
             self._desiredProperty = 'wall_clock_time'
         else:
             self._desiredProperty = attribute
+
+        if not isinstance(self._desiredProperty, list):
+            self._desiredProperty = [self._desiredProperty]
         
         if process_prefix == 'default':
             self._prefix = 't_'
@@ -42,6 +46,7 @@ class DataReader:
             self._suffix = ''
         else:
             self._suffix = process_suffix
+
         
         path_as_list = file_path.split('/')
         last_element = path_as_list[len(path_as_list)-1]
@@ -62,7 +67,8 @@ class DataReader:
                             for name in self._mProcessNames:
                                 to_update[i].update({ name : row[self._prefix + name + self._suffix]})
 
-                            to_update[i].update({self._desiredProperty : row[self._desiredProperty]})
+                            for p in self._desiredProperty:
+                                to_update[i].update({p: row[p]})
                             self._mDataDict.update(to_update)
                             i += 1
 
@@ -79,36 +85,40 @@ class DataReader:
 
                     for name in self._mProcessNames:
                         to_update[i].update({ name : row[self._prefix + name + self._suffix]})
-                    to_update[i].update({self._desiredProperty : row[self._desiredProperty]})
+                    for p in self._desiredProperty:
+                        to_update[i].update({p: row[p]})
                     self._mDataDict.update(to_update)
                     i += 1
-    
+
     def formMappings(self):
         for entry in self._mDataDict:
             fromList = []
-            
+
             for key in self._mDataDict[entry]:
                 if key != self._desiredProperty:
                     asString = list(self._mDataDict[entry][key])
                     asNumber = ''
-                    
+
                     i = len(asString)
-                    while(i > 0):
+                    while (i > 0):
                         i -= 1
                         try:
                             int(asString[i])
                             asNumber = asString[i] + asNumber
                         except:
                             break
-                        
+
                     asNumber = int(asNumber)
                     fromList.append(asNumber)
-            
+
             if fromList != []:
                 mapping = self._mMapper.generate_mapping(fromList)
             else:
-                mapping = Mapping(self._mKpnInstance,self._mPlatform)
-            self._mMappingDict.update({entry : (mapping, self._mDataDict[entry][self._desiredProperty])})
+                mapping = Mapping(self._mKpnInstance, self._mPlatform)
+            self._mMappingDict.update({
+                entry: (mapping, ) + tuple(self._mDataDict[entry][p]
+                                           for p in self._desiredProperty)
+            })
         return self._mMappingDict
 
 class DataReaderFromHydra(DataReader):
