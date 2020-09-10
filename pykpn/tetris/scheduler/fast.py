@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from pykpn.tetris.context import Context
 from pykpn.tetris.mapping import SegmentMapping, JobSegmentMapping
 from pykpn.tetris.scheduler.base import (SingleVariantSegmentMapper,
                                          SingleVariantSegmentizedScheduler)
@@ -101,9 +100,9 @@ class FastSegmentMapper(SingleVariantSegmentMapper):
                 if r is not None:
                     continue
                 rid = self.__job_table[i].rid
-                d = Context().req_table[rid].deadline()
+                d = self.__job_table[i].abs_deadline
                 c = self.__job_table[i].cratio
-                app = Context().req_table[rid].app()
+                app = self.__job_table[i].app
                 to_finish[i] = (
                     self.__select_app_mappings_fit_deadline_resources(
                         app, d - self.__start_time, avl_core_types,
@@ -125,7 +124,7 @@ class FastSegmentMapper(SingleVariantSegmentMapper):
             # On Odroid XU-4, the check that it can be scheduled is simple.
             # All mappings in to_finish are valid.
             rid = self.__job_table[i_max_diff].rid
-            a = Context().req_table[rid].app()
+            a = self.__job_table[i_max_diff].app
             mid = to_finish[i_max_diff][0][0]
             m = a.mappings[mid]
             avl_core_types -= m.core_types

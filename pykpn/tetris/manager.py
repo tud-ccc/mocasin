@@ -5,8 +5,8 @@
 from pykpn.tetris.scheduler.base import SchedulerBase
 from pykpn.common.platform import Platform
 from pykpn.tetris.apptable import AppTable
+from pykpn.tetris.reqtable import ReqTable
 from pykpn.tetris.mapping import Mapping
-from pykpn.tetris.context import Context
 from pykpn.tetris.job import JobTable
 from pykpn.tetris.reqtable import RequestStatus
 
@@ -19,18 +19,20 @@ EPS = 0.00001
 
 
 class ResourceManager:
-    def __init__(self, app_table, platform, scheduler, allow_migration=True,
-                 start_time=0.0):
+    def __init__(self, app_table, req_table, platform, scheduler,
+                 allow_migration=True, start_time=0.0):
         assert isinstance(app_table, AppTable)
+        assert isinstance(req_table, ReqTable)
         assert isinstance(scheduler, SchedulerBase)
         assert isinstance(platform, Platform)
         self.__app_table = app_table
+        self.__req_table = req_table
         self.__scheduler = scheduler
         self.__platform = platform
         self.__allow_migration = allow_migration
 
         self.__ctime = start_time
-        self.__job_state_table = None # active_job_table
+        self.__job_state_table = None  # active_job_table
 
         self.__jobs = None
         self.__active_mapping = None
@@ -55,7 +57,6 @@ class ResourceManager:
     @property
     def allow_migration(self):
         return self.__allow_migration
-
 
     def start(self):
         self.__jobs = JobTable(time=self.ctime)
@@ -123,7 +124,7 @@ class ResourceManager:
         assert self.ctime == arrival
 
         # Add a new request into request table
-        rid = Context().req_table.add(app, arrival, deadline)
+        rid = self.__req_table.add(app, arrival, deadline)
         log.info(
             "t:{:.2f}  New request {}, application = {}, deadline = {}".format(
                 arrival, rid, app, deadline))
@@ -146,16 +147,16 @@ class ResourceManager:
             # Update job list and active scheduling
             self.__jobs.add(rid)
             self.__active_mapping = scheduling
-            Context().req_table[rid].status = RequestStatus.ACCEPTED
+            self.__req_table[rid].status = RequestStatus.ACCEPTED
         else:
             log.info("t:{:.2f}  Request {} is rejected".format(
                 self.ctime, rid))
-            Context().req_table[rid].status = RequestStatus.REFUSED
+            self.__req_table[rid].status = RequestStatus.REFUSED
 
     def stats(self):
         res = {}
-        res['requests'] = len(Context().req_table)
-        res['accepted'] = Context().req_table.count_accepted_and_finished()
+        res['requests'] = len(self.__req_table)
+        res['accepted'] = self.__req_table.count_accepted_and_finished()
         res['energy'] = self.__history_mapping.energy
         res['scheduler'] = self.scheduler.name
         return res

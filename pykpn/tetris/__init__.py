@@ -110,7 +110,7 @@ class TetrisManagement:
         scheduler = hydra.utils.instantiate(cfg['resource_manager'], app_table,
                                             platform)
 
-        manager = ResourceManager(app_table, platform, scheduler,
+        manager = ResourceManager(app_table, req_table, platform, scheduler,
                                   cfg['allow_migration'])
 
         tracer = TracePlayer(manager, scenario)
