@@ -60,8 +60,7 @@ class TetrisScheduling:
         req_table.read_from_file(cfg['job_table'])
 
         # Initialize tetris scheduler
-        scheduler = hydra.utils.instantiate(cfg['resource_manager'], app_table,
-                                            platform)
+        scheduler = hydra.utils.instantiate(cfg['resource_manager'], platform)
 
         scheduling = TetrisScheduling(scheduler, req_table)
         return scheduling
@@ -107,8 +106,7 @@ class TetrisManagement:
         scenario = cfg['input_jobs']
 
         # Initialize tetris scheduler
-        scheduler = hydra.utils.instantiate(cfg['resource_manager'], app_table,
-                                            platform)
+        scheduler = hydra.utils.instantiate(cfg['resource_manager'], platform)
 
         manager = ResourceManager(app_table, req_table, platform, scheduler,
                                   cfg['allow_migration'])

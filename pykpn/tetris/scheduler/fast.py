@@ -138,16 +138,14 @@ class FastSegmentMapper(SingleVariantSegmentMapper):
 
 
 class FastScheduler(SingleVariantSegmentizedScheduler):
-    def __init__(self, app_table, platform):
+    def __init__(self, platform, **kwargs):
         """Fast scheduler.
 
-        :param app_table: a table with applications
-        :type app_table: AppTable
         :param platform: a platform
         :type platform: Platform
         """
         segment_mapper = FastSegmentMapper(self, platform)
-        super().__init__(app_table, platform, segment_mapper)
+        super().__init__(platform, segment_mapper)
 
     @property
     def name(self):

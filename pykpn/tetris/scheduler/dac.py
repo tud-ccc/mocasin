@@ -1,7 +1,7 @@
-from pykpn.tetris.job import JobTable, Job
 import math
 import logging
 
+from pykpn.tetris.job import JobTable, Job
 from pykpn.tetris.mapping import Mapping, SegmentMapping, JobSegmentMapping
 from pykpn.tetris.scheduler.base import SchedulerBase
 
@@ -15,12 +15,12 @@ EPS = 0.00001
 
 
 class DacScheduler(SchedulerBase):
-    def __init__(self, app_table, platform, dac_version):
-        super().__init__(app_table, platform)
+    def __init__(self, platform, **kwargs):
+        super().__init__(platform)
         self.__platform = platform
         self.__start_energy = 0.0
         self.__start_time = 0.0
-        self.__version = dac_version
+        self.__version = kwargs['dac_version']
 
     @property
     def name(self):

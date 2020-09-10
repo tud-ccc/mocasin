@@ -187,7 +187,7 @@ class WWT15SegmentMapper(SingleVariantSegmentMapper):
 
 
 class WWT15Scheduler(SingleVariantSegmentizedScheduler):
-    def __init__(self, app_table, platform, **kwargs):
+    def __init__(self, platform, **kwargs):
         sorting_arg = kwargs["wwt15_sorting"]
         if sorting_arg == "COST":
             self.__sorting_key = WWT15SortingKey.MINCOST
@@ -222,7 +222,7 @@ class WWT15Scheduler(SingleVariantSegmentizedScheduler):
             self, platform, sorting_key=self.__sorting_key,
             explore_mode=self.__explore_mode,
             lr_constraints=self.__lr_constraints, lr_rounds=self.__lr_rounds)
-        super().__init__(app_table, platform, segment_mapper)
+        super().__init__(platform, segment_mapper)
 
         self.__name = self.__generate_name()
 
