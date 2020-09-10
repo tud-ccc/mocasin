@@ -4,7 +4,6 @@ import math
 from enum import Enum
 
 from pykpn.tetris.apptable import AppTable
-from pykpn.tetris.context import Context
 
 import logging
 log = logging.getLogger(__name__)
