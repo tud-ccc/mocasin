@@ -20,14 +20,16 @@ class JobRequestStatus(Enum):
 
 
 class JobRequestInfo:
-    def __init__(self, app, arrival, deadline=math.inf,
+    def __init__(self, app, mappings, arrival, deadline=math.inf,
                  status=JobRequestStatus.ARRIVED, start_cratio=0.0):
         assert isinstance(app, KpnGraph)
+        assert isinstance(mappings, list)
         assert isinstance(arrival, float)
         assert isinstance(deadline, float)
         assert isinstance(status, JobRequestStatus)
         assert isinstance(start_cratio, float)
         self.__app = app
+        self.__mappings = mappings
         self.__arrival = arrival
         self.__deadline = deadline  # Absolute time
         self.__status = status
@@ -37,6 +39,10 @@ class JobRequestInfo:
     @property
     def app(self):
         return self.__app
+
+    @property
+    def mappings(self):
+        return self.__mappings
 
     @property
     def arrival(self):
