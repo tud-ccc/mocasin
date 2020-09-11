@@ -19,7 +19,7 @@ class NamedDimensionalNumber:
     def __init__(self, v, init_only_names=False):
         assert isinstance(v, Iterable)
 
-        if isinstance(v, (type({}.items()), NamedDimensionalNumber)):
+        if isinstance(v, (type({}.items()), NamedDimensionalNumber, dict)):
             self.__dict = dict(v)
             if init_only_names:
                 for k in self.__dict.keys():

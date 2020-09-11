@@ -127,7 +127,7 @@ class CanonicalMapping:
             }
         else:
             ps = {}
-        ct = NamedDimensionalNumber(platform.core_types(),
+        ct = NamedDimensionalNumber(dict(platform.get_processor_types()),
                                     init_only_names=True)
         for p in ps:
             pp = platform.find_processor(p.name)
