@@ -3,10 +3,13 @@
 #
 # Authors: Robert Khasanov
 
-from pykpn.common.mapping import Mapping
-from enum import Enum
+from pykpn.tetris.job_request import JobRequestInfo
 
+from pykpn.common.mapping import Mapping
+
+from enum import Enum
 import logging
+
 log = logging.getLogger(__name__)
 
 
@@ -33,7 +36,7 @@ class JobStateInfo:
     def __init__(self, request_info, mapping=None,
                  state=JobStateEnum.NOT_STARTED, cratio=0.0):
         assert isinstance(request_info, JobRequestInfo)
-        assert isinstance(mapping, Mapping)
+        assert isinstance(mapping, (Mapping, type(None)))
         assert isinstance(cratio, float)
         self.request = request_info
         self.mapping = mapping
@@ -60,3 +63,16 @@ class JobStateInfo:
     def app(self):
         """Application."""
         return self.request.app()
+
+    @staticmethod
+    def from_requests(reqs):
+        """ Generate job states from job requests
+
+        Args:
+            reqs (list): a list of JobRequestInfo objects
+        """
+        jobs = []
+        for req in reqs:
+            job = JobStateInfo(req, cratio=req.start_cratio)
+            jobs.append(job)
+        return jobs

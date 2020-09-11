@@ -3,10 +3,12 @@
 #
 # Authors: Robert Khasanov
 
-import math
-from enum import Enum
+from pykpn.common.kpn import KpnGraph
 
+from enum import Enum
 import logging
+import math
+
 log = logging.getLogger(__name__)
 
 
@@ -18,24 +20,33 @@ class JobRequestStatus(Enum):
 
 
 class JobRequestInfo:
-    def __init__(self, kpn, arrival, deadline=math.inf,
+    def __init__(self, app, arrival, deadline=math.inf,
                  status=JobRequestStatus.ARRIVED, start_cratio=0.0):
-        self.__app = kpn
+        assert isinstance(app, KpnGraph)
+        assert isinstance(arrival, float)
+        assert isinstance(deadline, float)
+        assert isinstance(status, JobRequestStatus)
+        assert isinstance(start_cratio, float)
+        self.__app = app
         self.__arrival = arrival
         self.__deadline = deadline  # Absolute time
         self.__status = status
         self.__start_cratio = start_cratio
         self.__finish = None
 
+    @property
     def app(self):
         return self.__app
 
+    @property
     def arrival(self):
         return self.__arrival
 
+    @property
     def deadline(self):
         return self.__deadline
 
+    @property
     def start_cratio(self):
         return self.__start_cratio
 
@@ -75,4 +86,5 @@ class JobRequestInfo:
         res = ("Job request (app: {}, arrival [cratio]: {} [{}], " +
                "deadline: {}, status: {}, finished: {})").format(
                    self.__app.name, self.__arrival, self.__start_cratio,
-                   self.__deadline, self.__status, self.__finished)
+                   self.__deadline, self.__status, self.__finish)
+        return res
