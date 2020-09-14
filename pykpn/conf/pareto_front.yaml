@@ -6,12 +6,7 @@ defaults:
   - platform: default
   - trace: default
   - representation: default
-  - mapper: default
+  - mapper : genetic
 
-simulate_best : true
-objective : runtime
 outdir : ./
-progress :  true
-plot_distribution: false
-visualize : false
-show_plots : false
+progress :  false

@@ -47,6 +47,10 @@ _tasks = {
         'generate_mapping',
         'generate_mapping',
         "Generate a mapping."),
+    'pareto_front': (
+        'pareto_front',
+        'pareto_front',
+        "Generate a pareto front of mappings."),
     'generate_yaml': (
         'generate_yaml',
         'generate_yaml',
