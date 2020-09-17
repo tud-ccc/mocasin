@@ -25,7 +25,7 @@ from importlib import import_module
 log = logging.getLogger(__name__)
 
 
-@hydra.main(config_path='conf/help.yaml')
+@hydra.main(config_path='conf', config_name='help')
 def print_help(cfg=None):
     _print_help_impl()
 
