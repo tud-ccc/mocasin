@@ -1,4 +1,4 @@
 # @package _group_
 _target_: pykpn.slx.kpn.SlxKpnGraph
 name: audio_filter
-cpngraph: ../../../slx/app/${kpn.name}/${kpn.name}.cpn.xml
+xml_file: ../../../slx/app/${kpn.name}/${kpn.name}.cpn.xml

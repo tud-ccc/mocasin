@@ -76,7 +76,7 @@ def test_tgff_mapping_to_dot(datadir, expected_dir, tgff):
                            "platform=tgff_reader",
                            "kpn=tgff_reader",
                            "mapper=random",
-                           "mapper.params.random_seed=42",
+                           "mapper.random_seed=42",
                            "tgff.file=%s.tgff" % tgff,
                            "output_file=%s" % out_file],
                           cwd=datadir)

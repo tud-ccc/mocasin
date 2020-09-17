@@ -5,7 +5,6 @@
 
 
 import timeit
-import hydra
 import random
 import numpy as np
 import os

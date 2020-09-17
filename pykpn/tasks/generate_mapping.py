@@ -86,7 +86,7 @@ def generate_mapping(cfg):
         with open(outdir + 'best_time.txt','w') as f:
             f.write(str(exec_time))
 
-    if not cfg['kpn']['target'] == 'pykpn.tgff.tgffSimulation.KpnGraphFromTgff':
+    if not cfg['kpn']['_target_'] == 'pykpn.tgff.tgffSimulation.KpnGraphFromTgff':
         export_slx_mapping(result,
                            os.path.join(outdir, 'generated_mapping'))
 

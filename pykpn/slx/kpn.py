@@ -14,13 +14,13 @@ log = logging.getLogger(__name__)
 
 
 class SlxKpnGraph(KpnGraph):
-    def __init__(self, name, cpngraph):
+    def __init__(self, name, xml_file):
         super(SlxKpnGraph, self).__init__(name)
 
         log.info('Start parsing the PnGraph')
 
-        log.debug("Reading from file: %s" % cpngraph)
-        tree = ET.parse(cpngraph)
+        log.debug("Reading from file: %s" % xml_file)
+        tree = ET.parse(xml_file)
         xmlroot = tree.getroot()
 
         for channel in xmlroot.iter('PNchannel'):

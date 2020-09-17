@@ -15,9 +15,9 @@ log = logging.getLogger(__name__)
 
 class SlxPlatform(Platform):
 
-    def __init__(self, name, platform_xml):
+    def __init__(self, name, xml_file):
         super().__init__(name)
         log.info('start parsing the platform description')
-        xml_platform = parse(platform_xml, True)
+        xml_platform = parse(xml_file, True)
         convert(self, xml_platform)
         log.info('done parsing the platform description')

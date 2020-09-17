@@ -6,19 +6,18 @@ import numpy as np
 
 @pytest.fixture
 def conf():
-    return {'mapper' : {    'params' : {'random_seed' : 42,
-                                        'record_statistics' : False,
-                                        'initial_temperature' : 1.0,
-                                        'final_temperature'  : 0.01,
-                                        'temperature_proportionality_constant' : 0.5,
-                                        'radius' : 2,
-                                        'dump_cache' : False,
-                                        'chunk_size' : 10,
-                                        'progress' : False,
-                                        'parallel' : True,
-                                        'jobs' : 4,
-                                        },
-                        },
+    return {'mapper': {'random_seed' : 42,
+                        'record_statistics' : False,
+                        'initial_temperature' : 1.0,
+                        'final_temperature'  : 0.01,
+                        'temperature_proportionality_constant' : 0.5,
+                        'radius' : 2,
+                        'dump_cache' : False,
+                        'chunk_size' : 10,
+                        'progress' : False,
+                        'parallel' : True,
+                        'jobs' : 4,
+                       },
             'norm_p' : 2,
             'periodic_boundary_conditions' : False,
             'representation' : 'SimpleVector',
@@ -45,14 +44,14 @@ def test_ts(mapper, evaluation_function):
 
 def test_temperature_cooling(conf, mapper):
     timeout = 10000
-    temperature = conf['mapper']['params']['initial_temperature']
+    temperature = conf['mapper']['initial_temperature']
 
     for i in range(timeout):
         temperature = mapper.temperature_cooling(temperature, i)
-        if temperature <= conf['mapper']['params']['final_temperature']:
+        if temperature <= conf['mapper']['final_temperature']:
             break
 
-    assert temperature <= conf['mapper']['params']['final_temperature']
+    assert temperature <= conf['mapper']['final_temperature']
 
 def test_query_accept(mapper):
     mapper.initial_cost = 1

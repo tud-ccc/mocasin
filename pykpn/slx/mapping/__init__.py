@@ -24,8 +24,8 @@ class SlxMapper:
     calling the generate_mapping method.  This implements the common mapper
     interface.
     """
-    def __init__(self, kpn, platform, cfg, mapping_xml=None):
-        self.mapping = SlxMapping(kpn, platform, mapping_xml)
+    def __init__(self, kpn, platform, cfg, xml_file=None):
+        self.mapping = SlxMapping(kpn, platform, xml_file)
 
     def generate_mapping(self):
         return self.mapping
@@ -33,14 +33,14 @@ class SlxMapper:
 
 class SlxMapping(Mapping):
 
-    def __init__(self, kpn, platform, mapping_xml):
+    def __init__(self, kpn, platform, xml_file):
         super().__init__(kpn, platform)
 
-        log.info('Start parsing the SLX mapping ' + mapping_xml)
+        log.info('Start parsing the SLX mapping ' + xml_file)
 
         # load the xml
-        with open(mapping_xml) as mf:
-            xml_mapping = slxmapping.CreateFromDocument(mf.read())
+        with open(xml_file) as f:
+            xml_mapping = slxmapping.CreateFromDocument(f.read())
 
         # keep track of the mapping process->scheduler
         process_scheduler = {}
