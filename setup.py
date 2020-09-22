@@ -5,63 +5,34 @@ from setuptools.command.install import install
 from setuptools.command.develop import develop
 from doc.build_doc import BuildDocCommand
 import subprocess
-import sys
 
 project_name = "pykpn"
 version = "0.1"
 
-install_requirements = []
-setup_requirements = []
+install_requirements = [
+    'argparse',
+    'arpeggio',
+    'cvxpy',
+    'cvxopt',
+    'scipy',
+    'lxml',
+    'numpy',
+    'matplotlib',
+    'pandas',
+    'pint',
+    'pydot',
+    'pyxb',
+    'simpy',
+    'termcolor',
+    'tqdm',
+    'hydra-core<1.0',
+    'deap',
+    'sortedcontainers',
+    'networkx',
+    'recordclass',
+]
+setup_requirements = ['pytest-runner', 'sphinx', 'numpy']
 
-if sys.version_info > (3, 8):
-    install_requirements = [
-        'argparse',
-        'arpeggio',
-        'cvxpy',
-        'cvxopt',
-        'scipy',
-        'lxml',
-        'numpy',
-        'matplotlib',
-        'pandas',
-        'pint',
-        'pydot',
-        'pyxb',
-        'simpy',
-        'termcolor',
-        'tqdm',
-        'hydra-core<1.0',
-        'deap',
-        'sortedcontainers',
-        'networkx',
-        'recordclass',
-    ]
-    setup_requirements = ['pytest-runner', 'sphinx', 'numpy']
-
-else:
-    install_requirements = [
-        'argparse',
-        'arpeggio',
-        'cvxpy<=1.0.0',
-        'cvxopt',
-        'scipy<=1.1.0',
-        'lxml',
-        'numpy<1.16',
-        'matplotlib<3.0',
-        'pandas',
-        'pint',
-        'pydot',
-        'pyxb',
-        'simpy',
-        'termcolor',
-        'tqdm',
-        'hydra-core<1.0',
-        'deap',
-        'sortedcontainers',
-        'networkx',
-        'recordclass',
-    ]
-    setup_requirements = ['pytest-runner', 'sphinx', 'numpy<1.16']
 
 class InstallPynautyCommand(distutils.cmd.Command):
     """A custom command to install the pynauty dependency"""
