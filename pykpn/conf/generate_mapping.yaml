@@ -6,7 +6,7 @@ defaults:
   - kpn: default
   - platform: default
   - trace: default
-  - representation: default
+  - representation: SimpleVector
   - mapper: default
 
 simulate_best : true

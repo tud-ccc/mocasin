@@ -6,7 +6,7 @@ defaults:
   - kpn: default
   - platform: default
   - trace: default
-  - representation: default
+  - representation: SimpleVector
 
 threads : 1
 max_samples : 50
