@@ -180,9 +180,3 @@ class KpnSimulation(BaseSimulation):
         trace = hydra.utils.instantiate(cfg['trace'])
         simulation = KpnSimulation(platform, kpn, mapping, trace)
         return simulation
-
-
-# workaround until we can call the static method above directly from hydra 1.0
-class HydraKpnSimulation(KpnSimulation):
-    def __new__(cls, cfg):
-        return KpnSimulation.from_hydra(cfg)
