@@ -2,3 +2,4 @@
 _target_: pykpn.slx.platform.SlxPlatform
 name: ???
 xml_file: ???
+scheduler_cycles: null

@@ -17,17 +17,20 @@ ur = UnitRegistry()
 log = logging.getLogger(__name__)
 
 
-def create_policy(xml_platform, list_ref):
-    log.warning('SLX platforms do not define scheduling delays. -> default to 0')
+def create_policy(xml_platform, list_ref, scheduler_cycles):
+    if scheduler_cycles is None:
+        log.warning("SLX platforms do not define scheduling delays. "
+                    "-> default to 0. You can override this defult by setting "
+                    "'platform.scheduler_cycles'")
+        scheduler_cycles = 0
     policies = []
     for pl in xml_platform.get_SchedulingPolicyList():
         if pl.get_id() == list_ref:
             for p in pl.get_SchedulingPolicy():
                 name = p.get_schedulingAlgorithm()
                 # there is no scheduling delay in slx
-                cycles = 0
                 time_slice = get_value_in_unit(p, "timeSlice", "ps", None)
-                policies.append(SchedulingPolicy(name, cycles,
+                policies.append(SchedulingPolicy(name, scheduler_cycles,
                                                  time_slice=time_slice))
             if len(policies) == 0:
                 raise RuntimeError(f"The SchedulingPolicyList {list_ref} does "
@@ -78,7 +81,7 @@ def find_elem(xml_platform, type_name, elem_name):
     raise RuntimeError('%s %s was not defined', type_name, elem_name)
 
 
-def convert(platform, xml_platform):
+def convert(platform, xml_platform, scheduler_cycles=None):
     # keep a map of scheduler names to processors, this helps when creating
     # scheduler objects
     schedulers_to_processors = {}
@@ -116,7 +119,8 @@ def convert(platform, xml_platform):
     # Initialize all Schedulers
     for xs in xml_platform.get_Scheduler():
         name = xs.get_id()
-        policy = create_policy(xml_platform, xs.get_schedulingPolicyList())
+        policy = create_policy(xml_platform, xs.get_schedulingPolicyList(),
+                               scheduler_cycles)
         s = Scheduler(name, schedulers_to_processors[name], policy)
         log.debug('Found scheduler %s for %s supporting %s',
                   name, schedulers_to_processors[name], policy.name)
