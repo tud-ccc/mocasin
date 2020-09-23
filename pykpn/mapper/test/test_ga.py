@@ -5,15 +5,18 @@ import numpy as np
 
 @pytest.fixture
 def conf():
-    return { 'pop_size' : 10, 'num_gens' : 5,
-    'cxpb' : 0.35, 'mutpb' : 0.5, 'tournsize' : 4,
-    'mupluslambda': True, 'initials' : 'random',
-    'objective_exec_time': True, 'objective_num_resources': False,
-     'radius' : 5, 'random_seed': 42, 'channels' : False,
-    'representation' : 'SimpleVector', 'norm_p' : 2,
-    'jobs' : 8, 'chunk_size' : 10, 'parallel' : True, 'progress' : False,
-    'periodic_boundary_conditions' : False, 'dump_cache' : False,
-    'crossover_rate' : 1, 'record_statistics' : False}
+    return {'mapper':
+            { 'pop_size' : 10, 'num_gens' : 5, 'cxpb' : 0.35, 'mutpb' : 0.5,
+              'tournsize' : 4, 'mupluslambda': True, 'initials' : 'random',
+              'objective_exec_time': True, 'objective_num_resources': False,
+              'radius' : 5, 'random_seed': 42, 'jobs' : 8, 'chunk_size' : 10,
+              'parallel' : True, 'progress' : False, 'dump_cache' : False,
+              'crossover_rate' : 1, 'record_statistics' : False},
+            'representation' : 'SimpleVector',
+            'channels' : False,
+            'norm_p' : 2,
+            'periodic_boundary_conditions' : False,
+            }
 
 @pytest.fixture
 def evaluation_function():
@@ -21,8 +24,7 @@ def evaluation_function():
 
 @pytest.fixture
 def mapper(kpn, platform, conf, evaluation_function):
-    m = GeneticMapper(kpn, platform, conf, 10, 5, 0.35, 0.5, 4, True, 'random', 5, 42, 1, False, False, 10, False, True,
-                      4)
+    m = GeneticMapper(kpn, platform, conf)
     m.simulation_manager = MockMappingCache(evaluation_function)
     return m
 
