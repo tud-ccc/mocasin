@@ -341,7 +341,7 @@ class StateMemoryTable:
 
 
 class BruteforceScheduler(SchedulerBase):
-    def __init__(self, app_table, platform, config, name, **kwargs):
+    def __init__(self, app_table, platform, **kwargs):
         super().__init__(app_table, platform)
         self._platform = platform
         self.__rescheduling = kwargs['reschedule']
