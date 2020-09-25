@@ -9,9 +9,8 @@ import tkinter as tk
 
 from pykpn.slx.platform import SlxPlatform
 from pykpn.slx.kpn import SlxKpnGraph
-from pykpn.mapper.random import RandomMapping
+from pykpn.mapper.random import RandomMapper
 
-from pykpn.platforms.kalray_mppa import KalrayMppa as kmppa
 
 from pykpn.gui.testPlatform import TestPlatform
 from pykpn.gui.drawAPI import  drawAPI
@@ -80,7 +79,8 @@ class controlPanel(tk.Frame):
         self.addMappingButton['state'] = 'normal'
     
     def __addRandomMapping(self):
-        mapping = RandomMapping(self.__kpnInstance, self.__platform)
+        mapper = RandomMapper(self.__kpnInstance, self.__platform)
+        mapping = mapper.generate_mapping()
         mappingID = self.parent.drawPanel.drawDevice.addMapping(mapping)
         self.__mappingIDs.append(mappingID)
         self.removeLastMappingButton['state'] = 'normal'

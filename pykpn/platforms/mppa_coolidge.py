@@ -6,6 +6,7 @@
 from pykpn.common.platform import Platform
 from pykpn.platforms.topologies import fullyConnectedTopology
 from pykpn.platforms.platformDesigner import PlatformDesigner
+from pykpn.platforms.utils import simpleDijkstra as sd
 
 class DesignerPlatformCoolidge(Platform):
     #The topology and latency numbers (!) of this should come from the MPPA3 Coolidge

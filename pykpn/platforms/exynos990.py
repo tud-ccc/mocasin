@@ -2,6 +2,7 @@
 # All Rights Reserved
 #
 # Authors: Felix Teweleit, Andres Goens
+
 from pykpn.common.platform import Platform
 from pykpn.platforms.platformDesigner import PlatformDesigner
 

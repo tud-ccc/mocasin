@@ -1,12 +1,13 @@
-# Copyright (C) 2017 TU Dresden
+# Copyright (C) 2017-2020 TU Dresden
 # All Rights Reserved
 #
-# Authors: Christian Menard
+# Authors: Christian Menard, Felix Teweleit
 
 
 from pykpn.common.platform import (FrequencyDomain, Platform, Processor,
     Scheduler, SchedulingPolicy, Storage)
 from pykpn.common.platform.bus import Bus, primitives_from_buses
+from pykpn.platforms.platformDesigner import PlatformDesigner
 
 
 class GenericBusPlatform(Platform):
@@ -142,3 +143,20 @@ class GenericClusteredPlatform(Platform):
         primitives = primitives_from_buses(bus_list)
         for p in primitives:
             self.add_primitive(p)
+
+class DesignerPlatformBus(Platform):
+    def __init__(self, tgff_processor, name="bus"):
+        """Initializes an example platform with four processing
+        elements connected via an shared memory.
+        :param tgff_processor: the processing element for the platform
+        :type tgff_processor: TgffProcessor
+        :param name: The name for the returned platform
+        :type name: String
+        """
+        super(DesignerPlatformBus, self).__init__(name)
+        designer = PlatformDesigner(self)
+        designer.setSchedulingPolicy('FIFO', 1000)
+        designer.newElement("test_chip")
+        designer.addPeClusterForProcessor("cluster_0", tgff_processor.to_pykpn_processor(), 4)
+        designer.addCommunicationResource("shared_memory", ["cluster_0"], 100, 100, 1000, 1000, frequencyDomain=2000)
+        designer.finishElement()
