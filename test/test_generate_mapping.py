@@ -28,7 +28,7 @@ def test_generate_mapping_tgff(datadir, tgff_mapper, tgff, representation):
     tgff_dir = os.path.join(datadir, 'tgff/e3s-0.9')
     subprocess.check_call(["pykpn", "generate_mapping",
                            "kpn=tgff_reader",
-                           "platform=tgff_reader",
+                           "platform=exynos990",
                            "mapper=%s" % tgff_mapper,
                            "tgff.directory=%s" % tgff_dir,
                            "tgff.file=%s.tgff" % tgff,

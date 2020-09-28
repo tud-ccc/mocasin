@@ -7,20 +7,25 @@ log = logging.getLogger(__name__)
 
 from pykpn.common.platform import Platform, FrequencyDomain
 from pykpn.platforms.platformDesigner import PlatformDesigner
+from hydra.utils import instantiate
 
 class DesignerPlatformOdroid(Platform):
-    def __init__(self, processor_1, processor_2, name="odroid"):
+    def __init__(self, processor_0, processor_1, name="odroid"):
+
+        #workaraound for Hydra < 1.1
+        processor_0 = instantiate(processor_0)
+        processor_1 = instantiate(processor_1)
         super(DesignerPlatformOdroid, self).__init__(name)
-        if processor_1.frequency_domain.frequency != 1400000000.0:
-            log.warning(f"Rescaling processor {processor_1.name} to fit Odroid frequency")
+        if processor_0.frequency_domain.frequency != 1400000000.0:
+            log.warning(f"Rescaling processor {processor_0.name} to fit Odroid frequency")
             fd_a7 = FrequencyDomain('fd_a7', 1400000000.0)
-            processor_1.frequency_domain = fd_a7
+            processor_0.frequency_domain = fd_a7
 
         designer = PlatformDesigner(self)
-        if processor_2.frequency_domain.frequency != 2000000000.0:
-            log.warning(f"Rescaling processor {processor_2.name} to fit Odroid frequency")
+        if processor_1.frequency_domain.frequency != 2000000000.0:
+            log.warning(f"Rescaling processor {processor_1.name} to fit Odroid frequency")
             fd_a15 = FrequencyDomain('fd_a15', 2000000000.0)
-            processor_2.frequency_domain = fd_a15
+            processor_1.frequency_domain = fd_a15
 
         designer.setSchedulingPolicy('FIFO', 1000)
         designer.newElement("exynos5422")

@@ -1,8 +1,6 @@
 # @package _group_
-_target_: pykpn.tgff.tgffSimulation.PlatformFromTgff
-platform_type: 'bus'
+_target_: ??? #pykpn.platforms.
 processor_1: 'processor_0'
 processor_2: 'processor_1'
 processor_3: 'processor_2'
 processor_4: 'processor_3'
-tgff_file: ${tgff.directory}/${tgff.file}

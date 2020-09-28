@@ -5,10 +5,16 @@
 
 from pykpn.common.platform import Platform
 from pykpn.platforms.platformDesigner import PlatformDesigner
+from hydra.utils import instantiate
 
 class DesignerPlatformExynos990(Platform):
-    def __init__(self, processor_1, processor_2, processor_3, processor_4, name="exynos-990"):
+    def __init__(self, processor_0, processor_1, processor_2, processor_3, name="exynos-990"):
         super(DesignerPlatformExynos990, self).__init__(name)
+        #This is a workaround until Hydra 1.1 (with recursive instantiaton!)
+        processor_0 = instantiate(processor_0)
+        processor_1 = instantiate(processor_1)
+        processor_2 = instantiate(processor_2)
+        processor_3 = instantiate(processor_3)
         designer = PlatformDesigner(self)
 
         designer.setSchedulingPolicy('FIFO', 1000)
@@ -16,7 +22,7 @@ class DesignerPlatformExynos990(Platform):
 
         # cluster 0 with l2 cache
         designer.addPeClusterForProcessor("cluster_0",
-                                          processor_1,
+                                          processor_0,
                                           2)
         # Add L1/L2 caches
         designer.addCacheForPEs("cluster_0", 5, 7, float('inf'), float('inf'), frequencyDomain=6000000.0, name='L1')
@@ -30,7 +36,7 @@ class DesignerPlatformExynos990(Platform):
 
         # cluster 1, with l2 cache
         designer.addPeClusterForProcessor("cluster_1",
-                                          processor_2,
+                                          processor_1,
                                           2)
         # Add L1/L2 caches
         designer.addCacheForPEs("cluster_1", 5, 7, float('inf'), float('inf'), frequencyDomain=6670000.0, name='L1')
@@ -44,7 +50,7 @@ class DesignerPlatformExynos990(Platform):
 
         # cluster 2, with l2 cache
         designer.addPeClusterForProcessor("cluster_2",
-                                          processor_3,
+                                          processor_2,
                                           4)
         # Add L1/L2 caches
         designer.addCacheForPEs("cluster_2", 5, 7, float('inf'), float('inf'), frequencyDomain=6670000.0, name='L1')
@@ -67,7 +73,7 @@ class DesignerPlatformExynos990(Platform):
 
         # single GPU
         designer.addPeClusterForProcessor("GPU",
-                                          processor_4,
+                                          processor_3,
                                           1)
         designer.addCacheForPEs("GPU", 5, 7, float('inf'), float('inf'), frequencyDomain=6670000.0, name='GPU_MEM')
 

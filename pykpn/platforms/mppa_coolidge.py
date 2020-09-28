@@ -7,13 +7,17 @@ from pykpn.common.platform import Platform
 from pykpn.platforms.topologies import fullyConnectedTopology
 from pykpn.platforms.platformDesigner import PlatformDesigner
 from pykpn.platforms.utils import simpleDijkstra as sd
+from hydra.utils import instantiate
 
 class DesignerPlatformCoolidge(Platform):
     #The topology and latency numbers (!) of this should come from the MPPA3 Coolidge
     #sheet published by Kalray
-    def __init__(self, processor_1, processor_2, name="coolidge"):
+    def __init__(self, processor_0, processor_1, name="coolidge"):
         super(DesignerPlatformCoolidge, self).__init__(name)
 
+        #workaround until Hydra 1.1
+        processor_0 = instantiate(processor_0)
+        processor_1 = instantiate(processor_1)
         designer = PlatformDesigner(self)
         designer.setSchedulingPolicy('FIFO', 1000)
         designer.newElement('coolidge')
@@ -22,7 +26,7 @@ class DesignerPlatformCoolidge(Platform):
         for i in range(0, 5):
             designer.newElement('cluster_{0}'.format(i))
 
-            designer.addPeClusterForProcessor(f'cluster_{i}_0', processor_1, 16)
+            designer.addPeClusterForProcessor(f'cluster_{i}_0', processor_0, 16)
 
             topology = fullyConnectedTopology(['processor_{0}'.format(i * 17), 'processor_{0}'.format(i * 17 + 1),
                                                'processor_{0}'.format(i * 17 + 2), 'processor_{0}'.format(i * 17 + 3),
@@ -36,7 +40,7 @@ class DesignerPlatformCoolidge(Platform):
 
             designer.createNetworkForCluster(f'cluster_{i}_0', f'noc_{i}', topology, sd, 40000.0, 100, 150, 100, 60)
 
-            designer.addPeClusterForProcessor(f'cluster_{i}_1', processor_2, 1)
+            designer.addPeClusterForProcessor(f'cluster_{i}_1', processor_1, 1)
 
             designer.addCommunicationResource(f'L2_{i}', [f'cluster_{i}_0', f'cluster_{i}_1'], 500, 1500,
                                               float('inf'), float('inf'), frequencyDomain=600000.0)

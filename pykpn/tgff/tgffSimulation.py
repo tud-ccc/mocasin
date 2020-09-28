@@ -54,4 +54,3 @@ class TraceGeneratorWrapper:
         return trace_generator
     
 
-

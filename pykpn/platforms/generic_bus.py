@@ -1,13 +1,14 @@
 # Copyright (C) 2017-2020 TU Dresden
 # All Rights Reserved
 #
-# Authors: Christian Menard, Felix Teweleit
+# Authors: Christian Menard, Felix Teweleit, Andres Goens
 
 
 from pykpn.common.platform import (FrequencyDomain, Platform, Processor,
     Scheduler, SchedulingPolicy, Storage)
 from pykpn.common.platform.bus import Bus, primitives_from_buses
 from pykpn.platforms.platformDesigner import PlatformDesigner
+from hydra.utils import instantiate
 
 
 class GenericBusPlatform(Platform):
@@ -145,18 +146,20 @@ class GenericClusteredPlatform(Platform):
             self.add_primitive(p)
 
 class DesignerPlatformBus(Platform):
-    def __init__(self, tgff_processor, name="bus"):
+    def __init__(self, processor_0, name="bus"):
         """Initializes an example platform with four processing
         elements connected via an shared memory.
-        :param tgff_processor: the processing element for the platform
-        :type tgff_processor: TgffProcessor
+        :param processor_0: the processing element for the platform
+        :type processor_0: Processor
         :param name: The name for the returned platform
         :type name: String
         """
         super(DesignerPlatformBus, self).__init__(name)
+        #This is a workaround until Hydra 1.1 (with recursive instantiaton!)
+        processor_0 = instantiate(processor_0)
         designer = PlatformDesigner(self)
         designer.setSchedulingPolicy('FIFO', 1000)
         designer.newElement("test_chip")
-        designer.addPeClusterForProcessor("cluster_0", tgff_processor, 4)
+        designer.addPeClusterForProcessor("cluster_0", processor_0, 4)
         designer.addCommunicationResource("shared_memory", ["cluster_0"], 100, 100, 1000, 1000, frequencyDomain=2000)
         designer.finishElement()
