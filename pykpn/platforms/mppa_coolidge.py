@@ -22,7 +22,7 @@ class DesignerPlatformCoolidge(Platform):
         for i in range(0, 5):
             designer.newElement('cluster_{0}'.format(i))
 
-            designer.addPeClusterForProcessor(f'cluster_{i}_0', processor_1.to_pykpn_processor(), 16)
+            designer.addPeClusterForProcessor(f'cluster_{i}_0', processor_1, 16)
 
             topology = fullyConnectedTopology(['processor_{0}'.format(i * 17), 'processor_{0}'.format(i * 17 + 1),
                                                'processor_{0}'.format(i * 17 + 2), 'processor_{0}'.format(i * 17 + 3),
@@ -36,7 +36,7 @@ class DesignerPlatformCoolidge(Platform):
 
             designer.createNetworkForCluster(f'cluster_{i}_0', f'noc_{i}', topology, sd, 40000.0, 100, 150, 100, 60)
 
-            designer.addPeClusterForProcessor(f'cluster_{i}_1', processor_2.to_pykpn_processor(), 1)
+            designer.addPeClusterForProcessor(f'cluster_{i}_1', processor_2, 1)
 
             designer.addCommunicationResource(f'L2_{i}', [f'cluster_{i}_0', f'cluster_{i}_1'], 500, 1500,
                                               float('inf'), float('inf'), frequencyDomain=600000.0)

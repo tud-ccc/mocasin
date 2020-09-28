@@ -15,12 +15,12 @@ class DesignerPlatformMultiCluster(Platform):
         designer.newElement('multi_cluster')
 
         #add first cluster with L2 cache
-        designer.addPeClusterForProcessor('cluster_0', processor_1.to_pykpn_processor(), 2)
+        designer.addPeClusterForProcessor('cluster_0', processor_1, 2)
         designer.addCommunicationResource('cl0_l2', ['cluster_0'], 100, 100, float('inf'), float('inf'),
                                           frequencyDomain=10000)
 
         #add second cluster with L2 cache
-        designer.addPeClusterForProcessor('cluster_1', processor_2.to_pykpn_processor(), 2)
+        designer.addPeClusterForProcessor('cluster_1', processor_2, 2)
         designer.addCommunicationResource('cl1_l2', ['cluster_1'], 100, 100, float('inf'), float('inf'),
                                           frequencyDomain=10000)
 

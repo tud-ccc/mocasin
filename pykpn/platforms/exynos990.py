@@ -16,7 +16,7 @@ class DesignerPlatformExynos990(Platform):
 
         # cluster 0 with l2 cache
         designer.addPeClusterForProcessor("cluster_0",
-                                          processor_1.to_pykpn_processor(),
+                                          processor_1,
                                           2)
         # Add L1/L2 caches
         designer.addCacheForPEs("cluster_0", 5, 7, float('inf'), float('inf'), frequencyDomain=6000000.0, name='L1')
@@ -30,7 +30,7 @@ class DesignerPlatformExynos990(Platform):
 
         # cluster 1, with l2 cache
         designer.addPeClusterForProcessor("cluster_1",
-                                          processor_2.to_pykpn_processor(),
+                                          processor_2,
                                           2)
         # Add L1/L2 caches
         designer.addCacheForPEs("cluster_1", 5, 7, float('inf'), float('inf'), frequencyDomain=6670000.0, name='L1')
@@ -44,7 +44,7 @@ class DesignerPlatformExynos990(Platform):
 
         # cluster 2, with l2 cache
         designer.addPeClusterForProcessor("cluster_2",
-                                          processor_3.to_pykpn_processor(),
+                                          processor_3,
                                           4)
         # Add L1/L2 caches
         designer.addCacheForPEs("cluster_2", 5, 7, float('inf'), float('inf'), frequencyDomain=6670000.0, name='L1')
@@ -67,7 +67,7 @@ class DesignerPlatformExynos990(Platform):
 
         # single GPU
         designer.addPeClusterForProcessor("GPU",
-                                          processor_4.to_pykpn_processor(),
+                                          processor_4,
                                           1)
         designer.addCacheForPEs("GPU", 5, 7, float('inf'), float('inf'), frequencyDomain=6670000.0, name='GPU_MEM')
 

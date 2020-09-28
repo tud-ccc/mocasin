@@ -157,6 +157,6 @@ class DesignerPlatformBus(Platform):
         designer = PlatformDesigner(self)
         designer.setSchedulingPolicy('FIFO', 1000)
         designer.newElement("test_chip")
-        designer.addPeClusterForProcessor("cluster_0", tgff_processor.to_pykpn_processor(), 4)
+        designer.addPeClusterForProcessor("cluster_0", tgff_processor, 4)
         designer.addCommunicationResource("shared_memory", ["cluster_0"], 100, 100, 1000, 1000, frequencyDomain=2000)
         designer.finishElement()
