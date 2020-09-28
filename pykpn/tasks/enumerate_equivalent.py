@@ -13,7 +13,7 @@ from pykpn.representations.representations import RepresentationType
 log = logging.getLogger(__name__)
 
 
-@hydra.main(config_path='conf/enumerate_equivalent.yaml')
+@hydra.main(config_path='../conf', config_name='enumerate_equivalent')
 def enumerate_equivalent(cfg):
     kpn = hydra.utils.instantiate(cfg['kpn'])
     platform = hydra.utils.instantiate(cfg['platform'])

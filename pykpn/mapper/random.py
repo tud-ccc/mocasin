@@ -18,7 +18,7 @@ class RandomPartialMapper(object):
     platform and KPN application.
     """
 
-    def __init__(self, kpn, platform, config, seed=None):
+    def __init__(self, kpn, platform, seed=None):
         """Generates a random mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
@@ -29,12 +29,11 @@ class RandomPartialMapper(object):
         if seed is not None:
             random.seed(seed)
         self.seed = seed
-        self.config = config
         self.full_mapper = True
         self.platform = platform
         self.kpn = kpn
 
-    def generate_mapping(self, part_mapping = None):
+    def generate_mapping(self, part_mapping=None):
         """ Generates a random mapping
 
         The generated mapping takes a partial mapping (that may also be empty)
@@ -100,10 +99,19 @@ class RandomPartialMapper(object):
         return part_mapping
 
 
+class RandomPartialMapperHydra(RandomPartialMapper):
+    """
+    This class implements a new constructor for the random_partial mapper in order to handle the instantiation via an
+    hydra config file.
+    """
+    def __init__(self, kpn, platform, config):
+        random_seed = config['mapper']['random_seed']
+        super(RandomPartialMapperHydra, self).__init__(kpn, platform, seed=random_seed)
+
 class RandomMapper(RandomPartialMapper):
     """Generates a random mapping
     This class is a FullMapper wrapper
     for RandomPartialMapper.
     """
-    def __init__(self, kpn, platform, config):
-        super().__init__(kpn, platform, config, seed=config['random_seed'])
+    def __init__(self, kpn, platform, config, random_seed=None):
+        super().__init__(kpn, platform, seed=random_seed)

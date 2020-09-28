@@ -9,12 +9,12 @@ import pytest
 
 thresholds = {
     "audio_filter": {
-        "exynos": "37.3 ms",
-        "multidsp": "800 ms",
-        "parallella": "280 ms",
+        "exynos": "'37.3 ms'",
+        "multidsp": "'800 ms'",
+        "parallella": "'280 ms'",
     },
-    "hog": {"exynos": "880 ms"},
-    "speaker_recognition": {"exynos": "38.3 ms"},
+    "hog": {"exynos": "'880 ms'"},
+    "speaker_recognition": {"exynos": "'38.3 ms'"},
 }
 
 

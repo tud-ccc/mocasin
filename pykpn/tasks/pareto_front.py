@@ -10,14 +10,13 @@ import hydra
 import os
 import pickle
 
-from pykpn.slx.mapping import export_slx_mapping
-from pykpn.simulate import KpnSimulation
 from pykpn.tgff.tgffSimulation import TgffReferenceError
 from pykpn.mapper.genetic import GeneticMapper
 
 log = logging.getLogger(__name__)
 
-@hydra.main(config_path='conf/pareto_front.yaml')
+
+@hydra.main(config_path='../conf/', config_name='pareto_front.yaml')
 def pareto_front(cfg):
     """Pareto Front Task
 
@@ -46,7 +45,7 @@ def pareto_front(cfg):
     try:
         kpn = hydra.utils.instantiate(cfg['kpn'])
         platform = hydra.utils.instantiate(cfg['platform'])
-        mapper = GeneticMapper(kpn,platform,cfg)
+        mapper = hydra.utils.instantiate(cfg['mapper'], kpn, platform, cfg)
     except TgffReferenceError:
         # Special exception indicates a bad combination of tgff components
         # can be thrown during multiruns and should not stop the hydra

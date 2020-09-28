@@ -10,6 +10,7 @@ import sys
 import traceback
 
 from pykpn.tasks import execute_task
+
 log = logging.getLogger(__name__)
 
 
@@ -50,11 +51,11 @@ def main():
 
     try:
         execute_task(task)
+
     except Exception:
         log.error(traceback.format_exc())
         if fail_on_exception:
             sys.exit(1)
-
 
 if __name__ == "__main__":
     main()

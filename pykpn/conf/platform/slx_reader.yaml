@@ -1,7 +1,5 @@
-platform:
-  name: test
-  file: ???
-  class: pykpn.slx.platform.SlxPlatform
-  params:
-    name: ${platform.name}
-    platform_xml: ${platform.file}
+# @package _group_
+_target_: pykpn.slx.platform.SlxPlatform
+name: ???
+xml_file: ???
+scheduler_cycles: null

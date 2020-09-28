@@ -1,5 +1,3 @@
-mapper:
-  slx_input_file: "../../../slx/app/${kpn.name}/${platform.name}/default.mapping"
-  class: pykpn.slx.mapping.SlxMapper
-  params:
-    mapping_xml: ${mapper.slx_input_file}
+# @package _group_
+_target_: pykpn.slx.mapping.SlxMapper
+xml_file: "../../../slx/app/${kpn.name}/${platform.name}/default.mapping"

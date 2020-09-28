@@ -61,7 +61,7 @@ class MappingRepresentation(type):
         instance = deepcopy(cls._instances[(cls,kpn_names,platform.name)])
         instance.kpn = kpn
         instance.platform = platform
-        com_mapper = ComFullMapper(kpn,platform,cfg)
+        com_mapper = ComFullMapper(kpn,platform)
         instance.list_mapper = ProcPartialMapper(kpn,platform,com_mapper)
         instance.init_time = timeit.default_timer() - time
         return instance
@@ -113,7 +113,7 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         self.config = cfg
         self.p = cfg['norm_p']
         self.num_procs = len(list(self.kpn._processes.keys()))
-        com_mapper = ComFullMapper(kpn,platform,cfg)
+        com_mapper = ComFullMapper(kpn,platform)
         self.list_mapper = ProcPartialMapper(kpn,platform,com_mapper)
 
     def _uniform(self):
@@ -317,7 +317,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         self._arch_nc_inv = {}
         self.channels=False
         self.cfg = cfg
-        com_mapper = ComFullMapper(kpn,platform,cfg)
+        com_mapper = ComFullMapper(kpn,platform)
         self.list_mapper = ProcPartialMapper(kpn,platform,com_mapper)
 
         for node in self._arch_nc:
@@ -437,7 +437,7 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
         self._d = len(kpn.processes())
         self.cfg = cfg
         self.p = cfg['norm_p']
-        com_mapper = ComFullMapper(kpn,platform,cfg)
+        com_mapper = ComFullMapper(kpn,platform)
         self.list_mapper = ProcPartialMapper(kpn,platform,com_mapper)
         init_app_ncs(self,kpn)
         if self.p != 2:

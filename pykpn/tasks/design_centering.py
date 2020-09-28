@@ -13,8 +13,7 @@ import hydra
 import numpy as np
 import sys
 
-from pykpn.design_centering import DesignCentering
-from pykpn.design_centering import volume
+from pykpn.design_centering import DesignCenteringFromHydra, volume
 from pykpn.design_centering import sample as dc_sample
 from pykpn.design_centering import oracle as o
 from pykpn.design_centering import util as dc_util
@@ -24,7 +23,7 @@ from pykpn.representations import representations as reps
 log = logging.getLogger(__name__)
 
 
-@hydra.main(config_path='conf/design_centering.yaml')
+@hydra.main(config_path='../conf', config_name='design_centering')
 def dc_task(cfg):
     json_dc_dump = {
         'config' : {
@@ -58,10 +57,12 @@ def dc_task(cfg):
         }}
     if 'periodic_boundary_conditions' in cfg:
         json_dc_dump['config']['periodic_boundary_conditions'] = cfg['periodic_boundary_conditions']
+
     tp = dc_util.ThingPlotter()
     random.seed(cfg['random_seed'])
     np.random.seed(cfg['random_seed'])
     log.info("Initialized random number generator. Seed: {" + str(cfg['random_seed']) + "}")
+
     # if config.platform_class is not None:
     #     platform = config.platform_class()
     #     platform_name = platform.name
@@ -79,34 +80,41 @@ def dc_task(cfg):
     platform = hydra.utils.instantiate(cfg['platform'])
 
     rep_type_str = cfg['representation']
+
     if rep_type_str == "GeomDummy":
         representation = "GeomDummy"
+
     elif rep_type_str not in dir(reps.RepresentationType):
-        log.exception("Representation " + rep_type_str + " not recognized. Available: " + ", ".join(dir(reps.RepresentationType)))
+        log.exception("Representation " + rep_type_str + " not recognized. Available: " +
+                      ", ".join(dir(reps.RepresentationType)))
         raise RuntimeError('Unrecognized representation.')
+
     else:
         representation_type = reps.RepresentationType[rep_type_str]
         log.info(f"initializing representation ({rep_type_str})")
 
-        representation = (representation_type.getClassType())(kpn,platform,cfg)
+        representation = (representation_type.getClassType())(kpn, platform, cfg)
 
     # run DC algorithm
 
-    oracle = o.Oracle(cfg)
+    oracle = o.OracleFromHydra(cfg)
 
     # starting volume (init):
     if representation == "GeomDummy":
-        starting_center = [1,2,3,4,5,6,7,8]
+        starting_center = [1, 2, 3, 4, 5, 6, 7, 8]
     else:
         timeout = 0
         while timeout < cfg['perturbation_max_iters']:
             starting_center = representation.uniform()
-            starting_center_sample = dc_sample.Sample(sample=representation.toRepresentation(starting_center),representation = representation)
+            starting_center_sample = dc_sample.Sample(sample=representation.toRepresentation(starting_center),
+                                                      representation=representation)
             oracle.validate_set([starting_center_sample])
-            if starting_center_sample.getFeasibility() == True:
+
+            if starting_center_sample.getFeasibility():
                 break
             else:
                 timeout += 1
+
     if timeout == cfg['perturbation_max_iters']:
         log.error(f"could not find a feasible starting center after {timeout} iterations")
         sys.exit(1)
@@ -114,16 +122,23 @@ def dc_task(cfg):
     log.info(f"Starting with center: {starting_center.to_list()}")
     #center = dc_sample.Sample(center)
 
-    if (cfg['shape'] == "cube"):
-        v = volume.Cube(starting_center, starting_center.get_numProcs(),cfg) #TODO: refactor, remove unnecessary arguments passed
-    elif (cfg['shape'] == "lpvol"):
-        v = volume.LPVolume(starting_center, starting_center.get_numProcs(),kpn,platform,cfg,representation_type)#TODO: refactor, remove unnecessary arguments passed
+    if cfg['shape'] == "cube":
+        #TODO: refactor, remove unnecessary arguments passed
+        v = volume.Cube(starting_center, starting_center.get_numProcs(), cfg)
+    elif cfg['shape'] == "lpvol":
+        #TODO: refactor, remove unnecessary arguments passed
+        v = volume.LPVolume(starting_center,
+                            starting_center.get_numProcs(),
+                            kpn,
+                            platform,
+                            cfg,
+                            representation_type)
 
 
     # config = args.configFile
-    dc = DesignCentering(v, oracle, representation, cfg)
+    dc = DesignCenteringFromHydra(v, oracle, representation, cfg)
 
-    center,history = dc.ds_explore()
+    center, history = dc.ds_explore()
     centers = history['centers']
     samples = history['samples']
     radii = history['radii']
@@ -140,9 +155,11 @@ def dc_task(cfg):
     json_dc_dump['center']['runtime'] = center.getSimContext().exec_time / 1000000000.0
     # FIXME: This crashs with index out of range:
     #json_dc_dump['center']['radius'] = radii[-1]
+
     if cfg['record_samples']:
         json_dc_dump['samples'] = {}
-        for cent_idx,cent in enumerate(centers):
+
+        for cent_idx, cent in enumerate(centers):
             json_dc_dump['samples'][cent_idx] = { 'center' : {}}
             json_dc_dump['samples'][cent_idx]['center']['mapping'] = cent.getMapping().to_list()
             json_dc_dump['samples'][cent_idx]['center']['feasible'] = cent.getFeasibility()
@@ -151,18 +168,23 @@ def dc_task(cfg):
 
 
         n = cfg['adapt_samples']
-        for i,sample in enumerate(samples):
+
+        for i, sample in enumerate(samples):
             idx = int(i/n)
             json_dc_dump['samples'][idx][i%n] = { 'mapping' : sample.getMapping().to_list()}
             json_dc_dump['samples'][idx][i%n]['feasible'] = sample.getFeasibility()
             json_dc_dump['samples'][idx][i%n]['runtime'] = sample.getSimContext().exec_time / 1000000000.0
 
     # run perturbation test
+
     if cfg['run_perturbation']:
         log.info("==== Run Perturbation Test ====")
         num_pert = cfg['num_perturbations']
         num_mappings = cfg['num_reference_mappings']
-        pm = p.PerturbationManager( cfg, num_mappings, num_pert) #TODO: propagate cfg
+
+        #TODO: propagate cfg
+        pm = p.PerturbationManager(cfg, num_mappings, num_pert)
+
         if cfg['perturbation_type'] == 'classic':
             pert_func = pm.apply_singlePerturbation
         elif cfg['perturbation_type'] == 'representation':
@@ -179,8 +201,8 @@ def dc_task(cfg):
         json_dc_dump['center']['pert'] = c
         json_dc_dump['center']['passed'] = s
 
-        for i,m in enumerate(map_set):
-            s,c = pm.run_perturbation(m, pert_func)
+        for i, m in enumerate(map_set):
+            s, c = pm.run_perturbation(m, pert_func)
             pert_res.append(s)
             json_dc_dump['rand mapping' + str(i)] = {}
             json_dc_dump['rand mapping' + str(i)]['mapping'] = m.to_list()
@@ -188,8 +210,10 @@ def dc_task(cfg):
             json_dc_dump['rand mapping' + str(i)]['passed'] = s
 
         if bool(cfg['plot_perturbations']) and not os.environ.get('DISPLAY', '') == '':
-            tp.plot_perturbations(pert_res,cfg['perturbations_out'])
+            tp.plot_perturbations(pert_res, cfg['perturbations_out'])
+
         log.info("==== Perturbation Test done ====")
+
     #FIXME: it should probably not be oracle.oracle
     log.info(f"total simulations from cache: {oracle.oracle.total_cached}")
 

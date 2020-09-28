@@ -1,2 +1,2 @@
-simulation_type:
-  class: pykpn.simulate.HydraKpnSimulation
+# @package _group_
+_target_: pykpn.simulate.KpnSimulation.from_hydra

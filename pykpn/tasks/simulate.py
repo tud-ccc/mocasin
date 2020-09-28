@@ -11,7 +11,7 @@ import timeit
 log = logging.getLogger(__name__)
 
 
-@hydra.main(config_path='conf/simulate.yaml')
+@hydra.main(config_path='../conf', config_name='simulate')
 def simulate(cfg):
     """Simulate the execution of a KPN application mapped to a platform.
 

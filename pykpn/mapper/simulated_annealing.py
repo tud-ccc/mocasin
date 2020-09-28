@@ -5,6 +5,7 @@
 
 import random
 import numpy as np
+import hydra
 
 from pykpn.util import logging
 from pykpn.representations.representations import RepresentationType
@@ -15,6 +16,7 @@ from pykpn.mapper.utils import Statistics
 
 log = logging.getLogger(__name__)
 
+#TODO: Skip this cause representation object is needed?
 
 class SimulatedAnnealingMapper(object):
     """Generates a full mapping by using a simulated annealing algorithm from:
@@ -22,7 +24,8 @@ class SimulatedAnnealingMapper(object):
     Automated memory-aware application distribution for multi-processor system-on-chips.
     Journal of Systems Architecture, 53(11), 795-815.e.
     """
-    def __init__(self, kpn,platform,config):
+    def __init__(self, kpn, platform, config, random_seed, record_statistics, initial_temperature, final_temperature,
+                 temperature_proportionality_constant, radius, dump_cache, chunk_size, progress, parallel, jobs):
         """Generates a full mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
@@ -32,21 +35,23 @@ class SimulatedAnnealingMapper(object):
         :param config: the hyrda configuration
         :type config: OmniConf
         """
-        random.seed(config['random_seed'])
-        np.random.seed(config['random_seed'])
+        random.seed(random_seed)
+        np.random.seed(random_seed)
         self.full_mapper = True # flag indicating the mapper type
         self.kpn = kpn
         self.platform = platform
-        self.config = config
-        self.random_mapper = RandomPartialMapper(self.kpn,self.platform,config,seed=None)
-        self.initial_temperature = config['initial_temperature']
-        self.final_temperature = config['final_temperature']
+        self.random_mapper = RandomPartialMapper(self.kpn, self.platform, seed=None)
+        self.statistics = Statistics(log, len(self.kpn.processes()), record_statistics)
+        self.initial_temperature = initial_temperature
+        self.final_temperature = final_temperature
         self.max_rejections = len(self.kpn.processes()) * (len(self.platform.processors()) - 1) #R_max = L
-        self.p = config['temperature_proportionality_constant']
-        if not (self.p < 1 and self.p > 0):
+        self.p = temperature_proportionality_constant
+        self.radius = radius
+        self.dump_cache = dump_cache
+
+        if not (1 > self.p > 0):
             log.error(f"Temperature proportionality constant {self.p} not suitable, "
                       f"it should be close to, but smaller than 1 (algorithm probably won't terminate).")
-
 
         rep_type_str = config['representation']
 
@@ -58,27 +63,28 @@ class SimulatedAnnealingMapper(object):
             representation_type = RepresentationType[rep_type_str]
             log.info(f"initializing representation ({rep_type_str})")
 
-            representation = (representation_type.getClassType())(self.kpn, self.platform,self.config)
+            representation = (representation_type.getClassType())(self.kpn, self.platform, config)
 
         self.representation = representation
+
         self.simulation_manager = SimulationManager(representation, config)
 
-    def temperature_cooling(self,temperature,iter):
+    def temperature_cooling(self, temperature, iter):
         return self.initial_temperature*self.p**np.floor(iter/self.max_rejections)
 
     def query_accept(self,time,temperature):
         normalized_probability = 1 / (np.exp(time/(0.5*temperature*self.initial_cost)))
         return normalized_probability
 
-    def move(self,mapping,temperature):
-        radius = self.config['radius']
+    def move(self, mapping, temperature):
+        radius = self.radius
         while(1):
             new_mappings = self.representation._uniformFromBall(mapping,radius,20)
             for m in new_mappings:
                 if list(m) != list(mapping):
                     return m
             radius *= 1.1
-            if radius > 10000 * self.config['radius']:
+            if radius > 10000 * self.radius:
                 log.error("Could not mutate mapping")
                 raise RuntimeError("Could not mutate mapping")
 
@@ -125,7 +131,7 @@ class SimulatedAnnealingMapper(object):
             iter += 1
         self.simulation_manager.statistics.log_statistics()
         self.simulation_manager.statistics.to_file()
-        if self.config['dump_cache']:
+        if self.dump_cache:
             self.simulation_manager.dump('mapping_cache.csv')
 
         return self.representation.fromRepresentation(best_mapping)

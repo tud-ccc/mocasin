@@ -38,7 +38,7 @@ class StaticCFS(object):
     """Base class for mapping using a static method similar to the Linux CFS scheduler.
     See: http://people.redhat.com/mingo/cfs-scheduler/sched-design-CFS.txt
     """
-    def __init__(self, platform,config):
+    def __init__(self, platform, config):
         """Generates a full mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph

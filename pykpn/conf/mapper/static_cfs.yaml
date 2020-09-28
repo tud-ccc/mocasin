@@ -1,4 +1,4 @@
-mapper:
-   class:
-     pykpn.mapper.fair.StaticCFSMapper
+# @package _group_
+
+_target_ : pykpn.mapper.fair.StaticCFSMapper
 

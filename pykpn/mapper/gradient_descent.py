@@ -4,6 +4,7 @@
 # Authors: Andrés Goens
 
 import random
+import hydra
 import numpy as np
 
 from pykpn.util import logging
@@ -15,11 +16,13 @@ from pykpn.mapper.utils import Statistics
 
 log = logging.getLogger(__name__)
 
+#TODO: Skip this cause representation object is needed?
 
 class GradientDescentMapper(object):
     """Generates a full mapping by using a gradient descent on the mapping space.
     """
-    def __init__(self, kpn,platform,config):
+    def __init__(self, kpn, platform, config, gd_iterations, stepsize, random_seed, record_statistics, dump_cache,
+                 chunk_size, progress, parallel, jobs):
         """Generates a full mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
@@ -29,16 +32,17 @@ class GradientDescentMapper(object):
         :param config: the hyrda configuration
         :type config: OmniConf
         """
-        random.seed(config['random_seed'])
-        np.random.seed(config['random_seed'])
+        random.seed(random_seed)
+        np.random.seed(random_seed)
         self.full_mapper = True # flag indicating the mapper type
         self.kpn = kpn
         self.platform = platform
         self.num_PEs = len(platform.processors())
-        self.config = config
-        self.random_mapper = RandomPartialMapper(self.kpn,self.platform,config,seed=None)
-        self.gd_iterations = config['gd_iterations']
-        self.stepsize = config['stepsize']
+        self.random_mapper = RandomPartialMapper(self.kpn, self.platform, seed=None)
+        self.gd_iterations = gd_iterations
+        self.stepsize = stepsize
+        self.dump_cache = dump_cache
+        self.statistics = Statistics(log, len(self.kpn.processes()), record_statistics)
         rep_type_str = config['representation']
 
         if rep_type_str not in dir(RepresentationType):
@@ -49,9 +53,10 @@ class GradientDescentMapper(object):
             representation_type = RepresentationType[rep_type_str]
             log.info(f"initializing representation ({rep_type_str})")
 
-            representation = (representation_type.getClassType())(self.kpn, self.platform,self.config)
+            representation = (representation_type.getClassType())(self.kpn, self.platform, config)
 
         self.representation = representation
+
         self.simulation_manager = SimulationManager(representation, config)
 
     def generate_mapping(self):
@@ -66,9 +71,9 @@ class GradientDescentMapper(object):
         self.best_exec_time = cur_exec_time
 
         for _ in range(self.gd_iterations):
-            grad = self.calculate_gradient(mapping,cur_exec_time)
+            grad = self.calculate_gradient(mapping, cur_exec_time)
 
-            if np.allclose(grad,np.zeros(self.dim)): #found local minimum
+            if np.allclose(grad, np.zeros(self.dim)): #found local minimum
                 break
             mapping = mapping + (self.stepsize / self.best_exec_time) * (-grad)
             mapping = self.representation.approximate(np.array(mapping))
@@ -82,13 +87,13 @@ class GradientDescentMapper(object):
         self.best_mapping = np.array(self.representation.approximate(np.array(self.best_mapping)))
         self.simulation_manager.statistics.log_statistics()
         self.simulation_manager.statistics.to_file()
-        if self.config['dump_cache']:
+        if self.dump_cache:
             self.simulation_manager.dump('mapping_cache.csv')
 
         return self.representation.fromRepresentation(self.best_mapping)
 
 
-    def calculate_gradient(self,mapping,cur_exec_time):
+    def calculate_gradient(self, mapping, cur_exec_time):
         grad = np.zeros(self.dim)
         for i in range(self.dim):
             evec = np.zeros(self.dim)

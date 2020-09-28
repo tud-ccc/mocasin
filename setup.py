@@ -25,7 +25,7 @@ install_requirements = [
     'simpy',
     'termcolor',
     'tqdm',
-    'hydra-core<1.0',
+    'hydra-core>=1.0.3',
     'deap',
     'sortedcontainers',
     'networkx',

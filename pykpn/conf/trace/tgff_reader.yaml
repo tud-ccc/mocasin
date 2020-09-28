@@ -1,6 +1,4 @@
-trace:
-  file: ${tgff.directory}/${tgff.file}
-  class: pykpn.tgff.tgffSimulation.TraceGeneratorWrapper
-  params:
-    file_path: ${trace.file}
-    task_graph: ${kpn.name}
+# @package _group_
+_target_: pykpn.tgff.tgffSimulation.TraceGeneratorWrapper
+tgff_file: ${tgff.directory}/${tgff.file}
+graph_name: ${kpn.name}

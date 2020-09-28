@@ -5,7 +5,7 @@ defaults:
   - kpn: default
   - platform: default
   - trace: default
-  - representation: default
+  - representation: SimpleVector
   - mapper : genetic
 
 outdir : ./

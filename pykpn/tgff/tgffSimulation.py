@@ -23,40 +23,40 @@ class TgffReferenceError(Exception):
 class KpnGraphFromTgff:
     """New, since we want to return a common.kpn instance instead of am TgffToKpnGraph instance
     """
-    def __new__(cls, file_path, task_graph):
-        if file_path not in _parsed_tgff_files:
-            _parsed_tgff_files.update( {file_path : Parser().parse_file(file_path)} )
+    def __new__(cls, tgff_file, name):
+        if tgff_file not in _parsed_tgff_files:
+            _parsed_tgff_files.update( {tgff_file : Parser().parse_file(tgff_file)} )
         
-        tgff_graphs = _parsed_tgff_files[file_path][0]
+        tgff_graphs = _parsed_tgff_files[tgff_file][0]
         
-        if task_graph not in tgff_graphs:
+        if name not in tgff_graphs:
             raise TgffReferenceError()
         
-        return tgff_graphs[task_graph].to_kpn_graph()
+        return tgff_graphs[name].to_kpn_graph()
 
 
 class TraceGeneratorWrapper:
-    def __new__(cls, file_path, task_graph, repetition=1):
-        if file_path not in _parsed_tgff_files:
-            _parsed_tgff_files.update( {file_path : Parser().parse_file(file_path)} )
+    def __new__(cls, tgff_file, graph_name, repetition=1):
+        if tgff_file not in _parsed_tgff_files:
+            _parsed_tgff_files.update( {tgff_file : Parser().parse_file(tgff_file)} )
         
-        tgff_components = _parsed_tgff_files[file_path]
+        tgff_components = _parsed_tgff_files[tgff_file]
         processor_dict = {}
 
         for processor in tgff_components[1]:
             processor_dict.update({processor.type : processor})
 
-        trace_generator = TgffTraceGenerator(processor_dict, tgff_components[0][task_graph], repetition)
+        trace_generator = TgffTraceGenerator(processor_dict, tgff_components[0][graph_name], repetition)
         
         return trace_generator
     
 
 class PlatformFromTgff:
-    def __new__(cls, platform_type, processor_1, processor_2, processor_3, processor_4, file_path):
-        if file_path not in _parsed_tgff_files:
-            _parsed_tgff_files.update( {file_path : Parser().parse_file(file_path)} )
+    def __new__(cls, platform_type, processor_1, processor_2, processor_3, processor_4, tgff_file):
+        if tgff_file not in _parsed_tgff_files:
+            _parsed_tgff_files.update( {tgff_file : Parser().parse_file(tgff_file)} )
         
-        tgff_processors = _parsed_tgff_files[file_path][1]
+        tgff_processors = _parsed_tgff_files[tgff_file][1]
 
         processor_dict = {}
 

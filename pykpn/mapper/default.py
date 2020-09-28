@@ -9,11 +9,11 @@ from pykpn.common.mapping import ChannelMappingInfo, Mapping, ProcessMappingInfo
 log = logging.getLogger(__name__)
 
 
-class DefaultFullMapper(object):
+class DefaultFullMapper:
     """Generates a default mapping by selecting the first available option everywhere
     """
 
-    def __init__(self, kpn, platform, config, seed=None):
+    def __init__(self, kpn, platform, config):
         """Generates a default mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
@@ -21,12 +21,11 @@ class DefaultFullMapper(object):
         :param platform: a platform
         :type platform: Platform
         """
-        self.config = config
         self.full_mapper = True
         self.platform = platform
         self.kpn = kpn
 
-    def generate_mapping(self, part_mapping = None):
+    def generate_mapping(self, part_mapping=None):
         """ Generates a random mapping
 
         The generated mapping takes a partial mapping (that may also be empty)
@@ -87,5 +86,4 @@ class DefaultFullMapper(object):
         assert not part_mapping.get_unmapped_processes()
         assert not part_mapping.get_unmapped_channels()
         return part_mapping
-
 

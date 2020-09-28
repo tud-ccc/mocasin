@@ -1,6 +1,4 @@
-kpn:
-  name: speaker_recognition
-  class: pykpn.slx.kpn.SlxKpnGraph
-  params:
-    name: ${kpn.name}
-    cpngraph: ../../../slx/app/${kpn.name}/${kpn.name}.cpn.xml
+# @package _group_
+_target_: pykpn.slx.kpn.SlxKpnGraph
+name: speaker_recognition
+xml_file: ../../../slx/app/${kpn.name}/${kpn.name}.cpn.xml

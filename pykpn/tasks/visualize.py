@@ -9,7 +9,7 @@ import tkinter as tk
 from pykpn.gui.drawAPI import drawAPI
 
 
-@hydra.main(config_path='conf/visualize.yaml')
+@hydra.main(config_path='../conf', config_name='visualize')
 def visualize(cfg):
     kpn = hydra.utils.instantiate(cfg['kpn'])
     platform = hydra.utils.instantiate(cfg['platform'])

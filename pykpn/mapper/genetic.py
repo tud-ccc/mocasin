@@ -21,7 +21,7 @@ log = logging.getLogger(__name__)
 class GeneticMapper(object):
     """Generates a full mapping by using genetic algorithms.
     """
-    def __init__(self, kpn,platform, config):
+    def __init__(self, kpn, platform, config, **kwargs):
         """Generates a partial mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
@@ -31,16 +31,16 @@ class GeneticMapper(object):
         :param config: the hyrda configuration
         :type fullGererator: OmniConf
         """
-        random.seed(config['random_seed'])
-        np.random.seed(config['random_seed'])
+        self.config = config['mapper']
+        random.seed(self.config['random_seed'])
+        np.random.seed(self.config['random_seed'])
         self.full_mapper = True # flag indicating the mapper type
         self.kpn = kpn
         self.platform = platform
-        self.config = config
-        self.random_mapper = RandomPartialMapper(self.kpn, self.platform, config, seed=None)
+        self.random_mapper = RandomPartialMapper(self.kpn, self.platform, seed=None)
         self.crossover_rate = self.config['crossover_rate']
-        self.exec_time = config['objective_exec_time']
-        self.num_resources = config['objective_num_resources']
+        self.exec_time = self.config['objective_exec_time']
+        self.num_resources = self.config['objective_num_resources']
         if not self.exec_time and not self.num_resources:
             raise RuntimeError("Trying to initalize genetic algorithm without objectives")
 
@@ -58,7 +58,7 @@ class GeneticMapper(object):
             representation_type = RepresentationType[rep_type_str]
             log.info(f"initializing representation ({rep_type_str})")
 
-            representation = (representation_type.getClassType())(self.kpn, self.platform,self.config)
+            representation = (representation_type.getClassType())(self.kpn, self.platform, config)
 
         self.representation = representation
         self.simulation_manager = SimulationManager(self.representation, config)
@@ -94,7 +94,7 @@ class GeneticMapper(object):
         stats.register("max", np.max)
         self.evolutionary_stats = stats
 
-        if config['initials'] == 'random':
+        if self.config['initials'] == 'random':
             self.population = toolbox.population(n=self.config['pop_size'])
         else:
             log.error("Initials not supported yet")

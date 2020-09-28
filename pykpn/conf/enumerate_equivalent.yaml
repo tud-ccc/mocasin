@@ -1,3 +1,4 @@
+# @package _global_
 defaults:
   - common
   - hydra/job_logging: pykpn
@@ -5,6 +6,5 @@ defaults:
   - kpn: default
   - platform: default
   - mapper: from_file
-  - source: slx
 
 output_file: equivalent_mappings.txt

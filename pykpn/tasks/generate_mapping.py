@@ -16,7 +16,7 @@ from pykpn.tgff.tgffSimulation import TgffReferenceError
 
 log = logging.getLogger(__name__)
 
-@hydra.main(config_path='conf/generate_mapping.yaml')
+@hydra.main(config_path='../conf', config_name='generate_mapping')
 def generate_mapping(cfg):
     """Mapper Task
 
@@ -86,7 +86,7 @@ def generate_mapping(cfg):
         with open(outdir + 'best_time.txt','w') as f:
             f.write(str(exec_time))
 
-    if not cfg['kpn']['class'] == 'pykpn.tgff.tgffSimulation.KpnGraphFromTgff':
+    if not cfg['kpn']['_target_'] == 'pykpn.tgff.tgffSimulation.KpnGraphFromTgff':
         export_slx_mapping(result,
                            os.path.join(outdir, 'generated_mapping'))
 
