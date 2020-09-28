@@ -3,7 +3,7 @@
 #
 # Authors: Felix Teweleit, Andres Goens
 
-from pykpn.common.platform import Platform
+from pykpn.common.platform import Platform, Processor
 from pykpn.platforms.topologies import fullyConnectedTopology
 from pykpn.platforms.platformDesigner import PlatformDesigner
 from pykpn.platforms.utils import simpleDijkstra as sd
@@ -16,8 +16,10 @@ class DesignerPlatformCoolidge(Platform):
         super(DesignerPlatformCoolidge, self).__init__(name)
 
         #workaround until Hydra 1.1
-        processor_0 = instantiate(processor_0)
-        processor_1 = instantiate(processor_1)
+        if not isinstance(processor_0,Processor):
+            processor_0 = instantiate(processor_0)
+        if not isinstance(processor_0,Processor):
+            processor_1 = instantiate(processor_1)
         designer = PlatformDesigner(self)
         designer.setSchedulingPolicy('FIFO', 1000)
         designer.newElement('coolidge')

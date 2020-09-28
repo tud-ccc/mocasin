@@ -5,7 +5,7 @@
 
 from pykpn.platforms.topologies import meshTopology
 from pykpn.platforms.utils import simpleDijkstra as sd
-from pykpn.common.platform import Platform
+from pykpn.common.platform import Platform, Processor
 from pykpn.platforms.platformDesigner import PlatformDesigner
 from hydra.utils import instantiate
 
@@ -13,8 +13,10 @@ class DesignerPlatformMesh(Platform):
     def __init__(self, processor_0, processor_1, name="parallella-styled"):
         super(DesignerPlatformMesh, self).__init__(name)
         #This is a workaround until Hydra 1.1 (with recursive instantiaton!)
-        processor_0 = instantiate(processor_0)
-        processor_1 = instantiate(processor_1)
+        if not isinstance(processor_0,Processor):
+            processor_0 = instantiate(processor_0)
+        if not isinstance(processor_0,Processor):
+            processor_1 = instantiate(processor_1)
         designer = PlatformDesigner(self)
         designer.setSchedulingPolicy('FIFO', 1000)
         designer.newElement("test_chip")

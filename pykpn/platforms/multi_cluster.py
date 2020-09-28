@@ -3,7 +3,7 @@
 #
 # Authors: Felix Teweleit, Andres Goens
 
-from pykpn.common.platform import Platform
+from pykpn.common.platform import Platform, Processor
 from pykpn.platforms.platformDesigner import PlatformDesigner
 from hydra.utils import instantiate
 
@@ -12,8 +12,10 @@ class DesignerPlatformMultiCluster(Platform):
         super(DesignerPlatformMultiCluster, self).__init__(name)
 
         #woraround for Hydra < 1.1
-        processor_0 = instantiate(processor_0)
-        processor_1 = instantiate(processor_1)
+        if not isinstance(processor_0,Processor):
+            processor_0 = instantiate(processor_0)
+        if not isinstance(processor_0,Processor):
+            processor_1 = instantiate(processor_1)
 
         designer = PlatformDesigner(self)
         designer.setSchedulingPolicy('FIFO', 1000)

@@ -5,7 +5,7 @@
 import logging
 log = logging.getLogger(__name__)
 
-from pykpn.common.platform import Platform, FrequencyDomain
+from pykpn.common.platform import Platform, FrequencyDomain, Processor
 from pykpn.platforms.platformDesigner import PlatformDesigner
 from hydra.utils import instantiate
 
@@ -13,8 +13,10 @@ class DesignerPlatformOdroid(Platform):
     def __init__(self, processor_0, processor_1, name="odroid"):
 
         #workaraound for Hydra < 1.1
-        processor_0 = instantiate(processor_0)
-        processor_1 = instantiate(processor_1)
+        if not isinstance(processor_0,Processor):
+            processor_0 = instantiate(processor_0)
+        if not isinstance(processor_0,Processor):
+            processor_1 = instantiate(processor_1)
         super(DesignerPlatformOdroid, self).__init__(name)
         if processor_0.frequency_domain.frequency != 1400000000.0:
             log.warning(f"Rescaling processor {processor_0.name} to fit Odroid frequency")

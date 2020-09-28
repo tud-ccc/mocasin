@@ -6,15 +6,20 @@
 from pykpn.common.platform import Platform
 from pykpn.platforms.platformDesigner import PlatformDesigner
 from hydra.utils import instantiate
+from pykpn.common.platform import Processor
 
 class DesignerPlatformExynos990(Platform):
     def __init__(self, processor_0, processor_1, processor_2, processor_3, name="exynos-990"):
         super(DesignerPlatformExynos990, self).__init__(name)
         #This is a workaround until Hydra 1.1 (with recursive instantiaton!)
-        processor_0 = instantiate(processor_0)
-        processor_1 = instantiate(processor_1)
-        processor_2 = instantiate(processor_2)
-        processor_3 = instantiate(processor_3)
+        if not isinstance(processor_0,Processor):
+            processor_0 = instantiate(processor_0)
+        if not isinstance(processor_1,Processor):
+            processor_1 = instantiate(processor_1)
+        if not isinstance(processor_2,Processor):
+            processor_2 = instantiate(processor_2)
+        if not isinstance(processor_3,Processor):
+            processor_3 = instantiate(processor_3)
         designer = PlatformDesigner(self)
 
         designer.setSchedulingPolicy('FIFO', 1000)

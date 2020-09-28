@@ -156,7 +156,8 @@ class DesignerPlatformBus(Platform):
         """
         super(DesignerPlatformBus, self).__init__(name)
         #This is a workaround until Hydra 1.1 (with recursive instantiaton!)
-        processor_0 = instantiate(processor_0)
+        if not isinstance(processor_0,Processor):
+            processor_0 = instantiate(processor_0)
         designer = PlatformDesigner(self)
         designer.setSchedulingPolicy('FIFO', 1000)
         designer.newElement("test_chip")
