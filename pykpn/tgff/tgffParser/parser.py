@@ -270,7 +270,7 @@ class Parser:
         
         self.processor_list.append(TgffProcessor(identifier,
                                                  operations,
-                                                 processor_type=("processor_" + str(len(self.processor_list)))))
+                                                 processor_type=("proc_type_" + str(len(self.processor_list)))))
     
     def _add_properties(self, properties, match):
         self.logger.debug('Parsed processor properties')

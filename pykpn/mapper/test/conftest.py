@@ -45,8 +45,8 @@ def tgff_parallella_setup():
 
     graph = 'TASK_GRAPH_0'
 
-    processor0 = genericProcessor('processor_0')
-    processor1 = genericProcessor('processor_1')
+    processor0 = genericProcessor('proc_type_0')
+    processor1 = genericProcessor('proc_type_1')
 
     kpn = KpnGraphFromTgff(file, graph)
     platform = DesignerPlatformMesh(processor0, processor1)
@@ -60,10 +60,10 @@ def tgff_exynos_setup():
 
     graph = 'TASK_GRAPH_3'
 
-    processor0 = genericProcessor('processor_13')
-    processor1 = genericProcessor('processor_14')
-    processor2 = genericProcessor('processor_15')
-    processor3 = genericProcessor('processor_16')
+    processor0 = genericProcessor('proc_type_13')
+    processor1 = genericProcessor('proc_type_14')
+    processor2 = genericProcessor('proc_type_15')
+    processor3 = genericProcessor('proc_type_16')
 
     kpn = KpnGraphFromTgff(file, graph)
     platform = DesignerPlatformExynos990(processor0, processor1, processor2, processor3)
@@ -77,8 +77,8 @@ def tgff_coolidge_setup():
 
     graph = 'TASK_GRAPH_0'
 
-    processor0 = genericProcessor('processor_20')
-    processor1 = genericProcessor('processor_21')
+    processor0 = genericProcessor('proc_type_20')
+    processor1 = genericProcessor('proc_type_21')
 
     kpn = KpnGraphFromTgff(file, graph)
     platform = DesignerPlatformCoolidge(processor0, processor1)
@@ -92,8 +92,8 @@ def tgff_multi_cluster_setup():
 
     graph = 'TASK_GRAPH_1'
 
-    processor0 = genericProcessor('processor_0')
-    processor1 = genericProcessor('processor_1')
+    processor0 = genericProcessor('proc_type_0')
+    processor1 = genericProcessor('proc_type_1')
 
     kpn = KpnGraphFromTgff(file, graph)
     platform = DesignerPlatformMultiCluster(processor0, processor1)

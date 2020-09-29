@@ -25,7 +25,7 @@ class DesignerPlatformCoolidge(Platform):
         designer.newElement('coolidge')
 
         #create five chips with 16 cores, NoC, +Security Core
-        for i in range(0, 5):
+        for i in range(5):
             designer.newElement('cluster_{0}'.format(i))
 
             designer.addPeClusterForProcessor(f'cluster_{i}_0', processor_0, 16)
