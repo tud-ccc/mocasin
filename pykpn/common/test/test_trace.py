@@ -7,7 +7,9 @@ from pykpn.slx.kpn import SlxKpnGraph
 from pykpn.slx.platform import SlxPlatform
 from pykpn.common.trace import TraceGraph
 from pykpn.mapper.utils import DerivedPrimitive
-from pykpn.tgff.tgffSimulation import KpnGraphFromTgff, PlatformFromTgff
+from pykpn.tgff.tgffSimulation import KpnGraphFromTgff
+from pykpn.platforms.multi_cluster import DesignerPlatformMultiCluster
+from pykpn.platforms.platformDesigner import genericProcessor
 
 import networkx as nx
 
@@ -16,13 +18,13 @@ import networkx as nx
 
 tgff_file = 'pykpn/tgff/graphs/auto-indust-cords.tgff'
 tgff_graph = 'TASK_GRAPH_1'
-processor0 = 'processor_0'
-processor1 = 'processor_1'
-processor2 = 'processor_2'
-processor3 = 'processor_3'
+processor0 = genericProcessor('proc_type_0')
+processor1 = genericProcessor('proc_type_1')
+processor2 = genericProcessor('proc_type_2')
+processor3 = genericProcessor('proc_type_3')
 
 kpn_tgff = KpnGraphFromTgff(tgff_file, tgff_graph)
-platform_tgff = PlatformFromTgff('multi_cluster', processor0, processor1, processor2, processor3, tgff_file)
+platform_tgff = DesignerPlatformMultiCluster('multi_cluster', processor0, processor1, processor2, processor3)
 
 process_mapping_tgff = {}
 for process in kpn_tgff.processes():

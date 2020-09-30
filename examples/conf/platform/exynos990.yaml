@@ -6,17 +6,17 @@ _target_: pykpn.platforms.exynos990.DesignerPlatformExynos990
 # https://github.com/facebookresearch/hydra/issues/566
 processor_0:
   _target_: pykpn.platforms.platformDesigner.genericProcessor
-  type : 'processor_0'
+  type : 'proc_type_0'
   frequency : 2000000000
 processor_1:
   _target_: pykpn.platforms.platformDesigner.genericProcessor
-  type : 'processor_1'
+  type : 'proc_type_1'
   frequency : 2000000000
 processor_2:
   _target_: pykpn.platforms.platformDesigner.genericProcessor
-  type : 'processor_2'
+  type : 'proc_type_2'
   frequency : 2000000000
 processor_3:
   _target_: pykpn.platforms.platformDesigner.genericProcessor
-  type : 'processor_3'
+  type : 'proc_type_3'
   frequency : 2000000000

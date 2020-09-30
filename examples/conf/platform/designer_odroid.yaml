@@ -6,10 +6,10 @@ _target_: pykpn.platforms.odroid.DesignerPlatformOdroid
 # https://github.com/facebookresearch/hydra/issues/566
 processor_0:
   _target_: pykpn.platforms.platformDesigner.genericProcessor
-  type : 'processor_0'
+  type : 'proc_type_0'
   frequency : 1400000000
 processor_1:
   _target_: pykpn.platforms.platformDesigner.genericProcessor
-  type : 'processor_1'
+  type : 'proc_type_1'
   frequency : 2000000000
 proce
