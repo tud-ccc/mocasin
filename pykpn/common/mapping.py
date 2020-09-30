@@ -135,6 +135,8 @@ class Mapping:
         :param KpnProcess process: the KPN process
         :rtype: Processor
         """
+        if self._process_info[process.name] is None:
+            return None
         return self._process_info[process.name].affinity
 
     def primitive(self, channel):
