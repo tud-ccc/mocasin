@@ -37,9 +37,8 @@ def test_slx_simulate(datadir, slx_kpn_platform_pair):
 
     assert found_line
 
-#this is a really bad idea, to make times depend on random mappings...
 tgff_expected_sim_time = {
-    "auto-indust-cords": "524.6655 ms",
+    "auto-indust-cords": "524.0033275 ms",
     "auto-indust-cowls": "530.327 ms",
     "auto-indust-mocsyn": "524.6655 ms",
     "auto-indust-mocsyn-asic": "524.0033275 ms",
@@ -55,8 +54,7 @@ def test_tgff_simulate(datadir, tgff):
                           "platform=designer_bus",
                           "kpn=tgff_reader",
                           "trace=tgff_reader",
-                          "mapper=random",
-                          "mapper.random_seed=42",
+                          "mapper=default",
                           f"tgff.file={tgff}.tgff"],
                          cwd=datadir,
                          check=True,
