@@ -25,7 +25,7 @@ def test_platform_to_autgrp_tgff(datadir, expected_dir, tgff):
     out_file = os.path.join(datadir, file_name)
 
     subprocess.check_call(["pykpn", "platform_to_autgrp",
-                           "platform=tgff_reader",
+                           "platform=designer_bus",
                            "tgff.directory=%s" % tgff_directory,
                            "tgff.file=%s.tgff" % tgff,
                            "out_file=%s" % out_file],

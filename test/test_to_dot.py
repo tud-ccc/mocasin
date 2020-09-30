@@ -73,7 +73,7 @@ def test_tgff_mapping_to_dot(datadir, expected_dir, tgff):
     dot_file = "%s.mapping.dot" % tgff
     out_file = os.path.join(datadir, dot_file)
     subprocess.check_call(["pykpn", "mapping_to_dot",
-                           "platform=tgff_reader",
+                           "platform=designer_bus",
                            "kpn=tgff_reader",
                            "mapper=random",
                            "mapper.random_seed=42",

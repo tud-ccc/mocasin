@@ -123,8 +123,8 @@ def test_change_channel_mapping_tgff_2(trace_generator_tgff):
 
 #========================================
 #setup test data for slx
-kpn_slx = SlxKpnGraph('audio_filter', '../../../examples/slx/app/audio_filter/audio_filter.cpn.xml')
-platform_slx = SlxPlatform('exynos', '../../../examples/slx/platforms/exynos.platform')
+kpn_slx = SlxKpnGraph('audio_filter', 'examples/slx/app/audio_filter/audio_filter.cpn.xml')
+platform_slx = SlxPlatform('exynos', 'examples/slx/platforms/exynos.platform')
 
 process_mapping_slx = {}
 for process in kpn_slx.processes():

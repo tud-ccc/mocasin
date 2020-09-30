@@ -6,7 +6,7 @@
 import subprocess
 import os
 
-def test_generate_mapping_slx(datadir, slx_kpn,representation):
+def test_pareto_front_slx(datadir, slx_kpn,representation):
     subprocess.check_call(["pykpn", "pareto_front",
                            "kpn=%s" % slx_kpn,
                            "platform=exynos",
@@ -22,11 +22,11 @@ def test_generate_mapping_slx(datadir, slx_kpn,representation):
     except FileNotFoundError:
         assert False
 
-def test_generate_mapping_tgff(datadir, tgff):
+def test_pareto_front_tgff(datadir, tgff):
     tgff_dir = os.path.join(datadir, 'tgff/e3s-0.9')
     subprocess.check_call(["pykpn", "pareto_front",
                            "kpn=tgff_reader",
-                           "platform=tgff_reader",
+                           "platform=exynos990",
                            "tgff.directory=%s" % tgff_dir,
                            "tgff.file=%s.tgff" % tgff,
                            "outdir=../../../",

@@ -52,7 +52,7 @@ tgff_expected_sim_time = {
 
 def test_tgff_simulate(datadir, tgff):
     res = subprocess.run(["pykpn", "simulate",
-                          "platform=tgff_reader",
+                          "platform=designer_bus",
                           "kpn=tgff_reader",
                           "trace=tgff_reader",
                           "mapper=random",

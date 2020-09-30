@@ -38,7 +38,7 @@ def test_enumerate_equivalent_tgff(datadir, tgff):
 
     subprocess.check_call(["pykpn", "enumerate_equivalent",
                            "kpn=tgff_reader",
-                           "platform=tgff_reader",
+                           "platform=exynos990",
                            "tgff.directory=%s" % tgff_directory,
                            "tgff.file=%s.tgff" % tgff,
                            "mapper=default",
