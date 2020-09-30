@@ -16,28 +16,26 @@ import networkx as nx
 #========================================
 #setup tgff test data
 
-tgff_file = 'pykpn/tgff/graphs/auto-indust-cords.tgff'
+tgff_file = 'examples/tgff/e3s-0.9/auto-indust-cords.tgff'
 tgff_graph = 'TASK_GRAPH_1'
 processor0 = genericProcessor('proc_type_0')
 processor1 = genericProcessor('proc_type_1')
-processor2 = genericProcessor('proc_type_2')
-processor3 = genericProcessor('proc_type_3')
 
 kpn_tgff = KpnGraphFromTgff(tgff_file, tgff_graph)
-platform_tgff = DesignerPlatformMultiCluster('multi_cluster', processor0, processor1, processor2, processor3)
+platform_tgff = DesignerPlatformMultiCluster( processor0, processor1)
 
 process_mapping_tgff = {}
 for process in kpn_tgff.processes():
-    process_mapping_tgff.update({process.name : ['processor_0', 'processor_1']})
+    process_mapping_tgff.update({process.name : ['proc_type_0', 'proc_type_1']})
 
 channel_mapping_tgff = {}
 for channel in kpn_tgff.channels():
     channel_mapping_tgff.update({channel.name : [1000, 2000]})
 
-processor_groups_tgff = {'processor_0' : list(filter(
-                            lambda x : x.type == 'processor_0', list(platform_tgff.processors()))),
-                         'processor_1' : list(filter(
-                            lambda x : x.type == 'processor_1', list(platform_tgff.processors())))}
+processor_groups_tgff = {'proc_type_0' : list(filter(
+                            lambda x : x.type == 'proc_type_0', list(platform_tgff.processors()))),
+                         'proc_type_1' : list(filter(
+                            lambda x : x.type == 'proc_type_1', list(platform_tgff.processors())))}
 
 l2 = platform_tgff.find_primitive('prim_multi_cluster_cl0_l2_1')
 ram = platform_tgff.find_primitive('prim_multi_cluster_RAM_1')
@@ -60,8 +58,8 @@ def test_trace_graph_tgff(trace_generator_tgff):
                              prim_groups_tgff)
 
     elements, _, nodes = trace_graph.determine_critical_path_elements()
-    assert elements == ['src', 'a1_0']
-    assert nodes == ['V_s', 'src_1', 'src_2', 'r_a1_0_0']
+    assert elements == ['idct', 'a1_2']
+    assert nodes == ['V_s', 'idct_1', 'idct_2', 'idct_3', 'r_a1_2_0']
 
     try:
         nx.find_cycle(trace_graph, 'V_s')
@@ -81,11 +79,11 @@ def test_change_process_mapping_tgff(trace_generator_tgff):
 
     trace_graph.determine_critical_path_elements()
 
-    trace_graph.change_element_mapping('src', {'src' : ['processor_0']}, processor_groups_tgff, definitive=True)
+    trace_graph.change_element_mapping('src', {'src' : ['proc_type_0']}, processor_groups_tgff, definitive=True)
     elements, time, nodes = trace_graph.determine_critical_path_elements()
-    assert elements == ['src', 'a1_0']
-    assert time == 1000000100000
-    assert nodes == ['V_s', 'src_1', 'src_2', 'r_a1_0_0']
+    assert elements == ['idct', 'a1_2']
+    assert time == 1000004550000
+    assert nodes == ['V_s', 'idct_1', 'idct_2', 'idct_3', 'r_a1_2_0']
 
 def test_change_channel_mapping_tgff_1(trace_generator_tgff):
     trace_graph = TraceGraph(kpn_tgff,
@@ -100,9 +98,9 @@ def test_change_channel_mapping_tgff_1(trace_generator_tgff):
     trace_graph.change_element_mapping('a1_0', {'a1_0' : [1000]}, prim_groups_tgff, definitive=True)
 
     elements, time, nodes = trace_graph.determine_critical_path_elements()
-    assert elements == ['sink', 'a1_2']
-    assert time == 1000000000000
-    assert nodes == ['V_s', 'sink_1', 'r_a1_2_0']
+    assert elements == ['idct', 'a1_2']
+    assert time == 1000004550000
+    assert nodes == ['V_s', 'idct_1', 'idct_2', 'idct_3', 'r_a1_2_0']
 
 def test_change_channel_mapping_tgff_2(trace_generator_tgff):
     trace_graph = TraceGraph(kpn_tgff,
@@ -119,14 +117,14 @@ def test_change_channel_mapping_tgff_2(trace_generator_tgff):
 
     elements, time, nodes = trace_graph.determine_critical_path_elements()
 
-    assert elements == ['sink', 'a1_2']
-    assert time == 1000000000000
-    assert nodes == ['V_s', 'sink_1', 'r_a1_2_0']
+    assert elements == ['iir', 'a1_1']
+    assert time == 1000000400000
+    assert nodes == ['V_s', 'iir_1', 'iir_2', 'iir_3', 'r_a1_1_0']
 
 #========================================
 #setup test data for slx
-kpn_slx = SlxKpnGraph('audio_filter', 'examples/slx/app/audio_filter/audio_filter.cpn.xml')
-platform_slx = SlxPlatform('exynos', 'examples/slx/platforms/exynos.platform')
+kpn_slx = SlxKpnGraph('audio_filter', '../../../examples/slx/app/audio_filter/audio_filter.cpn.xml')
+platform_slx = SlxPlatform('exynos', '../../../examples/slx/platforms/exynos.platform')
 
 process_mapping_slx = {}
 for process in kpn_slx.processes():
