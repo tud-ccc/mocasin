@@ -50,7 +50,7 @@ def test_processor_dict(processor_list):
     """
     tgff_processor = processor_list[0]
     assert(tgff_processor.name == 'CLIENT_PE_0')
-    assert(tgff_processor.type == 'processor_0')
+    assert(tgff_processor.type == 'proc_type_0')
     #Todo: Get right cycle time
     assert(tgff_processor.cycle_time == float('1e-06'))
     #Todo: Get correct execution cycles

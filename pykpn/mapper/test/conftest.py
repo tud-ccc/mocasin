@@ -41,7 +41,7 @@ def platform(num_procs):
 
 @pytest.fixture
 def tgff_parallella_setup():
-    file = '../../../examples/tgff/e3s-0.9/auto-indust-cords.tgff'
+    file = 'examples/tgff/e3s-0.9/auto-indust-cords.tgff'
 
     graph = 'TASK_GRAPH_0'
 
@@ -56,7 +56,7 @@ def tgff_parallella_setup():
 
 @pytest.fixture
 def tgff_exynos_setup():
-    file = '../../../examples/tgff/e3s-0.9/auto-indust-cowls.tgff'
+    file = 'examples/tgff/e3s-0.9/auto-indust-cowls.tgff'
 
     graph = 'TASK_GRAPH_3'
 
@@ -73,7 +73,7 @@ def tgff_exynos_setup():
 
 @pytest.fixture
 def tgff_coolidge_setup():
-    file = '../../../examples/tgff/e3s-0.9/office-automation-mocsyn.tgff'
+    file = 'examples/tgff/e3s-0.9/office-automation-mocsyn.tgff'
 
     graph = 'TASK_GRAPH_0'
 
@@ -88,7 +88,7 @@ def tgff_coolidge_setup():
 
 @pytest.fixture
 def tgff_multi_cluster_setup():
-    file = '../../../examples/tgff/e3s-0.9/auto-indust-cords.tgff'
+    file = 'examples/tgff/e3s-0.9/auto-indust-cords.tgff'
 
     graph = 'TASK_GRAPH_1'
 
@@ -103,9 +103,9 @@ def tgff_multi_cluster_setup():
 
 @pytest.fixture
 def slx_speaker_recognition_setup():
-    kpn_file = '../../../examples/slx/app/speaker_recognition/speaker_recognition.cpn.xml'
-    platform_file = '../../../examples/slx/platforms/exynos.platform'
-    trace_dir = '../../../examples/slx/app/speaker_recognition/exynos/traces'
+    kpn_file = 'examples/slx/app/speaker_recognition/speaker_recognition.cpn.xml'
+    platform_file = 'examples/slx/platforms/exynos.platform'
+    trace_dir = 'examples/slx/app/speaker_recognition/exynos/traces'
 
     kpn = SlxKpnGraph('SlxKpnGraph',  kpn_file)
     platform = SlxPlatform('SlxPlatform', platform_file)
@@ -115,9 +115,9 @@ def slx_speaker_recognition_setup():
 
 @pytest.fixture
 def slx_hog_setup():
-    kpn_file = '../../../examples/slx/app/hog/hog.cpn.xml'
-    platform_file = '../../../examples/slx/platforms/exynos.platform'
-    trace_dir = '../../../examples/slx/app/hog/exynos/traces'
+    kpn_file = 'examples/slx/app/hog/hog.cpn.xml'
+    platform_file = 'examples/slx/platforms/exynos.platform'
+    trace_dir = 'examples/slx/app/hog/exynos/traces'
 
     kpn = SlxKpnGraph('SlxKpnGraph',  kpn_file)
     platform = SlxPlatform('SlxPlatform', platform_file)
@@ -127,9 +127,9 @@ def slx_hog_setup():
 
 @pytest.fixture
 def slx_parallella_setup():
-    kpn_file = '../../../examples/slx/app/audio_filter/audio_filter.cpn.xml'
-    platform_file = '../../../examples/slx/platforms/parallella.platform'
-    trace_dir = '../../../examples/slx/app/audio_filter/parallella/traces'
+    kpn_file = 'examples/slx/app/audio_filter/audio_filter.cpn.xml'
+    platform_file = 'examples/slx/platforms/parallella.platform'
+    trace_dir = 'examples/slx/app/audio_filter/parallella/traces'
 
     kpn = SlxKpnGraph('SlxKpnGraph',  kpn_file)
     platform = SlxPlatform('SlxPlatform', platform_file)
@@ -139,9 +139,9 @@ def slx_parallella_setup():
 
 @pytest.fixture
 def slx_multidsp_setup():
-    kpn_file = '../../../examples/slx/app/audio_filter/audio_filter.cpn.xml'
-    platform_file = '../../../examples/slx/platforms/multidsp.platform'
-    trace_dir = '../../../examples/slx/app/audio_filter/multidsp/traces'
+    kpn_file = 'examples/slx/app/audio_filter/audio_filter.cpn.xml'
+    platform_file = 'examples/slx/platforms/multidsp.platform'
+    trace_dir = 'examples/slx/app/audio_filter/multidsp/traces'
 
     kpn = SlxKpnGraph('SlxKpnGraph',  kpn_file)
     platform = SlxPlatform('SlxPlatform', platform_file)
