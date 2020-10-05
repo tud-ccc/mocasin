@@ -9,7 +9,7 @@ from pykpn.slx.trace import SlxTraceReader
 
 @pytest.fixture
 def trace_generator_tgff():
-    return TraceGeneratorWrapper('pykpn/tgff/graphs/auto-indust-cords.tgff', 'TASK_GRAPH_1')
+    return TraceGeneratorWrapper('examples/tgff/e3s-0.9/auto-indust-cords.tgff', 'TASK_GRAPH_1')
 
 @pytest.fixture
 def trace_generator_slx():
