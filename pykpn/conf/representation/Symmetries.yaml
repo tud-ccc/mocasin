@@ -1,2 +1,2 @@
-# @package _global_
-name: Symmetries
+# @package _group_
+target: pykpn.representation.SymmetryRepresentation

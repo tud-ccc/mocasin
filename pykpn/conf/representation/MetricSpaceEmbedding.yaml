@@ -1,5 +1,4 @@
-# @package _global_
-name: MetricSpaceEmbedding
+# @package _group_
+_target_: pykpn.representations.MetricEmbeddingRepresentation
 norm_p : 2
-distortion : 1.05
 
