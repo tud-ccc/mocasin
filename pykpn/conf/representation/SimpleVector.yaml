@@ -1,5 +1,5 @@
 # @package _global_
-representation: SimpleVector
+_target_: pykpn.representations.SimpleVector
 channels : false
 norm_p : 2
 periodic_boundary_conditions: false

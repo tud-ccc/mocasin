@@ -4,7 +4,7 @@
 #Authors: Felix Teweleit
 
 from pykpn.common.mapping import Mapping
-from pykpn.representations.representations import RepresentationType
+from pykpn.representations.__init__ import RepresentationType
 from arpeggio import OrderedChoice, EOF, PTNodeVisitor, OneOrMore, Optional
 from arpeggio import RegExMatch as _
 from abc import ABC, abstractmethod

@@ -10,7 +10,7 @@ from pykpn.design_centering import sample as dc_sample
 from pykpn.design_centering import util as dc_util
 from pykpn.util import logging
 from pykpn.util import plot # t-SNE plotting stuff
-from pykpn.representations.representations import RepresentationType
+from pykpn.representations.__init__ import RepresentationType
 import sys
 
 log = logging.getLogger(__name__)

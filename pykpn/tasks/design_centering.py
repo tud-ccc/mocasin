@@ -18,7 +18,7 @@ from pykpn.design_centering import sample as dc_sample
 from pykpn.design_centering import oracle as o
 from pykpn.design_centering import util as dc_util
 from pykpn.design_centering import perturbation_manager as p
-from pykpn.representations import representations as reps
+import pykpn.representations as reps
 
 log = logging.getLogger(__name__)
 

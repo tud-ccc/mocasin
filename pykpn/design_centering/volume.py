@@ -6,7 +6,7 @@
 import sys
 import logging
 import numpy as np
-from pykpn.representations.representations import RepresentationType 
+from pykpn.representations.__init__ import RepresentationType
 import pykpn.util.random_distributions.lp as lp
 
 from pykpn.util import logging

@@ -41,7 +41,6 @@ def generate_mapping(cfg):
           :class:`~pykpn.common.platform.Platform` object.
         * **plot_distribution:** a flag indicating whether to plot the
           distribution of simulated execution times over all mapping
-        * **rep_type_str** the representation type for the mapping space
         * **trace:** the input trace. The task expects a configuration dict
           that can be instantiated to a
           :class:`~pykpn.common.trace.TraceGenerator` object.

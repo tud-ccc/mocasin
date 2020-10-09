@@ -9,7 +9,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import cm as cm
 from pykpn.util import annotate
-from pykpn.representations.representations import RepresentationType 
+from pykpn.representations.__init__ import RepresentationType
 
 import matplotlib.animation as animation
 from matplotlib import colors as colors

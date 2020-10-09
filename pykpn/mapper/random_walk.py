@@ -13,7 +13,7 @@ from pykpn.mapper.utils import SimulationManager, Statistics
 from pykpn.mapper.random import RandomMapper
 from pykpn.util import logging, plot
 from pykpn.slx.mapping import export_slx_mapping
-from pykpn.representations.representations import RepresentationType
+from pykpn.representations.__init__ import RepresentationType
 
 log = logging.getLogger(__name__)
 

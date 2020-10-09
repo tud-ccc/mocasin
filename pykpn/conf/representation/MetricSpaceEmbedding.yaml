@@ -1,5 +1,5 @@
 # @package _global_
-representation: MetricSpaceEmbedding
+name: MetricSpaceEmbedding
 norm_p : 2
 distortion : 1.05
 

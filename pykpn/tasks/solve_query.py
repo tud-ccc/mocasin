@@ -5,7 +5,7 @@
 
 import hydra
 
-from pykpn.representations.representations import RepresentationType
+from pykpn.representations.__init__ import RepresentationType
 from pykpn.util.logging import getLogger
 from pykpn.ontologies.solver import Solver
 

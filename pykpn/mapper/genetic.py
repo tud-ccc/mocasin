@@ -9,7 +9,7 @@ import numpy as np
 import pickle
 
 from pykpn.util import logging
-from pykpn.representations.representations import RepresentationType
+from pykpn.representations.__init__ import RepresentationType
 from pykpn.mapper.utils import SimulationManager
 from pykpn.mapper.random import RandomPartialMapper
 

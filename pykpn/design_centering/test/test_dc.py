@@ -7,7 +7,7 @@ from unittest.mock import Mock
 
 #imports to run DC
 from pykpn.design_centering import DesignCenteringFromHydra, volume
-from pykpn.representations import representations as reps
+from pykpn.representations import __init__ as reps
 
 def test_dc_holistic(kpn, platform, conf, oracle):
     #Mapping

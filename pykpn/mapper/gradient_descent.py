@@ -8,7 +8,7 @@ import hydra
 import numpy as np
 
 from pykpn.util import logging
-from pykpn.representations.representations import RepresentationType
+from pykpn.representations.__init__ import RepresentationType
 from pykpn.mapper.random import RandomPartialMapper
 from pykpn.mapper.utils import SimulationManager
 from pykpn.mapper.utils import Statistics

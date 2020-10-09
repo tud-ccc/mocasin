@@ -8,7 +8,7 @@
 import logging
 import hydra
 
-from pykpn.representations.representations import RepresentationType
+from pykpn.representations import SymmetryRepresentation
 
 log = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ def enumerate_equivalent(cfg):
     platform = hydra.utils.instantiate(cfg['platform'])
     mapping = hydra.utils.instantiate(cfg['mapper'], kpn, platform, cfg).generate_mapping()
 
-    representation = RepresentationType['Symmetries'].getClassType()(kpn,platform,cfg)
+    representation = SymmetryRepresentation(kpn,platform)
     log.info(("calculating orbit for mapping:" + str(mapping.to_list())))
     orbit = representation.allEquivalent(mapping.to_list())
     log.info("orbit of size: " + str(len(orbit)))

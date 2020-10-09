@@ -7,7 +7,7 @@
 from threading import Thread
 from pykpn.common.mapping import Mapping
 from arpeggio import ParserPython, visit_parse_tree
-from pykpn.representations.representations import RepresentationType
+from pykpn.representations.__init__ import RepresentationType
 from pykpn.mapper.mapgen import MappingGeneratorOrbit, MappingGeneratorSimvec
 from pykpn.ontologies.logicLanguage import Grammar, SemanticAnalysis, MappingConstraint, EqualsConstraint,\
                                             SharedCoreUsageConstraint, ProcessingConstraint
