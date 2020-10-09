@@ -1,0 +1,5 @@
+# @package _group_
+_target_ : pykpn.design_centering.volume.LPVolume
+adaptable_center_weights : true
+aggressive_center_movement : true
+radius : 5

@@ -1,0 +1,20 @@
+# @package _global_
+defaults:
+  - common
+  - hydra/job_logging: pykpn
+  - tgff: default
+  - kpn: default
+  - platform: default
+  - trace: default
+  - representation: SimpleVector
+  - design_centering: algorithm
+
+
+record_samples : false
+adapt_samples : 10
+run_perturbation : true
+plot_perturbations : false
+out_dir : ./
+perturbations_out : perturbation_plot.pdf
+random_seed : 42
+

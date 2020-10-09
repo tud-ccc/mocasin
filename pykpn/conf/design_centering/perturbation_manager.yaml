@@ -1,0 +1,7 @@
+# @package _group_
+max_iters : 1000
+ball_num : 20
+radius : 2
+num_mappings : 10
+num_tests : 10
+perturbation_type : classic

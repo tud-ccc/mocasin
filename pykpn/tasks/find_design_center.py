@@ -13,7 +13,6 @@ import hydra
 import numpy as np
 import sys
 
-from pykpn.design_centering import DesignCenteringFromHydra, volume
 from pykpn.design_centering import sample as dc_sample
 from pykpn.design_centering import oracle as o
 from pykpn.design_centering import util as dc_util
@@ -23,45 +22,13 @@ import pykpn.representations as reps
 log = logging.getLogger(__name__)
 
 
-@hydra.main(config_path='../conf', config_name='design_centering')
+@hydra.main(config_path='../conf', config_name='find_design_center')
 def dc_task(cfg):
-    json_dc_dump = {
-        'config' : {
-            'max_samples': cfg['max_samples'],
-            'adapt_samples': cfg['adapt_samples'],
-            'hitting_probability': list(cfg['hitting_probability']),
-            'deg_p_polynomial': cfg['deg_p_polynomial'],
-            'step_width': list(cfg['step_width']),
-            'deg_s_polynomial': cfg['deg_s_polynomial'],
-            'adaptable_center_weights': cfg['adaptable_center_weights'],
-            'max_step': cfg['max_step'],
-            'show_polynomials': cfg['show_polynomials'],
-            'show_points': cfg['show_points'],
-            'max_pe': cfg['max_pe'],
-            'distr': cfg['distr'],
-            'shape': cfg['shape'],
-            'oracle': cfg['oracle'],
-            'random_seed': cfg['random_seed'],
-            'threshold': cfg['threshold'],
-            'perturbation_type': cfg['perturbation_type'],
-            'run_perturbation': cfg['run_perturbation'],
-            'num_perturbations': cfg['num_perturbations'],
-            'representation': cfg['representation'],
-            'keep_metrics': cfg['keep_metrics'],
-            'visualize_mappings': cfg['visualize_mappings'],
-            'start_time': cfg['start_time'],
-            'app': cfg['kpn']['name'],
-            'platform': cfg['platform']['name'],
-            'starting_radius': cfg['radius'],
-            #'trace_dir': cfg['trace_dir'],
-        }}
-    if 'periodic_boundary_conditions' in cfg:
-        json_dc_dump['config']['periodic_boundary_conditions'] = cfg['periodic_boundary_conditions']
-
     tp = dc_util.ThingPlotter()
     random.seed(cfg['random_seed'])
     np.random.seed(cfg['random_seed'])
     log.info("Initialized random number generator. Seed: {" + str(cfg['random_seed']) + "}")
+    json_dc_dump = {}
 
     # if config.platform_class is not None:
     #     platform = config.platform_class()
@@ -78,33 +45,17 @@ def dc_task(cfg):
 
     kpn = hydra.utils.instantiate(cfg['kpn'])
     platform = hydra.utils.instantiate(cfg['platform'])
-
-    rep_type_str = cfg['representation']
-
-    if rep_type_str == "GeomDummy":
-        representation = "GeomDummy"
-
-    elif rep_type_str not in dir(reps.RepresentationType):
-        log.exception("Representation " + rep_type_str + " not recognized. Available: " +
-                      ", ".join(dir(reps.RepresentationType)))
-        raise RuntimeError('Unrecognized representation.')
-
-    else:
-        representation_type = reps.RepresentationType[rep_type_str]
-        log.info(f"initializing representation ({rep_type_str})")
-
-        representation = (representation_type.getClassType())(kpn, platform, cfg)
-
-    # run DC algorithm
-
-    oracle = o.OracleFromHydra(cfg)
+    trace = hydra.utils.instantiate(cfg['trace'])
+    representation = hydra.utils.instantiate(cfg['representation'],kpn,platform)
+    oracle = hydra.utils.instantiate(cfg['design_centering']['oracle'])
 
     # starting volume (init):
-    if representation == "GeomDummy":
-        starting_center = [1, 2, 3, 4, 5, 6, 7, 8]
+    # this should be doable via hydra too
+    if 'starting_center' in cfg['design_centering']['volume']:
+        starting_center = cfg['design_centering']['volume']['starting_center']
     else:
         timeout = 0
-        while timeout < cfg['perturbation_max_iters']:
+        while timeout < cfg['design_centering']['perturbation']['max_iters']:
             starting_center = representation.uniform()
             starting_center_sample = dc_sample.Sample(sample=representation.toRepresentation(starting_center),
                                                       representation=representation)
@@ -115,29 +66,15 @@ def dc_task(cfg):
             else:
                 timeout += 1
 
-    if timeout == cfg['perturbation_max_iters']:
+    if timeout == cfg['design_centering']['perturbation']['max_iters']:
         log.error(f"could not find a feasible starting center after {timeout} iterations")
         sys.exit(1)
 
     log.info(f"Starting with center: {starting_center.to_list()}")
     #center = dc_sample.Sample(center)
 
-    if cfg['shape'] == "cube":
-        #TODO: refactor, remove unnecessary arguments passed
-        v = volume.Cube(starting_center, starting_center.get_numProcs(), cfg)
-    elif cfg['shape'] == "lpvol":
-        #TODO: refactor, remove unnecessary arguments passed
-        v = volume.LPVolume(starting_center,
-                            starting_center.get_numProcs(),
-                            kpn,
-                            platform,
-                            cfg,
-                            representation_type)
-
-
-    # config = args.configFile
-    dc = DesignCenteringFromHydra(v, oracle, representation, cfg)
-
+    v = hydra.utils.instantiate(cfg['design_centering']['volume'],kpn,platform,representation)
+    dc = hydra.utils.instantiate(cfg['design_centering']['algorithm'],v, oracle, representation)
     center, history = dc.ds_explore()
     centers = history['centers']
     samples = history['samples']
@@ -179,30 +116,21 @@ def dc_task(cfg):
 
     if cfg['run_perturbation']:
         log.info("==== Run Perturbation Test ====")
-        num_pert = cfg['num_perturbations']
-        num_mappings = cfg['num_reference_mappings']
 
-        #TODO: propagate cfg
-        pm = p.PerturbationManager(cfg, num_mappings, num_pert)
+        pm = hydra.utils.instantiate(cfg['design_centering']['perturbation_manager'],
+                                     kpn,platform,trace,representation)
 
-        if cfg['perturbation_type'] == 'classic':
-            pert_func = pm.apply_singlePerturbation
-        elif cfg['perturbation_type'] == 'representation':
-            pert_func = pm.applyPerturbationRepresentation
-        else:
-            log.error(f"Unknown perturbation type: {cfg['perturbation_type']} ")
-            sys.exit(1)
         map_set = pm.create_randomMappings()
 
         pert_res = []
-        s,c = pm.run_perturbation(center.getMapping(), pert_func)
+        s,c = pm.run_perturbation(center.getMapping(), pm.apply_perturbation)
         pert_res.append(s)
 
         json_dc_dump['center']['pert'] = c
         json_dc_dump['center']['passed'] = s
 
         for i, m in enumerate(map_set):
-            s, c = pm.run_perturbation(m, pert_func)
+            s, c = pm.run_perturbation(m, pm.apply_perturbation)
             pert_res.append(s)
             json_dc_dump['rand mapping' + str(i)] = {}
             json_dc_dump['rand mapping' + str(i)]['mapping'] = m.to_list()

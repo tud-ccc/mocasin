@@ -21,12 +21,12 @@ thresholds = {
 def test_dc_slx(datadir, slx_kpn_platform_pair):
     kpn, platform = slx_kpn_platform_pair
 
-    subprocess.check_call(["pykpn", "design_centering",
+    subprocess.check_call(["pykpn", "find_design_center",
                            "kpn=%s" % kpn,
                            "platform=%s" % platform,
                            "trace=slx_default",
                            "out_dir=%s" % datadir,
-                           "threshold=%s" % thresholds[kpn][platform]],
+                           "design_centering.oracle.threshold=%s" % thresholds[kpn][platform]],
                           cwd=datadir)
 
     #TODO: check if generated json is actually parsable
@@ -36,14 +36,14 @@ def test_dc_slx(datadir, slx_kpn_platform_pair):
 def test_dc_tgff(datadir, tgff):
     tgff_directory = os.path.join(datadir, 'tgff/e3s-0.9')
 
-    subprocess.check_call(["pykpn", "design_centering",
+    subprocess.check_call(["pykpn", "find_design_center",
                            "kpn=tgff_reader",
                            "platform=tgff_reader",
                            "trace=tgff_reader",
                            "tgff.directory=%s" % tgff_directory,
                            "tgff.file=%s.tgff" % tgff,
                            "out_dir=%s" % datadir,
-                           "threshold=100 ms"],
+                           "design_centering.oracle.threshold=100 ms"],
                           cwd=datadir)
 
     #TODO: check if generated json is actually parsable

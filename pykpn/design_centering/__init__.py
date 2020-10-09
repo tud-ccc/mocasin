@@ -10,16 +10,18 @@ from pykpn.design_centering import sample as dc_sample
 from pykpn.design_centering import util as dc_util
 from pykpn.util import logging
 from pykpn.util import plot # t-SNE plotting stuff
-from pykpn.representations.__init__ import RepresentationType
+from pykpn.representations import MappingRepresentation
 import sys
 
 log = logging.getLogger(__name__)
 
 
 class DesignCentering(object):
-    def __init__(self, init_vol, oracle, representation, hitting_probability, hitting_probability_threshold,
-                 deg_p_polynomial, deg_s_polynomial, step_width, adapt_samples, max_samples, record_samples,
-                 show_polynomials, distr, visualize_mappings, keep_metrics, representation_type, max_pe):
+    def __init__(self, init_vol, oracle, representation, hitting_probability=[0.4, 0.5, 0.5, 0.7, 0.9],
+                 hitting_probability_threshold=0.7, deg_p_polynomial=2, deg_s_polynomial=2,
+                 step_width=[0.9, 0.7, 0.6, 0.5, 0.1], adapt_samples=10, max_samples=50,
+                 record_samples=False, show_polynomials=False, distr='uniform', visualize_mappings=False,
+                 keep_metrics=True, max_pe=16):
         type(self).vol = init_vol
         type(self).oracle = oracle
         type(self).representation = representation
@@ -32,7 +34,6 @@ class DesignCentering(object):
         type(self).distr = distr
         type(self).visualize_mappings = visualize_mappings
         type(self).keep_metrics = keep_metrics
-        type(self).representation_type = representation_type
         type(self).max_pe = max_pe
 
 
@@ -217,40 +218,7 @@ class DesignCentering(object):
         #print("thresholds: {}".format(thresholds))
         plot.visualize_mapping_space(mappings, exec_times,
                                      None,
-                                     RepresentationType[self.representation_type],
+                                     self.representation,
                                      tick,
                                      len(center_history))
 
-class DesignCenteringFromHydra(DesignCentering):
-    def __init__(self, init_vol, oracle, representation, cfg):
-        hitting_probability = cfg['hitting_probability']
-        hitting_probability_threshold = cfg['hitting_probability_threshold']
-        deg_p_polynomial = cfg['deg_p_polynomial']
-        deg_s_polynomial = cfg['deg_s_polynomial']
-        step_width = cfg['step_width']
-        adapt_samples = cfg['adapt_samples']
-        max_samples = cfg['max_samples']
-        record_samples = cfg['record_samples']
-        show_polynomials = cfg['show_polynomials']
-        distr = cfg['distr']
-        visualize_mappings = cfg['visualize_mappings']
-        keep_metrics = cfg['keep_metrics']
-        representation_type = cfg['representation']
-        max_pe = cfg['max_pe']
-
-
-        super(DesignCenteringFromHydra, self).__init__(init_vol, oracle, representation,
-                                                       hitting_probability,
-                                                       hitting_probability_threshold,
-                                                       deg_p_polynomial,
-                                                       deg_s_polynomial,
-                                                       step_width,
-                                                       adapt_samples,
-                                                       max_samples,
-                                                       record_samples,
-                                                       show_polynomials,
-                                                       distr,
-                                                       visualize_mappings,
-                                                       keep_metrics,
-                                                       representation_type,
-                                                       max_pe)

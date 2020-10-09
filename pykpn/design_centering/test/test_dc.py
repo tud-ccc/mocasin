@@ -6,7 +6,7 @@
 from unittest.mock import Mock
 
 #imports to run DC
-from pykpn.design_centering import DesignCenteringFromHydra, volume
+from pykpn.design_centering import DesignCentering, volume
 from pykpn.representations import __init__ as reps
 
 def test_dc_holistic(kpn, platform, conf, oracle):
@@ -18,6 +18,6 @@ def test_dc_holistic(kpn, platform, conf, oracle):
    
     #print(oracle.validate_set())
     v = volume.LPVolume(starting_center, starting_center.get_numProcs(), kpn, platform, conf, representation_type)
-    dc = DesignCenteringFromHydra(v, oracle, representation, conf)
+    dc = DesignCentering(v, oracle, representation, conf)
     center, history = dc.ds_explore()
     #TODO: inserting some kind of assert statement? What is actually tested here?

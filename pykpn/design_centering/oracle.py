@@ -5,7 +5,6 @@
 
 import traceback
 import pint
-import hydra
 from sys import exit
 
 from copy import deepcopy
@@ -19,23 +18,13 @@ from pykpn.util import logging
 
 log = logging.getLogger(__name__)
 
-
-# https://stackoverflow.com/questions/4984647/accessing-dict-keys-like-an-attribute
-class AttrDict(dict):
-    def __init__(self, *args, **kwargs):
-        super(AttrDict, self).__init__(*args, **kwargs)
-        self.__dict__ = self
-
-
 class Oracle(object):
-    def __init__(self, oracle_type, kpn=None,
-                                    platform=None,
-                                    trace_generator=None,
-                                    threshold=None,
-                                    threads=None,
-                                    seed=None):
+    def __init__(self, oracle_type, kpn,
+                                    platform,
+                                    trace_generator,
+                                    threshold,
+                                    threads=None):
 
-        #self.config = AttrDict(config)
         self.oracle_type = oracle_type
 
         if oracle_type == "TestSet":
@@ -43,7 +32,7 @@ class Oracle(object):
         elif oracle_type == "TestTwoPrKPN":
             type(self).oracle = TestTwoPrKPN()
         elif oracle_type == "simulation":
-            type(self).oracle = Simulation(kpn, platform, trace_generator, threshold, threads, seed)
+            type(self).oracle = Simulation(kpn, platform, trace_generator, threshold, threads=1)
         else:
              log.error("Error, unknown oracle:" + oracle_type)
              exit(1)
@@ -72,37 +61,13 @@ class Oracle(object):
 
         return res
 
-class OracleFromHydra(Oracle):
-    def __init__(self, config, kpn=None, platform=None, trace_generator=None, threshold=None, threads=None, seed=None):
-        oracle_type = config['oracle']
-
-        if not kpn:
-            kpn = hydra.utils.instantiate(config['kpn'])
-
-        if not platform:
-            platform = hydra.utils.instantiate(config['platform'])
-
-        if not trace_generator:
-            trace_generator = hydra.utils.instantiate(config['trace'])
-
-        if not threshold:
-            threshold = config['threshold']
-
-        if not threads:
-            threads = config['threads']
-
-        if not seed:
-            seed = config['random_seed']
-
-        super(OracleFromHydra, self).__init__(oracle_type, kpn, platform, trace_generator, threshold, threads, seed)
-
 class Simulation(object):
     """ simulation code """
-    def __init__(self, kpn, platform, trace_generator, threshold, threads, seed):
+    def __init__(self, kpn, platform, trace_generator, threshold, threads):
         self.kpn = kpn
         self.platform = platform
         self.trace_generator = trace_generator
-        self.randMapGen = RandomPartialMapper(self.kpn, self.platform, seed)
+        self.randMapGen = RandomPartialMapper(self.kpn, self.platform)
         self.comMapGen = ComPartialMapper(self.kpn, self.platform, self.randMapGen)
         self.dcMapGen = ProcPartialMapper(self.kpn, self.platform, self.comMapGen)
         self.threads = threads

@@ -21,27 +21,28 @@ log = logging.getLogger(__name__)
 
 class PerturbationManager(object):
 
-    def __init__(self, config, num_mappings=0, num_tests=0):
-        self.config = config
+    def __init__(self,kpn,platform, trace, representation, threshold,
+                 threads=1, random_seed=42, num_mappings=10, num_tests=10, ball_num=20,
+                 max_iters=1000, radius=2.0,perturbation_type='classic'):
 
-        self.platform = hydra.utils.instantiate(config['platform'])
-        self.kpn = hydra.utils.instantiate(config['kpn'])
-        trace_generator = hydra.utils.instantiate(config['trace'])
-        threshold = config['threshold']
-        threads = config['threads']
-        seed = config['random_seed']
+        self.platform = platform
+        self.kpn = kpn
+        trace_generator = trace
+        threshold = threshold
+        threads = threads
+        seed = random_seed
+        self.perturbation_type = perturbation_type
 
-        self.sim = oracle.Simulation(self.kpn, self.platform, trace_generator, threshold, threads, seed)
+        self.sim = oracle.Simulation(kpn, platform, trace_generator, threshold, threads, seed)
 
         self.num_mappings = num_mappings
         self.num_perturbations = num_tests
-        self.perturbation_ball_num = config['perturbation_ball_num']
-        self.iteration_max = config['perturbation_max_iters']
-        self.radius = config['perturbation_radius']
+        self.perturbation_ball_num = ball_num
+        self.iteration_max = max_iters
+        self.radius = radius
 
-        if config['representation'] != "GeomDummy":
-            representation_type = reps.RepresentationType[config['representation']]
-            self.representation = (representation_type.getClassType())(self.kpn,self.platform,config)
+        #if config['representation'] != "GeomDummy":
+        self.representation = representation
 
         #TODO: (FIXME) Perturbation manager only works in simple vector representation (for now)
         #self.representation = (reps.RepresentationType['SimpleVector'].getClassType())(self.kpn, self.platform)
@@ -53,13 +54,20 @@ class PerturbationManager(object):
             mg = RandomPartialMapper(self.kpn, self.platform)
             mapping_set.add(mg.generate_mapping())
         return mapping_set
-
+    def apply_perturbation(self,mapping,history):
+        if self.perturbation_type == 'classic':
+            self.apply_singlePerturbation(mapping,history)
+        elif self.perturbation_type == 'representation':
+            self.applyPerturbationRepresentation(mapping,history)
+        else:
+            log.error(f"Unknown perturbation type: {cfg['perturbation_type']} ")
+            sys.exit(1)
     def apply_singlePerturbation(self, mapping, history):
         """ Creates a defined number of unique single core perturbations
             Therefore, the mapping is interpreted as vector with the 
             processor cores assigned to the vector elements.
         """
-        rand_part_mapper = RandomPartialMapper(self.kpn, self.platform,self.config)
+        rand_part_mapper = RandomPartialMapper(self.kpn, self.platform)
         proc_part_mapper = ProcPartialMapper(self.kpn, self.platform, rand_part_mapper)
         iteration_max = self.iteration_max
 
@@ -155,7 +163,7 @@ class PerturbationManager(object):
         feasible = []
         for e in exec_times:
             ureg = pint.UnitRegistry()
-            threshold = ureg(self.config.threshold).to(ureg.ps).magnitude
+            threshold = ureg(self.threshold).to(ureg.ps).magnitude
             if e > threshold:
                 feasible.append(False)
             else:
@@ -173,15 +181,3 @@ class PerturbationManager(object):
 
         return simple_res, complex_res
 
-class PerturbationManagerFromHydra(PerturbationManager):
-    def __init__(self, config, num_mappings=0, num_tests=0):
-        kpn = hydra.utils.instantiate(config['kpn'])
-        platform = hydra.utils.instantiate(config['platform'])
-        trace_generator = hydra.utils.instantiate(config['trace'])
-
-
-        perturbation_ball_num = config['perturbation_ball_num']
-        perturbation_max_iters = config['perturbation_max_iters']
-        perturbation_radius =config['perturbation_radius']
-
-        super(PerturbationManagerFromHydra, self).__init__()
