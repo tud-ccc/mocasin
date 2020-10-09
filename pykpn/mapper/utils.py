@@ -7,6 +7,7 @@ import timeit
 import hydra
 import multiprocessing as mp
 import numpy as np
+from copy import deepcopy
 
 from pykpn.common.mapping import Mapping
 from pykpn.simulate import KpnSimulation
@@ -73,6 +74,7 @@ class SimulationManager(object):
         self._last_added = None
         self.jobs = jobs
         self.trace = trace
+        self.trace.reset() #just make sure
         self.parallel = parallel
         self.progress = progress
         self.chunk_size = chunk_size
@@ -133,8 +135,8 @@ class SimulationManager(object):
             if lookups[i]:
                 continue
 
-            self.trace.reset()
-            simulation = KpnSimulation(self.platform, self.kpn, mapping, self.trace)
+            trace = deepcopy(self.trace)
+            simulation = KpnSimulation(self.platform, self.kpn, mapping, trace)
 
             # since mappings are simulated in parallel, whole simulation time is added later as offset
             self.statistics.mapping_evaluated(0)

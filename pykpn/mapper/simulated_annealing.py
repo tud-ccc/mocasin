@@ -5,10 +5,10 @@
 
 import random
 import numpy as np
-import hydra
+from hydra.utils import instantiate
 
 from pykpn.util import logging
-from pykpn.representations.__init__ import RepresentationType
+from pykpn.representations import MappingRepresentation
 from pykpn.mapper.random import RandomPartialMapper
 from pykpn.mapper.utils import SimulationManager
 from pykpn.mapper.utils import Statistics
@@ -16,7 +16,6 @@ from pykpn.mapper.utils import Statistics
 
 log = logging.getLogger(__name__)
 
-#TODO: Skip this cause representation object is needed?
 
 class SimulatedAnnealingMapper(object):
     """Generates a full mapping by using a simulated annealing algorithm from:
@@ -24,16 +23,42 @@ class SimulatedAnnealingMapper(object):
     Automated memory-aware application distribution for multi-processor system-on-chips.
     Journal of Systems Architecture, 53(11), 795-815.e.
     """
-    def __init__(self, kpn, platform, config, random_seed, record_statistics, initial_temperature, final_temperature,
-                 temperature_proportionality_constant, radius, dump_cache, chunk_size, progress, parallel, jobs):
+
+    def __init__(self, kpn, platform, trace, representation, random_seed=42, record_statistics=False,
+                 initial_temperature=1.0, final_temperature=0.1, temperature_proportionality_constant=.5,
+                 radius=3.0, dump_cache=False, chunk_size=10, progress=False, parallel=False, jobs=1):
         """Generates a full mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
         :type kpn: KpnGraph
         :param platform: a platform
         :type platform: Platform
-        :param config: the hyrda configuration
-        :type config: OmniConf
+        :param trace: a trace generator
+        :type trace: TraceGenerator
+        :param representation: a mapping representation object
+        :type representation: MappingRepresentation
+        :param random_seed: A random seed for the RNG
+        :type random_seed: int
+        :param initial_temperature: Initial temperature for simmulated annealing
+        :type initial_temperature: float
+        :param final_temperature: Final temperature for simmulated annealing
+        :type final_temperature: float
+        :param temperature_proportionality_constant: Temperature prop. constant for simmulated annealing
+        :type temperature_proportionality_constant: float
+        :param radius: Radius for search when moving
+        :type radius: int
+        :param record_statistics: Record statistics on mappings evaluated?
+        :type record_statistics: bool
+        :param dump_cache: Dump the mapping cache?
+        :type dump_cache: bool
+        :param chunk_size: Size of chunks for parallel simulation
+        :type chunk_size: int
+        :param progress: Display simulation progress visually?
+        :type progress: bool
+        :param parallel: Execute simulations in parallel?
+        :type parallel: bool
+        :param jobs: Number of jobs for parallel simulation
+        :type jobs: int
         """
         random.seed(random_seed)
         np.random.seed(random_seed)
@@ -53,21 +78,13 @@ class SimulatedAnnealingMapper(object):
             log.error(f"Temperature proportionality constant {self.p} not suitable, "
                       f"it should be close to, but smaller than 1 (algorithm probably won't terminate).")
 
-        rep_type_str = config['representation']
-
-        if rep_type_str not in dir(RepresentationType):
-            log.exception("Representation " + rep_type_str + " not recognized. Available: " + ", ".join(
-                dir(RepresentationType)))
-            raise RuntimeError('Unrecognized representation.')
-        else:
-            representation_type = RepresentationType[rep_type_str]
-            log.info(f"initializing representation ({rep_type_str})")
-
-            representation = (representation_type.getClassType())(self.kpn, self.platform, config)
-
+        # This is a workaround until Hydra 1.1 (with recursive instantiaton!)
+        if not issubclass(type(type(representation)), MappingRepresentation):
+            representation = instantiate(representation,kpn,platform)
         self.representation = representation
 
-        self.simulation_manager = SimulationManager(representation, config)
+        self.simulation_manager = SimulationManager(self.representation, trace,jobs, parallel,
+                                                    progress,chunk_size,record_statistics)
 
     def temperature_cooling(self, temperature, iter):
         return self.initial_temperature*self.p**np.floor(iter/self.max_rejections)

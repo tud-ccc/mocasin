@@ -3,11 +3,7 @@
 _target_: pykpn.mapper.random_walk.RandomWalkMapper
 num_iterations : 100
 progress :  false
-export_all : false
-plot_distribution: false
-visualize : false
-show_plots : false
-radius : 5
+radius : 5.0
 random_seed : null
 record_statistics: true
 parallel : true

@@ -26,7 +26,7 @@ class GeneticMapper(object):
                  objective_num_resources = False, objective_exec_time = True,
                  pop_size = 10, num_gens = 5, mutpb = 0.5, cxpb = 0.35,
                  tournsize = 4, mupluslambda = True, crossover_rate = 1,
-                 radius=2, random_seed = 42, record_statistics = True,
+                 radius=2.0, random_seed = 42, record_statistics = True,
                  dump_cache = False, chunk_size = 10, progress = False,
                  parallel = True, jobs = 4):
         """Generates a partial mapping for a given platform and KPN application.
