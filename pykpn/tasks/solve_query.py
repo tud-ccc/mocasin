@@ -5,7 +5,6 @@
 
 import hydra
 
-from pykpn.representations.__init__ import RepresentationType
 from pykpn.util.logging import getLogger
 from pykpn.ontologies.solver import Solver
 
@@ -20,7 +19,9 @@ def solve_query(cfg):
     platform = hydra.utils.instantiate(cfg['platform'])
     query = cfg['query']
     vector = cfg['vector']
-    representation = RepresentationType['SimpleVector'].getClassType()(kpn, platform, cfg)
+    if cfg['representation']._target_ != 'pykpn.representations.SimpleVectorRepresentation':
+        raise RuntimeError(f"The solve_query task needs to be called with the SimpleVector representation. Called with {cfg['representation']._target_}")
+    representation = hydra.utils.instantiate(cfg['representation'], kpn, platform)
 
     solver = Solver(kpn, platform, cfg)
 

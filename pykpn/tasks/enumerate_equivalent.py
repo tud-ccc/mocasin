@@ -19,7 +19,7 @@ def enumerate_equivalent(cfg):
     platform = hydra.utils.instantiate(cfg['platform'])
     trace = hydra.utils.instantiate(cfg['trace'])
     if cfg['representation']._target_ != 'pykpn.representations.SymmetryRepresentation':
-        raise RuntimeError(f"The enumerate equvialent task needs to be called with the symmetry representation. Called with {cfg['representation']._target_}")
+        raise RuntimeError(f"The enumerate equvialent task needs to be called with the Symmetry representation. Called with {cfg['representation']._target_}")
     representation = hydra.utils.instantiate(cfg['representation'], kpn, platform)
     mapping = hydra.utils.instantiate(cfg['mapper'], kpn, platform, trace,representation).generate_mapping()
 

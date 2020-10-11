@@ -5,24 +5,6 @@ import numpy as np
 from itertools import product
 
 @pytest.fixture
-def conf():
-    return {'mapper' : {'gd_iterations' : 100,
-                        'stepsize' : 2,
-                        'random_seed' : 42,
-                        'record_statistics' : False,
-                        'dump_cache' : False,
-                        'chunk_size' : 10,
-                        'progress' : False,
-                        'parallel' : True,
-                        'jobs' : 4,
-                        },
-            'norm_p' : 2,
-            'periodic_boundary_conditions' : True,
-            'representation' : 'SimpleVector',
-            'channels' : False
-            }
-
-@pytest.fixture
 def evaluation_function():
     return lambda m : 1 + np.cos(m[0]-m[1])*np.sin(m[1]*2-1)
 
@@ -32,8 +14,8 @@ def evaluation_function_gradient():
                        (3 * np.cos(1 + m[0] - 3 * m[1]) + np.cos(1 - m[0] - m[1]))]
 
 @pytest.fixture
-def mapper(kpn, platform, conf, evaluation_function):
-    m = GradientDescentMapper(kpn, platform, conf, 100, 2, 42, False, False, 10, False, True, 4)
+def mapper(kpn, platform, trace, representation_pbc, evaluation_function):
+    m = GradientDescentMapper(kpn, platform, trace, representation_pbc, 100, 2, 42, False, False, 10, False, True, 4)
     m.simulation_manager = MockMappingCache(evaluation_function)
     return m
 

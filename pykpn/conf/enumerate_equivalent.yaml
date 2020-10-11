@@ -5,6 +5,7 @@ defaults:
   - tgff: default
   - kpn: default
   - platform: default
+  - trace: default
   - mapper: from_file
-
+  - representation: Symmetries
 output_file: equivalent_mappings.txt

@@ -10,6 +10,8 @@ from pykpn.platforms.generic_mesh import DesignerPlatformMesh
 from pykpn.platforms.exynos990 import DesignerPlatformExynos990
 from pykpn.platforms.mppa_coolidge import DesignerPlatformCoolidge
 from pykpn.platforms.multi_cluster import DesignerPlatformMultiCluster
+from pykpn.representations import SimpleVectorRepresentation
+from pykpn.common.trace import EmptyTraceGenerator
 from pykpn.slx.platform import SlxPlatform
 from pykpn.slx.kpn import SlxKpnGraph
 from pykpn.slx.trace import SlxTraceReader
@@ -38,6 +40,19 @@ def platform(num_procs):
     sched = Scheduler('name', procs, policies)
     p.add_scheduler(sched)
     return p
+
+@pytest.fixture
+def representation(kpn,platform):
+    return SimpleVectorRepresentation(kpn,platform)
+
+@pytest.fixture
+def representation_pbc(kpn,platform):
+    return SimpleVectorRepresentation(kpn,platform,periodic_boundary_conditions=True)
+
+@pytest.fixture
+def trace():
+    return EmptyTraceGenerator()
+
 
 @pytest.fixture
 def tgff_parallella_setup():

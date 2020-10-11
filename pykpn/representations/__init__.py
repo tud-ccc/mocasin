@@ -111,7 +111,7 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
     interface, but they are provided in case they prove useful, when you know
     what you are doing.
     """
-    def __init__(self, kpn, platform,channels,periodic_boundary_conditions,norm_p):
+    def __init__(self, kpn, platform,channels=False,periodic_boundary_conditions=False,norm_p=2):
         self.kpn = kpn
         self.platform = platform
         self.channels = channels

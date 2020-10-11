@@ -89,7 +89,7 @@ class LPVolume(Volume):
 
     def __init__(self, kpn, platform, representation, center, radius,
                  adaptable_center_weights=True, aggressive_center_movement=False,
-                 adapt_samples=-1):
+                 adapt_samples=0):
         # This is a workaround until Hydra 1.1 (with recursive instantiaton!)
         if not issubclass(type(type(representation)), MappingRepresentation):
             representation = instantiate(representation, kpn, platform)

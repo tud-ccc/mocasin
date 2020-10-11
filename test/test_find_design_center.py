@@ -26,7 +26,7 @@ def test_dc_slx(datadir, slx_kpn_platform_pair):
                            "platform=%s" % platform,
                            "trace=slx_default",
                            "out_dir=%s" % datadir,
-                           "design_centering.oracle.threshold=%s" % thresholds[kpn][platform]],
+                           "threshold=%s" % thresholds[kpn][platform]],
                           cwd=datadir)
 
     #TODO: check if generated json is actually parsable
@@ -43,7 +43,7 @@ def test_dc_tgff(datadir, tgff):
                            "tgff.directory=%s" % tgff_directory,
                            "tgff.file=%s.tgff" % tgff,
                            "out_dir=%s" % datadir,
-                           "design_centering.oracle.threshold=100 ms"],
+                           "threshold=100 ms"],
                           cwd=datadir)
 
     #TODO: check if generated json is actually parsable

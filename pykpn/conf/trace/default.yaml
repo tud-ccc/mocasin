@@ -1,2 +1,2 @@
 # @package _group_
-_target_: ???
+_target_: pykpn.common.trace.EmptyTraceGenerator

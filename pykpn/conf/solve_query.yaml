@@ -5,6 +5,7 @@ defaults:
     - tgff: default
     - platform: default
     - kpn: default
+    - trace: default
     - representation: SimpleVector
 query: ???
 output_file: "None"

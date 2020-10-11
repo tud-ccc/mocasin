@@ -5,6 +5,7 @@ defaults:
   - tgff: default
   - kpn: default
   - platform: default
+  - trace: default
   - mapper: default
 
 task_names: True

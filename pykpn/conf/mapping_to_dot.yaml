@@ -5,6 +5,8 @@ defaults:
   - tgff: default
   - kpn: default
   - platform: default
+  - trace: default
+  - representation: SimpleVector
   - mapper: default
 
 output_file: "${kpn.name}_on_${platform.name}.dot"

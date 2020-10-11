@@ -1,2 +1,2 @@
 # @package _group_
-target: pykpn.representation.SymmetryRepresentation
+_target_: pykpn.representations.SymmetryRepresentation
