@@ -20,19 +20,14 @@ log = logging.getLogger(__name__)
 class PerturbationManager(object):
 
     def __init__(self,kpn,platform, trace, representation, threshold,
-                 threads=1, random_seed=42, num_mappings=10, num_tests=10, ball_num=20,
+                 threads=1, num_mappings=10, num_tests=10, ball_num=20,
                  max_iters=1000, radius=2.0,perturbation_type='classic'):
 
         self.platform = platform
         self.kpn = kpn
-        trace_generator = trace
-        threshold = threshold
-        threads = threads
-        seed = random_seed
+        self.threshold = threshold
         self.perturbation_type = perturbation_type
-
-        self.sim = oracle.Simulation(kpn, platform, trace_generator, threshold, threads)
-
+        self.sim = oracle.Simulation(kpn, platform, trace, threshold, threads)
         self.num_mappings = num_mappings
         self.num_perturbations = num_tests
         self.perturbation_ball_num = ball_num
@@ -54,11 +49,11 @@ class PerturbationManager(object):
         return mapping_set
     def apply_perturbation(self,mapping,history):
         if self.perturbation_type == 'classic':
-            self.apply_singlePerturbation(mapping,history)
+            return self.apply_singlePerturbation(mapping,history)
         elif self.perturbation_type == 'representation':
-            self.applyPerturbationRepresentation(mapping,history)
+            return self.applyPerturbationRepresentation(mapping,history)
         else:
-            log.error(f"Unknown perturbation type: {cfg['perturbation_type']} ")
+            log.error(f"Unknown perturbation type: {self.perturbation_type} ")
             sys.exit(1)
     def apply_singlePerturbation(self, mapping, history):
         """ Creates a defined number of unique single core perturbations
@@ -136,7 +131,7 @@ class PerturbationManager(object):
             log.error("Could not find a new perturbation")
             sys.exit(1)
 
-    def run_perturbation(self, mapping, pert_fun):
+    def run_perturbation(self, mapping):
         """ 
         Runs the perturbation test with the defined Perturbation Method.
         The given mapping is evaluated by comparing it to randomly generated mappings. 
@@ -146,7 +141,7 @@ class PerturbationManager(object):
         results = []
         samples = []
         for i in range(0, self.num_perturbations):
-            mapping = pert_fun(mapping, history)
+            mapping = self.apply_perturbation(mapping, history)
             history.append(mapping)
             sample = dc_sample.Sample(self.representation.toRepresentation(mapping),representation=self.representation)
             samples.append(sample)

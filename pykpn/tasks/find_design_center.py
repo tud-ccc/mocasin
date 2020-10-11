@@ -125,14 +125,14 @@ def dc_task(cfg):
         map_set = pm.create_randomMappings()
 
         pert_res = []
-        s,c = pm.run_perturbation(center.getMapping(), pm.apply_perturbation)
+        s,c = pm.run_perturbation(center.getMapping())
         pert_res.append(s)
 
         json_dc_dump['center']['pert'] = c
         json_dc_dump['center']['passed'] = s
 
         for i, m in enumerate(map_set):
-            s, c = pm.run_perturbation(m, pm.apply_perturbation)
+            s, c = pm.run_perturbation(m)
             pert_res.append(s)
             json_dc_dump['rand mapping' + str(i)] = {}
             json_dc_dump['rand mapping' + str(i)]['mapping'] = m.to_list()
@@ -144,9 +144,7 @@ def dc_task(cfg):
 
         log.info("==== Perturbation Test done ====")
 
-    #FIXME: it should probably not be oracle.oracle
-    log.info(f"total simulations from cache: {oracle.oracle.total_cached}")
-
+    log.info(f"total simulations from cache: {oracle.total_cached}")
     if not os.path.exists(cfg['out_dir']):
         os.mkdir(cfg['out_dir'])
     with open(cfg['out_dir'] + '/dc_out.json', 'w+') as dump:

@@ -175,8 +175,9 @@ class KpnSimulation(BaseSimulation):
         """
         platform = hydra.utils.instantiate(cfg['platform'])
         kpn = hydra.utils.instantiate(cfg['kpn'])
-        mapper = hydra.utils.instantiate(cfg['mapper'], kpn, platform, cfg)
-        mapping = mapper.generate_mapping()
+        rep = hydra.utils.instantiate(cfg['representation'],kpn,platform)
         trace = hydra.utils.instantiate(cfg['trace'])
+        mapper = hydra.utils.instantiate(cfg['mapper'], kpn, platform, trace, rep)
+        mapping = mapper.generate_mapping()
         simulation = KpnSimulation(platform, kpn, mapping, trace)
         return simulation
