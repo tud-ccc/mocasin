@@ -314,7 +314,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
     In order to work with other mappings in the same class, the methods
     allEquivalent/_allEquivalent returns for a mapping, all mappings in that class.
     """
-    def __init__(self,kpn, platform):
+    def __init__(self,kpn, platform,channels=False,periodic_boundary_conditions=False,norm_p=2,canonical_operations=True):
         self._topologyGraph = platform.to_adjacency_dict()
         self.kpn = kpn
         self.platform = platform
@@ -322,9 +322,12 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         adjacency_dict, num_vertices, coloring, self._arch_nc = to_labeled_edge_graph(self._topologyGraph)
         init_app_ncs(self,kpn)
         self._arch_nc_inv = {}
-        self.channels=False
+        self.channels=channels
+        self.boundary_conditions = periodic_boundary_conditions
+        self.p = norm_p
         com_mapper = ComFullMapper(kpn,platform)
         self.list_mapper = ProcPartialMapper(kpn,platform,com_mapper)
+        self.canonical_operations = canonical_operations
 
         for node in self._arch_nc:
             self._arch_nc_inv[self._arch_nc[node]] = node
@@ -364,7 +367,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         return res
 
     def toRepresentation(self,mapping):
-        return self._simpleVec2Elem(mapping.to_list(mapping))
+        return self._simpleVec2Elem(mapping.to_list())
 
     def fromRepresentation(self,mapping):
         #Does not check if canonical. This is deliberate.
@@ -378,7 +381,33 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         return self.fromRepresentation(self._uniformFRomBall(p,r,npoints=npoints))
 
     def distance(self,x,y):
-        return SimpleVectorRepresentation.distance(self,x,y)
+        if self.canonical_operations:
+            return SimpleVectorRepresentation.distance(self, self.toRepresentation(x), self.toRepresentation(y))
+        else:
+            xsv = SimpleVectorRepresentation.toRepresentation(self,x)
+            ysv = SimpleVectorRepresentation.toRepresentation(self,y)
+            return SimpleVectorRepresentation.distance(self,xsv,ysv)
+
+    def crossover(self,m1,m2,k):
+        if self.canonical_operations:
+            return SimpleVectorRepresentation._crossover(self,self.toRepresentation(m1),self.toRepresentation(m2),k)
+        else:
+            xsv = SimpleVectorRepresentation.toRepresentation(self,m1)
+            ysv = SimpleVectorRepresentation.toRepresentation(self,m2)
+            return SimpleVectorRepresentation._crossover(self,xsv,ysv,k)
+
+    def _crossover(self,x,y,k):
+        if self.canonical_operations:
+            xcan = self._simpleVec2Elem(x)
+            ycan = self._simpleVec2Elem(y)
+            xcx,ycx = SimpleVectorRepresentation._crossover(self,xcan,ycan,k)
+            #update manually so that we return DEAP Individuals in DEAP
+            for i in range(len(x)):
+                x[i] = xcx[i]
+                y[i] = ycx[i]
+            return x,y
+        else:
+            return SimpleVectorRepresentation._crossover(self,x,y,k)
 
     def approximate(self,x):
         return SimpleVectorRepresentation.approximate(self,x)
