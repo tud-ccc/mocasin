@@ -1,11 +1,10 @@
-# Copyright (C) 2017-2019 TU Dresden
+# Copyright (C) 2017-2020 TU Dresden
 # All Rights Reserved
 #
 # Authors: Gerald Hempel, Andres Goens
 
 import sys
 import pint
-import hydra
 import random as rand
 import numpy as np
 
@@ -13,7 +12,6 @@ from pykpn.design_centering import sample as dc_sample
 from pykpn.design_centering import oracle
 from pykpn.mapper.partial import ProcPartialMapper
 from pykpn.mapper.random import RandomPartialMapper
-from pykpn.representations import __init__ as reps
 
 from pykpn.util import logging
 
@@ -33,7 +31,7 @@ class PerturbationManager(object):
         seed = random_seed
         self.perturbation_type = perturbation_type
 
-        self.sim = oracle.Simulation(kpn, platform, trace_generator, threshold, threads, seed)
+        self.sim = oracle.Simulation(kpn, platform, trace_generator, threshold, threads)
 
         self.num_mappings = num_mappings
         self.num_perturbations = num_tests

@@ -7,7 +7,11 @@ defaults:
   - platform: default
   - trace: default
   - representation: SimpleVector
-  - design_centering: algorithm
+  - design_centering/algorithm: default
+  - design_centering/oracle: simulation
+  - design_centering/perturbation: classic
+  - design_centering/sample_generator: metric
+  - design_centering/volume: lpvolume
 
 
 record_samples : false
@@ -17,4 +21,5 @@ plot_perturbations : false
 out_dir : ./
 perturbations_out : perturbation_plot.pdf
 random_seed : 42
+threshold : ???
 

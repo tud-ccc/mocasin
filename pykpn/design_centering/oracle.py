@@ -28,42 +28,43 @@ class Oracle(object):
         self.oracle_type = oracle_type
 
         if oracle_type == "TestSet":
-            type(self).oracle = TestSet()
+            self.oracle = TestSet()
         elif oracle_type == "TestTwoPrKPN":
-            type(self).oracle = TestTwoPrKPN()
+            self.oracle = TestTwoPrKPN()
         elif oracle_type == "simulation":
-            type(self).oracle = Simulation(kpn, platform, trace_generator, threshold, threads=1)
+            self.oracle = Simulation(kpn, platform, trace_generator, threshold, threads=1)
         else:
              log.error("Error, unknown oracle:" + oracle_type)
              exit(1)
 
     def validate(self, sample):
         """ check whether a single sample is feasible """
-        res = type(self).oracle.is_feasible(sample.sample2simpleTuple)
+        res = self.oracle.is_feasible(sample.sample2simpleTuple)
+        return res
 
     def validate_set(self, samples):
         """ check whether a set of samples is feasible """
         # extra switch for evaluation of static sets vs. simulation
         res = []
-        self.oracle.prepare_sim_contexts_for_samples(samples)
+        self.prepare_sim_contexts_for_samples(samples)
 
         for s in samples:
             mapping = tuple(s.getMapping().to_list())
-            if mapping in self.oracle.cache:
+            if mapping in self.cache:
                 log.debug(f"skipping simulation for mapping {mapping}: cached.")
-                s.sim_context.exec_time = self.oracle.cache[mapping]
+                s.sim_context.exec_time = self.cache[mapping]
 
         if self.oracle_type != "simulation":
             for s in samples:
-                res.append(type(self).oracle.is_feasible(s.sample2simpleTuple))
+                res.append(self.is_feasible(s.sample2simpleTuple))
         else:
-            res = type(self).oracle.is_feasible(samples)
+            res = self.is_feasible(samples)
 
         return res
 
-class Simulation(object):
+class Simulation(Oracle):
     """ simulation code """
-    def __init__(self, kpn, platform, trace_generator, threshold, threads):
+    def __init__(self, kpn, platform, trace_generator, threshold, threads=1):
         self.kpn = kpn
         self.platform = platform
         self.trace_generator = trace_generator
@@ -74,6 +75,7 @@ class Simulation(object):
         self.threshold = threshold
         self.cache = {}
         self.total_cached = 0
+        self.oracle_type = 'simulation'
 
     def prepare_sim_contexts_for_samples(self, samples):
         """ Prepare simualtion/application context and mapping for a each element in `samples`. """
@@ -159,7 +161,7 @@ class Simulation(object):
         return sample
 
 # This is a temporary test class
-class TestSet(object):
+class TestSet(Oracle):
     # specify a fesability test set
     def is_feasible(self, s):
         """ test oracle function (2-dim) """
@@ -181,7 +183,7 @@ class TestSet(object):
             return False
 
 
-class TestTwoPrKPN():
+class TestTwoPrKPN(Oracle):
     def is_feasible(self,s):
          """ test oracle function (2-dim) """
          if (len(s) != 2):

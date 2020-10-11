@@ -14,10 +14,7 @@ import numpy as np
 import sys
 
 from pykpn.design_centering import sample as dc_sample
-from pykpn.design_centering import oracle as o
 from pykpn.design_centering import util as dc_util
-from pykpn.design_centering import perturbation_manager as p
-import pykpn.representations as reps
 
 log = logging.getLogger(__name__)
 
@@ -43,11 +40,12 @@ def dc_task(cfg):
     #     log.warn("DC Flow just supports one appilcation. The rest will be ignored")
     #app_config = (gconf.system[app_pl]['sconf'], setting) #TODO: where is this being read?
 
+    threshold = cfg['threshold']
     kpn = hydra.utils.instantiate(cfg['kpn'])
     platform = hydra.utils.instantiate(cfg['platform'])
     trace = hydra.utils.instantiate(cfg['trace'])
     representation = hydra.utils.instantiate(cfg['representation'],kpn,platform)
-    oracle = hydra.utils.instantiate(cfg['design_centering']['oracle'])
+    oracle = hydra.utils.instantiate(cfg['design_centering']['oracle'],kpn,platform,trace,threshold)
 
     # starting volume (init):
     # this should be doable via hydra too
@@ -73,8 +71,12 @@ def dc_task(cfg):
     log.info(f"Starting with center: {starting_center.to_list()}")
     #center = dc_sample.Sample(center)
 
-    v = hydra.utils.instantiate(cfg['design_centering']['volume'],kpn,platform,representation)
-    dc = hydra.utils.instantiate(cfg['design_centering']['algorithm'],v, oracle, representation)
+    v = hydra.utils.instantiate(cfg['design_centering']['volume'],
+                                kpn,platform,representation,starting_center)
+    sg = hydra.utils.instantiate(cfg['design_centering']['sample_generator'],
+                                 representation)
+    dc = hydra.utils.instantiate(cfg['design_centering']['algorithm'],
+                                 v, oracle,sg, representation)
     center, history = dc.ds_explore()
     centers = history['centers']
     samples = history['samples']
@@ -117,8 +119,8 @@ def dc_task(cfg):
     if cfg['run_perturbation']:
         log.info("==== Run Perturbation Test ====")
 
-        pm = hydra.utils.instantiate(cfg['design_centering']['perturbation_manager'],
-                                     kpn,platform,trace,representation)
+        pm = hydra.utils.instantiate(cfg['design_centering']['perturbation'],
+                                     kpn,platform,trace,representation,threshold)
 
         map_set = pm.create_randomMappings()
 

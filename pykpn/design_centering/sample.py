@@ -169,7 +169,6 @@ class VectorSpaceSample(Sample):
 
 class MetricSpaceSampleGen(SampleGenerator):
     def __init__(self, representation):
-        super().__init__(None)
         self.representation = representation
 
     def gen_sample_in_vol(self, vol, distr):
