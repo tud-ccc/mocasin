@@ -3,7 +3,6 @@
 #
 # Author: Andres Goens
 
-from enum import Enum
 import numpy as np
 from numpy.random import randint
 from copy import deepcopy
@@ -19,8 +18,8 @@ from pykpn.mapper.partial import ProcPartialMapper, ComFullMapper
 
 from .metric_spaces import FiniteMetricSpace, FiniteMetricSpaceSym, FiniteMetricSpaceLP, FiniteMetricSpaceLPSym, arch_graph_to_distance_metric
 from .embeddings import MetricSpaceEmbedding
-import pykpn.representations.automorphisms as aut
-import pykpn.representations.permutations as perm
+from .automorphisms import to_labeled_edge_graph, edge_to_node_autgrp, list_to_tuple_permutation
+from .permutations import Permutation, PermutationGroup
 import pykpn.util.random_distributions.lp as lp
 from pykpn.util import logging
 log = logging.getLogger(__name__)
@@ -320,7 +319,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         self.kpn = kpn
         self.platform = platform
         self._d = len(kpn.processes())
-        adjacency_dict, num_vertices, coloring, self._arch_nc = aut.to_labeled_edge_graph(self._topologyGraph)
+        adjacency_dict, num_vertices, coloring, self._arch_nc = to_labeled_edge_graph(self._topologyGraph)
         init_app_ncs(self,kpn)
         self._arch_nc_inv = {}
         self.channels=False
@@ -334,10 +333,10 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         n = len(self.platform.processors())
         nautygraph = pynauty.Graph(num_vertices,True,adjacency_dict, coloring)
         autgrp_edges = pynauty.autgrp(nautygraph)
-        autgrp, new_nodes_correspondence = aut.edge_to_node_autgrp(autgrp_edges[0],self._arch_nc)
-        permutations_lists = map(aut.list_to_tuple_permutation,autgrp)
-        permutations = [perm.Permutation(p,n= n) for p in permutations_lists]
-        self._G = perm.PermutationGroup(permutations)
+        autgrp, new_nodes_correspondence = edge_to_node_autgrp(autgrp_edges[0],self._arch_nc)
+        permutations_lists = map(list_to_tuple_permutation,autgrp)
+        permutations = [Permutation(p,n= n) for p in permutations_lists]
+        self._G = PermutationGroup(permutations)
 
     def changed_parameters(self):
         return False
@@ -397,7 +396,7 @@ class MetricSymmetryRepresentation(FiniteMetricSpaceLPSym, metaclass=MappingRepr
         self._d = len(kpn.processes())
         M_matrix, self._arch_nc, self._arch_nc_inv = arch_graph_to_distance_metric(self._topologyGraph)
         M = FiniteMetricSpace(M_matrix)
-        adjacency_dict, num_vertices, coloring, self._arch_nc = aut.to_labeled_edge_graph(self._topologyGraph)
+        adjacency_dict, num_vertices, coloring, self._arch_nc = to_labeled_edge_graph(self._topologyGraph)
         init_app_ncs(self,kpn)
         self._arch_nc_inv = {}
         for node in self._arch_nc:
@@ -407,10 +406,10 @@ class MetricSymmetryRepresentation(FiniteMetricSpaceLPSym, metaclass=MappingRepr
         n = len(self.platform.processors())
         nautygraph = pynauty.Graph(num_vertices,True,adjacency_dict, coloring)
         autgrp_edges = pynauty.autgrp(nautygraph)
-        autgrp, new_nodes_correspondence = aut.edge_to_node_autgrp(autgrp_edges[0],self._arch_nc)
-        permutations_lists = map(aut.list_to_tuple_permutation,autgrp)
-        permutations = [perm.Permutation(p,n= n) for p in permutations_lists]
-        self._G = perm.PermutationGroup(permutations)
+        autgrp, new_nodes_correspondence = edge_to_node_autgrp(autgrp_edges[0],self._arch_nc)
+        permutations_lists = map(list_to_tuple_permutation,autgrp)
+        permutations = [Permutation(p,n= n) for p in permutations_lists]
+        self._G = PermutationGroup(permutations)
         FiniteMetricSpaceLPSym.__init__(self,M,self._G,self._d)
         self.p = 1
 
@@ -538,13 +537,13 @@ class SymmetryEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRep
         init_app_ncs(self,kpn)
         n = len(self.platform.processors())
         M_matrix, self._arch_nc, self._arch_nc_inv = arch_graph_to_distance_metric(self._topologyGraph)
-        adjacency_dict, num_vertices, coloring, self._arch_nc = aut.to_labeled_edge_graph(self._topologyGraph)
+        adjacency_dict, num_vertices, coloring, self._arch_nc = to_labeled_edge_graph(self._topologyGraph)
         nautygraph = pynauty.Graph(num_vertices,True,adjacency_dict, coloring)
         autgrp_edges = pynauty.autgrp(nautygraph)
-        autgrp, new_nodes_correspondence = aut.edge_to_node_autgrp(autgrp_edges[0],self._arch_nc)
-        permutations_lists = map(aut.list_to_tuple_permutation,autgrp)
-        permutations = [perm.Permutation(p,n= n) for p in permutations_lists]
-        self._G = perm.PermutationGroup(permutations)
+        autgrp, new_nodes_correspondence = edge_to_node_autgrp(autgrp_edges[0],self._arch_nc)
+        permutations_lists = map(list_to_tuple_permutation,autgrp)
+        permutations = [Permutation(p,n= n) for p in permutations_lists]
+        self._G = PermutationGroup(permutations)
         M = FiniteMetricSpace(M_matrix)
         self._M = FiniteMetricSpaceLPSym(M,self._G,self._d)
         self._M._populateD()
