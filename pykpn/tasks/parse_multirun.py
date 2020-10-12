@@ -16,7 +16,11 @@ _parsers = {
     'mapper_statistics': (
        'pykpn.mapper.utils',
        'statistics_parser',
-       'Parses the statistics file from a mapper'),
+       'Parses the statistics file from a mapper.'),
+    'best_mapping_time': (
+        'pykpn.mapper.utils',
+        'best_time_parser',
+        'Parses the execution time from the best mapping found.'),
 }
 
 def available_parsers():
@@ -59,5 +63,5 @@ def parse_multirun(cfg):
         print("parse_multirun usage: pykpn parse_multirun path=<multirun_root_directory> parsers=[<parser list>]\n")
         print("For example, to look at the mapper statistics after a multirun mapping:")
         print("pykpn path=parse_multirun examples/multirun/1999-12-31-23-59-59 parsers=[mapper_statistics]")
-
-
+        print("-------------------------------------------------------------------------------------------\n")
+        raise(Exception)
