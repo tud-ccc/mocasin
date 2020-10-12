@@ -2,7 +2,7 @@
 
 _target_: pykpn.mapper.random_walk.RandomWalkMapper
 num_iterations : 100
-progress :  false
+progress :  true
 radius : 5.0
 random_seed : null
 record_statistics: true

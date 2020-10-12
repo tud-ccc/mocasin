@@ -7,6 +7,6 @@ random_seed : 42
 record_statistics: true
 dump_cache: false
 chunk_size : 10
-progress : false
+progress : true
 parallel : true
 jobs : 2
