@@ -127,7 +127,7 @@ class SimulatedAnnealingMapper(object):
         iter = 0
         temperature = self.initial_temperature
         if self.progress:
-            pbar = tqdm.tqdm(total=self.max_rejections)
+            pbar = tqdm.tqdm(total=self.max_rejections*20)
 
         while rejections < self.max_rejections:
             temperature = self.temperature_cooling(temperature,iter)
@@ -157,6 +157,7 @@ class SimulatedAnnealingMapper(object):
             if self.progress:
                 pbar.update(1)
         if self.progress:
+            pbar.update(self.max_rejections*20-iter)
             pbar.close()
 
         self.simulation_manager.statistics.log_statistics()
