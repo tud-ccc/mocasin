@@ -413,7 +413,8 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
             return SimpleVectorRepresentation._crossover(self,x,y,k)
 
     def approximate(self,x):
-        return SimpleVectorRepresentation.approximate(self,x)
+        approx = SimpleVectorRepresentation.approximate(self,x)
+        return self._simpleVec2Elem(approx)
 
 #FIXME: UNTESTED!!
 class MetricSymmetryRepresentation(FiniteMetricSpaceLPSym, metaclass=MappingRepresentation):

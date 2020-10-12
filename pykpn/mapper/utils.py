@@ -253,7 +253,6 @@ def statistics_parser(dir):
    return results,list(results.keys())
 
 def best_time_parser(dir):
-    results = {}
     with open(os.path.join(dir, "best_time.txt"), 'r') as f:
         exec_time = float(f.readline())
     results = {'best_mapping_time' : exec_time}
