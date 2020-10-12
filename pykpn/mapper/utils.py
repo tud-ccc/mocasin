@@ -123,6 +123,7 @@ class SimulationManager(object):
         lookups = [self.lookup(t) for t in tup]
         num = len([m for m in lookups if m])
         log.info(f"{num} from cache.")
+        self.statistics.mappings_cached(num)
 
         #if all were already cached, return them
         if num == len(tup):
