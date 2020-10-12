@@ -143,7 +143,10 @@ class TabuSearchMapper(object):
         """ Generates a full mapping using gradient descent
         """
         mapping_obj = self.random_mapper.generate_mapping()
-        cur_mapping = self.representation.toRepresentation(mapping_obj)
+        if hasattr(self.representation,'canonical_operations') and not self.representation.canonical_operations:
+            cur_mapping = self.representation.toRepresentationNoncanonical(mapping_obj)
+        else:
+            cur_mapping = self.representation.toRepresentation(mapping_obj)
 
         best_mapping = cur_mapping
         best_exec_time = self.simulation_manager.simulate([cur_mapping])[0]

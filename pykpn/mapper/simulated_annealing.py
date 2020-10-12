@@ -110,7 +110,10 @@ class SimulatedAnnealingMapper(object):
         """ Generates a full mapping using simulated anealing
         """
         mapping_obj = self.random_mapper.generate_mapping()
-        mapping = self.representation.toRepresentation(mapping_obj)
+        if hasattr(self.representation,'canonical_operations') and not self.representation.canonical_operations:
+            mapping = self.representation.toRepresentationNoncanonical(mapping_obj)
+        else:
+            mapping = self.representation.toRepresentation(mapping_obj)
 
         last_mapping = mapping
         last_exec_time = self.simulation_manager.simulate([mapping])[0]

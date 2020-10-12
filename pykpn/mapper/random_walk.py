@@ -98,7 +98,10 @@ class RandomWalkMapper(object):
         for i in range(0, self.num_iterations):
             mapping = self.random_mapper.generate_mapping()
             mappings.append(mapping)
-        tup = list(map(self.representation.toRepresentation, mappings))
+        if hasattr(self.representation,'canonical_operations') and not self.representation.canonical_operations:
+            tup = list(map(self.representation.toRepresentationNoncanonical, mappings))
+        else:
+            tup = list(map(self.representation.toRepresentation, mappings))
         exec_times = self.simulation_manager.simulate(tup)
         best_result_idx = exec_times.index(min(exec_times))
         best_result = mappings[best_result_idx]

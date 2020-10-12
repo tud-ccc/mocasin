@@ -369,6 +369,9 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
     def toRepresentation(self,mapping):
         return self._simpleVec2Elem(mapping.to_list())
 
+    def toRepresentationNoncanonical(self,mapping):
+        return SimpleVectorRepresentation.toRepresentation(self,mapping)
+
     def fromRepresentation(self,mapping):
         #Does not check if canonical. This is deliberate.
         mapping_obj = self.list_mapper.generate_mapping(mapping)

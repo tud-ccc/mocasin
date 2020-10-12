@@ -161,7 +161,10 @@ class GeneticMapper(object):
 
     def random_mapping(self):
         mapping = self.random_mapper.generate_mapping()
-        as_rep = self.representation.toRepresentation(mapping)
+        if hasattr(self.representation,'canonical_operations') and not self.representation.canonical_operations:
+            as_rep = self.representation.toRepresentationNoncanonical(mapping)
+        else:
+            as_rep = self.representation.toRepresentation(mapping)
         return list(as_rep)
 
     def mapping_crossover(self,m1,m2):
