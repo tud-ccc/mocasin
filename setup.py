@@ -30,6 +30,7 @@ install_requirements = [
     'sortedcontainers',
     'networkx',
     'recordclass',
+    'pyyaml'
 ]
 setup_requirements = ['pytest-runner', 'sphinx', 'numpy']
 

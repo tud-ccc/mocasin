@@ -92,6 +92,10 @@ _tasks = {
         'visualize',
         'visualize',
         "Visualize a mapping in the GUI"),
+    'parse_multirun': (
+        'parse_multirun',
+        'parse_multirun',
+        "Parse the directory structure after executing a multirun job"),
 }
 """A dictionary that maps task names to descriptors of callable functions."""
 

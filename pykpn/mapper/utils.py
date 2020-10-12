@@ -4,7 +4,7 @@
 # Authors: Andrés Goens, Felix Teweleit
 
 import timeit
-import hydra
+import os
 import multiprocessing as mp
 import numpy as np
 from copy import deepcopy
@@ -233,3 +233,19 @@ class DerivedPrimitive:
         self.cost = self.write_cost + self.read_cost
 
         self.ref_primitive = ref_prim
+
+def statistics_parser(dir):
+   results = {}
+   with open(os.path.join(dir,"statistics.txt"),'r') as f:
+       results['processes_in_task'] = int(f.readline().replace("Processes: ",''))
+       results['mappings_cached'] = int(f.readline().replace("Mappings cached: ",''))
+       results['mappings_evaluated'] = int(f.readline().replace("Mappings evaluated: ",''))
+       results['time_simulating'] = float(f.readline().replace("Time spent simulating: ",''))
+       results['time_representation'] = float(f.readline().replace("Representation time: ",''))
+       results['representation_init_time'] = float(f.readline().replace("Representation initialization time: ",''))
+   return results,list(results.keys())
+
+
+
+
+
