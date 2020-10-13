@@ -228,7 +228,7 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         return self.distance(x,y)
 
     def approximate(self,x):
-        approx = np.around(x)
+        approx = np.rint(x).astype(int)
         P = len(list(self.platform._processors.keys()))
         if self.boundary_conditions:
             res = list(map(lambda t : t % P,approx))
