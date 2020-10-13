@@ -25,8 +25,11 @@ class DesignerPlatformCoolidge(Platform):
         designer.newElement('coolidge')
 
         #create five chips with 16 cores, NoC, +Security Core
+        clusters = []
         for i in range(5):
-            designer.newElement('cluster_{0}'.format(i))
+            cluster = 'cluster_{0}'.format(i)
+            designer.newElement(cluster)
+            clusters.append(cluster)
 
             designer.addPeClusterForProcessor(f'cluster_{i}_0', processor_0, 16)
 
@@ -49,7 +52,7 @@ class DesignerPlatformCoolidge(Platform):
 
             designer.finishElement()
 
-        designer.addCommunicationResource("RAM", ['chip_0', 'chip_1', 'chip_2', 'chip_3', 'chip_4'],
+        designer.addCommunicationResource("RAM", clusters,
                                           1000, 3000, float('inf'), float('inf'), frequencyDomain=10000)
 
         designer.finishElement()

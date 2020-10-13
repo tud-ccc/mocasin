@@ -14,7 +14,7 @@ class DesignerPlatformMultiCluster(Platform):
         #woraround for Hydra < 1.1
         if not isinstance(processor_0,Processor):
             processor_0 = instantiate(processor_0)
-        if not isinstance(processor_0,Processor):
+        if not isinstance(processor_1,Processor):
             processor_1 = instantiate(processor_1)
 
         designer = PlatformDesigner(self)
