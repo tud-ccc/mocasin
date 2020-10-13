@@ -40,7 +40,7 @@ def expected_dir(request):
 def slx_platform(request):
     return request.param
 
-@pytest.fixture(params=["exynos990", "generic_bus", "generic_mesh", "mppa_coolidge","multi_cluster","designer_odroid"])
+@pytest.fixture(params=["exynos990", "designer_bus", "generic_mesh", "mppa_coolidge","multi_cluster","designer_odroid"])
 def designer_platform(request):
     return request.param
 
