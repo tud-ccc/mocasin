@@ -39,7 +39,7 @@ def load_parser(name):
    """
 
    if name not in _parsers:
-       log.error(f"Unknown parser: {name}. Available parsers are:" + available_parsers())
+       log.error(f"Unknown parser: {name}. Available parsers are:\n\n" + available_parsers())
        raise RuntimeError()
 
    else:
