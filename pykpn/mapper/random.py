@@ -18,17 +18,23 @@ class RandomPartialMapper(object):
     platform and KPN application.
     """
 
-    def __init__(self, kpn, platform, seed=None):
+    def __init__(self, kpn, platform, seed=None, support_first=False):
         """Generates a random mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
         :type kpn: KpnGraph
         :param platform: a platform
         :type platform: Platform
+        :param seed: a random seed for the RNG
+        :type seed: int
+        :param support_first: Changes the generation method to first choose processors,
+        and then assign processes only to those processors
+        :type support_first: bool
         """
         if seed is not None:
             random.seed(seed)
         self.seed = seed
+        self.support_first = support_first
         self.full_mapper = True
         self.platform = platform
         self.kpn = kpn
@@ -56,14 +62,20 @@ class RandomPartialMapper(object):
                                part_mapping.platform.name, part_mapping.kpn.name,
                                self.platform.name, self.kpn.name)
 
+        available_processors = list(self.platform.processors())
+        if self.support_first:
+            num = random.randint(1,len(available_processors))
+            available_processors = random.sample(available_processors,num)
+
         # map processes
         processes = part_mapping.get_unmapped_processes()
         #print("remaining process list: {}".format(processes))
         for p in processes:
             i = random.randrange(0, len(self.platform.schedulers()))
             scheduler = list(self.platform.schedulers())[i]
-            i = random.randrange(0, len(scheduler.processors))
-            affinity = scheduler.processors[i]
+            processors = [proc for proc in scheduler.processors if proc in available_processors]
+            i = random.randrange(0, processors)
+            affinity = processors[i]
             priority = random.randrange(0, 20)
             info = ProcessMappingInfo(scheduler, affinity, priority)
             part_mapping.add_process_info(p, info)

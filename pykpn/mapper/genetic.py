@@ -81,7 +81,7 @@ class GeneticMapper(object):
         self.full_mapper = True # flag indicating the mapper type
         self.kpn = kpn
         self.platform = platform
-        self.random_mapper = RandomPartialMapper(self.kpn, self.platform, seed=None)
+        self.random_mapper = RandomPartialMapper(self.kpn, self.platform, support_first=objective_num_resources)
         self.crossover_rate = crossover_rate
         self.exec_time = objective_exec_time
         self.num_resources = objective_num_resources
@@ -92,6 +92,7 @@ class GeneticMapper(object):
         self.mupluslambda = mupluslambda
         self.dump_cache = dump_cache
         self.radius = radius
+        self.progress = progress
         if not self.exec_time and not self.num_resources:
             raise RuntimeError("Trying to initalize genetic algorithm without objectives")
 
@@ -195,18 +196,17 @@ class GeneticMapper(object):
         num_gens = self.num_gens
         cxpb = self.cxpb
         mutpb = self.mutpb
-
         population = self.population
 
         if self.mupluslambda:
             population, logbook = deap.algorithms.eaMuPlusLambda(population, toolbox, mu=pop_size, lambda_=3*pop_size,
                                                                  cxpb=cxpb, mutpb=mutpb, ngen=num_gens, stats=stats,
-                                                                 halloffame=hof, verbose=False)
+                                                                 halloffame=hof, verbose=self.progress)
             log.info(logbook.stream)
         else:
             population, logbook = deap.algorithms.eaMuCommaLambda(population, toolbox, mu=pop_size, lambda_=3*pop_size,
                                                                   cxpb=cxpb, mutpb=mutpb, ngen=num_gens, stats=stats,
-                                                                  halloffame=hof, verbose=False)
+                                                                  halloffame=hof, verbose=self.progress)
             log.info(logbook.stream)
 
         return population,logbook,hof
