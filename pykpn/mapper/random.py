@@ -71,11 +71,20 @@ class RandomPartialMapper(object):
         processes = part_mapping.get_unmapped_processes()
         #print("remaining process list: {}".format(processes))
         for p in processes:
-            i = random.randrange(0, len(self.platform.schedulers()))
-            scheduler = list(self.platform.schedulers())[i]
-            processors = [proc for proc in scheduler.processors if proc in available_processors]
-            i = random.randrange(0, processors)
-            affinity = processors[i]
+            affinity = None
+            max_tries = 0
+            while affinity is None and max_tries < 100:
+                i = random.randrange(0, len(self.platform.schedulers()))
+                scheduler = list(self.platform.schedulers())[i]
+                processors = [proc for proc in scheduler.processors if proc in available_processors]
+                if len(processors) == 0:
+                    max_tries += 1
+                    continue
+                i = random.randrange(0, len(processors))
+                affinity = processors[i]
+            if max_tries == 100:
+                raise RuntimeError(f"Could not find an appropriate scheduler for any of the processors: {available_processors}")
+
             priority = random.randrange(0, 20)
             info = ProcessMappingInfo(scheduler, affinity, priority)
             part_mapping.add_process_info(p, info)
