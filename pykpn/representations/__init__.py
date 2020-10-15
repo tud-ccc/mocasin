@@ -5,7 +5,7 @@
 
 import numpy as np
 from numpy.random import randint
-from copy import deepcopy
+from copy import copy
 import random
 import timeit
 
@@ -63,7 +63,7 @@ class MappingRepresentation(type):
             cls._instances[(cls, kpn_names, platform.name)] = super(MappingRepresentation, cls).__call__(*args, **kwargs)
             log.info(f"Initializing representation {cls} of kpn with processes: {kpn_names} on platform {platform.name}")
 
-        instance = deepcopy(cls._instances[(cls,kpn_names,platform.name)])
+        instance = copy(cls._instances[(cls,kpn_names,platform.name)])
         instance.kpn = kpn
         instance.platform = platform
         com_mapper = ComFullMapper(kpn,platform)
