@@ -12,3 +12,5 @@ processor_1:
   _target_: pykpn.platforms.platformDesigner.genericProcessor
   type : 'proc_type_1'
   frequency : 2000000000
+num_big : 4
+num_little : 4

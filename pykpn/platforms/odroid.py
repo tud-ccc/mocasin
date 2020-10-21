@@ -10,7 +10,7 @@ from pykpn.platforms.platformDesigner import PlatformDesigner
 from hydra.utils import instantiate
 
 class DesignerPlatformOdroid(Platform):
-    def __init__(self, processor_0, processor_1, name="odroid"):
+    def __init__(self, processor_0, processor_1, num_big=4, num_little=4,name="odroid"):
 
         #workaraound for Hydra < 1.1
         if not isinstance(processor_0,Processor):
@@ -35,7 +35,7 @@ class DesignerPlatformOdroid(Platform):
         # cluster 0 with l2 cache
         designer.addPeClusterForProcessor("cluster_a7",
                                           processor_0,
-                                          4)
+                                          num_little)
         # Add L1/L2 caches
         designer.addCacheForPEs("cluster_a7", 1, 0, 8.0, float('inf'), frequencyDomain=1400000000.0, name='L1_A7')
         designer.addCommunicationResource("L2_A7",
@@ -49,7 +49,7 @@ class DesignerPlatformOdroid(Platform):
         # cluster 1, with l2 cache
         designer.addPeClusterForProcessor("cluster_a15",
                                           processor_1,
-                                          4)
+                                          num_big)
         # Add L1/L2 caches
         designer.addCacheForPEs("cluster_a15", 1, 4, 8.0, 8.0, frequencyDomain=2000000000.0, name='L1_A15')
         designer.addCommunicationResource("L2_A15",
