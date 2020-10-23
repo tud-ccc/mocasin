@@ -3,12 +3,6 @@ from pykpn.common.mapping import Mapping
 from pykpn.common.trace import TraceSegment
 import pytest
 
-@pytest.fixture
-def conf():
-    return {'periodic_boundary_conditions' : True,
-            'representation' : 'SimpleVector', 'channels' : False,
-            }
-
 class MockTraceGenerator(object):
     def __init__(self,proc_names,core_types,lookup_function,max_length=1):
         self.cores = core_types
@@ -54,8 +48,8 @@ def test_gen_trace_summary(kpn,platform):
                     assert (other_core == core and other_proc == proc and val == (num_iter-1)*const_value) or (val == 0)
 
 
-def test_map_to_core(kpn,platform,conf):
-    cfs = StaticCFS(platform,conf)
+def test_map_to_core(kpn,platform):
+    cfs = StaticCFS(platform)
     for core in platform.processors():
         for proc in kpn.processes():
             mapping = Mapping(kpn,platform)

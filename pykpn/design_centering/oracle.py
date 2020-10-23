@@ -5,7 +5,6 @@
 
 import traceback
 import pint
-import hydra
 from sys import exit
 
 from copy import deepcopy
@@ -19,96 +18,64 @@ from pykpn.util import logging
 
 log = logging.getLogger(__name__)
 
-
-# https://stackoverflow.com/questions/4984647/accessing-dict-keys-like-an-attribute
-class AttrDict(dict):
-    def __init__(self, *args, **kwargs):
-        super(AttrDict, self).__init__(*args, **kwargs)
-        self.__dict__ = self
-
-
 class Oracle(object):
-    def __init__(self, oracle_type, kpn=None,
-                                    platform=None,
-                                    trace_generator=None,
-                                    threshold=None,
-                                    threads=None,
-                                    seed=None):
+    def __init__(self, oracle_type, kpn,
+                                    platform,
+                                    trace_generator,
+                                    threshold,
+                                    threads=None):
 
-        #self.config = AttrDict(config)
         self.oracle_type = oracle_type
 
         if oracle_type == "TestSet":
-            type(self).oracle = TestSet()
+            self.oracle = TestSet()
         elif oracle_type == "TestTwoPrKPN":
-            type(self).oracle = TestTwoPrKPN()
+            self.oracle = TestTwoPrKPN()
         elif oracle_type == "simulation":
-            type(self).oracle = Simulation(kpn, platform, trace_generator, threshold, threads, seed)
+            self.oracle = Simulation(kpn, platform, trace_generator, threshold, threads=1)
         else:
              log.error("Error, unknown oracle:" + oracle_type)
              exit(1)
 
     def validate(self, sample):
         """ check whether a single sample is feasible """
-        res = type(self).oracle.is_feasible(sample.sample2simpleTuple)
+        res = self.oracle.is_feasible(sample.sample2simpleTuple)
+        return res
 
     def validate_set(self, samples):
         """ check whether a set of samples is feasible """
         # extra switch for evaluation of static sets vs. simulation
         res = []
-        self.oracle.prepare_sim_contexts_for_samples(samples)
+        self.prepare_sim_contexts_for_samples(samples)
 
         for s in samples:
             mapping = tuple(s.getMapping().to_list())
-            if mapping in self.oracle.cache:
+            if mapping in self.cache:
                 log.debug(f"skipping simulation for mapping {mapping}: cached.")
-                s.sim_context.exec_time = self.oracle.cache[mapping]
+                s.sim_context.exec_time = self.cache[mapping]
 
         if self.oracle_type != "simulation":
             for s in samples:
-                res.append(type(self).oracle.is_feasible(s.sample2simpleTuple))
+                res.append(self.is_feasible(s.sample2simpleTuple))
         else:
-            res = type(self).oracle.is_feasible(samples)
+            res = self.is_feasible(samples)
 
         return res
 
-class OracleFromHydra(Oracle):
-    def __init__(self, config, kpn=None, platform=None, trace_generator=None, threshold=None, threads=None, seed=None):
-        oracle_type = config['oracle']
-
-        if not kpn:
-            kpn = hydra.utils.instantiate(config['kpn'])
-
-        if not platform:
-            platform = hydra.utils.instantiate(config['platform'])
-
-        if not trace_generator:
-            trace_generator = hydra.utils.instantiate(config['trace'])
-
-        if not threshold:
-            threshold = config['threshold']
-
-        if not threads:
-            threads = config['threads']
-
-        if not seed:
-            seed = config['random_seed']
-
-        super(OracleFromHydra, self).__init__(oracle_type, kpn, platform, trace_generator, threshold, threads, seed)
-
-class Simulation(object):
+class Simulation(Oracle):
     """ simulation code """
-    def __init__(self, kpn, platform, trace_generator, threshold, threads, seed):
+    def __init__(self, kpn, platform, trace_generator, threshold, threads=1):
         self.kpn = kpn
         self.platform = platform
         self.trace_generator = trace_generator
-        self.randMapGen = RandomPartialMapper(self.kpn, self.platform, seed)
+        self.randMapGen = RandomPartialMapper(self.kpn, self.platform)
         self.comMapGen = ComPartialMapper(self.kpn, self.platform, self.randMapGen)
         self.dcMapGen = ProcPartialMapper(self.kpn, self.platform, self.comMapGen)
         self.threads = threads
         self.threshold = threshold
         self.cache = {}
         self.total_cached = 0
+        self.oracle_type = 'simulation'
 
     def prepare_sim_contexts_for_samples(self, samples):
         """ Prepare simualtion/application context and mapping for a each element in `samples`. """
@@ -194,7 +161,7 @@ class Simulation(object):
         return sample
 
 # This is a temporary test class
-class TestSet(object):
+class TestSet(Oracle):
     # specify a fesability test set
     def is_feasible(self, s):
         """ test oracle function (2-dim) """
@@ -216,7 +183,7 @@ class TestSet(object):
             return False
 
 
-class TestTwoPrKPN():
+class TestTwoPrKPN(Oracle):
     def is_feasible(self,s):
          """ test oracle function (2-dim) """
          if (len(s) != 2):

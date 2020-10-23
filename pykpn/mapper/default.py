@@ -13,7 +13,7 @@ class DefaultFullMapper:
     """Generates a default mapping by selecting the first available option everywhere
     """
 
-    def __init__(self, kpn, platform, config):
+    def __init__(self, kpn, platform, trace, representation):
         """Generates a default mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph

@@ -48,7 +48,7 @@ def slx_mapper(request):
 def tgff_mapper(request):
     return request.param
 
-@pytest.fixture(params=["SimpleVector", "MetricSpaceEmbedding"])
+@pytest.fixture(params=["SimpleVector", "MetricSpaceEmbedding", "Symmetries"])
 def representation(request):
     return request.param
 

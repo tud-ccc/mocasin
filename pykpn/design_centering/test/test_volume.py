@@ -123,13 +123,12 @@ def test_center_adaptation(vol_mu,num_iter,num_procs,num_samples,Q,r,seed):
 #f = (1+Beta*(1-mu/lambd))^mu * (1-Beta * mu/lambd)^(lambd-mu)
 #plot(f(lambd=1000),(mu,0,1000))
 
-def test_radius_adaptation(vol_mu,num_samples,seed,num_iter,num_procs,dim,Q,r_set,target_p,conf):
+def test_radius_adaptation(vol_mu,num_samples,seed,num_iter,num_procs,dim,Q,r_set,target_p):
     np.random.seed(seed)
     #points = []
     radii = [vol_mu.radius]
     for _ in range(num_iter):
         sample_set = random_s_set_test_radius(vol_mu.radius,vol_mu.center,dim,num_procs,num_samples,Q,r_set) # (r,point,dim,num_procs,num_samples,Q,r_set)
-        conf.adapt_samples=num_samples
         vol_mu.adapt_volume(sample_set,target_p,Mock())
         radii.append(vol_mu.radius)
         #x,y,colors = parse_s_set(sample_set,vol_mu.center,coordinates=[0,1])
@@ -151,7 +150,7 @@ def test_radius_adaptation(vol_mu,num_samples,seed,num_iter,num_procs,dim,Q,r_se
     assert np.isclose(p,target_p,atol=0.1)
 
     
-def test_covariance_adaptation(seed,num_iter,num_samples,r_small,num_procs,vol_mu,Q,Q_not_rotated,conf):
+def test_covariance_adaptation(seed,num_iter,num_samples,r_small,num_procs,vol_mu,Q,Q_not_rotated):
     np.random.seed(seed)
     points = []
     mu = vol_mu.center
@@ -164,7 +163,6 @@ def test_covariance_adaptation(seed,num_iter,num_samples,r_small,num_procs,vol_m
     for _ in range(num_iter):
         #print(f"\n radius: {vol_mu.radius} ;covariance (det: {np.linalg.det(vol_mu.covariance)}): \n {vol_mu.covariance}")
         sample_set = random_s_set_test_covariance(vol_mu.covariance,Q_not_rotated,dim,num_procs,r,vol_mu.center,num_samples)
-        conf.adapt_samples=num_samples
         vol_mu.adapt_volume(sample_set,p_target,Mock())
         if vol_mu.radius > r:
             p_target = 0.9
@@ -179,9 +177,8 @@ def test_covariance_adaptation(seed,num_iter,num_samples,r_small,num_procs,vol_m
     #visualize_s_sets(points)
     
     
-def test_all_infeasible(lp_vol,num_samples,conf):
+def test_all_infeasible(lp_vol,num_samples):
     sample_set = sample.SampleSet()
-    conf.adapt_samples=num_samples
     cov = lp_vol.covariance
     radius = lp_vol.radius
     center = lp_vol.center

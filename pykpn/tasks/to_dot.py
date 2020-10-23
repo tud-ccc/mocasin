@@ -66,9 +66,10 @@ def mapping_to_dot(cfg):
         * **dot:** the output file
     """
     kpn = hydra.utils.instantiate(cfg['kpn'])
-
     platform = hydra.utils.instantiate(cfg['platform'])
-
-    mapping = hydra.utils.instantiate(cfg['mapper'], kpn, platform, cfg).generate_mapping()
+    trace = hydra.utils.instantiate(cfg['trace'])
+    representation = hydra.utils.instantiate(cfg['representation'],kpn,platform)
+    mapping = hydra.utils.instantiate(cfg['mapper'], kpn, platform,
+                                      trace, representation).generate_mapping()
 
     mapping.to_pydot().write_raw(cfg['output_file'])

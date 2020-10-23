@@ -8,12 +8,13 @@ import timeit
 import random
 import numpy as np
 import os
+from hydra.utils import instantiate
 
 from pykpn.mapper.utils import SimulationManager, Statistics
 from pykpn.mapper.random import RandomMapper
 from pykpn.util import logging, plot
 from pykpn.slx.mapping import export_slx_mapping
-from pykpn.representations.representations import RepresentationType
+from pykpn.representations import MappingRepresentation
 
 log = logging.getLogger(__name__)
 
@@ -33,24 +34,43 @@ class RandomWalkMapper(object):
         * **num_operations:** the total number of mappings to be generated
     """
 
-    def __init__(self, kpn, platform, config, num_iterations, progress, export_all, plot_distribution, visualize,
-                 show_plots, radius, random_seed, record_statistics, parallel, dump_cache, chunk_size, jobs):
+    def __init__(self, kpn, platform, trace, representation, num_iterations=100, progress=False,
+                 radius=3.0,random_seed=42, record_statistics=False, parallel=False,
+                 dump_cache=False, chunk_size=10, jobs=1):
         """Generates a random mapping for a given platform and KPN application.
         Args:
-           cfg(~omegaconf.dictconfig.DictConfig): the hydra configuration object
+        :param kpn: a KPN graph
+        :type kpn: KpnGraph
+        :param platform: a platform
+        :type platform: Platform
+        :param trace: a trace generator
+        :type trace: TraceGenerator
+        :param representation: a mapping representation object
+        :type representation: MappingRepresentation
+        :param random_seed: A random seed for the RNG
+        :type random_seed: int
+        :param record_statistics: Record statistics on mappings evaluated?
+        :type record_statistics: bool
+        :param num_iterations: Number of iterations (mappings) in random walk
+        :type num_iterations: int
+        :param rodius: Currently unused.
+        :type radius: float
+        :param dump_cache: Dump the mapping cache?
+        :type dump_cache: bool
+        :param chunk_size: Size of chunks for parallel simulation
+        :type chunk_size: int
+        :param progress: Display simulation progress visually?
+        :type progress: bool
+        :param parallel: Execute simulations in parallel?
+        :type parallel: bool
+        :param jobs: Number of jobs for parallel simulation
+        :type jobs: int
         """
         self.full_mapper = True
         self.kpn = kpn
         self.platform = platform
-        self.random_mapper = RandomMapper(self.kpn, self.platform, config, random_seed=None)
-        self.statistics = Statistics(log, len(self.kpn.processes()), record_statistics)
-        self.out_dir = config['outdir']
-
+        self.random_mapper = RandomMapper(self.kpn, self.platform, trace, representation, random_seed=None)
         self.num_iterations = num_iterations
-        self.export_all = export_all
-        self.plot_distribution = plot_distribution
-        self.show_plots = show_plots
-        self.visualize = visualize
         self.dump_cache = dump_cache
         self.seed = random_seed
         if self.seed == 'None':
@@ -59,21 +79,13 @@ class RandomWalkMapper(object):
             random.seed(self.seed)
             np.random.seed(self.seed)
 
-        rep_type_str = config['representation']
-        if rep_type_str not in dir(RepresentationType):
-            log.exception("Representation " + rep_type_str + " not recognized. Available: " + ", ".join(
-                dir(RepresentationType)))
-            raise RuntimeError('Unrecognized representation.')
-        else:
-            representation_type = RepresentationType[rep_type_str]
-            log.info(f"initializing representation ({rep_type_str})")
-            self.rep_type = representation_type
-
-            representation = (representation_type.getClassType())(self.kpn, self.platform, config)
-
+        # This is a workaround until Hydra 1.1 (with recursive instantiaton!)
+        if not issubclass(type(type(representation)), MappingRepresentation):
+            representation = instantiate(representation,kpn,platform)
         self.representation = representation
 
-        self.simulation_manager = SimulationManager(representation, config)
+        self.simulation_manager = SimulationManager(self.representation, trace,jobs, parallel,
+                                                    progress,chunk_size,record_statistics)
 
     def generate_mapping(self):
         """ Generates a mapping via a random walk
@@ -93,39 +105,6 @@ class RandomWalkMapper(object):
         stop = timeit.default_timer()
         log.info('Tried %d random mappings in %0.1fs' %
                  (len(exec_times), stop - start))
-        # export all mappings if requested
-        idx = 1
-
-        if self.export_all:
-            for mapping in mappings:
-                mapping_name = 'rnd_%08d.mapping' % idx
-                #FIXME: We assume an slx output here, this should be configured
-                export_slx_mapping(mapping, os.path.join(self.out_dir, mapping_name))
-                idx += 1
-
-        # plot result distribution
-        if self.plot_distribution:
-            import matplotlib.pyplot as plt
-            # exec time in milliseconds
-            plt.hist(exec_times, bins=int(self.num_iterations / 20), density=True)
-            plt.yscale('log', nonposy='clip')
-            plt.title("Mapping Distribution")
-            plt.xlabel("Execution Time [ms]")
-            plt.ylabel("Probability")
-
-            if self.show_plots:
-                plt.show()
-
-            plt.savefig("distribution.pdf")
-
-        # visualize searched space
-        if self.visualize:
-
-            plot.visualize_mapping_space(mappings,
-                                         exec_times,
-                                         representation_type=self.rep_type,
-                                         show_plot=self.show_plots, )
-
         self.simulation_manager.statistics.to_file()
         if self.dump_cache:
             self.simulation_manager.dump('mapping_cache.csv')

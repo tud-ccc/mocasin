@@ -4,7 +4,7 @@
 #Authors: Felix Teweleit
 
 from pykpn.common.mapping import Mapping
-from pykpn.representations.representations import RepresentationType
+from pykpn.representations import SymmetryRepresentation
 from arpeggio import OrderedChoice, EOF, PTNodeVisitor, OneOrMore, Optional
 from arpeggio import RegExMatch as _
 from abc import ABC, abstractmethod
@@ -306,7 +306,7 @@ class EqualsConstraint(Constraint):
     def __init__(self, negate, mappingObject, kpn, platform,cfg):
         self.negate = negate
         self.mapping = mappingObject
-        self.lens = RepresentationType['Symmetries'].getClassType()(kpn, platform,cfg)
+        self.lens = SymmetryRepresentation(kpn, platform)
         
     def isFulfilled(self, mapping):
         if isinstance(mapping, Mapping):

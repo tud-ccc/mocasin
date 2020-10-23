@@ -38,18 +38,15 @@ class StaticCFS(object):
     """Base class for mapping using a static method similar to the Linux CFS scheduler.
     See: http://people.redhat.com/mingo/cfs-scheduler/sched-design-CFS.txt
     """
-    def __init__(self, platform, config):
+    def __init__(self, platform):
         """Generates a full mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
         :type kpn: KpnGraph
         :param platform: a platform
         :type platform: Platform
-        :param config: the hyrda configuration
-        :type config: OmniConf
         """
         self.platform = platform
-        self.config = config
         #self.statistics = Statistics()
 
     def generate_mapping_dict(self,kpns,trace_summary,load = None, restricted = None):
@@ -116,15 +113,16 @@ class StaticCFSMapper(StaticCFS):
     """
     Generates a full mapping by using the static CFS method.
     """
-    def __init__(self,kpn,platform,config):
-        super().__init__(platform,config)
+    def __init__(self,kpn,platform,trace,representation):
+        super().__init__(platform)
         self.full_mapper = True # flag indicating the mapper type
         self.kpn = kpn
-        self.randMapGen = RandomPartialMapper(self.kpn, self.platform, config)
+        self.trace = trace
+        self.randMapGen = RandomPartialMapper(self.kpn, self.platform)
         self.comMapGen = ComPartialMapper(self.kpn, self.platform, self.randMapGen)
 
     def generate_mapping(self,load = None, restricted = None):
-        trace_generator = hydra.utils.instantiate(self.config['trace'])
+        trace_generator = self.trace
         trace_summary = gen_trace_summary(self.kpn,self.platform,trace_generator)
         trace_generator.reset()
         mapping = Mapping(self.kpn,self.platform)
@@ -134,8 +132,8 @@ class StaticCFSMapper(StaticCFS):
         return self.comMapGen.generate_mapping(mapping)
 
 class StaticCFSMapperMultiApp(StaticCFS):
-    def __init__(self,platform,config):
-        super().__init__(platform,config)
+    def __init__(self,platform):
+        super().__init__(platform)
 
     def generate_mappings(self,kpns,traces,load = None, restricted = None):
         if len(kpns) == 0:
@@ -146,7 +144,7 @@ class StaticCFSMapperMultiApp(StaticCFS):
         if len(traces) != len(kpns):
             raise RuntimeError(f"Mapper received unbalanced number of traces ({len(traces)}) and applications ({len(kpns)})")
         for kpn in kpns:
-            randMapGen = RandomPartialMapper(kpn, self.platform, self.config)
+            randMapGen = RandomPartialMapper(kpn, self.platform)
             comMapGen[kpn] = ComPartialMapper(kpn, self.platform, randMapGen)
 
         trace_summaries = {}

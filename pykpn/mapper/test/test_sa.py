@@ -29,8 +29,10 @@ def evaluation_function():
     return lambda m : 1 + np.cos(m[0]-m[1]) * np.sin(m[1] * 2-1)
 
 @pytest.fixture
-def mapper(kpn, platform, conf, evaluation_function):
-    m = SimulatedAnnealingMapper(kpn, platform, conf, 42, False, 1.0, 0.01, 0.5, 2, False, 10, False, True, 4)
+def mapper(kpn, platform, trace,representation, evaluation_function):
+    m = SimulatedAnnealingMapper(kpn, platform, trace, representation,
+                                 42, False, 1.0, 0.01, 0.5, 2, False,
+                                 10, False, True, 4)
     m.simulation_manager = MockMappingCache(evaluation_function)
     return m
 

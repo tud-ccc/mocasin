@@ -1,2 +1,6 @@
-# @package _global_
-representation: Symmetries
+# @package _group_
+_target_: pykpn.representations.SymmetryRepresentation
+channels: false
+periodic_boundary_conditions: false
+norm_p: 2
+canonical_operations: false

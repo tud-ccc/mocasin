@@ -8,7 +8,7 @@
 import logging
 import hydra
 
-from pykpn.representations.representations import RepresentationType
+from pykpn.representations import SymmetryRepresentation
 
 log = logging.getLogger(__name__)
 
@@ -17,9 +17,12 @@ log = logging.getLogger(__name__)
 def enumerate_equivalent(cfg):
     kpn = hydra.utils.instantiate(cfg['kpn'])
     platform = hydra.utils.instantiate(cfg['platform'])
-    mapping = hydra.utils.instantiate(cfg['mapper'], kpn, platform, cfg).generate_mapping()
+    trace = hydra.utils.instantiate(cfg['trace'])
+    if cfg['representation']._target_ != 'pykpn.representations.SymmetryRepresentation':
+        raise RuntimeError(f"The enumerate equvialent task needs to be called with the Symmetry representation. Called with {cfg['representation']._target_}")
+    representation = hydra.utils.instantiate(cfg['representation'], kpn, platform)
+    mapping = hydra.utils.instantiate(cfg['mapper'], kpn, platform, trace,representation).generate_mapping()
 
-    representation = RepresentationType['Symmetries'].getClassType()(kpn,platform,cfg)
     log.info(("calculating orbit for mapping:" + str(mapping.to_list())))
     orbit = representation.allEquivalent(mapping.to_list())
     log.info("orbit of size: " + str(len(orbit)))

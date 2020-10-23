@@ -5,33 +5,13 @@ import numpy as np
 from itertools import product
 
 @pytest.fixture
-def conf():
-    return {'mapper': { 'random_seed' : 42,
-                        'record_statistics' : False,
-                        'max_iterations' : 100,
-                        'iteration_size'  : 10,
-                        'tabu_tenure' : 10,
-                        'move_set_size' : 10,
-                        'radius' : 2,
-                        'dump_cache' : False,
-                        'chunk_size' : 10,
-                        'progress' : False,
-                        'parallel' : True,
-                        'jobs' : 4,
-                       },
-            'norm_p' : 2,
-            'representation' : 'SimpleVector',
-            'channels' : False,
-            'periodic_boundary_conditions' : False,
-            }
-
-@pytest.fixture
 def evaluation_function():
     return lambda m : 1 + np.cos(m[0] - m[1]) * np.sin(m[1] * 2-1)
 
 @pytest.fixture
-def mapper(kpn, platform, conf, evaluation_function):
-    m = TabuSearchMapper(kpn, platform, conf, 42, False, 100, 10, 10, 10, 2, False, 10, False, True, 4)
+def mapper(kpn, platform, trace, representation, evaluation_function):
+    m = TabuSearchMapper(kpn, platform, trace, representation,
+    42, False, 100, 10, 10, 10, 2, False, 10, False, True, 4)
     m.simulation_manager = MockMappingCache(evaluation_function)
     return m
 

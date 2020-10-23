@@ -9,11 +9,12 @@ import numpy as np
 import pickle
 
 from pykpn.util import logging
-from pykpn.representations.representations import RepresentationType
 from pykpn.mapper.utils import SimulationManager
 from pykpn.mapper.random import RandomPartialMapper
+from pykpn.representations import MappingRepresentation
 
 from deap import creator, tools, base, algorithms
+from hydra.utils import instantiate
 
 log = logging.getLogger(__name__)
 
@@ -21,26 +22,76 @@ log = logging.getLogger(__name__)
 class GeneticMapper(object):
     """Generates a full mapping by using genetic algorithms.
     """
-    def __init__(self, kpn, platform, config, **kwargs):
+    def __init__(self, kpn, platform, trace, representation,initials = 'random',
+                 objective_num_resources = False, objective_exec_time = True,
+                 pop_size = 10, num_gens = 5, mutpb = 0.5, cxpb = 0.35,
+                 tournsize = 4, mupluslambda = True, crossover_rate = 1,
+                 radius=2.0, random_seed = 42, record_statistics = True,
+                 dump_cache = False, chunk_size = 10, progress = False,
+                 parallel = True, jobs = 4):
         """Generates a partial mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
         :type kpn: KpnGraph
         :param platform: a platform
         :type platform: Platform
-        :param config: the hyrda configuration
-        :type fullGererator: OmniConf
+        :param trace: a trace generator
+        :type trace: TraceGenerator
+        :param representation: a mapping representation object
+        :type representation: MappingRepresentation
+        :param initials: what initial population to use (e.g. random)
+        :type initials: string
+        :param objective_num_resources: Use number of resources as an optimization objective?
+        :type objective_num_resources: bool
+        :param objective_exec_time: Use execution time as an optimization objective?
+        :type objective_exec_time: bool
+        :param pop_size: Population size
+        :type pop_size: int
+        :param num_gens: Number of generations
+        :type num_gens: int
+        :param mutpb: Probability of mutation
+        :type mutpb: float
+        :param cxpb: Crossover probability
+        :type cxpb: float
+        :param tournsize: Size of tournament for selection
+        :type tournsize: int
+        :param mupluslambda: Use mu+lambda algorithm? if False: mu,lambda
+        :type mupluslambda: bool
+        :param crossover_rate: The number of crossovers in the crossover operator
+        :type crossover_rate: int
+        :param radius: The radius for searching mutations
+        :type radius: float
+        :param random_seed: A random seed for the RNG
+        :type random_seed: int
+        :param record_statistics: Record statistics on mappings evaluated?
+        :type record_statistics: bool
+        :param dump_cache: Dump the mapping cache?
+        :type dump_cache: bool
+        :param chunk_size: Size of chunks for parallel simulation
+        :type chunk_size: int
+        :param progress: Display simulation progress visually?
+        :type progress: bool
+        :param parallel: Execute simulations in parallel?
+        :type parallel: bool
+        :param jobs: Number of jobs for parallel simulation
+        :type jobs: int
         """
-        self.config = config['mapper']
-        random.seed(self.config['random_seed'])
-        np.random.seed(self.config['random_seed'])
+        random.seed(random_seed)
+        np.random.seed(random_seed)
         self.full_mapper = True # flag indicating the mapper type
         self.kpn = kpn
         self.platform = platform
         self.random_mapper = RandomPartialMapper(self.kpn, self.platform, seed=None)
-        self.crossover_rate = self.config['crossover_rate']
-        self.exec_time = self.config['objective_exec_time']
-        self.num_resources = self.config['objective_num_resources']
+        self.crossover_rate = crossover_rate
+        self.exec_time = objective_exec_time
+        self.num_resources = objective_num_resources
+        self.pop_size = pop_size
+        self.num_gens = num_gens
+        self.mutpb = mutpb
+        self.cxpb = cxpb
+        self.mupluslambda = mupluslambda
+        self.dump_cache = dump_cache
+        self.radius = radius
         if not self.exec_time and not self.num_resources:
             raise RuntimeError("Trying to initalize genetic algorithm without objectives")
 
@@ -48,20 +99,12 @@ class GeneticMapper(object):
             log.error("Crossover rate cannot be higher than number of processes in application")
             raise RuntimeError("Invalid crossover rate")
 
-        rep_type_str = config['representation']
-
-        if rep_type_str not in dir(RepresentationType):
-            log.exception("Representation " + rep_type_str + " not recognized. Available: " + ", ".join(
-                dir(RepresentationType)))
-            raise RuntimeError('Unrecognized representation.')
-        else:
-            representation_type = RepresentationType[rep_type_str]
-            log.info(f"initializing representation ({rep_type_str})")
-
-            representation = (representation_type.getClassType())(self.kpn, self.platform, config)
-
+        # This is a workaround until Hydra 1.1 (with recursive instantiaton!)
+        if not issubclass(type(type(representation)), MappingRepresentation):
+            representation = instantiate(representation,kpn,platform)
         self.representation = representation
-        self.simulation_manager = SimulationManager(self.representation, config)
+        self.simulation_manager = SimulationManager(self.representation, trace,jobs, parallel,
+                                                    progress,chunk_size,record_statistics)
 
         if 'FitnessMin' not in deap.creator.__dict__:
             num_params = 0
@@ -69,7 +112,8 @@ class GeneticMapper(object):
                 num_params += 1
             if self.num_resources:
                 num_params += len(self.platform.core_types())
-            #this will weight a milisecond as equivalent to an additional core
+            #this will weigh a milisecond as equivalent to an additional core
+            #todo: add a general parameter for controlling weights
             deap.creator.create("FitnessMin", deap.base.Fitness, weights=num_params*(-1.0,))
 
         if 'Individual' not in deap.creator.__dict__:
@@ -83,7 +127,7 @@ class GeneticMapper(object):
         toolbox.register("mate", self.mapping_crossover)
         toolbox.register("mutate", self.mapping_mutation)
         toolbox.register("evaluate", self.evaluate_mapping)
-        toolbox.register("select", deap.tools.selTournament, tournsize=self.config['tournsize'])
+        toolbox.register("select", deap.tools.selTournament, tournsize=tournsize)
 
         self.evolutionary_toolbox = toolbox
         self.hof = deap.tools.ParetoFront() #todo: we could add symmetry comparison (or other similarity) here
@@ -94,8 +138,8 @@ class GeneticMapper(object):
         stats.register("max", np.max)
         self.evolutionary_stats = stats
 
-        if self.config['initials'] == 'random':
-            self.population = toolbox.population(n=self.config['pop_size'])
+        if initials == 'random':
+            self.population = toolbox.population(n=self.pop_size)
         else:
             log.error("Initials not supported yet")
             raise RuntimeError('GeneticMapper: Initials not supported')
@@ -125,7 +169,7 @@ class GeneticMapper(object):
 
     def mapping_mutation(self,mapping):
         #m_obj = self.representation.fromRepresentation(list((mapping)))
-        radius = self.config['radius']
+        radius = self.radius
         while(1):
             new_mappings = self.representation._uniformFromBall(mapping,radius,20)
             for m in new_mappings:
@@ -135,7 +179,7 @@ class GeneticMapper(object):
                         mapping[i] = m[i]
                     return mapping,
             radius *= 1.1
-            if radius > 10000 * self.config['radius']:
+            if radius > 10000 * self.radius:
                 log.error("Could not mutate mapping")
                 raise RuntimeError("Could not mutate mapping")
 
@@ -144,14 +188,14 @@ class GeneticMapper(object):
         toolbox = self.evolutionary_toolbox
         stats = self.evolutionary_stats
         hof = self.hof
-        pop_size = self.config['pop_size']
-        num_gens = self.config['num_gens']
-        cxpb = self.config['cxpb']
-        mutpb = self.config['mutpb']
+        pop_size = self.pop_size
+        num_gens = self.num_gens
+        cxpb = self.cxpb
+        mutpb = self.mutpb
 
         population = self.population
 
-        if self.config['mupluslambda']:
+        if self.mupluslambda:
             population, logbook = deap.algorithms.eaMuPlusLambda(population, toolbox, mu=pop_size, lambda_=3*pop_size,
                                                                  cxpb=cxpb, mutpb=mutpb, ngen=num_gens, stats=stats,
                                                                  halloffame=hof, verbose=False)
@@ -174,7 +218,7 @@ class GeneticMapper(object):
             pickle.dump(logbook,f)
         result = self.representation.fromRepresentation(np.array(mapping))
         self.simulation_manager.statistics.to_file()
-        if self.config['dump_cache']:
+        if self.dump_cache:
             self.simulation_manager.dump('mapping_cache.csv')
         self.cleanup()
         return result
@@ -192,7 +236,7 @@ class GeneticMapper(object):
         for mapping in hof:
             results.append(self.representation.fromRepresentation(np.array(mapping)))
         self.simulation_manager.statistics.to_file()
-        if self.config['dump_cache']:
+        if self.dump_cache:
             self.simulation_manager.dump('mapping_cache.csv')
         self.cleanup()
         return results

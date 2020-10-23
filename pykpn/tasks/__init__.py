@@ -35,10 +35,10 @@ _tasks = {
         'csv_plot',
         'csv_plot',
         "???"),
-    'design_centering': (
-        'design_centering',
+    'find_design_center': (
+        'find_design_center',
         'dc_task',
-        "generate a mapping using the design centering algorityh"),
+        "generate a mapping using the design centering algorithm"),
     'enumerate_equivalent': (
         'enumerate_equivalent',
         'enumerate_equivalent',

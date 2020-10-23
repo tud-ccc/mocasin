@@ -101,8 +101,9 @@ class RandomPartialMapper(object):
 
 class RandomPartialMapperHydra(RandomPartialMapper):
     """
-    This class implements a new constructor for the random_partial mapper in order to handle the instantiation via an
+    This class implements a new constructor for the random_partial mapper in order to handle the instantiation via a
     hydra config file.
+    TODO: do we need this??
     """
     def __init__(self, kpn, platform, config):
         random_seed = config['mapper']['random_seed']
@@ -113,5 +114,5 @@ class RandomMapper(RandomPartialMapper):
     This class is a FullMapper wrapper
     for RandomPartialMapper.
     """
-    def __init__(self, kpn, platform, config, random_seed=None):
+    def __init__(self, kpn, platform, trace, representation, random_seed=None):
         super().__init__(kpn, platform, seed=random_seed)

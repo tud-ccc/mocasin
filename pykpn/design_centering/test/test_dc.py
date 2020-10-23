@@ -4,20 +4,21 @@
 # Author: Gerald Hempel
 
 from unittest.mock import Mock
+from pykpn.representations import SimpleVectorRepresentation
 
 #imports to run DC
-from pykpn.design_centering import DesignCenteringFromHydra, volume
-from pykpn.representations import representations as reps
+from pykpn.design_centering import DesignCentering, volume
+from pykpn.design_centering.sample import MetricSpaceSampleGen
 
 def test_dc_holistic(kpn, platform, conf, oracle):
     #Mapping
-    representation_type = reps.RepresentationType['SimpleVector']
     print("--- Generate DC Test ---")
-    representation = (representation_type.getClassType())(kpn, platform, conf)
+    representation = SimpleVectorRepresentation(kpn,platform)
     starting_center = representation.uniform()
    
     #print(oracle.validate_set())
-    v = volume.LPVolume(starting_center, starting_center.get_numProcs(), kpn, platform, conf, representation_type)
-    dc = DesignCenteringFromHydra(v, oracle, representation, conf)
+    v = volume.LPVolume(kpn, platform, representation, starting_center,radius=2.0)
+    sg = MetricSpaceSampleGen(representation)
+    dc = DesignCentering(v, oracle, sg, representation)
     center, history = dc.ds_explore()
     #TODO: inserting some kind of assert statement? What is actually tested here?

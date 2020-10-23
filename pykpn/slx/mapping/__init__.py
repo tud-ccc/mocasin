@@ -24,7 +24,7 @@ class SlxMapper:
     calling the generate_mapping method.  This implements the common mapper
     interface.
     """
-    def __init__(self, kpn, platform, cfg, xml_file=None):
+    def __init__(self, kpn, platform,trace,representation, xml_file=None):
         self.mapping = SlxMapping(kpn, platform, xml_file)
 
     def generate_mapping(self):

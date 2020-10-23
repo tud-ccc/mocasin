@@ -1,11 +1,10 @@
-# Copyright (C) 2017-2019 TU Dresden
+# Copyright (C) 2017-2020 TU Dresden
 # All Rights Reserved
 #
 # Authors: Gerald Hempel, Andres Goens
 
 import sys
 import pint
-import hydra
 import random as rand
 import numpy as np
 
@@ -13,7 +12,6 @@ from pykpn.design_centering import sample as dc_sample
 from pykpn.design_centering import oracle
 from pykpn.mapper.partial import ProcPartialMapper
 from pykpn.mapper.random import RandomPartialMapper
-from pykpn.representations import representations as reps
 
 from pykpn.util import logging
 
@@ -21,27 +19,23 @@ log = logging.getLogger(__name__)
 
 class PerturbationManager(object):
 
-    def __init__(self, config, num_mappings=0, num_tests=0):
-        self.config = config
+    def __init__(self,kpn,platform, trace, representation, threshold,
+                 threads=1, num_mappings=10, num_tests=10, ball_num=20,
+                 max_iters=1000, radius=2.0,perturbation_type='classic'):
 
-        self.platform = hydra.utils.instantiate(config['platform'])
-        self.kpn = hydra.utils.instantiate(config['kpn'])
-        trace_generator = hydra.utils.instantiate(config['trace'])
-        threshold = config['threshold']
-        threads = config['threads']
-        seed = config['random_seed']
-
-        self.sim = oracle.Simulation(self.kpn, self.platform, trace_generator, threshold, threads, seed)
-
+        self.platform = platform
+        self.kpn = kpn
+        self.threshold = threshold
+        self.perturbation_type = perturbation_type
+        self.sim = oracle.Simulation(kpn, platform, trace, threshold, threads)
         self.num_mappings = num_mappings
         self.num_perturbations = num_tests
-        self.perturbation_ball_num = config['perturbation_ball_num']
-        self.iteration_max = config['perturbation_max_iters']
-        self.radius = config['perturbation_radius']
+        self.perturbation_ball_num = ball_num
+        self.iteration_max = max_iters
+        self.radius = radius
 
-        if config['representation'] != "GeomDummy":
-            representation_type = reps.RepresentationType[config['representation']]
-            self.representation = (representation_type.getClassType())(self.kpn,self.platform,config)
+        #if config['representation'] != "GeomDummy":
+        self.representation = representation
 
         #TODO: (FIXME) Perturbation manager only works in simple vector representation (for now)
         #self.representation = (reps.RepresentationType['SimpleVector'].getClassType())(self.kpn, self.platform)
@@ -53,13 +47,20 @@ class PerturbationManager(object):
             mg = RandomPartialMapper(self.kpn, self.platform)
             mapping_set.add(mg.generate_mapping())
         return mapping_set
-
+    def apply_perturbation(self,mapping,history):
+        if self.perturbation_type == 'classic':
+            return self.apply_singlePerturbation(mapping,history)
+        elif self.perturbation_type == 'representation':
+            return self.applyPerturbationRepresentation(mapping,history)
+        else:
+            log.error(f"Unknown perturbation type: {self.perturbation_type} ")
+            sys.exit(1)
     def apply_singlePerturbation(self, mapping, history):
         """ Creates a defined number of unique single core perturbations
             Therefore, the mapping is interpreted as vector with the 
             processor cores assigned to the vector elements.
         """
-        rand_part_mapper = RandomPartialMapper(self.kpn, self.platform,self.config)
+        rand_part_mapper = RandomPartialMapper(self.kpn, self.platform)
         proc_part_mapper = ProcPartialMapper(self.kpn, self.platform, rand_part_mapper)
         iteration_max = self.iteration_max
 
@@ -130,7 +131,7 @@ class PerturbationManager(object):
             log.error("Could not find a new perturbation")
             sys.exit(1)
 
-    def run_perturbation(self, mapping, pert_fun):
+    def run_perturbation(self, mapping):
         """ 
         Runs the perturbation test with the defined Perturbation Method.
         The given mapping is evaluated by comparing it to randomly generated mappings. 
@@ -140,7 +141,7 @@ class PerturbationManager(object):
         results = []
         samples = []
         for i in range(0, self.num_perturbations):
-            mapping = pert_fun(mapping, history)
+            mapping = self.apply_perturbation(mapping, history)
             history.append(mapping)
             sample = dc_sample.Sample(self.representation.toRepresentation(mapping),representation=self.representation)
             samples.append(sample)
@@ -155,7 +156,7 @@ class PerturbationManager(object):
         feasible = []
         for e in exec_times:
             ureg = pint.UnitRegistry()
-            threshold = ureg(self.config.threshold).to(ureg.ps).magnitude
+            threshold = ureg(self.threshold).to(ureg.ps).magnitude
             if e > threshold:
                 feasible.append(False)
             else:
@@ -173,15 +174,3 @@ class PerturbationManager(object):
 
         return simple_res, complex_res
 
-class PerturbationManagerFromHydra(PerturbationManager):
-    def __init__(self, config, num_mappings=0, num_tests=0):
-        kpn = hydra.utils.instantiate(config['kpn'])
-        platform = hydra.utils.instantiate(config['platform'])
-        trace_generator = hydra.utils.instantiate(config['trace'])
-
-
-        perturbation_ball_num = config['perturbation_ball_num']
-        perturbation_max_iters = config['perturbation_max_iters']
-        perturbation_radius =config['perturbation_radius']
-
-        super(PerturbationManagerFromHydra, self).__init__()

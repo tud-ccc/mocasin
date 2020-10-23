@@ -4,4 +4,5 @@ defaults:
   - hydra/job_logging: pykpn
   - tgff: default
   - kpn: default
+  - trace: default
   - kpn_to_dot_inc
