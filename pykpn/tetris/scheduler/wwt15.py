@@ -10,7 +10,7 @@ from pykpn.tetris.scheduler.base import (SingleVariantSegmentMapper,
                                          SingleVariantSegmentizedScheduler)
 from pykpn.tetris.scheduler.lr_solver import LRSolver, LRConstraint
 from pykpn.common.platform import Platform
-from pykpn.tetris.job import Job, JobTable
+from pykpn.tetris.job_legacy import Job, JobTable
 from pykpn.tetris.mapping import SegmentMapping, JobSegmentMapping
 from pykpn.tetris.extra import NamedDimensionalNumber
 

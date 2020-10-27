@@ -1,5 +1,5 @@
 from pykpn.common.platform import Platform
-from pykpn.tetris.job import Job, JobTable
+from pykpn.tetris.job_legacy import Job, JobTable
 from pykpn.tetris.extra import NamedDimensionalNumber
 from pykpn.tetris.apptable import CanonicalMapping
 

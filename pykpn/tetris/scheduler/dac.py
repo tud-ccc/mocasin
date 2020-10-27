@@ -1,7 +1,7 @@
 import math
 import logging
 
-from pykpn.tetris.job import JobTable, Job
+from pykpn.tetris.job_legacy import JobTable, Job
 from pykpn.tetris.mapping import Mapping, SegmentMapping, JobSegmentMapping
 from pykpn.tetris.scheduler.base import SchedulerBase
 

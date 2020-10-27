@@ -7,7 +7,7 @@ import hydra
 
 from pykpn.tetris.apptable import AppTable
 from pykpn.tetris.context import Context
-from pykpn.tetris.job import JobTable
+from pykpn.tetris.job_legacy import JobTable
 from pykpn.tetris.manager import ResourceManager
 from pykpn.tetris.reqtable import ReqTable
 from pykpn.tetris.tracer import TracePlayer

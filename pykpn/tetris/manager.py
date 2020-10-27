@@ -7,7 +7,7 @@ from pykpn.common.platform import Platform
 from pykpn.tetris.apptable import AppTable
 from pykpn.tetris.reqtable import ReqTable
 from pykpn.tetris.mapping import Mapping
-from pykpn.tetris.job import JobTable
+from pykpn.tetris.job_legacy import JobTable
 from pykpn.tetris.reqtable import RequestStatus
 
 import logging
