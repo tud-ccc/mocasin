@@ -55,7 +55,13 @@ class SchedulerBase(abc.ABC):
         return self.__allow_preemptions
 
     @abc.abstractmethod
-    def schedule(self, jobs):
+    def schedule(self, jobs, scheduling_start_time=0.0):
+        """ Schedule jobs.
+
+        Args:
+            jobs (list[JobState]): input jobs
+            scheduling_start_time (float): a start time
+        """
         pass
 
 

@@ -1,38 +1,59 @@
-#!/usr/bin/env python3
+# Copyright (C) 2020 TU Dresden
+# All Rights Reserved
+#
+# Authors: Robert Khasanov
 
-import math
+# TODO:
+# [ ] Separate Memoization code into another class/file
+# [ ] Remove drop_high option
+# [ ] Remove pruning in memoization
+# [ ] Remove time limits
+# [ ] Remove rescheduling option
+
+from pykpn.tetris.job_state import Job
+from pykpn.tetris.schedule import Schedule, ScheduleSegment, JobSegmentMapping
+from pykpn.tetris.scheduler.base import SchedulerBase
+
+from collections import Counter
 import heapq
+import logging
+import math
 import time
 
-import copy
-
-from pykpn.tetris.scheduler.base import SchedulerBase
-from pykpn.tetris.mapping import Mapping, SegmentMapping, JobSegmentMapping
-from pykpn.tetris.job import JobTable
-from pykpn.tetris.extra import NamedDimensionalNumber
-
 EPS = 0.00001
-
 FINISH_MAX_DIFF = 0.5
 
-import logging
 log = logging.getLogger(__name__)
 
 
-class _BfMapping(Mapping):
-    """Mapping class for Bruteforce scheduler.
+def _is_better_eu(a, b):
+    """ Compare two schedules in terms of Energy-Utility Functions.
+    """
+    if b is None:
+        return True
+    if a.energy < b.energy - EPS:
+        return True
+    if a.energy > b.energy + EPS:
+        return False
+    if a.end_time < b.end_time + EPS:
+        return True
+    return False
+
+
+class _BfSchedule(Schedule):
+    """Inheritted schedule class for Bruteforce scheduler.
 
     This class is used to store intermediate mapping object with
-    additional data.
+    additional metadata.
     """
     def __init__(self, segments=[], best_case_energy=None):
-        Mapping.__init__(self, segments=segments)
+        Schedule.__init__(self, segments=segments)
         assert best_case_energy is not None
         self.__best_case_energy = best_case_energy
 
     def copy(self):
-        """_BfMapping: returns a shallow copy of the mapping"""
-        return _BfMapping(self.segments(), self.__best_case_energy)
+        """_BfSchedule: returns a shallow copy of the mapping"""
+        return _BfSchedule(self.segments(), self.__best_case_energy)
 
     @property
     def best_case_energy(self):
@@ -58,95 +79,116 @@ class _BfMapping(Mapping):
         return id(self) < id(other)
 
     def count_non_finished_jobs(self):
-        if len(self) == 0:
-            return 0
-        return sum([1 for m in self.last if not m.finished])
+        return sum([
+            1 for _, ms in self.per_requests().items() if not ms[-1].finished
+        ])
 
 
-class BruteforceStepScheduler:
-    def __init__(self, parent_scheduler, job_table, prev_mapping=None,
-                 rescheduling=True, all_combinations=False):
-        assert len(job_table) != 0
+class BruteforceSegmentScheduler:
+    def __init__(self, parent_scheduler, rescheduling=True,
+                 all_combinations=False):
+        #    def __init__(self, parent_scheduler, job_table, prev_mapping=None,
+        #                 rescheduling=True, all_combinations=False):
+        #        assert len(job_table) != 0
         self.__parent = parent_scheduler
-        self.__job_table = job_table
+        #        self.__job_table = job_table
         self.__rescheduling = rescheduling
-        self.__prev_mapping = prev_mapping
-        self.__step_best_energy = math.inf
-        self.__force_return = False
-        self.__results = []
         self.__all_combinations = all_combinations
 
-        self.__start_time = job_table.time
+        #        self.__start_time = job_table.time
 
-        if prev_mapping.last is not None:
-            self.__start_energy = prev_mapping.energy
-        else:
-            self.__start_energy = 0.0
+        # Initialize variables used during the scheduling to None
+        self.__jobs = None
+        self.__step_best_energy = None
+        self.__segment_start_time = None
+        self.__accumulated_energy = None
+        self.__force_return = None
+        self.__results = None
 
-        self.__min_segment_time = self.__calc_min_segment_time()
+    def __eval_min_segment_duration(self):
+        """Evaluate minimal segment duration.
+        """
+        return min([
+            mapping.metadata.exec_time * (1.0 - job.cratio)
+            for job in self.__jobs for mapping in job.request.mappings
+        ])
 
-    def __calc_min_segment_time(self):
-        res = [
-            x.app.best_case_time(start_cratio=x.cratio)
-            for x in self.__job_table
-        ]
-        return min(res)
+    def __eval_core_energy_usage(self, current_mappings):
+        """Evaluate the energy and used processors types of assigned mappings.
 
-    def __schedule_calc_values(self, clist):
+        The length of 'current_mappings' equals to the number of already
+        assigned jobs. The energy consumption is evaluated assuming minimal
+        duration of the segment '__min_segment_duration'.
+
+        Args:
+            current_mappings (list of Mapping): The list of mappings
+
+        Returns: a tuple (core_types (Counter), energy (float))
+        """
+        # Initialize the variables to zero values
         energy = 0
-        core_types = NamedDimensionalNumber(
-            dict(self.__parent._platform.get_processor_types()),
-            init_only_names=True)
-        for ts, m in zip(self.__job_table, clist):
-            cratio = ts.cratio
-            app = ts.app
-            config = app.mappings[m]
-            if m != "__idle__":
-                config_rem_time = config.time(start_cratio=cratio)
-                assert config_rem_time > self.__min_segment_time - EPS
-                energy += (config.energy() * self.__min_segment_time /
-                           config.time())
-            core_types += config.core_types
+        core_types = Counter()
+
+        for job, mapping in zip(self.__jobs, current_mappings):
+            cratio = job.cratio
+            if mapping is not None:
+                rratio = 1.0 - cratio
+                config_rem_time = mapping.metadata.exec_time * rratio
+                assert config_rem_time > self.__min_segment_duration - EPS
+                energy += (mapping.metadata.energy *
+                           self.__min_segment_duration /
+                           mapping.metadata.exec_time)
+                core_types.update(mapping.get_used_processor_types())
         return (core_types, energy)
 
-    def __create_mapping_from_list(self, clist):
+    def __form_schedule_segment(self, job_mappings):
+        """ Construct a schedule segment out of job mappings.
+
+        Args:
+            job_mappings (list of Mapping): The list of job mappings.
+
+        Returns: a ScheduleSegment object
+        """
+        # TODO: Return only a schedule segment
         res = []
         full_mapping_list = []
 
         # Calculate estimated end time
-        for ts, m in zip(self.__job_table, clist):
-            single_job_mapping = JobSegmentMapping(
-                ts.rid, m, start_time=self.__start_time,
-                start_cratio=ts.cratio, finished=True)
-            full_mapping_list.append(single_job_mapping)
+        for job, mapping in zip(self.__jobs, job_mappings):
+            if mapping is not None:
+                single_job_mapping = JobSegmentMapping(
+                    job.request, mapping, start_time=self.__segment_start_time,
+                    start_cratio=job.cratio, finished=True)
+                full_mapping_list.append(single_job_mapping)
 
         # Check if the scheduling meets deadlines
         full_meets_deadline = True
         for sm in full_mapping_list:
-            rid = sm.rid
-            ts = self.__job_table.find_by_rid(rid)
-            d = ts.abs_deadline
+            d = sm.request.deadline
             if sm.end_time > d:
                 full_meets_deadline = False
-            if sm.idle:
-                full_meets_deadline = False
+            # if sm.idle:
+            #     full_meets_deadline = False
 
-        if full_meets_deadline:
+        if full_meets_deadline and False:
+            # TODO: This branch constructs the mapping where all jobs meet
+            # deadlines. This step optimizes the bruteforce algorithm, however
+            # I doubt that it significantly reduces the search time, maybe
+            # I remove it later
             cur_energy = sum([x.energy for x in full_mapping_list])
-            total_energy = cur_energy + self.__start_energy
+            total_energy = cur_energy + self.__accumulated_energy
             if self.__step_best_energy > total_energy:
                 self.__step_best_energy = total_energy
 
             full_finish_time = max([x.end_time for x in full_mapping_list])
-            new_segment = SegmentMapping(
-                self.__parent._platform, full_mapping_list,
-                time_range=(self.__start_time, full_finish_time))
-            new_mapping = self.__prev_mapping.copy()
-            new_mapping.append_segment(new_segment)
-            new_mapping.best_case_energy = total_energy
-            res.append((full_meets_deadline, total_energy, new_mapping))
+            new_segment = ScheduleSegment(
+                self.__parent.platform, full_mapping_list,
+                time_range=(self.__segment_start_time, full_finish_time))
+            new_schedule = _BfSchedule(segments=[new_segment],
+                                       best_case_energy=total_energy)
+            res.append((full_meets_deadline, total_energy, new_schedule))
 
-        if self.__rescheduling:
+        if self.__rescheduling:  # to be removed, always true
             segment_mapping_list = []
             min_finish_time = min([x.end_time for x in full_mapping_list])
             stop_jobs = [
@@ -154,81 +196,85 @@ class BruteforceStepScheduler:
                 if x.end_time < min_finish_time + FINISH_MAX_DIFF
             ]
             segment_end_time = max([x.end_time for x in stop_jobs])
-            segment_time = segment_end_time - self.__start_time
-            assert segment_time > self.__min_segment_time - EPS
+            segment_duration = segment_end_time - self.__segment_start_time
+            assert segment_duration > self.__min_segment_duration - EPS
             for fsm in full_mapping_list:
-                ssm = JobSegmentMapping(fsm.rid, fsm.can_mapping_id,
+                ssm = JobSegmentMapping(fsm.request, fsm.mapping,
                                         start_time=fsm.start_time,
                                         start_cratio=fsm.start_cratio,
                                         end_time=segment_end_time)
                 segment_mapping_list.append(ssm)
 
-            # Check if the scheduling meets deadlines
+            # Check if all jobs might meet deadlines given the current mapping
+            # TODO: Check idle jobs
             segment_meets_deadline = True
             finished = True
             for sm in segment_mapping_list:
-                rid = sm.rid
-                ts = self.__job_table.find_by_rid(rid)
-                d = ts.abs_deadline
+                d = sm.request.deadline
                 if not sm.finished:
                     finished = False
                 if sm.end_time > d:
                     segment_meets_deadline = False
-                app = ts.app
-                min_time_left = app.best_case_time(start_cratio=sm.end_cratio)
+                min_time_left = sm.request.get_min_exec_time() * (
+                    1.0 - sm.end_cratio)
                 if min_time_left + sm.end_time > d:
                     segment_meets_deadline = False
 
             if segment_meets_deadline:
                 # Evaluate best-case energy consumption
                 cur_energy = sum([x.energy for x in segment_mapping_list])
-                total_energy = cur_energy + self.__start_energy
+                total_energy = cur_energy + self.__accumulated_energy
                 best_case_energy = total_energy
                 for sm in segment_mapping_list:
-                    rid = sm.rid
-                    ts = self.__job_table.find_by_rid(rid)
-                    app = ts.app
-                    bc_energy = app.best_case_energy(
-                        start_cratio=sm.end_cratio)
+                    bc_energy = sm.request.get_min_energy() * (1.0 -
+                                                               sm.end_cratio)
                     best_case_energy += bc_energy
 
-                new_segment = SegmentMapping(
-                    self.__parent._platform, segment_mapping_list,
-                    time_range=(self.__start_time, segment_end_time))
-                new_mapping = self.__prev_mapping.copy()
-                new_mapping.append_segment(new_segment)
-                new_mapping.best_case_energy = best_case_energy
-                res.append((segment_meets_deadline, total_energy, new_mapping))
+                new_schedule = self.__prev_schedule.copy()
+                new_segment = ScheduleSegment(
+                    self.__parent.platform, segment_mapping_list,
+                    time_range=(self.__segment_start_time, segment_end_time))
+                new_segment.verify()
+                new_schedule.append_segment(new_segment)
+                new_schedule.best_case_energy = total_energy
+                res.append(
+                    (segment_meets_deadline, total_energy, new_schedule))
         return res
 
-    def __schedule_step(self, clist):
+    def __schedule_step(self, current_mappings):
+        """ Perform a single step of the bruteforce algorithm.
+
+        Args:
+            current_mappings (list): list of the chosen mappings for jobs.
+        """
         if self.__force_return:
             return
 
-        (core_types, e) = self.__schedule_calc_values(clist)
+        (used_cores, e) = self.__eval_core_energy_usage(current_mappings)
+        total_cores = self.__parent.platform.get_processor_types()
 
-        if not (core_types <= NamedDimensionalNumber(
-                dict(self.__parent._platform.get_processor_types()))):
+        # Check whether the current used cores do not exceed available cores
+        if (used_cores | total_cores) != total_cores:
             return
 
         # Check current energy
         if not self.__all_combinations:
-            if e + self.__start_energy > self.__parent._energy_limit():
+            if e + self.__accumulated_energy > self.__parent._energy_limit():
                 return
 
             # Check current energy
-            if e + self.__start_energy > self.__step_best_energy:
+            if e + self.__accumulated_energy > self.__step_best_energy:
                 return
 
-        if len(clist) == len(self.__job_table):
-            only_idle = True
-            for x in clist:
-                if x != "__idle__":
-                    only_idle = False
+        # Whether all jobs are mapped
+        if len(current_mappings) == len(self.__jobs):
+            # Skip mappings with all idle jobs
+            only_idle = all(m is None for m in current_mappings)
             if only_idle:
                 return
 
-            results = self.__create_mapping_from_list(clist)
+            results = self.__form_schedule_segment(current_mappings)
+            # print("results", results)
             for r, energy, m in results:
                 if r:
                     self.__results.append(m)
@@ -237,15 +283,63 @@ class BruteforceStepScheduler:
                 self.__force_return = True
             return
 
-        next_app = self.__job_table[len(clist)].app
-        for config in next_app.mappings.keys():
-            if not self.__rescheduling and config == "__idle__":
+        next_job = self.__jobs[len(current_mappings)]
+        for mapping in next_job.request.mappings + [None]:
+            if not self.__rescheduling and mapping is None:
                 continue
-            self.__schedule_step(clist + [config])
+            self.__schedule_step(current_mappings + [mapping])
 
-    def schedule(self):
+    def schedule(self, jobs, segment_start_time=0.0, accumulated_energy=0.0,
+                 prev_schedule=None):
+        """ Schedule the jobs.
+
+        Args:
+            jobs (list of JobState): a list of jobs
+        """
+        # TODO: Remove prev_schedule
+        assert prev_schedule is not None
+
+        assert self.__jobs is None
+
+        # Check that all jobs are in ready state
+        _jobs = []
+        for j in jobs:
+            if j.is_ready() or j.is_running():
+                _jobs.append(j)
+                continue
+            log.warning(
+                "Removing job with a state {} from a job list: {}".format(
+                    j.state, j.to_str()))
+
+        if len(_jobs) == 0:
+            log.warning("No job to schedule")
+            return []
+
+        # Initialize variables
+        self.__jobs = _jobs
+        self.__min_segment_duration = self.__eval_min_segment_duration()
+        self.__step_best_energy = math.inf
+        self.__force_return = False
+        self.__segment_start_time = segment_start_time
+        self.__results = []
+        self.__accumulated_energy = accumulated_energy
+        self.__prev_schedule = prev_schedule
+
+        # Run step scheduler
         self.__schedule_step([])
-        return self.__results
+        results = self.__results
+
+        # Deinitialize variables
+        self.__jobs = None
+        self.__min_segment_duration = None
+        self.__step_best_energy = None
+        self.__force_return = None
+        self.__results = None
+        self.__segment_start_time = None
+        self.__accumulated_energy = None
+        self.__prev_schedule = None
+
+        return results
 
 
 class StateMemoryTable:
@@ -343,7 +437,7 @@ class StateMemoryTable:
 class BruteforceScheduler(SchedulerBase):
     def __init__(self, platform, **kwargs):
         super().__init__(platform)
-        self._platform = platform
+        # TODO: Remove reschedule options (always true)
         self.__rescheduling = kwargs['reschedule']
         self.__drop_high = kwargs["bf_drop"]
         self.__dump_steps = kwargs["bf_dump_steps"]
@@ -354,6 +448,11 @@ class BruteforceScheduler(SchedulerBase):
         self.__memoization = kwargs["memoization"]
         self.__dump_mem_table = kwargs["dump_mem_table"]
         self.__prune_mem_table = kwargs["prune_mem_table"]
+
+        # Initialize a step scheduler
+        self.__step_scheduler = BruteforceSegmentScheduler(
+            self, rescheduling=self.__rescheduling,
+            all_combinations=self.__memoization)
 
     @property
     def name(self):
@@ -379,12 +478,12 @@ class BruteforceScheduler(SchedulerBase):
         self.__filter_queue()
         log.debug("Found new best scheduling: energy = {}".format(
             self.__best_energy))
-        log.debug("New scheduling: \n" +
-                  self.__best_scheduling.legacy_dump_str() + '\n')
+        log.debug("New scheduling: \n" + self.__best_scheduling.to_str() +
+                  '\n')
         pass
 
     def _energy_limit(self):
-        return self.__best_energy * (1.0 - self.__drop_high) - EPS
+        return self.__best_energy * (1.0 - self.__drop_high) + EPS
 
     def __filter_queue(self):
         energy_limit = self._energy_limit()
@@ -409,12 +508,13 @@ class BruteforceScheduler(SchedulerBase):
         return new_res
 
     def __calc_distribution_by_finished(self):
+        # FIXME: count_non_finished_jobs might be incorrect because the schedule
+        # does not include idle jobs
         num_tasks = len(self.__jobs)
 
         res = [0] * (num_tasks+1)
-        for i, r in enumerate(res):
-            res[i] = sum(1 for s in self.__hq
-                         if num_tasks - s.count_non_finished_jobs() == i)
+        for s in self.__hq:
+            res[num_tasks - s.count_non_finished_jobs()] += 1
         return res
 
     def __clear(self):
@@ -425,17 +525,19 @@ class BruteforceScheduler(SchedulerBase):
         if self.__time_limit is not None:
             self.__start_time = time.time()
 
-    def schedule(self, jobs_start):
+    def schedule(self, jobs, scheduling_start_time=0.0):
         """Find the optimal scheduling.
-        
+
         Args:
-            jobs_start (JobTable): jobs to schedule
+            jobs (list[JobState]): jobs to schedule
+            scheduling_start_time (float): a start time
 
         Returns:
             a tuple (successful, list of configurations)
         """
         self.__clear()
-        self.__jobs = jobs_start
+        self.__jobs = jobs
+        self.__scheduling_start_time = scheduling_start_time
 
         if self.__memoization:
             return self.__schedule_memoization()
@@ -452,11 +554,18 @@ class BruteforceScheduler(SchedulerBase):
             l = len(self.__hq)
             m = heapq.heappop(self.__hq)
             if m is None:
-                jobs = self.__jobs.copy()
-                m = _BfMapping(segments=[], best_case_energy=-1)
-                nf = -1
+                # First iteration
+                current_jobs = self.__jobs.copy()
+                m = _BfSchedule(segments=[], best_case_energy=-1)
+                nf = -1  # TODO: What is it? Probably needs to be removed
+                segment_start_time = self.__scheduling_start_time
             else:
-                jobs = JobTable.from_mapping(m)
+                # Create a list of remained jobs
+                current_jobs = [
+                    x for x in Job.from_schedule(m, self.__jobs)
+                    if not x.is_terminated()
+                ]
+                segment_start_time = m.end_time
                 nf = m.count_non_finished_jobs()
 
             e = m.energy
@@ -467,14 +576,12 @@ class BruteforceScheduler(SchedulerBase):
             if bc > self._energy_limit():
                 continue
             step_counter += 1
-            # print("len(hq) = {}, e = {:.3f}, bc_energy = {:.3f},"
-            # " self._wc_energy = {:.3f}, non_finished = {},"
-            # " #full_schedulin: {}".format(
-            # l, e, bc, self._wc_energy, nf, len(finished)))
 
-            step_scheduler = BruteforceStepScheduler(
-                self, jobs, m, rescheduling=self.__rescheduling)
-            results = step_scheduler.schedule()
+            # print("current_jobs", [j.to_str() for j in current_jobs])
+            results = self.__step_scheduler.schedule(
+                current_jobs, segment_start_time=segment_start_time,
+                accumulated_energy=e, prev_schedule=m)
+            # print("#results:", len(results))
             results = self.__filter_step_results(results)
             results.sort()
 
@@ -484,8 +591,19 @@ class BruteforceScheduler(SchedulerBase):
                     continue
                 if m.best_case_energy > self._energy_limit():
                     continue
-                if m.last.finished:
-                    self.__register_best_scheduling(m)
+                # Check that all jobs are finished
+                req_schedules = m.per_requests()
+                all_jobs_finished = True
+                for j in self.__jobs:
+                    if j.request not in req_schedules:
+                        all_jobs_finished = False
+                        break
+                    if not req_schedules[j.request][-1].finished:
+                        all_jobs_finished = False
+                        break
+                if all_jobs_finished:
+                    if _is_better_eu(m, self.__best_scheduling):
+                        self.__register_best_scheduling(m)
                     continue
                 heapq.heappush(self.__hq, m)
 
@@ -563,7 +681,7 @@ class BruteforceScheduler(SchedulerBase):
 
         if mapping is None:
             jobs = self.__jobs.copy()
-            passed_mapping = _BfMapping([], -1)
+            passed_mapping = _BfSchedule([], -1)
         else:
             jobs = JobTable.from_mapping(mapping)
             passed_mapping = mapping
