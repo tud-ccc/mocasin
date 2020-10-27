@@ -3,14 +3,15 @@
 #
 # Authors: Robert Khasanov
 
-import hydra
-
 from pykpn.tetris.apptable import AppTable
 from pykpn.tetris.context import Context
-from pykpn.tetris.job_legacy import JobTable
+from pykpn.tetris.job_state import Job
 from pykpn.tetris.manager import ResourceManager
 from pykpn.tetris.reqtable import ReqTable
 from pykpn.tetris.tracer import TracePlayer
+from pykpn.tetris.tetris_reader import read_applications, read_requests
+
+import hydra
 
 
 class TetrisScheduling:
@@ -20,14 +21,16 @@ class TetrisScheduling:
     platform. While this class is called from hydra tasks, we dedicate a static
     method to handle hydra configuration object.
     """
-    def __init__(self, scheduler, req_table):
+    def __init__(self, scheduler, reqs):
         self.scheduler = scheduler
-        self.req_table = req_table
-        Context().req_table = self.req_table
+        self.requests = reqs
 
         # Job table
-        self.job_table = JobTable()
-        self.job_table.init_by_req_table(self.req_table)
+        # TODO: no need in a method which generates the whole list, switch to
+        # a single object constructor
+        self.jobs = list(
+            map(lambda x: x.dispatch(), Job.from_requests(self.requests)))
+        log.info("Jobs: {}".format(",".join(x.to_str() for x in self.jobs)))
 
         # Scheduling results
         self.found_schedule = None
@@ -36,7 +39,8 @@ class TetrisScheduling:
 
     def run(self):
         (self.found_schedule, self.schedule,
-         self.within_time_limit) = self.scheduler.schedule(self.job_table)
+         self.within_time_limit) = self.scheduler.schedule(
+             self.jobs, scheduling_start_time=0.0)
         pass
 
     @staticmethod
@@ -51,18 +55,17 @@ class TetrisScheduling:
         # Set the platform
         platform = hydra.utils.instantiate(cfg['platform'])
 
-        # Initialize application table
+        # Read applications and mappings
         base_apps_dir = cfg['tetris_apps_dir']
-        app_table = AppTable(platform, base_apps_dir)
+        apps = read_applications(base_apps_dir, platform)
 
-        # Initialize a job table, and fill it by job infos from the file
-        req_table = ReqTable(app_table)
-        req_table.read_from_file(cfg['job_table'])
+        # Read jobs file
+        reqs = read_requests(cfg['job_table'], apps)
 
         # Initialize tetris scheduler
         scheduler = hydra.utils.instantiate(cfg['resource_manager'], platform)
 
-        scheduling = TetrisScheduling(scheduler, req_table)
+        scheduling = TetrisScheduling(scheduler, reqs)
         return scheduling
 
 
