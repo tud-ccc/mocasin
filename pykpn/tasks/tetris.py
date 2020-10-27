@@ -60,7 +60,7 @@ def tetris_scheduler(cfg):
         print("Number of segments: {}".format(len(scheduling.schedule)))
         if cfg["output_schedule"] is not None:
             with open(cfg["output_schedule"], mode="w") as f:
-                scheduling.schedule.legacy_dump(outf=f)
+                print(scheduling.schedule.to_str(), file=f)
 
 
 @hydra.main(config_path='../conf', config_name='tetris_manager')
