@@ -13,10 +13,11 @@ log = logging.getLogger(__name__)
 
 
 def init_logging():
-    logging.getLogger("pykpn.slx.platform.convert_2017_04").setLevel(
-        logging.ERROR)
+    logging.getLogger("pykpn.slx.platform.convert").setLevel(logging.ERROR)
     logging.getLogger("pykpn.slx.platform").setLevel(logging.WARNING)
     logging.getLogger("pykpn.slx.kpn").setLevel(logging.WARNING)
+    logging.getLogger("pykpn.mapper.partial").setLevel(logging.WARNING)
+    logging.getLogger("pykpn.common.mapping").setLevel(logging.WARNING)
 
 
 @hydra.main(config_path='../conf', config_name='tetris_scheduler')
