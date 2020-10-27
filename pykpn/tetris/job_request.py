@@ -36,6 +36,10 @@ class JobRequestInfo:
         self.__start_cratio = start_cratio
         self.__finish = None
 
+        # Memoize functions
+        self.__memo_min_exec_time = None
+        self.__memo_min_energy = None
+
     @property
     def app(self):
         return self.__app
@@ -94,3 +98,23 @@ class JobRequestInfo:
                    self.__app.name, self.__arrival, self.__start_cratio,
                    self.__deadline, self.__status, self.__finish)
         return res
+
+    def get_min_exec_time(self):
+        """ Returns the minimum execution time over all mappings.
+        """
+        if self.__memo_min_exec_time is not None:
+            return self.__memo_min_exec_time
+
+        self.__memo_min_exec_time = min(
+            [m.metadata.exec_time for m in self.__mappings])
+        return self.__memo_min_exec_time
+
+    def get_min_energy(self):
+        """ Returns the minimum energy consumption over all mappings.
+        """
+        if self.__memo_min_energy is not None:
+            return self.__memo_min_energy
+
+        self.__memo_min_energy = min(
+            [m.metadata.energy for m in self.__mappings])
+        return self.__memo_min_energy
