@@ -93,8 +93,8 @@ class JobRequestInfo:
         self.__finish = finish
 
     def to_str(self):
-        res = ("Job request (app: {}, arrival [cratio]: {} [{}], " +
-               "deadline: {}, status: {}, finished: {})").format(
+        res = ("(Job request app={} arrival[cratio]={}[{}] " +
+               "deadline={} status={} finished={})").format(
                    self.__app.name, self.__arrival, self.__start_cratio,
                    self.__deadline, self.__status, self.__finish)
         return res
