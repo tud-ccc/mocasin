@@ -1,11 +1,9 @@
 # @package _group_
 
-_target_: pykpn.tetris.scheduler.bruteforce.BruteforceScheduler
+_target_: pykpn.tetris.scheduler.bruteforce_memo.BruteforceMemoScheduler
 
 # Dump the status of the queue every N steps
 bf_dump_steps: 1000
-
-memoization: true
 
 # Dump the mem table
 dump_mem_table: false

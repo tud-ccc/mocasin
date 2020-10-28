@@ -35,12 +35,10 @@ class TetrisScheduling:
         # Scheduling results
         self.found_schedule = None
         self.schedule = None
-        self.within_time_limit = None
 
     def run(self):
-        (self.found_schedule, self.schedule,
-         self.within_time_limit) = self.scheduler.schedule(
-             self.jobs, scheduling_start_time=0.0)
+        self.schedule = self.scheduler.schedule(self.jobs, scheduling_start_time=0.0)
+        self.found_schedule = (self.schedule is not None)
         pass
 
     @staticmethod
