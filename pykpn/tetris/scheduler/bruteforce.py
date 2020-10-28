@@ -5,7 +5,6 @@
 
 # TODO:
 # [ ] Separate Memoization code into another class/file
-# [ ] Remove time limits
 
 from pykpn.tetris.job_state import Job
 from pykpn.tetris.schedule import (Schedule, ScheduleSegment,
@@ -91,7 +90,6 @@ class BruteforceSegmentScheduler:
         self.__step_best_energy = None
         self.__segment_start_time = None
         self.__accumulated_energy = None
-        self.__force_return = None
         self.__results = None
 
     def __eval_min_segment_duration(self):
@@ -201,9 +199,6 @@ class BruteforceSegmentScheduler:
         Args:
             current_mappings (list): list of the chosen mappings for jobs.
         """
-        if self.__force_return:
-            return
-
         (used_cores, e) = self.__eval_core_energy_usage(current_mappings)
         total_cores = self.__parent.platform.get_processor_types()
 
@@ -232,9 +227,6 @@ class BruteforceSegmentScheduler:
             for r, energy, m in results:
                 if r:
                     self.__results.append(m)
-
-            if not self.__parent._within_time_limit():
-                self.__force_return = True
             return
 
         next_job = self.__jobs[len(current_mappings)]
@@ -271,7 +263,6 @@ class BruteforceSegmentScheduler:
         self.__jobs = _jobs
         self.__min_segment_duration = self.__eval_min_segment_duration()
         self.__step_best_energy = math.inf
-        self.__force_return = False
         self.__segment_start_time = segment_start_time
         self.__results = []
         self.__accumulated_energy = accumulated_energy
@@ -285,7 +276,6 @@ class BruteforceSegmentScheduler:
         self.__jobs = None
         self.__min_segment_duration = None
         self.__step_best_energy = None
-        self.__force_return = None
         self.__results = None
         self.__segment_start_time = None
         self.__accumulated_energy = None
@@ -362,8 +352,6 @@ class BruteforceScheduler(SchedulerBase):
 
         self.__dump_steps = kwargs["bf_dump_steps"]
 
-        self.__time_limit = kwargs["time_limit"]
-
         self.__scheduled_on_time = True
         self.__memoization = kwargs["memoization"]
         self.__dump_mem_table = kwargs["dump_mem_table"]
@@ -378,17 +366,7 @@ class BruteforceScheduler(SchedulerBase):
             res = "Exact"
         else:
             res = "Exact-Memo"
-        if self.__time_limit:
-            res += "-TL{:.1f}".format(self.__time_limit)
         return res
-
-    def _within_time_limit(self):
-        if self.__time_limit is None:
-            return True
-        if time.time() - self.__start_time > self.__time_limit:
-            self.__scheduled_on_time = False
-            return False
-        return True
 
     def __register_best_scheduling(self, m):
         self.__best_scheduling = m
@@ -440,8 +418,6 @@ class BruteforceScheduler(SchedulerBase):
         self.__best_energy = math.inf
         self._wc_energy = math.inf
         self.__hq = []
-        if self.__time_limit is not None:
-            self.__start_time = time.time()
 
     def schedule(self, jobs, scheduling_start_time=0.0):
         """Find the optimal scheduling.
@@ -533,10 +509,6 @@ class BruteforceScheduler(SchedulerBase):
                               step_counter, len(self.__hq), self.__best_energy,
                               self.__hq_best_est_energy(), distr_finished))
 
-            if not self._within_time_limit():
-                log.debug("Reached time limit, returning")
-                break
-
         return (self.__best_energy != math.inf, self.__best_scheduling,
                 self.__scheduled_on_time)
 
@@ -544,17 +516,12 @@ class BruteforceScheduler(SchedulerBase):
     def __schedule_memoization(self):
         self.__mem_step_counter = 0
         self.__mem_state_table = StateMemoryTable(len(self.__jobs))
-        self.__force_return = False
         self.__schedule_memoization_step(None)
         return (self.__best_energy != math.inf, self.__best_scheduling,
                 self.__scheduled_on_time)
 
     # Returns (min energy to finish)
     def __schedule_memoization_step(self, mapping):
-        if not self._within_time_limit():
-            self.__force_return = True
-            log.debug("Reached time limit, returning")
-            return math.inf
         self.__mem_step_counter += 1
         if mapping is None:
             prev_e = 0.0
@@ -621,8 +588,6 @@ class BruteforceScheduler(SchedulerBase):
         child_min_energy = math.inf
 
         for m in results:
-            if self.__force_return:
-                return child_min_energy
             e = m.energy
             if m.best_case_energy > self._energy_limit():
                 if m.best_case_energy - prev_e < child_min_energy:

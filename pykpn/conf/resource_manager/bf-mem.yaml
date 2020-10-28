@@ -5,9 +5,6 @@ _target_: pykpn.tetris.scheduler.bruteforce.BruteforceScheduler
 # Dump the status of the queue every N steps
 bf_dump_steps: 1000
 
-# Set a time limit
-time_limit:
-
 memoization: true
 
 # Dump the mem table
