@@ -9,7 +9,8 @@
 # [ ] Remove time limits
 
 from pykpn.tetris.job_state import Job
-from pykpn.tetris.schedule import Schedule, ScheduleSegment, JobSegmentMapping
+from pykpn.tetris.schedule import (Schedule, ScheduleSegment,
+                                   JobSegmentMapping, MAX_END_GAP)
 from pykpn.tetris.scheduler.base import SchedulerBase
 
 from collections import Counter
@@ -19,7 +20,6 @@ import math
 import time
 
 EPS = 0.00001
-FINISH_MAX_DIFF = 0.5
 
 log = logging.getLogger(__name__)
 
@@ -143,56 +143,24 @@ class BruteforceSegmentScheduler:
         res = []
         full_mapping_list = []
 
-        # Calculate estimated end time
-        for job, mapping in zip(self.__jobs, job_mappings):
-            if mapping is not None:
-                single_job_mapping = JobSegmentMapping(
-                    job.request, mapping, start_time=self.__segment_start_time,
-                    start_cratio=job.cratio, finished=True)
-                full_mapping_list.append(single_job_mapping)
-
-        # Check if the scheduling meets deadlines
-        full_meets_deadline = True
-        for sm in full_mapping_list:
-            d = sm.request.deadline
-            if sm.end_time > d:
-                full_meets_deadline = False
-            # if sm.idle:
-            #     full_meets_deadline = False
-
-        if full_meets_deadline and False:
-            # TODO: This branch constructs the mapping where all jobs meet
-            # deadlines. This step optimizes the bruteforce algorithm, however
-            # I doubt that it significantly reduces the search time, maybe
-            # I remove it later
-            cur_energy = sum([x.energy for x in full_mapping_list])
-            total_energy = cur_energy + self.__accumulated_energy
-            if self.__step_best_energy > total_energy:
-                self.__step_best_energy = total_energy
-
-            full_finish_time = max([x.end_time for x in full_mapping_list])
-            new_segment = ScheduleSegment(
-                self.__parent.platform, full_mapping_list,
-                time_range=(self.__segment_start_time, full_finish_time))
-            new_schedule = _BfSchedule(segments=[new_segment],
-                                       best_case_energy=total_energy)
-            res.append((full_meets_deadline, total_energy, new_schedule))
+        # Calculate segment end time
+        jobs_rem_time = [
+            m.metadata.exec_time * (1.0 - j.cratio)
+            for j, m in zip(self.__jobs, job_mappings) if m is not None
+        ]
+        segment_duration = max(
+            [t for t in jobs_rem_time if t < min(jobs_rem_time) + MAX_END_GAP])
+        segment_end_time = segment_duration + self.__segment_start_time
+        assert segment_duration > self.__min_segment_duration - EPS
 
         segment_mapping_list = []
-        min_finish_time = min([x.end_time for x in full_mapping_list])
-        stop_jobs = [
-            x for x in full_mapping_list
-            if x.end_time < min_finish_time + FINISH_MAX_DIFF
-        ]
-        segment_end_time = max([x.end_time for x in stop_jobs])
-        segment_duration = segment_end_time - self.__segment_start_time
-        assert segment_duration > self.__min_segment_duration - EPS
-        for fsm in full_mapping_list:
-            ssm = JobSegmentMapping(fsm.request, fsm.mapping,
-                                    start_time=fsm.start_time,
-                                    start_cratio=fsm.start_cratio,
-                                    end_time=segment_end_time)
-            segment_mapping_list.append(ssm)
+        for j, m in zip(self.__jobs, job_mappings):
+            if m is not None:
+                ssm = JobSegmentMapping(j.request, m,
+                                        start_time=self.__segment_start_time,
+                                        start_cratio=j.cratio,
+                                        end_time=segment_end_time)
+                segment_mapping_list.append(ssm)
 
         # Check if all jobs might meet deadlines given the current mapping
         # TODO: Check idle jobs
