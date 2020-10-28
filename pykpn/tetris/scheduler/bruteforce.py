@@ -657,8 +657,11 @@ class BruteforceScheduler(SchedulerBase):
                           self.__mem_state_table.size()))
 
         if mapping is not None:
+            req_schedules = mapping.per_requests()
             cratio_list = [
-                mapping.get_job_end_cratio(x.rid) for x in self.__jobs
+                req_schedules[j.request][-1].end_cratio
+                if j.request in req_schedules else j.cratio
+                for j in self.__jobs
             ]
             mem_e = self.__mem_state_table.find_min_energy_from_state(
                 cratio_list, mapping.end_time)
@@ -681,15 +684,19 @@ class BruteforceScheduler(SchedulerBase):
 
         if mapping is None:
             jobs = self.__jobs.copy()
-            passed_mapping = _BfSchedule([], -1)
+            passed_schedule = _BfSchedule([], -1)
+            segment_start_time = self.__scheduling_start_time
         else:
-            jobs = JobTable.from_mapping(mapping)
-            passed_mapping = mapping
+            jobs = [
+                x for x in Job.from_schedule(mapping, self.__jobs)
+                if not x.is_terminated()
+            ]
+            passed_schedule = mapping
+            segment_start_time = mapping.end_time
 
-        step_scheduler = BruteforceStepScheduler(
-            self, jobs, prev_mapping=passed_mapping,
-            rescheduling=self.__rescheduling, all_combinations=True)
-        results = step_scheduler.schedule()
+        results = self.__step_scheduler.schedule(
+            jobs, segment_start_time=segment_start_time,
+            accumulated_energy=prev_e, prev_schedule=passed_schedule)
         # results = self.__filter_step_results(results)
         results.sort()
 
@@ -704,8 +711,19 @@ class BruteforceScheduler(SchedulerBase):
                 if m.best_case_energy - prev_e < child_min_energy:
                     child_min_energy = m.best_case_energy - prev_e
                 continue
-            if m.last.finished:
-                self.__register_best_scheduling(m)
+            # Check that all jobs are finished
+            req_schedules = m.per_requests()
+            all_jobs_finished = True
+            for j in self.__jobs:
+                if j.request not in req_schedules:
+                    all_jobs_finished = False
+                    break
+                if not req_schedules[j.request][-1].finished:
+                    all_jobs_finished = False
+                    break
+            if all_jobs_finished:
+                if _is_better_eu(m, self.__best_scheduling):
+                    self.__register_best_scheduling(m)
                 best_mapping = m
                 if e - prev_e < child_min_energy:
                     child_min_energy = e - prev_e
