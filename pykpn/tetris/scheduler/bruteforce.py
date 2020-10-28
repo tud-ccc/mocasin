@@ -5,7 +5,6 @@
 
 # TODO:
 # [ ] Separate Memoization code into another class/file
-# [ ] Remove pruning in memoization
 # [ ] Remove time limits
 
 from pykpn.tetris.job_state import Job
@@ -300,10 +299,9 @@ class StateMemoryTable:
     COMP_STEP = 0.01
     TIME_STEP = 0.1
 
-    def __init__(self, num_apps, prune_mem_table=False):
+    def __init__(self, num_apps):
         self.__num_apps = num_apps
         self.__table = []
-        self.__prune_mem_table = prune_mem_table
         self.__added_cnt = 0
 
     def find_min_energy_from_state(self, task_comp, time, exclude_list=[]):
@@ -329,23 +327,6 @@ class StateMemoryTable:
         else:
             return None
 
-    def __prune(self):
-        log.debug("Pruning the memory table. Current size = {}".format(
-            len(self.__table)))
-        to_exclude = []
-        for idx, item in enumerate(self.__table):
-            found_energy = self.find_min_energy_from_state(
-                item['task_comp'], item['time'], to_exclude + [idx])
-            if found_energy is None:
-                continue
-            if found_energy + EPS > item['min_energy']:
-                to_exclude.append(idx)
-        log.debug("Items to remove: {}".format(to_exclude))
-        self.__table = [
-            v for k, v in enumerate(self.__table) if k not in to_exclude
-        ]
-        log.debug("New size = {}".format(len(self.__table)))
-
     def size(self):
         return len(self.__table)
 
@@ -361,23 +342,11 @@ class StateMemoryTable:
                 return
             if min_energy < current_e + EPS:
                 return
-        if self.__prune_mem_table and False:
-            task_comp = [
-                math.floor(x / StateMemoryTable.COMP_STEP) *
-                StateMemoryTable.COMP_STEP for x in task_comp
-            ]
-            time = math.ceil(
-                time / StateMemoryTable.TIME_STEP) * StateMemoryTable.TIME_STEP
         s = {}
         s['task_comp'] = task_comp
         s['time'] = time
         s['min_energy'] = min_energy
         self.__table.append(s)
-
-        if self.__prune_mem_table:
-            self.__added_cnt += 1
-            if self.__added_cnt % 100 == 0:
-                self.__prune()
 
     def dump_str(self):
         res = "StateMemoryTable:\n"
@@ -398,7 +367,6 @@ class BruteforceScheduler(SchedulerBase):
         self.__scheduled_on_time = True
         self.__memoization = kwargs["memoization"]
         self.__dump_mem_table = kwargs["dump_mem_table"]
-        self.__prune_mem_table = kwargs["prune_mem_table"]
 
         # Initialize a step scheduler
         self.__step_scheduler = BruteforceSegmentScheduler(
@@ -575,8 +543,7 @@ class BruteforceScheduler(SchedulerBase):
     # Run scheduler with memoization
     def __schedule_memoization(self):
         self.__mem_step_counter = 0
-        self.__mem_state_table = StateMemoryTable(len(self.__jobs),
-                                                  self.__prune_mem_table)
+        self.__mem_state_table = StateMemoryTable(len(self.__jobs))
         self.__force_return = False
         self.__schedule_memoization_step(None)
         return (self.__best_energy != math.inf, self.__best_scheduling,

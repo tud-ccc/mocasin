@@ -13,6 +13,3 @@ memoization: false
 # Dump the mem table
 dump_mem_table: false
 
-# Enable pruning the mem table
-prune_mem_table: false
-
