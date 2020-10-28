@@ -4,9 +4,6 @@ _target_: pykpn.tetris.scheduler.bruteforce.BruteforceScheduler
 
 reschedule: true
 
-# Drop schedulings close to current best by bf_drop.
-bf_drop: 0.0
-
 # Dump the status of the queue every N steps
 bf_dump_steps: 1000
 

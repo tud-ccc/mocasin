@@ -5,7 +5,6 @@
 
 # TODO:
 # [ ] Separate Memoization code into another class/file
-# [ ] Remove drop_high option
 # [ ] Remove pruning in memoization
 # [ ] Remove time limits
 # [ ] Remove rescheduling option
@@ -439,7 +438,6 @@ class BruteforceScheduler(SchedulerBase):
         super().__init__(platform)
         # TODO: Remove reschedule options (always true)
         self.__rescheduling = kwargs['reschedule']
-        self.__drop_high = kwargs["bf_drop"]
         self.__dump_steps = kwargs["bf_dump_steps"]
 
         self.__time_limit = kwargs["time_limit"]
@@ -483,7 +481,7 @@ class BruteforceScheduler(SchedulerBase):
         pass
 
     def _energy_limit(self):
-        return self.__best_energy * (1.0 - self.__drop_high) + EPS
+        return self.__best_energy + EPS
 
     def __filter_queue(self):
         energy_limit = self._energy_limit()
