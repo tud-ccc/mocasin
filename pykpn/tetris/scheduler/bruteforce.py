@@ -7,7 +7,6 @@
 # [ ] Separate Memoization code into another class/file
 # [ ] Remove pruning in memoization
 # [ ] Remove time limits
-# [ ] Remove rescheduling option
 
 from pykpn.tetris.job_state import Job
 from pykpn.tetris.schedule import Schedule, ScheduleSegment, JobSegmentMapping
@@ -84,17 +83,9 @@ class _BfSchedule(Schedule):
 
 
 class BruteforceSegmentScheduler:
-    def __init__(self, parent_scheduler, rescheduling=True,
-                 all_combinations=False):
-        #    def __init__(self, parent_scheduler, job_table, prev_mapping=None,
-        #                 rescheduling=True, all_combinations=False):
-        #        assert len(job_table) != 0
+    def __init__(self, parent_scheduler, all_combinations=False):
         self.__parent = parent_scheduler
-        #        self.__job_table = job_table
-        self.__rescheduling = rescheduling
         self.__all_combinations = all_combinations
-
-        #        self.__start_time = job_table.time
 
         # Initialize variables used during the scheduling to None
         self.__jobs = None
@@ -187,57 +178,54 @@ class BruteforceSegmentScheduler:
                                        best_case_energy=total_energy)
             res.append((full_meets_deadline, total_energy, new_schedule))
 
-        if self.__rescheduling:  # to be removed, always true
-            segment_mapping_list = []
-            min_finish_time = min([x.end_time for x in full_mapping_list])
-            stop_jobs = [
-                x for x in full_mapping_list
-                if x.end_time < min_finish_time + FINISH_MAX_DIFF
-            ]
-            segment_end_time = max([x.end_time for x in stop_jobs])
-            segment_duration = segment_end_time - self.__segment_start_time
-            assert segment_duration > self.__min_segment_duration - EPS
-            for fsm in full_mapping_list:
-                ssm = JobSegmentMapping(fsm.request, fsm.mapping,
-                                        start_time=fsm.start_time,
-                                        start_cratio=fsm.start_cratio,
-                                        end_time=segment_end_time)
-                segment_mapping_list.append(ssm)
+        segment_mapping_list = []
+        min_finish_time = min([x.end_time for x in full_mapping_list])
+        stop_jobs = [
+            x for x in full_mapping_list
+            if x.end_time < min_finish_time + FINISH_MAX_DIFF
+        ]
+        segment_end_time = max([x.end_time for x in stop_jobs])
+        segment_duration = segment_end_time - self.__segment_start_time
+        assert segment_duration > self.__min_segment_duration - EPS
+        for fsm in full_mapping_list:
+            ssm = JobSegmentMapping(fsm.request, fsm.mapping,
+                                    start_time=fsm.start_time,
+                                    start_cratio=fsm.start_cratio,
+                                    end_time=segment_end_time)
+            segment_mapping_list.append(ssm)
 
-            # Check if all jobs might meet deadlines given the current mapping
-            # TODO: Check idle jobs
-            segment_meets_deadline = True
-            finished = True
+        # Check if all jobs might meet deadlines given the current mapping
+        # TODO: Check idle jobs
+        segment_meets_deadline = True
+        finished = True
+        for sm in segment_mapping_list:
+            d = sm.request.deadline
+            if not sm.finished:
+                finished = False
+            if sm.end_time > d:
+                segment_meets_deadline = False
+            min_time_left = sm.request.get_min_exec_time() * (1.0 -
+                                                              sm.end_cratio)
+            if min_time_left + sm.end_time > d:
+                segment_meets_deadline = False
+
+        if segment_meets_deadline:
+            # Evaluate best-case energy consumption
+            cur_energy = sum([x.energy for x in segment_mapping_list])
+            total_energy = cur_energy + self.__accumulated_energy
+            best_case_energy = total_energy
             for sm in segment_mapping_list:
-                d = sm.request.deadline
-                if not sm.finished:
-                    finished = False
-                if sm.end_time > d:
-                    segment_meets_deadline = False
-                min_time_left = sm.request.get_min_exec_time() * (
-                    1.0 - sm.end_cratio)
-                if min_time_left + sm.end_time > d:
-                    segment_meets_deadline = False
+                bc_energy = sm.request.get_min_energy() * (1.0 - sm.end_cratio)
+                best_case_energy += bc_energy
 
-            if segment_meets_deadline:
-                # Evaluate best-case energy consumption
-                cur_energy = sum([x.energy for x in segment_mapping_list])
-                total_energy = cur_energy + self.__accumulated_energy
-                best_case_energy = total_energy
-                for sm in segment_mapping_list:
-                    bc_energy = sm.request.get_min_energy() * (1.0 -
-                                                               sm.end_cratio)
-                    best_case_energy += bc_energy
-
-                new_schedule = self.__prev_schedule.copy()
-                new_segment = ScheduleSegment(
-                    self.__parent.platform, segment_mapping_list,
-                    time_range=(self.__segment_start_time, segment_end_time))
-                new_segment.verify()
-                new_schedule.append_segment(new_segment)
-                new_schedule.best_case_energy = total_energy
-                res.append(
-                    (segment_meets_deadline, total_energy, new_schedule))
+            new_schedule = self.__prev_schedule.copy()
+            new_segment = ScheduleSegment(
+                self.__parent.platform, segment_mapping_list,
+                time_range=(self.__segment_start_time, segment_end_time))
+            new_segment.verify()
+            new_schedule.append_segment(new_segment)
+            new_schedule.best_case_energy = total_energy
+            res.append((segment_meets_deadline, total_energy, new_schedule))
         return res
 
     def __schedule_step(self, current_mappings):
@@ -284,8 +272,6 @@ class BruteforceSegmentScheduler:
 
         next_job = self.__jobs[len(current_mappings)]
         for mapping in next_job.request.mappings + [None]:
-            if not self.__rescheduling and mapping is None:
-                continue
             self.__schedule_step(current_mappings + [mapping])
 
     def schedule(self, jobs, segment_start_time=0.0, accumulated_energy=0.0,
@@ -436,8 +422,7 @@ class StateMemoryTable:
 class BruteforceScheduler(SchedulerBase):
     def __init__(self, platform, **kwargs):
         super().__init__(platform)
-        # TODO: Remove reschedule options (always true)
-        self.__rescheduling = kwargs['reschedule']
+
         self.__dump_steps = kwargs["bf_dump_steps"]
 
         self.__time_limit = kwargs["time_limit"]
@@ -449,8 +434,7 @@ class BruteforceScheduler(SchedulerBase):
 
         # Initialize a step scheduler
         self.__step_scheduler = BruteforceSegmentScheduler(
-            self, rescheduling=self.__rescheduling,
-            all_combinations=self.__memoization)
+            self, all_combinations=self.__memoization)
 
     @property
     def name(self):

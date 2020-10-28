@@ -2,8 +2,6 @@
 
 _target_: pykpn.tetris.scheduler.bruteforce.BruteforceScheduler
 
-reschedule: true
-
 # Dump the status of the queue every N steps
 bf_dump_steps: 1000
 
