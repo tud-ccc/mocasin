@@ -483,6 +483,9 @@ class Schedule:
                 segment.get_used_processor_types(), segment.energy)
         return res
 
+    def count_finished_jobs(self):
+        return sum([ms[-1].finished for _, ms in self.per_requests().items()])
+
     def per_requests(self, none_as_idle=False):
         """ Returns a dict of 'JobRequestInfo' objects involved in the schedule
         with the list of 'JobSegmentMapping' objects. If 'none_as_idle' is true,

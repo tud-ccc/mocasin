@@ -56,9 +56,10 @@ class _BfSchedule(Schedule):
         self.__best_case_energy = val
 
     def __lt__(self, other):
-        if self.count_non_finished_jobs() != other.count_non_finished_jobs():
-            return (self.count_non_finished_jobs() <
-                    other.count_non_finished_jobs())
+        sf = self.count_finished_jobs()
+        of = other.count_finished_jobs()
+        if sf != of:
+            return sf > of
         if self.best_case_energy != other.best_case_energy:
             return self.best_case_energy < other.best_case_energy
         if self.end_time != other.end_time:
@@ -69,12 +70,6 @@ class _BfSchedule(Schedule):
         if self.energy != other.energy:
             return self.energy < other.energy
         return id(self) < id(other)
-
-    def count_non_finished_jobs(self):
-        return sum([
-            1 for _, ms in self.per_requests().items() if not ms[-1].finished
-        ])
-
 
 class BruteforceSegmentScheduler:
     def __init__(self, parent_scheduler):
@@ -301,13 +296,11 @@ class BruteforceScheduler(SchedulerBase):
             return math.inf
 
     def __calc_distribution_by_finished(self):
-        # FIXME: count_non_finished_jobs might be incorrect because the schedule
-        # does not include idle jobs
         num_tasks = len(self.__jobs)
 
         res = [0] * (num_tasks+1)
         for s in self.__hq:
-            res[num_tasks - s.count_non_finished_jobs()] += 1
+            res[s.count_finished_jobs()] += 1
         return res
 
     def __clear(self):
