@@ -32,51 +32,12 @@ def _is_better_eu(a, b):
     return False
 
 
-def get_bc_energy(jobs):
+def get_jobs_bc_energy(jobs):
     """ Returns the best energy of job lists.
     """
     return sum([(1.0 - j.cratio) * j.request.get_min_energy() for j in jobs
                 if not j.is_terminated()])
 
-
-class _BfSchedule(Schedule):
-    """Inheritted schedule class for Bruteforce scheduler.
-
-    This class is used to store intermediate mapping object with
-    additional metadata.
-    """
-    def __init__(self, segments=[], best_case_energy=None):
-        Schedule.__init__(self, segments=segments)
-        assert best_case_energy is not None
-        self.__best_case_energy = best_case_energy
-
-    def copy(self):
-        """_BfSchedule: returns a shallow copy of the mapping"""
-        return _BfSchedule(self.segments(), self.__best_case_energy)
-
-    @property
-    def best_case_energy(self):
-        return self.__best_case_energy
-
-    @best_case_energy.setter
-    def best_case_energy(self, val):
-        self.__best_case_energy = val
-
-    def __lt__(self, other):
-        sf = self.count_finished_jobs()
-        of = other.count_finished_jobs()
-        if sf != of:
-            return sf > of
-        if self.best_case_energy != other.best_case_energy:
-            return self.best_case_energy < other.best_case_energy
-        if self.end_time != other.end_time:
-            return self.end_time > other.end_time
-        if len(self) > 0 and len(other) > 0:
-            if self.last.energy != other.last.energy:
-                return self.last.energy < other.last.energy
-        if self.energy != other.energy:
-            return self.energy < other.energy
-        return id(self) < id(other)
 
 class BruteforceSegmentScheduler:
     def __init__(self, parent_scheduler):
@@ -163,18 +124,6 @@ class BruteforceSegmentScheduler:
         new_segment.verify()
         return new_segment
 
-    def __can_segment_meet_deadlines(self, segment):
-        """ Returns whether the segment can meet deadlines.
-
-        Args:
-            segment (ScheduleSegment): an input segment.
-        """
-        for js in segment:
-            if js.end_time > js.request.deadline:
-                return False
-        end_jobs = Job.from_schedule(Schedule(segment), self.__jobs)
-        return all(j.can_meet_deadline(segment.end_time) for j in end_jobs)
-
     def __schedule_step(self, current_mappings):
         """ Perform a single step of the bruteforce algorithm.
 
@@ -194,12 +143,26 @@ class BruteforceSegmentScheduler:
             if segment is None:
                 return
 
-            if not self.__can_segment_meet_deadlines(segment):
+            # Check that all jobs meet dealines
+            for js in segment:
+                if js.end_time > js.request.deadline:
+                    return
+
+            # Generate the job states at the end of the segment
+            new_jobs = [
+                x for x in Job.from_schedule(Schedule(self.platform, segment),
+                                             self.__jobs)
+                if not x.is_terminated()
+            ]
+
+            # Check whether all remaining jobs still meet deadlines
+            if not all(
+                    j.can_meet_deadline(segment.end_time) for j in new_jobs):
                 return
 
             new_schedule = self.__prev_schedule.copy()
             new_schedule.append_segment(segment)
-            self.__results.append(new_schedule)
+            self.__results.append((new_schedule, new_jobs))
             return
 
         next_job = self.__jobs[len(current_mappings)]
@@ -257,6 +220,53 @@ class BruteforceSegmentScheduler:
         return results
 
 
+class ScheduleHeap:
+    def __init__(self):
+        self._index = 0
+        self._data = []
+
+    @staticmethod
+    def _key(schedule, jobs):
+        """ Returns a tuple: (-#finished_jobs, bc_energy, -end_time).
+        """
+        f = schedule.count_finished_jobs()
+        full_bc_energy = schedule.energy + get_jobs_bc_energy(jobs)
+        end_time = schedule.end_time
+        if end_time is None:
+            end_time = -math.inf
+        return (-f, full_bc_energy, -end_time)
+
+    def __len__(self):
+        return len(self._data)
+
+    def empty(self):
+        return len(self._data) == 0
+
+    def push(self, schedule, jobs):
+        key = self._key(schedule, jobs)
+        heapq.heappush(self._data, (key, self._index, (schedule, jobs)))
+        self._index += 1
+
+    def pop(self):
+        return heapq.heappop(self._data)[2]
+
+    def _get_finished_distr(self):
+        res = []
+        for item in self._data:
+            s, _ = item[2]
+            f = s.count_finished_jobs()
+            while len(res) <= f:
+                res.append(0)
+            res[f] += 1
+        return res
+
+    def _get_min_bc_energy(self):
+        return min([
+            schedule.energy + get_jobs_bc_energy(jobs)
+            for _, _, (schedule, jobs) in self._data
+        ])
+
+
 class BruteforceScheduler(SchedulerBase):
     def __init__(self, platform, **kwargs):
         super().__init__(platform)
@@ -281,26 +291,9 @@ class BruteforceScheduler(SchedulerBase):
     def _energy_limit(self):
         return self.__best_energy + EPS
 
-    def __hq_best_est_energy(self):
-        hq_bc_list = [x.best_case_energy for x in self.__hq]
-        if len(hq_bc_list) > 0:
-            return min(hq_bc_list)
-        else:
-            return math.inf
-
-    def __calc_distribution_by_finished(self):
-        num_tasks = len(self.__jobs)
-
-        res = [0] * (num_tasks+1)
-        for s in self.__hq:
-            res[s.count_finished_jobs()] += 1
-        return res
-
     def __clear(self):
         self.__best_scheduling = None
         self.__best_energy = math.inf
-        self._wc_energy = math.inf
-        self.__hq = []
 
     def schedule(self, jobs, scheduling_start_time=0.0):
         """Find the optimal scheduling.
@@ -312,58 +305,46 @@ class BruteforceScheduler(SchedulerBase):
         Returns:
             a tuple (successful, list of configurations)
         """
+        # Initialization
         self.__clear()
         self.__jobs = jobs
         self.__scheduling_start_time = scheduling_start_time
 
-        # Generate the empty mapping
-        m = None
+        # Create ScheduleHeap, push a starting point
+        schedule_heap = ScheduleHeap()
+        schedule_heap.push(Schedule(self.platform, []), self.__jobs)
 
-        heapq.heappush(self.__hq, m)
-
-        finished = []
         step_counter = 0
 
-        while self.__hq:
-            l = len(self.__hq)
-            m = heapq.heappop(self.__hq)
-            if m is None:
-                # First iteration
-                current_jobs = self.__jobs.copy()
-                m = _BfSchedule(segments=[], best_case_energy=-1)
-                segment_start_time = self.__scheduling_start_time
-            else:
-                # Create a list of remained jobs
-                current_jobs = [
-                    x for x in Job.from_schedule(m, self.__jobs)
-                    if not x.is_terminated()
-                ]
-                segment_start_time = m.end_time
-
-            e = m.energy
-            bc = m.best_case_energy
-            if e > self._energy_limit():
-                continue
-
-            if bc > self._energy_limit():
-                continue
+        while not schedule_heap.empty():
+            if step_counter % self.__dump_steps == 0:
+                finished_distr = schedule_heap._get_finished_distr()
+                log.debug(
+                    "step_cnt = {}, heap_size = {}, "
+                    "found_best_energy = {:.3f}, heap_bc_energy = {:.3f}, "
+                    "distr_by_finished = {}".format(
+                        step_counter, len(schedule_heap), self.__best_energy,
+                        schedule_heap._get_min_bc_energy(), finished_distr))
             step_counter += 1
 
-            # print("current_jobs", [j.to_str() for j in current_jobs])
-            segments = self.__segment_scheduler.schedule(
-                current_jobs, segment_start_time=segment_start_time,
-                accumulated_energy=e, prev_schedule=m)
-            # print("#segments:", len(segments))
-            segments.sort()
+            cschedule, cjobs = schedule_heap.pop()
+            cstart_time = self.__scheduling_start_time
+            if len(cschedule.segments()) > 0:
+                cstart_time = cschedule.end_time
 
-            for segment in segments:
-                e = segment.energy
-                if e > self._energy_limit():
-                    continue
-                if segment.best_case_energy > self._energy_limit():
-                    continue
-                # Check that all jobs are finished
-                req_schedules = segment.per_requests()
+            full_bc_energy = cschedule.energy + get_jobs_bc_energy(cjobs)
+            if full_bc_energy > self._energy_limit():
+                continue
+
+            # print("current_jobs", [j.to_str() for j in current_jobs])
+            results = self.__segment_scheduler.schedule(
+                cjobs, segment_start_time=cstart_time,
+                accumulated_energy=cschedule.energy, prev_schedule=cschedule)
+            # print("#segments:", len(segments))
+
+            for nsegment, njobs in results:
+                # Check whether all jobs are finished
+                req_schedules = nsegment.per_requests()
                 all_jobs_finished = True
                 for j in self.__jobs:
                     if j.request not in req_schedules:
@@ -373,17 +354,11 @@ class BruteforceScheduler(SchedulerBase):
                         all_jobs_finished = False
                         break
                 if all_jobs_finished:
-                    if _is_better_eu(segment, self.__best_scheduling):
-                        self.__register_best_scheduling(segment)
+                    if _is_better_eu(nsegment, self.__best_scheduling):
+                        self.__register_best_scheduling(nsegment)
                     continue
-                heapq.heappush(self.__hq, segment)
 
-            if step_counter % self.__dump_steps == 0:
-                distr_finished = self.__calc_distribution_by_finished()
-                log.debug("step_counter = {}, queue_size = {}, "
-                          "found_best_energy = {}, hq_best_est_energy = {}, "
-                          "distr_by_finished = {}".format(
-                              step_counter, len(self.__hq), self.__best_energy,
-                              self.__hq_best_est_energy(), distr_finished))
+                # otherwise push the new state into the heap
+                schedule_heap.push(nsegment, njobs)
 
         return self.__best_scheduling

@@ -7,7 +7,8 @@ from pykpn.tetris.job_state import Job
 from pykpn.tetris.schedule import Schedule
 from pykpn.tetris.scheduler.base import SchedulerBase
 from pykpn.tetris.scheduler.bruteforce import (BruteforceSegmentScheduler,
-                                               get_bc_energy, _is_better_eu)
+                                               get_jobs_bc_energy,
+                                               _is_better_eu)
 
 import logging
 import math
@@ -18,10 +19,6 @@ log = logging.getLogger(__name__)
 
 
 class StateMemoryTable:
-
-    COMP_STEP = 0.01
-    TIME_STEP = 0.1
-
     def __init__(self, num_apps):
         self.__num_apps = num_apps
         self.__table = []
@@ -120,72 +117,61 @@ class BruteforceMemoScheduler(SchedulerBase):
 
         self.__mem_step_counter = 0
         self.__mem_state_table = StateMemoryTable(len(self.__jobs))
-        self.__schedule_step(None)
+        self.__schedule_step(Schedule(self.platform, []), jobs)
         return self.__best_scheduling
 
     # Returns (min energy to finish)
-    def __schedule_step(self, mapping):
-        self.__mem_step_counter += 1
-
+    def __schedule_step(self, cschedule, cjobs):
         if self.__mem_step_counter % self.__dump_steps == 0:
             log.debug("step_counter = {}, found_best_energy = {},"
                       " size(mem_table) = {}".format(
                           self.__mem_step_counter, self.__best_energy,
                           self.__mem_state_table.size()))
 
-        if mapping is None:
-            prev_e = 0.0
-            jobs = self.__jobs.copy()
-            passed_schedule = Schedule([])
-            segment_start_time = self.__scheduling_start_time
-        else:
-            prev_e = mapping.energy
-            jobs = [
-                x for x in Job.from_schedule(mapping, self.__jobs)
-                if not x.is_terminated()
-            ]
-            passed_schedule = mapping
-            segment_start_time = mapping.end_time
+        self.__mem_step_counter += 1
+
+        cstart_time = self.__scheduling_start_time
+        if len(cschedule.segments()) > 0:
+            cstart_time = cschedule.end_time
 
         # If bc_energy exceeds the energy of the current solution, skip it
-        bc_energy = get_bc_energy(jobs)
-        if bc_energy > self._energy_limit():
-            assert False, "to be covered with a test case"
-            return (bc_energy - prev_e)
+        jobs_bc_energy = get_jobs_bc_energy(cjobs)
+        full_bc_energy = cschedule.energy + jobs_bc_energy
+        if full_bc_energy > self._energy_limit():
+            return jobs_bc_energy
 
-        if mapping is not None:
-            req_schedules = mapping.per_requests()
-            cratio_list = [
-                req_schedules[j.request][-1].end_cratio
-                if j.request in req_schedules else j.cratio
-                for j in self.__jobs
-            ]
-            mem_e = self.__mem_state_table.find_min_energy_from_state(
-                cratio_list, mapping.end_time)
-            if self.__dump_mem_table:
-                log.debug(self.__mem_state_table.dump_str())
-                log.debug(
-                    "Check mem table: comp = {}, time = {}, found energy = {}"
-                    .format(cratio_list, mapping.end_time(), mem_e))
-            if mem_e is not None:
+        # Look up in the mem_state_table
+        req_schedules = cschedule.per_requests()
+        cratio_list = [
+            req_schedules[j.request][-1].end_cratio
+            if j.request in req_schedules else j.cratio for j in self.__jobs
+        ]
+
+        mem_e = self.__mem_state_table.find_min_energy_from_state(
+            cratio_list, cstart_time)
+        if self.__dump_mem_table:
+            log.debug(self.__mem_state_table.dump_str())
+            log.debug(
+                "Checking mem table: comp = {}, time = {}, found energy = {}"
+                .format(cratio_list, cstart_time, mem_e))
+
+        # Check with a cached energy whether we can improve energy efficiency
+        if mem_e is not None:
+            if mem_e + cschedule.energy >= self._energy_limit():
                 if self.__dump_mem_table:
-                    log.debug("prev_energy = {}".format(prev_e))
-                if mem_e + prev_e >= self._energy_limit():
-                    if self.__dump_mem_table:
-                        log.debug("Returning")
-                    return mem_e
+                    log.debug("Returning")
+                return mem_e
 
-        segments = self.__segment_scheduler.schedule(
-            jobs, segment_start_time=segment_start_time,
-            accumulated_energy=prev_e, prev_schedule=passed_schedule)
+        # Get child segments
+        results = self.__segment_scheduler.schedule(
+            cjobs, segment_start_time=cstart_time,
+            accumulated_energy=cschedule.energy, prev_schedule=cschedule)
 
-        child_min_energy = math.inf
+        min_child_energy = math.inf
 
-        for segment in segments:
-            e = segment.energy
-
+        for nsegment, njobs in results:
             # Check if all jobs are finished
-            req_schedules = segment.per_requests()
+            req_schedules = nsegment.per_requests()
             all_jobs_finished = True
             for j in self.__jobs:
                 if j.request not in req_schedules:
@@ -195,17 +181,18 @@ class BruteforceMemoScheduler(SchedulerBase):
                     all_jobs_finished = False
                     break
             if all_jobs_finished:
-                if _is_better_eu(segment, self.__best_scheduling):
-                    self.__register_best_scheduling(segment)
-                if e - prev_e < child_min_energy:
-                    child_min_energy = e - prev_e
+                if _is_better_eu(nsegment, self.__best_scheduling):
+                    self.__register_best_scheduling(nsegment)
+                current_child_energy = nsegment.energy - cschedule.energy
+                min_child_energy = min(current_child_energy, min_child_energy)
                 continue
-            (child_e) = self.__schedule_step(segment)
-            if e + child_e - prev_e < child_min_energy:
-                child_min_energy = e + child_e - prev_e
 
-        if mapping is not None:
-            self.__mem_state_table.add_state(cratio_list, mapping.end_time,
-                                             child_min_energy)
+            # If non-finished jobs exist
+            (child_e) = self.__schedule_step(nsegment, njobs)
+            current_child_energy = nsegment.energy + child_e - cschedule.energy
+            min_child_energy = min(current_child_energy, min_child_energy)
 
-        return child_min_energy
+        self.__mem_state_table.add_state(cratio_list, cstart_time,
+                                         min_child_energy)
+
+        return min_child_energy
