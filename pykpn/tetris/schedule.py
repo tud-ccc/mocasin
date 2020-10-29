@@ -378,10 +378,13 @@ class Schedule:
         self.__segments = []
 
         # yapf: disable
-        assert isinstance(segments, list), (
-                "segments should be a type of list, but it is {}"
+        assert isinstance(segments, (list, ScheduleSegment)), (
+                "segments must be a list or a ScheduleSegment, but it is {}"
                 .format(type(segments)))
         # yapf: enable
+
+        if isinstance(segments, ScheduleSegment):
+            segments = [segments]
 
         for s in segments:
             self.append_segment(s)

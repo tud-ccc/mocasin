@@ -185,6 +185,23 @@ class Job:
             jobs.append(job)
         return jobs
 
+    def can_meet_deadline(self, ctime):
+        """ Returns whether the job can meet a deadline.
+
+        If a job in a TERMINATED state, the function returns true if the job is
+        completed, otherwise it returns false.
+
+        Args:
+            ctime (float): current time
+        """
+        rratio = 1.0 - self.cratio
+        rtime = self.request.deadline - ctime
+
+        if self.is_terminated():
+            return self.completed
+
+        return (self.request.get_min_exec_time() * rratio <= rtime)
+
     def dispatch(self):
         """ Dispatch the job, that it could execute.
 
@@ -263,7 +280,7 @@ class Job:
         res = []
         for j in init_jobs:
             j_after = copy.copy(j)
-            for segment in req_schedules.get(j.request, []):
+            for segment in req_schedules.get(j.request, [None]):
                 if segment is None:
                     j_after.idle()
                 else:

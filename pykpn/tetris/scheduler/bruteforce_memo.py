@@ -7,7 +7,7 @@ from pykpn.tetris.job_state import Job
 from pykpn.tetris.schedule import Schedule
 from pykpn.tetris.scheduler.base import SchedulerBase
 from pykpn.tetris.scheduler.bruteforce import (BruteforceSegmentScheduler,
-                                               _is_better_eu)
+                                               get_bc_energy, _is_better_eu)
 
 import logging
 import math
@@ -126,20 +126,32 @@ class BruteforceMemoScheduler(SchedulerBase):
     # Returns (min energy to finish)
     def __schedule_step(self, mapping):
         self.__mem_step_counter += 1
-        if mapping is None:
-            prev_e = 0.0
-            bc = -1
-        else:
-            prev_e = mapping.energy
-            bc = mapping.best_case_energy
-        if bc > self._energy_limit():
-            return (bc - e)
 
         if self.__mem_step_counter % self.__dump_steps == 0:
             log.debug("step_counter = {}, found_best_energy = {},"
                       " size(mem_table) = {}".format(
                           self.__mem_step_counter, self.__best_energy,
                           self.__mem_state_table.size()))
+
+        if mapping is None:
+            prev_e = 0.0
+            jobs = self.__jobs.copy()
+            passed_schedule = Schedule([])
+            segment_start_time = self.__scheduling_start_time
+        else:
+            prev_e = mapping.energy
+            jobs = [
+                x for x in Job.from_schedule(mapping, self.__jobs)
+                if not x.is_terminated()
+            ]
+            passed_schedule = mapping
+            segment_start_time = mapping.end_time
+
+        # If bc_energy exceeds the energy of the current solution, skip it
+        bc_energy = get_bc_energy(jobs)
+        if bc_energy > self._energy_limit():
+            assert False, "to be covered with a test case"
+            return (bc_energy - prev_e)
 
         if mapping is not None:
             req_schedules = mapping.per_requests()
@@ -158,42 +170,22 @@ class BruteforceMemoScheduler(SchedulerBase):
             if mem_e is not None:
                 if self.__dump_mem_table:
                     log.debug("prev_energy = {}".format(prev_e))
-                if mem_e == math.inf:
-                    if self.__dump_mem_table:
-                        log.debug("Returning")
-                    return math.inf
-                if mem_e + prev_e > self._energy_limit():
+                if mem_e + prev_e >= self._energy_limit():
                     if self.__dump_mem_table:
                         log.debug("Returning")
                     return mem_e
 
-        if mapping is None:
-            jobs = self.__jobs.copy()
-            passed_schedule = Schedule([])
-            segment_start_time = self.__scheduling_start_time
-        else:
-            jobs = [
-                x for x in Job.from_schedule(mapping, self.__jobs)
-                if not x.is_terminated()
-            ]
-            passed_schedule = mapping
-            segment_start_time = mapping.end_time
-
-        results = self.__segment_scheduler.schedule(
+        segments = self.__segment_scheduler.schedule(
             jobs, segment_start_time=segment_start_time,
             accumulated_energy=prev_e, prev_schedule=passed_schedule)
 
-        best_mapping = None
         child_min_energy = math.inf
 
-        for m in results:
-            e = m.energy
-            if m.best_case_energy > self._energy_limit():
-                if m.best_case_energy - prev_e < child_min_energy:
-                    child_min_energy = m.best_case_energy - prev_e
-                continue
-            # Check that all jobs are finished
-            req_schedules = m.per_requests()
+        for segment in segments:
+            e = segment.energy
+
+            # Check if all jobs are finished
+            req_schedules = segment.per_requests()
             all_jobs_finished = True
             for j in self.__jobs:
                 if j.request not in req_schedules:
@@ -203,13 +195,12 @@ class BruteforceMemoScheduler(SchedulerBase):
                     all_jobs_finished = False
                     break
             if all_jobs_finished:
-                if _is_better_eu(m, self.__best_scheduling):
-                    self.__register_best_scheduling(m)
-                best_mapping = m
+                if _is_better_eu(segment, self.__best_scheduling):
+                    self.__register_best_scheduling(segment)
                 if e - prev_e < child_min_energy:
                     child_min_energy = e - prev_e
                 continue
-            (child_e) = self.__schedule_step(m)
+            (child_e) = self.__schedule_step(segment)
             if e + child_e - prev_e < child_min_energy:
                 child_min_energy = e + child_e - prev_e
 
