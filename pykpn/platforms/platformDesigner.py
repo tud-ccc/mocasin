@@ -10,6 +10,11 @@ from collections import OrderedDict
 from pykpn.util import logging
 import sys
 
+try:
+    import pympsym
+except:
+    pass
+
 log = logging.getLogger(__name__)
 
 
@@ -54,18 +59,32 @@ class PlatformDesigner():
         self.__activeScope = 'base'
         self.__scopeStack = []
         self.__elementDict = { 'base' : {} }
+
+        try:
+            pympsym
+            self.__symLibrary = True
+            self.__agDict = { 'base' : {} }
+        except NameError:
+            self.__symLibrary = False
     
     def newElement(self, identifier):
         """A new scope is opened and pushed on the stack.
         :param identifier: The identifier, the element can be addressed with.
         :type identifier: int
         """
+        if self.__symLibrary:
+            if self._ag_hasSuperGraph():
+                raise ValueError("pympsym: extending super graph not supported")
+
         self.__scopeStack.append(self.__activeScope)
         self.__activeScope = identifier
         
         self.__namingSuffix += 1
         
         self.__elementDict.update({ identifier : {}})
+
+        if self.__symLibrary:
+            self.__agDict.update({ identifier: {} })
     
     def finishElement(self):
         """The first scope on the stack is closed. The element is still addressable with
@@ -74,27 +93,31 @@ class PlatformDesigner():
         if len(self.__scopeStack) == 0:
             return
         
-        tmpScope = self.__activeScope
-        self.__activeScope = self.__scopeStack.pop()
+        lastScope = self.__activeScope
+        nextScope = self.__scopeStack.pop()
         
         tmpPElist = []
         
-        for element in self.__elementDict[tmpScope]: 
-            if isinstance(self.__elementDict[tmpScope][element], list):
-                for entry in self.__elementDict[tmpScope][element]:
+        for element in self.__elementDict[lastScope]:
+            if isinstance(self.__elementDict[lastScope][element], list):
+                for entry in self.__elementDict[lastScope][element]:
                     tmpPElist.append(entry)
             
-            elif isinstance(self.__elementDict[tmpScope][element], dict):
-                for innerElement in self.__elementDict[tmpScope][element]:
+            elif isinstance(self.__elementDict[lastScope][element], dict):
+                for innerElement in self.__elementDict[lastScope][element]:
                     for entry in innerElement:
                         tmpPElist.append(entry)
             else:
                 raise RuntimeWarning("Expected an element of type list or dict!")
         
-        self.__elementDict[self.__activeScope].update({tmpScope : tmpPElist})
-        
-        self.__elementDict.pop(tmpScope, None)
-        
+        self.__elementDict[nextScope].update({lastScope : tmpPElist})
+        self.__elementDict.pop(lastScope, None)
+
+        if self.__symLibrary:
+            self._ag_updateAgs(lastScope, nextScope)
+
+        self.__activeScope = nextScope
+
     def addPeCluster(self, 
                     identifier, 
                     name, 
@@ -123,8 +146,12 @@ class PlatformDesigner():
                 self.__peAmount += 1
                 
                 self.__elementDict[self.__activeScope].update({identifier : processors})
+
         except:
             log.error("Exception caught: " + sys.exc_info()[0])
+
+        if self.__symLibrary:
+            self._ag_addCluster(identifier, name, amount, processors)
     
     def addPeClusterForProcessor(self,
                      identifier,
@@ -159,6 +186,10 @@ class PlatformDesigner():
                 self.__elementDict[self.__activeScope].update({identifier : processors})
         except:
             log.error("Exception caught: " + str(sys.exc_info()[0]))
+
+        if self.__symLibrary:
+            self._ag_addCluster(identifier, processor.name, amount, processors)
+
     
     def setSchedulingPolicy(self, 
                             policy, 
@@ -234,9 +265,12 @@ class PlatformDesigner():
                 prim.add_producer(pe[0], [produce])
                 prim.add_consumer(pe[0], [consume])
                 self.__platform.add_primitive(prim)
-                
+
         except:
             log.error("Exception caught: " + sys.exc_info()[0])
+
+        if self.__symLibrary:
+            self._ag_addClusterCache(identifier, name)
          
     def addCommunicationResource(self, 
                                   name,
@@ -281,7 +315,7 @@ class PlatformDesigner():
                                                  fd,
                                                  readLatency,
                                                  writeLatency,
-                                                 readThroughput, 
+                                                 readThroughput,
                                                  writeThroughput)
             else:
                 com_resource = CommunicationResource(nameToGive,
@@ -309,7 +343,26 @@ class PlatformDesigner():
             log.error("Exception caught: " + str(sys.exc_info()[0]))
             return
         
-        return
+        if self.__symLibrary:
+            idType = self._ag_classifyIdentifiers(clusterIds)
+
+            if self._ag_hasChips():
+                if idType != 'chips':
+                    raise ValueError("pympsym: cannot mix clusters/chips connections")
+
+                if self._ag_hasIdenticalChips():
+                    if not self._ag_hasSuperGraph():
+                        self._ag_createSuperGraph()
+
+                    self._ag_fullyConnectSuperGraph(clusterIds, name)
+
+                    if self.__activeScope == 'base':
+                        self._ag_updateBaseAgs()
+            else:
+                if idType != 'clusters':
+                    raise ValueError("pympsym: cannot mix clusters/chips connections")
+
+                self._ag_fullyConnectClusters(clusterIds, name)
     
     def createNetworkForCluster(self,
                     clusterIdentifier,
@@ -350,7 +403,8 @@ class PlatformDesigner():
         
         if self.__activeScope is not None:
             processorList = self.__elementDict[self.__activeScope][clusterIdentifier]
-            
+            processorNames = [p.name for p, _ in processorList]
+
             '''Adding physical links and NOC memories according to the adjacency list
             '''
             for key in adjacencyList:
@@ -373,7 +427,10 @@ class PlatformDesigner():
                                                                   readThroughput,
                                                                   writeThroughput)
                     self.__platform.add_communication_resource(communicationResource)
-                    
+
+                    if self.__symLibrary:
+                        self._ag_addClusterChannel(key, target, networkName)
+
             for processor in processorList:
                 if not adjacencyList[processor[0].name]:
                     continue
@@ -480,7 +537,7 @@ class PlatformDesigner():
                                                                readThroughput,
                                                                writeThroughput)
                     self.__platform.add_communication_resource(communicationResource)
-            
+
             for key in self.__elementDict[self.__activeScope]:
                 if adjacencyList[key] == []:
                     continue
@@ -522,8 +579,22 @@ class PlatformDesigner():
                     
                     self.__platform.add_primitive(prim)                    
                                         
-            
-        
+
+            if self.__symLibrary:
+                chipIds = set(adjacencyList.keys()) | \
+                          set(c for v in adjacencyList.values() for c in v)
+
+                if not self._ag_classifyIdentifiers(chipIds):
+                    raise ValueError("pympsym: chip network must consist of chips only")
+
+                if self._ag_hasIdenticalChips():
+                    if not self._ag_hasSuperGraph():
+                        self._ag_createSuperGraph()
+
+                    self._ag_connectSuperGraph(adjacencyList, networkName)
+
+                    if self.__activeScope == 'base':
+                        self._ag_updateBaseAgs()
         else:
             return
     
@@ -544,6 +615,207 @@ class PlatformDesigner():
         :returns: The platform object the designer is working on.
         :rtype Platform:
         """
+        if self.__symLibrary:
+            self.__platform.ag = self._ag_makeChipAgs('base')
+
         return self.__platform
-    
-    
+
+    def _ag(self, scope=None):
+        if scope is None:
+            scope = self.__activeScope
+
+        return self.__agDict[scope]
+
+    def _ag_pop(self, scope=None):
+        return self.__agDict.pop(scope)
+
+    def _ag_isBase(self, scope=None):
+        return scope == 'base'
+
+    def _ag_classifyIdentifiers(self, ids, scope=None):
+        if not self._ag_hasChips(scope):
+            return 'clusters'
+
+        chipNames = set(chipName for chipName, _ in self._ag(scope)['chips'])
+
+        if all(id in chipNames for id in ids):
+            return 'chips'
+        elif not any(id in chipNames for id in ids):
+            return 'clusters'
+        else:
+            return 'mixed'
+
+    def _ag_hasAgs(self, scope=None):
+        return 'system' in self._ag(scope)
+
+    def _ag_setAgs(self, system, scope=None):
+        self._ag(scope)['system'] = system
+
+    def _ag_makeAgs(self, scope=None):
+        if self._ag_hasSuperGraph(scope):
+            return self._ag_makeSuperGraphAgs(scope)
+        elif self._ag_hasChips(scope):
+            return self._ag_makeChipAgs(scope)
+        else:
+            return self._ag_makeClusterAgs(scope)
+
+    def _ag_updateBaseAgs(self):
+        assert self.__activeScope == 'base'
+
+        self._ag_setAgs(self._ag_makeAgs())
+
+    def _ag_updateAgs(self, lastScope, nextScope):
+        if self._ag_isBase(lastScope):
+            raise ValueError("pympsym: improperly nested elements")
+
+        if self._ag_hasAgs(lastScope):
+            raise ValueError("pympsym: improperly nested elements")
+
+        self._ag_setAgs(self._ag_makeAgs(lastScope), lastScope)
+
+        self._ag_addChip(lastScope, self._ag_pop(lastScope), nextScope)
+
+    def _ag_hasChips(self, scope=None):
+        return 'chips' in self._ag(scope)
+
+    def _ag_hasIdenticalChips(self, scope=None):
+        return True # TODO
+
+    def _ag_addChip(self, chipName, chip, scope=None):
+        if self._ag_hasClusters(scope):
+            raise ValueError("pympsym: mixing cannot mix chips/clusters")
+
+        ag = self._ag(scope)
+
+        ag['chips'] = ag.get('chips', []) + [(chipName, chip)]
+
+    def _ag_makeChipAgs(self, scope=None):
+        agc = pympsym.ArchGraphCluster()
+        for _, chip in self._ag(scope)['chips']:
+            agc.add_subsystem(chip['system'])
+
+        return agc
+
+    def _ag_hasSuperGraph(self, scope=None):
+        ag = self._ag(scope)
+
+        return 'proto' in ag and 'super_graph' in ag
+
+    def _ag_createSuperGraph(self, scope=None):
+        ag = self._ag(scope)
+
+        protoChipName, protoChip = ag['chips'][0]
+        proto = protoChip['system']
+
+        superGraph = pympsym.ArchGraph()
+        superGraphProcessors = {}
+
+        for i, (chipName, chip) in enumerate(ag['chips']):
+            superGraphProcessors[chipName] = superGraph.add_processor(protoChipName)
+
+        ag['proto'] = proto
+        ag['super_graph'] = superGraph
+        ag['super_graph_processors'] = superGraphProcessors
+
+    def _ag_connectSuperGraph(self, chipAdjacencies, chType, scope=None):
+        ag = self._ag(scope)
+
+        superGraph = ag['super_graph']
+        superGraphProcessors = ag['super_graph_processors']
+
+        chipAdjacencies = {
+            superGraphProcessors[k] : [superGraphProcessors[c] for c in v] \
+            for k, v in chipAdjacencies.items()
+        }
+
+        superGraph.add_channels(chipAdjacencies, chType)
+
+    def _ag_fullyConnectSuperGraph(self, chips, chType, scope=None):
+        ag = self._ag(scope)
+
+        superGraph = ag['super_graph']
+        superGraphProcessors = ag['super_graph_processors']
+
+        for chip1 in chips:
+            chip1 = superGraphProcessors[chip1]
+
+            for chip2 in chips:
+                chip2 = superGraphProcessors[chip2]
+
+                superGraph.add_channel(chip1, chip2, chType)
+                superGraph.add_channel(chip2, chip1, chType)
+
+    def _ag_makeSuperGraphAgs(self, scope=None):
+        ag = self._ag(scope)
+
+        return pympsym.ArchUniformSuperGraph(ag['super_graph'], ag['proto'])
+
+    def _ag_hasClusters(self, scope=None):
+        return 'clusters' in self._ag(scope)
+
+    def _ag_addCluster(self, clusterId, peName, peAmount, pes, scope=None):
+        if self._ag_hasChips(scope):
+            raise ValueError("pympsym: mixing cannot mix chips/clusters")
+
+        ag = self._ag(scope)
+
+        if 'clusters' not in ag:
+            ag['clusters'] = {
+                'processors': {},
+                'groups': {},
+                'graph': pympsym.ArchGraph()
+            }
+
+        pes = [p.name for p, _ in pes]
+
+        # graph
+        peMax = ag['clusters']['graph'].add_processors(peAmount, peName)
+
+        # cluster
+        ag['clusters']['groups'][clusterId] = set(pes)
+
+        # processors
+        peOffs = peMax - peAmount + 1
+        for i, pe in enumerate(pes, start=peOffs):
+            ag['clusters']['processors'][pe] = i
+
+    def _ag_clusterProcessors(self, scope=None):
+        return self._ag(scope)['clusters']['processors']
+
+    def _ag_clusterGroups(self, scope=None):
+        return self._ag(scope)['clusters']['groups']
+
+    def _ag_clusterGraph(self, scope=None):
+        return self._ag(scope)['clusters']['graph']
+
+    def _ag_addClusterChannel(self, peSource, peTarget, chType, scope=None):
+        clusterProcessors =self._ag_clusterProcessors(scope)
+        clusterGraph =self._ag_clusterGraph(scope)
+
+        peSource = clusterProcessors[peSource]
+        peTarget = clusterProcessors[peTarget]
+
+        clusterGraph.add_channel(peSource, peTarget, chType)
+
+    def _ag_addClusterCache(self, cluster, cacheType, scope=None):
+        clusterProcessors = self._ag_clusterProcessors(scope)
+        clusterGroups = self._ag_clusterGroups(scope)
+        clusterGraph = self._ag_clusterGraph(scope)
+
+        for pe in clusterGroups[cluster]:
+            pe = clusterProcessors[pe]
+
+            clusterGraph.add_channel(pe, pe, 'cache_' + cacheType)
+
+    def _ag_fullyConnectClusters(self, clusters, chType, scope=None):
+        clusterGroups = self._ag_clusterGroups(scope)
+
+        for cluster1 in clusters:
+            for cluster2 in clusters:
+                for pe1 in clusterGroups[cluster1]:
+                    for pe2 in clusterGroups[cluster2]:
+                        self._ag_addClusterChannel(pe1, pe2, chType)
+                        self._ag_addClusterChannel(pe2, pe1, chType)
+
+    def _ag_makeClusterAgs(self, scope=None):
+        return self._ag_clusterGraph(scope)
