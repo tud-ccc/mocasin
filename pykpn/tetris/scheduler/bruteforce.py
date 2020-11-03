@@ -345,15 +345,9 @@ class BruteforceScheduler(SchedulerBase):
 
             for nsegment, njobs in results:
                 # Check whether all jobs are finished
-                req_schedules = nsegment.per_requests()
-                all_jobs_finished = True
-                for j in self.__jobs:
-                    if j.request not in req_schedules:
-                        all_jobs_finished = False
-                        break
-                    if not req_schedules[j.request][-1].finished:
-                        all_jobs_finished = False
-                        break
+                all_jobs_finished = all(
+                    nsegment.is_request_completed(j.request)
+                    for j in self.__jobs)
                 if all_jobs_finished:
                     if _is_better_eu(nsegment, self.__best_schedule):
                         self.__register_best_schedule(nsegment)

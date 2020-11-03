@@ -519,3 +519,11 @@ class Schedule:
                 if j.request == request:
                     res.append(j)
         return res
+
+    def is_request_completed(self, request):
+        """ Returns whether the request comleted in the current schedule."""
+        for segment in self:
+            for j in segment:
+                if j.request == request and j.finished:
+                    return True
+        return False

@@ -155,12 +155,11 @@ def test_tetris_wwt15_rdp(datadir, wwt15_rdp_expected_schedule):
 
 @pytest.fixture(params=[
     ("hog-1.csv", True, 12.663, 11.866),
-    ("hog-1-2.csv", True, 12.353, 14.254),
-    ("1041-sr_B-1-new-deadline_7.csv", True, 24.379, 31.006),
-    ("1053-af_B-1-new-deadline_7.csv", True, 27.913, 125.33),
+    ("1053-af_B-1-new-deadline_7.csv", True, 27.913, 125.326),
     ("2177-mix-2-new-deadline_2.csv", True, 41.922, 42.123),
-    #     ("3337-mix-3-running-deadline_4.csv", True, 15.144, 32.513), # FIXME: This test is too long, need to find a substitution
     ("3569-mix-3-running-deadline_7.csv", False, None, None),
+    ("3658-mix-3-running-deadline_6.csv", True, 10.692, 46.171),
+    ("4412-hog_B-4-running-deadline_6.csv", True, 80.760, 238.836),
 ])
 def bf_expected_schedule(request):
     return request.param
