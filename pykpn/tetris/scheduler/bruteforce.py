@@ -6,7 +6,7 @@
 from pykpn.tetris.job_state import Job
 from pykpn.tetris.schedule import (Schedule, ScheduleSegment,
                                    JobSegmentMapping, MAX_END_GAP)
-from pykpn.tetris.scheduler.base import SchedulerBase
+from pykpn.tetris.scheduler.base import SegmentSchedulerBase, SchedulerBase
 
 from collections import Counter
 import heapq
@@ -39,8 +39,9 @@ def get_jobs_bc_energy(jobs):
                 if not j.is_terminated()])
 
 
-class BruteforceSegmentScheduler:
+class BruteforceSegmentScheduler(SegmentSchedulerBase):
     def __init__(self, parent_scheduler):
+        super().__init__(parent_scheduler, parent_scheduler.platform)
         self.__parent = parent_scheduler
 
         # Initialize variables used during the scheduling to None
@@ -169,6 +170,7 @@ class BruteforceSegmentScheduler:
         for mapping in next_job.request.mappings + [None]:
             self.__schedule_step(current_mappings + [mapping])
 
+    # TODO: Remove prev_schedule
     def schedule(self, jobs, segment_start_time=0.0, accumulated_energy=0.0,
                  prev_schedule=None):
         """ Schedule the jobs.

@@ -1,11 +1,16 @@
+# Copyright (C) 2020 TU Dresden
+# All Rights Reserved
+#
+# Authors: Robert Khasanov
+
 from pykpn.common.platform import Platform
 from pykpn.tetris.job_legacy import JobTable
 from pykpn.tetris.mapping import Mapping, SegmentMapping
 
-import abc
+from abc import ABC, abstractmethod
 
 
-class SegmentMapperBase(abc.ABC):
+class SegmentSchedulerBase(ABC):
     def __init__(self, parent_scheduler, platform):
         assert isinstance(parent_scheduler, SchedulerBase)
         assert isinstance(platform, Platform)
@@ -16,12 +21,12 @@ class SegmentMapperBase(abc.ABC):
     def platform(self):
         return self.__platform
 
-    @abc.abstractmethod
+    @abstractmethod
     def schedule(self, jobs):
         pass
 
 
-class SchedulerBase(abc.ABC):
+class SchedulerBase(ABC):
     def __init__(self, platform, allow_migrations=True,
                  allow_preemptions=True):
         """A base class for tetris scheduler
@@ -38,7 +43,7 @@ class SchedulerBase(abc.ABC):
         super().__init__()
 
     @property
-    @abc.abstractmethod
+    @abstractmethod
     def name(self):
         pass
 
@@ -54,7 +59,7 @@ class SchedulerBase(abc.ABC):
     def allow_preemptions(self):
         return self.__allow_preemptions
 
-    @abc.abstractmethod
+    @abstractmethod
     def schedule(self, jobs, scheduling_start_time=0.0):
         """ Schedule jobs.
 
@@ -65,7 +70,7 @@ class SchedulerBase(abc.ABC):
         pass
 
 
-class SingleVariantSegmentMapper(SegmentMapperBase):
+class SingleVariantSegmentScheduler(SegmentSchedulerBase):
     def __init__(self, parent_scheduler, platform):
         assert isinstance(parent_scheduler, SingleVariantSegmentizedScheduler)
         super().__init__(parent_scheduler, platform)
