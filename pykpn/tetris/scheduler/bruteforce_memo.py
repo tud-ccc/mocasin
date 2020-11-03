@@ -85,20 +85,19 @@ class BruteforceMemoScheduler(SchedulerBase):
     def name(self):
         return "Exact-Memo"
 
-    def __register_best_scheduling(self, m):
-        self.__best_scheduling = m
+    def __register_best_schedule(self, m):
+        self.__best_schedule = m
         self.__best_energy = m.energy
-        log.debug("Found new best scheduling: energy = {}".format(
+        log.debug("Found new best schedule: energy = {}".format(
             self.__best_energy))
-        log.debug("New scheduling: \n" + self.__best_scheduling.to_str() +
-                  '\n')
+        log.debug("New schedule: \n" + self.__best_schedule.to_str() + '\n')
         pass
 
     def _energy_limit(self):
         return self.__best_energy + EPS
 
     def __clear(self):
-        self.__best_scheduling = None
+        self.__best_schedule = None
         self.__best_energy = math.inf
 
     def schedule(self, jobs, scheduling_start_time=0.0):
@@ -118,7 +117,7 @@ class BruteforceMemoScheduler(SchedulerBase):
         self.__mem_step_counter = 0
         self.__mem_state_table = StateMemoryTable(len(self.__jobs))
         self.__schedule_step(Schedule(self.platform, []), jobs)
-        return self.__best_scheduling
+        return self.__best_schedule
 
     # Returns (min energy to finish)
     def __schedule_step(self, cschedule, cjobs):
@@ -181,8 +180,8 @@ class BruteforceMemoScheduler(SchedulerBase):
                     all_jobs_finished = False
                     break
             if all_jobs_finished:
-                if _is_better_eu(nsegment, self.__best_scheduling):
-                    self.__register_best_scheduling(nsegment)
+                if _is_better_eu(nsegment, self.__best_schedule):
+                    self.__register_best_schedule(nsegment)
                 current_child_energy = nsegment.energy - cschedule.energy
                 min_child_energy = min(current_child_energy, min_child_energy)
                 continue

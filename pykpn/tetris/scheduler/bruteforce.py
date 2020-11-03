@@ -281,20 +281,19 @@ class BruteforceScheduler(SchedulerBase):
     def name(self):
         return "Exact"
 
-    def __register_best_scheduling(self, m):
-        self.__best_scheduling = m
+    def __register_best_schedule(self, m):
+        self.__best_schedule = m
         self.__best_energy = m.energy
-        log.debug("Found new best scheduling: energy = {}".format(
+        log.debug("Found new best schedule: energy = {}".format(
             self.__best_energy))
-        log.debug("New scheduling: \n" + self.__best_scheduling.to_str() +
-                  '\n')
+        log.debug("New schedule: \n" + self.__best_schedule.to_str() + '\n')
         pass
 
     def _energy_limit(self):
         return self.__best_energy + EPS
 
     def __clear(self):
-        self.__best_scheduling = None
+        self.__best_schedule = None
         self.__best_energy = math.inf
 
     def schedule(self, jobs, scheduling_start_time=0.0):
@@ -356,11 +355,11 @@ class BruteforceScheduler(SchedulerBase):
                         all_jobs_finished = False
                         break
                 if all_jobs_finished:
-                    if _is_better_eu(nsegment, self.__best_scheduling):
-                        self.__register_best_scheduling(nsegment)
+                    if _is_better_eu(nsegment, self.__best_schedule):
+                        self.__register_best_schedule(nsegment)
                     continue
 
                 # otherwise push the new state into the heap
                 schedule_heap.push(nsegment, njobs)
 
-        return self.__best_scheduling
+        return self.__best_schedule
