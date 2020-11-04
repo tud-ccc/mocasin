@@ -128,6 +128,9 @@ class RuntimeProcess(object):
         self.blocked = self.env.event()
         self.blocked.callbacks.append(self._cb_blocked)
 
+        # internal event for requesting preemption
+        self._preempt = self.env.event()
+
         # record the process creation int the simulation trace
         if self.app.system.app_trace_enabled:
             self.trace_writer.begin_duration(self.app.name, self.name,
@@ -242,6 +245,19 @@ class RuntimeProcess(object):
                         self.processor.name)
         self.processor = None
         self._transition('READY')
+
+    def preempt(self):
+        """Request deactivation of a running process
+
+        Raises:
+            AssertionError: if not in :const:`ProcessState.RUNNING` state
+        """
+        assert(self._state == ProcessState.RUNNING)
+        self._log.debug('Preempt workload execution on processor %s',
+                        self.processor.name)
+        old_event = self._preempt
+        self._preempt = self.env.event()
+        old_event.succeed()
 
     def finish(self):
         """Terminate the process.
@@ -415,10 +431,10 @@ class RuntimeKpnProcess(RuntimeProcess):
             self._log.debug('resume workload execution')
 
         while True:
-            # The ready event will be overridden once triggered. Thus we keep a
-            # copy here. This event will be triggered when deactivate is
+            # The preempt event will be overridden once triggered. Thus we keep
+            # a copy here. This event will be triggered when preempt() is
             # called.
-            ready = self.ready
+            preempt = self._preempt
 
             if self._current_segment is None:
                 self._current_segment = self._trace_generator.next_segment(
@@ -434,18 +450,18 @@ class RuntimeKpnProcess(RuntimeProcess):
                 start = self.env.now
 
                 # process until computation completes (timeout) or until the
-                # process is deactivated (ready)
-                yield self.env.any_of([timeout, ready])
+                # process is preempted
+                yield self.env.any_of([timeout, preempt])
 
                 # if the timeout was processed, the computation completed
                 if timeout.processed:
                     s.processing_cycles = None
                 else:
-                    assert ready.processed
+                    assert preempt.processed
                     # Calculate how many cycles where executed until the
-                    # triggering of the interrupt. Note that the interrupt
+                    # process was preempted. Note that the preemption
                     # can occur in between full cycles in our simulation. We
-                    # lose a bit of precision here, by allowing interrupts in
+                    # lose a bit of precision here, by allowing preemption in
                     # between cycles and rounding the number of processed
                     # cycles to an integer number. However, the introduced
                     # error should be marginal.
@@ -454,28 +470,29 @@ class RuntimeKpnProcess(RuntimeProcess):
                     cycles_processed = int(round(float(cycles) * ratio))
 
                     s.processing_cycles = cycles - cycles_processed
-                    assert s.processing_cycles > 0
+                    assert s.processing_cycles >= 0
                     self._log.debug("process was deactivated after "
                                     f"{cycles_processed} cycles")
 
-                # Stop processing the workload even if ready and timeout
+                # Stop processing the workload even if preempt and timeout
                 # occur simultaneously
-                if ready.processed:
+                if preempt.processed:
+                    self.deactivate()
                     return
             if s.read_from_channel is not None:
                 # Consume tokens from a channel. Unlike the processing, this
-                # operation cannot easily be interrupted. There are two
+                # operation cannot easily be preempted. There are two
                 # problems here.  First, consume and produce are considered
                 # atomic operations by our algorithm. If they could be
                 # interrupted, both operations would need to implement a
                 # synchronization strategy.  Second, it is unclear what
-                # interrupting a consume or produce operation means. The
+                # preempting a consume or produce operation means. The
                 # simulation does not know Which part of the consume/produce
                 # costs is actual processing by a CPU and which part is due to
                 # asynchronous operations (e.g., a DMA or the memory
                 # architecture) that would not be affected by an interrupt.
-                # Therefore, both consume and produce ignore any interrupts
-                # and process it only after the operation completes.
+                # Therefore, both consume and produce ignore any preemption
+                # requests and process it only after the operation completes.
                 c = self._channels[s.read_from_channel]
                 self._log.debug('read %d tokens from channel %s', s.n_tokens,
                                 c.full_name)
@@ -488,13 +505,14 @@ class RuntimeKpnProcess(RuntimeProcess):
                     s.read_from_channel = None
                     yield self.env.process(c.consume(self, s.n_tokens))
 
-                # Stop processing if interrupted
-                if ready.processed:
+                # Stop processing if preempted
+                if preempt.processed:
+                    self.deactivate()
                     return
             if s.write_to_channel is not None:
                 # Produce tokens on a channel. Similar to consume above, this
-                # is considered as an atomic operation and an interrupt is only
-                # processed after this operation completes.
+                # is considered as an atomic operation and an preemption
+                # request is only processed after this operation completes.
                 c = self._channels[s.write_to_channel]
                 self._log.debug('write %d tokens to channel %s', s.n_tokens,
                                 c.full_name)
@@ -507,8 +525,9 @@ class RuntimeKpnProcess(RuntimeProcess):
                     s.write_to_channel = None
                     yield self.env.process(c.produce(self, s.n_tokens))
 
-                # Stop processing if interrupted
-                if ready.processed:
+                # Stop processing if preempted
+                if preempt.processed:
+                    self.deactivate()
                     return
             if s.terminate:
                 self._log.debug('process terminates')

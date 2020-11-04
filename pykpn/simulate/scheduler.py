@@ -248,7 +248,15 @@ class RuntimeScheduler(object):
                     timeout = self.env.timeout(self._time_slice)
                     yield self.env.any_of([timeout, workload])
                     if timeout.processed:
-                        self.current_process.deactivate()
+                        self.current_process.preempt()
+                        # Although we requested to preempt the process, it may
+                        # still continue running in order to finish any atomic
+                        # operations it might be processing at the moment. Thus
+                        # we wait for the workload process to terminate before
+                        # continuing
+                        yield workload
+                        assert not self.current_process.check_state(
+                            ProcessState.RUNNING)
                 else:
                     yield self.env.process(workload)
 
