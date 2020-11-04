@@ -335,15 +335,11 @@ class RuntimeProcess(object):
         assert(self._state == ProcessState.CREATED)
         self._log.debug('Entered CREATED state')
 
-    def workload(self, interrupt=None):
+    def workload(self):
         """Implements the process functionality.
 
         This is just a stub and may not be called. This has to be overridden by
         a subclass.
-
-        Args:
-            interrupt (~simpy.events.event): an optional event that interrupts
-                the workload execution when triggered.
 
         Raises:
             NotImplementedError
@@ -401,25 +397,17 @@ class RuntimeKpnProcess(RuntimeProcess):
         self._channels[channel.name] = channel
         channel.set_src(self)
 
-    def workload(self, interrupt=None):
+    def workload(self):
         """Replay a KPN execution trace
 
         Iterates over all segments in the execution trace and performs actions
         as specified by the segments. By returning, the execution
         terminates. However, this does not mean that it is actually complete. A
-        process may also return when it blocks. Then the execution is resumed
-        on the next call of this method.
-
-        Args:
-            interrupt (~simpy.events.event): an optional event that interrupts
-                the workload execution when triggered.
+        process may also return when it blocks or was deactivated. Then the
+        execution is resumed on the next call of this method.
         """
 
         assert self.check_state(ProcessState.RUNNING)
-
-        if interrupt is None:
-            # create an interrupt event that is never triggered
-            interrupt = self.env.event()
 
         if self._current_segment is None:
             self._log.debug('start workload execution')
@@ -427,6 +415,11 @@ class RuntimeKpnProcess(RuntimeProcess):
             self._log.debug('resume workload execution')
 
         while True:
+            # The ready event will be overridden once triggered. Thus we keep a
+            # copy here. This event will be triggered when deactivate is
+            # called.
+            ready = self.ready
+
             if self._current_segment is None:
                 self._current_segment = self._trace_generator.next_segment(
                     self.name, self.processor.type)
@@ -440,15 +433,15 @@ class RuntimeKpnProcess(RuntimeProcess):
                 timeout = self.env.timeout(ticks)
                 start = self.env.now
 
-                # process until computation completes (timeout) or until their
-                # is an interrupt
-                yield self.env.any_of([timeout, interrupt])
+                # process until computation completes (timeout) or until the
+                # process is deactivated (ready)
+                yield self.env.any_of([timeout, ready])
 
                 # if the timeout was processed, the computation completed
                 if timeout.processed:
                     s.processing_cycles = None
                 else:
-                    assert interrupt.processed
+                    assert ready.processed
                     # Calculate how many cycles where executed until the
                     # triggering of the interrupt. Note that the interrupt
                     # can occur in between full cycles in our simulation. We
@@ -462,13 +455,12 @@ class RuntimeKpnProcess(RuntimeProcess):
 
                     s.processing_cycles = cycles - cycles_processed
                     assert s.processing_cycles > 0
-                    self._log.debug("process interrupted after "
+                    self._log.debug("process was deactivated after "
                                     f"{cycles_processed} cycles")
 
-                # deactivate if interrupted, even if interrupt and timeout
+                # Stop processing the workload even if ready and timeout
                 # occur simultaneously
-                if interrupt.processed:
-                    self.deactivate()
+                if ready.processed:
                     return
             if s.read_from_channel is not None:
                 # Consume tokens from a channel. Unlike the processing, this
@@ -496,9 +488,8 @@ class RuntimeKpnProcess(RuntimeProcess):
                     s.read_from_channel = None
                     yield self.env.process(c.consume(self, s.n_tokens))
 
-                # deactivate if interrupted
-                if interrupt.processed:
-                    self.deactivate()
+                # Stop processing if interrupted
+                if ready.processed:
                     return
             if s.write_to_channel is not None:
                 # Produce tokens on a channel. Similar to consume above, this
@@ -516,9 +507,8 @@ class RuntimeKpnProcess(RuntimeProcess):
                     s.write_to_channel = None
                     yield self.env.process(c.produce(self, s.n_tokens))
 
-                # deactivate if interrupted
-                if interrupt.processed:
-                    self.deactivate()
+                # Stop processing if interrupted
+                if ready.processed:
                     return
             if s.terminate:
                 self._log.debug('process terminates')

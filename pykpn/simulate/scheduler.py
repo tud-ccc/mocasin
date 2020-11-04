@@ -169,7 +169,8 @@ class RuntimeScheduler(object):
             raise ValueError('Expected a RuntimeProcess to be passed as value '
                              'of the triggering event!')
         process = event.value
-        self._ready_queue.append(event.value)
+        if (process not in self._ready_queue):
+            self._ready_queue.append(process)
         process.ready.callbacks.append(self._cb_process_ready)
 
         # notify the process created event
@@ -242,11 +243,14 @@ class RuntimeScheduler(object):
                                                      category="Schedule")
 
                 # execute the process workload
+                workload = self.env.process(self.current_process.workload())
                 if self._time_slice is not None:
                     timeout = self.env.timeout(self._time_slice)
+                    yield self.env.any_of([timeout, workload])
+                    if timeout.processed:
+                        self.current_process.deactivate()
                 else:
-                    timeout = None
-                yield self.env.process(self.current_process.workload(timeout))
+                    yield self.env.process(workload)
 
                 # record the process halting in the simulation trace
                 if self._system.platform_trace_enabled:
