@@ -73,11 +73,11 @@ class RuntimeProcess(object):
             :const:`~ProcessState.READY`
           * :func:`activate`: Transition from :const:`~ProcessState.READY` to
             :const:`~ProcessState.RUNNING`
-          * :func:`deactivate`: Transition from :const:`~ProcessState.RUNNING`
+          * :func:`_deactivate`: Transition from :const:`~ProcessState.RUNNING`
             to :const:`~ProcessState.READY`
-          * :func:`finish`: Transition from :const:`~ProcessState.RUNNING` to
+          * :func:`_finish`: Transition from :const:`~ProcessState.RUNNING` to
             :const:`~ProcessState.FINISHED`
-          * :func:`block`: Transition from :const:`~ProcessState.RUNNING` to
+          * :func:`_block`: Transition from :const:`~ProcessState.RUNNING` to
             :const:`~ProcessState.BLOCKED`
           * :func:`unblock`: Transition from :const:`~ProcessState.BLOCKED` to
             :const:`~ProcessState.READY`
@@ -231,7 +231,7 @@ class RuntimeProcess(object):
         self.processor = processor
         self._transition('RUNNING')
 
-    def deactivate(self):
+    def _deactivate(self):
         """Halt the process execution.
 
         Transition to the :const:`~ProcessState.READY` state and update
@@ -259,7 +259,7 @@ class RuntimeProcess(object):
         self._preempt = self.env.event()
         old_event.succeed()
 
-    def finish(self):
+    def _finish(self):
         """Terminate the process.
 
         Transition to the :const:`~ProcessState.FINISHED` state.
@@ -272,7 +272,7 @@ class RuntimeProcess(object):
         self.processor = None
         self._transition('FINISHED')
 
-    def block(self):
+    def _block(self):
         """Block the process.
 
         Interrupt the process execution by transitioning to the
@@ -477,7 +477,7 @@ class RuntimeKpnProcess(RuntimeProcess):
                 # Stop processing the workload even if preempt and timeout
                 # occur simultaneously
                 if preempt.processed:
-                    self.deactivate()
+                    self._deactivate()
                     return
             if s.read_from_channel is not None:
                 # Consume tokens from a channel. Unlike the processing, this
@@ -498,7 +498,7 @@ class RuntimeKpnProcess(RuntimeProcess):
                                 c.full_name)
                 if not c.can_consume(self, s.n_tokens):
                     self._log.debug('not enough tokens available -> block')
-                    self.block()
+                    self._block()
                     self.env.process(c.wait_for_tokens(self, s.n_tokens))
                     return
                 else:
@@ -507,7 +507,7 @@ class RuntimeKpnProcess(RuntimeProcess):
 
                 # Stop processing if preempted
                 if preempt.processed:
-                    self.deactivate()
+                    self._deactivate()
                     return
             if s.write_to_channel is not None:
                 # Produce tokens on a channel. Similar to consume above, this
@@ -518,7 +518,7 @@ class RuntimeKpnProcess(RuntimeProcess):
                                 c.full_name)
                 if not c.can_produce(self, s.n_tokens):
                     self._log.debug('not enough slots available -> block')
-                    self.block()
+                    self._block()
                     self.env.process(c.wait_for_slots(self, s.n_tokens))
                     return
                 else:
@@ -527,7 +527,7 @@ class RuntimeKpnProcess(RuntimeProcess):
 
                 # Stop processing if preempted
                 if preempt.processed:
-                    self.deactivate()
+                    self._deactivate()
                     return
             if s.terminate:
                 self._log.debug('process terminates')
@@ -535,4 +535,4 @@ class RuntimeKpnProcess(RuntimeProcess):
 
             self._current_segment = None
 
-        self.finish()
+        self._finish()
