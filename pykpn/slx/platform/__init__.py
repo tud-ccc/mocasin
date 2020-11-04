@@ -19,5 +19,5 @@ class SlxPlatform(Platform):
         super().__init__(name)
         log.info('start parsing the platform description')
         xml_platform = parse(xml_file, True)
-        convert(self, xml_platform, **kwargs)
+        convert(self, xml_platform, scheduler_cycles=kwargs.get('scheduler_cycles', None))
         log.info('done parsing the platform description')

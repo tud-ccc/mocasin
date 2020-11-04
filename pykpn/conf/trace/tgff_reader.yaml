@@ -2,7 +2,9 @@
 _target_: pykpn.tgff.tgffSimulation.TraceGeneratorWrapper
 tgff_file: ${tgff.directory}/${tgff.file}
 graph_name: ${kpn.name}
-processor_0 : ${platform.processor_0.type}
-processor_1 : ${platform.processor_1.type}
-processor_2 : ${platform.processor_2.type} #variable interpolation is lazy
-processor_3 : ${platform.processor_3.type} #variable interpolation is lazy
+repetition : 1
+processor_types :
+  - ${platform.processor_0.type}
+  - ${platform.processor_1.type}
+  - ${platform.processor_2.type}
+  - $platform.processor_3.type}

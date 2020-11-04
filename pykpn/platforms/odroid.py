@@ -10,7 +10,7 @@ from pykpn.platforms.platformDesigner import PlatformDesigner
 from hydra.utils import instantiate
 
 class DesignerPlatformOdroid(Platform):
-    def __init__(self, processor_0, processor_1, num_big=4, num_little=4,name="odroid"):
+    def __init__(self, processor_0, processor_1, num_big=4, num_little=4,name="odroid",**kwargs):
 
         #workaraound for Hydra < 1.1
         if not isinstance(processor_0,Processor):
