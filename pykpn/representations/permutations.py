@@ -1,7 +1,13 @@
+# Copyright (C) 2016-2020 TU Dresden
+# All Rights Reserved
+#
+# Authors: Andrés Goens
+
 import functools
 import time
-import logging
 from itertools import product
+from pykpn.util.logging import getLogger
+log = getLogger(__name__)
 
 total_time = 0
 def timeit(func):
@@ -25,11 +31,11 @@ class Permutation(list):
             self.n = m+1
         else:
             if not (n >= m):
-                logging.error("Trying to initialize " + str(ls) + "( max " + str(m) + ") with n = " + str(n))
+                log.error("Trying to initialize " + str(ls) + "( max " + str(m) + ") with n = " + str(n))
                 return None
             self.n = n
         if not(action == 0 or action == 1):
-            logging.error("Unrecognized action: " + str(action))
+            log.error("Unrecognized action: " + str(action))
             return None
         self.action = action
         list.__init__(self,range(0,self.n), *args)
@@ -46,16 +52,16 @@ class Permutation(list):
     def act(self,obj):
         if self.action == 0:
             if not (isinstance(obj,list) or isinstance(obj,tuple)):
-                logging.debug(str(obj) + " not of list/tuple type (" + str(type(obj)) + ")")
+                log.debug(str(obj) + " not of list/tuple type (" + str(type(obj)) + ")")
                 return None
             for elem in obj:
                 if not(elem < self.n):
-                    logging.error("Permutation " + str(self) + ": trying to act on invalid point " + str(elem) + " in object: " + str(obj))
+                    log.error("Permutation " + str(self) + ": trying to act on invalid point " + str(elem) + " in object: " + str(obj))
                     return None
             return self.act_point(obj)
         elif self.action == 1:
             if not (len(obj) == self.n):
-                logging.error("Permutation " + str(self) + ": trying to act on invalid point " + str(obj))
+                log.error("Permutation " + str(self) + ": trying to act on invalid point " + str(obj))
                 return None
             return self.act_tuple(obj)
         else:
@@ -63,7 +69,7 @@ class Permutation(list):
 
     def act_point(self,l):
         if not (type(l) == list or type(l) == tuple):
-            logging.error((str(l) + " not of list/tuple type"))
+            log.error((str(l) + " not of list/tuple type"))
             return None
         res = list()
         for i in l:
@@ -103,7 +109,7 @@ class PermutationGroup(list):
         assert(len(perms) > 0 or n > -1)
         if(len(perms) > 0):
             if not(type(perms[0]) == Permutation):
-                logging.error(str(perms[0]) + " is not a permutation (" + str(type(perms[0])))
+                log.error(str(perms[0]) + " is not a permutation (" + str(type(perms[0])))
                 return None
             n = perms[0].n
         for g in perms:
@@ -174,7 +180,7 @@ class PermutationGroup(list):
     @timeit
     def tuple_normalize(self,tup,verbose=False,quick=True):
         if verbose:
-            logging.debug(("normalizing: " + str(tup)))
+            log.debug(("normalizing: " + str(tup)))
         S_x0lt = [] #{ g.act(tup) for g in self if g.act(tup) < tup}
         for g in self:
             im = g.act(tup)
@@ -195,15 +201,15 @@ class PermutationGroup(list):
                     if im not in Snext_x0lt and im < t:
                         Snext_x0lt.append(im)
             if verbose and Snext_x0lt:
-                logging.debug("|(S^{" + str(iterator) + "}x_0)_<| = " + str(len(Snext_x0lt)) + ", min: " + str(min(Snext_x0lt)))
+                log.debug("|(S^{" + str(iterator) + "}x_0)_<| = " + str(len(Snext_x0lt)) + ", min: " + str(min(Snext_x0lt)))
                 iterator = iterator + 1
             if quick == True and Snext_x0lt:
                 Snext_x0lt = [min(Snext_x0lt)]
         minimal = Scur_x0lt[0]
         if verbose:
-            logging.debug("finished normalizing: " + str(minimal))
+            log.debug("finished normalizing: " + str(minimal))
             global total_time
-            logging.debug("total time elapsed normalizing: " + str(total_time ))
+            log.debug("total time elapsed normalizing: " + str(total_time ))
         return minimal
 
 class TrivialGroup(PermutationGroup):

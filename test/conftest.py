@@ -1,7 +1,7 @@
 # Copyright (C) 2020 TU Dresden
 # All Rights Reserved
 #
-# Authors: Christian Menard, Felix Teweleit
+# Authors: Christian Menard, Felix Teweleit, Andres Goens
 
 
 import pytest
@@ -38,6 +38,10 @@ def expected_dir(request):
 
 @pytest.fixture(params=["exynos", "multidsp", "parallella"])
 def slx_platform(request):
+    return request.param
+
+@pytest.fixture(params=["exynos990", "designer_bus", "generic_mesh", "mppa_coolidge","multi_cluster","designer_odroid"])
+def designer_platform(request):
     return request.param
 
 @pytest.fixture(params=["slx_default", "random", "static_cfs", "random_walk", "tabu_search", "gradient_descent", "genetic",  "simulated_annealing", "gbm"])

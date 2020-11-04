@@ -4,6 +4,7 @@
 # Authors: Andrés Goens
 
 import random
+import tqdm
 from hydra.utils import instantiate
 import numpy as np
 
@@ -11,7 +12,6 @@ from pykpn.util import logging
 from pykpn.representations import MappingRepresentation
 from pykpn.mapper.random import RandomPartialMapper
 from pykpn.mapper.utils import SimulationManager
-from pykpn.mapper.utils import Statistics
 
 
 log = logging.getLogger(__name__)
@@ -72,6 +72,7 @@ class TabuSearchMapper(object):
         self.move_set_size = move_set_size
         self.dump_cache = dump_cache
         self.radius = radius
+        self.progress = progress
         self.tabu_moves = dict()
 
         # This is a workaround until Hydra 1.1 (with recursive instantiaton!)
@@ -143,13 +144,20 @@ class TabuSearchMapper(object):
         """ Generates a full mapping using gradient descent
         """
         mapping_obj = self.random_mapper.generate_mapping()
-        cur_mapping = self.representation.toRepresentation(mapping_obj)
+        if hasattr(self.representation,'canonical_operations') and not self.representation.canonical_operations:
+            cur_mapping = self.representation.toRepresentationNoncanonical(mapping_obj)
+        else:
+            cur_mapping = self.representation.toRepresentation(mapping_obj)
 
         best_mapping = cur_mapping
         best_exec_time = self.simulation_manager.simulate([cur_mapping])[0]
         since_last_improvement = 0
 
-        for iter in range(self.max_iterations):
+        if self.progress:
+            iterations_range = tqdm.tqdm(range(self.max_iterations))
+        else:
+            iterations_range = range(self.max_iterations)
+        for iter in iterations_range:
             while since_last_improvement < self.iteration_size:
                 self.update_candidate_moves(cur_mapping)
                 move,cur_exec_time = self.move(best_exec_time) #updates tabu set

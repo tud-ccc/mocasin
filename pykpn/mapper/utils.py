@@ -3,8 +3,8 @@
 #
 # Authors: Andrés Goens, Felix Teweleit
 
-import timeit
-import hydra
+from time import process_time
+import os
 import multiprocessing as mp
 import numpy as np
 from copy import deepcopy
@@ -108,21 +108,22 @@ class SimulationManager(object):
             return []
         else:
             if isinstance(input_mappings[0],Mapping):
-                time = timeit.default_timer()
+                time = process_time()
                 tup = [tuple(self.representation.toRepresentation(m)) for m in input_mappings]
-                self.statistics.add_rep_time(timeit.default_timer() - time)
+                self.statistics.add_rep_time(process_time() - time)
                 mappings = input_mappings
             else: #assume mappings are list type then
                 #transform into tuples
-                time = timeit.default_timer()
+                time = process_time()
                 tup = [tuple(self.representation.approximate(np.array(m))) for m in input_mappings]
                 mappings = [self.representation.fromRepresentation(m) for m in input_mappings]
-                self.statistics.add_rep_time(timeit.default_timer() - time)
+                self.statistics.add_rep_time(process_time() - time)
 
         # first look up as many as possible:
         lookups = [self.lookup(t) for t in tup]
         num = len([m for m in lookups if m])
         log.info(f"{num} from cache.")
+        self.statistics.mappings_cached(num)
 
         #if all were already cached, return them
         if num == len(tup):
@@ -138,32 +139,36 @@ class SimulationManager(object):
             trace = deepcopy(self.trace)
             simulation = KpnSimulation(self.platform, self.kpn, mapping, trace)
 
-            # since mappings are simulated in parallel, whole simulation time is added later as offset
-            self.statistics.mapping_evaluated(0)
             simulations.append(simulation)
 
         if self.parallel and len(simulations) > self.chunk_size:
+            # since mappings are simulated in parallel, whole simulation time is added later as offset
+            for _ in range(len(simulations)):
+                self.statistics.mapping_evaluated(0)
+
             # run the simulations in parallel
-            time = timeit.default_timer()
             if self.progress:
                 import tqdm
                 results = list(tqdm.tqdm(self.pool.imap(run_simulation,
                                                         simulations,
                                                         chunksize=self.chunk_size),
                                          total=len(mappings)))
+                time = sum([res[1] for res in results])
+                results = [res[0] for res in results]
             else:
                 results = list(self.pool.map(run_simulation,
                                              simulations,
                                              chunksize=self.chunk_size))
-            self.statistics.add_offset(timeit.default_timer() - time)
+                time = sum([res[1] for res in results])
+                results = [res[0] for res in results]
+            self.statistics.add_offset(time)
         else:
             results = []
             # run the simulations sequentially
             for s in simulations:
-                time = timeit.default_timer()
-                r = run_simulation(s)
+                r,time = run_simulation(s)
                 results.append(r)
-                self.statistics.mapping_evaluated(timeit.default_timer() - time)
+                self.statistics.mapping_evaluated(time)
 
         # calculate the execution times in milliseconds and store them
         exec_times = []  # keep a list of exec_times for later
@@ -191,8 +196,10 @@ class SimulationManager(object):
 
 def run_simulation(simulation):
     with simulation:
+        start_time = process_time()
         simulation.run()
-    return simulation
+        time = process_time() - start_time
+    return simulation,time
 
 
 class DerivedPrimitive:
@@ -233,3 +240,24 @@ class DerivedPrimitive:
         self.cost = self.write_cost + self.read_cost
 
         self.ref_primitive = ref_prim
+
+def statistics_parser(dir):
+   results = {}
+   with open(os.path.join(dir,"statistics.txt"),'r') as f:
+       results['processes_in_task'] = int(f.readline().replace("Processes: ",''))
+       results['mappings_cached'] = int(f.readline().replace("Mappings cached: ",''))
+       results['mappings_evaluated'] = int(f.readline().replace("Mappings evaluated: ",''))
+       results['time_simulating'] = float(f.readline().replace("Time spent simulating: ",''))
+       results['time_representation'] = float(f.readline().replace("Representation time: ",''))
+       results['representation_init_time'] = float(f.readline().replace("Representation initialization time: ",''))
+   return results,list(results.keys())
+
+def best_time_parser(dir):
+    with open(os.path.join(dir, "best_time.txt"), 'r') as f:
+        exec_time = float(f.readline())
+    results = {'best_mapping_time' : exec_time}
+    return results, list(results.keys())
+
+
+
+

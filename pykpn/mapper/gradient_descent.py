@@ -6,6 +6,7 @@
 import random
 from hydra.utils import instantiate
 import numpy as np
+import tqdm
 
 from pykpn.util import logging
 from pykpn.mapper.random import RandomPartialMapper
@@ -62,6 +63,7 @@ class GradientDescentMapper(object):
         self.gd_iterations = gd_iterations
         self.stepsize = stepsize
         self.dump_cache = dump_cache
+        self.progress = progress
         self.statistics = Statistics(log, len(self.kpn.processes()), record_statistics)
 
         # This is a workaround until Hydra 1.1 (with recursive instantiaton!)
@@ -75,14 +77,21 @@ class GradientDescentMapper(object):
         """ Generates a full mapping using gradient descent
         """
         mapping_obj = self.random_mapper.generate_mapping()
-        mapping = self.representation.toRepresentation(mapping_obj)
+        if hasattr(self.representation,'canonical_operations') and not self.representation.canonical_operations:
+            mapping = self.representation.toRepresentationNoncanonical(mapping_obj)
+        else:
+            mapping = self.representation.toRepresentation(mapping_obj)
 
         self.dim = len(mapping)
         cur_exec_time = self.simulation_manager.simulate([mapping])[0]
         self.best_mapping = mapping
         self.best_exec_time = cur_exec_time
 
-        for _ in range(self.gd_iterations):
+        if self.progress:
+            iterations_range = tqdm.tqdm(range(self.gd_iterations))
+        else:
+            iterations_range = range(self.gd_iterations)
+        for _ in iterations_range:
             grad = self.calculate_gradient(mapping, cur_exec_time)
 
             if np.allclose(grad, np.zeros(self.dim)): #found local minimum

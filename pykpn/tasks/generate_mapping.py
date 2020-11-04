@@ -53,9 +53,9 @@ def generate_mapping(cfg):
     output from the individual simulations.
 """
     try:
-        kpn = hydra.utils.instantiate(cfg['kpn'])
         platform = hydra.utils.instantiate(cfg['platform'])
         trace = hydra.utils.instantiate(cfg['trace'])
+        kpn = hydra.utils.instantiate(cfg['kpn'])
         representation = hydra.utils.instantiate(cfg['representation'],kpn,platform)
         mapper = hydra.utils.instantiate(cfg['mapper'], kpn, platform, trace, representation)
     except TgffReferenceError:

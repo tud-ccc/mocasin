@@ -5,7 +5,7 @@
 
 import numpy as np
 from numpy.random import randint
-from copy import deepcopy
+from copy import copy
 import random
 import timeit
 
@@ -63,7 +63,7 @@ class MappingRepresentation(type):
             cls._instances[(cls, kpn_names, platform.name)] = super(MappingRepresentation, cls).__call__(*args, **kwargs)
             log.info(f"Initializing representation {cls} of kpn with processes: {kpn_names} on platform {platform.name}")
 
-        instance = deepcopy(cls._instances[(cls,kpn_names,platform.name)])
+        instance = copy(cls._instances[(cls,kpn_names,platform.name)])
         instance.kpn = kpn
         instance.platform = platform
         com_mapper = ComFullMapper(kpn,platform)
@@ -228,7 +228,7 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         return self.distance(x,y)
 
     def approximate(self,x):
-        approx = np.around(x)
+        approx = np.rint(x).astype(int)
         P = len(list(self.platform._processors.keys()))
         if self.boundary_conditions:
             res = list(map(lambda t : t % P,approx))
@@ -369,6 +369,9 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
     def toRepresentation(self,mapping):
         return self._simpleVec2Elem(mapping.to_list())
 
+    def toRepresentationNoncanonical(self,mapping):
+        return SimpleVectorRepresentation.toRepresentation(self,mapping)
+
     def fromRepresentation(self,mapping):
         #Does not check if canonical. This is deliberate.
         mapping_obj = self.list_mapper.generate_mapping(mapping)
@@ -410,7 +413,8 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
             return SimpleVectorRepresentation._crossover(self,x,y,k)
 
     def approximate(self,x):
-        return SimpleVectorRepresentation.approximate(self,x)
+        approx = SimpleVectorRepresentation.approximate(self,x)
+        return self._simpleVec2Elem(approx)
 
 #FIXME: UNTESTED!!
 class MetricSymmetryRepresentation(FiniteMetricSpaceLPSym, metaclass=MappingRepresentation):

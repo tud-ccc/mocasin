@@ -7,13 +7,12 @@
 import timeit
 import random
 import numpy as np
-import os
+import tqdm
 from hydra.utils import instantiate
 
 from pykpn.mapper.utils import SimulationManager, Statistics
 from pykpn.mapper.random import RandomMapper
-from pykpn.util import logging, plot
-from pykpn.slx.mapping import export_slx_mapping
+from pykpn.util import logging
 from pykpn.representations import MappingRepresentation
 
 log = logging.getLogger(__name__)
@@ -73,6 +72,7 @@ class RandomWalkMapper(object):
         self.num_iterations = num_iterations
         self.dump_cache = dump_cache
         self.seed = random_seed
+        self.progress = progress
         if self.seed == 'None':
             self.seed = None
         if self.seed is not None:
@@ -95,10 +95,17 @@ class RandomWalkMapper(object):
         # worker processes.
         mappings = []
 
-        for i in range(0, self.num_iterations):
+        if self.progress:
+            iterations_range = tqdm.tqdm(range(self.num_iterations))
+        else:
+            iterations_range = range(self.num_iterations)
+        for i in iterations_range:
             mapping = self.random_mapper.generate_mapping()
             mappings.append(mapping)
-        tup = list(map(self.representation.toRepresentation, mappings))
+        if hasattr(self.representation,'canonical_operations') and not self.representation.canonical_operations:
+            tup = list(map(self.representation.toRepresentationNoncanonical, mappings))
+        else:
+            tup = list(map(self.representation.toRepresentation, mappings))
         exec_times = self.simulation_manager.simulate(tup)
         best_result_idx = exec_times.index(min(exec_times))
         best_result = mappings[best_result_idx]

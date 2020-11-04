@@ -5,6 +5,7 @@
 
 import random
 import numpy as np
+import tqdm
 from hydra.utils import instantiate
 
 from pykpn.util import logging
@@ -72,6 +73,7 @@ class SimulatedAnnealingMapper(object):
         self.max_rejections = len(self.kpn.processes()) * (len(self.platform.processors()) - 1) #R_max = L
         self.p = temperature_proportionality_constant
         self.radius = radius
+        self.progress = progress
         self.dump_cache = dump_cache
 
         if not (1 > self.p > 0):
@@ -110,7 +112,10 @@ class SimulatedAnnealingMapper(object):
         """ Generates a full mapping using simulated anealing
         """
         mapping_obj = self.random_mapper.generate_mapping()
-        mapping = self.representation.toRepresentation(mapping_obj)
+        if hasattr(self.representation,'canonical_operations') and not self.representation.canonical_operations:
+            mapping = self.representation.toRepresentationNoncanonical(mapping_obj)
+        else:
+            mapping = self.representation.toRepresentation(mapping_obj)
 
         last_mapping = mapping
         last_exec_time = self.simulation_manager.simulate([mapping])[0]
@@ -121,6 +126,9 @@ class SimulatedAnnealingMapper(object):
 
         iter = 0
         temperature = self.initial_temperature
+        if self.progress:
+            pbar = tqdm.tqdm(total=self.max_rejections*20)
+
         while rejections < self.max_rejections:
             temperature = self.temperature_cooling(temperature,iter)
             log.info(f"Current temperature {temperature}")
@@ -146,6 +154,12 @@ class SimulatedAnnealingMapper(object):
                 if temperature <= self.final_temperature:
                     rejections += 1
             iter += 1
+            if self.progress:
+                pbar.update(1)
+        if self.progress:
+            pbar.update(self.max_rejections*20-iter)
+            pbar.close()
+
         self.simulation_manager.statistics.log_statistics()
         self.simulation_manager.statistics.to_file()
         if self.dump_cache:

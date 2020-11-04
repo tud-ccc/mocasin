@@ -18,15 +18,18 @@ class DesignerPlatformCoolidge(Platform):
         #workaround until Hydra 1.1
         if not isinstance(processor_0,Processor):
             processor_0 = instantiate(processor_0)
-        if not isinstance(processor_0,Processor):
+        if not isinstance(processor_1,Processor):
             processor_1 = instantiate(processor_1)
         designer = PlatformDesigner(self)
         designer.setSchedulingPolicy('FIFO', 1000)
         designer.newElement('coolidge')
 
         #create five chips with 16 cores, NoC, +Security Core
+        clusters = []
         for i in range(5):
-            designer.newElement('cluster_{0}'.format(i))
+            cluster = 'cluster_{0}'.format(i)
+            designer.newElement(cluster)
+            clusters.append(cluster)
 
             designer.addPeClusterForProcessor(f'cluster_{i}_0', processor_0, 16)
 
@@ -49,7 +52,7 @@ class DesignerPlatformCoolidge(Platform):
 
             designer.finishElement()
 
-        designer.addCommunicationResource("RAM", ['chip_0', 'chip_1', 'chip_2', 'chip_3', 'chip_4'],
+        designer.addCommunicationResource("RAM", clusters,
                                           1000, 3000, float('inf'), float('inf'), frequencyDomain=10000)
 
         designer.finishElement()
