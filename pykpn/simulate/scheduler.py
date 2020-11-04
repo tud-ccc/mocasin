@@ -258,7 +258,7 @@ class RuntimeScheduler(object):
                         assert not self.current_process.check_state(
                             ProcessState.RUNNING)
                 else:
-                    yield self.env.process(workload)
+                    yield workload
 
                 # record the process halting in the simulation trace
                 if self._system.platform_trace_enabled:
