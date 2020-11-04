@@ -26,9 +26,9 @@ class TgffReferenceError(Exception):
 class KpnGraphFromTgff:
     """New, since we want to return a common.kpn instance instead of am TgffToKpnGraph instance
     """
-    def __new__(cls, tgff_file, name):
+    def __new__(cls, tgff_file, name,**kwargs):
         if tgff_file not in _parsed_tgff_files:
-            _parsed_tgff_files.update( {tgff_file : Parser().parse_file(tgff_file)} )
+            _parsed_tgff_files.update( {tgff_file : Parser().parse_file(tgff_file,**kwargs)} )
         
         tgff_graphs = _parsed_tgff_files[tgff_file][0]
         
@@ -39,9 +39,9 @@ class KpnGraphFromTgff:
 
 
 class TraceGeneratorWrapper:
-    def __new__(cls, tgff_file, graph_name, repetition=1):
+    def __new__(cls, tgff_file, graph_name, **kwargs):
         if tgff_file not in _parsed_tgff_files:
-            _parsed_tgff_files.update( {tgff_file : Parser().parse_file(tgff_file)} )
+            _parsed_tgff_files.update( {tgff_file : Parser().parse_file(tgff_file,**kwargs)} )
         
         tgff_components = _parsed_tgff_files[tgff_file]
         processor_dict = {}
@@ -49,7 +49,7 @@ class TraceGeneratorWrapper:
         for processor in tgff_components[1]:
             processor_dict.update({processor.type : processor})
 
-        trace_generator = TgffTraceGenerator(processor_dict, tgff_components[0][graph_name], repetition)
+        trace_generator = TgffTraceGenerator(processor_dict, tgff_components[0][graph_name], kwargs['repetition'], kwargs)
         
         return trace_generator
     

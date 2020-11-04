@@ -81,10 +81,10 @@ class Parser:
                     dict{string : TgffLink},
                     dict{int : dict{int : float}})
     """
-    def parse_file(self, file_path):
+    def parse_file(self, file_path, **kwargs):
         with open(file_path, 'r') as file:
             last_mismatch = None
-            current_line  = file.readline()
+            current_line = file.readline()
             
             while current_line:
                 key, match = self._parse_line(current_line, self.data_components)
@@ -96,7 +96,7 @@ class Parser:
                     self._parse_commun_quant(file, match)
                 elif key == 'hw_component':
                     self.logger.debug('Parse HW component')
-                    self._parse_hw_component(file, match, last_mismatch)
+                    self._parse_hw_component(file, match, last_mismatch, **kwargs)
                 elif key == 'unused_scope':
                     self.logger.debug('Parse unused group')
                     self._parse_unused_scope(file)
@@ -164,7 +164,7 @@ class Parser:
         self.logger.info('Added to commun_quant dict: ' + identifier)
         self.quantity_dict.update( {int(identifier) : commun_values} )
     
-    def _parse_hw_component(self, file, match, last_missmatch):
+    def _parse_hw_component(self, file, match, last_missmatch, **kwargs):
         identifier = match.group('name') + '_' + match.group('identifier')
         current_line = file.readline()
         lower_last_missmatch = None
@@ -180,7 +180,7 @@ class Parser:
                 self._parse_prim_link(identifier, file, match)
                 return
             elif key == 'properties' or key == 'operation':
-                self._parse_processor(identifier, file, key, match, upper_last_missmatch)
+                self._parse_processor(identifier, file, key, match, **kwargs)
                 return
             elif key == 'scope_limiter':
                 self.logger.error('Reached end of scope. Unable to recognize HW component!')
@@ -241,7 +241,7 @@ class Parser:
         data_struct.append(match.group('bit_time'))
         data_struct.append(match.group('power'))
         
-    def _parse_processor(self, identifier, file, key, match, last_missmatch):
+    def _parse_processor(self, identifier, file, key, match, **kwargs):
         self.logger.debug("Recognized component as processing element")
         properties = []
         operations = {}
@@ -267,10 +267,12 @@ class Parser:
             current_line = file.readline()
             
         self.logger.info('Added to processor dict: ' + str(identifier))
-        
+
+        print(kwargs)
+        name = kwargs["processor_" + str(len(self.processor_list))]
         self.processor_list.append(TgffProcessor(identifier,
                                                  operations,
-                                                 processor_type=("proc_type_" + str(len(self.processor_list)))))
+                                                 processor_type=(name)))
     
     def _add_properties(self, properties, match):
         self.logger.debug('Parsed processor properties')
