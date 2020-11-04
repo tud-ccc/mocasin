@@ -12,4 +12,4 @@ hydra:
 
 parsers: []
 output_format : csv
-path: ???
+path: ""
