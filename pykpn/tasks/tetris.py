@@ -115,7 +115,7 @@ def single_mode_scheduler(scheduler, scenario):
     return res, scheduling, schedule_time
 
 
-@hydra.main(config_path="conf/tetris.yaml")
+@hydra.main(config_path='../conf', config_name='tetris')
 def tetris(cfg):
     """TETRiS
 
@@ -164,8 +164,7 @@ def tetris(cfg):
     Context().req_table = req_table
 
     # Initialize scheduler
-    scheduler = hydra.utils.instantiate(cfg['resource_manager'], app_table,
-                                        platform, cfg)
+    scheduler = hydra.utils.instantiate(cfg['resource_manager'], app_table, platform)
 
     opt_summary = cfg["summary"]
     opt_summary_append = cfg["summary_append"]

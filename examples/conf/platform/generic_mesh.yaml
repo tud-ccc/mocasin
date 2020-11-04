@@ -1,0 +1,14 @@
+# @package _group_
+_target_: pykpn.platforms.generic_mesh.DesignerPlatformMesh
+# Once hydra 1.1 rolls out with recursive instantiation,
+# we should replace this and recursively instantiate
+# the processors. See:
+# https://github.com/facebookresearch/hydra/issues/566
+processor_0:
+  _target_: pykpn.platforms.platformDesigner.genericProcessor
+  type : 'proc_type_0'
+  frequency : 2000000000
+processor_1:
+  _target_: pykpn.platforms.platformDesigner.genericProcessor
+  type : 'proc_type_1'
+  frequency : 2000000000

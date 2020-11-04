@@ -3,10 +3,9 @@
 #
 # Author: Andres Goens
 
-from enum import Enum
 import numpy as np
 from numpy.random import randint
-from copy import deepcopy
+from copy import copy
 import random
 import timeit
 
@@ -20,12 +19,12 @@ try:
 except:
     import pykpn.representations.permutations as perm
 
-
 from pykpn.mapper.partial import ProcPartialMapper, ComFullMapper
 
 from .metric_spaces import FiniteMetricSpace, FiniteMetricSpaceSym, FiniteMetricSpaceLP, FiniteMetricSpaceLPSym, arch_graph_to_distance_metric
 from .embeddings import MetricSpaceEmbedding
-import pykpn.representations.automorphisms as aut
+from .automorphisms import to_labeled_edge_graph, edge_to_node_autgrp, list_to_tuple_permutation
+from .permutations import Permutation, PermutationGroup
 import pykpn.util.random_distributions.lp as lp
 from pykpn.util import logging
 log = logging.getLogger(__name__)
@@ -43,6 +42,11 @@ class MappingRepresentation(type):
        a new representation object will be initialized even if
        a representation of that type already exists.
 
+       A representation has to implement a function `changed_parameters`
+       that checks if the representation-specific parameters are different
+       (takes the same parameters in the same order as the init function,
+       except for the application and platform)
+
        In general, representations work with mapping objects
        and can return something which corresponds to the
        type of the representation. However, it is also possible
@@ -54,19 +58,20 @@ class MappingRepresentation(type):
         time = timeit.default_timer()
         kpn = args[0]
         platform = args[1]
-        cfg = args[2]
         kpn_names = ";".join(map(lambda x : x.name, kpn.channels()))
 
-        if (cls, kpn, platform) not in cls._instances:
+        if (cls, kpn, platform) in cls._instances:
+            different = cls._instances[(cls, kpn, platform)].changed_parameters(*args[2:])
+
+        if (cls, kpn, platform) not in cls._instances or different:
             #make hashables of these two
             cls._instances[(cls, kpn_names, platform.name)] = super(MappingRepresentation, cls).__call__(*args, **kwargs)
             log.info(f"Initializing representation {cls} of kpn with processes: {kpn_names} on platform {platform.name}")
-            cls._instances[(cls, kpn_names, platform.name)]._representationType = cls
 
-        instance = deepcopy(cls._instances[(cls,kpn_names,platform.name)])
+        instance = copy(cls._instances[(cls,kpn_names,platform.name)])
         instance.kpn = kpn
         instance.platform = platform
-        com_mapper = ComFullMapper(kpn,platform,cfg)
+        com_mapper = ComFullMapper(kpn,platform)
         instance.list_mapper = ProcPartialMapper(kpn,platform,com_mapper)
         instance.init_time = timeit.default_timer() - time
         return instance
@@ -110,16 +115,18 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
     interface, but they are provided in case they prove useful, when you know
     what you are doing.
     """
-    def __init__(self, kpn, platform, cfg):
+    def __init__(self, kpn, platform,channels=False,periodic_boundary_conditions=False,norm_p=2):
         self.kpn = kpn
         self.platform = platform
-        self.channels = cfg['channels']
-        self.boundary_conditions = cfg['periodic_boundary_conditions']
-        self.config = cfg
-        self.p = cfg['norm_p']
+        self.channels = channels
+        self.boundary_conditions = periodic_boundary_conditions
+        self.p = norm_p
         self.num_procs = len(list(self.kpn._processes.keys()))
-        com_mapper = ComFullMapper(kpn,platform,cfg)
+        com_mapper = ComFullMapper(kpn,platform)
         self.list_mapper = ProcPartialMapper(kpn,platform,com_mapper)
+
+    def changed_parameters(self,channels,periodic_boundary_conditions,norm_p):
+        return self.channels != channels or self.boundary_conditions != periodic_boundary_conditions or self.p != norm_p
 
     def _uniform(self):
         Procs = sorted(list(self.kpn._processes.keys()))
@@ -226,9 +233,9 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         return self.distance(x,y)
 
     def approximate(self,x):
-        approx = np.around(x)
+        approx = np.rint(x).astype(int)
         P = len(list(self.platform._processors.keys()))
-        if self.config['periodic_boundary_conditions']:
+        if self.boundary_conditions:
             res = list(map(lambda t : t % P,approx))
         else:
             res = list(map(lambda t: max(0,min(t , P-1)), approx))
@@ -258,13 +265,13 @@ class MetricSpaceRepresentation(FiniteMetricSpaceLP, metaclass=MappingRepresenta
     (slightly better) tested and documented.
     """
 
-    def __init__(self,kpn, platform, cfg):
+    def __init__(self,kpn, platform):
+        raise RuntimeError("represetation not properly implemented")
         self._topologyGraph = platform.to_adjacency_dict()
         M_list, self._arch_nc, self._arch_nc_inv = arch_graph_to_distance_metric(self._topologyGraph)
         M = FiniteMetricSpace(M_list)
         self.kpn = kpn
         self.platform = platform
-        self.cfg = cfg
         d = len(kpn.processes())
         init_app_ncs(self,kpn)
         super().__init__(M,d)
@@ -312,41 +319,49 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
     In order to work with other mappings in the same class, the methods
     allEquivalent/_allEquivalent returns for a mapping, all mappings in that class.
     """
-    def __init__(self,kpn, platform,cfg):
+    def __init__(self,kpn, platform,channels=False,periodic_boundary_conditions=False,norm_p=2,canonical_operations=True):
         self._topologyGraph = platform.to_adjacency_dict()
         self.kpn = kpn
         self.platform = platform
         self._d = len(kpn.processes())
-        adjacency_dict, num_vertices, coloring, self._arch_nc = aut.to_labeled_edge_graph(self._topologyGraph)
+        adjacency_dict, num_vertices, coloring, self._arch_nc = to_labeled_edge_graph(self._topologyGraph)
         init_app_ncs(self,kpn)
         self._arch_nc_inv = {}
-        self.channels=False
-        self.cfg = cfg
-        com_mapper = ComFullMapper(kpn,platform,cfg)
+        self.channels=channels
+        self.boundary_conditions = periodic_boundary_conditions
+        self.p = norm_p
+        com_mapper = ComFullMapper(kpn,platform)
         self.list_mapper = ProcPartialMapper(kpn,platform,com_mapper)
+        self.canonical_operations = canonical_operations
 
         for node in self._arch_nc:
             self._arch_nc_inv[self._arch_nc[node]] = node
         #TODO: ensure that nodes_correspondence fits simpleVec
 
         n = len(self.platform.processors())
-        nautygraph = pynauty.Graph(num_vertices,True,adjacency_dict, coloring)
-        autgrp_edges = pynauty.autgrp(nautygraph)
-        autgrp, _ = aut.edge_to_node_autgrp(autgrp_edges[0],self._arch_nc)
 
         try:
             pympsym
         except NameError:
             self.sym_library = False
-            permutations_lists = map(aut.list_to_tuple_permutation,autgrp)
-            permutations = [perm.Permutation(p,n=n) for p in permutations_lists]
-            self._G = perm.PermutationGroup(permutations)
         else:
             self.sym_library = True
             if hasattr(platform, 'ag'):
                 self._ag = platform.ag
             else:
+                #only calculate this if not already present
+                nautygraph = pynauty.Graph(num_vertices, True, adjacency_dict, coloring)
+                autgrp_edges = pynauty.autgrp(nautygraph)
+                autgrp, _ = edge_to_node_autgrp(autgrp_edges[0], self._arch_nc)
                 self._ag = pympsym.ArchGraphAutomorphisms([pympsym.Perm(g) for g in autgrp])
+
+        if not self.sym_library:
+            nautygraph = pynauty.Graph(num_vertices, True, adjacency_dict, coloring)
+            autgrp_edges = pynauty.autgrp(nautygraph)
+            autgrp, _ = edge_to_node_autgrp(autgrp_edges[0], self._arch_nc)
+            permutations_lists = map(list_to_tuple_permutation,autgrp)
+            permutations = [perm.Permutation(p,n=n) for p in permutations_lists]
+            self._G = perm.PermutationGroup(permutations)
 
     def _simpleVec2Elem(self,x):
         x_ = x[:self._d]
@@ -354,6 +369,9 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
             return self._ag.representative(x_)
         else:
             return self._G.tuple_normalize(x_)
+
+    def changed_parameters(self):
+        return False
 
     def _elem2SimpleVec(self,x):
         return x
@@ -384,7 +402,10 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         return res
 
     def toRepresentation(self,mapping):
-        return self._simpleVec2Elem(mapping.to_list(mapping))
+        return self._simpleVec2Elem(mapping.to_list())
+
+    def toRepresentationNoncanonical(self,mapping):
+        return SimpleVectorRepresentation.toRepresentation(self,mapping)
 
     def fromRepresentation(self,mapping):
         #Does not check if canonical. This is deliberate.
@@ -398,10 +419,37 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         return self.fromRepresentation(self._uniformFRomBall(p,r,npoints=npoints))
 
     def distance(self,x,y):
-        return SimpleVectorRepresentation.distance(self,x,y)
+        if self.canonical_operations:
+            return SimpleVectorRepresentation.distance(self, self.toRepresentation(x), self.toRepresentation(y))
+        else:
+            xsv = SimpleVectorRepresentation.toRepresentation(self,x)
+            ysv = SimpleVectorRepresentation.toRepresentation(self,y)
+            return SimpleVectorRepresentation.distance(self,xsv,ysv)
+
+    def crossover(self,m1,m2,k):
+        if self.canonical_operations:
+            return SimpleVectorRepresentation._crossover(self,self.toRepresentation(m1),self.toRepresentation(m2),k)
+        else:
+            xsv = SimpleVectorRepresentation.toRepresentation(self,m1)
+            ysv = SimpleVectorRepresentation.toRepresentation(self,m2)
+            return SimpleVectorRepresentation._crossover(self,xsv,ysv,k)
+
+    def _crossover(self,x,y,k):
+        if self.canonical_operations:
+            xcan = self._simpleVec2Elem(x)
+            ycan = self._simpleVec2Elem(y)
+            xcx,ycx = SimpleVectorRepresentation._crossover(self,xcan,ycan,k)
+            #update manually so that we return DEAP Individuals in DEAP
+            for i in range(len(x)):
+                x[i] = xcx[i]
+                y[i] = ycx[i]
+            return x,y
+        else:
+            return SimpleVectorRepresentation._crossover(self,x,y,k)
 
     def approximate(self,x):
-        return SimpleVectorRepresentation.approximate(self,x)
+        approx = SimpleVectorRepresentation.approximate(self,x)
+        return self._simpleVec2Elem(approx)
 
 #FIXME: UNTESTED!!
 class MetricSymmetryRepresentation(FiniteMetricSpaceLPSym, metaclass=MappingRepresentation):
@@ -416,7 +464,7 @@ class MetricSymmetryRepresentation(FiniteMetricSpaceLPSym, metaclass=MappingRepr
         self._d = len(kpn.processes())
         M_matrix, self._arch_nc, self._arch_nc_inv = arch_graph_to_distance_metric(self._topologyGraph)
         M = FiniteMetricSpace(M_matrix)
-        adjacency_dict, num_vertices, coloring, self._arch_nc = aut.to_labeled_edge_graph(self._topologyGraph)
+        adjacency_dict, num_vertices, coloring, self._arch_nc = to_labeled_edge_graph(self._topologyGraph)
         init_app_ncs(self,kpn)
         self._arch_nc_inv = {}
         for node in self._arch_nc:
@@ -426,10 +474,10 @@ class MetricSymmetryRepresentation(FiniteMetricSpaceLPSym, metaclass=MappingRepr
         n = len(self.platform.processors())
         nautygraph = pynauty.Graph(num_vertices,True,adjacency_dict, coloring)
         autgrp_edges = pynauty.autgrp(nautygraph)
-        autgrp, new_nodes_correspondence = aut.edge_to_node_autgrp(autgrp_edges[0],self._arch_nc)
-        permutations_lists = map(aut.list_to_tuple_permutation,autgrp)
-        permutations = [perm.Permutation(p,n= n) for p in permutations_lists]
-        self._G = perm.PermutationGroup(permutations)
+        autgrp, new_nodes_correspondence = edge_to_node_autgrp(autgrp_edges[0],self._arch_nc)
+        permutations_lists = map(list_to_tuple_permutation,autgrp)
+        permutations = [Permutation(p,n= n) for p in permutations_lists]
+        self._G = PermutationGroup(permutations)
         FiniteMetricSpaceLPSym.__init__(self,M,self._G,self._d)
         self.p = 1
 
@@ -457,27 +505,24 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
     and makes calculations much more efficient.
 
     """
-    def __init__(self,kpn, platform, cfg):
+    def __init__(self,kpn, platform, norm_p):
         self._topologyGraph = platform.to_adjacency_dict()
         M_matrix, self._arch_nc, self._arch_nc_inv = arch_graph_to_distance_metric(self._topologyGraph)
         self._M = FiniteMetricSpace(M_matrix)
         self.kpn = kpn
         self.platform = platform
         self._d = len(kpn.processes())
-        self.cfg = cfg
-        self.p = cfg['norm_p']
-        com_mapper = ComFullMapper(kpn,platform,cfg)
+        self.p = norm_p
+        com_mapper = ComFullMapper(kpn,platform)
         self.list_mapper = ProcPartialMapper(kpn,platform,com_mapper)
         init_app_ncs(self,kpn)
         if self.p != 2:
             log.error(f"Metric space embeddings only supports p = 2. For p = 1, for example, finding such an embedding is NP-hard (See Matousek, J.,  Lectures on Discrete Geometry, Chap. 15.5)")
         MetricSpaceEmbedding.__init__(self,self._M,self._d)
         log.info(f"Found embedding with distortion: {self.distortion}")
-        #Debug:
-        #for p in self.iotainv.keys():
-        #    for q in self.iotainv.keys():
-        #        print(lp.p_norm(np.array(p)-np.array(q),self.p))
-        #        print(self.M.D[self.iotainv[p],self.iotainv[q]])
+
+    def changed_parameters(self,norm_p):
+        return self.p != norm_p
 
     def _simpleVec2Elem(self,x):
         proc_vec = x[:self._d]
@@ -552,6 +597,7 @@ class SymmetryEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRep
     and not ready for using.
     """
     def __init__(self,kpn, platform):
+        raise RuntimeError("representation not properly implemented")
         self.kpn = kpn
         self.platform = platform
         self._d = len(kpn.processes())
@@ -559,13 +605,13 @@ class SymmetryEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRep
         init_app_ncs(self,kpn)
         n = len(self.platform.processors())
         M_matrix, self._arch_nc, self._arch_nc_inv = arch_graph_to_distance_metric(self._topologyGraph)
-        adjacency_dict, num_vertices, coloring, self._arch_nc = aut.to_labeled_edge_graph(self._topologyGraph)
+        adjacency_dict, num_vertices, coloring, self._arch_nc = to_labeled_edge_graph(self._topologyGraph)
         nautygraph = pynauty.Graph(num_vertices,True,adjacency_dict, coloring)
         autgrp_edges = pynauty.autgrp(nautygraph)
-        autgrp, new_nodes_correspondence = aut.edge_to_node_autgrp(autgrp_edges[0],self._arch_nc)
-        permutations_lists = map(aut.list_to_tuple_permutation,autgrp)
-        permutations = [perm.Permutation(p,n= n) for p in permutations_lists]
-        self._G = perm.PermutationGroup(permutations)
+        autgrp, new_nodes_correspondence = edge_to_node_autgrp(autgrp_edges[0],self._arch_nc)
+        permutations_lists = map(list_to_tuple_permutation,autgrp)
+        permutations = [Permutation(p,n= n) for p in permutations_lists]
+        self._G = PermutationGroup(permutations)
         M = FiniteMetricSpace(M_matrix)
         self._M = FiniteMetricSpaceLPSym(M,self._G,self._d)
         self._M._populateD()
@@ -581,27 +627,3 @@ class SymmetryEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRep
     def _uniform(self):
         return self.uniformVector()
 
-class RepresentationType(Enum):
-    """Simple enum to store the different types of representations a mapping can have.
-    """
-    SimpleVector = SimpleVectorRepresentation
-    FiniteMetricSpaceLP = FiniteMetricSpaceLP
-    Symmetries = FiniteMetricSpaceSym
-    FiniteMetricSpaceLPSym = FiniteMetricSpaceLPSym
-    MetricSpaceEmbedding = MetricSpaceEmbedding
-    SymmetryEmbedding = SymmetryEmbeddingRepresentation
-
-    def getClassType(self):
-
-        if self is RepresentationType['SimpleVector']:
-            return SimpleVectorRepresentation
-        if self is RepresentationType['FiniteMetricSpaceLP']:
-            return MetricSpaceRepresentation
-        if self is RepresentationType['Symmetries']:
-            return SymmetryRepresentation
-        if self is RepresentationType['FiniteMetricSpaceLPSym']:
-            return MetricSymmetryRepresentation
-        if self is RepresentationType['MetricSpaceEmbedding']:
-            return MetricEmbeddingRepresentation
-        if self is RepresentationType['SymmetryEmbedding']:
-            return SymmetryEmbeddingRepresentation

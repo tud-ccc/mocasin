@@ -186,8 +186,8 @@ class WWT15SegmentMapper(SingleVariantSegmentMapper):
 
 
 class WWT15Scheduler(SingleVariantSegmentizedScheduler):
-    def __init__(self, app_table, platform, config):
-        sorting_arg = config["wwt15_sorting"]
+    def __init__(self, app_table, platform, **kwargs):
+        sorting_arg = kwargs["wwt15_sorting"]
         if sorting_arg == "COST":
             self.__sorting_key = WWT15SortingKey.MINCOST
         elif sorting_arg == "DEADLINE":
@@ -197,7 +197,7 @@ class WWT15Scheduler(SingleVariantSegmentizedScheduler):
         else:
             assert False, "Unknown sorting key"
 
-        explore_arg = config["wwt15_seg_explore"]
+        explore_arg = kwargs["wwt15_seg_explore"]
         if explore_arg == "ALL":
             self.__explore_mode = WWT15ExploreMode.ALL
         elif explore_arg == "BEST":
@@ -205,7 +205,7 @@ class WWT15Scheduler(SingleVariantSegmentizedScheduler):
         else:
             assert False, "Unknown explore mode"
 
-        lr_constraints_arg = config["wwt15_lr"]
+        lr_constraints_arg = kwargs["wwt15_lr"]
         if len(lr_constraints_arg) == 0:
             lr_constraints_arg.append("R")
         self.__lr_constraints = LRConstraint.NULL
@@ -216,7 +216,7 @@ class WWT15Scheduler(SingleVariantSegmentizedScheduler):
         if "RDP" in lr_constraints_arg:
             self.__lr_constraints |= LRConstraint.RDP
 
-        self.__lr_rounds = config["wwt15_lr_rounds"]
+        self.__lr_rounds = kwargs["wwt15_lr_rounds"]
         segment_mapper = WWT15SegmentMapper(
             self, platform, sorting_key=self.__sorting_key,
             explore_mode=self.__explore_mode,

@@ -1,10 +1,14 @@
-# Copyright (C) 2017 TU Dresden
+# Copyright (C) 2017-2020 TU Dresden
 # All Rights Reserved
 #
-# Authors: Christian Menard, Felix Teweleit
+# Authors: Christian Menard, Felix Teweleit, Andres Goens
 
 import networkx as nx
 from enum import Enum
+from pykpn.util import logging
+import random
+
+log = logging.getLogger(__name__)
 
 class TraceSegment(object):
     """Represents a segment in a process' execution trace
@@ -89,7 +93,59 @@ class TraceGenerator(object):
                 implementation of any subclass.
         """
         return None
- 
+
+class EmptyTraceGenerator(TraceGenerator):
+    def next_segment(self, process_name, processor_type):
+        log.warning("Generating traces from empty trace. Did you forget to specify a trace configuration?")
+        return TraceSegment(terminate=True)
+
+class RandomTraceGenerator(TraceGenerator):
+
+    def __init__(self,expected_num_executions=1000,
+                 min_cycles=100,max_cycles=10000):
+        self.firings = {}
+        self.max_firings = {}
+        self.num_firings = {}
+        #suggestion: give min/max cycles per processor type?
+        #perhaps also per process_name?
+        self.min_cycles = min_cycles
+        self.max_cycles = max_cycles
+        self.expected_num_executions = expected_num_executions
+
+    def next_segment(self, process_name, processor_type):
+        #This will not produce any read/write events currently.
+        #This can't be fixed without having information about
+        #the application. If the need arises, we can change it.
+        #Otherwise we don't need to change the initalization
+        #of the trace generator.
+        if process_name not in self.firings:
+            sigma = 0.1 * self.expected_num_executions
+            final = random.gauss(self.expected_num_executions,sigma)
+            total = round(final)
+            self.firings[process_name] = []
+            self.num_firings[process_name] = 0
+            self.max_firings[process_name] = total
+            for i in range(total):
+                exec_cycles = random.randint(self.min_cycles, self.max_cycles)
+                self.firings[process_name].append(exec_cycles)
+            log.info(f"Random trace for {process_name}: {final} executions.")
+
+        exec_cycles = self.firings[process_name][self.num_firings[process_name]]
+        log.debug(f"firing {process_name} for {exec_cycles} cycles.")
+        self.num_firings[process_name] += 1
+        if self.num_firings[process_name] == self.max_firings[process_name]:
+            return TraceSegment(process_cycles=exec_cycles,terminate=True)
+        elif self.num_firings[process_name] < self.max_firings[process_name]:
+            return TraceSegment(process_cycles=exec_cycles)
+        else:
+            raise RuntimeError("Getting a segment from finished trace.")
+
+
+    def reset(self,seed=None):
+        if seed is not None:
+            random.seed(seed)
+        for proc in self.num_firings:
+            self.num_firings[proc] = 0
 
 class EdgeType(Enum):
     SEQUENTIAL_ORDER = 1

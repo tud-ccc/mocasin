@@ -9,19 +9,19 @@ import pytest
 
 thresholds = {
     "audio_filter": {
-        "exynos": "37.3 ms",
-        "multidsp": "800 ms",
-        "parallella": "280 ms",
+        "exynos": "'37.3 ms'",
+        "multidsp": "'800 ms'",
+        "parallella": "'280 ms'",
     },
-    "hog": {"exynos": "880 ms"},
-    "speaker_recognition": {"exynos": "38.3 ms"},
+    "hog": {"exynos": "'880 ms'"},
+    "speaker_recognition": {"exynos": "'38.3 ms'"},
 }
 
 
 def test_dc_slx(datadir, slx_kpn_platform_pair):
     kpn, platform = slx_kpn_platform_pair
 
-    subprocess.check_call(["pykpn", "design_centering",
+    subprocess.check_call(["pykpn", "find_design_center",
                            "kpn=%s" % kpn,
                            "platform=%s" % platform,
                            "trace=slx_default",
@@ -36,7 +36,7 @@ def test_dc_slx(datadir, slx_kpn_platform_pair):
 def test_dc_tgff(datadir, tgff):
     tgff_directory = os.path.join(datadir, 'tgff/e3s-0.9')
 
-    subprocess.check_call(["pykpn", "design_centering",
+    subprocess.check_call(["pykpn", "find_design_center",
                            "kpn=tgff_reader",
                            "platform=tgff_reader",
                            "trace=tgff_reader",

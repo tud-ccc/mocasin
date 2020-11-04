@@ -25,7 +25,7 @@ from importlib import import_module
 log = logging.getLogger(__name__)
 
 
-@hydra.main(config_path='conf/help.yaml')
+@hydra.main(config_path='conf', config_name='help')
 def print_help(cfg=None):
     _print_help_impl()
 
@@ -35,10 +35,10 @@ _tasks = {
         'csv_plot',
         'csv_plot',
         "???"),
-    'design_centering': (
-        'design_centering',
+    'find_design_center': (
+        'find_design_center',
         'dc_task',
-        "generate a mapping using the design centering algorityh"),
+        "generate a mapping using the design centering algorithm"),
     'enumerate_equivalent': (
         'enumerate_equivalent',
         'enumerate_equivalent',
@@ -47,6 +47,10 @@ _tasks = {
         'generate_mapping',
         'generate_mapping',
         "Generate a mapping."),
+    'pareto_front': (
+        'pareto_front',
+        'pareto_front',
+        "Generate a pareto front of mappings."),
     'generate_yaml': (
         'generate_yaml',
         'generate_yaml',
@@ -88,6 +92,10 @@ _tasks = {
         'visualize',
         'visualize',
         "Visualize a mapping in the GUI"),
+    'parse_multirun': (
+        'parse_multirun',
+        'parse_multirun',
+        "Parse the directory structure after executing a multirun job"),
 }
 """A dictionary that maps task names to descriptors of callable functions."""
 

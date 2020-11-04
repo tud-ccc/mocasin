@@ -9,7 +9,7 @@ class TgffTraceGenerator(TraceGenerator):
     """A trace generator based on the tgff representation.
     """
     
-    def __init__(self, processor_list, tgff_graph, repetition=1):
+    def __init__(self, processor_list, tgff_graph, repetition):
         """ Initializes the generator
     
         :param processor_list: a list of all processors a

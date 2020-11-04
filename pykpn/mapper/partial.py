@@ -216,7 +216,7 @@ class ComFullMapper(object):
     This class is used to generate a full mapping for a given
     platform and KPN application.
     """
-    def __init__(self, kpn, platform, config):
+    def __init__(self, kpn, platform):
         """Generates a partial mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
@@ -229,11 +229,11 @@ class ComFullMapper(object):
         self.full_mapper = True # flag indicating the mapper type
         self.platform = platform
         self.kpn = kpn
-        self.config = config
 
     def generate_mapping(self, part_mapping=None):
         # configure policy of schedulers
         if part_mapping is None:
             part_mapping = Mapping(self.kpn, self.platform)
+
         return ComPartialMapper.generate_mapping_static(self.kpn, self.platform, part_mapping=part_mapping)
 

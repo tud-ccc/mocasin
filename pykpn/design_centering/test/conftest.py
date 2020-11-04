@@ -3,6 +3,7 @@ import numpy as np
 from pykpn.common.kpn import KpnGraph, KpnProcess
 from pykpn.common.platform import Platform, Processor, Scheduler
 from pykpn.common.mapping import Mapping
+from pykpn.representations import SimpleVectorRepresentation
 from scipy.linalg import sqrtm
 from unittest.mock import Mock
 from pykpn.design_centering.volume import *
@@ -12,6 +13,9 @@ import pykpn.design_centering.sample as sample
 def Q_not_rotated():
     return np.array(sqrtm(np.array([[3., 0.], [0., 1 / 3.]])))
 
+@pytest.fixture
+def radius():
+    return 7.0
 
 @pytest.fixture
 def Q():
@@ -85,6 +89,10 @@ def platform(num_procs):
     p.add_scheduler(sched)
     return p
 
+@pytest.fixture
+def representation(kpn,platform):
+    rep = SimpleVectorRepresentation(kpn,platform)
+    return rep
 
 @pytest.fixture
 def point():
@@ -94,14 +102,14 @@ def point():
 @pytest.fixture
 def center(kpn, platform, point):
     m = Mapping(kpn, platform)
-    m.from_list(point)
+    m.from_list_random(point)
     return m
 
 
 @pytest.fixture
 def center_mu(kpn, platform, mu):
     m = Mapping(kpn, platform)
-    m.from_list(mu)
+    m.from_list_random(mu)
     return m
 
 
@@ -111,14 +119,15 @@ def dim():
 
 
 @pytest.fixture
-def lp_vol(center, point, kpn, platform, dim, conf):
-    vol = LPVolume(center, dim, kpn, platform, conf)
+def lp_vol(center, point, kpn, platform, representation,radius):
+    vol = LPVolume(kpn, platform, representation, center,radius=radius)
     return vol
 
 
 @pytest.fixture
-def vol_mu(center_mu, kpn, platform, dim, conf):
-    vol = LPVolume(center_mu, dim, kpn, platform, conf)
+def vol_mu(center_mu, kpn, platform, representation,radius,num_samples):
+    vol = LPVolume(kpn, platform, representation, center_mu,radius=radius)
+    vol.adapt_samples = num_samples
     return vol
 
 
@@ -159,23 +168,24 @@ class AttrDict(dict):
 def conf(num_samples):
     #center movement should probably work without aggressive movement (fix this in dc branch)
     return AttrDict({'adapt_samples' : num_samples,
-    'max_step': 10,
-    'max_samples' : 50,
-    'max_step' : 10,
-    'adaptable_center_weights' : False , 
-    'radius' : 7,
-    'representation' : 'SimpleVector',
-    'channels' : False,
-    'norm_p' : 2,
-    'aggressive_center_movement' : True,
-    'periodic_boundary_conditions' : False , 
-    'distr' : 'uniform', 
-    'record_samples' : False,
-    'visualize_mappings' : False,
-    'show_polynomials' : False,
-    'deg_p_polynomial' : 2,
-    'deg_s_polynomial' : 2,
-    'step_width' : [0.9, 0.7, 0.6, 0.5, 0.1],
-    'hitting_probability' : [0.4, 0.5, 0.5, 0.7, 0.9],
-    'hitting_probability_threshold' : 0.7})
+                     'max_step': 10,
+                     'max_samples' : 50,
+                     'adaptable_center_weights' : False ,
+                     'radius' : 7,
+                     'representation' : 'SimpleVector',
+                     'channels' : False,
+                     'norm_p' : 2,
+                     'aggressive_center_movement' : True,
+                     'periodic_boundary_conditions' : False ,
+                     'distr' : 'uniform',
+                     'record_samples' : False,
+                     'visualize_mappings' : False,
+                     'show_polynomials' : False,
+                     'deg_p_polynomial' : 2,
+                     'deg_s_polynomial' : 2,
+                     'step_width' : [0.9, 0.7, 0.6, 0.5, 0.1],
+                     'hitting_probability' : [0.4, 0.5, 0.5, 0.7, 0.9],
+                     'hitting_probability_threshold' : 0.7,
+                     'keep_metrics' : True,
+                     'max_pe' : 16})
 

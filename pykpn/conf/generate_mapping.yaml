@@ -1,3 +1,4 @@
+# @package _global_
 defaults:
   - common
   - hydra/job_logging: pykpn
@@ -5,7 +6,7 @@ defaults:
   - kpn: default
   - platform: default
   - trace: default
-  - representation: default
+  - representation: SimpleVector
   - mapper: default
 
 simulate_best : true
@@ -14,5 +15,4 @@ outdir : ./
 progress :  true
 plot_distribution: false
 visualize : false
-rep_type_str : SimpleVector
 show_plots : false

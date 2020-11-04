@@ -9,11 +9,14 @@ import tkinter as tk
 from pykpn.gui.drawAPI import drawAPI
 
 
-@hydra.main(config_path='conf/visualize.yaml')
+@hydra.main(config_path='../conf', config_name='visualize')
 def visualize(cfg):
     kpn = hydra.utils.instantiate(cfg['kpn'])
     platform = hydra.utils.instantiate(cfg['platform'])
-    mapping = hydra.utils.instantiate(cfg['mapper'], kpn, platform, cfg).generate_mapping()
+    trace = hydra.utils.instantiate(cfg['trace'])
+    representation = hydra.utils.instantiate(cfg['representation'],kpn,platform)
+    mapping = hydra.utils.instantiate(cfg['mapper'], kpn, platform,
+                                      trace, representation).generate_mapping()
     task_names = cfg['task_names']
     width = cfg['width']
     height = cfg['height']

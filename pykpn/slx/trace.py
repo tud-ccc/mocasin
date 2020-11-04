@@ -102,7 +102,7 @@ class SlxTraceReader(TraceGenerator):
         if a trace has to be calculated twice.
         """
         for fh in self._trace_files.values():
-            if not fh == None:
+            if fh:
                 fh.close()
         self._trace_files = {}
         self._processor_types = {}

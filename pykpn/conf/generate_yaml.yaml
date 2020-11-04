@@ -1,3 +1,0 @@
-directory: generated_yamls
-hooks: tgff.file:all kpn.name:TASK_GRAPH_1,TASK_GRAPH_2
-template_path: pykpn/conf/template.yaml

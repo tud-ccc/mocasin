@@ -1,10 +1,11 @@
+# @package _global_
 defaults:
   - common
   - hydra/job_logging: pykpn
   - tgff: default
   - kpn: default
   - platform: default
+  - trace: default
   - mapper: from_file
-  - source: slx
-
+  - representation: Symmetries
 output_file: equivalent_mappings.txt

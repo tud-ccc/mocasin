@@ -341,19 +341,19 @@ class StateMemoryTable:
 
 
 class BruteforceScheduler(SchedulerBase):
-    def __init__(self, app_table, platform, config):
+    def __init__(self, app_table, platform, **kwargs):
         super().__init__(app_table, platform)
         self._platform = platform
-        self.__rescheduling = config['reschedule']
-        self.__drop_high = config["bf_drop"]
-        self.__dump_steps = config["bf_dump_steps"]
+        self.__rescheduling = kwargs['reschedule']
+        self.__drop_high = kwargs["bf_drop"]
+        self.__dump_steps = kwargs["bf_dump_steps"]
 
-        self.__time_limit = config["time_limit"]
+        self.__time_limit = kwargs["time_limit"]
 
         self.__scheduled_on_time = True
-        self.__memoization = config["memoization"]
-        self.__dump_mem_table = config["dump_mem_table"]
-        self.__prune_mem_table = config["prune_mem_table"]
+        self.__memoization = kwargs["memoization"]
+        self.__dump_mem_table = kwargs["dump_mem_table"]
+        self.__prune_mem_table = kwargs["prune_mem_table"]
 
     @property
     def name(self):

@@ -102,10 +102,11 @@ class RuntimeChannel(object):
         self._fifo_state[process.name] = 0
 
         # record the channel creation in the simulation trace
-        self.trace_writer.update_counter(self.app.name,
-                                         self.name,
-                                         self._fifo_state.copy(),
-                                         category="Channel")
+        if self.app.system.app_trace_enabled:
+            self.trace_writer.update_counter(self.app.name,
+                                             self.name,
+                                             self._fifo_state.copy(),
+                                             category="Channel")
 
     def can_consume(self, process, num):
         """Check if a process can consume a number of tokens.
@@ -260,10 +261,11 @@ class RuntimeChannel(object):
         self._fifo_state[process.name] = new_state
 
         # record the consume operation in the simulation trace
-        self.trace_writer.update_counter(self.app.name,
-                                         self.name,
-                                         self._fifo_state.copy(),
-                                         category="Channel")
+        if self.app.system.app_trace_enabled:
+            self.trace_writer.update_counter(self.app.name,
+                                             self.name,
+                                             self._fifo_state.copy(),
+                                             category="Channel")
 
         for phase in prim.consume_phases[sink.name]:
             log.debug('start communication phase "%s"', phase.name)
@@ -345,10 +347,11 @@ class RuntimeChannel(object):
             self._fifo_state[p] += num
 
         # record the produce operation in the simulation trace
-        self.trace_writer.update_counter(self.app.name,
-                                         self.name,
-                                         self._fifo_state.copy(),
-                                         category="Channel")
+        if self.app.system.app_trace_enabled:
+            self.trace_writer.update_counter(self.app.name,
+                                             self.name,
+                                             self._fifo_state.copy(),
+                                             category="Channel")
 
         for phase in prim.produce_phases[src.name]:
             log.debug('start communication phase "%s"', phase.name)

@@ -129,8 +129,9 @@ class RuntimeProcess(object):
         self.blocked.callbacks.append(self._cb_blocked)
 
         # record the process creation int the simulation trace
-        self.trace_writer.begin_duration(self.app.name, self.name,
-                                         'CREATED', category="Process")
+        if self.app.system.app_trace_enabled:
+            self.trace_writer.begin_duration(self.app.name, self.name,
+                                             'CREATED', category="Process")
 
     @property
     def env(self):
@@ -166,10 +167,11 @@ class RuntimeProcess(object):
         assert hasattr(self, cb_name)
 
         # record the transition in the simulation trace
-        self.trace_writer.end_duration(self.app.name, self.name,
-                                       self._state.name, category="Process")
-        self.trace_writer.begin_duration(self.app.name, self.name,
-                                         state_name, category="Process")
+        if self.app.system.app_trace_enabled:
+            self.trace_writer.end_duration(self.app.name, self.name,
+                                           self._state.name, category="Process")
+            self.trace_writer.begin_duration(self.app.name, self.name,
+                                             state_name, category="Process")
 
         # update the state
         self._state = getattr(ProcessState, state_name)

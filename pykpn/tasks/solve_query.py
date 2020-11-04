@@ -5,13 +5,12 @@
 
 import hydra
 
-from pykpn.representations.representations import RepresentationType
 from pykpn.util.logging import getLogger
 from pykpn.ontologies.solver import Solver
 
 logger = getLogger(__name__)
 
-@hydra.main(config_path='conf/solve_query.yaml')
+@hydra.main(config_path='../conf', config_name='solve_query.yaml')
 def solve_query(cfg):
     #TODO:
     #find a way to hand in a set of mappings on which equal_operations can be applied
@@ -20,9 +19,11 @@ def solve_query(cfg):
     platform = hydra.utils.instantiate(cfg['platform'])
     query = cfg['query']
     vector = cfg['vector']
-    representation = RepresentationType['SimpleVector'].getClassType()(kpn,platform,cfg)
+    if cfg['representation']._target_ != 'pykpn.representations.SimpleVectorRepresentation':
+        raise RuntimeError(f"The solve_query task needs to be called with the SimpleVector representation. Called with {cfg['representation']._target_}")
+    representation = hydra.utils.instantiate(cfg['representation'], kpn, platform)
 
-    solver = Solver(kpn, platform,cfg)
+    solver = Solver(kpn, platform, cfg)
 
     if not vector == 'None':
         starting_vector = []
@@ -38,7 +39,7 @@ def solve_query(cfg):
     if not cfg["output_file"] == 'None':
         #write result to file in simple vector representation
         output_file = open(cfg['output_file'], 'w+')
-        if result == False:
+        if not result:
             output_file.write("False")
         else:
             output_file.write('[')
@@ -50,7 +51,7 @@ def solve_query(cfg):
         output_file.close()
 
     else:
-       if result == False:
-           print("No result found.")
-       else:
+        if not result:
+            print("No result found.")
+        else:
             print(representation.toRepresentation(result))

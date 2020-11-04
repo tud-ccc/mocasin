@@ -1,0 +1,15 @@
+# @package _global_
+-defaults:
+  common
+#work at CWD, don't output log
+hydra:
+  run:
+    dir: ./
+  job_logging:
+    root:
+       handlers: [console]
+  output_subdir: outputs/.hydra-${now:%Y-%m-%d-%H-%M-%S}
+
+parsers: []
+output_format : csv
+path: ""

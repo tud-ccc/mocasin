@@ -1,7 +1,8 @@
+# @package _global_
 kpn:
   name: 'TASK_GRAPH_0'
   file: ${tgff.directory}/${tgff.file}
-  class: pykpn.tgff.tgffSimulation.KpnGraphFromTgff
+  _target_: pykpn.tgff.tgffSimulation.KpnGraphFromTgff
   params:
     file_path: ${kpn.file}
     task_graph: ${kpn.name}
@@ -10,7 +11,7 @@ platform:
   name: 'tgff'
   type: 'bus'
   file: ${tgff.directory}/${tgff.file}
-  class: pykpn.tgff.tgffSimulation.PlatformFromTgff
+  _target_: pykpn.tgff.tgffSimulation.PlatformFromTgff
   processor_0: 'processor_0'
   processor_1: 'processor_1'
   processor_2: 'processor_2'
@@ -25,13 +26,13 @@ platform:
 
 trace:
   file: ${tgff.directory}/${tgff.file}
-  class: pykpn.tgff.tgffSimulation.TraceGeneratorWrapper
+  _target_: pykpn.tgff.tgffSimulation.TraceGeneratorWrapper
   params:
     file_path: ${trace.file}
 
 mapping:
   name: ${kpn.name}_on_${platform.name}
-  class: pykpn.mapper.random_mapper.RandomMapping
+  _target_: pykpn.mapper.random_mapper.RandomMapping
 
 tgff:
   directory: '../../../pykpn/tgff/graphs'

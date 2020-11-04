@@ -16,7 +16,7 @@ from pykpn.tgff.tgffSimulation import TgffReferenceError
 
 log = logging.getLogger(__name__)
 
-@hydra.main(config_path='conf/generate_mapping.yaml')
+@hydra.main(config_path='../conf', config_name='generate_mapping')
 def generate_mapping(cfg):
     """Mapper Task
 
@@ -41,7 +41,6 @@ def generate_mapping(cfg):
           :class:`~pykpn.common.platform.Platform` object.
         * **plot_distribution:** a flag indicating whether to plot the
           distribution of simulated execution times over all mapping
-        * **rep_type_str** the representation type for the mapping space
         * **trace:** the input trace. The task expects a configuration dict
           that can be instantiated to a
           :class:`~pykpn.common.trace.TraceGenerator` object.
@@ -54,9 +53,11 @@ def generate_mapping(cfg):
     output from the individual simulations.
 """
     try:
-        kpn = hydra.utils.instantiate(cfg['kpn'])
         platform = hydra.utils.instantiate(cfg['platform'])
-        mapper = hydra.utils.instantiate(cfg['mapper'], kpn, platform, cfg)
+        trace = hydra.utils.instantiate(cfg['trace'])
+        kpn = hydra.utils.instantiate(cfg['kpn'])
+        representation = hydra.utils.instantiate(cfg['representation'],kpn,platform)
+        mapper = hydra.utils.instantiate(cfg['mapper'], kpn, platform, trace, representation)
     except TgffReferenceError:
         # Special exception indicates a bad combination of tgff components
         # can be thrown during multiruns and should not stop the hydra
@@ -86,8 +87,43 @@ def generate_mapping(cfg):
         with open(outdir + 'best_time.txt','w') as f:
             f.write(str(exec_time))
 
-    if not cfg['kpn']['class'] == 'pykpn.tgff.tgffSimulation.KpnGraphFromTgff':
+    if not cfg['kpn']['_target_'] == 'pykpn.tgff.tgffSimulation.KpnGraphFromTgff':
         export_slx_mapping(result,
                            os.path.join(outdir, 'generated_mapping'))
+    #moved this from random mapper. It should be part of the task, not the mapper.
+    # export all mappings if requested
+    # idx = 1
+    #if self.export_all:
+    #    for mapping in mappings:
+    #        mapping_name = 'rnd_%08d.mapping' % idx
+    #        #FIXME: We assume an slx output here, this should be configured
+    #        export_slx_mapping(mapping, os.path.join(self.out_dir, mapping_name))
+    #        idx += 1
+
+    # plot result distribution
+    #if self.plot_distribution:
+    #    import matplotlib.pyplot as plt
+    #    # exec time in milliseconds
+    #    plt.hist(exec_times, bins=int(self.num_iterations / 20), density=True)
+    #    plt.yscale('log', nonposy='clip')
+    #    plt.title("Mapping Distribution")
+    #    plt.xlabel("Execution Time [ms]")
+    #    plt.ylabel("Probability")
+
+    #    if self.show_plots:
+    #        plt.show()
+
+    #    plt.savefig("distribution.pdf")
+
+    ## visualize searched space
+    #if self.visualize:
+
+    #    plot.visualize_mapping_space(mappings,
+    #                                 exec_times,
+    #                                 self.representation,
+    #                                 show_plot=self.show_plots,
+    #                                 tick=self.tick,
+    #                                 history=self.history)
+
 
     del mapper

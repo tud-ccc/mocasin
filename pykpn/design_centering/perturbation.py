@@ -1,19 +1,17 @@
-# Copyright (C) 2017-2019 TU Dresden
+# Copyright (C) 2017-2020 TU Dresden
 # All Rights Reserved
 #
 # Authors: Gerald Hempel, Andres Goens
 
 import sys
-import random as rand
 import pint
+import random as rand
 import numpy as np
 
 from pykpn.design_centering import sample as dc_sample
 from pykpn.design_centering import oracle
 from pykpn.mapper.partial import ProcPartialMapper
 from pykpn.mapper.random import RandomPartialMapper
-from pykpn.representations import representations as reps
-
 
 from pykpn.util import logging
 
@@ -21,19 +19,24 @@ log = logging.getLogger(__name__)
 
 class PerturbationManager(object):
 
-    def __init__(self, config ,num_mappings=0, num_tests=0):
-        self.config = config
+    def __init__(self,kpn,platform, trace, representation, threshold,
+                 threads=1, num_mappings=10, num_tests=10, ball_num=20,
+                 max_iters=1000, radius=2.0,perturbation_type='classic'):
+
+        self.platform = platform
+        self.kpn = kpn
+        self.threshold = threshold
+        self.perturbation_type = perturbation_type
+        self.sim = oracle.Simulation(kpn, platform, trace, threshold, threads)
         self.num_mappings = num_mappings
         self.num_perturbations = num_tests
-        self.sim = oracle.Simulation(config)
-        self.platform = self.sim.platform
-        self.kpn = self.sim.kpn
-        self.perturbation_ball_num = config['perturbation_ball_num']
-        self.iteration_max = config['perturbation_max_iters']
-        self.radius = config['perturbation_radius']
-        if config['representation'] != "GeomDummy":
-            representation_type = reps.RepresentationType[config['representation']]
-            self.representation = (representation_type.getClassType())(self.kpn,self.platform,config)
+        self.perturbation_ball_num = ball_num
+        self.iteration_max = max_iters
+        self.radius = radius
+
+        #if config['representation'] != "GeomDummy":
+        self.representation = representation
+
         #TODO: (FIXME) Perturbation manager only works in simple vector representation (for now)
         #self.representation = (reps.RepresentationType['SimpleVector'].getClassType())(self.kpn, self.platform)
 
@@ -44,13 +47,20 @@ class PerturbationManager(object):
             mg = RandomPartialMapper(self.kpn, self.platform)
             mapping_set.add(mg.generate_mapping())
         return mapping_set
-
+    def apply_perturbation(self,mapping,history):
+        if self.perturbation_type == 'classic':
+            return self.apply_singlePerturbation(mapping,history)
+        elif self.perturbation_type == 'representation':
+            return self.applyPerturbationRepresentation(mapping,history)
+        else:
+            log.error(f"Unknown perturbation type: {self.perturbation_type} ")
+            sys.exit(1)
     def apply_singlePerturbation(self, mapping, history):
         """ Creates a defined number of unique single core perturbations
             Therefore, the mapping is interpreted as vector with the 
             processor cores assigned to the vector elements.
         """
-        rand_part_mapper = RandomPartialMapper(self.kpn, self.platform,self.config)
+        rand_part_mapper = RandomPartialMapper(self.kpn, self.platform)
         proc_part_mapper = ProcPartialMapper(self.kpn, self.platform, rand_part_mapper)
         iteration_max = self.iteration_max
 
@@ -75,7 +85,7 @@ class PerturbationManager(object):
         while timeout < iteration_max:
             perturbated_mapping = proc_part_mapper.generate_mapping(vec, history)
             if perturbated_mapping:
-                break;
+                break
             else:
                 pe = rand.randint(0, len(list(self.platform.processors()))-1)
                 process = rand.randint(0, len(list(self.kpn.processes()))-1)
@@ -99,7 +109,7 @@ class PerturbationManager(object):
         radius = self.radius
         timeout = 0
         while timeout < iteration_max:
-            perturbation_ball = self.representation._uniformFromBall(mapping,radius,self.perturbation_ball_num)
+            perturbation_ball = self.representation._uniformFromBall(mapping, radius, self.perturbation_ball_num)
             for m in perturbation_ball:
                 #TODO: this should be handled in the representations too (with an _equal function or something)
                 if not (m == mapping).all():
@@ -121,7 +131,7 @@ class PerturbationManager(object):
             log.error("Could not find a new perturbation")
             sys.exit(1)
 
-    def run_perturbation(self, mapping, pert_fun):
+    def run_perturbation(self, mapping):
         """ 
         Runs the perturbation test with the defined Perturbation Method.
         The given mapping is evaluated by comparing it to randomly generated mappings. 
@@ -131,7 +141,7 @@ class PerturbationManager(object):
         results = []
         samples = []
         for i in range(0, self.num_perturbations):
-            mapping = pert_fun(mapping, history)
+            mapping = self.apply_perturbation(mapping, history)
             history.append(mapping)
             sample = dc_sample.Sample(self.representation.toRepresentation(mapping),representation=self.representation)
             samples.append(sample)
@@ -146,8 +156,8 @@ class PerturbationManager(object):
         feasible = []
         for e in exec_times:
             ureg = pint.UnitRegistry()
-            threshold = ureg(self.config.threshold).to(ureg.ps).magnitude
-            if (e > threshold):
+            threshold = ureg(self.threshold).to(ureg.ps).magnitude
+            if e > threshold:
                 feasible.append(False)
             else:
                 feasible.append(True)
@@ -162,5 +172,5 @@ class PerturbationManager(object):
             complex_res['p' + str(i)]['runtime'] = exec_times[i] / 1000000000.0
             complex_res['p' + str(i)]['feasible'] = feasible[i]
 
-        return simple_res,complex_res
+        return simple_res, complex_res
 

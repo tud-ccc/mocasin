@@ -9,7 +9,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import cm as cm
 from pykpn.util import annotate
-from pykpn.representations.representations import RepresentationType 
+from pykpn.representations import MappingRepresentation
+from hydra.utils import instantiate
 
 import matplotlib.animation as animation
 from matplotlib import colors as colors
@@ -22,7 +23,7 @@ from matplotlib import collections as coll
 from pykpn.util import logging
 log = logging.getLogger(__name__)
 
-def visualize_mapping_space(mappings, exec_times, cfg):
+def visualize_mapping_space(mappings, exec_times, representation,show_plot,tick,history):
     """Visualize a multi-dimensional mapping space using t-SNE
 
     Args:
@@ -35,21 +36,6 @@ def visualize_mapping_space(mappings, exec_times, cfg):
          execution time of ``mapping[idx]``.
     """
     assert len(mappings) == len(exec_times)
-
-
-    show_plot = cfg['show_plot']
-    tick = cfg['tick']
-    history = cfg['history']
-    rep_type_str = cfg['representation']
-    if rep_type_str not in dir(RepresentationType):
-        log.exception("Representation " + rep_type_str + " not recognized. Available: " + ", ".join(
-            dir(RepresentationType)))
-        raise RuntimeError('Unrecognized representation.')
-    else:
-        representation_type = RepresentationType[rep_type_str]
-        log.info(f"initializing representation ({rep_type_str})")
-
-        representation = (representation_type.getClassType())(mappings[0].kpn, mappings[0].platform, cfg)
     mapping_tuples = np.array(list(map(representation.toRepresentation, mappings)))
 
     #Code to derive mapping from dot graph:

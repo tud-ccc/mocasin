@@ -1,7 +1,6 @@
-resource_manager:
-  name: WWT15Scheduler
-  class: pykpn.tetris.scheduler.wwt15.WWT15Scheduler
+# @package _group_
 
+_target_: pykpn.tetris.scheduler.wwt15.WWT15Scheduler
 # A high-level mapper algorithm: segmentized (SEG), joint-fixed (JF),
 # joint-dynamic (JD)
 # wwt15_type: SEG

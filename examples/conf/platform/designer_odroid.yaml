@@ -1,0 +1,17 @@
+# @package _group_
+_target_: pykpn.platforms.odroid.DesignerPlatformOdroid
+# Once hydra 1.1 rolls out with recursive instantiation,
+# we should replace this and recursively instantiate
+# the processors. See:
+# https://github.com/facebookresearch/hydra/issues/566
+processor_0:
+  _target_: pykpn.platforms.platformDesigner.genericProcessor
+  type : 'ARM_CORTEX_A7'
+  frequency : 1400000000
+processor_1:
+  _target_: pykpn.platforms.platformDesigner.genericProcessor
+  type : 'ARM_CORTEX_A15'
+  frequency : 2000000000
+num_big : 4
+num_little : 4
+name: 'exynos' #for running with SLX traces

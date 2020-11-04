@@ -6,12 +6,6 @@
 import numpy as np
 import random as rand
 
-from pykpn.design_centering import volume
-from pykpn.design_centering import oracle
-from pykpn.representations.metric_spaces import FiniteMetricSpace
-from pykpn.common.mapping import Mapping
-from pykpn.representations.representations import RepresentationType, MetricSpaceRepresentation,\
-    MetricEmbeddingRepresentation, SimpleVectorRepresentation, SymmetryRepresentation
 import pykpn.util.random_distributions.lp as lp
 
 from sys import exit
@@ -76,14 +70,12 @@ class Sample(list):
         return "Sample: {}".format(tuple(self.sample))
 
 
-class SampleGeneratorBase():
-    def __init__(self, conf):
-        self.conf = conf
+class SampleGenerator():
 
-    def gen_samples_in_ball(self,vol,distr,nsamples=1):
+    def gen_samples_in_ball(self, vol, distr, nsamples=1):
         res = []
         for _ in range(nsamples):
-            s = self.gen_sample_in_vol(vol,distr)
+            s = self.gen_sample_in_vol(vol, distr)
             res.append(Sample(s))
         return res
 
@@ -94,22 +86,26 @@ class GeometricSample(Sample):
         # use Manhattan metric
         return np.linalg.norm(self.sample - s.sample, 2)
 
-class SampleGeometricGen(SampleGeneratorBase):
+class GeometricSampleGen(SampleGenerator):
 
-    def __init__(self, conf):
-        super().__init__(conf)
+    def __init__(self, representation, max_pe=16):
+        super().__init__(None)
+        self.max_pe = max_pe
 
-    def gen_samples_in_ball(self,vol,distr,nsamples=1):
+    def gen_samples_in_ball(self, vol, distr, nsamples=1):
         res = []
+
         for _ in range(nsamples):
-            s = self.gen_sample_in_vol(vol,distr)
+            s = self.gen_sample_in_vol(vol, distr)
             res.append(GeometricSample(s))
+
         log.debug("\ngen sample in ball\n {}\n".format(res[0].sample2tuple()))
+
         return res
 
-    def gen_random_sample(self):
+    def gen_random_sample(self,vol):
         for _d in vol.center:
-            rand_val = self.uniform_distribution(0, self.conf[1].max_pe)
+            rand_val = self.uniform_distribution(0, self.max_pe)
             self.sample.append(rand_val)
 
 
@@ -132,18 +128,18 @@ class SampleGeometricGen(SampleGeneratorBase):
     def binomial_distribution(self, c, r):
         upper = c + r
         lower = c - r
-        if (upper > self.conf[1].max_pe):
-            upper = self.conf[1].max_pe
+        if (upper > self.max_pe):
+            upper = self.max_pe
         if (lower < 0):
             lower = 0
         val = -1
         while ( val < lower or val > upper):
-            val = np.random.binomial(self.conf[1].max_pe-1, 0.5, 1)
+            val = np.random.binomial(self.max_pe-1, 0.5, 1)
         return val[0]
 
-class VectorSampleGen(SampleGeneratorBase):
-    def __init__(self,representation, conf):
-        super().__init__(conf)
+class VectorSampleGen(SampleGenerator):
+    def __init__(self,representation):
+        super().__init__()
         self.representation = representation
 
     def gen_sample_in_vol(self,vol,distr):
@@ -171,32 +167,34 @@ class VectorSpaceSample(Sample):
         #print("M.n = " + str(self.M.n))
         return tuple(self.representation.int2Tuple(int(self.sample)))
 
-class MetricSpaceSampleGen(SampleGeneratorBase):
-    def __init__(self,representation, conf):
-        super().__init__(conf)
+class MetricSpaceSampleGen(SampleGenerator):
+    def __init__(self, representation):
         self.representation = representation
 
-    def gen_sample_in_vol(self,vol,distr):
-        return self.gen_samples_in_ball(vol,distr,nsamples=1)
+    def gen_sample_in_vol(self, vol, distr):
+        return self.gen_samples_in_ball(vol, distr, nsamples=1)
 
     #TODO: this seems it would be better housed in volume than here.
-    def gen_samples_in_ball(self,vol,distr,nsamples=1):
+    def gen_samples_in_ball(self, vol, distr, nsamples=1):
         if distr != "uniform":
             log.error("Error!, distribution '" + str(distr) + "' not supported (yet).")
             exit(1)
         sample_list = []
         for _ in range(nsamples):
-            lp_random_vector = lp.uniform_from_p_ball(p=vol.norm_p,n=vol.dim)
+            lp_random_vector = lp.uniform_from_p_ball(p=vol.norm_p, n=vol.dim)
             scaled_vector = vol.radius * lp_random_vector
             transformed_vector = vol.covariance @ scaled_vector
             new_sample_vector = vol.center + transformed_vector
             sample_ints = self.representation.approximate(new_sample_vector)
-            new_sample = MetricSpaceSample(self.representation,sample_ints)
+            new_sample = MetricSpaceSample(self.representation, sample_ints)
             sample_list.append(new_sample)
-            distance = self.representation._distance(sample_ints,vol.center)
+            distance = self.representation._distance(sample_ints, vol.center)
+
             if distance > vol.radius:
                 log.warning(f"Generated vector with distance ({distance}) greater than radius ({vol.radius}).")
+
             log.debug(f"Generated sample (distance: {distance}):\n {sample_ints}")
+
         return sample_list
 
 
@@ -248,18 +246,3 @@ class SampleSet(object):
                 infeasible_samples.append(_s)
         return infeasible_samples
 
-def SampleGen(representation, conf):
-    if representation == "GeomDummy":
-        return SampleGeometricGen(conf)
-    elif isinstance(representation,MetricSpaceRepresentation):
-        return MetricSpaceSampleGen(representation, conf)
-    elif isinstance(representation,MetricEmbeddingRepresentation):
-        return MetricSpaceSampleGen(representation, conf)
-    elif isinstance(representation,SimpleVectorRepresentation):
-        return MetricSpaceSampleGen(representation, conf)
-    elif isinstance(representation,SymmetryRepresentation):
-        return MetricSpaceSampleGen(representation, conf)
-    else:
-        log.error(f"Sample generator type not found:{generator_type}")
-        exit(1)
-    

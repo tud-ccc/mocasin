@@ -4,9 +4,10 @@
 # Authors: Gerald Hempel, Andres Goens
 
 import sys
-import logging
 import numpy as np
-from pykpn.representations.representations import RepresentationType 
+from hydra.utils import instantiate
+from pykpn.representations import MappingRepresentation
+
 import pykpn.util.random_distributions.lp as lp
 
 from pykpn.util import logging
@@ -28,21 +29,13 @@ class Volume(object):
 
 class Cube(Volume):
 
-    def __init__(self, center, dim, cfg):
+    def __init__(self, kpn, platform, representation, center,
+                 radius=1.0, max_step=10, max_pe=16):
         # define initial cube with radius 1 at the given center
         self.center = center.to_list()
-        if (len(self.center) != dim):
-            log.error("Dimensions do not match to the given center. (-1)")
-            sys.exit(-1)
-        self.radius = cfg['radius']
-        self.dim = dim
+        self.radius = radius
+        self.dim = len(center)
         #https://stackoverflow.com/questions/4984647/accessing-dict-keys-like-an-attribute
-        class AttrDict(dict):
-            def __init__(self, *args, **kwargs):
-                super(AttrDict, self).__init__(*args, **kwargs)
-                self.__dict__ = self
-        self.conf = AttrDict(cfg)
-
     def adapt_center(self, s_set):
         fs_set = list(map(lambda s: s.sample,  s_set.get_feasible()))
         if not fs_set:
@@ -89,37 +82,32 @@ class Cube(Volume):
 
     def extend(self, step):
         # extend volume by one on each border
-        self.radius = self.radius + step*self.conf.max_step if (self.radius + step*self.conf.max_step < self.conf.max_pe) else self.radius
+        self.radius = self.radius + step*self.max_step if (self.radius + step*self.max_step < self.max_pe) else self.radius
 
 
 class LPVolume(Volume):
 
-    def __init__(self, center, num_procs, kpn, platform, conf, representation_type=RepresentationType['SimpleVector']):
-        if representation_type not in [RepresentationType['SimpleVector'],
-                                       RepresentationType['MetricSpaceEmbedding'],
-                                       RepresentationType['Symmetries']]:
-            log = logging.getLogger(__name__)
-            log.exception("Representation currently not supported for VectorSpaceVolumes")
-            sys.exit(-1)
-
-        #https://stackoverflow.com/questions/4984647/accessing-dict-keys-like-an-attribute
-        class AttrDict(dict):
-            def __init__(self, *args, **kwargs):
-                super(AttrDict, self).__init__(*args, **kwargs)
-                self.__dict__ = self
-        self.conf = AttrDict(conf)
-        self.representation = representation_type.getClassType()(kpn,platform,self.conf)
+    def __init__(self, kpn, platform, representation, center, radius,
+                 adaptable_center_weights=True, aggressive_center_movement=False,
+                 adapt_samples=0):
+        # This is a workaround until Hydra 1.1 (with recursive instantiaton!)
+        if not issubclass(type(type(representation)), MappingRepresentation):
+            representation = instantiate(representation, kpn, platform)
+        self.representation = representation
         self.kpn = kpn
         self.platform = platform
+        self.adaptable_center_weights = adaptable_center_weights
+        self.adapt_samples = adapt_samples
+        self.aggressive_center_movement = aggressive_center_movement
         self.center = np.array(self.representation.toRepresentation(center))
-        log = logging.getLogger(__name__)
         log.debug(f"Initializing center with representation:{self.center}")
         self.old_center = self.center
-        self.radius = self.conf.radius
+        self.radius = radius
         self.dim = len(self.center)
         self.true_dim = len(kpn.processes())
-        self.num_procs = num_procs
-        self.norm_p = conf['norm_p']
+        if not hasattr(self.representation,'p'):
+            raise RuntimeError("Representation does not have a norm")
+        self.norm_p = representation.p
         self.weight_center = 1/(np.exp(1)*self.dim)
         self.rk1_learning_constant = 1/np.sqrt(self.true_dim)
         self.rk1_vec = np.zeros(self.dim)
@@ -140,9 +128,9 @@ class LPVolume(Volume):
             return self.center
         # take mean of feasible points to add weighted to the old center
         num_feasible = len(fs_set) # mu
-        if self.conf.adaptable_center_weights:
+        if self.adaptable_center_weights:
             self.weight_center = min(0.5,num_feasible/(np.exp(1)*self.true_dim))
-        if self.conf.aggressive_center_movement:
+        if self.aggressive_center_movement:
             self.weight_center = 0.51
 
         mean_center = np.mean(fs_set, axis=0)
@@ -177,7 +165,7 @@ class LPVolume(Volume):
         # adjust radius
         num_feasible = len(s_set.get_feasible())
         num_samples = len(s_set.sample_set)
-        assert(num_samples <= self.conf.adapt_samples or log.error(f"number of samples produced ({num_samples}) exceeds self.configuration ({self.conf.adapt_samples})"))
+        assert(num_samples <= self.adapt_samples or log.error(f"number of samples produced ({num_samples}) exceeds self.configuration ({self.adapt_samples})"))
         self.update_factors(target_p,num_samples)
         if num_feasible != 0:
             p_emp =  num_feasible / num_samples

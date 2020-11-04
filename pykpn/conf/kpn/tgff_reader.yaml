@@ -1,7 +1,4 @@
-kpn:
-  name: 'TASK_GRAPH_0'
-  file: ${tgff.directory}/${tgff.file}
-  class: pykpn.tgff.tgffSimulation.KpnGraphFromTgff
-  params:
-    file_path: ${kpn.file}
-    task_graph: ${kpn.name}
+# @package _group_
+_target_: pykpn.tgff.tgffSimulation.KpnGraphFromTgff
+name: 'TASK_GRAPH_0'
+tgff_file: ${tgff.directory}/${tgff.file}

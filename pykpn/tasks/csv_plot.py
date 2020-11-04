@@ -7,15 +7,19 @@ import hydra
 import os
 
 from pykpn.util import plot
-from pykpn.util.csv_reader import DataReader
+from pykpn.util.csv_reader import DataReaderFromHydra
 
-@hydra.main(config_path='conf/csv_plot.yaml')
+@hydra.main(config_path='../conf', config_name='csv_plot')
 def csv_plot(cfg):
     platform = hydra.utils.instantiate(cfg['platform'])
     kpn = hydra.utils.instantiate(cfg['kpn'])
+    representation = hydra.utils.instantiate(cfg['representation'],kpn,platform)
     out_file = cfg['output_file']
     only_log = bool(cfg['log_to_file'])
-    data_reader = DataReader(platform, kpn, cfg)
+    data_reader = DataReaderFromHydra(platform, kpn, cfg)
+    show_plot = cfg['show_plot']
+    tick = cfg['tick']
+    history = cfg['history']
 
     mappings = data_reader.formMappings()
 
@@ -38,4 +42,5 @@ def csv_plot(cfg):
 
         file.close()
 
-    plot.visualize_mapping_space(mapping_list, compare_property,cfg)
+    plot.visualize_mapping_space(mapping_list, compare_property,
+                                 representation,show_plot,tick,history)

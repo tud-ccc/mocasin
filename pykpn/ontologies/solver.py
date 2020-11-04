@@ -7,7 +7,7 @@
 from threading import Thread
 from pykpn.common.mapping import Mapping
 from arpeggio import ParserPython, visit_parse_tree
-from pykpn.representations.representations import RepresentationType
+from pykpn.representations import SymmetryRepresentation
 from pykpn.mapper.mapgen import MappingGeneratorOrbit, MappingGeneratorSimvec
 from pykpn.ontologies.logicLanguage import Grammar, SemanticAnalysis, MappingConstraint, EqualsConstraint,\
                                             SharedCoreUsageConstraint, ProcessingConstraint
@@ -160,8 +160,8 @@ class Solver():
                             return
             
                 remaining = remaining + mappingConstraints + sharedCoreConstraints
-                symmetryLens = RepresentationType['Symmetries'].getClassType()(self.__kpn, self.__platform,self.__cfg)
-                generator = MappingGeneratorOrbit(symmetryLens, genMapping)
+                symmetryLense = SymmetryRepresentation(self.__kpn, self.__platform)
+                generator = MappingGeneratorOrbit(symmetryLense, genMapping)
             else:
                 generator = MappingGeneratorSimvec(self.__kpn, self.__platform, mappingConstraints, sharedCoreConstraints, processingConstraints, vec)
         

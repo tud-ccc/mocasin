@@ -4,13 +4,14 @@
 # Authors: Andrés Goens
 
 import random
+import tqdm
+from hydra.utils import instantiate
 import numpy as np
 
 from pykpn.util import logging
-from pykpn.representations.representations import RepresentationType
+from pykpn.representations import MappingRepresentation
 from pykpn.mapper.random import RandomPartialMapper
 from pykpn.mapper.utils import SimulationManager
-from pykpn.mapper.utils import Statistics
 
 
 log = logging.getLogger(__name__)
@@ -20,43 +21,68 @@ class TabuSearchMapper(object):
     """Generates a full mapping by using a tabu search on the mapping space.
 
     """
-    def __init__(self, kpn,platform,config):
+    def __init__(self, kpn, platform, trace, representation, random_seed=42,
+                 record_statistics=False, max_iterations=10, iteration_size=5,
+                 tabu_tenure=5, move_set_size=10, radius=2.0, dump_cache=False,
+                 chunk_size=10, progress=False, parallel=False, jobs=1):
         """Generates a full mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
         :type kpn: KpnGraph
         :param platform: a platform
         :type platform: Platform
-        :param config: the hyrda configuration
-        :type config: OmniConf
+        :param trace: a trace generator
+        :type trace: TraceGenerator
+        :param representation: a mapping representation object
+        :type representation: MappingRepresentation
+        :param random_seed: A random seed for the RNG
+        :type random_seed: int
+        :param record_statistics: Record statistics on mappings evaluated?
+        :type record_statistics: bool
+        :param max_iterations: Maximal number of iterations of tabu search
+        :type max_iterations: int
+        :param iteration_size: Size (# mappings) of a single iteration
+        :type iteration_size: int
+        :param tabu_tenure: How long until a tabu move is allowed again?
+        :type tabu_tenure: int
+        :param move_set_size: Size of the move set considered in an iteration
+        :type move_set_size: int
+        :param radius: Radius for updating candidate moves
+        :type radius: float
+        :param dump_cache: Dump the mapping cache?
+        :type dump_cache: bool
+        :param chunk_size: Size of chunks for parallel simulation
+        :type chunk_size: int
+        :param progress: Display simulation progress visually?
+        :type progress: bool
+        :param parallel: Execute simulations in parallel?
+        :type parallel: bool
+        :param jobs: Number of jobs for parallel simulation
+        :type jobs: int
         """
-        random.seed(config['random_seed'])
-        np.random.seed(config['random_seed'])
+        random.seed(random_seed)
+        np.random.seed(random_seed)
         self.full_mapper = True # flag indicating the mapper type
         self.kpn = kpn
         self.platform = platform
-        self.config = config
-        self.random_mapper = RandomPartialMapper(self.kpn,self.platform,config,seed=None)
-        self.max_iterations = config['max_iterations']
-        self.iteration_size = config['iteration_size']
-        self.tabu_tenure = config['tabu_tenure']
-        self.move_set_size = config['move_set_size']
-        self.radius = config['radius']
+        self.random_mapper = RandomPartialMapper(self.kpn, self.platform, seed=None)
+        self.max_iterations = max_iterations
+        self.iteration_size = iteration_size
+        self.tabu_tenure = tabu_tenure
+        self.move_set_size = move_set_size
+        self.dump_cache = dump_cache
+        self.radius = radius
+        self.progress = progress
         self.tabu_moves = dict()
-        rep_type_str = config['representation']
 
-        if rep_type_str not in dir(RepresentationType):
-            log.exception("Representation " + rep_type_str + " not recognized. Available: " + ", ".join(
-                dir(RepresentationType)))
-            raise RuntimeError('Unrecognized representation.')
-        else:
-            representation_type = RepresentationType[rep_type_str]
-            log.info(f"initializing representation ({rep_type_str})")
-
-            representation = (representation_type.getClassType())(self.kpn, self.platform,self.config)
-
+        # This is a workaround until Hydra 1.1 (with recursive instantiaton!)
+        if not issubclass(type(type(representation)), MappingRepresentation):
+            representation = instantiate(representation,kpn,platform)
         self.representation = representation
-        self.simulation_manager = SimulationManager(representation, config)
+
+        self.simulation_manager = SimulationManager(self.representation, trace,jobs, parallel,
+                                                    progress,chunk_size,record_statistics)
+
 
     def update_candidate_moves(self,mapping):
         new_mappings = self.representation._uniformFromBall(mapping, self.radius, self.move_set_size)
@@ -118,13 +144,20 @@ class TabuSearchMapper(object):
         """ Generates a full mapping using gradient descent
         """
         mapping_obj = self.random_mapper.generate_mapping()
-        cur_mapping = self.representation.toRepresentation(mapping_obj)
+        if hasattr(self.representation,'canonical_operations') and not self.representation.canonical_operations:
+            cur_mapping = self.representation.toRepresentationNoncanonical(mapping_obj)
+        else:
+            cur_mapping = self.representation.toRepresentation(mapping_obj)
 
         best_mapping = cur_mapping
         best_exec_time = self.simulation_manager.simulate([cur_mapping])[0]
         since_last_improvement = 0
 
-        for iter in range(self.max_iterations):
+        if self.progress:
+            iterations_range = tqdm.tqdm(range(self.max_iterations))
+        else:
+            iterations_range = range(self.max_iterations)
+        for iter in iterations_range:
             while since_last_improvement < self.iteration_size:
                 self.update_candidate_moves(cur_mapping)
                 move,cur_exec_time = self.move(best_exec_time) #updates tabu set
@@ -141,7 +174,7 @@ class TabuSearchMapper(object):
 
         self.simulation_manager.statistics.log_statistics()
         self.simulation_manager.statistics.to_file()
-        if self.config['dump_cache']:
+        if self.dump_cache:
             self.simulation_manager.dump('mapping_cache.csv')
 
         return self.representation.fromRepresentation(np.array(best_mapping))

@@ -18,23 +18,28 @@ class RandomPartialMapper(object):
     platform and KPN application.
     """
 
-    def __init__(self, kpn, platform, config, seed=None):
+    def __init__(self, kpn, platform, seed=None, support_first=False):
         """Generates a random mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
         :type kpn: KpnGraph
         :param platform: a platform
         :type platform: Platform
+        :param seed: a random seed for the RNG
+        :type seed: int
+        :param support_first: Changes the generation method to first choose processors,
+        and then assign processes only to those processors
+        :type support_first: bool
         """
         if seed is not None:
             random.seed(seed)
         self.seed = seed
-        self.config = config
+        self.support_first = support_first
         self.full_mapper = True
         self.platform = platform
         self.kpn = kpn
 
-    def generate_mapping(self, part_mapping = None):
+    def generate_mapping(self, part_mapping=None):
         """ Generates a random mapping
 
         The generated mapping takes a partial mapping (that may also be empty)
@@ -57,14 +62,28 @@ class RandomPartialMapper(object):
                                part_mapping.platform.name, part_mapping.kpn.name,
                                self.platform.name, self.kpn.name)
 
+        available_processors = list(self.platform.processors())
+        if self.support_first:
+            num = random.randint(1,len(available_processors))
+            available_processors = random.sample(available_processors,num)
+
         # map processes
         processes = part_mapping.get_unmapped_processes()
         #print("remaining process list: {}".format(processes))
         for p in processes:
-            i = random.randrange(0, len(self.platform.schedulers()))
-            scheduler = list(self.platform.schedulers())[i]
-            i = random.randrange(0, len(scheduler.processors))
-            affinity = scheduler.processors[i]
+            affinity = None
+            scheduler_list = list(self.platform.schedulers())
+            while affinity is None and len(scheduler_list) > 0:
+                i = random.randrange(0, len(scheduler_list))
+                scheduler = scheduler_list.pop(i)
+                processors = [proc for proc in scheduler.processors if proc in available_processors]
+                if len(processors) == 0:
+                    continue
+                i = random.randrange(0, len(processors))
+                affinity = processors[i]
+            if affinity is None:
+                raise RuntimeError(f"Could not find an appropriate scheduler for any of the processors: {available_processors}")
+
             priority = random.randrange(0, 20)
             info = ProcessMappingInfo(scheduler, affinity, priority)
             part_mapping.add_process_info(p, info)
@@ -100,10 +119,20 @@ class RandomPartialMapper(object):
         return part_mapping
 
 
+class RandomPartialMapperHydra(RandomPartialMapper):
+    """
+    This class implements a new constructor for the random_partial mapper in order to handle the instantiation via a
+    hydra config file.
+    TODO: do we need this??
+    """
+    def __init__(self, kpn, platform, config):
+        random_seed = config['mapper']['random_seed']
+        super(RandomPartialMapperHydra, self).__init__(kpn, platform, seed=random_seed)
+
 class RandomMapper(RandomPartialMapper):
     """Generates a random mapping
     This class is a FullMapper wrapper
     for RandomPartialMapper.
     """
-    def __init__(self, kpn, platform, config):
-        super().__init__(kpn, platform, config, seed=config['random_seed'])
+    def __init__(self, kpn, platform, trace, representation, random_seed=None):
+        super().__init__(kpn, platform, seed=random_seed)

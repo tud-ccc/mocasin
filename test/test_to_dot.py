@@ -61,7 +61,7 @@ def test_tgff_platform_to_dot(datadir, expected_dir, tgff):
     dot_file = "%s.platform.dot" % tgff
     out_file = os.path.join(datadir, dot_file)
     subprocess.check_call(["pykpn", "platform_to_dot",
-                           "platform=tgff_reader",
+                           "platform=designer_bus",
                            "tgff.file=%s.tgff" % tgff,
                            "output_file=%s" % out_file],
                           cwd=datadir)
@@ -73,10 +73,10 @@ def test_tgff_mapping_to_dot(datadir, expected_dir, tgff):
     dot_file = "%s.mapping.dot" % tgff
     out_file = os.path.join(datadir, dot_file)
     subprocess.check_call(["pykpn", "mapping_to_dot",
-                           "platform=tgff_reader",
+                           "platform=designer_bus",
                            "kpn=tgff_reader",
                            "mapper=random",
-                           "random_seed=42",
+                           "mapper.random_seed=42",
                            "tgff.file=%s.tgff" % tgff,
                            "output_file=%s" % out_file],
                           cwd=datadir)

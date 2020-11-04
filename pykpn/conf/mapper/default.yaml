@@ -1,2 +1,2 @@
-mapper:
-  class: pykpn.mapper.default.DefaultFullMapper
+# @package _group_
+_target_: pykpn.mapper.default.DefaultFullMapper

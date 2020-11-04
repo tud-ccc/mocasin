@@ -1,7 +1,7 @@
-# Copyright (C) 2019 TU Dresden
+# Copyright (C) 2019-2020 TU Dresden
 # All Rights Reserved
 #
-# Authors: Felix Teweleit
+# Authors: Felix Teweleit,Andres Goens
 
 from pykpn.common.platform import FrequencyDomain, Processor, \
     SchedulingPolicy, Scheduler, Storage, CommunicationPhase, \
@@ -819,3 +819,19 @@ class PlatformDesigner():
 
     def _ag_makeClusterAgs(self, scope=None):
         return self._ag_clusterGraph(scope)
+
+class genericProcessor(Processor):
+    """This class is a generic processor to be passed to the
+    different architectures generated with the platform designer.
+    :param type: The processor type string (needs to match traces!).
+    :type type: string
+    :param frequency: The processor frequency
+    :type type: int
+    :returns: A processor object
+    :rtype pykpn.common.platform.Processor:
+    """
+
+    def __init__(self,type,frequency=2000000000):
+        fd = FrequencyDomain('fd_' + type, frequency)
+        super().__init__("DesignerGenericProc" + str(type) + str(frequency), type, fd)
+

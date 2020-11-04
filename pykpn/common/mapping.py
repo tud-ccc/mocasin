@@ -135,6 +135,8 @@ class Mapping:
         :param KpnProcess process: the KPN process
         :rtype: Processor
         """
+        if self._process_info[process.name] is None:
+            return None
         return self._process_info[process.name].affinity
 
     def primitive(self, channel):
@@ -243,6 +245,27 @@ class Mapping:
         for proc in procs_list:
             pes2procs[self.affinity(proc).name].append(proc.name)
         return pes2procs
+
+    def to_resourceDict(self):
+        """Returns a dict where the types of processing elements are the keys and
+           the values are the corresponding number of cores of that type which
+           have processes mapped to them
+        :rtype dict[string, int]:
+        """
+        resource_dict = {}
+        #make sure that all core types are included in the dict
+        counted_cores = []
+        for core in self.platform.processors():
+            if core.type not in resource_dict:
+                resource_dict[core.type] = 0
+        for proc in self.kpn.processes():
+            core = self.affinity(proc)
+            if core.name in counted_cores:
+                continue
+            else:
+                counted_cores.append(core.name)
+                resource_dict[core.type] += 1
+        return resource_dict
 
     def to_list(self,channels=False):
         """Convert to a list (tuple), the simple vector representation.
