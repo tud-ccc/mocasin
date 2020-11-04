@@ -37,7 +37,10 @@ class TetrisScheduling:
         self.schedule = None
 
     def run(self):
-        self.schedule = self.scheduler.schedule(self.jobs, scheduling_start_time=0.0)
+        self.schedule = self.scheduler.schedule(self.jobs,
+                                                scheduling_start_time=0.0)
+        if self.schedule is not None:
+            self.schedule.verify()
         self.found_schedule = (self.schedule is not None)
         pass
 

@@ -19,9 +19,9 @@ from pykpn.common.platform import Platform
 
 from collections import Counter
 from functools import reduce
+import itertools
 import logging
 import math
-import sys
 
 EPS = 0.00001
 MAX_END_GAP = 0.5
@@ -462,8 +462,26 @@ class Schedule:
         yield from self.__segments
 
     def verify(self):
+        # Verify segments
         for segment in self:
             segment.verify()
+
+        failed = False
+
+        # Verify the segment borders
+        s0, s1 = itertools.tee(self.__segments)
+        next(s1, None)
+        for left, right in zip(s0, s1):
+            if abs(left.end_time - right.start_time) > EPS:
+                failed = True
+                log.error("The segment is not aligned with the end of "
+                          "the previous segment:\n{}\n{}".format(
+                              left.to_str(), right.to_str()))
+
+        if failed:
+            log.error("Some errors found in a segment schedule: {}".format(
+                self.to_str()))
+            assert False
 
     def to_str(self):
         """Compact representation of the schedule.
