@@ -111,6 +111,7 @@ def test_tetris_dac2(datadir, dac2_expected_schedule):
     ("2177-mix-2-new-deadline_2.csv", True, 41.922, 42.123),
     ("3319-af_B-3-running-deadline_4.csv", True, 62.667, 158.81),
     ("3337-mix-3-running-deadline_4.csv", True, 11.015, 43.016),
+    ("3569-mix-3-running-deadline_7.csv", False, None, None),
     ("4405-hog_B-4-new-deadline_6.csv", False, None, None),
 ])
 def fast_expected_schedule(request):

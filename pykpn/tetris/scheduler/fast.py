@@ -1,140 +1,161 @@
-#!/usr/bin/env python3
+# Copyright (C) 2020 TU Dresden
+# All Rights Reserved
+#
+# Authors: Robert Khasanov
 
-from pykpn.tetris.mapping import SegmentMapping, JobSegmentMapping
-from pykpn.tetris.scheduler.base import (SingleVariantSegmentMapper,
+from pykpn.tetris.job_state import Job
+from pykpn.tetris.schedule import (Schedule, ScheduleSegment,
+                                   JobSegmentMapping, MAX_END_GAP)
+from pykpn.tetris.scheduler.base import (SingleVariantSegmentScheduler,
                                          SingleVariantSegmentizedScheduler)
-from pykpn.tetris.extra import NamedDimensionalNumber
-import math
+
 import logging
+import math
 
 log = logging.getLogger(__name__)
 
-FINISH_MAX_DIFF = 0.5
 
-
-class FastSegmentMapper(SingleVariantSegmentMapper):
+class FastSegmentScheduler(SingleVariantSegmentScheduler):
     """ TODO: Add a description"""
     def __init__(self, parent_scheduler, platform):
 
         super().__init__(parent_scheduler, platform)
 
-    def __select_app_mappings_fit_deadline_resources(self, app, deadline,
-                                                     avl_core_types,
-                                                     completion=0.0):
-        res = []
-        for mid, mapping in app.mappings.items():
-            if mid == '__idle__':
-                continue
-            rem_time = (1.0-completion) * mapping.time()
-            if rem_time > deadline:
-                continue
-            if not (mapping.core_types <= avl_core_types):
-                continue
+    def _filter_job_mappings_by_deadline_resources(self, job, free_cores):
+        """ Filters mappings which can feet deadline resources.
 
-            rem_energy = (1.0-completion) * mapping.energy()
-            res.append((mid, rem_energy))
-        res.sort(key=lambda tup: tup[1])
+        Args:
+            job (Job): a job
+            free_cores (Counter): a counter of available core types
+
+        Returns: a list of mappings satisfying deadline and resources
+        conditions.
+        """
+        # TODO: This function is similar to DAC?
+        res = []
+        rratio = 1.0 - job.cratio
+        rdeadline = job.request.deadline - self.__segment_start_time
+        for m in job.request.mappings:
+            m_cores = m.get_used_processor_types()
+            # filter by deadline
+            rtime = rratio * m.metadata.exec_time
+            if rtime > rdeadline:
+                continue
+            # filter by resources
+            if (m_cores | free_cores) != free_cores:
+                continue
+            res.append(m)
         return res
 
-    def __create_mapping_from_list(self, clist):
-        full_mapping_list = []
+    def _form_schedule_segment(self, job_mappings):
+        # TODO: This function is very similar to one in Bruteforce.
+        # Consider placing it in a base class
+        """ Generate a schedule segment out of job_mappings.
 
-        # Calculate estimated end time
-        for ts, m in zip(self.__job_table, clist):
-            single_job_mapping = JobSegmentMapping(
-                ts.rid, m, start_time=self.__start_time,
-                start_cratio=ts.cratio, finished=True)
-            full_mapping_list.append(single_job_mapping)
+        Args:
+            job_mappings (dict): a dict of job mappings
+        """
 
-        segment_mapping_list = []
-        min_finish_time = min([x.end_time for x in full_mapping_list])
-        stop_jobs = [
-            x for x in full_mapping_list
-            if x.end_time < min_finish_time + FINISH_MAX_DIFF
+        # Skip mappings with all idle jobs
+        if all(m is None for m in job_mappings.values()):
+            return None
+
+        # Calculate segment end time
+        jobs_rem_time = [
+            m.metadata.exec_time * (1.0 - j.cratio)
+            for j, m in job_mappings.items() if m is not None
         ]
-        segment_end_time = max([x.end_time for x in stop_jobs])
-        for fsm in full_mapping_list:
-            ssm = JobSegmentMapping(fsm.rid, fsm.can_mapping_id,
-                                    start_time=fsm.start_time,
-                                    start_cratio=fsm.start_cratio,
-                                    end_time=segment_end_time)
-            segment_mapping_list.append(ssm)
+        segment_duration = max(
+            [t for t in jobs_rem_time if t < min(jobs_rem_time) + MAX_END_GAP])
+        segment_end_time = segment_duration + self.__segment_start_time
 
-        # Check if the scheduling meets deadlines
-        segment_meets_deadline = True
-        finished = True
-        for ssm in segment_mapping_list:
-            rid = ssm.rid
-            ts = self.__job_table.find_by_rid(rid)
-            d = ts.abs_deadline
-            if not ssm.finished:
-                finished = False
-            if ssm.end_time > d:
-                segment_meets_deadline = False
-            app = ts.app
-            min_time_left = app.best_case_time(start_cratio=ssm.end_cratio)
-            if min_time_left + ssm.end_time > d:
-                segment_meets_deadline = False
+        # Construct JobSegmentMapping objects
+        job_segments = []
+        for j, m in job_mappings.items():
+            if m is not None:
+                ssm = JobSegmentMapping(j.request, m,
+                                        start_time=self.__segment_start_time,
+                                        start_cratio=j.cratio,
+                                        end_time=segment_end_time)
+                job_segments.append(ssm)
 
-        cur_energy = sum([x.energy for x in segment_mapping_list])
+        # Construct a schedule segment
+        new_segment = ScheduleSegment(self.platform, job_segments)
+        new_segment.verify()
+        return new_segment
 
-        new_segment = SegmentMapping(
-            self.platform, segment_mapping_list,
-            time_range=(self.__start_time, segment_end_time))
-        return (segment_meets_deadline, new_segment)
+    def schedule(self, jobs, segment_start_time=0.0):
+        self.__segment_start_time = segment_start_time
 
-    def schedule(self, job_table):
-        assert len(job_table) != 0
-        self.__job_table = job_table
-        self.__start_time = job_table.time
+        job_mappings = {}
+        avl_core_types = self.platform.get_processor_types()
 
-        mapping = [None] * len(self.__job_table)
-        avl_core_types = NamedDimensionalNumber(
-            dict(self.platform.get_processor_types()))
-
-        while None in mapping:
+        while any(j not in job_mappings for j in jobs):
+            log.debug("Free cores: {}".format(avl_core_types))
             # List of mappings to finish the applications
-            to_finish = [None] * len(self.__job_table)
-            i_max_diff, diff = None, -math.inf
-            for i, r in enumerate(mapping):
-                if r is not None:
+            to_finish = {}
+            diff = (-math.inf, None)
+            for job in jobs:
+                # Skip jobs with found mappings
+                if job in job_mappings:
                     continue
-                rid = self.__job_table[i].rid
-                d = self.__job_table[i].abs_deadline
-                c = self.__job_table[i].cratio
-                app = self.__job_table[i].app
-                to_finish[i] = (
-                    self.__select_app_mappings_fit_deadline_resources(
-                        app, d - self.__start_time, avl_core_types,
-                        completion=c))
-                log.debug("to_finish[{}]: {}".format(i, to_finish[i]))
-                if len(to_finish[i]) == 0:
-                    mapping[i] = '__idle__'
+                to_finish[job] = (
+                    self._filter_job_mappings_by_deadline_resources(
+                        job, avl_core_types))
+                to_finish[job].sort(key=lambda m: m.metadata.energy)
+                log.debug("to_finish[{}]: {}".format(job.to_str(), [
+                    m.metadata.energy * (1.0 - job.cratio)
+                    for m in to_finish[job]
+                ]))
+                if len(to_finish[job]) == 0:
+                    job_mappings[job] = None
                     continue
-                if len(to_finish[i]) == 1:
-                    diff = math.inf
-                    i_max_diff = i
+                if len(to_finish[job]) == 1:
+                    diff = (math.inf, job)
                     continue
-                if to_finish[i][1][1] - to_finish[i][0][1] > diff:
-                    diff = to_finish[i][1][1] - to_finish[i][0][1]
-                    i_max_diff = i
-            log.debug("Choose {}".format(i_max_diff))
-            if i_max_diff is None:
+                # Check energy difference between first two mappings
+                cdiff = (1.0 -
+                         job.cratio) * (to_finish[job][1].metadata.energy -
+                                        to_finish[job][0].metadata.energy)
+                if cdiff > diff[0]:
+                    diff = (cdiff, job)
+            _, job_d = diff
+            if job_d is None:
                 return None
+            log.debug("Choose {}".format(job_d.to_str()))
             # On Odroid XU-4, the check that it can be scheduled is simple.
             # All mappings in to_finish are valid.
-            rid = self.__job_table[i_max_diff].rid
-            a = self.__job_table[i_max_diff].app
-            mid = to_finish[i_max_diff][0][0]
-            m = a.mappings[mid]
-            avl_core_types -= m.core_types
-            mapping[i_max_diff] = mid
-        log.debug('Mapping: {}'.format(mapping))
-        res, segment = self.__create_mapping_from_list(mapping)
-        if res:
-            return segment
-        else:
+            m = to_finish[job_d][0]
+            avl_core_types -= m.get_used_processor_types()
+            job_mappings[job_d] = m
+            log.debug('Job_mappings: {}'.format([
+                (j.to_str(), m.get_used_processor_types(),
+                 m.metadata.energy * (1.0 - j.cratio)) if m is not None else
+                (j.to_str(), None) for j, m in job_mappings.items()
+            ]))
+
+        segment = self._form_schedule_segment(job_mappings)
+        # TODO: this is copied from bruteforce, put it in a separate functions
+        if segment is None:
             return None
+
+        # Check that all jobs meet dealines
+        for js in segment:
+            if js.end_time > js.request.deadline:
+                return None
+
+        # Generate the job states at the end of the segment
+        new_jobs = [
+            x
+            for x in Job.from_schedule(Schedule(self.platform, segment), jobs)
+            if not x.is_terminated()
+        ]
+
+        # Check whether all remaining jobs still meet deadlines
+        if not all(j.can_meet_deadline(segment.end_time) for j in new_jobs):
+            return None
+
+        return segment, new_jobs
 
 
 class FastScheduler(SingleVariantSegmentizedScheduler):
@@ -144,7 +165,7 @@ class FastScheduler(SingleVariantSegmentizedScheduler):
         :param platform: a platform
         :type platform: Platform
         """
-        segment_mapper = FastSegmentMapper(self, platform)
+        segment_mapper = FastSegmentScheduler(self, platform)
         super().__init__(platform, segment_mapper)
 
     @property
