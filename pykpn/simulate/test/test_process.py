@@ -87,8 +87,9 @@ class TestRuntimeProcess(object):
             assert process._state == ProcessState.FINISHED
             assert process.processor is None
         else:
-            with pytest.raises(AssertionError):
-                process._finish()
+            process._finish()
+            process.env.run(3)
+            assert process._state == ProcessState.FINISHED
 
     def test_block(self, process, state, mocker):
         process.env.run(1)  # start simulation to initialze the process

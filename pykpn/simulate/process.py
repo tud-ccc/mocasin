@@ -130,6 +130,8 @@ class RuntimeProcess(object):
 
         # internal event for requesting preemption
         self._preempt = self.env.event()
+        # internal event for requesting termination
+        self._kill = self.env.event()
 
         # record the process creation int the simulation trace
         if self.app.system.app_trace_enabled:
@@ -267,10 +269,24 @@ class RuntimeProcess(object):
         Raises:
             AssertionError: if not in :const:`ProcessState.RUNNING` state
         """
-        assert(self._state == ProcessState.RUNNING)
         self._log.debug('Workload execution finished.')
         self.processor = None
         self._transition('FINISHED')
+
+    def kill(self):
+        """Request termination of a running process
+
+        Raises:
+            AssertionError: if not in :const:`ProcessState.RUNNING` state
+        """
+        self._log.debug('Kill request')
+        assert self._state != ProcessState.FINISHED
+        if self._state == ProcessState.RUNNING:
+            old_event = self._kill
+            self._kill = self.env.event()
+            old_event.succeed()
+        else:
+            self._finish()
 
     def _block(self):
         """Block the process.
@@ -431,10 +447,10 @@ class RuntimeKpnProcess(RuntimeProcess):
             self._log.debug('resume workload execution')
 
         while True:
-            # The preempt event will be overridden once triggered. Thus we keep
-            # a copy here. This event will be triggered when preempt() is
-            # called.
+            # The preempt and kill events will be overridden once
+            # triggered. Thus we keep references to the original events here.
             preempt = self._preempt
+            kill = self._kill
 
             if self._current_segment is None:
                 self._current_segment = self._trace_generator.next_segment(
@@ -451,13 +467,12 @@ class RuntimeKpnProcess(RuntimeProcess):
 
                 # process until computation completes (timeout) or until the
                 # process is preempted
-                yield self.env.any_of([timeout, preempt])
+                yield self.env.any_of([timeout, preempt, kill])
 
                 # if the timeout was processed, the computation completed
                 if timeout.processed:
                     s.processing_cycles = None
-                else:
-                    assert preempt.processed
+                elif preempt.processed:
                     # Calculate how many cycles where executed until the
                     # process was preempted. Note that the preemption
                     # can occur in between full cycles in our simulation. We
@@ -474,8 +489,11 @@ class RuntimeKpnProcess(RuntimeProcess):
                     self._log.debug("process was deactivated after "
                                     f"{cycles_processed} cycles")
 
-                # Stop processing the workload even if preempt and timeout
-                # occur simultaneously
+                # Stop processing the workload even if preempt (or kill) and
+                # timeout occur simultaneously
+                if kill.processed:
+                    self._finish()
+                    return
                 if preempt.processed:
                     self._deactivate()
                     return
@@ -505,7 +523,10 @@ class RuntimeKpnProcess(RuntimeProcess):
                     s.read_from_channel = None
                     yield self.env.process(c.consume(self, s.n_tokens))
 
-                # Stop processing if preempted
+                # Stop processing if preempted or killed
+                if kill.processed:
+                    self._finish()
+                    return
                 if preempt.processed:
                     self._deactivate()
                     return
@@ -526,6 +547,9 @@ class RuntimeKpnProcess(RuntimeProcess):
                     yield self.env.process(c.produce(self, s.n_tokens))
 
                 # Stop processing if preempted
+                if kill.processed:
+                    self._finish()
+                    return
                 if preempt.processed:
                     self._deactivate()
                     return
