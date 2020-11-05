@@ -10,8 +10,8 @@ from pykpn.platforms.platformDesigner import PlatformDesigner
 from hydra.utils import instantiate
 
 class DesignerPlatformMesh(Platform):
-    def __init__(self, processor_0, processor_1, name="parallella-styled"):
-        super(DesignerPlatformMesh, self).__init__(name)
+    def __init__(self, processor_0, processor_1, name="parallella-styled", symmetries_json=None):
+        super(DesignerPlatformMesh, self).__init__(name,symmetries_json)
         #This is a workaround until Hydra 1.1 (with recursive instantiaton!)
         if not isinstance(processor_0,Processor):
             processor_0 = instantiate(processor_0)

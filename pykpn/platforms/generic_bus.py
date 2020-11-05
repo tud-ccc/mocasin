@@ -14,7 +14,7 @@ from hydra.utils import instantiate
 class GenericBusPlatform(Platform):
     """Represents a flat bus-based platform"""
 
-    def __init__(self, name, num_processors):
+    def __init__(self, name, num_processors, symmetries_json=None):
         """Initialize the platform
 
         Generate `num_processors` processors and schedulers and connect
@@ -22,7 +22,7 @@ class GenericBusPlatform(Platform):
         connects it to the bus. Based on this bus setup, the primitive for
         communication via shared RAM is generated.
         """
-        super().__init__(name)
+        super().__init__(name,symmetries_json)
 
         fd_pes = FrequencyDomain('fd_pes', 500000000)
         fd_ram = FrequencyDomain('fd_ram', 100000000)

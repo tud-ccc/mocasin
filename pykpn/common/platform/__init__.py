@@ -317,7 +317,7 @@ class Platform(object):
     platform by creating the corresponding objects.
     """
 
-    def __init__(self, name):
+    def __init__(self, name, symmetries_json = None):
         """Initialize the platform.
 
         This initializes all attributes to empty dicts. Derived classes should
@@ -328,6 +328,8 @@ class Platform(object):
         self._communication_resources = {}  #: dict of communication resources
         self._primitives = {}               #: dict of communication primitives
         self._schedulers = {}               #: dict of schedulers
+        if symmetries_json is not None:
+            self.ag_json = symmetries_json
 
     def processors(self):
         return self._processors.values()

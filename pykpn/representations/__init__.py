@@ -8,6 +8,7 @@ from numpy.random import randint
 from copy import copy
 import random
 import timeit
+from os.path import exists
 
 try:
     import pynauty as pynauty
@@ -324,7 +325,6 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         self.kpn = kpn
         self.platform = platform
         self._d = len(kpn.processes())
-        adjacency_dict, num_vertices, coloring, self._arch_nc = to_labeled_edge_graph(self._topologyGraph)
         init_app_ncs(self,kpn)
         self._arch_nc_inv = {}
         self.channels=channels
@@ -334,9 +334,6 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         self.list_mapper = ProcPartialMapper(kpn,platform,com_mapper)
         self.canonical_operations = canonical_operations
 
-        for node in self._arch_nc:
-            self._arch_nc_inv[self._arch_nc[node]] = node
-        #TODO: ensure that nodes_correspondence fits simpleVec
 
         n = len(self.platform.processors())
 
@@ -348,12 +345,20 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
             self.sym_library = True
             if hasattr(platform, 'ag'):
                 self._ag = platform.ag
+            elif hasattr(platform,'ag_json') and exists(platform.ag_json):
+                #todo: make sure the correspondence of cores is correct!
+                self._ag = pympsym.ArchGraphSystem.from_json_file(platform.ag_json)
+
             else:
                 #only calculate this if not already present
+                adjacency_dict, num_vertices, coloring, self._arch_nc = to_labeled_edge_graph(self._topologyGraph)
                 nautygraph = pynauty.Graph(num_vertices, True, adjacency_dict, coloring)
                 autgrp_edges = pynauty.autgrp(nautygraph)
                 autgrp, _ = edge_to_node_autgrp(autgrp_edges[0], self._arch_nc)
                 self._ag = pympsym.ArchGraphAutomorphisms([pympsym.Perm(g) for g in autgrp])
+                for node in self._arch_nc:
+                    self._arch_nc_inv[self._arch_nc[node]] = node
+                    #TODO: ensure that nodes_correspondence fits simpleVec
 
         if not self.sym_library:
             nautygraph = pynauty.Graph(num_vertices, True, adjacency_dict, coloring)

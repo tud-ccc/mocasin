@@ -8,8 +8,8 @@ from pykpn.platforms.platformDesigner import PlatformDesigner
 from hydra.utils import instantiate
 
 class DesignerPlatformMultiCluster(Platform):
-    def __init__(self, processor_0, processor_1, name='multi_cluster'):
-        super(DesignerPlatformMultiCluster, self).__init__(name)
+    def __init__(self, processor_0, processor_1, name='multi_cluster',symmetries_json=None):
+        super(DesignerPlatformMultiCluster, self).__init__(name,symmetries_json)
 
         #woraround for Hydra < 1.1
         if not isinstance(processor_0,Processor):
