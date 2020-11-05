@@ -1,7 +1,7 @@
 # Copyright (C) 2019-2020 TU Dresden
 # All Rights Reserved
 #
-# Authors: Felix Teweleit,Andres Goens
+# Authors: Felix Teweleit, Andres Goens, Timo Nicolai
 
 from pykpn.common.platform import FrequencyDomain, Processor, \
     SchedulingPolicy, Scheduler, Storage, CommunicationPhase, \
@@ -69,6 +69,7 @@ class PlatformDesigner():
     
     def newElement(self, identifier):
         """A new scope is opened and pushed on the stack.
+
         :param identifier: The identifier, the element can be addressed with.
         :type identifier: int
         """
@@ -124,6 +125,7 @@ class PlatformDesigner():
                     amount, 
                     frequency):
         """Creates a new cluster of processing elements on the platform.
+
         :param identifier: The identifier the cluster can be addressed within the currently active scope.
         :type identifier: int
         :param name: The name of the processing elements.
@@ -133,6 +135,7 @@ class PlatformDesigner():
         :param frequency: The frequency of the processing elements.
         :type frequency: int
         """
+        log.warning("Deprecationg warning: use addPEClusterForProcessor instead.")
         try:
             fd = FrequencyDomain('fd_' + name, frequency)
             start = self.__peAmount
@@ -158,6 +161,7 @@ class PlatformDesigner():
                      processor,
                      amount):
         """Creates a new cluster of processing elements on the platform.
+
         :param identifier: The identifier the cluster can be addressed within the currently active scope.
         :type identifier: int
         :param processor: The pykpn Processor object which will be used for the cluster.
@@ -195,6 +199,7 @@ class PlatformDesigner():
                             policy, 
                             cycles):
         """Sets a new scheduling policy, which will be applied to all schedulers of new PE Clusters.
+
         :param policy: The name of the policy.
         :type policy: String
         :param cycles: The cycles of the policy.
@@ -218,6 +223,7 @@ class PlatformDesigner():
                        frequencyDomain=100000, #TODO: this should be added to tests
                        name='default'):
         """Adds a level 1 cache to each PE of the given cluster.
+
         :param identifier: The identifier of the cluster to which the cache will be added. 
         :type identifier: int
         :param readLatency: The read latency of the cache.
@@ -282,7 +288,8 @@ class PlatformDesigner():
                                   resourceType = CommunicationResourceType.Storage, 
                                   frequencyDomain=0):
         """Adds a communication resource to the platform. All cores of the given cluster identifiers can communicate
-        via this resource. 
+        via this resource.
+
         :param name: The name of the storage
         :type name: String
         :param clusterIds: A list of identifiers for all clusters which will be connected.
@@ -375,6 +382,7 @@ class PlatformDesigner():
                     readThroughput,
                     writeThroughput):
         """Creates a network on chip topology for the given cluster.
+
         :param clusterIdentifier: The identifier of the cluster the network will be created for.
         :type clusterIdentifier: int 
         :param networkName: The name of the network. (primitives belonging to the network will be named
@@ -384,8 +392,8 @@ class PlatformDesigner():
                                 The key is the name of a processing element and the list contains
                                 the names of processing elements the key has a physical link to.
         :type adjacencyList: dict {String : list[String]}
-        :param routingFunction: A function, that takes the name of a source processing element, a target 
-                                processing element and the adjacency list. Should return the path, taken to communicate
+        :param routingFunction: A function that takes the name of a source processing element, a target
+                                processing element and the adjacency list. Should return the path taken to communicate
                                 between source and target, in case there is no direct physical link between them.
         :type routingFunction: function
         :param frequencyDomain: The frequency of the physical links an network routers.
@@ -483,6 +491,7 @@ class PlatformDesigner():
                       readThroughput,
                       writeThroughput):
         """Creates a network between the given elements.
+
         :param networkName: The name of the network. (primitives belonging to the network will be named
                                 like this.
         :type networkName: String
@@ -600,6 +609,7 @@ class PlatformDesigner():
     
     def getClusterList(self, identifier):
         """Returns a list of all processing elements contained in specified cluster.
+
         :param identifier: The identifier of the target cluster.
         :type identifier: int
         :returns: A list of names of processing elements
@@ -612,6 +622,7 @@ class PlatformDesigner():
            
     def getPlatform(self):
         """Returns the platform, created with the designer. (Only needed for test issues.)
+
         :returns: The platform object the designer is working on.
         :rtype Platform:
         """
@@ -823,6 +834,7 @@ class PlatformDesigner():
 class genericProcessor(Processor):
     """This class is a generic processor to be passed to the
     different architectures generated with the platform designer.
+
     :param type: The processor type string (needs to match traces!).
     :type type: string
     :param frequency: The processor frequency
