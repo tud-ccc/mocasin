@@ -5,6 +5,7 @@
 
 import subprocess
 import os
+import pytest
 
 
 def test_symmetries_slx(datadir):
@@ -60,7 +61,8 @@ def test_symmetries_slx(datadir):
     except FileNotFoundError:
         assert False
 
-def test_symmetries_tgff(datadir):
+@pytest.mark.skip(reason="Test just takes too long.")
+def test_symmetries_tgff_coolidge(datadir):
     tgff_dir = os.path.join(datadir, 'tgff/e3s-0.9')
     subprocess.check_call(["pykpn", "generate_mapping",
                            "kpn=tgff_reader",
