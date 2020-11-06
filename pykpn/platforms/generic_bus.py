@@ -146,7 +146,7 @@ class GenericClusteredPlatform(Platform):
             self.add_primitive(p)
 
 class DesignerPlatformBus(Platform):
-    def __init__(self, processor_0, name="bus"):
+    def __init__(self, processor_0, name="bus", symmetries_json=None):
         """Initializes an example platform with four processing
         elements connected via an shared memory.
         :param processor_0: the processing element for the platform
@@ -154,7 +154,7 @@ class DesignerPlatformBus(Platform):
         :param name: The name for the returned platform
         :type name: String
         """
-        super(DesignerPlatformBus, self).__init__(name)
+        super(DesignerPlatformBus, self).__init__(name,symmetries_json=symmetries_json)
         #This is a workaround until Hydra 1.1 (with recursive instantiaton!)
         if not isinstance(processor_0,Processor):
             processor_0 = instantiate(processor_0)

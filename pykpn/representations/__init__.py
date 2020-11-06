@@ -20,7 +20,6 @@ try:
 except ModuleNotFoundError:
     pass
 
-import pykpn.representations.permutations as perm
 
 from pykpn.mapper.partial import ProcPartialMapper, ComFullMapper
 
@@ -377,8 +376,8 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
             autgrp_edges = pynauty.autgrp(nautygraph)
             autgrp, _ = edge_to_node_autgrp(autgrp_edges[0], self._arch_nc)
             permutations_lists = map(list_to_tuple_permutation,autgrp)
-            permutations = [perm.Permutation(p,n=n) for p in permutations_lists]
-            self._G = perm.PermutationGroup(permutations)
+            permutations = [Permutation(p,n=n) for p in permutations_lists]
+            self._G = PermutationGroup(permutations)
             log.info("Initialized automorphism group with internal symmetries")
 
     def _simpleVec2Elem(self,x):
