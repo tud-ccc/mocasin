@@ -67,9 +67,9 @@ _tasks = {
         'to_dot',
         'mapping_to_dot',
         "Visualize a mapping as a dot graph"),
-    'platform_to_autgrp': (
-        'platform_to_autgrp',
-        'platform_to_autgrp',
+    'calculate_platform_symmetries': (
+        'calculate_platform_symmetries',
+        'calculate_platform_symmetries',
         "Calculate the Automorphism Group of a Platform Graph"),
     'platform_to_dot': (
         'to_dot',

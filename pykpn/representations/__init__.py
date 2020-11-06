@@ -12,12 +12,12 @@ from os.path import exists
 
 try:
     import pynauty as pynauty
-except:
+except ModuleNotFoundError:
     pass
 
 try:
     import pympsym
-except:
+except ModuleNotFoundError:
     pass
 
 import pykpn.representations.permutations as perm

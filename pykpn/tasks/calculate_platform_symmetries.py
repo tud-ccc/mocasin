@@ -8,27 +8,33 @@
 import hydra
 import logging
 import pynauty
-
 import pykpn.representations.automorphisms as aut
 
 log = logging.getLogger(__name__)
+try:
+    import pympsym
+except ModuleNotFoundError:
+    log.warning("mpsym could not be loaded")
 
-@hydra.main(config_path='../conf', config_name='platform_to_autgrp')
-def platform_to_autgrp(cfg):
+@hydra.main(config_path='../conf', config_name='calculate_platform_symmetries')
+def calculate_platform_symmetries(cfg):
     """Calculate the Automorphism Group of a Platform Graph
 
-    This task expects two hydra parameters to be available.
+    This task expects three hydra parameters to be available.
 
 
     **Hydra Parameters**:
         * **platform:** the input platform. The task expects a configuration
           dict that can be instantiated to a
           :class:`~pykpn.common.platform.Platform` object.
-        * **out:** the output file
+        * **out:** the output file (extension will be added)
+        * **mpsym:** a boolean value selecting mpsym as backend (and JSON as output)
+        Otherwise it outputs plaintext from the python implementation.
     """
     platform = hydra.utils.instantiate(cfg['platform'])
     log.info("start converting platform to edge graph for automorphisms.")
     plat_graph = platform.to_adjacency_dict()
+    mpsym = cfg['mpsym']
 
     adjacency_dict, num_vertices, coloring, nodes_correspondence = aut.to_labeled_edge_graph(plat_graph)
     log.info("done converting platform to edge graph for automorphisms.")
@@ -50,12 +56,28 @@ def platform_to_autgrp(cfg):
     log.info("done coverting automorhpism of edges to nodes.")
 
     log.info("start writing to file.")
-    with open(cfg['out_file'], 'w') as f:
-        f.write("Platform Graph:")
-        f.write(str(plat_graph))
-        #f.write("Edge Group with ~" + str(autgrp_edges[1]) + " * 10^" + str(autgrp_edges[2]) + " elements.\n")
-        f.write("Symmetry group generators:")
-        f.write(str(list(permutations_lists)))
-        f.write("\nCorrespondence:")
-        f.write(str(new_nodes_correspondence))
+    if mpsym:
+        try:
+            pympsym
+        except NameError:
+           log.error("Configured for mpsym output but could not load pympsym. Fallback to python implementation")
+           mpsym = False
+
+    if mpsym:
+        out_filename = cfg['out_file'] + ".json"
+        mpsym_autgrp = pympsym.ArchGraphAutomorphisms([pympsym.Perm(g) for g in autgrp])
+        json_out = mpsym_autgrp.to_json()
+        with open(out_filename, 'w') as f:
+            f.write(json_out)
+    else:
+        out_filename = cfg['out_file'] + ".out"
+        with open(out_filename, 'w') as f:
+            f.write("Platform Graph:")
+            f.write(str(plat_graph))
+            #f.write("Edge Group with ~" + str(autgrp_edges[1]) + " * 10^" + str(autgrp_edges[2]) + " elements.\n")
+            f.write("Symmetry group generators:")
+            f.write(str(list(permutations_lists)))
+            f.write("\nCorrespondence:")
+            f.write(str(new_nodes_correspondence))
+
     log.info("done writing to file.")
