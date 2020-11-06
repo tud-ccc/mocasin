@@ -12,4 +12,4 @@ processor_1:
   _target_: pykpn.platforms.platformDesigner.genericProcessor
   type : 'proc_type_1'
   frequency : 2000000000
-#symmetries_json: "../../../platform/symmetries/parallella.json" currently: 64 cores, not 16
+symmetries_json: "../../../platform/symmetries/generic_mesh.json"
