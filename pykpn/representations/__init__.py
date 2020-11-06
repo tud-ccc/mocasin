@@ -18,7 +18,9 @@ except:
 try:
     import pympsym
 except:
-    import pykpn.representations.permutations as perm
+    pass
+
+import pykpn.representations.permutations as perm
 
 from pykpn.mapper.partial import ProcPartialMapper, ComFullMapper
 
@@ -198,7 +200,7 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
                 if point > P-1:
                     return P-1
                 elif point < 0:
-                   return 0
+                    return 0
                 else:
                     return rounded
 
@@ -212,7 +214,7 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
 
             else:
                 offset = r * lp.uniform_from_p_ball(p=self.p,n=len(Procs))
-            real_point = (np.array(center) + np.array(offset)).tolist() 
+            real_point = (np.array(center) + np.array(offset)).tolist()
             v = list(map(_round,real_point))
 
             if self.channels:
@@ -320,7 +322,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
     In order to work with other mappings in the same class, the methods
     allEquivalent/_allEquivalent returns for a mapping, all mappings in that class.
     """
-    def __init__(self,kpn, platform,channels=False,periodic_boundary_conditions=False,norm_p=2,canonical_operations=True):
+    def __init__(self,kpn, platform,channels=False,periodic_boundary_conditions=False,norm_p=2,canonical_operations=True,disable_mpsym=False):
         self._topologyGraph = platform.to_adjacency_dict()
         self.kpn = kpn
         self.platform = platform
@@ -337,36 +339,47 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
 
         n = len(self.platform.processors())
 
-        try:
-            pympsym
-        except NameError:
+        if disable_mpsym:
             self.sym_library = False
         else:
-            self.sym_library = True
-            if hasattr(platform, 'ag'):
-                self._ag = platform.ag
-            elif hasattr(platform,'ag_json') and exists(platform.ag_json):
-                #todo: make sure the correspondence of cores is correct!
-                self._ag = pympsym.ArchGraphSystem.from_json_file(platform.ag_json)
-
+            try:
+                pympsym
+            except NameError:
+                self.sym_library = False
             else:
-                #only calculate this if not already present
-                adjacency_dict, num_vertices, coloring, self._arch_nc = to_labeled_edge_graph(self._topologyGraph)
-                nautygraph = pynauty.Graph(num_vertices, True, adjacency_dict, coloring)
-                autgrp_edges = pynauty.autgrp(nautygraph)
-                autgrp, _ = edge_to_node_autgrp(autgrp_edges[0], self._arch_nc)
-                self._ag = pympsym.ArchGraphAutomorphisms([pympsym.Perm(g) for g in autgrp])
-                for node in self._arch_nc:
-                    self._arch_nc_inv[self._arch_nc[node]] = node
-                    #TODO: ensure that nodes_correspondence fits simpleVec
+                self.sym_library = True
+                if hasattr(platform, 'ag'):
+                    self._ag = platform.ag
+                    log.info("Symmetries initialized with mpsym: Platform Generator.")
+                elif hasattr(platform,'ag_json') and exists(platform.ag_json):
+                    #todo: make sure the correspondence of cores is correct!
+                    self._ag = pympsym.ArchGraphSystem.from_json_file(platform.ag_json)
+                    log.info("Symmetries initialized with mpsym: JSON file.")
+
+                else:
+                    #only calculate this if not already present
+                    log.info("No pre-comupted mpsym symmetry group available. Initalizing architecture graph...")
+                    adjacency_dict, num_vertices, coloring, self._arch_nc = to_labeled_edge_graph(self._topologyGraph)
+                    nautygraph = pynauty.Graph(num_vertices, True, adjacency_dict, coloring)
+                    log.info("Architecture graph initialized. Calculating automorphism group using Nauty...")
+                    autgrp_edges = pynauty.autgrp(nautygraph)
+                    autgrp, _ = edge_to_node_autgrp(autgrp_edges[0], self._arch_nc)
+                    self._ag = pympsym.ArchGraphAutomorphisms([pympsym.Perm(g) for g in autgrp])
+                    for node in self._arch_nc:
+                        self._arch_nc_inv[self._arch_nc[node]] = node
+                        #TODO: ensure that nodes_correspondence fits simpleVec
 
         if not self.sym_library:
+            log.info("Using python symmetries: Initalizing architecture graph...")
+            adjacency_dict, num_vertices, coloring, self._arch_nc = to_labeled_edge_graph(self._topologyGraph)
             nautygraph = pynauty.Graph(num_vertices, True, adjacency_dict, coloring)
+            log.info("Architecture graph initialized. Calculating automorphism group using Nauty...")
             autgrp_edges = pynauty.autgrp(nautygraph)
             autgrp, _ = edge_to_node_autgrp(autgrp_edges[0], self._arch_nc)
             permutations_lists = map(list_to_tuple_permutation,autgrp)
             permutations = [perm.Permutation(p,n=n) for p in permutations_lists]
             self._G = perm.PermutationGroup(permutations)
+            log.info("Initialized automorphism group with internal symmetries")
 
     def _simpleVec2Elem(self,x):
         x_ = x[:self._d]
