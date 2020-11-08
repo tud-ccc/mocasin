@@ -116,7 +116,7 @@ class SimulationManager(object):
                 #transform into tuples
                 time = process_time()
                 tup = [tuple(self.representation.approximate(np.array(m))) for m in input_mappings]
-                mappings = [self.representation.fromRepresentation(m) for m in input_mappings]
+                mappings = [self.representation.fromRepresentation(m) for m in tup]
                 self.statistics.add_rep_time(process_time() - time)
 
         # first look up as many as possible:

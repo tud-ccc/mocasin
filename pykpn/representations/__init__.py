@@ -256,6 +256,8 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
             if swap:
                 m1[i] = m2[i]
                 m2[i] = m2[i]
+        log.debug(f"crossover: {m1},{m2}")
+
         return m1,m2
 
 
@@ -383,7 +385,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
     def _simpleVec2Elem(self,x):
         x_ = x[:self._d]
         if self.sym_library:
-            return self._ag.representative(x_)
+            return list(self._ag.representative(x_))
         else:
             return self._G.tuple_normalize(x_)
 
@@ -433,7 +435,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         return SimpleVectorRepresentation._uniformFromBall(self,p,r,npoints=npoints)
 
     def uniformFromBall(self,p,r,npoints=1):
-        return self.fromRepresentation(self._uniformFRomBall(p,r,npoints=npoints))
+        return self.fromRepresentation(self._uniformFromBall(p,r,npoints=npoints))
 
     def distance(self,x,y):
         if self.canonical_operations:
