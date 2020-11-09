@@ -9,7 +9,7 @@ import os
 import pytest
 
 
-def test_tetris_mapping(datadir, expected_dir):
+def test_tetris_schedule(datadir, expected_dir):
     testname = "3337-mix-3-running-deadline_4.csv"
     input_scn = os.path.join(datadir, "tetris", "job_table",
                              "{}".format(testname))
