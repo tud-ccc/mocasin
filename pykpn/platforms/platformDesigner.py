@@ -62,7 +62,7 @@ class PlatformDesigner():
 
         try:
             pympsym
-            self.__symLibrary = True
+            self.__symLibrary = False #Disabled for now. Needn refactoring
             self.__agDict = { 'base' : {} }
         except NameError:
             self.__symLibrary = False
@@ -175,7 +175,7 @@ class PlatformDesigner():
             processors = []
             for i in range (start, end):
                 #copy the input processor since a single processor can only be added once
-                name = "processor_" + str(self.__peAmount)
+                name = f"processor_{self.__peAmount:04d}"
                 new_processor = Processor(name,
                                           processor.type,
                                           processor.frequency_domain,

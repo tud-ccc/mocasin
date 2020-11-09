@@ -33,14 +33,14 @@ class DesignerPlatformCoolidge(Platform):
 
             designer.addPeClusterForProcessor(f'cluster_{i}_0', processor_0, 16)
 
-            topology = fullyConnectedTopology(['processor_{0}'.format(i * 17), 'processor_{0}'.format(i * 17 + 1),
-                                               'processor_{0}'.format(i * 17 + 2), 'processor_{0}'.format(i * 17 + 3),
-                                               'processor_{0}'.format(i * 17 + 4), 'processor_{0}'.format(i * 17 + 5),
-                                               'processor_{0}'.format(i * 17 + 6), 'processor_{0}'.format(i * 17 + 7),
-                                               'processor_{0}'.format(i * 17 + 8), 'processor_{0}'.format(i * 17 + 9),
-                                               'processor_{0}'.format(i * 17 + 10), 'processor_{0}'.format(i * 17 + 11),
-                                               'processor_{0}'.format(i * 17 + 12), 'processor_{0}'.format(i * 17 + 13),
-                                               'processor_{0}'.format(i * 17 + 14), 'processor_{0}'.format(i * 17 + 15)
+            topology = fullyConnectedTopology(['processor_{:04d}'.format(i * 17), 'processor_{:04d}'.format(i * 17 + 1),
+                                               'processor_{:04d}'.format(i * 17 + 2), 'processor_{:04d}'.format(i * 17 + 3),
+                                               'processor_{:04d}'.format(i * 17 + 4), 'processor_{:04d}'.format(i * 17 + 5),
+                                               'processor_{:04d}'.format(i * 17 + 6), 'processor_{:04d}'.format(i * 17 + 7),
+                                               'processor_{:04d}'.format(i * 17 + 8), 'processor_{:04d}'.format(i * 17 + 9),
+                                               'processor_{:04d}'.format(i * 17 + 10), 'processor_{:04d}'.format(i * 17 + 11),
+                                               'processor_{:04d}'.format(i * 17 + 12), 'processor_{:04d}'.format(i * 17 + 13),
+                                               'processor_{:04d}'.format(i * 17 + 14), 'processor_{:04d}'.format(i * 17 + 15)
                                                ])
 
             designer.createNetworkForCluster(f'cluster_{i}_0', f'noc_{i}', topology, sd, 40000.0, 100, 150, 100, 60)
