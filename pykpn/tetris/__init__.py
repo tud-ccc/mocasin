@@ -12,6 +12,10 @@ from pykpn.tetris.tracer import TracePlayer
 from pykpn.tetris.tetris_reader import read_applications, read_requests
 
 import hydra
+import logging
+import sys
+
+log = logging.getLogger(__name__)
 
 
 class TetrisScheduling:
@@ -36,13 +40,44 @@ class TetrisScheduling:
         self.found_schedule = None
         self.schedule = None
 
+    def check_solution(self):
+        if self.schedule is None:
+            return
+
+        # Verify that a schedule object in a valid state
+        self.schedule.verify()
+
+        failed = False
+
+        # Check whether all jobs finish
+        fjobs = Job.from_schedule(self.schedule, self.jobs)
+        for sj, fj in zip(self.jobs, fjobs):
+            if fj.completed:
+                continue
+            log.error(
+                "Job {} is not completed at the end of the schedule: ".format(
+                    sj.to_str(), fj.to_str()))
+            failed = True
+
+        # Check all jobs meet deadlines
+        for j, js in self.schedule.per_requests().items():
+            if j.deadline >= js[-1].end_time:
+                continue
+            log.error("Job {} does not meet deadline, finished={:.3f}".format(
+                j.to_str(), js[-1].end_time))
+            failed = True
+
+        if failed:
+            log.error("The error occured in the generated schedule:\n")
+            for s in self.schedule:
+                log.error("{}".format(s.to_str()))
+            sys.exit(1)
+
     def run(self):
         self.schedule = self.scheduler.schedule(self.jobs,
                                                 scheduling_start_time=0.0)
-        if self.schedule is not None:
-            self.schedule.verify()
+        self.check_solution()
         self.found_schedule = (self.schedule is not None)
-        pass
 
     @staticmethod
     def from_hydra(cfg):
