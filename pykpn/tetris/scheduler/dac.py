@@ -25,9 +25,6 @@ def get_mapping_time_core_product(mapping, cratio=0.0):
 class DacScheduler(SchedulerBase):
     def __init__(self, platform, **kwargs):
         super().__init__(platform)
-        self.__start_energy = 0.0
-        self.__start_time = 0.0
-        self.__version = kwargs['dac_version']
 
     @property
     def name(self):
@@ -131,7 +128,7 @@ class DacScheduler(SchedulerBase):
                 return None
         return schedule
 
-    def __map_infinite_jobs(self):
+    def _map_infinite_jobs(self):
         """ Map jobs without deadlines.
 
         Since the algorithm uses an internal data structures "jars" initialized
@@ -148,9 +145,10 @@ class DacScheduler(SchedulerBase):
         # print({j.to_str(): m.energy for j,m in job_mappings.items()})
         return job_mappings
 
-    def __schedule_original(self):
-        jobs = self.__jobs
-        job_mappings = self.__map_infinite_jobs()
+    def schedule(self, jobs, scheduling_start_time=0.0):
+        self.__jobs = jobs
+        self.__scheduling_start_time = scheduling_start_time
+        job_mappings = self._map_infinite_jobs()
         schedule = self._form_schedule(job_mappings)
 
         max_deadline = max([
@@ -213,83 +211,4 @@ class DacScheduler(SchedulerBase):
                         for j, m in job_mappings.items()
                     ]))
 
-        return schedule
-
-    def __schedule_2(self):
-        tt = self.__job_table
-        mapping = self.__map_infinite_jobs()
-
-        if None not in mapping:
-            res_scheduling = self.__schedule_mapping(mapping)
-            assert res_scheduling is not None
-            return res_scheduling
-
-        to_be_scheduled = set(
-            [i for i, x in enumerate(tt) if x.deadline != math.inf])
-        max_deadline = max([tt[x].deadline for x in to_be_scheduled])
-        core_type_jars = NamedDimensionalNumber(
-            dict(self.__platform.get_processor_types())) * max_deadline
-        log.debug(to_be_scheduled)
-
-        while len(to_be_scheduled) != 0:
-            log.debug("Jars: {}".format(core_type_jars))
-            # List of mappings to finish the applications
-            to_finish = {}
-            for tid in to_be_scheduled:
-                ts = tt[tid]
-                d = ts.deadline
-                c = ts.cratio
-                app = ts.app
-                to_finish[tid] = self.__select_app_mappings_fit_jars(
-                    app, d, core_type_jars, completion=c)
-                log.debug("{}: {}".format(tid, to_finish[tid]))
-
-            while True:
-                i_md, diff = None, -math.inf
-                for tid in to_be_scheduled:
-                    log.debug(
-                        "Canonical mappings in list (to_finish), job {}: {}"
-                        .format(tid, to_finish[tid]))
-                    if len(to_finish[tid]) == 0:
-                        continue
-                    if len(to_finish[tid]) == 1:
-                        diff = math.inf
-                        i_md = tid
-                        continue
-                    cdiff = to_finish[tid][1][1] - to_finish[tid][0][1]
-                    if cdiff > diff:
-                        diff = cdiff
-                        i_md = tid
-                log.debug("Choose {}".format(i_md))
-                if i_md is None:
-                    return None
-
-                assert mapping[i_md] is None
-                new_mapping = mapping.copy()
-                new_mapping[i_md] = to_finish[i_md][0][0]
-                res_scheduling = self.__schedule_mapping(new_mapping)
-                if res_scheduling is None:
-                    to_finish[i_md].pop(0)
-                else:
-                    mapping = new_mapping
-                    log.debug("New mapping: {}".format(mapping))
-                    log.debug(res_scheduling.legacy_dump_str())
-                    ts = self.__job_table[i_md]
-                    cm = ts.app.mappings[mapping[i_md]]
-                    rem_time = cm.time(start_cratio=ts.cratio)
-                    core_type_jars -= cm.core_types * rem_time
-                    to_be_scheduled.remove(i_md)
-                    break
-        return res_scheduling
-
-    def schedule(self, jobs, scheduling_start_time=0.0):
-        self.__jobs = jobs
-        self.__scheduling_start_time = scheduling_start_time
-        # TODO: Consider to remove version 2
-        if self.__version == "original":
-            schedule = self.__schedule_original()
-        elif self.__version == "2":
-            schedule = self.__schedule_2()
-        else:
-            assert False
         return schedule

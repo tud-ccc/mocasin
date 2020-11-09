@@ -91,20 +91,6 @@ def test_tetris_dac(datadir, dac_expected_schedule):
 
 @pytest.fixture(params=[
     ("hog-1.csv", True, 12.663, 11.866),
-    ("hog-big-8-d.csv", True, 125.766, 601.98),
-    ("3337-mix-3-running-deadline_4.csv", True, 11.041, 46.493),
-    ("4405-hog_B-4-new-deadline_6.csv", False, None, None),
-])
-def dac2_expected_schedule(request):
-    return request.param
-
-
-def test_tetris_dac2(datadir, dac2_expected_schedule):
-    run_tetris_scheduler(datadir, "dac-2", dac2_expected_schedule)
-
-
-@pytest.fixture(params=[
-    ("hog-1.csv", True, 12.663, 11.866),
     ("hog-1-2.csv", True, 12.353, 14.254),
     ("hog-big-5-d.csv", False, None, None),
     ("1041-sr_B-1-new-deadline_7.csv", True, 24.379, 31.006),
