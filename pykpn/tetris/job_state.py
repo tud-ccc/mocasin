@@ -4,6 +4,7 @@
 # Authors: Robert Khasanov
 
 from pykpn.tetris.job_request import JobRequestInfo
+from pykpn.tetris.schedule import CRATIO_EPS
 
 from pykpn.common.mapping import Mapping
 
@@ -222,7 +223,7 @@ class Job:
         """
         # Checking prerequisities
         assert self.request == job_segment.request
-        assert self.cratio == job_segment.start_cratio, (
+        assert abs(self.cratio - job_segment.start_cratio) < CRATIO_EPS, (
             "Cannot apply job to a job segment:\n"
             "job: {}\n"
             "segment: {}".format(self.to_str(), job_segment.to_str()))

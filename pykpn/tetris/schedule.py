@@ -23,7 +23,9 @@ import itertools
 import logging
 import math
 
-EPS = 0.00001
+ENERGY_EPS = 0.00001
+TIME_EPS = 0.00001
+CRATIO_EPS = 0.00001
 MAX_END_GAP = 0.5
 
 log = logging.getLogger(__name__)
@@ -93,7 +95,7 @@ class JobSegmentMapping:
         full_rem_time = self.mapping.metadata.exec_time * (1. -
                                                            self.__start_cratio)
         segment_time = end_time - self.__start_time
-        if full_rem_time <= segment_time + EPS:
+        if full_rem_time <= segment_time + TIME_EPS:
             self.__end_time = self.__start_time + full_rem_time
             self.__end_cratio = 1.0
             self.__finished = True
@@ -194,7 +196,6 @@ class JobSegmentMapping:
     def to_str(self):
         cores = self.mapping.get_used_processors()
         core_types = self.mapping.get_used_processor_types()
-        print(core_types)
         core_types_str = ", ".join(
             ["{}: {}".format(ty, count) for ty, count in core_types.items()])
         job_str = "Job: {} ".format(self.app.name)
@@ -271,13 +272,13 @@ class ScheduleSegment:
         # All JobSegmentMappings should have the same time range
         for j in self.__jobs:
             j.verify()
-            if abs(self.start_time - j.start_time) > EPS:
+            if abs(self.start_time - j.start_time) > TIME_EPS:
                 log.error(
                     "Job start_time does not equal segment start_time: {}"
                     .format(j.to_str()))
                 failed = True
             if (self.end_time - j.end_time > MAX_END_GAP
-                    or j.end_time - self.end_time > EPS):
+                    or j.end_time - self.end_time > TIME_EPS):
                 log.error(
                     "Job start_time does not equal segment start_time: {}"
                     .format(j.to_str()))
@@ -472,7 +473,7 @@ class Schedule:
         s0, s1 = itertools.tee(self.__segments)
         next(s1, None)
         for left, right in zip(s0, s1):
-            if abs(left.end_time - right.start_time) > EPS:
+            if abs(left.end_time - right.start_time) > TIME_EPS:
                 failed = True
                 log.error("The segment is not aligned with the end of "
                           "the previous segment:\n{}\n{}".format(

@@ -5,15 +5,14 @@
 
 from pykpn.tetris.job_state import Job
 from pykpn.tetris.schedule import (Schedule, ScheduleSegment,
-                                   JobSegmentMapping, MAX_END_GAP)
+                                   JobSegmentMapping, MAX_END_GAP, ENERGY_EPS,
+                                   TIME_EPS)
 from pykpn.tetris.scheduler.base import SegmentSchedulerBase, SchedulerBase
 
 from collections import Counter
 import heapq
 import logging
 import math
-
-EPS = 0.00001
 
 log = logging.getLogger(__name__)
 
@@ -23,11 +22,11 @@ def _is_better_eu(a, b):
     """
     if b is None:
         return True
-    if a.energy < b.energy - EPS:
+    if a.energy < b.energy - ENERGY_EPS:
         return True
-    if a.energy > b.energy + EPS:
+    if a.energy > b.energy + ENERGY_EPS:
         return False
-    if a.end_time < b.end_time + EPS:
+    if a.end_time < b.end_time + TIME_EPS:
         return True
     return False
 
@@ -80,7 +79,7 @@ class BruteforceSegmentScheduler(SegmentSchedulerBase):
             if mapping is not None:
                 rratio = 1.0 - cratio
                 config_rem_time = mapping.metadata.exec_time * rratio
-                assert config_rem_time > self.__min_segment_duration - EPS
+                assert config_rem_time > self.__min_segment_duration - TIME_EPS
                 energy += (mapping.metadata.energy *
                            self.__min_segment_duration /
                            mapping.metadata.exec_time)
@@ -108,7 +107,7 @@ class BruteforceSegmentScheduler(SegmentSchedulerBase):
         segment_duration = max(
             [t for t in jobs_rem_time if t < min(jobs_rem_time) + MAX_END_GAP])
         segment_end_time = segment_duration + self.__segment_start_time
-        assert segment_duration > self.__min_segment_duration - EPS
+        assert segment_duration > self.__min_segment_duration - TIME_EPS
 
         # Construct JobSegmentMapping objects
         job_segments = []
@@ -290,7 +289,7 @@ class BruteforceScheduler(SchedulerBase):
         pass
 
     def _energy_limit(self):
-        return self.__best_energy + EPS
+        return self.__best_energy + ENERGY_EPS
 
     def __clear(self):
         self.__best_schedule = None

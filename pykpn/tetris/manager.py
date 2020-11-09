@@ -2,6 +2,8 @@
 #
 # Author: Robert Khasanov
 
+from pykpn.tetris.schedule import TIME_EPS
+
 from pykpn.tetris.scheduler.base import SchedulerBase
 from pykpn.common.platform import Platform
 from pykpn.tetris.apptable import AppTable
@@ -14,8 +16,6 @@ import logging
 log = logging.getLogger(__name__)
 
 import time
-
-EPS = 0.00001
 
 
 class ResourceManager:
@@ -68,7 +68,7 @@ class ResourceManager:
         if len(self.__history_mapping) > 0:
             # Assert no gaps in the actual scheduling
             assert abs(self.__history_mapping.end_time -
-                       segment.start_time) < EPS
+                       segment.start_time) < TIME_EPS
 
         self.__history_mapping.append_segment(segment)
 
@@ -92,13 +92,13 @@ class ResourceManager:
 
         # If there is an active mapping, then update the states by segments
         for segment in self.__active_mapping:
-            assert segment.start_time > self.ctime - EPS, (
+            assert segment.start_time > self.ctime - TIME_EPS, (
                 "The start of the segment ({}) in the past"
                 " (current time is {})".format(segment.start_time, self.ctime))
 
-            if segment.start_time < new_time - EPS:
+            if segment.start_time < new_time - TIME_EPS:
                 # If the segment starts before the new time
-                if segment.end_time - EPS < new_time:
+                if segment.end_time - TIME_EPS < new_time:
                     # Easy case, the whole segment
                     self.__simulate_segment(segment)
                 else:

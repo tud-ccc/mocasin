@@ -4,7 +4,7 @@
 # Authors: Robert Khasanov
 
 from pykpn.tetris.job_state import Job
-from pykpn.tetris.schedule import Schedule
+from pykpn.tetris.schedule import (Schedule, ENERGY_EPS, TIME_EPS)
 from pykpn.tetris.scheduler.base import SchedulerBase
 from pykpn.tetris.scheduler.bruteforce import (BruteforceSegmentScheduler,
                                                get_jobs_bc_energy,
@@ -12,8 +12,6 @@ from pykpn.tetris.scheduler.bruteforce import (BruteforceSegmentScheduler,
 
 import logging
 import math
-
-EPS = 0.00001
 
 log = logging.getLogger(__name__)
 
@@ -29,11 +27,11 @@ class StateMemoryTable:
         for idx, s in enumerate(self.__table):
             if idx in exclude_list:
                 continue
-            if s['time'] > time + EPS:
+            if s['time'] > time + TIME_EPS:
                 continue
             rs = True
             for msc, tc in zip(s['task_comp'], task_comp):
-                if msc + EPS < tc:
+                if msc + TIME_EPS < tc:
                     rs = False
                     break
             if not rs:
@@ -53,9 +51,9 @@ class StateMemoryTable:
         assert len(task_comp) == self.__num_apps
         current_e = self.find_min_energy_from_state(task_comp, time)
         if current_e is not None:
-            if abs(min_energy - current_e) < EPS:
+            if abs(min_energy - current_e) < ENERGY_EPS:
                 return
-            if min_energy < current_e + EPS:
+            if min_energy < current_e + ENERGY_EPS:
                 return
         s = {}
         s['task_comp'] = task_comp
@@ -94,7 +92,7 @@ class BruteforceMemoScheduler(SchedulerBase):
         pass
 
     def _energy_limit(self):
-        return self.__best_energy + EPS
+        return self.__best_energy + ENERGY_EPS
 
     def __clear(self):
         self.__best_schedule = None
