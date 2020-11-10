@@ -156,6 +156,7 @@ class RuntimeScheduler(object):
                                'added to a scheduler')
         self._processes.append(process)
         process.ready.callbacks.append(self._cb_process_ready)
+        process.finished.callbacks.append(self._cb_process_finished)
 
     def _cb_process_ready(self, event):
         """Callback for the ready event of runtime processes
