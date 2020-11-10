@@ -297,11 +297,17 @@ class RuntimeProcess(object):
     def unblock(self):
         """Unblock the process.
 
-        Transitioning to the :const:`~ProcessState.READY` state.
+        Transition to the :const:`~ProcessState.READY` if currently in
+        :const:`ProcessState.BLOCKED` state. Does nothing if currently in
+        :const:`ProcessState.FINISHED` state.
 
         Raises:
-            AssertionError: if not in :const:`ProcessState.BLOCKED` state
+            AssertionError: if not in :const:`ProcessState.BLOCKED` or
+            :const:`ProcessState.FINISHED` state
         """
+        if self._state == ProcessState.FINISHED:
+            return
+
         assert(self._state == ProcessState.BLOCKED)
         self._log.debug('Process unblocks')
         self.processor = None
