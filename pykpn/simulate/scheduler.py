@@ -246,7 +246,13 @@ class RuntimeScheduler(object):
                     ticks = self._processor.context_load_ticks()
                     yield self.env.timeout(ticks)
 
-                # activate the process
+                # it could happen, that the process gets killed before the
+                # context was loaded completely. In this case we just continue
+                # and run the scheduling algorithm again
+                if np.check_state(ProcessState.FINISHED):
+                    continue
+
+                # activate the process and remove it from the ready queue
                 self.current_process = np
                 self._ready_queue.remove(np)
                 np.activate(self._processor)
