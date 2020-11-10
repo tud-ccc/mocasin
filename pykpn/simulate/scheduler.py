@@ -177,6 +177,23 @@ class RuntimeScheduler(object):
         self.process_ready.succeed()
         self.process_ready = self.env.event()
 
+    def _cb_process_finished(self, event):
+        """Callback for the finished event of runtime processes
+
+        Makes sure that the process is removed fromt the ready queue.
+
+        :param event: The event calling the callback. This function expects \
+            ``event.value`` to be a valid RuntimeProcess object.
+        """
+        if not isinstance(event.value, RuntimeProcess):
+            raise ValueError('Expected a RuntimeProcess to be passed as value '
+                             'of the triggering event!')
+        process = event.value
+        try:
+            self._ready_queue.remove(process)
+        except ValueError:
+            pass
+
     def schedule(self):
         """Perform the scheduling.
 
