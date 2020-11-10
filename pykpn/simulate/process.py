@@ -274,13 +274,8 @@ class RuntimeProcess(object):
         self._transition('FINISHED')
 
     def kill(self):
-        """Request termination of a running process
-
-        Raises:
-            AssertionError: if not in :const:`ProcessState.RUNNING` state
-        """
+        """Request termination of a running process"""
         self._log.debug('Kill request')
-        assert self._state != ProcessState.FINISHED
         if self._state == ProcessState.RUNNING:
             old_event = self._kill
             self._kill = self.env.event()
