@@ -492,10 +492,10 @@ class RuntimeKpnProcess(RuntimeProcess):
 
                 # Stop processing the workload even if preempt (or kill) and
                 # timeout occur simultaneously
-                if kill.processed:
+                if kill.triggered:
                     self._finish()
                     return
-                if preempt.processed:
+                if preempt.triggered:
                     self._deactivate()
                     return
             if s.read_from_channel is not None:
@@ -525,10 +525,10 @@ class RuntimeKpnProcess(RuntimeProcess):
                     yield self.env.process(c.consume(self, s.n_tokens))
 
                 # Stop processing if preempted or killed
-                if kill.processed:
+                if kill.triggered:
                     self._finish()
                     return
-                if preempt.processed:
+                if preempt.triggered:
                     self._deactivate()
                     return
             if s.write_to_channel is not None:
@@ -547,11 +547,11 @@ class RuntimeKpnProcess(RuntimeProcess):
                     s.write_to_channel = None
                     yield self.env.process(c.produce(self, s.n_tokens))
 
-                # Stop processing if preempted
-                if kill.processed:
+                # Stop processing if preempted or killed
+                if kill.triggered:
                     self._finish()
                     return
-                if preempt.processed:
+                if preempt.triggered:
                     self._deactivate()
                     return
             if s.terminate:
