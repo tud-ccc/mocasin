@@ -110,12 +110,13 @@ def test_tetris_fast(datadir, fast_expected_schedule):
 
 @pytest.fixture(params=[
     ("hog-1-2.csv", True, 12.353, 14.254),
-    ("hog-big-5-d.csv", True, 79.872, 366.01),
-    ("hog-big-8-d.csv", True, 114.298, 626.05),
+    ("hog-big-5-d.csv", True, 85.747, 357.768),
+    ("hog-big-8-d.csv", True, 114.298, 626.054),
+    ("2057-sr_B-2-running-deadline_2.csv", True, 39.027, 44.970),
     ("2177-mix-2-new-deadline_2.csv", True, 41.922, 42.123),
-    ("3319-af_B-3-running-deadline_4.csv", True, 67.103, 147.96),
-    ("3337-mix-3-running-deadline_4.csv", True, 12.131, 40.719),
-    ("3509-mix-3-running-deadline_5.csv", True, 37.127, 105.08),
+    ("3319-af_B-3-running-deadline_4.csv", True, 67.103, 147.956),
+    ("3337-mix-3-running-deadline_4.csv", True, 12.676, 40.076),
+    ("3509-mix-3-running-deadline_5.csv", True, 37.127, 105.081),
     ("4405-hog_B-4-new-deadline_6.csv", False, None, None),
 ])
 def wwt15_expected_schedule(request):
