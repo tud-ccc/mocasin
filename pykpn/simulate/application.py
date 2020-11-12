@@ -141,3 +141,24 @@ class RuntimeKpnApplication(RuntimeApplication):
         finished.callbacks.append(lambda _: self._log.info(
             f"Application {self.name} terminates"))
         yield finished
+
+    def kill(self):
+        """Stop execution of this application
+
+        This method kills each running process of this application. The
+        processes might not stop immediately as operations such as producing
+        or consuming tokens are considered atomic an cannot be interrupted.
+        The simpy process managing run will terminate as soon as all processes
+        terminated.
+
+        Examples:
+            Usage::
+
+                app_finished = env.process(app.run())
+                yield env.timeout(1000000000)  # wait 1ms
+                app.kill()
+                yield app_finished  # wait until the application stopped completely
+
+        """
+        for p in self.processes():
+            p.kill()

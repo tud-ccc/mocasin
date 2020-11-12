@@ -62,19 +62,34 @@ class TestRuntimeProcess(object):
             with pytest.raises(AssertionError):
                 process.activate(processor)
 
+    def test_deactivate(self, process, state, mocker):
+        process.env.run(1)  # start simulation to initialze the process
+        process._transition(state)
+        process.env.run(2)
+        if state == 'RUNNING':
+            process.processor = mocker.Mock()
+            process._deactivate()
+            process.env.run(3)
+            assert process._state == ProcessState.READY
+            assert process.processor is None
+        else:
+            with pytest.raises(AssertionError):
+                process._block()
+
     def test_finish(self, process, state, mocker):
         process.env.run(1)  # start simulation to initialze the process
         process._transition(state)
         process.env.run(2)
         if state == 'RUNNING':
             process.processor = mocker.Mock()
-            process.finish()
+            process._finish()
             process.env.run(3)
             assert process._state == ProcessState.FINISHED
             assert process.processor is None
         else:
-            with pytest.raises(AssertionError):
-                process.finish()
+            process._finish()
+            process.env.run(3)
+            assert process._state == ProcessState.FINISHED
 
     def test_block(self, process, state, mocker):
         process.env.run(1)  # start simulation to initialze the process
@@ -82,13 +97,13 @@ class TestRuntimeProcess(object):
         process.env.run(2)
         if state == 'RUNNING':
             process.processor = mocker.Mock()
-            process.block()
+            process._block()
             process.env.run(3)
             assert process._state == ProcessState.BLOCKED
             assert process.processor is None
         else:
             with pytest.raises(AssertionError):
-                process.block()
+                process._block()
 
     def test_unblock(self, process, state, mocker):
         process.env.run(1)  # start simulation to initialze the process
@@ -100,6 +115,10 @@ class TestRuntimeProcess(object):
             process.env.run(3)
             assert process._state == ProcessState.READY
             assert process.processor is None
+        elif state == 'FINISHED':
+            process.unblock()
+            process.env.run(3)
+            assert process._state == ProcessState.FINISHED
         else:
             with pytest.raises(AssertionError):
                 process.unblock()

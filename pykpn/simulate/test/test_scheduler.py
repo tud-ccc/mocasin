@@ -25,12 +25,14 @@ def runtime_scheduler(system, processor):
                             ContextSwitchMode.NEVER, 0, None, system)
 
 
-def mock_process_workload(env, process, interrupt, ticks):
+def mock_process_workload(env, process, ticks):
     assert process.check_state(ProcessState.RUNNING)
-    if interrupt is None:
-        interrupt = env.event()
-    yield env.any_of([env.timeout(ticks), interrupt])
-    process.finish()
+    preempt = process._preempt
+    yield env.any_of([env.timeout(ticks), preempt])
+    if preempt.processed:
+        process._deactivate()
+    else:
+        process._finish()
 
 
 @pytest.fixture
@@ -38,9 +40,8 @@ def processes(app, env, mocker):
     processes = [RuntimeProcess(f"test_proc{i}", app) for i in range(0, 5)]
     for i in range(0, len(processes)):
         processes[i].workload = mocker.Mock(
-            side_effect=lambda interrupt, i=i:
-                mock_process_workload(env, processes[i], interrupt,
-                                      workload_ticks*(i+1)))
+            side_effect=lambda i=i:
+                mock_process_workload(env, processes[i], workload_ticks*(i+1)))
     return processes
 
 
@@ -139,8 +140,8 @@ class TestRuntimeScheduler:
                                  processes):
         process = processes[0]
         process.workload = mocker.Mock(
-            side_effect=lambda interrupt:
-                mock_process_workload(env, process, interrupt, 2000000000000))
+            side_effect=lambda:
+                mock_process_workload(env, process, 2000000000000))
         # start the process
         self.test_processes_become_ready(runtime_scheduler, [process], env)
 

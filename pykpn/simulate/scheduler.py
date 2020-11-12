@@ -156,6 +156,7 @@ class RuntimeScheduler(object):
                                'added to a scheduler')
         self._processes.append(process)
         process.ready.callbacks.append(self._cb_process_ready)
+        process.finished.callbacks.append(self._cb_process_finished)
 
     def _cb_process_ready(self, event):
         """Callback for the ready event of runtime processes
@@ -169,12 +170,30 @@ class RuntimeScheduler(object):
             raise ValueError('Expected a RuntimeProcess to be passed as value '
                              'of the triggering event!')
         process = event.value
-        self._ready_queue.append(event.value)
+        if (process not in self._ready_queue):
+            self._ready_queue.append(process)
         process.ready.callbacks.append(self._cb_process_ready)
 
         # notify the process created event
         self.process_ready.succeed()
         self.process_ready = self.env.event()
+
+    def _cb_process_finished(self, event):
+        """Callback for the finished event of runtime processes
+
+        Makes sure that the process is removed fromt the ready queue.
+
+        :param event: The event calling the callback. This function expects \
+            ``event.value`` to be a valid RuntimeProcess object.
+        """
+        if not isinstance(event.value, RuntimeProcess):
+            raise ValueError('Expected a RuntimeProcess to be passed as value '
+                             'of the triggering event!')
+        process = event.value
+        try:
+            self._ready_queue.remove(process)
+        except ValueError:
+            pass
 
     def schedule(self):
         """Perform the scheduling.
@@ -227,7 +246,13 @@ class RuntimeScheduler(object):
                     ticks = self._processor.context_load_ticks()
                     yield self.env.timeout(ticks)
 
-                # activate the process
+                # it could happen, that the process gets killed before the
+                # context was loaded completely. In this case we just continue
+                # and run the scheduling algorithm again
+                if np.check_state(ProcessState.FINISHED):
+                    continue
+
+                # activate the process and remove it from the ready queue
                 self.current_process = np
                 self._ready_queue.remove(np)
                 np.activate(self._processor)
@@ -242,11 +267,22 @@ class RuntimeScheduler(object):
                                                      category="Schedule")
 
                 # execute the process workload
+                workload = self.env.process(self.current_process.workload())
                 if self._time_slice is not None:
                     timeout = self.env.timeout(self._time_slice)
+                    yield self.env.any_of([timeout, workload])
+                    if timeout.processed:
+                        self.current_process.preempt()
+                        # Although we requested to preempt the process, it may
+                        # still continue running in order to finish any atomic
+                        # operations it might be processing at the moment. Thus
+                        # we wait for the workload process to terminate before
+                        # continuing
+                        yield workload
+                        assert not self.current_process.check_state(
+                            ProcessState.RUNNING)
                 else:
-                    timeout = None
-                yield self.env.process(self.current_process.workload(timeout))
+                    yield workload
 
                 # record the process halting in the simulation trace
                 if self._system.platform_trace_enabled:
