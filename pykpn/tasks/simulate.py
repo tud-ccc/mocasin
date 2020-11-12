@@ -57,9 +57,15 @@ def simulate(cfg):
         stop = timeit.default_timer()
         log.info('Simulation done')
 
-        exec_time = float(simulation.exec_time) / 1000000000.0
-        print('Total simulated time: ' + str(exec_time) + ' ms')
-        print('Total simulation time: ' + str(stop - start) + ' s')
+        if hasattr(simulation,'exec_times'):
+            for i,exec_time in enumerate(simulation.exec_times):
+                t = float(exec_time) / 1000000000.0
+                print(f"Simulated time({i}): {t} ms")
+            print('Total simulation time: ' + str(stop - start) + ' s')
+        else:
+            exec_time = float(simulation.exec_time) / 1000000000.0
+            print('Total simulated time: ' + str(exec_time) + ' ms')
+            print('Total simulation time: ' + str(stop - start) + ' s')
 
         if trace_cfg is not None and trace_cfg['file'] is not None:
             simulation.system.write_simulation_trace(trace_cfg['file'])
