@@ -115,6 +115,10 @@ class TestRuntimeProcess(object):
             process.env.run(3)
             assert process._state == ProcessState.READY
             assert process.processor is None
+        elif state == 'FINISHED':
+            process.unblock()
+            process.env.run(3)
+            assert process._state == ProcessState.FINISHED
         else:
             with pytest.raises(AssertionError):
                 process.unblock()
