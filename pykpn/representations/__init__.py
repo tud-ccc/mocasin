@@ -49,21 +49,27 @@ class MappingRepresentation(type):
     """
     _instances = {}
 
+    @staticmethod
+    def gen_hash(kpn,platform):
+        kpn_names = ";".join(map(lambda x : x.name, kpn.channels()))
+        platform_names = ";".join(map(lambda x : x.name, platform.processors()))
+        return kpn_names,platform_names
+
     def __call__(cls, *args, **kwargs):
         time = timeit.default_timer()
         kpn = args[0]
         platform = args[1]
-        kpn_names = ";".join(map(lambda x : x.name, kpn.channels()))
+        kpn_names, platform_names = MappingRepresentation.gen_hash(kpn, platform)
 
         if (cls, kpn, platform) in cls._instances:
             different = cls._instances[(cls, kpn, platform)].changed_parameters(*args[2:])
 
         if (cls, kpn, platform) not in cls._instances or different:
             #make hashables of these two
-            cls._instances[(cls, kpn_names, platform.name)] = super(MappingRepresentation, cls).__call__(*args, **kwargs)
-            log.info(f"Initializing representation {cls} of kpn with processes: {kpn_names} on platform {platform.name}")
+            cls._instances[(cls, kpn_names, platform_names)] = super(MappingRepresentation, cls).__call__(*args, **kwargs)
+            log.info(f"Initializing representation {cls} of kpn with processes: {kpn_names} on platform with cores {platform_names}")
 
-        instance = copy(cls._instances[(cls,kpn_names,platform.name)])
+        instance = copy(cls._instances[(cls,kpn_names,platform_names)])
         instance.kpn = kpn
         instance.platform = platform
         com_mapper = ComFullMapper(kpn,platform)

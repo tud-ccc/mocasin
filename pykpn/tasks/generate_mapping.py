@@ -72,9 +72,9 @@ def generate_mapping(cfg):
     outdir = cfg['outdir']
     if not os.path.exists(outdir):
         os.makedirs(outdir)
-        with open(outdir + "/mapping.pickle" ,'wb') as f:
-            p = pickle.Pickler(f)
-            p.dump(result)
+    with open(outdir + "/mapping.pickle" ,'wb') as f:
+        p = pickle.Pickler(f)
+        p.dump(result)
 
     if cfg['simulate_best']:
         trace = hydra.utils.instantiate(cfg['trace'])
@@ -87,9 +87,9 @@ def generate_mapping(cfg):
         with open(outdir + 'best_time.txt','w') as f:
             f.write(str(exec_time))
 
-    if not cfg['kpn']['_target_'] == 'pykpn.tgff.tgffSimulation.KpnGraphFromTgff':
+    if cfg['kpn']['_target_'] == 'pykpn.slx.kpn.SlxKpnGraph':
         export_slx_mapping(result,
-                           os.path.join(outdir, 'generated_mapping'))
+                           os.path.join(outdir, 'generated_mapping.mapping'))
     #moved this from random mapper. It should be part of the task, not the mapper.
     # export all mappings if requested
     # idx = 1

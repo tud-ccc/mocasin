@@ -1,0 +1,3 @@
+# @package _group_
+_target_: pykpn.mapper.from_file.FromFileMapper
+file_path : ???
