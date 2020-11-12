@@ -186,15 +186,15 @@ class KpnMultipleMappingsSimulation(BaseSimulation):
     """Handles multiple simulations of a single KPN application
 
     Attributes:
-        app (RuntimeApplication): Runtime instance of the application to be
-            simulated. This is only valid inside a with block and is
-            ``None`` otherwise.
+        apps (list(RuntimeApplication)): Runtime instances of the application to be
+            simulated with the different mappings. This is only valid inside a with block and is
+            ``[]`` otherwise.
 
     Args:
         platform (Platform): the platform that is simulated by this object
         kpn (KpnGraph): the KPN application to be executed on the given
             ``platform``
-        mapping (Mapping): a mapping of the ``kpn`` to the ``platform``
+        mappings (list(Mapping)): a list of mappings of the ``kpn`` to the ``platform``
         trace (TraceGenerator): a trace generator for the given ``kpn``
     """
 
@@ -226,7 +226,9 @@ class KpnMultipleMappingsSimulation(BaseSimulation):
     def _run(self):
         """Run the simulation.
 
-        May only be called once. Updates the :attr:`exec_time` attribute.
+        May only be called once. Updates the :attr:`exec_time` attribute,
+        yielding the lowest execution time of all. It also sets a second attribute,
+        :attr:`exec_times, which lists all of the execution times.
         """
         if self.exec_times is not None:
             raise RuntimeError("A MultipleKpnSimulation may only be run once! It simulates all mappings for one execution.")
