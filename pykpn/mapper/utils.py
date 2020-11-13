@@ -182,6 +182,15 @@ class SimulationManager(object):
                 self.add_time_mapping(tup[i],exec_time)
         return exec_times
 
+    def append_mapping_metadata(self, mapping):
+        """ Append metadata to the mapping object such as execution_time.
+
+        Args:
+            mapping (Mapping): a mapping object.
+        """
+        exec_time = self.simulate([mapping])
+        mapping.exec_time = exec_time[0]
+
     def dump(self,filename):
         log.info(f"dumping cache to {filename}")
         file = open(filename,'x')

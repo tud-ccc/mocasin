@@ -231,13 +231,16 @@ class GeneticMapper(object):
             the input parameters determine the criteria with which the pareto
             front is going to be built.
         """
-        _,logbook,hof = self.run_genetic_algorithm()
+        _, logbook, hof = self.run_genetic_algorithm()
         results = []
         self.simulation_manager.statistics.log_statistics()
-        with open('evolutionary_logbook.pickle','wb') as f:
-            pickle.dump(logbook,f)
+        with open('evolutionary_logbook.pickle', 'wb') as f:
+            pickle.dump(logbook, f)
         for mapping in hof:
-            results.append(self.representation.fromRepresentation(np.array(mapping)))
+            mapping_object = self.representation.fromRepresentation(
+                np.array(mapping))
+            self.simulation_manager.append_mapping_metadata(mapping_object)
+            results.append(mapping_object)
         self.simulation_manager.statistics.to_file()
         if self.dump_cache:
             self.simulation_manager.dump('mapping_cache.csv')
