@@ -53,6 +53,10 @@ def designer_platform(request):
 def designer_platform_small(request):
     return request.param
 
+@pytest.fixture(params=["haec", "mppa_coolidge"])
+def designer_platform_large(request):
+    return request.param
+
 @pytest.fixture(params=["slx_default", "random", "static_cfs", "random_walk", "tabu_search", "gradient_descent", "genetic",  "simulated_annealing", "gbm"])
 def slx_mapper(request):
     return request.param
