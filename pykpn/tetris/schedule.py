@@ -16,6 +16,7 @@ from pykpn.tetris.job_request import JobRequestInfo
 
 from pykpn.common.mapping import Mapping
 from pykpn.common.platform import Platform
+from pykpn.representations import SimpleVectorRepresentation
 
 from collections import Counter
 from functools import reduce
@@ -556,3 +557,44 @@ class Schedule:
                 if j.request == request and j.finished:
                     return True
         return False
+
+    def is_any_request_migrated(self):
+        """ Returns whether any job migrates in the schedule. """
+        job_schedules = self.per_requests()
+        for job, segments in job_schedules.items():
+            rep = SimpleVectorRepresentation(job.app, self.platform)
+            start_mapping_list = rep.toRepresentation(segments[0].mapping)
+            itersegments = iter(segments)
+            next(itersegments)
+            for jm in itersegments:
+                # Compare mappings here
+                segment_mapping_list = rep.toRepresentation(jm.mapping)
+                if start_mapping_list != segment_mapping_list:
+                    return True
+        return False
+
+    def get_job_mappings(self):
+        """ Returns the pairs of jobs and used mappings during the schedule.
+
+        The mappings are given without time ranges, and duplications. The order
+        of the mappings is undefined, though implemented in the order appeared
+        in the schedule.
+
+        Returns: pairs of job and list of mappings.
+        """
+        job_schedules = self.per_requests()
+        rdict = {}
+        for job, segments in job_schedules.items():
+            rep = SimpleVectorRepresentation(job.app, self.platform)
+            job_mapping_list = []
+            for segment in segments:
+                mapping_vect = rep.toRepresentation(segment.mapping)
+                # Check that it is not already included:
+                already_included = any(
+                    rep.toRepresentation(m) == mapping_vect
+                    for m in job_mapping_list)
+                if already_included:
+                    continue
+                job_mapping_list.append(segment.mapping)
+            rdict[job] = job_mapping_list
+        return rdict.items()
