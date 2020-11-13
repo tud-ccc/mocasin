@@ -49,7 +49,7 @@ def designer_platform(request):
     return request.param
 
 #exclude coolidge, haec for time
-@pytest.fixture(params=["exynos990", "designer_bus", "generic_mesh","multi_cluster","designer_odroid"])
+@pytest.fixture(params=["exynos990", "designer_bus", "generic_mesh","multi_cluster"])
 def designer_platform_small(request):
     return request.param
 

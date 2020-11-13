@@ -14,35 +14,35 @@ def test_symmetries_slx(datadir,slx_platform):
                            f"platform={slx_platform}",
                            "representation=Symmetries",
                            "mapper=genetic",
-                           "outdir=../../../mpsym_json",
+                           "outdir=../../../mpsym_json/",
                            f"platform.symmetries_json=../../../platform/symmetries/{slx_platform}.json",
                            "trace=slx_default"],
                           cwd=datadir)
 
     subprocess.check_call(["pykpn", "generate_mapping",
                            "kpn=audio_filter",
-                           "platform=exynos",
+                           f"platform={slx_platform}",
                            "representation=Symmetries",
                            "mapper=genetic",
-                           "outdir=../../../mpsym_nauty",
+                           "outdir=../../../mpsym_nauty/",
                            "platform.symmetries_json=null",
                            "trace=slx_default"],
                           cwd=datadir)
 
     subprocess.check_call(["pykpn", "generate_mapping",
                            "kpn=audio_filter",
-                           "platform=exynos",
+                           f"platform={slx_platform}",
                            "representation=Symmetries",
                            "representation.disable_mpsym=true",
                            "mapper=genetic",
-                           "outdir=../../../python",
+                           "outdir=../../../python/",
                            "trace=slx_default"],
                           cwd=datadir)
 
     try:
-        mpsym_json_file_path = os.path.join(datadir, 'mpsym_json/generated_mapping')
-        mpsym_nauty_file_path = os.path.join(datadir, 'mpsym_nauty/generated_mapping')
-        python_file_path = os.path.join(datadir, 'python/generated_mapping')
+        mpsym_json_file_path = os.path.join(datadir, 'mpsym_json/best_time.txt')
+        mpsym_nauty_file_path = os.path.join(datadir, 'mpsym_nauty/best_time.txt')
+        python_file_path = os.path.join(datadir, 'python/best_time.txt')
         mpsym_json_file = open(mpsym_json_file_path, 'r')
         mpsym_nauty_file = open(mpsym_nauty_file_path, 'r')
         python_file = open(python_file_path, 'r')
@@ -113,7 +113,7 @@ def test_symmetries_tgff_small(datadir,designer_platform_small):
                            f"platform={designer_platform_small}",
                            "representation=Symmetries",
                            "mapper=genetic",
-                           "outdir=../../../mpsym",
+                           "outdir=../../../mpsym/",
                            f"platform.symmetries_json=../../../platform/symmetries/{designer_platform_small}.json",
                            "trace=tgff_reader"],
                           cwd=datadir)
@@ -126,14 +126,14 @@ def test_symmetries_tgff_small(datadir,designer_platform_small):
                            "representation=Symmetries",
                            "representation.disable_mpsym=true",
                            "mapper=genetic",
-                           "outdir=../../../python",
+                           "outdir=../../../python/",
                            "trace=tgff_reader"],
                           cwd=datadir)
 
     try:
-        mpsym_file_path = os.path.join(datadir, 'mpsym/generated_mapping')
+        mpsym_file_path = os.path.join(datadir, 'mpsym/best_time.txt')
         mpsym_file = open(mpsym_file_path, 'r')
-        python_file_path = os.path.join(datadir, 'python/generated_mapping')
+        python_file_path = os.path.join(datadir, 'python/best_time.txt')
         python_file = open(python_file_path, 'r')
         python_line = python_file.readline()
         mpsym_line = mpsym_file.readline()
