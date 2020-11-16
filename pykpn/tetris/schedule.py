@@ -270,7 +270,7 @@ class ScheduleSegment:
             res = res and jm.finished
         return res
 
-    def verify(self):
+    def verify(self, only_counters=False):
         """ Verify that ScheduleSegment in a consistent stay.
         """
         failed = False
@@ -290,11 +290,21 @@ class ScheduleSegment:
                 failed = True
 
         # Check that there are enough processors
-        cores_used = self.get_used_processor_types()
-        cores_total = self.platform.get_processor_types()
-        if (cores_used | cores_total) != cores_total:
-            log.error("Not enough available processors for a schedule segment")
-            failed = True
+        if only_counters:
+            cores_used = self.get_used_processor_types()
+            cores_total = self.platform.get_processor_types()
+            if (cores_used | cores_total) != cores_total:
+                log.error(
+                    "Not enough available processors for a schedule segment")
+                failed = True
+        else:
+            for j1, j2 in itertools.combinations(self.jobs(), r=2):
+                j1_cores = j1.mapping.get_used_processors()
+                j2_cores = j2.mapping.get_used_processors()
+                if j1_cores.intersection(j2_cores):
+                    log.error(
+                        f"Some jobs share the jobs: {j1_cores}, {j2_cores}")
+                    failed = True
 
         if failed:
             log.error("Some errors found in a segment schedule: {}".format(
@@ -467,10 +477,10 @@ class Schedule:
     def __iter__(self):
         yield from self.__segments
 
-    def verify(self):
+    def verify(self, only_counters=False):
         # Verify segments
         for segment in self:
-            segment.verify()
+            segment.verify(only_counters=only_counters)
 
         failed = False
 

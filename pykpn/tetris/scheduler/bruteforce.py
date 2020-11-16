@@ -120,7 +120,7 @@ class BruteforceSegmentScheduler(SegmentSchedulerBase):
 
         # Construct a schedule segment
         new_segment = ScheduleSegment(self.scheduler.platform, job_segments)
-        new_segment.verify()
+        new_segment.verify(only_counters=not self.scheduler.rotations)
         return new_segment
 
     def __schedule_step(self, current_mappings):

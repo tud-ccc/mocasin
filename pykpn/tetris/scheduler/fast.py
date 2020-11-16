@@ -81,7 +81,7 @@ class FastSegmentScheduler(SingleVariantSegmentScheduler):
 
         # Construct a schedule segment
         new_segment = ScheduleSegment(self.platform, job_segments)
-        new_segment.verify()
+        new_segment.verify(only_counters=not self.scheduler.rotations)
         return new_segment
 
     def schedule(self, jobs, segment_start_time=0.0):
