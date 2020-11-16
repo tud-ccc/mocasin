@@ -25,18 +25,17 @@ class SegmentSchedulerBase(ABC):
 
 
 class SchedulerBase(ABC):
-    def __init__(self, platform, allow_migrations=True,
-                 allow_preemptions=True):
+    def __init__(self, platform, migrations=True, preemptions=True):
         """A base class for tetris scheduler
 
         Args:
             platform (Platform): a platform
-            allow_migrations (bool): whether scheduler can migrate processes
-            allow_preemptions (bool): whether scheduler can preempt processes
+            migrations (bool): whether scheduler can migrate processes
+            preemptions (bool): whether scheduler can preempt processes
         """
         self.__platform = platform
-        self.__allow_migrations = allow_migrations
-        self.__allow_preemptions = allow_preemptions
+        self.__migrations = migrations
+        self.__preemptions = preemptions
         super().__init__()
 
     @property
@@ -49,12 +48,12 @@ class SchedulerBase(ABC):
         return self.__platform
 
     @property
-    def allow_migrations(self):
-        return self.__allow_migrations
+    def migrations(self):
+        return self.__migrations
 
     @property
-    def allow_preemptions(self):
-        return self.__allow_preemptions
+    def preemptions(self):
+        return self.__preemptions
 
     @abstractmethod
     def schedule(self, jobs, scheduling_start_time=0.0):
