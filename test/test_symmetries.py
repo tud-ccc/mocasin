@@ -71,7 +71,7 @@ def test_symmetries_tgff_large(datadir,designer_platform_large):
                            f"platform={designer_platform_large}",
                            "representation=Symmetries",
                            "mapper=genetic",
-                           "outdir=../../../mpsym",
+                           "outdir=../../../mpsym/",
                            f"platform.symmetries_json=../../../platform/symmetries/{designer_platform_large}.json",
                            "trace=tgff_reader"],
                           cwd=datadir)
@@ -84,14 +84,14 @@ def test_symmetries_tgff_large(datadir,designer_platform_large):
                            "representation=Symmetries",
                            "representation.disable_mpsym=true",
                            "mapper=genetic",
-                           "outdir=../../../python",
+                           "outdir=../../../python/",
                            "trace=tgff_reader"],
                           cwd=datadir)
 
     try:
-        mpsym_file_path = os.path.join(datadir, 'mpsym/generated_mapping')
+        mpsym_file_path = os.path.join(datadir, 'mpsym/best_time.txt')
         mpsym_file = open(mpsym_file_path, 'r')
-        python_file_path = os.path.join(datadir, 'python/generated_mapping')
+        python_file_path = os.path.join(datadir, 'python/best_time.txt')
         python_file = open(python_file_path, 'r')
         python_line = python_file.readline()
         mpsym_line = mpsym_file.readline()
