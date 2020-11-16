@@ -21,17 +21,25 @@ class SegmentSchedulerBase(ABC):
 
 
 class SchedulerBase(ABC):
-    def __init__(self, platform, migrations=True, preemptions=True):
+    def __init__(self, platform, migrations=True, preemptions=True,
+                 rotations=False):
         """A base class for tetris scheduler
+
+        If rotations is False, the scheduler does not rotate the mappings. In
+        the final scheduler it is only checked that total number of used cores
+        of corresponding type does not exceed the number of cores in the
+        platform.
 
         Args:
             platform (Platform): a platform
             migrations (bool): whether scheduler can migrate processes
             preemptions (bool): whether scheduler can preempt processes
+            rotations (bool): whether the scheduler rotate the mappings
         """
         self.__platform = platform
         self.__migrations = migrations
         self.__preemptions = preemptions
+        self.__rotations = rotations
         super().__init__()
 
     @property
@@ -50,6 +58,10 @@ class SchedulerBase(ABC):
     @property
     def preemptions(self):
         return self.__preemptions
+
+    @property
+    def rotations(self):
+        return self.__rotations
 
     @abstractmethod
     def schedule(self, jobs, scheduling_start_time=0.0):

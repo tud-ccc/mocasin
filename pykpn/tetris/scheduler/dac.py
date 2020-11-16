@@ -24,7 +24,14 @@ def get_mapping_time_core_product(mapping, cratio=0.0):
 
 class DacScheduler(SchedulerBase):
     def __init__(self, platform, **kwargs):
-        super().__init__(platform)
+        super().__init__(platform, **kwargs)
+
+        if not self.preemptions:
+            raise RuntimeError(
+                "DacScheduler only generates schedules with preemtpions")
+
+        if self.rotations:
+            raise RuntimeError("DacScheduler does not rotate mappings")
 
     @property
     def name(self):
