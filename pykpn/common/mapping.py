@@ -198,10 +198,14 @@ class Mapping:
         assert processor in self._process_info[process_name].scheduler.processors
         self._process_info[process_name].affinity = processor
 
+    def get_used_processors(self):
+        """ Returns a set of used processors. """
+        return {self.affinity(p) for p in self.kpn.processes()}
+
     def get_used_processor_types(self):
         """ Returns the counter of processors of each type used by the mapping.
         """
-        processors = {self.affinity(p) for p in self.kpn.processes()}
+        processors = self.get_used_processors()
         res = Counter()
         for p in processors:
             res[p.type] += 1
