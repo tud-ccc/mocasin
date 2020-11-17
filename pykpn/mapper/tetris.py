@@ -3,10 +3,9 @@
 #
 # Authors: Robert Khasanov, Andrés Goens
 
-from os import mkdir
-from os.path import isdir
-from glob import glob
+from pathlib import Path
 import pickle
+import sys
 
 from pykpn.util import logging
 from pykpn.mapper.genetic import GeneticMapper
@@ -21,7 +20,7 @@ log = logging.getLogger(__name__)
 
 
 class TetrisMapper(object):
-    def __init__(self, platform, pareto_dir = "pareto_mappings/"):
+    def __init__(self, platform, pareto_dir="pareto_mappings/"):
         """Generates a full mapping for a given platform and KPN application.
 
         :param platform: a platform
@@ -29,56 +28,62 @@ class TetrisMapper(object):
         """
         self.platform = platform
 
-    def generate_mappings(self, kpns, traces, load=None, restricted=None):
+    def generate_pareto_fronts(self, kpns, traces):
         pareto_dir = self.pareto_dir
-        if len(kpns) == 0:
-            return []
-        log.info(f"generating fair mapping for {len(kpns)} apps")
-
-        if len(traces) != len(kpns):
-            raise RuntimeError(
-                f"Mapper received unbalanced number of traces ({len(traces)}) "
-                f"and applications ({len(kpns)})")
-
-        # Generate pareto-fronts
         pareto_fronts = {}
-        mappings = {}
-        if not isdir(f"{pareto_dir}"):
-            mkdir(f"{pareto_dir}")
+        pareto_path = Path(pareto_dir)
+        pareto_path.mkdir(parents=True, exist_ok=True)
+        log.info("Generating Pareto-optimal solutions")
         for kpn, trace in zip(kpns, traces):
             representation = SymmetryRepresentation(kpn, self.platform)
-
-            gen_mapper = GeneticMapper(kpn, self.platform, trace, representation,
-                                       objective_exec_time=True, objective_num_resources=True,
+            gen_mapper = GeneticMapper(kpn, self.platform, trace,
+                                       representation,
+                                       objective_exec_time=True,
+                                       objective_num_resources=True,
                                        record_statistics=False)
-            if not isdir(f"{pareto_dir}/{kpn.name}"):
-                mkdir(f"{pareto_dir}/{kpn.name}")
-            if len(glob(f"{pareto_dir}/{kpn.name}/mapping_*.pickle")) == 0:
-                log.info(f"Pareto points for {kpn.name} not found. Generating... ")
+            kpn_path = pareto_path.joinpath(kpn.name)
+            kpn_path.mkdir(exist_ok=True)
+            if len(list(kpn_path.glob(f"mapping_*.pickle"))) == 0:
+                log.info(f"Pareto points for {kpn.name} not found. "
+                         "Generating... ")
                 par_mappings = gen_mapper.generate_pareto_front()
-                for j,point in enumerate(par_mappings):
-                    with open(f"{pareto_dir}/{kpn.name}/mapping_{j}.pickle", 'wb') as f:
+                sys.setrecursionlimit(2000)
+                for j, point in enumerate(par_mappings):
+                    mapping_path = kpn_path.joinpath(f"mapping_{j}.pickle")
+                    with open(mapping_path, 'wb') as f:
                         p = pickle.Pickler(f)
                         p.dump(point)
             else:
-                mapper = FromFileMapper(kpn, self.platform, trace, representation,
-                                        files_pattern=f"{pareto_dir}/{kpn.name}/mapping_*.pickle")
+                mapper = FromFileMapper(
+                    kpn, self.platform, trace, representation,
+                    files_pattern=f"{pareto_dir}/{kpn.name}/mapping_*.pickle")
                 par_mappings = mapper.generate_multiple_mappings()
                 log.info(f"Pareto points for {kpn.name} read from file")
 
             log.info(f"App({kpn.name}) has {len(par_mappings)} pareto points.")
             for i in range(len(par_mappings)):
                 if par_mappings[i].metadata.energy is None:
-                    log.warning(
-                        "The mapping has no energy value, set to execution time"
-                    )
+                    log.warning("The mapping has no energy value, "
+                                "set to execution time")
                     par_mappings[i].metadata.energy = par_mappings[i].metadata.exec_time
                 m = par_mappings[i]
-                print("Mapping: {}, exec_time: {}, energy: {}".format(
-                    gen_mapper.evaluate_mapping(
-                        gen_mapper.representation.toRepresentation(m)),
-                    m.metadata.exec_time, m.metadata.energy))
+                log.debug(f"Mapping: {m.get_used_processor_types()} "
+                          f"exec_time: {m.metadata.exec_time}, "
+                          f"energy: {m.metadata.energy}")
             pareto_fronts.update({kpn: par_mappings})
+        return pareto_fronts
+
+    def generate_mappings(self, kpns, traces):
+        if len(kpns) == 0:
+            return []
+        log.info(f"Constructing mappings for {len(kpns)} apps with Tetris")
+        if len(traces) != len(kpns):
+            raise RuntimeError(
+                f"Mapper received unbalanced number of traces ({len(traces)}) "
+                f"and applications ({len(kpns)})")
+
+        # Generate pareto-fronts
+        pareto_fronts = self.generate_pareto_fronts(kpns, traces)
 
         # Prepare job requests
         job_requests = []
@@ -87,7 +92,8 @@ class TetrisMapper(object):
         jobs = list(
             map(lambda x: x.dispatch(), Job.from_requests(job_requests)))
 
-        scheduler = DacScheduler(self.platform, rotations = True)
+        log.info("Running Tetris scheduler")
+        scheduler = DacScheduler(self.platform, rotations=True)
         schedule = scheduler.schedule(jobs)
         print(schedule.to_str())
         job_mappings = schedule.get_job_mappings()
