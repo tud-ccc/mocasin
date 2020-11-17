@@ -413,10 +413,13 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
             return self._G.tuple_orbit(x_)
 
     def allEquivalent(self,x):
-        orbit = self._allEquivalent(x)
+        x_ = x.to_list(channels=False)
+        orbit = self._allEquivalent(x_)
         res = []
         for elem in orbit:
             mapping = self.list_mapper.generate_mapping(list(elem))
+            if hasattr(x,"metadata"):
+                mapping.metadata  = copy(x.metadata)
             res.append(mapping)
         return res
 
