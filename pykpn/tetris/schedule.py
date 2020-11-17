@@ -590,7 +590,7 @@ class Schedule:
         of the mappings is undefined, though implemented in the order appeared
         in the schedule.
 
-        Returns: pairs of job and list of mappings.
+        Returns: a dict of job and list of mappings.
         """
         job_schedules = self.per_requests()
         rdict = {}
@@ -607,4 +607,4 @@ class Schedule:
                     continue
                 job_mapping_list.append(segment.mapping)
             rdict[job] = job_mapping_list
-        return rdict.items()
+        return rdict
