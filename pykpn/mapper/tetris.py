@@ -3,6 +3,7 @@
 #
 # Authors: Robert Khasanov, Andrés Goens
 
+from itertools import chain, combinations
 from pathlib import Path
 import pickle
 import sys
@@ -17,6 +18,11 @@ from pykpn.tetris.job_state import Job
 from pykpn.tetris.scheduler.dac import DacScheduler
 
 log = logging.getLogger(__name__)
+
+
+def powerset(iterable):
+    s = list(iterable)
+    return chain.from_iterable(combinations(s, r) for r in range(len(s) + 1))
 
 
 class TetrisMapper(object):
@@ -88,19 +94,32 @@ class TetrisMapper(object):
         # Prepare job requests
         job_requests = []
         for kpn, mappings in pareto_fronts.items():
-            job_requests.append(JobRequestInfo(kpn, mappings, 0.0))
+            job_requests.append(
+                JobRequestInfo(kpn, mappings, 0.0, deadline=2.5))
         jobs = list(
             map(lambda x: x.dispatch(), Job.from_requests(job_requests)))
 
         log.info("Running Tetris scheduler")
         scheduler = DacScheduler(self.platform, rotations=True)
-        schedule = scheduler.schedule(jobs)
-        print(schedule.to_str())
+        schedule = None
+        for cjobs in reversed(list(powerset(jobs))):
+            if len(cjobs) == 0:
+                continue
+            schedule = scheduler.schedule(list(cjobs))
+            if schedule is not None:
+                break
+        if schedule is None:
+            log.info(f"Could not schedule any jobs")
+            return [None] * len(jobs)
+        log.info(f"Generated schedule: {schedule.to_str(verbose=True)}")
         job_mappings = schedule.get_job_mappings()
         res = []
         for kpn in kpns:
-            job = next(job for job in job_mappings if job.app == kpn)
-            mappings = job_mappings[job]
-            assert len(mappings) == 1
-            res.append(mappings[0])
+            job = next((job for job in job_mappings if job.app == kpn), None)
+            if job is None:
+                res.append(None)
+            else:
+                mappings = job_mappings.get(job, [None])
+                assert len(mappings) == 1
+                res.append(mappings[0])
         return res
