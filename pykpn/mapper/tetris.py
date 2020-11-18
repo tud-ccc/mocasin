@@ -70,8 +70,12 @@ class TetrisMapper(object):
             for i in range(len(par_mappings)):
                 if par_mappings[i].metadata.energy is None:
                     log.warning("The mapping has no energy value, "
-                                "set to execution time")
-                    par_mappings[i].metadata.energy = par_mappings[i].metadata.exec_time
+                                "approximated it")
+                    cnt = par_mappings[i].get_used_processor_types()
+                    par_mappings[i].metadata.energy = (
+                        par_mappings[i].metadata.exec_time *
+                        (cnt['ARM_CORTEX_A7'] * 0.192 +
+                         cnt['ARM_CORTEX_A15'] * 1.260))
                 m = par_mappings[i]
                 log.debug(f"Mapping: {m.get_used_processor_types()} "
                           f"exec_time: {m.metadata.exec_time}, "
