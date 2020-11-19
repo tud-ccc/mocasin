@@ -10,6 +10,9 @@ import csv
 from os import listdir
 from os.path import abspath, isdir, join
 
+from pykpn.util import logging
+log = logging.getLogger(__name__)
+
 def parse_override_string(override_string):
     #has format: key1=value1,value2,...,valueN,key2=...
     parameters_lists = [x.split(',') for x in override_string.split('=')]
@@ -59,9 +62,15 @@ def read_multirun(path,outputs_parsers = None,output_format = 'csv'):
 
         for parser in outputs_parsers:
             outputs,newkeys = parser(dir)
-            results_dict = {**results_dict,**outputs}
+            if type(outputs) == list:
+                for out in outputs:
+                    results.append({**results_dict, **out})
+            elif type(outputs) == dict:
+                results.append({**results_dict, **outputs})
+            else:
+                log.error(f"Parser error, invalid results: {outputs}")
+                raise RuntimeError
             keys = keys.union(newkeys)
-        results.append(results_dict)
     if output_format == 'csv':
         write_to_csv(keys,results,csv_out)
     else:
