@@ -8,8 +8,6 @@ from pykpn.tetris.schedule import (Schedule, ScheduleSegment,
                                    JobSegmentMapping, TIME_EPS)
 from pykpn.tetris.scheduler.base import SchedulerBase
 
-from pykpn.representations import SymmetryRepresentation
-
 from collections import Counter
 import copy
 import logging
@@ -161,8 +159,8 @@ class DacScheduler(SchedulerBase):
         if self.rotations:
             if not successful:
                 return None
-            rep = SymmetryRepresentation(job.app, self.platform)
-            equivalent_mappings = rep.allEquivalent(mapping.to_list())
+            equivalent_mappings = self.orbit_lookup_manager.get_orbit(
+                job.app, mapping)
             best_result = math.inf, None
             for m in equivalent_mappings:
                 # TODO: do it in the orbit lookup manager
