@@ -23,7 +23,7 @@ class SegmentSchedulerBase(ABC):
 
 class SchedulerBase(ABC):
     def __init__(self, platform, orbit_lookup_manager=None, migrations=True,
-                 preemptions=True, rotations=False):
+                 preemptions=True, rotations=False, **kwargs):
         """A base class for tetris scheduler
 
         If rotations is False, the scheduler does not rotate the mappings. In

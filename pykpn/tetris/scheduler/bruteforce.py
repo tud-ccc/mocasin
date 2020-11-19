@@ -49,6 +49,15 @@ class BruteforceSegmentScheduler(SegmentSchedulerBase):
         self.__accumulated_energy = None
         self.__results = None
 
+        if self.scheduler.rotations:
+            raise RuntimeError(
+                "Rotations are not yet supported by bruteforce scheduler")
+
+        if not self.scheduler.preemptions:
+            raise RuntimeError(
+                "Non-preemptable workload is not yet supported by bruteforce scheduler"
+            )
+
     def __eval_min_segment_duration(self):
         """Evaluate minimal segment duration.
         """
@@ -165,7 +174,13 @@ class BruteforceSegmentScheduler(SegmentSchedulerBase):
             return
 
         next_job = self.__jobs[len(current_mappings)]
-        for mapping in next_job.request.mappings + [None]:
+        next_mappings = []
+        if self.scheduler.migrations or next_job.last_mapping is None:
+            next_mappings.extend(next_job.request.mappings)
+        else:
+            next_mappings.append(next_job.last_mapping)
+        next_mappings.append(None)
+        for mapping in next_mappings:
             self.__schedule_step(current_mappings + [mapping])
 
     # TODO: Remove prev_schedule
@@ -269,11 +284,20 @@ class ScheduleHeap:
 
 class BruteforceScheduler(SchedulerBase):
     def __init__(self, platform, **kwargs):
-        super().__init__(platform)
+        super().__init__(platform, **kwargs)
 
         self.__dump_steps = kwargs["bf_dump_steps"]
         # Initialize a segment scheduler
         self.__segment_scheduler = BruteforceSegmentScheduler(self)
+
+        if self.rotations:
+            raise RuntimeError(
+                "Rotations are not yet supported by bruteforce scheduler")
+
+        if not self.preemptions:
+            raise RuntimeError(
+                "Non-preemptable workload is not yet supported by bruteforce scheduler"
+            )
 
     @property
     def name(self):
