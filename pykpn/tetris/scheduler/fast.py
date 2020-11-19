@@ -17,9 +17,9 @@ log = logging.getLogger(__name__)
 
 class FastSegmentScheduler(SingleVariantSegmentScheduler):
     """ TODO: Add a description"""
-    def __init__(self, parent_scheduler, platform):
+    def __init__(self, scheduler, platform):
 
-        super().__init__(parent_scheduler, platform)
+        super().__init__(scheduler, platform)
 
     def _filter_job_mappings_by_deadline_resources(self, job, free_cores):
         """ Filters mappings which can feet deadline resources.

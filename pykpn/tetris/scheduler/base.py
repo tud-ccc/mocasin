@@ -10,14 +10,10 @@ from abc import ABC, abstractmethod
 
 
 class SegmentSchedulerBase(ABC):
-    def __init__(self, parent_scheduler, platform):
-        assert isinstance(parent_scheduler, SchedulerBase)
-        self.__parent_scheduler = parent_scheduler
-        self.__platform = platform
-
-    @property
-    def platform(self):
-        return self.__platform
+    def __init__(self, scheduler, platform):
+        assert isinstance(scheduler, SchedulerBase)
+        self.scheduler = scheduler
+        self.platform = platform
 
     @abstractmethod
     def schedule(self, jobs):

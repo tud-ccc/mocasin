@@ -39,9 +39,8 @@ def get_jobs_bc_energy(jobs):
 
 
 class BruteforceSegmentScheduler(SegmentSchedulerBase):
-    def __init__(self, parent_scheduler):
-        super().__init__(parent_scheduler, parent_scheduler.platform)
-        self.__parent = parent_scheduler
+    def __init__(self, scheduler):
+        super().__init__(scheduler, scheduler.platform)
 
         # Initialize variables used during the scheduling to None
         self.__jobs = None
@@ -120,7 +119,7 @@ class BruteforceSegmentScheduler(SegmentSchedulerBase):
                 job_segments.append(ssm)
 
         # Construct a schedule segment
-        new_segment = ScheduleSegment(self.__parent.platform, job_segments)
+        new_segment = ScheduleSegment(self.scheduler.platform, job_segments)
         new_segment.verify()
         return new_segment
 
@@ -131,7 +130,7 @@ class BruteforceSegmentScheduler(SegmentSchedulerBase):
             current_mappings (list): list of the chosen mappings for jobs.
         """
         (used_cores, e) = self.__eval_core_energy_usage(current_mappings)
-        total_cores = self.__parent.platform.get_processor_types()
+        total_cores = self.scheduler.platform.get_processor_types()
 
         # Check whether the current used cores do not exceed available cores
         if (used_cores | total_cores) != total_cores:

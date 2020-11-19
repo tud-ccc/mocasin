@@ -46,19 +46,19 @@ class WWT15SegmentScheduler(SingleVariantSegmentScheduler):
     their cost.
 
     Args:
-        parent_scheduler: A segmentized scheduler
+        scheduler: A segmentized scheduler
         platform (Platform): Platform
         sortingKey (SortingKey): By which order application are mapped
         allow_local_violations (bool): whethen we allow to choose "slow"
             configurations which can be compensated in a next segment
     """
-    def __init__(self, parent_scheduler, platform,
+    def __init__(self, scheduler, platform,
                  sorting_key=WWT15SortingKey.MINCOST,
                  allow_local_violations=True,
                  explore_mode=WWT15ExploreMode.ALL,
                  lr_constraints=LRConstraint.RESOURCE, lr_rounds=1000):
 
-        super().__init__(parent_scheduler, platform)
+        super().__init__(scheduler, platform)
 
         self.__sorting_key = sorting_key
         self.__allow_local_violations = allow_local_violations
