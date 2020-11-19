@@ -175,6 +175,18 @@ def test_tetris_bf_mem(datadir, bf_expected_schedule):
 
 
 @pytest.fixture(params=[
+    ("3337-mix-3-running-deadline_4.csv", True, 14.803, 36.681),
+])
+def bf_nomigration_expected_schedule(request):
+    return request.param
+
+
+def test_tetris_bf_nomigration(datadir, bf_nomigration_expected_schedule):
+    run_tetris_scheduler(datadir, "bf", bf_nomigration_expected_schedule,
+                         options="+resource_manager.migrations=False")
+
+
+@pytest.fixture(params=[
     "hog-big-8-d-online.csv",
 ])
 def tetris_manager_test(request):
