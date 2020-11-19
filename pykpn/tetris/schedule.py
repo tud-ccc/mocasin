@@ -195,12 +195,16 @@ class JobSegmentMapping:
 
     def to_str(self):
         cores = self.mapping.get_used_processors()
+        cores_str = "{{{}}}".format(", ".join(sorted([x.name for x in cores])))
         core_types = self.mapping.get_used_processor_types()
-        core_types_str = ", ".join(
-            ["{}: {}".format(ty, count) for ty, count in core_types.items()])
+        core_types_str = ", ".join([
+            "{}: {}".format(ty, count)
+            for ty, count in sorted(core_types.items())
+        ])
         job_str = "Job: {} ".format(self.app.name)
-        mapping_str = "mapping: {}[{}, EU: {{exec_time={:.3f} energy={:.3f}}}]".format(
-            cores, core_types_str, self.mapping.metadata.exec_time, self.mapping.metadata.energy)
+        mapping_str = "mapping: {} [{} | t={:.3f} e={:.3f}]".format(
+            cores_str, core_types_str, self.mapping.metadata.exec_time,
+            self.mapping.metadata.energy)
         start_str = "start = {0:.3f} [{1:.2f}]".format(self.start_time,
                                                        self.start_cratio)
         if self.finished:
@@ -210,8 +214,8 @@ class JobSegmentMapping:
         end_str = "end = {:.3f} [{:.2f}{}]".format(self.end_time,
                                                    self.end_cratio, f_str)
         energy_str = "energy = {:.3f}".format(self.energy)
-        res_str = "{}, {}, {}, {}, {}".format(job_str, mapping_str, start_str,
-                                              end_str, energy_str)
+        res_str = "{}, {}, {}, {}, {}".format(job_str, start_str, end_str,
+                                              energy_str, mapping_str)
         return res_str
 
 
@@ -484,25 +488,31 @@ class Schedule:
                 self.to_str()))
             assert False
 
-    def to_str(self):
+    def to_str(self, verbose=False):
         """Compact representation of the schedule.
 
         Format:
         Schedule t:(<start_time>, <end_time>), e:<energy>
             [t:(<start_time>, <end_time>) <n> job(s), PEs: <cores_used>, e:<energy> ]
         where the format of <cores_used>: (<type>: <count>, ...)
+
+        If verbose is True, it also returns the information of job schedule segments.
         """
-        res = "Schedule t:({}, {}), e:{:.3f}\n".format(self.start_time,
-                                                       self.end_time,
-                                                       self.energy)
+        res = (f"Schedule t:({self.start_time:.3f}, {self.end_time:.3f}), "
+               f"e:{self.energy:.3f}\n")
         for segment in self:
-            res += "    [t:({:.3f}, {:.3f}), ".format(segment.start_time,
-                                                      segment.end_time)
-            res += "{} job".format(len(segment))
+            res += f"    [t:({segment.start_time:.3f}, {segment.end_time:.3f}),"
+            res += f" {len(segment)} job"
             if len(segment) > 1:
                 res += "s"
-            res += ", PEs: {}, e:{:.3f}]\n".format(
-                segment.get_used_processor_types(), segment.energy)
+            core_types_str = ", ".join([
+                f"{ty}: {count}" for ty, count in sorted(
+                    segment.get_used_processor_types().items())
+            ])
+            res += f", PEs: [{core_types_str}], e:{segment.energy:.3f}]\n"
+            if verbose:
+                for job in segment:
+                    res += f"        {job.to_str()}\n"
         return res
 
     def count_finished_jobs(self):
