@@ -137,14 +137,16 @@ class StaticCFSMapper(StaticCFS):
         restricted = [[]]
         cores = {}
         all_cores = list(self.platform.processors())
-        for core_type in self.platform.core_types():
-            cores[core_type] = [core.name for core in all_cores if core.type == core_type[0]]
-        for core_type in self.platform.core_types():
+        for core_type, _ in self.platform.get_processor_types().items():
+            cores[core_type] = [core.name for core in all_cores if core.type == core_type]
+        for core_type, _ in self.platform.get_processor_types().items():
             new_res = []
             for r in restricted:
-                for i in range(1,len(cores[core_type])):
-                    new_res.append(r + cores[core_type][:i])
+                for i in range(len(cores[core_type])):
+                    new_res.append(r + cores[core_type][:i+1])
             restricted = restricted + new_res
+        restricted = restricted[:-1]
+        log.debug(f"Length of restricted = {len(restricted)}")
         log.debug(f"{restricted}")
         for res in restricted:
             mapping = self.generate_mapping(restricted=res)
