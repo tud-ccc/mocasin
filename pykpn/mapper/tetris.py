@@ -11,6 +11,7 @@ import sys
 
 from pykpn.util import logging
 from pykpn.mapper.genetic import GeneticMapper
+from pykpn.mapper.fair import StaticCFSMapper
 from pykpn.mapper.from_file import FromFileMapper
 from pykpn.representations import SymmetryRepresentation
 
@@ -56,6 +57,8 @@ class TetrisMapper(object):
         log.info("Generating Pareto-optimal solutions")
         for kpn, trace in zip(kpns, traces):
             representation = SymmetryRepresentation(kpn, self.platform)
+            cfs_mapper = StaticCFSMapper(kpn, self.platform, trace,
+                                       representation)
             gen_mapper = GeneticMapper(kpn, self.platform, trace,
                                        representation,
                                        objective_exec_time=True,
@@ -66,8 +69,13 @@ class TetrisMapper(object):
             if len(list(kpn_path.glob(f"mapping_*.pickle"))) == 0:
                 log.info(f"Pareto points for {kpn.name} not found. "
                          "Generating... ")
-                par_mappings = gen_mapper.generate_pareto_front()
-                sys.setrecursionlimit(2000)
+                par_mappings = cfs_mapper.generate_pareto_front()
+                log.info(f"Evaluating execution time of the mappings")
+                sys.setrecursionlimit(5000)
+                gen_mapper.simulation_manager.simulate(par_mappings)
+                for i in range(len(par_mappings)):
+                    gen_mapper.simulation_manager.append_mapping_metadata(par_mappings[i])
+
                 for j, point in enumerate(par_mappings):
                     mapping_path = kpn_path.joinpath(f"mapping_{j}.pickle")
                     with open(mapping_path, 'wb') as f:
