@@ -177,13 +177,26 @@ def test_tetris_bf_mem(datadir, bf_expected_schedule):
 @pytest.fixture(params=[
     ("3337-mix-3-running-deadline_4.csv", True, 14.803, 36.681),
 ])
-def bf_nomigration_expected_schedule(request):
+def bf_nomig_expected_schedule(request):
     return request.param
 
 
-def test_tetris_bf_nomigration(datadir, bf_nomigration_expected_schedule):
-    run_tetris_scheduler(datadir, "bf", bf_nomigration_expected_schedule,
+@pytest.fixture(params=[
+    ("2177-mix-2-new-deadline_2.csv", True, 41.922, 42.123),
+])
+def bf_rot_nomig_expected_schedule(request):
+    return request.param
+
+
+def test_tetris_bf_nomig(datadir, bf_nomig_expected_schedule):
+    run_tetris_scheduler(datadir, "bf", bf_nomig_expected_schedule,
                          options="+resource_manager.migrations=False")
+
+
+def test_tetris_bf_rot_nomig(datadir, bf_rot_nomig_expected_schedule):
+    run_tetris_scheduler(
+        datadir, "bf", bf_rot_nomig_expected_schedule, options=
+        "+resource_manager.migrations=False +resource_manager.rotations=True")
 
 
 @pytest.fixture(params=[
