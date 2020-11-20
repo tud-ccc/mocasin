@@ -27,6 +27,7 @@ import math
 ENERGY_EPS = 0.00001
 TIME_EPS = 0.00001
 CRATIO_EPS = 0.00001
+# TODO: Make this parameter be read from the config
 MAX_END_GAP = 0.5
 
 log = logging.getLogger(__name__)
