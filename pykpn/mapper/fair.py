@@ -132,6 +132,33 @@ class StaticCFSMapper(StaticCFS):
             self.map_to_core(mapping,proc,mapping_dict[proc])
         return self.comMapGen.generate_mapping(mapping)
 
+    def generate_pareto_front(self):
+        pareto = []
+        restricted = [[]]
+        cores = {}
+        all_cores = list(self.platform.processors())
+        for core_type in self.platform.core_types():
+            cores[core_type] = [core.name for core in all_cores if core.type == core_type[0]]
+        for core_type in self.platform.core_types():
+            new_res = []
+            for r in restricted:
+                for i in range(1,len(cores[core_type])):
+                    new_res.append(r + cores[core_type][:i])
+            restricted = restricted + new_res
+        log.debug(f"{restricted}")
+        for res in restricted:
+            mapping = self.generate_mapping(restricted=res)
+            #num_resources = []
+            #for core_type in cores:
+            #    tot = 0
+            #    for core in res:
+            #        if core == cores[core_type]:
+            #            tot += 1
+            #    num_resources.append(tot)
+            pareto.append(mapping)
+        return pareto
+
+
 class StaticCFSMapperMultiApp(StaticCFS):
     def __init__(self,platform):
         super().__init__(platform)
