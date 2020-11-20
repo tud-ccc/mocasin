@@ -4,6 +4,7 @@
 # Authors: Robert Khasanov, Andrés Goens
 
 from itertools import chain, combinations
+import hydra
 from pathlib import Path
 import pickle
 import sys
@@ -15,7 +16,6 @@ from pykpn.representations import SymmetryRepresentation
 
 from pykpn.tetris.job_request import JobRequestInfo
 from pykpn.tetris.job_state import Job
-from pykpn.tetris.scheduler.dac import DacScheduler
 
 log = logging.getLogger(__name__)
 
@@ -26,13 +26,27 @@ def powerset(iterable):
 
 
 class TetrisMapper(object):
-    def __init__(self, platform, pareto_dir="pareto_mappings/"):
+    def __init__(self, platform, scheduler, pareto_dir="pareto_mappings/"):
         """Generates a full mapping for a given platform and KPN application.
 
         :param platform: a platform
         :type platform: Platform
         """
         self.platform = platform
+        self.pareto_dir = pareto_dir
+        self.scheduler = scheduler
+
+        log.info(f"Scheduler {self.scheduler.name} "
+                 f"rotations={self.scheduler.rotations} "
+                 f"migrations={self.scheduler.migrations} "
+                 f"preemptions={self.scheduler.preemptions}")
+
+    @staticmethod
+    def from_hydra(platform, cfg):
+        # Initialize tetris scheduler
+        scheduler = hydra.utils.instantiate(cfg['resource_manager'], platform)
+        mapper = TetrisMapper(platform, scheduler, cfg['pareto_dir'])
+        return mapper
 
     def generate_pareto_fronts(self, kpns, traces):
         pareto_dir = self.pareto_dir
@@ -69,8 +83,8 @@ class TetrisMapper(object):
             log.info(f"App({kpn.name}) has {len(par_mappings)} pareto points.")
             for i in range(len(par_mappings)):
                 if par_mappings[i].metadata.energy is None:
-                    log.warning("The mapping has no energy value, "
-                                "approximated it")
+                    #log.warning("The mapping has no energy value, "
+                    #            "approximated it")
                     cnt = par_mappings[i].get_used_processor_types()
                     par_mappings[i].metadata.energy = (
                         par_mappings[i].metadata.exec_time *
@@ -104,12 +118,11 @@ class TetrisMapper(object):
             map(lambda x: x.dispatch(), Job.from_requests(job_requests)))
 
         log.info("Running Tetris scheduler")
-        scheduler = DacScheduler(self.platform, rotations=True)
         schedule = None
         for cjobs in reversed(list(powerset(jobs))):
             if len(cjobs) == 0:
                 continue
-            schedule = scheduler.schedule(list(cjobs))
+            schedule = self.scheduler.schedule(list(cjobs))
             if schedule is not None:
                 break
         if schedule is None:
