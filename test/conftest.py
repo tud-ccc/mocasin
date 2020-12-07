@@ -22,6 +22,8 @@ def datadir(tmpdir):
                os.path.join(tmpdir, "slx"))
     os.symlink(os.path.join(examples_path, "tgff"),
                os.path.join(tmpdir, "tgff"))
+    os.symlink(os.path.join(examples_path, "sdf3"),
+               os.path.join(tmpdir, "sdf3"))
     os.symlink(os.path.join(examples_path, "csv"),
                os.path.join(tmpdir, "csv"))
     os.symlink(os.path.join(examples_path, "tetris"),
