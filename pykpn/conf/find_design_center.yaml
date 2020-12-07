@@ -12,6 +12,7 @@ defaults:
   - design_centering/perturbation: classic
   - design_centering/sample_generator: metric
   - design_centering/volume: lpvolume
+  - sdf3: default
 
 
 record_samples : false

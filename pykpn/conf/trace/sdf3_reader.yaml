@@ -1,6 +1,6 @@
 # @package _group_
 _target_: pykpn.sdf3.trace.Sdf3TraceGenerator
-xml_file: ???
+xml_file: "${sdf3.file}"
 repetitions: 1
 processor_types:
   ARM_CORTEX_A7:

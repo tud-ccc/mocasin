@@ -9,6 +9,7 @@ defaults:
   - trace: default
   - representation: SimpleVector
   - simulation_type: single_kpn
+  - sdf3: default
 
 simtrace:
   file: "trace.json"
