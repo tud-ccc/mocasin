@@ -2,3 +2,12 @@
 _target_: pykpn.sdf3.trace.Sdf3TraceGenerator
 xml_file: ???
 repetitions: 1
+processor_types:
+  ARM_CORTEX_A7:
+    sdf3_type: "proc_0"
+    frequency: "1400 MHz"
+    scale: "2.0 us"
+  ARM_CORTEX_A15:
+    sdf3_type: "proc_0"
+    frequency: "2000 MHz"
+    scale: "1.0 us"

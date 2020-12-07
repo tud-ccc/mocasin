@@ -5,6 +5,7 @@
 
 import logging
 import numpy as np
+import pint
 
 from dataclasses import dataclass, field
 from fractions import Fraction as frac
@@ -13,23 +14,71 @@ from pykpn.sdf3 import _sdf_parser
 from pykpn.common.trace import TraceGenerator, TraceSegment
 
 log = logging.getLogger(__name__)
+ureg = pint.UnitRegistry()
 
 
 @dataclass
 class _SdfFiringRule:
+    """Helper class defining the firing rules of an SDF actor"""
+
     reads: dict = field(default_factory=dict)
     writes: dict = field(default_factory=dict)
     initial_writes: dict = field(default_factory=dict)
 
 
+class _ProcessorType:
+    """Helper class for managing processor types.
+
+    This class is used to convert the execution times defined for each
+    SDF3 processor type to cycle counts for processor types.
+    """
+
+    def __init__(self, sdf3_type, frequency, scale):
+        self.sdf3_type = sdf3_type
+        self.frequency = ureg(frequency)
+        self.scale = ureg(scale)
+        if not isinstance(self.frequency, pint.Quantity):
+            raise ValueError("Provided frequency without a unit.")
+        if not self.frequency.check("[frequency]"):
+            raise ValueError(
+                "Provided frequency with wrong dimension (expected frequncy)"
+            )
+        if not isinstance(self.scale, pint.Quantity):
+            raise ValueError("Provided scale without a unit.")
+        if not self.scale.check("[time]"):
+            raise ValueError(
+                "Provided scale with wrong dimension (expected time)"
+            )
+
+
 class Sdf3TraceGenerator(TraceGenerator):
-    _firing_rules = {}
-    _repetition_vector = {}
-    _trace_segments = {}
+    """Trace generator for SDF3 files
 
-    _trace_iterators = {}
+    Generates traces for applications defined in SDF3 format.
 
-    def __init__(self, xml_file, repetitions=1):
+    Args:
+        xml_file (str): the SDF3 file to read from
+        procesor_types (dict(str, dict(str, str))): a dictionary defining a
+            mapping from pykpn processor eTraceGenerator types to SDF3
+            processor types
+        repetitions (int): a number indicating how many times the execution of
+            the entire SDF graph should repeat
+
+    Attributes:
+        _firing_rules (dict(str, _SdfFiringRule))
+        self._repetition_vector = {}
+        self._trace_segments = {}
+        self._trace_iterators = {}
+        self._actor_processor_cylces = {}
+    """
+
+    def __init__(self, xml_file, processor_types, repetitions=1):
+        self._firing_rules = {}
+        self._repetition_vector = {}
+        self._trace_segments = {}
+        self._trace_iterators = {}
+        self._actor_processor_cylces = {}
+
         log.info("Start parsing the SDF3 trace")
         # load the xml
         with open(xml_file) as f:
@@ -44,6 +93,7 @@ class Sdf3TraceGenerator(TraceGenerator):
         self.__init_firing_rules(graph)
         self.__init_repetition_vector(graph)
         self.__init_trace_segments(graph, repetitions)
+        self.__init_cycle_counts(graph, processor_types)
 
         self.reset()
         log.info("Done parsing the SDF3 trace")
@@ -202,7 +252,9 @@ class Sdf3TraceGenerator(TraceGenerator):
                     segments.append(s)
 
                 # process
-                segments.append(TraceSegment(process_cycles=1000))
+                segments.append(TraceSegment(process_cycles=0))
+                # Note that we set process_cycles to 0. The correct value will
+                # be set when retrieving the segment via next_segment()
 
                 # write tokens
                 for channel, count in firings.writes.items():
@@ -214,6 +266,54 @@ class Sdf3TraceGenerator(TraceGenerator):
 
             # store the trace
             self._trace_segments[actor.name] = segments
+
+    def __init_cycle_counts(self, graph, processor_types):
+        """Collects cycle counts for all actors and defined processor types.
+
+        Converts the time values, given in the actor properties for each SDF3
+        processor type, to a cycle count for pykpn's processor types.
+        The resulting values are stored in :obj:`~_actor_processor_cycles`
+        """
+        # initialize processor_types using the _ProcessorType class
+        processor_types = {
+            k: _ProcessorType(**v) for k, v in processor_types.items()
+        }
+
+        for actor in graph.sdf.actor:
+            # find actor properties
+            a_props = None
+            for props in graph.sdfProperties.actorProperties:
+                if props.actor == actor.name:
+                    a_props = props
+            if a_props is None:
+                raise RuntimeError(
+                    f"Did not find actor properties for {actor.name}"
+                )
+
+            # read execution times from the actor properties
+            exec_times = {}
+            for proc in a_props.processor:
+                exec_times[proc.type] = int(proc.executionTime.time)
+            assert (
+                len(exec_times) > 0
+            ), f"Did not find any execution times for actor {actor.name}"
+
+            proc_cycles = {}
+            for proc_name, proc_type in processor_types.items():
+                try:
+                    cycles = (
+                        proc_type.scale
+                        * proc_type.frequency
+                        * exec_times[proc_type.sdf3_type]
+                    ).to_reduced_units()
+                except KeyError:
+                    raise RuntimeError(
+                        f"Execution time for actor {actor.name} is not defined"
+                        f" for processor type {proc_type.sdf3_type}"
+                    )
+                assert cycles.check("[]")
+                proc_cycles[proc_name] = cycles.magnitude
+            self._actor_processor_cylces[actor.name] = proc_cycles
 
     def reset(self):
         """Resets the generator.
@@ -228,4 +328,14 @@ class Sdf3TraceGenerator(TraceGenerator):
 
         See :meth:`~TraceGenerator.next_segment`.
         """
-        return next(self._trace_iterators[process_name])
+        segment = next(self._trace_iterators[process_name])
+        if segment.processing_cycles is not None:
+            processor_cycles = self._actor_processor_cylces[process_name]
+            try:
+                segment.processing_cycles = processor_cycles[processor_type]
+            except KeyError:
+                raise RuntimeError(
+                    f"Processor type {processor_type} is not defined in SDF3 "
+                    "trace"
+                )
+        return segment

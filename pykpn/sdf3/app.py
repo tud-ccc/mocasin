@@ -12,6 +12,13 @@ log = logging.getLogger(__name__)
 
 
 class Sdf3Graph(KpnGraph):
+    """Graph representation of a SDF3 application
+
+    Args:
+        xml_file (str): the SDF3 file to read from
+        name (str, optional): an optional name to use instead of the name
+            defined in the SDF3 file
+    """
     def __init__(self, xml_file, name=None):
         log.info("Start parsing the SDF3 graph")
 
