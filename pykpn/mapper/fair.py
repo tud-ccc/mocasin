@@ -29,7 +29,8 @@ def gen_trace_summary(kpn, platform, trace):
             tot = 0
             seg = trace.next_segment(proc.name,p_type)
             while not seg.terminate:
-                tot += seg.processing_cycles
+                if seg.processing_cycles is not None:
+                    tot += seg.processing_cycles
                 seg = trace.next_segment(proc.name, p_type)
             summary[(proc,p_type)] = tot
     return summary
