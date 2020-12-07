@@ -29,7 +29,7 @@ class Sdf3TraceGenerator(TraceGenerator):
 
     _trace_iterators = {}
 
-    def __init__(self, xml_file):
+    def __init__(self, xml_file, repetitions=1):
         log.info("Start parsing the SDF3 trace")
         # load the xml
         with open(xml_file) as f:
@@ -43,7 +43,7 @@ class Sdf3TraceGenerator(TraceGenerator):
 
         self.__init_firing_rules(graph)
         self.__init_repetition_vector(graph)
-        self.__init_trace_segments(graph)
+        self.__init_trace_segments(graph, repetitions)
 
         self.reset()
         log.info("Done parsing the SDF3 trace")
@@ -179,7 +179,7 @@ class Sdf3TraceGenerator(TraceGenerator):
             f"{self._repetition_vector}"
         )
 
-    def __init_trace_segments(self, graph):
+    def __init_trace_segments(self, graph, repetitions):
         """Generate and store the actual trace segments
 
         Generates trace segments for all nodes in the graph and stores them in
@@ -194,7 +194,8 @@ class Sdf3TraceGenerator(TraceGenerator):
                 s = TraceSegment(write_to_channel=channel, n_tokens=count)
                 segments.append(s)
 
-            for _ in range(0, self._repetition_vector[actor.name]):
+            total_reps = self._repetition_vector[actor.name] * repetitions
+            for _ in range(0, total_reps):
                 # read tokens
                 for channel, count in firings.reads.items():
                     s = TraceSegment(read_from_channel=channel, n_tokens=count)
