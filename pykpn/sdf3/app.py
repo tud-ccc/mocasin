@@ -57,7 +57,8 @@ class Sdf3Graph(KpnGraph):
                 f"Add channel {name}.{c_name} with a token size of "
                 "{c_props.token_size} bytes"
             )
-            channel = KpnChannel(sdf_channel.name, c_props.tokenSize)
+            token_size = next(iter(c_props.tokenSize))
+            channel = KpnChannel(sdf_channel.name, int(token_size.sz))
             self.add_channel(channel)
 
             src_process = self.find_process(sdf_channel.srcActor)
