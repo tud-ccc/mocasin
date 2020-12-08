@@ -1,5 +1,5 @@
+import csv
 import sys
-import pandas as pd
 import math
 from enum import Enum
 
@@ -103,17 +103,12 @@ class ReqTable:
         return rid
 
     def read_from_file(self, scenario):
-        sdf = pd.read_csv(scenario, comment='#')
-
-        assert sdf.arrival.unique() == [0]
-        reqs = sdf.to_dict('records')
-
-        for r in reqs:
-            if 'start_cratio' in r:
-                sc = r['start_cratio']
-            else:
-                sc = 0.0
-            self.add(r['app'], r['arrival'], r['deadline'], sc)
+        with open(scenario) as csv_file:
+            reader = csv.DictReader(csv_file)
+            for row in reader:
+                sc = float(row.get('start_cratio', 0.0))
+                self.add(row['app'], float(row['arrival']),
+                         float(row['deadline']), sc)
 
     def to_list(self):
         return self.__reqs.copy()

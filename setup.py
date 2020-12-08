@@ -18,7 +18,6 @@ install_requirements = [
     'lxml',
     'numpy',
     'matplotlib',
-    'pandas',
     'pint',
     'pydot',
     'pyxb',
