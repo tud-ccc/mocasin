@@ -3,12 +3,13 @@
 #
 # Authors: Christian Menard, Andres Goens, Gerald Hempel
 
-
+from collections import Counter
 import pydot
 import random
 from pykpn.util import logging
 
 log = logging.getLogger(__name__)
+
 
 class ChannelMappingInfo:
     """Simple record to store mapping infos associated with a KpnChannel.
@@ -45,7 +46,6 @@ class Mapping:
     :ivar dict[str, ProcessMappingInfo] _process_info:
         dict of process mapping infos
     """
-
     def __init__(self, kpn, platform):
         """Initialize a Mapping
 
@@ -197,6 +197,19 @@ class Mapping:
         processor = self.platform.find_processor(processor_name)
         assert processor in self._process_info[process_name].scheduler.processors
         self._process_info[process_name].affinity = processor
+
+    def get_used_processors(self):
+        """ Returns a set of used processors. """
+        return {self.affinity(p) for p in self.kpn.processes()}
+
+    def get_used_processor_types(self):
+        """ Returns the counter of processors of each type used by the mapping.
+        """
+        processors = self.get_used_processors()
+        res = Counter()
+        for p in processors:
+            res[p.type] += 1
+        return res
 
     def to_string(self):
         """Convert mapping to a simple readable string 

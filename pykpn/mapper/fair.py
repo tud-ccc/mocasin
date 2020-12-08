@@ -54,7 +54,7 @@ class StaticCFS(object):
         """ Generates a full mapping using a static algorithm
         inspired by Linux' GBM
         """
-        core_types = dict(self.platform.core_types())
+        core_types = dict(self.platform.get_processor_types())
         processes = {}
         mappings = {}
         if restricted is None:

@@ -295,7 +295,7 @@ class SegmentMapping:
         cores_used = reduce(
             (lambda x, y: x + y),
             [x.can_mapping.core_types for x in self.jobs()],
-            NamedDimensionalNumber(self.__platform.core_types(),
+            NamedDimensionalNumber(dict(self.__platform.get_processor_types()),
                                    init_only_names=True))
         return cores_used
 
@@ -342,7 +342,9 @@ class SegmentMapping:
                 "Job's end_time ({}) must be not larger than the"
                 " segment's end_time ({})".format(job.end_time, self.end_time))
 
-        if cores_used <= NamedDimensionalNumber(self.__platform.core_types()):
+        total_cores = NamedDimensionalNumber(
+            dict(self.__platform.get_processor_types()))
+        if cores_used <= total_cores:
             self.__jobs.append(job)
         else:
             #print([ str(x) for x in self.__job_mappings])
