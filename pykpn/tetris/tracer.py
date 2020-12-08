@@ -1,5 +1,5 @@
+import csv
 import os
-import pandas as pd
 import time
 
 from pykpn.tetris.manager import ResourceManager
@@ -27,11 +27,16 @@ class TracePlayer:
         # Read scenario from file
         self.__scenario = scenario
         assert os.path.exists(scenario)
-        df = pd.read_csv(scenario, comment='#')
-        el = df.to_dict('records')
+        el = []
+        with open(scenario) as csv_file:
+            reader = csv.DictReader(csv_file)
+            for row in reader:
+                el.append({
+                    'arrival': float(row['arrival']),
+                    'app': row['app'],
+                    'deadline': float(row['deadline'])
+                })
 
-        # Check that table has specified columns
-        assert {'app', 'arrival', 'deadline'} == set(df.columns)
         # Check that all events are sorted in the arrival order
         assert all(el[i]['arrival'] <= el[i + 1]['arrival']
                    for i in range(len(el) - 1))

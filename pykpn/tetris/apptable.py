@@ -2,8 +2,8 @@
 #
 # Author: Robert Khasanov
 
+import csv
 import os
-import pandas as pd
 import math
 import logging
 import random
@@ -169,15 +169,20 @@ class Application:
         self.__kpn_graph = SlxKpnGraph('SlxKpnGraph', cpn_path)
 
         # Read mappings file
-        mdf = pd.read_csv(mappings_path)
-        mappings = mdf.set_index('mapping').to_dict('index')
         self.mappings = {}
-        for name, m in mappings.items():
-            time = m['executionTime']
-            energy = m['totalEnergy']
-            mapping = {k[2:]: v for k, v in m.items() if k.startswith("t_")}
-            self.mappings[name] = CanonicalMapping(mapping, time, energy,
-                                                   self.__kpn_graph, platform)
+        with open(mappings_path) as csv_file:
+            reader = csv.DictReader(csv_file)
+            for row in reader:
+                name = int(row['mapping'])
+                time = float(row['executionTime'])
+                energy = float(row['totalEnergy'])
+                mapping = {
+                    k[2:]: v
+                    for k, v in row.items() if k.startswith("t_")
+                }
+                self.mappings[name] = CanonicalMapping(mapping, time, energy,
+                                                       self.__kpn_graph,
+                                                       platform)
 
     def add_idle(self, platform):
         self.mappings['__idle__'] = CanonicalMapping.make_idle(platform)
