@@ -79,9 +79,6 @@ class SimulationManager(object):
         self.progress = progress
         self.chunk_size = chunk_size
 
-        if self.parallel:
-            self.pool = mp.Pool(processes=self.jobs)
-
     def lookup(self, mapping):
         if mapping not in self._cache:
             self._cache.update({mapping : None})
@@ -147,21 +144,22 @@ class SimulationManager(object):
                 self.statistics.mapping_evaluated(0)
 
             # run the simulations in parallel
-            if self.progress:
-                import tqdm
-                results = list(tqdm.tqdm(self.pool.imap(run_simulation,
-                                                        simulations,
-                                                        chunksize=self.chunk_size),
-                                         total=len(mappings)))
-                time = sum([res[1] for res in results])
-                results = [res[0] for res in results]
-            else:
-                results = list(self.pool.map(run_simulation,
-                                             simulations,
-                                             chunksize=self.chunk_size))
-                time = sum([res[1] for res in results])
-                results = [res[0] for res in results]
-            self.statistics.add_offset(time)
+            with mp.Pool(processes=self.jobs) as pool:
+                if self.progress:
+                    import tqdm
+                    results = list(tqdm.tqdm(pool.imap(run_simulation,
+                                                       simulations,
+                                                       chunksize=self.chunk_size),
+                                             total=len(mappings)))
+                    time = sum([res[1] for res in results])
+                    results = [res[0] for res in results]
+                else:
+                    results = list(pool.map(run_simulation,
+                                            simulations,
+                                            chunksize=self.chunk_size))
+                    time = sum([res[1] for res in results])
+                    results = [res[0] for res in results]
+                self.statistics.add_offset(time)
         else:
             results = []
             # run the simulations sequentially

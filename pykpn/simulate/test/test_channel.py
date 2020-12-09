@@ -28,7 +28,7 @@ def running_process(env, kpn_process, processor):
 @pytest.fixture
 def blocked_process(env, running_process):
     p = running_process
-    p.block()
+    p._block()
     env.run()
     assert p.check_state(ProcessState.BLOCKED)
     return p

@@ -1,6 +1,0 @@
-Time window: [0.000, 12.663), Energy (Total): 11.866 (MISSED)
-  Job: 0 [hog.A], mapping: 4 [ARM_CORTEX_A7: 3, ARM_CORTEX_A15: 0], start = 0.000 [0.00], end = 12.663 [1.00F], energy = 11.866
-  Job: 1 [hog.A], __idle__
-
-Time window: [12.663, 25.326), Energy (Total): 11.866 (MISSED)
-  Job: 1 [hog.A], mapping: 4 [ARM_CORTEX_A7: 3, ARM_CORTEX_A15: 0], start = 12.663 [0.00], end = 25.326 [1.00F], energy = 11.866
