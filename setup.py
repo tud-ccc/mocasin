@@ -21,7 +21,7 @@ install_requirements = [
     'pandas',
     'pint',
     'pydot',
-    'pympsym>=0.3',
+    'pympsym>=0.4',
     'pyxb',
     'simpy',
     'termcolor',
