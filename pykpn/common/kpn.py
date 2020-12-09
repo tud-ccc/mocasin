@@ -126,7 +126,7 @@ class KpnGraph(object):
         """Sort process list in topological order"""
         pass
 
-    def to_pydot(self):
+    def to_pydot(self,channels=True):
         """Convert the KPN graph to a dot graph."""
         dot = pydot.Dot(graph_type='digraph')
 
@@ -137,10 +137,11 @@ class KpnGraph(object):
             process_nodes[p] = node
             dot.add_node(node)
 
-        for c in self._channels.values():
-            src_node = process_nodes[c.source.name]
-            for s in c.sinks:
-                sink_node = process_nodes[s.name]
-                dot.add_edge(pydot.Edge(src_node, sink_node, label=c.name))
+        if channels:
+            for c in self._channels.values():
+                src_node = process_nodes[c.source.name]
+                for s in c.sinks:
+                    sink_node = process_nodes[s.name]
+                    dot.add_edge(pydot.Edge(src_node, sink_node, label=c.name))
 
         return dot
