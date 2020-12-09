@@ -73,11 +73,11 @@ class RuntimeProcess(object):
             :const:`~ProcessState.READY`
           * :func:`activate`: Transition from :const:`~ProcessState.READY` to
             :const:`~ProcessState.RUNNING`
-          * :func:`deactivate`: Transition from :const:`~ProcessState.RUNNING`
+          * :func:`_deactivate`: Transition from :const:`~ProcessState.RUNNING`
             to :const:`~ProcessState.READY`
-          * :func:`finish`: Transition from :const:`~ProcessState.RUNNING` to
+          * :func:`_finish`: Transition from :const:`~ProcessState.RUNNING` to
             :const:`~ProcessState.FINISHED`
-          * :func:`block`: Transition from :const:`~ProcessState.RUNNING` to
+          * :func:`_block`: Transition from :const:`~ProcessState.RUNNING` to
             :const:`~ProcessState.BLOCKED`
           * :func:`unblock`: Transition from :const:`~ProcessState.BLOCKED` to
             :const:`~ProcessState.READY`
@@ -127,6 +127,11 @@ class RuntimeProcess(object):
         self.finished.callbacks.append(self._cb_finished)
         self.blocked = self.env.event()
         self.blocked.callbacks.append(self._cb_blocked)
+
+        # internal event for requesting preemption
+        self._preempt = self.env.event()
+        # internal event for requesting termination
+        self._kill = self.env.event()
 
         # record the process creation int the simulation trace
         if self.app.system.app_trace_enabled:
@@ -228,7 +233,7 @@ class RuntimeProcess(object):
         self.processor = processor
         self._transition('RUNNING')
 
-    def deactivate(self):
+    def _deactivate(self):
         """Halt the process execution.
 
         Transition to the :const:`~ProcessState.READY` state and update
@@ -243,7 +248,20 @@ class RuntimeProcess(object):
         self.processor = None
         self._transition('READY')
 
-    def finish(self):
+    def preempt(self):
+        """Request deactivation of a running process
+
+        Raises:
+            AssertionError: if not in :const:`ProcessState.RUNNING` state
+        """
+        assert(self._state == ProcessState.RUNNING)
+        self._log.debug('Preempt workload execution on processor %s',
+                        self.processor.name)
+        old_event = self._preempt
+        self._preempt = self.env.event()
+        old_event.succeed()
+
+    def _finish(self):
         """Terminate the process.
 
         Transition to the :const:`~ProcessState.FINISHED` state.
@@ -251,12 +269,21 @@ class RuntimeProcess(object):
         Raises:
             AssertionError: if not in :const:`ProcessState.RUNNING` state
         """
-        assert(self._state == ProcessState.RUNNING)
         self._log.debug('Workload execution finished.')
         self.processor = None
         self._transition('FINISHED')
 
-    def block(self):
+    def kill(self):
+        """Request termination of a running process"""
+        self._log.debug('Kill request')
+        if self._state == ProcessState.RUNNING:
+            old_event = self._kill
+            self._kill = self.env.event()
+            old_event.succeed()
+        else:
+            self._finish()
+
+    def _block(self):
         """Block the process.
 
         Interrupt the process execution by transitioning to the
@@ -270,11 +297,17 @@ class RuntimeProcess(object):
     def unblock(self):
         """Unblock the process.
 
-        Transitioning to the :const:`~ProcessState.READY` state.
+        Transition to the :const:`~ProcessState.READY` if currently in
+        :const:`ProcessState.BLOCKED` state. Does nothing if currently in
+        :const:`ProcessState.FINISHED` state.
 
         Raises:
-            AssertionError: if not in :const:`ProcessState.BLOCKED` state
+            AssertionError: if not in :const:`ProcessState.BLOCKED` or
+            :const:`ProcessState.FINISHED` state
         """
+        if self._state == ProcessState.FINISHED:
+            return
+
         assert(self._state == ProcessState.BLOCKED)
         self._log.debug('Process unblocks')
         self.processor = None
@@ -335,15 +368,11 @@ class RuntimeProcess(object):
         assert(self._state == ProcessState.CREATED)
         self._log.debug('Entered CREATED state')
 
-    def workload(self, interrupt=None):
+    def workload(self):
         """Implements the process functionality.
 
         This is just a stub and may not be called. This has to be overridden by
         a subclass.
-
-        Args:
-            interrupt (~simpy.events.event): an optional event that interrupts
-                the workload execution when triggered.
 
         Raises:
             NotImplementedError
@@ -401,25 +430,17 @@ class RuntimeKpnProcess(RuntimeProcess):
         self._channels[channel.name] = channel
         channel.set_src(self)
 
-    def workload(self, interrupt=None):
+    def workload(self):
         """Replay a KPN execution trace
 
         Iterates over all segments in the execution trace and performs actions
         as specified by the segments. By returning, the execution
         terminates. However, this does not mean that it is actually complete. A
-        process may also return when it blocks. Then the execution is resumed
-        on the next call of this method.
-
-        Args:
-            interrupt (~simpy.events.event): an optional event that interrupts
-                the workload execution when triggered.
+        process may also return when it blocks or was deactivated. Then the
+        execution is resumed on the next call of this method.
         """
 
         assert self.check_state(ProcessState.RUNNING)
-
-        if interrupt is None:
-            # create an interrupt event that is never triggered
-            interrupt = self.env.event()
 
         if self._current_segment is None:
             self._log.debug('start workload execution')
@@ -427,6 +448,11 @@ class RuntimeKpnProcess(RuntimeProcess):
             self._log.debug('resume workload execution')
 
         while True:
+            # The preempt and kill events will be overridden once
+            # triggered. Thus we keep references to the original events here.
+            preempt = self._preempt
+            kill = self._kill
+
             if self._current_segment is None:
                 self._current_segment = self._trace_generator.next_segment(
                     self.name, self.processor.type)
@@ -440,19 +466,18 @@ class RuntimeKpnProcess(RuntimeProcess):
                 timeout = self.env.timeout(ticks)
                 start = self.env.now
 
-                # process until computation completes (timeout) or until their
-                # is an interrupt
-                yield self.env.any_of([timeout, interrupt])
+                # process until computation completes (timeout) or until the
+                # process is preempted
+                yield self.env.any_of([timeout, preempt, kill])
 
                 # if the timeout was processed, the computation completed
                 if timeout.processed:
                     s.processing_cycles = None
-                else:
-                    assert interrupt.processed
+                elif preempt.processed:
                     # Calculate how many cycles where executed until the
-                    # triggering of the interrupt. Note that the interrupt
+                    # process was preempted. Note that the preemption
                     # can occur in between full cycles in our simulation. We
-                    # lose a bit of precision here, by allowing interrupts in
+                    # lose a bit of precision here, by allowing preemption in
                     # between cycles and rounding the number of processed
                     # cycles to an integer number. However, the introduced
                     # error should be marginal.
@@ -461,64 +486,73 @@ class RuntimeKpnProcess(RuntimeProcess):
                     cycles_processed = int(round(float(cycles) * ratio))
 
                     s.processing_cycles = cycles - cycles_processed
-                    assert s.processing_cycles > 0
-                    self._log.debug("process interrupted after "
+                    assert s.processing_cycles >= 0
+                    self._log.debug("process was deactivated after "
                                     f"{cycles_processed} cycles")
 
-                # deactivate if interrupted, even if interrupt and timeout
-                # occur simultaneously
-                if interrupt.processed:
-                    self.deactivate()
+                # Stop processing the workload even if preempt (or kill) and
+                # timeout occur simultaneously
+                if kill.triggered:
+                    self._finish()
+                    return
+                if preempt.triggered:
+                    self._deactivate()
                     return
             if s.read_from_channel is not None:
                 # Consume tokens from a channel. Unlike the processing, this
-                # operation cannot easily be interrupted. There are two
+                # operation cannot easily be preempted. There are two
                 # problems here.  First, consume and produce are considered
                 # atomic operations by our algorithm. If they could be
                 # interrupted, both operations would need to implement a
                 # synchronization strategy.  Second, it is unclear what
-                # interrupting a consume or produce operation means. The
+                # preempting a consume or produce operation means. The
                 # simulation does not know Which part of the consume/produce
                 # costs is actual processing by a CPU and which part is due to
                 # asynchronous operations (e.g., a DMA or the memory
                 # architecture) that would not be affected by an interrupt.
-                # Therefore, both consume and produce ignore any interrupts
-                # and process it only after the operation completes.
+                # Therefore, both consume and produce ignore any preemption
+                # requests and process it only after the operation completes.
                 c = self._channels[s.read_from_channel]
                 self._log.debug('read %d tokens from channel %s', s.n_tokens,
                                 c.full_name)
                 if not c.can_consume(self, s.n_tokens):
                     self._log.debug('not enough tokens available -> block')
-                    self.block()
+                    self._block()
                     self.env.process(c.wait_for_tokens(self, s.n_tokens))
                     return
                 else:
                     s.read_from_channel = None
                     yield self.env.process(c.consume(self, s.n_tokens))
 
-                # deactivate if interrupted
-                if interrupt.processed:
-                    self.deactivate()
+                # Stop processing if preempted or killed
+                if kill.triggered:
+                    self._finish()
+                    return
+                if preempt.triggered:
+                    self._deactivate()
                     return
             if s.write_to_channel is not None:
                 # Produce tokens on a channel. Similar to consume above, this
-                # is considered as an atomic operation and an interrupt is only
-                # processed after this operation completes.
+                # is considered as an atomic operation and an preemption
+                # request is only processed after this operation completes.
                 c = self._channels[s.write_to_channel]
                 self._log.debug('write %d tokens to channel %s', s.n_tokens,
                                 c.full_name)
                 if not c.can_produce(self, s.n_tokens):
                     self._log.debug('not enough slots available -> block')
-                    self.block()
+                    self._block()
                     self.env.process(c.wait_for_slots(self, s.n_tokens))
                     return
                 else:
                     s.write_to_channel = None
                     yield self.env.process(c.produce(self, s.n_tokens))
 
-                # deactivate if interrupted
-                if interrupt.processed:
-                    self.deactivate()
+                # Stop processing if preempted or killed
+                if kill.triggered:
+                    self._finish()
+                    return
+                if preempt.triggered:
+                    self._deactivate()
                     return
             if s.terminate:
                 self._log.debug('process terminates')
@@ -526,4 +560,4 @@ class RuntimeKpnProcess(RuntimeProcess):
 
             self._current_segment = None
 
-        self.finish()
+        self._finish()

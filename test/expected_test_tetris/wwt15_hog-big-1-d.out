@@ -1,2 +1,0 @@
-Time window: [0.000, 32.322), Energy (Total): 56.893 (MISSED)
-  Job: 0 [hog.B], mapping: 20 [ARM_CORTEX_A7: 3, ARM_CORTEX_A15: 1], start = 0.000 [0.00], end = 32.322 [1.00F], energy = 56.893

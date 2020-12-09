@@ -89,8 +89,8 @@ class WWT15SegmentMapper(SingleVariantSegmentMapper):
                 self.__sorting_key)
 
         # Empty resource
-        resources = NamedDimensionalNumber(self.platform.core_types(),
-                                           init_only_names=True)
+        resources = NamedDimensionalNumber(
+            dict(self.platform.get_processor_types()), init_only_names=True)
 
         # Empty segment mapping
         segment_mapping = SegmentMapping(self.platform)
@@ -115,7 +115,8 @@ class WWT15SegmentMapper(SingleVariantSegmentMapper):
             for cm_id, can_mapping, _ in clist:
                 # Try to map in this order
                 if (resources + can_mapping.core_types <=
-                        NamedDimensionalNumber(self.platform.core_types())):
+                        NamedDimensionalNumber(
+                            dict(self.platform.get_processor_types()))):
                     # It is possible to map on the available resources, check
                     # whether it satisfies its deadline condition.
                     if can_mapping.time(start_cratio=cratio) > job.deadline:

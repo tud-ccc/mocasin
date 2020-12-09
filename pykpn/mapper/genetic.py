@@ -112,7 +112,7 @@ class GeneticMapper(object):
             if self.exec_time:
                 num_params += 1
             if self.num_resources:
-                num_params += len(self.platform.core_types())
+                num_params += len(self.platform.get_processor_types())
             #this will weigh a milisecond as equivalent to an additional core
             #todo: add a general parameter for controlling weights
             deap.creator.create("FitnessMin", deap.base.Fitness, weights=num_params*(-1.0,))

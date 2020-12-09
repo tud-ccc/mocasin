@@ -198,11 +198,10 @@ class TraceGraph(nx.DiGraph):
             process_dict.update({process.name : [0, None]})
             
         #Generate full trace for all processes
-        all_terminated = False
-        while not all_terminated:
-            all_terminated = True
-            
-            for process_name in process_dict:
+        not_terminated = set(process_dict.keys())
+        while len(not_terminated) > 0:
+
+            for process_name in list(not_terminated):
                 processor = self._determine_slowest_processor(process_name, process_mapping, processor_groups)
                 
                 try:
@@ -214,9 +213,8 @@ class TraceGraph(nx.DiGraph):
                 
                 process_dict[process_name][1] = current_segment
                 
-                if not current_segment.terminate:
-                    all_terminated = False
-                else:
+                if current_segment.terminate:
+                    not_terminated.remove(process_name)
                     continue
                 
                 if last_segment_index == 0:
