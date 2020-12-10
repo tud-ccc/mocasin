@@ -189,7 +189,7 @@ class SimulationManager(object):
             mapping (Mapping): a mapping object.
         """
         exec_time = self.simulate([mapping])
-        mapping.exec_time = exec_time[0]
+        mapping.metadata.exec_time = exec_time[0]
 
     def dump(self,filename):
         log.info(f"dumping cache to {filename}")

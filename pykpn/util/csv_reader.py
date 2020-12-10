@@ -141,10 +141,10 @@ class DataReader:
                 mapping = self._mMapper.generate_mapping(fromList)
                 # Update energy-utility metadata
                 if self._exec_time_col is not None:
-                    mapping.exec_time = float(
+                    mapping.metadata.exec_time = float(
                         self._mDataDict[entry][self._exec_time_col])
                 if self._energy_col is not None:
-                    mapping.energy = float(
+                    mapping.metadata.energy = float(
                         self._mDataDict[entry][self._energy_col])
             else:
                 mapping = Mapping(self._mKpnInstance, self._mPlatform)

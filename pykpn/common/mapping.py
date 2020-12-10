@@ -35,6 +35,15 @@ class ProcessMappingInfo:
         self.affinity = affinity
         self.priority = priority
 
+class MappingMetadata:
+    """Simple record to store mapping's energy-utility metadata.
+
+    :ivar float exec_time: the execution time of the mapping
+    :ivar float energy: the energy consumption of the mapping
+    """
+    def __init__(self, exec_time = None, energy = None):
+        self.exec_time = exec_time
+        self.energy = energy
 
 class Mapping:
     """Describes the mapping of a KpnGraph to a Platform.
@@ -66,7 +75,7 @@ class Mapping:
             self._channel_info[c.name] = None
 
         # initialize metadata
-        self._metadata = {'exec_time': None, 'energy': None}
+        self.metadata = MappingMetadata()
 
     def channel_info(self, channel):
         """Look up the mapping info of a channel.
@@ -85,42 +94,6 @@ class Mapping:
         :rtype: ProcessMappingInfo or None
         """
         return self._process_info[process.name]
-
-    @property
-    def exec_time(self):
-        """ Get the execution time of the mapping.
-
-        :returns: the execution time
-        :rtype: float or None
-        """
-        return self._metadata['exec_time']
-
-    @exec_time.setter
-    def exec_time(self, exec_time):
-        """ Set the execution time of the mapping.
-
-        :param float exec_time: new value of the execution time
-        """
-        assert isinstance(exec_time, (float, type(None)))
-        self._metadata.update({'exec_time': exec_time})
-
-    @property
-    def energy(self):
-        """ Get the energy consumption of the mapping.
-
-        :returns: the energy consumption
-        :rtype: float or None
-        """
-        return self._metadata['energy']
-
-    @energy.setter
-    def energy(self, energy):
-        """ Set the energy consumption of the mapping.
-
-        :param float energy: new value of the energy consumption
-        """
-        assert isinstance(energy, (float, type(None)))
-        self._metadata.update({'energy': energy})
 
     def get_unmapped_channels(self):
         """Returns a list of unmapped channels
