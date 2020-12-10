@@ -1,9 +1,9 @@
 digraph G {
 subgraph cluster_scheduler_sched00 {
 label=sched00;
-subgraph cluster_processor_processor_0 {
-label=processor_0;
-dummy_processor_0 [style=invis];
+subgraph cluster_processor_processor_0000 {
+label=processor_0000;
+dummy_processor_0000 [style=invis];
 process_src [label=src];
 process_fp [label=fp];
 process_pulse [label=pulse];
@@ -14,9 +14,9 @@ process_sink [label=sink];
 
 subgraph cluster_scheduler_sched01 {
 label=sched01;
-subgraph cluster_processor_processor_1 {
-label=processor_1;
-dummy_processor_1 [style=invis];
+subgraph cluster_processor_processor_0001 {
+label=processor_0001;
+dummy_processor_0001 [style=invis];
 process_can1 [label=can1];
 }
 
@@ -24,18 +24,18 @@ process_can1 [label=can1];
 
 subgraph cluster_scheduler_sched02 {
 label=sched02;
-subgraph cluster_processor_processor_2 {
-label=processor_2;
-dummy_processor_2 [style=invis];
+subgraph cluster_processor_processor_0002 {
+label=processor_0002;
+dummy_processor_0002 [style=invis];
 }
 
 }
 
 subgraph cluster_scheduler_sched03 {
 label=sched03;
-subgraph cluster_processor_processor_3 {
-label=processor_3;
-dummy_processor_3 [style=invis];
+subgraph cluster_processor_processor_0003 {
+label=processor_0003;
+dummy_processor_0003 [style=invis];
 process_can2 [label=can2];
 }
 
