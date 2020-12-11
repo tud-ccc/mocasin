@@ -12,11 +12,11 @@ version = "0.1"
 install_requirements = [
     'argparse',
     'arpeggio',
+    'numpy',
+    'scipy',
     'cvxpy',
     'cvxopt',
-    'scipy',
     'lxml',
-    'numpy',
     'matplotlib',
     'pint',
     'pydot',
