@@ -20,7 +20,7 @@ install_requirements = [
     'matplotlib',
     'pint',
     'pydot',
-    'pympsym>=0.4',
+    'pympsym>=0.5',
     'pyxb',
     'simpy',
     'termcolor',
