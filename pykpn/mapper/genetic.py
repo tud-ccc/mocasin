@@ -217,8 +217,8 @@ class GeneticMapper(object):
         _,logbook,hof = self.run_genetic_algorithm()
         mapping = hof[0]
         self.simulation_manager.statistics.log_statistics()
-        with open('evolutionary_logbook.pickle','wb') as f:
-            pickle.dump(logbook,f)
+        with open('evolutionary_logbook.txt','w') as f:
+            f.write(str(logbook))
         result = self.representation.fromRepresentation(np.array(mapping))
         self.simulation_manager.statistics.to_file()
         if self.dump_cache:

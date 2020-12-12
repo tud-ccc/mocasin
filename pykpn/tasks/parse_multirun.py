@@ -25,6 +25,10 @@ _parsers = {
         'pykpn.mapper.utils',
         'best_time_parser',
         'Parses the execution time from the best mapping found.'),
+    'evolutionary_logbook': (
+        'pykpn.mapper.utils',
+        'evolutionary_logbook_parser',
+        'Parses the evolutionary logbooks from the genetic mapper.'),
 }
 
 def available_parsers():
