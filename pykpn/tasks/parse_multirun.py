@@ -73,6 +73,8 @@ def parse_multirun(cfg):
 
     :param cfg: Hydra (Omegaconf) config file.
     """
+    hydra.utils.call(cfg['plugin'])
+
     try:
         parsers = []
         for parser in cfg['parsers']:
