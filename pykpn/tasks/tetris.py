@@ -52,11 +52,11 @@ def tetris_scheduler(cfg):
 
     print("Job table file: " + str(cfg['job_table']))
     print("Scheduler: " + str(scheduling.scheduler.name))
-    print("Scheduling time: {:.5} s".format(scheduling_time))
+    print("Scheduling time: {:.5f} s".format(scheduling_time))
     print("Found schedule: {}".format(scheduling.found_schedule))
     if scheduling.found_schedule:
-        print("Schedule time: {} s".format(scheduling.schedule.end_time))
-        print("Energy consumption: {:.5} J".format(scheduling.schedule.energy))
+        print("Schedule time: {:.5f} s".format(scheduling.schedule.end_time))
+        print("Energy consumption: {:.5f} J".format(scheduling.schedule.energy))
         print("Number of segments: {}".format(len(scheduling.schedule)))
         if cfg["output_schedule"] is not None:
             with open(cfg["output_schedule"], mode="w") as f:
