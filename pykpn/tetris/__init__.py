@@ -3,11 +3,8 @@
 #
 # Authors: Robert Khasanov
 
-from pykpn.tetris.apptable import AppTable
-from pykpn.tetris.context import Context
 from pykpn.tetris.job_state import Job
 from pykpn.tetris.manager import ResourceManager
-from pykpn.tetris.reqtable import ReqTable
 from pykpn.tetris.tracer import TracePlayer
 from pykpn.tetris.tetris_reader import read_applications, read_requests
 
@@ -112,13 +109,10 @@ class TetrisManagement:
     input job request trace and platform. While this class is called from hydra
     tasks, we dedicate a static method to handle hydra configuration object.
     """
-    def __init__(self, manager, tracer, req_table):
+    def __init__(self, manager, tracer, reqs):
         self.manager = manager
         self.tracer = tracer
-        self.req_table = req_table
-        Context().req_table = self.req_table
-
-        # Scheduling results
+        self.requests = reqs
 
     def run(self):
         self.tracer.run()
@@ -135,22 +129,19 @@ class TetrisManagement:
         # Set the platform
         platform = hydra.utils.instantiate(cfg['platform'])
 
-        # Initialize application table
+        # Read applications and mappings
         base_apps_dir = cfg['tetris_apps_dir']
-        app_table = AppTable(platform, base_apps_dir)
+        apps = read_applications(base_apps_dir, platform)
 
-        # Initialize a job table, and fill it by job infos from the file
-        req_table = ReqTable(app_table)
-
-        scenario = cfg['input_jobs']
+        # Read jobs file
+        reqs = read_requests(cfg['input_jobs'], apps)
 
         # Initialize tetris scheduler
         scheduler = hydra.utils.instantiate(cfg['resource_manager'], platform)
 
-        manager = ResourceManager(app_table, req_table, platform, scheduler,
-                                  cfg['allow_migration'])
+        manager = ResourceManager(platform, scheduler, cfg['allow_migration'])
 
-        tracer = TracePlayer(manager, scenario)
+        tracer = TracePlayer(manager, reqs)
 
-        management = TetrisManagement(manager, tracer, req_table)
+        management = TetrisManagement(manager, tracer, reqs)
         return management

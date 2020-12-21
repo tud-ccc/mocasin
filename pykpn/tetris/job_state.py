@@ -174,6 +174,16 @@ class Job:
         return res
 
     @staticmethod
+    def from_request(req):
+        """ Generate job states from the job request
+
+        Args:
+            req (JobRequestInfo): a job request
+        """
+        return Job(req, cratio=req.start_cratio)
+
+    @staticmethod
+    # TODO: remove
     def from_requests(reqs):
         """ Generate job states from job requests
 

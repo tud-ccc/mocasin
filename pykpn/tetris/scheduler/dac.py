@@ -40,6 +40,7 @@ class DacScheduler(SchedulerBase):
         Returns: a list of mappings satisfying deadline and jars consditions.
         """
         res = []
+
         for m in job.request.mappings:
             rtime = m.metadata.exec_time * (1.0 - job.cratio)
             if rtime > job.request.deadline - self.__scheduling_start_time:
@@ -152,7 +153,8 @@ class DacScheduler(SchedulerBase):
         schedule = self._form_schedule(job_mappings)
 
         max_deadline = max([
-            j.request.deadline for j in jobs if j.request.deadline != math.inf
+            j.request.deadline - scheduling_start_time
+            for j in jobs if j.request.deadline != math.inf
         ], default=0)
 
         time_core_jars = Counter({
@@ -192,6 +194,9 @@ class DacScheduler(SchedulerBase):
             while job_d not in job_mappings:
                 current_mapping = to_finish[job_d][0]
                 job_mappings[job_d] = current_mapping
+                log.debug(
+                    f"Checking mapping e:{current_mapping.metadata.energy*(1.0-job_d.cratio)}"
+                )
                 schedule = self._form_schedule(job_mappings)
                 if schedule is None:
                     to_finish[job_d].pop(0)
