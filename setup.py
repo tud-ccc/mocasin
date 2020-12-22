@@ -14,7 +14,7 @@ install_requirements = [
     'arpeggio',
     'cvxpy',
     'cvxopt',
-    'scipy',
+    'scipy==1.5.4',
     'lxml',
     'numpy',
     'matplotlib',
