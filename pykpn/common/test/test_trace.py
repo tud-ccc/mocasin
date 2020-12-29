@@ -40,9 +40,9 @@ processor_groups_tgff = {'proc_type_0' : list(filter(
 l2 = platform_tgff.find_primitive('prim_multi_cluster_cl0_l2_1')
 ram = platform_tgff.find_primitive('prim_multi_cluster_RAM_1')
 
-processor_0 = platform_tgff.find_processor('processor_0')
-processor_1 = platform_tgff.find_processor('processor_1')
-processor_2 = platform_tgff.find_processor('processor_2')
+processor_0 = platform_tgff.find_processor('processor_0000')
+processor_1 = platform_tgff.find_processor('processor_0001')
+processor_2 = platform_tgff.find_processor('processor_0002')
 
 prim_groups_tgff = { 1000 : [DerivedPrimitive(processor_0, processor_1, l2)],
                      2000 : [DerivedPrimitive(processor_0, processor_2, ram)]}

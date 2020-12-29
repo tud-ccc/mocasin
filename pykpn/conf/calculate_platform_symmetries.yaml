@@ -3,5 +3,6 @@ defaults:
   - common
   - hydra/job_logging: pykpn
   - tgff: default
-  - platform: default
-  - platform_to_autgrp_inc
+  - platform: ???
+mpsym : true
+out_file: "${platform.name}.autgrp"

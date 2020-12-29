@@ -5,3 +5,6 @@ hydra:
     subdir: ${hydra.job.num}
 
 log_level : WARNING
+
+cleanup:
+  _target_ : pykpn.util.cleaner._cleanup

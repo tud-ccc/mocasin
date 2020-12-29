@@ -8,6 +8,7 @@ import os
 import multiprocessing as mp
 import numpy as np
 from copy import deepcopy
+import csv
 
 from pykpn.common.mapping import Mapping
 from pykpn.simulate import KpnSimulation
@@ -113,7 +114,7 @@ class SimulationManager(object):
                 #transform into tuples
                 time = process_time()
                 tup = [tuple(self.representation.approximate(np.array(m))) for m in input_mappings]
-                mappings = [self.representation.fromRepresentation(m) for m in input_mappings]
+                mappings = [self.representation.fromRepresentation(m) for m in tup]
                 self.statistics.add_rep_time(process_time() - time)
 
         # first look up as many as possible:
@@ -256,6 +257,16 @@ def best_time_parser(dir):
     results = {'best_mapping_time' : exec_time}
     return results, list(results.keys())
 
+def evolutionary_logbook_parser(dir):
 
+    with open(os.path.join(dir,'evolutionary_logbook.txt'), 'r') as f:
+        results = []
+        reader = csv.DictReader(f,dialect='excel-tab')
+        for row in reader:
+            row_mod = {}
+            for key in row:
+                row_mod["genetic-" + key.replace(' ','').replace('\t','')] = row[key].replace(' ','').replace('\t','')
+            results.append(row_mod)
+        return results,list(results[0].keys())
 
 
