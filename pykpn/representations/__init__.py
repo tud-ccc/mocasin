@@ -529,7 +529,8 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
 
     """
     def __init__(self,kpn, platform, norm_p,extra_dimensions=True,
-                 extra_dimensions_factor=3,ignore_channels=True):
+                 extra_dimensions_factor=3,ignore_channels=True,
+                 verbose=False):
         # todo: make sure the correspondence of cores is correct!
         M_matrix, self._arch_nc, self._arch_nc_inv = \
             arch_to_distance_metric(platform,heterogeneity=extra_dimensions)
@@ -538,6 +539,7 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
         self.platform = platform
         self.extra_dims = extra_dimensions
         self.ignore_channels = ignore_channels
+        self.verbose = verbose
         if hasattr(platform, 'embedding_json'):
             self.embedding_matrix_path = platform.embedding_json
         else:
@@ -563,7 +565,8 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
                       f" Geometry, Chap. 15.5)")
         MetricSpaceEmbedding.__init__(self,self._M,self._d,
                                       embedding_matrix_path =
-                                      self.embedding_matrix_path)
+                                      self.embedding_matrix_path,
+                                      verbose=verbose)
         log.info(f"Found embedding with distortion: {self.distortion}")
 
     def changed_parameters(self,norm_p):

@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 #  However: the idea is to do this for the small space M
 #  and then handle the case M^d \hat \iota R^{kd} specially.
 class MetricSpaceEmbeddingBase():
-    def __init__(self,M,embedding_matrix_path=None):
+    def __init__(self,M,embedding_matrix_path=None,verbose=False):
         assert( isinstance(M,metric.FiniteMetricSpace))
         self.M = M
         self._k = M.n
@@ -51,10 +51,12 @@ class MetricSpaceEmbeddingBase():
                     valid = False #could not read json
                 if not valid:
                     log.warning("Stored embedding matrix invalid. Recalculating.")
-                    E,self.distortion = self.calculateEmbeddingMatrix(np.array(M.D))
+                    E,self.distortion = \
+                        self.calculateEmbeddingMatrix(np.array(M.D),verbose=verbose)
             else: #path does not exist but is not None
                 log.warning("No embedding matrix stored. Calculating and storing.")
-                E, self.distortion = self.calculateEmbeddingMatrix(np.array(M.D))
+                E, self.distortion = \
+                    self.calculateEmbeddingMatrix(np.array(M.D),verbose=verbose)
                 with open(embedding_matrix_path, 'w') as f:
                     contents = { 'matrix' : E.tolist(),
                                  'shape' : E.shape,
@@ -62,7 +64,8 @@ class MetricSpaceEmbeddingBase():
                     f.write(json.dumps(contents))
 
         else: #path is None
-            E,self.distortion = self.calculateEmbeddingMatrix(np.array(M.D))
+            E,self.distortion = self.calculateEmbeddingMatrix(np.array(M.D),
+                                                              verbose=verbose)
 
         #Populate look-up table
         self.iota = dict()
@@ -82,7 +85,7 @@ class MetricSpaceEmbeddingBase():
 
 
     @staticmethod
-    def calculateEmbeddingMatrix(D):
+    def calculateEmbeddingMatrix(D,verbose=False):
         assert(isMetricSpaceMatrix(D))
         n = D.shape[0]
         if int(cvx.__version__.split('.')[0]) == 0:
@@ -109,12 +112,12 @@ class MetricSpaceEmbeddingBase():
         solvers = cvx.installed_solvers()
         if 'MOSEK' in solvers:
             log.info("Solving problem with MOSEK solver")
-            prob.solve(solver=cvx.MOSEK)
+            prob.solve(solver=cvx.MOSEK,verbose=verbose)
         elif 'CVXOPT' in solvers:
-            prob.solve(solver=cvx.CVXOPT,kktsolver=cvx.ROBUST_KKTSOLVER,verbose=False)
+            prob.solve(solver=cvx.CVXOPT,kktsolver=cvx.ROBUST_KKTSOLVER,verbose=verbose)
             log.info("Solving problem with CVXOPT solver")
         else:
-            prob.solve(verbose=False)
+            prob.solve(verbose=verbose)
             log.warning("CVXOPT not installed. Solving problem with default solver.")
         if prob.status != cvx.OPTIMAL:
             log.warning("embedding optimization status non-optimal: " + str(prob.status)) 
@@ -163,10 +166,11 @@ class MetricSpaceEmbeddingBase():
 
 
 class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
-    def __init__(self,M,d=1,embedding_matrix_path=None):
+    def __init__(self,M,d=1,embedding_matrix_path=None,verbose=False):
         MetricSpaceEmbeddingBase.__init__(self,M,
                                           embedding_matrix_path=
-                                          embedding_matrix_path)
+                                          embedding_matrix_path,
+                                          verbose=verbose)
         self._d = d
         if not hasattr(self,'_split_d'):
             self._split_d = d
