@@ -342,7 +342,7 @@ def arch_to_distance_metric(architecture, scaling=True,heterogeneity=True,
             nodes_correspondence[n] = node
             nc_inv[node] = n
             n += 1
-            times_named[node] = min(primitives_graph[node].values())
+            times_named[node] = min([val for val in primitives_graph[node].values() if val != 0])
     else: #mcsoc'18 variant
         arch_graph = architecture.to_adjacency_dict()
         graph = make_graph_symmetric(arch_graph)

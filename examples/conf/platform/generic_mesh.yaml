@@ -13,3 +13,4 @@ processor_1:
   type : 'proc_type_1'
   frequency : 2000000000
 symmetries_json: "../../../platform/symmetries/generic_mesh.json"
+embedding_json: "../../../platform/embeddings/generic_mesh.json"

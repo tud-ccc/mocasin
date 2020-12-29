@@ -10,8 +10,8 @@ from pykpn.platforms.topologies import meshTopology
 from pykpn.platforms.utils import simpleDijkstra as sd
 
 class DesignerPlatformHAEC(Platform):
-    def __init__(self, processor_0, name='haec-like',symmetries_json=None):
-        super(DesignerPlatformHAEC, self).__init__(name,symmetries_json)
+    def __init__(self, processor_0, name='haec-like',symmetries_json=None,embedding_json=None):
+        super(DesignerPlatformHAEC, self).__init__(name,symmetries_json,embedding_json)
 
         #woraround for Hydra < 1.1
         if not isinstance(processor_0,Processor):

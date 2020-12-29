@@ -9,8 +9,8 @@ from hydra.utils import instantiate
 from pykpn.common.platform import Processor
 
 class DesignerPlatformExynos990(Platform):
-    def __init__(self, processor_0, processor_1, processor_2, processor_3, name="exynos-990",symmetries_json=None):
-        super(DesignerPlatformExynos990, self).__init__(name,symmetries_json)
+    def __init__(self, processor_0, processor_1, processor_2, processor_3, name="exynos-990",symmetries_json=None,embedding_json=None):
+        super(DesignerPlatformExynos990, self).__init__(name,symmetries_json,embedding_json)
         #This is a workaround until Hydra 1.1 (with recursive instantiaton!)
         if not isinstance(processor_0,Processor):
             processor_0 = instantiate(processor_0)

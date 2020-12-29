@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2018 TU Dresden
+# Copyright (C) 2017-2020 TU Dresden
 # All Rights Reserved
 #
 # Author: Andres Goens
@@ -6,10 +6,9 @@
 from __future__ import print_function
 import numpy as np
 import cvxpy as cvx
-import itertools
 import random
-import logging
-import sys
+from os.path import exists
+import json
 
 #import fjlt.fjlt as fjlt #TODO: use fjlt to (automatically) lower the dimension of embedding
 from pykpn.representations import permutations as perm
@@ -26,13 +25,44 @@ log = logging.getLogger(__name__)
 #  However: the idea is to do this for the small space M
 #  and then handle the case M^d \hat \iota R^{kd} specially.
 class MetricSpaceEmbeddingBase():
-    def __init__(self,M):
+    def __init__(self,M,embedding_matrix_path=None):
         assert( isinstance(M,metric.FiniteMetricSpace))
         self.M = M
         self._k = M.n
 
         #First: calculate a good embedding by solving an optimization problem
-        E,self.distortion = self.calculateEmbeddingMatrix(np.array(M.D))
+        if embedding_matrix_path is not None:
+            if exists(embedding_matrix_path):
+                try:
+                    with open(embedding_matrix_path,'r') as f:
+                        contents = json.loads(f)
+                        E = np.array(contents['matrix'])
+                        E.reshape(contents['shape'])
+                        self.distortion = np.array(contents['distortion'])
+                        valid = True
+                        it = np.nditer(np.array(M.D), flags=['multi_index'])
+                        for dist in it:
+                            x,y = dist.multi_index
+                            distort = np.abs(np.linalg.norm(E[x]-E[y]) - dist)
+                            if distort > self.distortion:
+                                valid = False
+                                break
+                except TypeError:
+                    valid = False #could not read json
+                if not valid:
+                    log.warning("Stored embedding matrix invalid. Recalculating.")
+                    E,self.distortion = self.calculateEmbeddingMatrix(np.array(M.D))
+            else: #path does not exist but is not None
+                log.warning("No embedding matrix stored. Calculating and storing.")
+                E, self.distortion = self.calculateEmbeddingMatrix(np.array(M.D))
+                with open(embedding_matrix_path, 'w') as f:
+                    contents = { 'matrix' : E.tolist(),
+                                 'shape' : E.shape,
+                                 'distortion' : self.distortion[0,0]}
+                    f.write(json.dumps(contents))
+
+        else: #path is None
+            E,self.distortion = self.calculateEmbeddingMatrix(np.array(M.D))
 
         #Populate look-up table
         self.iota = dict()
@@ -133,12 +163,16 @@ class MetricSpaceEmbeddingBase():
 
 
 class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
-    def __init__(self,M,d=1):
-        MetricSpaceEmbeddingBase.__init__(self,M)
+    def __init__(self,M,d=1,embedding_matrix_path=None):
+        MetricSpaceEmbeddingBase.__init__(self,M,
+                                          embedding_matrix_path=
+                                          embedding_matrix_path)
         self._d = d
-        if not hasattr(self,'_split'):
-            self._split = d
-    
+        if not hasattr(self,'_split_d'):
+            self._split_d = d
+        if not hasattr(self, '_split_k'):
+                self._split_k = M.n
+
     def i(self,vec):
         #iota^d: elementwise iota
         assert( type(vec) is list)
@@ -176,10 +210,10 @@ class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
             for j in range(0,self._k):
                 comp.append(vec[self._k*i +j])
 
-            if i < self._split:
-                value = MetricSpaceEmbeddingBase.approx(self, tuple(comp),range(0,self._split))
+            if i < self._split_d:
+                value = MetricSpaceEmbeddingBase.approx(self, tuple(comp),range(0,self._split_k))
             else:
-                value = MetricSpaceEmbeddingBase.approx(self, tuple(comp),range(self._split,self._d))
+                value = MetricSpaceEmbeddingBase.approx(self, tuple(comp),range(self._split_k,self._k))
             res.append(value)
 
         return res

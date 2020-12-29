@@ -318,7 +318,7 @@ class Platform(object):
     platform by creating the corresponding objects.
     """
 
-    def __init__(self, name, symmetries_json = None):
+    def __init__(self, name, symmetries_json = None, embedding_json = None):
         """Initialize the platform.
 
         This initializes all attributes to empty dicts. Derived classes should
@@ -331,6 +331,8 @@ class Platform(object):
         self._schedulers = {}               #: dict of schedulers
         if symmetries_json is not None:
             self.ag_json = symmetries_json
+        if embedding_json is not None:
+            self.embedding_json = embedding_json
 
     def processors(self):
         return self._processors.values()

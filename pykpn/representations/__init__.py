@@ -530,6 +530,7 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
     """
     def __init__(self,kpn, platform, norm_p,extra_dimensions=True,
                  extra_dimensions_factor=3,ignore_channels=True):
+        # todo: make sure the correspondence of cores is correct!
         M_matrix, self._arch_nc, self._arch_nc_inv = \
             arch_to_distance_metric(platform,heterogeneity=extra_dimensions)
         self._M = FiniteMetricSpace(M_matrix)
@@ -537,13 +538,19 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
         self.platform = platform
         self.extra_dims = extra_dimensions
         self.ignore_channels = ignore_channels
+        if hasattr(platform, 'embedding_json'):
+            self.embedding_matrix_path = platform.embedding_json
+        else:
+            self.embedding_matrix_path = None
+
         if not self.ignore_channels:
             log.warning("Not ignoring channels might lead"
                         " to invalid mappings when approximating.")
         self.extra_dims_factor = extra_dimensions_factor
         self._d = len(kpn.processes())
         if self.extra_dims:
-            self._split = self._d
+            self._split_d = self._d
+            self._split_k = len(platform.processors())
             self._d += len(kpn.channels())
         self.p = norm_p
         com_mapper = ComFullMapper(kpn,platform)
@@ -554,7 +561,9 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
                       f" For p = 1, for example, finding such an embedding"
                       f" is NP-hard (See Matousek, J.,  Lectures on Discrete"
                       f" Geometry, Chap. 15.5)")
-        MetricSpaceEmbedding.__init__(self,self._M,self._d)
+        MetricSpaceEmbedding.__init__(self,self._M,self._d,
+                                      embedding_matrix_path =
+                                      self.embedding_matrix_path)
         log.info(f"Found embedding with distortion: {self.distortion}")
 
     def changed_parameters(self,norm_p):
@@ -606,7 +615,7 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
     def fromRepresentation(self,mapping):
         simple_vec = self._elem2SimpleVec(mapping)
         if self.ignore_channels:
-            simple_vec = simple_vec[:self._split]
+            simple_vec = simple_vec[:self._split_d]
         mapping_obj = self.list_mapper.generate_mapping(simple_vec)
         return mapping_obj
 
