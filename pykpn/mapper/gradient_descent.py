@@ -23,7 +23,7 @@ class GradientDescentMapper(object):
     def __init__(self, kpn, platform, trace, representation, gd_iterations=100,
                  stepsize=2, random_seed=42, record_statistics=False,
                  dump_cache=False, chunk_size=10, progress=False, parallel=False,
-                 jobs=2):
+                 jobs=2,momentum_decay=0.5):
         """Generates a full mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
@@ -62,6 +62,7 @@ class GradientDescentMapper(object):
         self.random_mapper = RandomPartialMapper(self.kpn, self.platform, seed=None)
         self.gd_iterations = gd_iterations
         self.stepsize = stepsize
+        self.momentum_decay = momentum_decay
         self.dump_cache = dump_cache
         self.progress = progress
         self.statistics = Statistics(log, len(self.kpn.processes()), record_statistics)
@@ -91,8 +92,11 @@ class GradientDescentMapper(object):
             iterations_range = tqdm.tqdm(range(self.gd_iterations))
         else:
             iterations_range = range(self.gd_iterations)
+        grad = 0
         for _ in iterations_range:
-            grad = self.calculate_gradient(mapping, cur_exec_time)
+            old_grad = grad
+            grad = self.momentum_decay * old_grad \
+                   + self.calculate_gradient(mapping, cur_exec_time)
 
             if np.allclose(grad, np.zeros(self.dim)): #found local minimum
                 break
