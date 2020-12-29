@@ -16,6 +16,7 @@ install_requirements = [
     'scipy',
     'cvxpy',
     'cvxopt',
+    'scipy==1.5.4',
     'lxml',
     'matplotlib',
     'pint',
