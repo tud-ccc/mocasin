@@ -23,7 +23,7 @@ except ModuleNotFoundError:
 
 from pykpn.mapper.partial import ProcPartialMapper, ComFullMapper
 
-from .metric_spaces import FiniteMetricSpace, FiniteMetricSpaceSym, FiniteMetricSpaceLP, FiniteMetricSpaceLPSym, arch_graph_to_distance_metric
+from .metric_spaces import FiniteMetricSpace, FiniteMetricSpaceSym, FiniteMetricSpaceLP, FiniteMetricSpaceLPSym, arch_to_distance_metric
 from .embeddings import MetricSpaceEmbedding
 from .automorphisms import to_labeled_edge_graph, edge_to_node_autgrp, list_to_tuple_permutation
 from .permutations import Permutation, PermutationGroup
@@ -528,21 +528,32 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
     dimensions is controlled by the value of extra_dims_factor.
 
     """
-    def __init__(self,kpn, platform, norm_p,extra_dims=True,extra_dims_factor=3):
-        self._topologyGraph = platform.to_adjacency_dict()
-        M_matrix, self._arch_nc, self._arch_nc_inv = arch_graph_to_distance_metric(self._topologyGraph)
+    def __init__(self,kpn, platform, norm_p,extra_dimensions=True,
+                 extra_dimensions_factor=3,ignore_channels=True):
+        M_matrix, self._arch_nc, self._arch_nc_inv = \
+            arch_to_distance_metric(platform,heterogeneity=extra_dimensions)
         self._M = FiniteMetricSpace(M_matrix)
         self.kpn = kpn
         self.platform = platform
+        self.extra_dims = extra_dimensions
+        self.ignore_channels = ignore_channels
+        if not self.ignore_channels:
+            log.warning("Not ignoring channels might lead"
+                        " to invalid mappings when approximating.")
+        self.extra_dims_factor = extra_dimensions_factor
         self._d = len(kpn.processes())
+        if self.extra_dims:
+            self._split = self._d
+            self._d += len(kpn.channels())
         self.p = norm_p
         com_mapper = ComFullMapper(kpn,platform)
-        self.extra_dims = extra_dims
-        self.extra_dims_factor = extra_dims_factor
         self.list_mapper = ProcPartialMapper(kpn,platform,com_mapper)
         init_app_ncs(self,kpn)
         if self.p != 2:
-            log.error(f"Metric space embeddings only supports p = 2. For p = 1, for example, finding such an embedding is NP-hard (See Matousek, J.,  Lectures on Discrete Geometry, Chap. 15.5)")
+            log.error(f"Metric space embeddings only supports p = 2."
+                      f" For p = 1, for example, finding such an embedding"
+                      f" is NP-hard (See Matousek, J.,  Lectures on Discrete"
+                      f" Geometry, Chap. 15.5)")
         MetricSpaceEmbedding.__init__(self,self._M,self._d)
         log.info(f"Found embedding with distortion: {self.distortion}")
 
@@ -551,13 +562,8 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
 
     def _simpleVec2Elem(self,x):
         proc_vec = x[:self._d]
-        as_array = np.array(self.i(proc_vec)).flatten()# [value for comp in self.i(x) for value in comp]
-
-        if self.extra_dims:
-            extra_dims = np.zeros(self._k)
-            for idx in proc_vec:
-                extra_dims[idx] += self.extra_dims_factor
-            as_array = np.append(as_array,extra_dims)
+        as_array = np.array(self.i(proc_vec)).flatten()
+        #[value for comp in self.i(x) for value in comp]
 
         return as_array
 
@@ -595,10 +601,13 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
 
 
     def toRepresentation(self,mapping):
-        return self._simpleVec2Elem(mapping.to_list())
+        return self._simpleVec2Elem(mapping.to_list(channels=self.extra_dims))
 
     def fromRepresentation(self,mapping):
-        mapping_obj = self.list_mapper.generate_mapping(self._elem2SimpleVec(mapping))
+        simple_vec = self._elem2SimpleVec(mapping)
+        if self.ignore_channels:
+            simple_vec = simple_vec[:self._split]
+        mapping_obj = self.list_mapper.generate_mapping(simple_vec)
         return mapping_obj
 
     def _distance(self,x,y):
@@ -609,10 +618,6 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
 
     def approximate(self,x):
         res = np.array(self.approx(x[:(self._d*self._k)])).flatten()
-        if self.extra_dims:
-            extra_dims = x.flatten()[self._d*self._k:]
-            np.rint(extra_dims/self.extra_dims_factor)*self.extra_dims_factor
-            res = np.append(res,extra_dims)
         return res
 
     def crossover(self, m1, m2, k):

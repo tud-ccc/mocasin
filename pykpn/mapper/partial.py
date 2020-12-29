@@ -1,4 +1,4 @@
-# Copyright (C) 2019 TU Dresden
+# Copyright (C) 2019-2020 TU Dresden
 # All Rights Reserved
 #
 # Authors: Gerald Hempel, Andres Goens
@@ -114,9 +114,18 @@ class ComPartialMapper(object):
             # should never happen
             return None
 
+class CommListFullMapper(object):
+    """Generates a mapping by placing processes to processing elemends
+    and channels to communication primitives from a list.
+
+    This class is used to generate a full mapping for a given
+    platform and KPN application.
+    """
 
 class ProcPartialMapper(object):
-    """Generates a partial mapping derived from a vector(tuple)
+    """Generates a partial mapping derived from a vector(tuple).
+    If the tuple is longer than the num. of processors, it takes
+    the rest to be channels.
 
     This class is used to generate a partial mapping for a given
     platform and KPN application.
@@ -137,9 +146,13 @@ class ProcPartialMapper(object):
         self.kpn = kpn
         self.full_generator = full_generator
         pes = sorted(list(self.platform.processors()), key=(lambda p : p.name))
-        self.pe_vec_mapping = dict(zip(pes, [n for n in range(0, len(pes))]))
+        cps = sorted(list(self.platform.primitives()), key=(lambda p : p.name))
+        self.pe_vec_mapping = dict(zip(pes, [i for i in range(0, len(pes))]))
+        self.cp_vec_mapping = dict(zip(cps, [i+len(pes) for i in range(0, len(cps))]))
+        # build a reverse dict of the dictionaries (since it is a one-to-one dict)
         # build a reverse dict of the pe_vec_mapping dictionary (since it is a one-to-one dict)
         self.vec_pe_mapping = dict([(self.pe_vec_mapping[key], key) for key in self.pe_vec_mapping])
+        self.vec_cp_mapping = dict([(self.cp_vec_mapping[key], key) for key in self.cp_vec_mapping])
 
     def get_pe_name_mapping(self):
         """Return the used mapping of PE names to integers"""
@@ -148,8 +161,15 @@ class ProcPartialMapper(object):
             res[key.name] = self.pe_vec_mapping[key]
         return res
 
+    def get_cp_name_mapping(self):
+        """Return the used mapping of PE names to integers"""
+        res = {}
+        for key in self.cp_vec_mapping:
+            res[key.name] = self.cp_vec_mapping[key]
+        return res
+
     @staticmethod
-    def generate_pe_mapping_from_simple_vector(vec, kpn, platform, vec_pe_mapping):
+    def generate_pe_mapping_from_simple_vector(vec, kpn, platform, vec_pe_mapping,vec_cp_mapping):
         mapping = Mapping(kpn, platform)
 
         # map processes to scheduler and processor
@@ -165,6 +185,17 @@ class ProcPartialMapper(object):
             info = ProcessMappingInfo(scheduler, affinity, priority)
             # configure mapping
             mapping.add_process_info(p, info)
+        if len(vec) > len(kpn.processes()):
+            n = len(kpn.processes())
+            for j,c in enumerate(sorted(kpn.channels(), key=(lambda ch : ch.name))):
+                i = j + n
+                primitive = vec_cp_mapping[vec[i]]
+                capacity = 16  # fixed channel bound this may cause problems
+                info = ChannelMappingInfo(primitive, capacity)
+                mapping.add_channel_info(c, info)
+                log.debug('com_map: map channel %s to the primitive %s and bound to %d '
+                      'tokens' % (c.name, primitive.name, capacity))
+
         return mapping
 
     def generate_mapping(self, vec, map_history=None):
@@ -198,7 +229,8 @@ class ProcPartialMapper(object):
         mapping = ProcPartialMapper.generate_pe_mapping_from_simple_vector(vec,
                                                                            self.kpn,
                                                                            self.platform,
-                                                                           self.vec_pe_mapping)
+                                                                           self.vec_pe_mapping,
+                                                                           self.vec_cp_mapping)
         if mapping in map_history:
             return None
         else:
@@ -244,6 +276,8 @@ class InputTupleFullMapper:
 
     def __init__(self, kpn, platform, trace, representation, input_tuple):
         """Generates a default mapping for a given platform and KPN application.
+           If (some) channels are missing, they are mapped in a best-effort
+            fashion.
 
         :param kpn: a KPN graph
         :type kpn: KpnGraph
@@ -253,13 +287,16 @@ class InputTupleFullMapper:
         self.full_mapper = True
         self.platform = platform
         self.kpn = kpn
-        if len(input_tuple) != len(kpn.processes()):
-            log.error(f"Invalid mapping list size: {len(input_tuple)} (expected {len(kpn.processes())})")
+        if len(kpn.processes()) <= len(input_tuple) <\
+                len(kpn.processes()) + len(kpn.channels()):
+            self.mapping_list = input_tuple
+            com_mapper = ComFullMapper(kpn, platform)
+            self.proc_mapper = ProcPartialMapper(kpn, platform, com_mapper)
+        else:
+            log.error(f"Invalid mapping list size: {len(input_tuple)} "
+                      f"(expected between {len(kpn.processes())} and"
+                      f"{len(kpn.processes())+len(kpn.channels())} )")
             raise RuntimeError
-        self.mapping_list = input_tuple
-
-        com_mapper = ComFullMapper(kpn,platform)
-        self.proc_mapper = ProcPartialMapper(kpn,platform,com_mapper)
 
     def generate_mapping(self):
         """ Generates a mapping from the input list

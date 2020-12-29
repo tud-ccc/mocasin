@@ -3,3 +3,4 @@ _target_: pykpn.representations.MetricEmbeddingRepresentation
 norm_p : 2
 extra_dimensions : true
 extra_dimensions_factor : 3
+ignore_channels : true

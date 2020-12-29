@@ -310,7 +310,7 @@ class Mapping:
             prims = {}
             prim_names = sorted([prim.name for prim in prim_list])
             for j, prim in enumerate(prim_names):
-                prims[prim.name] = j+i
+                prims[prim] = j+i
             for chan in sorted(chans_list,key=(lambda c : c.name)):
                 prim = self.primitive(chan)
                 res.append(prims[prim.name])

@@ -47,7 +47,7 @@ class MetricSpaceEmbeddingBase():
         return self.iota[i]
 
     def inv(self,j):
-        assert(j in iotainv.keys())
+        assert(j in self.iotainv.keys())
         return self.iotainv[j]
 
 
@@ -118,10 +118,11 @@ class MetricSpaceEmbeddingBase():
         #print(lowerdim)
         return L,d.value
 
-    def approx(self,vec):
-        vecs = [list(self.iota[i]) for i in range(len(self.iota))]
+    def approx(self,vec,rg):
+        idxs = list(rg)
+        vecs = [list(self.iota[i]) for i in idxs]
         dists = [np.linalg.norm(np.array(v)-np.array(vec)) for v in vecs]
-        idx = np.argmin(dists)
+        idx = idxs[np.argmin(dists)]
         #print(idx)
         return self.iota[idx]
 
@@ -135,6 +136,8 @@ class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
     def __init__(self,M,d=1):
         MetricSpaceEmbeddingBase.__init__(self,M)
         self._d = d
+        if not hasattr(self,'_split'):
+            self._split = d
     
     def i(self,vec):
         #iota^d: elementwise iota
@@ -173,7 +176,11 @@ class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
             for j in range(0,self._k):
                 comp.append(vec[self._k*i +j])
 
-            res.append(MetricSpaceEmbeddingBase.approx(self,tuple(comp)))
+            if i < self._split:
+                value = MetricSpaceEmbeddingBase.approx(self, tuple(comp),range(0,self._split))
+            else:
+                value = MetricSpaceEmbeddingBase.approx(self, tuple(comp),range(self._split,self._d))
+            res.append(value)
 
         return res
 
