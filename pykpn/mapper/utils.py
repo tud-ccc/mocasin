@@ -258,7 +258,6 @@ def best_time_parser(dir):
     return results, list(results.keys())
 
 def evolutionary_logbook_parser(dir):
-
     with open(os.path.join(dir,'evolutionary_logbook.txt'), 'r') as f:
         results = []
         reader = csv.DictReader(f,dialect='excel-tab')
@@ -268,5 +267,14 @@ def evolutionary_logbook_parser(dir):
                 row_mod["genetic-" + key.replace(' ','').replace('\t','')] = row[key].replace(' ','').replace('\t','')
             results.append(row_mod)
         return results,list(results[0].keys())
+
+def cache_dump_parser(dir):
+    with open(os.path.join(dir,'mapping_cache.csv'), 'r') as f:
+        reader = csv.DictReader(f)
+        keys = reader.fieldnames
+        results = []
+        for row in reader:
+            results.append(row)
+    return results, keys
 
 
