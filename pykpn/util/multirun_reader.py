@@ -60,17 +60,25 @@ def read_multirun(path,outputs_parsers = None,output_format = 'csv'):
             for param in parameters:
                 results_dict[param] = parameters[param][0]
 
+        new_vals = [results_dict]
         for parser in outputs_parsers:
             outputs,newkeys = parser(dir)
             if type(outputs) == list:
-                for out in outputs:
-                    results.append({**results_dict, **out})
+                updated = []
+                for val in new_vals:
+                    for out in outputs:
+                        updated.append({**val, **out})
+                new_vals = updated
             elif type(outputs) == dict:
-                results.append({**results_dict, **outputs})
+                updated = []
+                for val in new_vals:
+                    updated.append({**val, **outputs})
+                new_vals = updated
             else:
                 log.error(f"Parser error, invalid results: {outputs}")
                 raise RuntimeError
             keys = keys.union(newkeys)
+        results = results + new_vals
     if output_format == 'csv':
         write_to_csv(keys,results,csv_out)
     else:
