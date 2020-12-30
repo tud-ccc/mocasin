@@ -422,7 +422,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         return res
 
     def toRepresentation(self,mapping):
-        return self._simpleVec2Elem(mapping.to_list())
+        return self._simpleVec2Elem(mapping.to_list(channels=self.channels))
 
     def toRepresentationNoncanonical(self,mapping):
         return SimpleVectorRepresentation.toRepresentation(self,mapping)
