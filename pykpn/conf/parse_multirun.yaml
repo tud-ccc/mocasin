@@ -13,5 +13,5 @@ hydra:
   output_subdir: outputs/.hydra-${now:%Y-%m-%d-%H-%M-%S}
 
 parsers: []
-output_format : csv
+output_format : h5
 path: ""

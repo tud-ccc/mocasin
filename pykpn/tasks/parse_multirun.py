@@ -90,7 +90,7 @@ def parse_multirun(cfg):
         path = cfg['path']
         if path == "":
             path = sorted([x.path for x in scandir("multirun/") if x.is_dir()])[-1]
-        read_multirun(path,parsers)
+        read_multirun(path,parsers,output_format=cfg['output_format'])
     except ParserNotFoundException:
         print_usage()
         raise ParserNotFoundException()

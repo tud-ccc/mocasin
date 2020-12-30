@@ -12,26 +12,26 @@ version = "0.1"
 install_requirements = [
     'argparse',
     'arpeggio',
-    'numpy',
-    'scipy',
     'cvxpy',
     'cvxopt',
-    'scipy==1.5.4',
+    'deap',
+    'h5py',
+    'hydra-core>=1.0.3',
     'lxml',
     'matplotlib',
+    'networkx',
+    'numpy',
     'pint',
     'pydot',
     'pympsym>=0.5',
+    'pyyaml'
     'pyxb',
+    'recordclass',
+    'scipy==1.5.4',
     'simpy',
+    'sortedcontainers',
     'termcolor',
     'tqdm',
-    'hydra-core>=1.0.3',
-    'deap',
-    'sortedcontainers',
-    'networkx',
-    'recordclass',
-    'pyyaml'
 ]
 setup_requirements = ['pytest-runner', 'sphinx', 'numpy']
 

@@ -2,7 +2,7 @@
 _target_: pykpn.representations.SymmetryEmbeddingRepresentation
 norm_p: 2
 periodic_boundary_conditions: false
-canonical_operations: false
+canonical_operations: true
 disable_mpsym : false
 extra_dimensions : true
 extra_dimensions_factor : 3
