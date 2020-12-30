@@ -384,10 +384,11 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
 
     def _simpleVec2Elem(self,x):
         x_ = x[:self._d]
+        _x = x[self._d:] #keep channels if exist (they should be mapped accordingly...)
         if self.sym_library:
-            return list(self._ag.representative(x_))
+            return list(self._ag.representative(x_)) + _x
         else:
-            return self._G.tuple_normalize(x_)
+            return self._G.tuple_normalize(x_) + _x
 
     def changed_parameters(self):
         return False
@@ -629,7 +630,7 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
         return lp.p_norm(x-y,self.p)
 
     def distance(self,x,y):
-        return self._distance(x.to_list(),y.to_list())
+        return self._distance(self.toRepresentation(x),self.toRepresentation(y))
 
     def approximate(self,x):
         res = np.array(self.approx(x[:(self._d*self._k)])).flatten()
@@ -653,37 +654,74 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
 
 class SymmetryEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepresentation):
     """Symmetry Embedding Representation
-    A representation combining symmetries with an embedding of a metric space. Currently still work in progress
-    and not ready for using.
+    A representation combining symmetries with an embedding of a metric space.
+    The mapping is first normalized using symmetries and then converted with the embedding.
     """
-    def __init__(self,kpn, platform):
-        raise RuntimeError("representation not properly implemented")
-        self.kpn = kpn
-        self.platform = platform
-        self._d = len(kpn.processes())
-        self._topologyGraph = platform.to_adjacency_dict()
-        init_app_ncs(self,kpn)
-        n = len(self.platform.processors())
-        M_matrix, self._arch_nc, self._arch_nc_inv = arch_graph_to_distance_metric(self._topologyGraph)
-        adjacency_dict, num_vertices, coloring, self._arch_nc = to_labeled_edge_graph(self._topologyGraph)
-        nautygraph = pynauty.Graph(num_vertices,True,adjacency_dict, coloring)
-        autgrp_edges = pynauty.autgrp(nautygraph)
-        autgrp, new_nodes_correspondence = edge_to_node_autgrp(autgrp_edges[0],self._arch_nc)
-        permutations_lists = map(list_to_tuple_permutation,autgrp)
-        permutations = [Permutation(p,n= n) for p in permutations_lists]
-        self._G = PermutationGroup(permutations)
-        M = FiniteMetricSpace(M_matrix)
-        self._M = FiniteMetricSpaceLPSym(M,self._G,self._d)
-        self._M._populateD()
-        MetricSpaceEmbedding.__init__(self,self._M,1)
+    def __init__(self, kpn, platform, norm_p, verbose=False,
+                 periodic_boundary_conditions=False, jlt_tries=10,
+                 extra_dimensions=True, extra_dimensions_factor=3,
+                 ignore_channels=True, target_distortion=1.1,
+                 canonical_operations=True, disable_mpsym=False):
+
+        self.sym =\
+            SymmetryRepresentation(kpn,platform,channels=extra_dimensions,
+                                   norm_p=norm_p, disable_mpsym=disable_mpsym,
+                                   periodic_boundary_conditions = periodic_boundary_conditions,
+                                   canonical_operations=canonical_operations)
+        self.emb =\
+            MetricEmbeddingRepresentation(kpn,platform,norm_p,verbose=verbose,
+                                          extra_dimensions=extra_dimensions,
+                                          extra_dimensions_factor=extra_dimensions_factor,
+                                          target_distortion=target_distortion,
+                                          jlt_tries=jlt_tries,ignore_channels=ignore_channels)
+        self.canonical_operations = canonical_operations
+        log.warning("The SymmetryEmbedding representation is not well-tested yet."
+                    " In particular, it currently ignores the symmetries of the channels,"
+                    "which should not be very problematic, however.")
 
     def _simpleVec2Elem(self,x):
-        proc_vec = x[:self._d]
-        return self.i(proc_vec)# [value for comp in self.i(x) for value in comp]
+        canonical = self.sym._simpleVec2Elem(x)
+        return self.emb._simpleVec2Elem(canonical)
 
     def _elem2SimpleVec(self,x):
-        return self.invapprox(x)
+        return self.emb._elem2SimpleVec(x)
 
     def _uniform(self):
-        return self.uniformVector()
+        return self.emb._uniform()
 
+    def uniformFromBall(self,p,r,npoints=1):
+        return self.emb.uniformFromBall(p,r,npoints=npoints)
+
+    def _uniformFromBall(self,p,r,npoints=1):
+        return self.emb._uniformFromBall(p,r,npoints=npoints)
+
+    def changed_parameters(self,norm_p):
+        return self.emb.changed_parameters(norm_p) or\
+               self.sym.changed_parameters()
+
+    def toRepresentation(self,mapping):
+        canonical = self.sym.toRepresentation(mapping)
+        return self._simpleVec2Elem(canonical)
+
+    def toRepresentationNoncanonical(self,mapping):
+        return self.emb.toRepresentation(mapping)
+
+    def fromRepresentation(self,mapping):
+        return self.emb.fromRepresentation(mapping)
+
+    def _distance(self,x,y):
+        return lp.p_norm(x-y,self.p)
+
+    def distance(self,x,y):
+        return self._distance(self.toRepresenatation(x),self.toRepresentation(y))
+
+    def approximate(self,x):
+        res = self.emb._elem2SimpleVec(self.emb.approximate(x))
+        can = self.sym._simpleVec2Elem(res)
+        return self.emb._simpleVec2Elem(can)
+
+    def crossover(self, m1, m2, k):
+        return self.approximate(self.emb._crossover(self.toRepresentation(m1), self.toRepresentation(m2), k))
+
+    def _crossover(self, m1, m2, k):
+        return self.emb._crossover(m1,m2,k)
