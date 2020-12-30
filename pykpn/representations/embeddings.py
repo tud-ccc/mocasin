@@ -90,9 +90,14 @@ class MetricSpaceEmbeddingBase():
                         contents = json.loads(f.read())
                         E = np.array(contents['matrix'])
                         E.reshape(contents['shape'])
-                        self.distortion = contents['distortion']
-                        dist = check_distortion(M.D,E)
-                        valid = dist <= self.distortion
+                        read_distortion = contents['distortion']
+                        if read_distortion > self.target_distortion:
+                            valid = False
+                        else:
+                            dist = check_distortion(M.D,E)
+                            valid = dist <= self.target_distortion
+                            if valid:
+                                self.distortion = dist
                 except TypeError as e:
                     valid = False #could not read json
                     log.warning(f"Could not read embedding JSON file (error parsing). {e}")
