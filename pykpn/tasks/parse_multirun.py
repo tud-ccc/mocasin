@@ -25,10 +25,14 @@ _parsers = {
         'pykpn.mapper.utils',
         'best_time_parser',
         'Parses the execution time from the best mapping found.'),
-    'cache_dump': (
+    'cache_dump_csv': (
         'pykpn.mapper.utils',
-        'cache_dump_parser',
-        'Parses cache dumps from iterative mappers.'),
+        'cache_dump_csv_parser',
+        'Parses cache dumps (csv) from iterative mappers.'),
+    'cache_dump_h5': (
+        'pykpn.mapper.utils',
+        'cache_dump_h5_parser',
+        'Parses cache dumps (h5) from iterative mappers.'),
     'evolutionary_logbook': (
         'pykpn.mapper.utils',
         'evolutionary_logbook_parser',

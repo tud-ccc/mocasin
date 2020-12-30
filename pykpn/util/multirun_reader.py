@@ -60,21 +60,22 @@ def write_to_csv(keys,results_dict,csv_out):
 
 def write_to_h5(results,h5_out):
     f = h5py.File(h5_out,'w')
-    for dir in results:
+    for dir_full in results:
+        dir = dir_full.replace('/','.')
         f.create_group(dir)
-        for param in results[dir]['params']:
-            f[dir].attrs[param] = results[dir]['params'][param]
-        for parser in results[dir]['parsers']:
+        for param in results[dir_full]['params']:
+            f[dir].attrs[param] = results[dir_full]['params'][param]
+        for parser in results[dir_full]['parsers']:
             f[dir].create_group(parser)
-            res = results[dir]['parsers'][parser]
+            res = results[dir_full]['parsers'][parser]
             if type(res) == dict:
                 for param in res:
                     f[dir][parser].attrs[param] = res[param]
             elif type(res) == list:
                 for i,vals in enumerate(res):
-                    f[dir][parser].greate_group(str(i))
+                    f[dir][parser].create_group(str(i))
                     for param in vals:
-                        f[dir][parser][str(i)].attrs[param] = res[param]
+                        f[dir][parser][str(i)].attrs[param] = res[i][param]
 
     f.close()
 
@@ -106,7 +107,7 @@ def read_multirun(path,outputs_parsers = None,output_format = 'csv'):
 
         for parser in outputs_parsers:
             outputs,newkeys = parser(dir)
-            results[dir]['parsers'][str(parser)] = outputs
+            results[dir]['parsers'][parser.__name__] = outputs
             keys = keys.union(newkeys)
     if output_format == 'csv':
         write_to_csv(keys,results,out_file)
