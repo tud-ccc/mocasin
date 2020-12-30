@@ -530,6 +530,7 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
     """
     def __init__(self,kpn, platform, norm_p,extra_dimensions=True,
                  extra_dimensions_factor=3,ignore_channels=True,
+                 target_distortion=1.1,jlt_tries=10,
                  verbose=False):
         # todo: make sure the correspondence of cores is correct!
         M_matrix, self._arch_nc, self._arch_nc_inv = \
@@ -538,6 +539,8 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
         self.kpn = kpn
         self.platform = platform
         self.extra_dims = extra_dimensions
+        self.jlt_tries = jlt_tries
+        self.target_distortion = target_distortion
         self.ignore_channels = ignore_channels
         self.verbose = verbose
         if hasattr(platform, 'embedding_json'):
@@ -563,10 +566,10 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
                       f" For p = 1, for example, finding such an embedding"
                       f" is NP-hard (See Matousek, J.,  Lectures on Discrete"
                       f" Geometry, Chap. 15.5)")
-        MetricSpaceEmbedding.__init__(self,self._M,self._d,
-                                      embedding_matrix_path =
-                                      self.embedding_matrix_path,
-                                      verbose=verbose)
+        MetricSpaceEmbedding.\
+            __init__(self,self._M,self._d, jlt_tries=self.jlt_tries,
+                     embedding_matrix_path = self.embedding_matrix_path,
+                     target_distortion=self.target_distortion, verbose=verbose)
         log.info(f"Found embedding with distortion: {self.distortion}")
 
     def changed_parameters(self,norm_p):

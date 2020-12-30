@@ -6,12 +6,12 @@
 from __future__ import print_function
 import numpy as np
 import cvxpy as cvx
+import math
 import random
 from os.path import exists
 import json
 
 #import fjlt.fjlt as fjlt #TODO: use fjlt to (automatically) lower the dimension of embedding
-from pykpn.representations import permutations as perm
 from pykpn.representations import metric_spaces as metric
 from pykpn.util import logging
 import pykpn.util.random_distributions.lp as lp
@@ -24,49 +24,106 @@ log = logging.getLogger(__name__)
 #
 #  However: the idea is to do this for the small space M
 #  and then handle the case M^d \hat \iota R^{kd} specially.
+
+#from: https://jeremykun.com/2016/02/08/big-dimensions-and-what-you-can-do-about-it/0/
+def randomSubspace(subspaceDimension, ambientDimension):
+    return np.random.normal(0, 1, size=(subspaceDimension, ambientDimension))
+
+def project(v, subspace):
+    subspaceDimension = len(subspace)
+    return (1 / math.sqrt(subspaceDimension)) * subspace.dot(v)
+
+def jlt(data, subspaceDimension):
+   ambientDimension = len(data[0])
+   A = randomSubspace(subspaceDimension, ambientDimension)
+   return (1 / math.sqrt(subspaceDimension)) * A.dot(data.T).T
+
+def jlt_search(D,E,target_dist,num_tries=30):
+    dim = 2
+    dim_orig = len(E[0])
+    found = False
+    while not found and dim < dim_orig:
+        log.info(f"jlt search: increasing dimension to {dim}")
+        for _ in range(num_tries):
+            candidate = jlt(E,dim)
+            cur_distortion = check_distortion(D,candidate)
+            log.debug(f"jlt search: found distortion of {cur_distortion}")
+            if cur_distortion < target_dist:
+                found = True
+                break
+        dim = dim * 2
+    if found:
+        return np.array(candidate),cur_distortion
+    else:
+        return E,check_distortion(D,E)
+
+def check_distortion(D,E):
+    distortion = 1
+    it = np.nditer(np.array(D), flags=['multi_index'])
+    for dist in it:
+        x, y = it.multi_index
+        distance_vecs = np.linalg.norm(E[x] - E[y])
+        if dist != 0:
+            distort = np.abs(distance_vecs / dist)
+        elif distance_vecs != 0:
+            distort = 1 + np.abs(distance_vecs)
+        else:
+            distort = 0
+        if distort > distortion:
+            distortion = distort
+    return distortion
+
+
 class MetricSpaceEmbeddingBase():
-    def __init__(self,M,embedding_matrix_path=None,verbose=False):
+    def __init__(self,M,embedding_matrix_path=None,verbose=False,
+                 target_distortion=1.1,jlt_tries=30):
         assert( isinstance(M,metric.FiniteMetricSpace))
         self.M = M
-        self._k = M.n
+        self.target_distortion= target_distortion
+        self.jlt_tries = jlt_tries
 
         #First: calculate a good embedding by solving an optimization problem
         if embedding_matrix_path is not None:
             if exists(embedding_matrix_path):
                 try:
                     with open(embedding_matrix_path,'r') as f:
-                        contents = json.loads(f)
+                        contents = json.loads(f.read())
                         E = np.array(contents['matrix'])
                         E.reshape(contents['shape'])
-                        self.distortion = np.array(contents['distortion'])
-                        valid = True
-                        it = np.nditer(np.array(M.D), flags=['multi_index'])
-                        for dist in it:
-                            x,y = dist.multi_index
-                            distort = np.abs(np.linalg.norm(E[x]-E[y]) - dist)
-                            if distort > self.distortion:
-                                valid = False
-                                break
-                except TypeError:
+                        self.distortion = contents['distortion']
+                        dist = check_distortion(M.D,E)
+                        valid = dist <= self.distortion
+                except TypeError as e:
                     valid = False #could not read json
+                    log.warning(f"Could not read embedding JSON file (error parsing). {e}")
+                    dist = np.inf
                 if not valid:
-                    log.warning("Stored embedding matrix invalid. Recalculating.")
+                    if dist != np.inf:
+                        log.warning(f"Stored embedding matrix invalid (distortion {dist} > {self.distortion}). Recalculating.")
                     E,self.distortion = \
-                        self.calculateEmbeddingMatrix(np.array(M.D),verbose=verbose)
+                        self.calculateEmbeddingMatrix(np.array(M.D),verbose=verbose,
+                                                      target_dist=self.target_distortion,
+                                                      jlt_tries=self.jlt_tries)
             else: #path does not exist but is not None
                 log.warning("No embedding matrix stored. Calculating and storing.")
                 E, self.distortion = \
-                    self.calculateEmbeddingMatrix(np.array(M.D),verbose=verbose)
+                    self.calculateEmbeddingMatrix(np.array(M.D),verbose=verbose,
+                                                  target_dist=self.target_distortion,
+                                                  jlt_tries=self.jlt_tries)
                 with open(embedding_matrix_path, 'w') as f:
                     contents = { 'matrix' : E.tolist(),
                                  'shape' : E.shape,
-                                 'distortion' : self.distortion[0,0]}
+                                 'distortion' : self.distortion}
                     f.write(json.dumps(contents))
 
         else: #path is None
-            E,self.distortion = self.calculateEmbeddingMatrix(np.array(M.D),
-                                                              verbose=verbose)
+            E,self.distortion = \
+                self.calculateEmbeddingMatrix(np.array(M.D),
+                                              target_dist=self.target_distortion,
+                                              jlt_tries=self.jlt_tries,
+                                              verbose=verbose)
 
+        self._k = E.shape[1]
         #Populate look-up table
         self.iota = dict()
         self.iotainv = dict() #Poor-man's bidirectional map
@@ -85,7 +142,7 @@ class MetricSpaceEmbeddingBase():
 
 
     @staticmethod
-    def calculateEmbeddingMatrix(D,verbose=False):
+    def calculateEmbeddingMatrix(D,verbose=False,target_dist=1.1,jlt_tries=30):
         assert(isMetricSpaceMatrix(D))
         n = D.shape[0]
         if int(cvx.__version__.split('.')[0]) == 0:
@@ -147,9 +204,10 @@ class MetricSpaceEmbeddingBase():
 
                       
         log.debug(f"Shape of lower-triangular matrix L: {L.shape}")
-        #lowerdim = fjlt.fjlt(L,10,1)
+        lowerdim,d = jlt_search(D,L,target_dist,num_tries=jlt_tries)
         #print(lowerdim)
-        return L,d.value
+        #return L,d.value
+        return lowerdim,d
 
     def approx(self,vec,rg):
         idxs = list(rg)
@@ -166,11 +224,12 @@ class MetricSpaceEmbeddingBase():
 
 
 class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
-    def __init__(self,M,d=1,embedding_matrix_path=None,verbose=False):
-        MetricSpaceEmbeddingBase.__init__(self,M,
-                                          embedding_matrix_path=
-                                          embedding_matrix_path,
-                                          verbose=verbose)
+    def __init__(self,M,d=1,embedding_matrix_path=None,verbose=False,
+                 jlt_tries=30,target_distortion=1.1):
+        MetricSpaceEmbeddingBase.\
+            __init__(self,M, embedding_matrix_path= embedding_matrix_path,
+                     target_distortion=target_distortion,jlt_tries=jlt_tries,
+                     verbose=verbose)
         self._d = d
         if not hasattr(self,'_split_d'):
             self._split_d = d
@@ -217,7 +276,7 @@ class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
             if i < self._split_d:
                 value = MetricSpaceEmbeddingBase.approx(self, tuple(comp),range(0,self._split_k))
             else:
-                value = MetricSpaceEmbeddingBase.approx(self, tuple(comp),range(self._split_k,self._k))
+                value = MetricSpaceEmbeddingBase.approx(self, tuple(comp),range(self._split_k,self.M.n))
             res.append(value)
 
         return res

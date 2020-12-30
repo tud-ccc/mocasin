@@ -93,6 +93,7 @@ class GradientDescentMapper(object):
         else:
             iterations_range = range(self.gd_iterations)
         grad = 0
+        last_mapping = [np.inf]*len(mapping)
         for _ in iterations_range:
             old_grad = grad
             grad = self.momentum_decay * old_grad \
@@ -100,6 +101,10 @@ class GradientDescentMapper(object):
 
             if np.allclose(grad, np.zeros(self.dim)): #found local minimum
                 break
+
+            before_last_mapping = last_mapping
+            last_mapping = mapping
+
             mapping = mapping + (self.stepsize / self.best_exec_time) * (-grad)
             mapping = self.representation.approximate(np.array(mapping))
 
@@ -108,6 +113,15 @@ class GradientDescentMapper(object):
             if cur_exec_time < self.best_exec_time:
                 self.best_exec_time = cur_exec_time
                 self.best_mapping = mapping
+
+            if np.allclose(mapping,last_mapping) or np.allclose(mapping,before_last_mapping):
+                #stuck in a loop. create new random mapping
+                mapping_obj = self.random_mapper.generate_mapping()
+                if hasattr(self.representation,
+                           'canonical_operations') and not self.representation.canonical_operations:
+                    mapping = self.representation.toRepresentationNoncanonical(mapping_obj)
+                else:
+                    mapping = self.representation.toRepresentation(mapping_obj)
 
         self.best_mapping = np.array(self.representation.approximate(np.array(self.best_mapping)))
         self.simulation_manager.statistics.log_statistics()
