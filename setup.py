@@ -24,7 +24,7 @@ install_requirements = [
     'pint',
     'pydot',
     'pympsym>=0.5',
-    'pyyaml'
+    'pyyaml',
     'pyxb',
     'recordclass',
     'scipy==1.5.4',
