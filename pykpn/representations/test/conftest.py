@@ -41,6 +41,16 @@ def autExampleClusterArch():
 def exampleParallella16():
     return generateExampleParallella(4,2,20)
 
+class mockPlatform:
+    def __init__(self,adjacency_dict):
+        self.adjacency_dict = adjacency_dict
+    def to_adjacency_dict(self):
+        return self.adjacency_dict
+
+@pytest.fixture
+def exampleDijkstraArch(exampleDijkstra):
+    return mockPlatform(exampleDijkstra)
+
 @pytest.fixture
 def exampleDijkstra():
     # from: https://people.sc.fsu.edu/~jburkardt/m_src/dijkstra/dijkstra.html

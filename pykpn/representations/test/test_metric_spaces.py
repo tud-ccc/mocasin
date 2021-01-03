@@ -5,7 +5,7 @@
 
 import pytest
 
-from pykpn.representations.metric_spaces import dijkstra, arch_graph_to_distance_metric, FiniteMetricSpaceLP, FiniteMetricSpaceLPSym
+from pykpn.representations.metric_spaces import dijkstra, arch_to_distance_metric_naive, FiniteMetricSpaceLP, FiniteMetricSpaceLPSym
 from pykpn.representations.embeddings import isMetricSpaceMatrix
 import numpy as np
 
@@ -27,8 +27,8 @@ class TestMetricSpaces(object):
         assert(distances['N5'] == 41)
 
 
-    def test_arch_graph_to_distance_metric(self, exampleDijkstra):
-        distance_metric, nodes_correspondence, nc_inv = arch_graph_to_distance_metric(exampleDijkstra)
+    def test_arch_graph_to_distance_metric(self, exampleDijkstraArch):
+        distance_metric, nodes_correspondence, nc_inv = arch_to_distance_metric_naive(exampleDijkstraArch)
         for node in nodes_correspondence:
             assert(nc_inv[nodes_correspondence[node]] == node)
         for node in nc_inv:
@@ -157,4 +157,4 @@ class TestMetricSpaces(object):
         
         
         
-        
+#TODO: add tests for the new metric

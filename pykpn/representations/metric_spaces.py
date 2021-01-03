@@ -1,7 +1,4 @@
-# Copyright (C) 2017-2020 TU Dresden
-# All Rights Reserved
-#
-# Author: Andres Goens
+
 
 from __future__ import print_function
 import logging
@@ -393,30 +390,30 @@ def arch_to_distance_metric(architecture, scaling=True,heterogeneity=True,
     return res,nodes_correspondence,nc_inv
         
 
-    def arch_to_distance_metric_naive(arch,scaling=True):
-        arch_graph= arch.to_adjacency_dict()
-        inf = float('inf')
-        n = 0
-        nodes_correspondence = {}
-        nc_inv = {}
-        dist_metric_named = {}
-        graph = make_graph_symmetric(arch_graph)
-        for node in graph:
-            nodes_correspondence[n] = node
-            nc_inv[node] = n
-            n += 1
-            dist_metric_named[node] = dijkstra(graph,node)
-        if scaling:
-            scaling_factor = np.mean([dist_metric_named[node_from][node_to] for node_from in dist_metric_named.keys() for node_to in dist_metric_named[node_from].keys()])
-            for node_from in graph:
-             for node_to in dist_metric_named[node_from]:
-                dist_metric_named[node_from][node_to] /= float(scaling_factor)
+def arch_to_distance_metric_naive(arch,scaling=True):
+    arch_graph= arch.to_adjacency_dict()
+    inf = float('inf')
+    n = 0
+    nodes_correspondence = {}
+    nc_inv = {}
+    dist_metric_named = {}
+    graph = make_graph_symmetric(arch_graph)
+    for node in graph:
+        nodes_correspondence[n] = node
+        nc_inv[node] = n
+        n += 1
+        dist_metric_named[node] = dijkstra(graph,node)
+    if scaling:
+        scaling_factor = np.mean([dist_metric_named[node_from][node_to] for node_from in dist_metric_named.keys() for node_to in dist_metric_named[node_from].keys()])
+        for node_from in graph:
+         for node_to in dist_metric_named[node_from]:
+            dist_metric_named[node_from][node_to] /= float(scaling_factor)
 
-        #We use the corresp. dictionaries to make sure we don't mess up the order
-        res = []
-        for node_from in range(0,n):
-            line = [inf]*n
-            for node_to_named in dist_metric_named[nodes_correspondence[node_from]]:
-                line[nc_inv[node_to_named]] = dist_metric_named[nodes_correspondence[node_from]][node_to_named]
-            res.append(line)
-        return res,nodes_correspondence,nc_inv
+    #We use the corresp. dictionaries to make sure we don't mess up the order
+    res = []
+    for node_from in range(0,n):
+        line = [inf]*n
+        for node_to_named in dist_metric_named[nodes_correspondence[node_from]]:
+            line[nc_inv[node_to_named]] = dist_metric_named[nodes_correspondence[node_from]][node_to_named]
+        res.append(line)
+    return res,nodes_correspondence,nc_inv

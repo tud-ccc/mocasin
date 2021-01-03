@@ -104,7 +104,7 @@ class MetricSpaceEmbeddingBase():
                     dist = np.inf
                 if not valid:
                     if dist != np.inf:
-                        log.warning(f"Stored embedding matrix invalid (distortion {dist} > {self.distortion}). Recalculating.")
+                        log.warning(f"Stored embedding matrix invalid (distortion {dist} > {self.target_distortion}). Recalculating.")
                     E,self.distortion = \
                         self.calculateEmbeddingMatrix(np.array(M.D),verbose=verbose,
                                                       target_dist=self.target_distortion,

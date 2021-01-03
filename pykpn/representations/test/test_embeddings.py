@@ -22,7 +22,7 @@ class TestEmbeddings(object):
         E = MetricSpaceEmbeddingBase(M)
 
         for _ in range(N):
-            result = E.approx(np.random.random(E._k))
+            result = E.approx(np.random.random(E._k),rg=range(E._k))
             found = False
             for vec in E.iotainv.keys():
                 if np.allclose(vec,result):
