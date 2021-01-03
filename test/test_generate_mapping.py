@@ -12,6 +12,7 @@ def test_generate_mapping_slx(datadir, slx_mapper, slx_kpn, representation):
                            "kpn=%s" % slx_kpn,
                            "platform=exynos",
                            "representation=%s" % representation,
+                           "platform.embedding_json=None",
                            "mapper=%s" % slx_mapper,
                            "outdir=../../../",
                            "trace=slx_default"],

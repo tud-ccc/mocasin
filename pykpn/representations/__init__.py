@@ -134,7 +134,11 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         Procs = sorted(list(self.kpn._processes.keys()))
         PEs = sorted(list(self.platform._processors.keys()))
         pe_mapping = list(randint(0,len(PEs),size=len(Procs)))
-        return SimpleVectorRepresentation.randomPrimitives(self,pe_mapping)
+        if self.channels:
+            return SimpleVectorRepresentation.randomPrimitives(self,pe_mapping)
+        else:
+            return pe_mapping
+
     def randomPrimitives(self,pe_mapping):
         Procs = sorted(list(self.kpn._processes.keys()))
         PEs = sorted(list(self.platform._processors.keys()))

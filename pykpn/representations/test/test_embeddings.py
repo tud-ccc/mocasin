@@ -58,7 +58,6 @@ class TestEmbeddings(object):
         M = exampleClusterArch
         E = MetricSpaceEmbeddingBase(M)
         Evec = MetricSpaceEmbedding(M, dimension)
-        
         result = Evec.invapprox(np.random.random((dimension*E._k)).flatten())
         
         for value in result:
@@ -69,7 +68,7 @@ class TestEmbeddings(object):
         
         result = Par.invapprox((10*np.random.random((dimension,Par._k))).flatten())
         for value in result:
-            assert(value >= 0 and value < 16)
+            assert(value >= 0 and value < 18)
     
     def test_calculate_embedding_matrix(self, D):
         L,d = np.array(MetricSpaceEmbeddingBase.calculateEmbeddingMatrix(D))
