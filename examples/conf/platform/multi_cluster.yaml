@@ -14,3 +14,4 @@ processor_1:
   frequency : 2000000000
 symmetries_json: "../../../platform/symmetries/multi_cluster.json"
 embedding_json: "../../../platform/embeddings/multi_cluster.json"
+name: "multi_cluster"

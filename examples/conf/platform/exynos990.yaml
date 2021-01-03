@@ -22,3 +22,4 @@ processor_3:
   frequency : 2000000000
 symmetries_json: "../../../platform/symmetries/exynos990.json"
 embedding_json: "../../../platform/embeddings/exynos990.json"
+name: "exynos990"
