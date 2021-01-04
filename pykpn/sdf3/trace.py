@@ -41,7 +41,7 @@ class _ProcessorType:
             raise ValueError("Provided frequency without a unit.")
         if not self.frequency.check("[frequency]"):
             raise ValueError(
-                "Provided frequency with wrong dimension (expected frequncy)"
+                "Provided frequency with wrong dimension (expected frequency)"
             )
         if not isinstance(self.scale, pint.Quantity):
             raise ValueError("Provided scale without a unit.")
