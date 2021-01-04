@@ -68,3 +68,24 @@ def test_tgff_simulate(datadir, tgff):
             found_line = True
 
     assert found_line
+
+
+def test_sdf3_simulate(datadir):
+    res = subprocess.run(["pykpn", "simulate",
+                          "platform=exynos",
+                          "kpn=sdf3_reader",
+                          "trace=sdf3_reader",
+                          "mapper=static_cfs",
+                          "sdf3.file=../../../sdf3/medium_cyclic.xml"],
+                         cwd=datadir,
+                         check=True,
+                         stdout=subprocess.PIPE)
+    found_line = False
+    stdout = res.stdout.decode()
+    for line in stdout.split('\n'):
+        if line.startswith("Total simulated time: "):
+            time = line[22:]
+            assert time == "1.340782929 ms"
+            found_line = True
+
+    assert found_line

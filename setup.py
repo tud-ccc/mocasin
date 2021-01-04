@@ -37,6 +37,10 @@ install_requirements = [
 setup_requirements = ['pytest-runner', 'sphinx', 'numpy']
 
 
+if sys.version_info < (3, 7):
+    install_requirements.append('dataclasses')
+
+
 class InstallPynautyCommand(distutils.cmd.Command):
     """A custom command to install the pynauty dependency"""
 
@@ -100,9 +104,6 @@ class DevelopCommand(develop):
         develop.run(self)
         self.run_command('pynauty')
         self.run_command('tsne')
-
-#All version restrictions stem from numpy causing issues, it seems with CI:
-#see: https://github.com/numpy/numpy/issues/14012
 
 setup(
     name=project_name,

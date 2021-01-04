@@ -1,0 +1,398 @@
+<?xml version="1.0"?>
+<sdf3 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.0" type="sdf" xsi:noNamespaceSchemaLocation="http://www.es.ele.tue.nl/sdf3/xsd/sdf3-sdf.xsd">
+  <applicationGraph>
+    <sdf name="g" type="G">
+      <actor name="a0" type="A0">
+        <port name="p4" type="out" rate="1"/>
+        <port name="p5" type="out" rate="1"/>
+        <port name="p6" type="out" rate="1"/>
+        <port name="p7" type="out" rate="1"/>
+        <port name="p8" type="out" rate="1"/>
+      </actor>
+      <actor name="a1" type="A1">
+        <port name="p1" type="in" rate="1"/>
+        <port name="p2" type="out" rate="1"/>
+      </actor>
+      <actor name="a2" type="A2">
+        <port name="p3" type="in" rate="1"/>
+        <port name="p5" type="out" rate="1"/>
+        <port name="p6" type="out" rate="1"/>
+        <port name="p7" type="out" rate="1"/>
+      </actor>
+      <actor name="a3" type="A3">
+        <port name="p0" type="in" rate="1"/>
+        <port name="p2" type="in" rate="1"/>
+        <port name="p3" type="out" rate="4"/>
+      </actor>
+      <actor name="a4" type="A4">
+        <port name="p0" type="in" rate="1"/>
+        <port name="p3" type="out" rate="2"/>
+      </actor>
+      <actor name="a5" type="A5">
+        <port name="p0" type="in" rate="1"/>
+        <port name="p1" type="in" rate="1"/>
+        <port name="p3" type="out" rate="1"/>
+        <port name="p4" type="out" rate="1"/>
+        <port name="p5" type="out" rate="1"/>
+        <port name="p6" type="out" rate="1"/>
+        <port name="p7" type="out" rate="1"/>
+      </actor>
+      <actor name="a6" type="A6">
+        <port name="p0" type="in" rate="1"/>
+        <port name="p2" type="in" rate="1"/>
+        <port name="p3" type="out" rate="1"/>
+        <port name="p5" type="out" rate="1"/>
+      </actor>
+      <actor name="a7" type="A7">
+        <port name="p0" type="in" rate="1"/>
+        <port name="p1" type="out" rate="1"/>
+        <port name="p2" type="out" rate="1"/>
+        <port name="p3" type="out" rate="1"/>
+      </actor>
+      <actor name="a8" type="A8">
+        <port name="p0" type="in" rate="1"/>
+        <port name="p1" type="in" rate="1"/>
+        <port name="p2" type="in" rate="1"/>
+        <port name="p3" type="out" rate="2"/>
+      </actor>
+      <actor name="a9" type="A9">
+        <port name="p0" type="in" rate="1"/>
+        <port name="p1" type="in" rate="1"/>
+        <port name="p2" type="in" rate="1"/>
+        <port name="p3" type="in" rate="1"/>
+        <port name="p4" type="out" rate="2"/>
+      </actor>
+      <actor name="a10" type="A10">
+        <port name="p0" type="in" rate="1"/>
+        <port name="p2" type="out" rate="1"/>
+      </actor>
+      <actor name="a11" type="A11">
+        <port name="p0" type="in" rate="1"/>
+        <port name="p1" type="out" rate="1"/>
+      </actor>
+      <actor name="a12" type="A12">
+        <port name="p0" type="in" rate="1"/>
+        <port name="p1" type="in" rate="1"/>
+        <port name="p2" type="in" rate="2"/>
+        <port name="p3" type="out" rate="4"/>
+      </actor>
+      <actor name="a13" type="A13">
+        <port name="p0" type="in" rate="1"/>
+        <port name="p1" type="in" rate="1"/>
+      </actor>
+      <actor name="a14" type="A14">
+        <port name="p0" type="in" rate="1"/>
+        <port name="p1" type="in" rate="1"/>
+      </actor>
+      <channel name="ch0" srcActor="a0" srcPort="p7" dstActor="a1" dstPort="p1"/>
+      <channel name="ch1" srcActor="a0" srcPort="p8" dstActor="a2" dstPort="p3"/>
+      <channel name="ch2" srcActor="a2" srcPort="p7" dstActor="a3" dstPort="p0"/>
+      <channel name="ch3" srcActor="a0" srcPort="p4" dstActor="a4" dstPort="p0"/>
+      <channel name="ch4" srcActor="a0" srcPort="p6" dstActor="a5" dstPort="p0"/>
+      <channel name="ch5" srcActor="a0" srcPort="p5" dstActor="a6" dstPort="p2"/>
+      <channel name="ch6" srcActor="a6" srcPort="p3" dstActor="a7" dstPort="p0"/>
+      <channel name="ch7" srcActor="a6" srcPort="p5" dstActor="a8" dstPort="p1"/>
+      <channel name="ch8" srcActor="a1" srcPort="p2" dstActor="a9" dstPort="p2"/>
+      <channel name="ch9" srcActor="a7" srcPort="p1" dstActor="a10" dstPort="p0"/>
+      <channel name="ch10" srcActor="a4" srcPort="p3" dstActor="a11" dstPort="p0"/>
+      <channel name="ch11" srcActor="a10" srcPort="p2" dstActor="a12" dstPort="p0"/>
+      <channel name="ch12" srcActor="a3" srcPort="p3" dstActor="a13" dstPort="p1"/>
+      <channel name="ch13" srcActor="a8" srcPort="p3" dstActor="a14" dstPort="p1"/>
+      <channel name="ch14" srcActor="a9" srcPort="p4" dstActor="a14" dstPort="p0"/>
+      <channel name="ch15" srcActor="a7" srcPort="p3" dstActor="a12" dstPort="p1"/>
+      <channel name="ch16" srcActor="a5" srcPort="p3" dstActor="a6" dstPort="p0"/>
+      <channel name="ch17" srcActor="a5" srcPort="p5" dstActor="a8" dstPort="p0"/>
+      <channel name="ch18" srcActor="a7" srcPort="p2" dstActor="a9" dstPort="p0"/>
+      <channel name="ch19" srcActor="a12" srcPort="p3" dstActor="a13" dstPort="p0"/>
+      <channel name="ch20" srcActor="a5" srcPort="p6" dstActor="a9" dstPort="p3"/>
+      <channel name="ch21" srcActor="a11" srcPort="p1" dstActor="a12" dstPort="p2"/>
+      <channel name="ch22" srcActor="a5" srcPort="p7" dstActor="a8" dstPort="p2"/>
+      <channel name="ch23" srcActor="a5" srcPort="p4" dstActor="a9" dstPort="p1"/>
+      <channel name="ch24" srcActor="a2" srcPort="p5" dstActor="a5" dstPort="p1"/>
+      <channel name="ch25" srcActor="a2" srcPort="p6" dstActor="a3" dstPort="p2"/>
+    </sdf>
+    <sdfProperties>
+      <actorProperties actor="a0">
+        <processor type="proc_0" default="true">
+          <executionTime time="33"/>
+          <memory>
+            <stateSize max="1"/>
+          </memory>
+        </processor>
+      </actorProperties>
+      <actorProperties actor="a1">
+        <processor type="proc_0" default="true">
+          <executionTime time="15"/>
+          <memory>
+            <stateSize max="1"/>
+          </memory>
+        </processor>
+      </actorProperties>
+      <actorProperties actor="a2">
+        <processor type="proc_0" default="true">
+          <executionTime time="50"/>
+          <memory>
+            <stateSize max="1"/>
+          </memory>
+        </processor>
+      </actorProperties>
+      <actorProperties actor="a3">
+        <processor type="proc_0" default="true">
+          <executionTime time="90"/>
+          <memory>
+            <stateSize max="1"/>
+          </memory>
+        </processor>
+      </actorProperties>
+      <actorProperties actor="a4">
+        <processor type="proc_0" default="true">
+          <executionTime time="22"/>
+          <memory>
+            <stateSize max="1"/>
+          </memory>
+        </processor>
+      </actorProperties>
+      <actorProperties actor="a5">
+        <processor type="proc_0" default="true">
+          <executionTime time="74"/>
+          <memory>
+            <stateSize max="1"/>
+          </memory>
+        </processor>
+      </actorProperties>
+      <actorProperties actor="a6">
+        <processor type="proc_0" default="true">
+          <executionTime time="28"/>
+          <memory>
+            <stateSize max="1"/>
+          </memory>
+        </processor>
+      </actorProperties>
+      <actorProperties actor="a7">
+        <processor type="proc_0" default="true">
+          <executionTime time="53"/>
+          <memory>
+            <stateSize max="1"/>
+          </memory>
+        </processor>
+      </actorProperties>
+      <actorProperties actor="a8">
+        <processor type="proc_0" default="true">
+          <executionTime time="69"/>
+          <memory>
+            <stateSize max="1"/>
+          </memory>
+        </processor>
+      </actorProperties>
+      <actorProperties actor="a9">
+        <processor type="proc_0" default="true">
+          <executionTime time="33"/>
+          <memory>
+            <stateSize max="1"/>
+          </memory>
+        </processor>
+      </actorProperties>
+      <actorProperties actor="a10">
+        <processor type="proc_0" default="true">
+          <executionTime time="87"/>
+          <memory>
+            <stateSize max="1"/>
+          </memory>
+        </processor>
+      </actorProperties>
+      <actorProperties actor="a11">
+        <processor type="proc_0" default="true">
+          <executionTime time="38"/>
+          <memory>
+            <stateSize max="1"/>
+          </memory>
+        </processor>
+      </actorProperties>
+      <actorProperties actor="a12">
+        <processor type="proc_0" default="true">
+          <executionTime time="94"/>
+          <memory>
+            <stateSize max="1"/>
+          </memory>
+        </processor>
+      </actorProperties>
+      <actorProperties actor="a13">
+        <processor type="proc_0" default="true">
+          <executionTime time="44"/>
+          <memory>
+            <stateSize max="1"/>
+          </memory>
+        </processor>
+      </actorProperties>
+      <actorProperties actor="a14">
+        <processor type="proc_0" default="true">
+          <executionTime time="26"/>
+          <memory>
+            <stateSize max="1"/>
+          </memory>
+        </processor>
+      </actorProperties>
+      <channelProperties channel="ch0">
+        <bufferSize sz="2" src="2" dst="2" mem="2"/>
+        <tokenSize sz="60"/>
+        <bandwidth min="2"/>
+        <latency min="2"/>
+      </channelProperties>
+      <channelProperties channel="ch1">
+        <bufferSize sz="1" src="1" dst="1" mem="1"/>
+        <tokenSize sz="19"/>
+        <bandwidth min="2"/>
+        <latency min="2"/>
+      </channelProperties>
+      <channelProperties channel="ch2">
+        <bufferSize sz="2" src="2" dst="2" mem="2"/>
+        <tokenSize sz="37"/>
+        <bandwidth min="2"/>
+        <latency min="2"/>
+      </channelProperties>
+      <channelProperties channel="ch3">
+        <bufferSize sz="1" src="1" dst="1" mem="1"/>
+        <tokenSize sz="36"/>
+        <bandwidth min="2"/>
+        <latency min="2"/>
+      </channelProperties>
+      <channelProperties channel="ch4">
+        <bufferSize sz="2" src="2" dst="2" mem="2"/>
+        <tokenSize sz="14"/>
+        <bandwidth min="2"/>
+        <latency min="2"/>
+      </channelProperties>
+      <channelProperties channel="ch5">
+        <bufferSize sz="2" src="2" dst="2" mem="2"/>
+        <tokenSize sz="56"/>
+        <bandwidth min="2"/>
+        <latency min="2"/>
+      </channelProperties>
+      <channelProperties channel="ch6">
+        <bufferSize sz="1" src="1" dst="1" mem="1"/>
+        <tokenSize sz="55"/>
+        <bandwidth min="2"/>
+        <latency min="2"/>
+      </channelProperties>
+      <channelProperties channel="ch7">
+        <bufferSize sz="1" src="1" dst="1" mem="1"/>
+        <tokenSize sz="51"/>
+        <bandwidth min="2"/>
+        <latency min="2"/>
+      </channelProperties>
+      <channelProperties channel="ch8">
+        <bufferSize sz="2" src="2" dst="2" mem="2"/>
+        <tokenSize sz="91"/>
+        <bandwidth min="2"/>
+        <latency min="2"/>
+      </channelProperties>
+      <channelProperties channel="ch9">
+        <bufferSize sz="1" src="1" dst="1" mem="1"/>
+        <tokenSize sz="26"/>
+        <bandwidth min="2"/>
+        <latency min="2"/>
+      </channelProperties>
+      <channelProperties channel="ch10">
+        <bufferSize sz="3" src="2" dst="2" mem="3"/>
+        <tokenSize sz="48"/>
+        <bandwidth min="2"/>
+        <latency min="2"/>
+      </channelProperties>
+      <channelProperties channel="ch11">
+        <bufferSize sz="1" src="1" dst="1" mem="1"/>
+        <tokenSize sz="63"/>
+        <bandwidth min="2"/>
+        <latency min="2"/>
+      </channelProperties>
+      <channelProperties channel="ch12">
+        <bufferSize sz="8" src="5" dst="5" mem="8"/>
+        <tokenSize sz="93"/>
+        <bandwidth min="2"/>
+        <latency min="2"/>
+      </channelProperties>
+      <channelProperties channel="ch13">
+        <bufferSize sz="2" src="2" dst="2" mem="2"/>
+        <tokenSize sz="75"/>
+        <bandwidth min="2"/>
+        <latency min="2"/>
+      </channelProperties>
+      <channelProperties channel="ch14">
+        <bufferSize sz="2" src="2" dst="2" mem="2"/>
+        <tokenSize sz="91"/>
+        <bandwidth min="2"/>
+        <latency min="2"/>
+      </channelProperties>
+      <channelProperties channel="ch15">
+        <bufferSize sz="1" src="1" dst="1" mem="1"/>
+        <tokenSize sz="60"/>
+        <bandwidth min="2"/>
+        <latency min="2"/>
+      </channelProperties>
+      <channelProperties channel="ch16">
+        <bufferSize sz="1" src="1" dst="1" mem="1"/>
+        <tokenSize sz="100"/>
+        <bandwidth min="2"/>
+        <latency min="2"/>
+      </channelProperties>
+      <channelProperties channel="ch17">
+        <bufferSize sz="2" src="2" dst="2" mem="2"/>
+        <tokenSize sz="30"/>
+        <bandwidth min="2"/>
+        <latency min="2"/>
+      </channelProperties>
+      <channelProperties channel="ch18">
+        <bufferSize sz="2" src="2" dst="2" mem="2"/>
+        <tokenSize sz="32"/>
+        <bandwidth min="2"/>
+        <latency min="2"/>
+      </channelProperties>
+      <channelProperties channel="ch19">
+        <bufferSize sz="8" src="5" dst="5" mem="8"/>
+        <tokenSize sz="56"/>
+        <bandwidth min="2"/>
+        <latency min="2"/>
+      </channelProperties>
+      <channelProperties channel="ch20">
+        <bufferSize sz="2" src="2" dst="2" mem="2"/>
+        <tokenSize sz="6"/>
+        <bandwidth min="2"/>
+        <latency min="2"/>
+      </channelProperties>
+      <channelProperties channel="ch21">
+        <bufferSize sz="2" src="2" dst="2" mem="2"/>
+        <tokenSize sz="59"/>
+        <bandwidth min="2"/>
+        <latency min="2"/>
+      </channelProperties>
+      <channelProperties channel="ch22">
+        <bufferSize sz="1" src="1" dst="1" mem="1"/>
+        <tokenSize sz="17"/>
+        <bandwidth min="2"/>
+        <latency min="2"/>
+      </channelProperties>
+      <channelProperties channel="ch23">
+        <bufferSize sz="2" src="2" dst="2" mem="2"/>
+        <tokenSize sz="15"/>
+        <bandwidth min="2"/>
+        <latency min="2"/>
+      </channelProperties>
+      <channelProperties channel="ch24">
+        <bufferSize sz="1" src="1" dst="1" mem="1"/>
+        <tokenSize sz="45"/>
+        <bandwidth min="2"/>
+        <latency min="2"/>
+      </channelProperties>
+      <channelProperties channel="ch25">
+        <bufferSize sz="1" src="1" dst="1" mem="1"/>
+        <tokenSize sz="43"/>
+        <bandwidth min="2"/>
+        <latency min="2"/>
+      </channelProperties>
+      <graphProperties>
+        <timeConstraints>
+          <throughput>8.56252e-05</throughput>
+        </timeConstraints>
+      </graphProperties>
+    </sdfProperties>
+  </applicationGraph>
+</sdf3>

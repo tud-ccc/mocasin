@@ -7,6 +7,7 @@ defaults:
   - kpn: default
   - trace: default
   - representation: SimpleVector
+  - sdf3: default
 
 csv_file: ???
 output_file: mapping_properties.txt

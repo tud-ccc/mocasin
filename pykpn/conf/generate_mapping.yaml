@@ -8,6 +8,7 @@ defaults:
   - trace: default
   - representation: SimpleVector
   - mapper: default
+  - sdf3: default
 
 simulate_best : true
 objective : runtime

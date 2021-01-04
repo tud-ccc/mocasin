@@ -383,7 +383,7 @@ class Mapping:
 
         # map channels
         for i,c in enumerate(self.kpn.channels(),start=i+1):
-            capacity = 4
+            capacity = 16  # fixed channel bound this may cause problems
             suitable_primitives = []
             for p in all_primitives:
                 src = self.process_info(c.source).affinity
