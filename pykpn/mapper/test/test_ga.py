@@ -8,9 +8,9 @@ def evaluation_function():
     return lambda m : 1 + np.cos(m[0]-m[1])*np.sin(m[1]*2-1)
 
 @pytest.fixture
-def mapper(kpn, platform, trace, representation, evaluation_function):
+def mapper(kpn, platform, trace, representation, evaluation_function, mocker):
     m = GeneticMapper(kpn, platform, trace, representation)
-    m.simulation_manager = MockMappingCache(evaluation_function)
+    m.simulation_manager = MockMappingCache(evaluation_function, mocker)
     return m
 
 def test_ga(mapper):

@@ -4,7 +4,6 @@
 # Author: Andrés Goens
 
 import numpy as np
-from unittest.mock import Mock
 
 from pykpn.design_centering.volume import *
 import pykpn.design_centering.sample as sample
@@ -123,13 +122,13 @@ def test_center_adaptation(vol_mu,num_iter,num_procs,num_samples,Q,r,seed):
 #f = (1+Beta*(1-mu/lambd))^mu * (1-Beta * mu/lambd)^(lambd-mu)
 #plot(f(lambd=1000),(mu,0,1000))
 
-def test_radius_adaptation(vol_mu,num_samples,seed,num_iter,num_procs,dim,Q,r_set,target_p):
+def test_radius_adaptation(vol_mu,num_samples,seed,num_iter,num_procs,dim,Q,r_set,target_p,mocker):
     np.random.seed(seed)
     #points = []
     radii = [vol_mu.radius]
     for _ in range(num_iter):
         sample_set = random_s_set_test_radius(vol_mu.radius,vol_mu.center,dim,num_procs,num_samples,Q,r_set) # (r,point,dim,num_procs,num_samples,Q,r_set)
-        vol_mu.adapt_volume(sample_set,target_p,Mock())
+        vol_mu.adapt_volume(sample_set,target_p,mocker.Mock())
         radii.append(vol_mu.radius)
         #x,y,colors = parse_s_set(sample_set,vol_mu.center,coordinates=[0,1])
         #points.append((x,y,colors))
@@ -150,7 +149,7 @@ def test_radius_adaptation(vol_mu,num_samples,seed,num_iter,num_procs,dim,Q,r_se
     assert np.isclose(p,target_p,atol=0.1)
 
     
-def test_covariance_adaptation(seed,num_iter,num_samples,r_small,num_procs,vol_mu,Q,Q_not_rotated):
+def test_covariance_adaptation(seed,num_iter,num_samples,r_small,num_procs,vol_mu,Q,Q_not_rotated,mocker):
     np.random.seed(seed)
     points = []
     mu = vol_mu.center
@@ -163,7 +162,7 @@ def test_covariance_adaptation(seed,num_iter,num_samples,r_small,num_procs,vol_m
     for _ in range(num_iter):
         #print(f"\n radius: {vol_mu.radius} ;covariance (det: {np.linalg.det(vol_mu.covariance)}): \n {vol_mu.covariance}")
         sample_set = random_s_set_test_covariance(vol_mu.covariance,Q_not_rotated,dim,num_procs,r,vol_mu.center,num_samples)
-        vol_mu.adapt_volume(sample_set,p_target,Mock())
+        vol_mu.adapt_volume(sample_set,p_target,mocker.Mock())
         if vol_mu.radius > r:
             p_target = 0.9
         else:
@@ -177,12 +176,12 @@ def test_covariance_adaptation(seed,num_iter,num_samples,r_small,num_procs,vol_m
     #visualize_s_sets(points)
     
     
-def test_all_infeasible(lp_vol,num_samples):
+def test_all_infeasible(lp_vol,num_samples,mocker):
     sample_set = sample.SampleSet()
     cov = lp_vol.covariance
     radius = lp_vol.radius
     center = lp_vol.center
-    lp_vol.adapt_volume(sample_set,0.65,Mock())
+    lp_vol.adapt_volume(sample_set,0.65,mocker.Mock())
     #nothing should change, but algorithm should not crash
     assert np.alltrue(cov == lp_vol.covariance)
     assert radius == lp_vol.radius

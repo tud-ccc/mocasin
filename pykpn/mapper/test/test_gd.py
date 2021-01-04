@@ -14,9 +14,9 @@ def evaluation_function_gradient():
                        (3 * np.cos(1 + m[0] - 3 * m[1]) + np.cos(1 - m[0] - m[1]))]
 
 @pytest.fixture
-def mapper(kpn, platform, trace, representation_pbc, evaluation_function):
+def mapper(kpn, platform, trace, representation_pbc, evaluation_function, mocker):
     m = GradientDescentMapper(kpn, platform, trace, representation_pbc, 100, 2, 42, False, False, 10, False, True, 4)
-    m.simulation_manager = MockMappingCache(evaluation_function)
+    m.simulation_manager = MockMappingCache(evaluation_function, mocker)
     return m
 
 def test_gd(mapper, evaluation_function):
