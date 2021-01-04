@@ -17,7 +17,7 @@ install_requirements = [
     'scipy',
     'cvxpy',
     'cvxopt',
-    'scipy' if sys.version_info > (3, 6) else 'scipy<1.6.0',
+    'scipy<1.6.0' if sys.version_info < (3, 7) else 'scipy',
     'lxml',
     'matplotlib',
     'pint',
