@@ -36,12 +36,25 @@ def expected_dir(request):
     module_name, _ = os.path.splitext(os.path.basename(request.module.__file__))
     return os.path.join(module_path, "expected_%s" % module_name)
 
+@pytest.fixture(params=[True,False])
+def mpsym(request):
+    return request.param
+
 @pytest.fixture(params=["exynos", "multidsp", "parallella"])
 def slx_platform(request):
     return request.param
 
 @pytest.fixture(params=["exynos990", "designer_bus", "generic_mesh", "mppa_coolidge","multi_cluster","designer_odroid"])
 def designer_platform(request):
+    return request.param
+
+#exclude coolidge, haec for time
+@pytest.fixture(params=["exynos990", "designer_bus", "generic_mesh","multi_cluster"])
+def designer_platform_small(request):
+    return request.param
+
+@pytest.fixture(params=["haec", "mppa_coolidge"])
+def designer_platform_large(request):
     return request.param
 
 @pytest.fixture(params=["slx_default", "random", "static_cfs", "random_walk", "tabu_search", "gradient_descent", "genetic",  "simulated_annealing", "gbm"])

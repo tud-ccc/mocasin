@@ -1,0 +1,8 @@
+# @package _global_
+defaults:
+  - common
+  - hydra/job_logging: pykpn
+  - tgff: default
+  - platform: ???
+mpsym : true
+out_file: "${platform.name}.autgrp"

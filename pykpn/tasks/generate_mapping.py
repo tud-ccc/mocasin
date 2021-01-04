@@ -126,4 +126,5 @@ def generate_mapping(cfg):
     #                                 history=self.history)
 
 
+    hydra.utils.call(cfg['cleanup'])
     del mapper

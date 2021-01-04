@@ -159,7 +159,7 @@ class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
         #we can find the minimal vectors componentwise
         if type(i_vec) is np.ndarray:
             vec = list(i_vec.flat)
-        elif type(i_vec) is list: 
+        elif type(i_vec) is list or type(i_vec) is tuple:
             vec = i_vec
         else:
             log.error(f"approx: Type error, unrecognized type ({type(i_vec)})")

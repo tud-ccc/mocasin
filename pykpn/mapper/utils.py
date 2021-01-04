@@ -8,6 +8,7 @@ import os
 import multiprocessing as mp
 import numpy as np
 from copy import deepcopy
+import csv
 
 from pykpn.common.mapping import Mapping
 from pykpn.simulate import KpnSimulation
@@ -79,9 +80,6 @@ class SimulationManager(object):
         self.progress = progress
         self.chunk_size = chunk_size
 
-        if self.parallel:
-            self.pool = mp.Pool(processes=self.jobs)
-
     def lookup(self, mapping):
         if mapping not in self._cache:
             self._cache.update({mapping : None})
@@ -116,7 +114,7 @@ class SimulationManager(object):
                 #transform into tuples
                 time = process_time()
                 tup = [tuple(self.representation.approximate(np.array(m))) for m in input_mappings]
-                mappings = [self.representation.fromRepresentation(m) for m in input_mappings]
+                mappings = [self.representation.fromRepresentation(m) for m in tup]
                 self.statistics.add_rep_time(process_time() - time)
 
         # first look up as many as possible:
@@ -147,21 +145,22 @@ class SimulationManager(object):
                 self.statistics.mapping_evaluated(0)
 
             # run the simulations in parallel
-            if self.progress:
-                import tqdm
-                results = list(tqdm.tqdm(self.pool.imap(run_simulation,
-                                                        simulations,
-                                                        chunksize=self.chunk_size),
-                                         total=len(mappings)))
-                time = sum([res[1] for res in results])
-                results = [res[0] for res in results]
-            else:
-                results = list(self.pool.map(run_simulation,
-                                             simulations,
-                                             chunksize=self.chunk_size))
-                time = sum([res[1] for res in results])
-                results = [res[0] for res in results]
-            self.statistics.add_offset(time)
+            with mp.Pool(processes=self.jobs) as pool:
+                if self.progress:
+                    import tqdm
+                    results = list(tqdm.tqdm(pool.imap(run_simulation,
+                                                       simulations,
+                                                       chunksize=self.chunk_size),
+                                             total=len(mappings)))
+                    time = sum([res[1] for res in results])
+                    results = [res[0] for res in results]
+                else:
+                    results = list(pool.map(run_simulation,
+                                            simulations,
+                                            chunksize=self.chunk_size))
+                    time = sum([res[1] for res in results])
+                    results = [res[0] for res in results]
+                self.statistics.add_offset(time)
         else:
             results = []
             # run the simulations sequentially
@@ -258,6 +257,16 @@ def best_time_parser(dir):
     results = {'best_mapping_time' : exec_time}
     return results, list(results.keys())
 
+def evolutionary_logbook_parser(dir):
 
+    with open(os.path.join(dir,'evolutionary_logbook.txt'), 'r') as f:
+        results = []
+        reader = csv.DictReader(f,dialect='excel-tab')
+        for row in reader:
+            row_mod = {}
+            for key in row:
+                row_mod["genetic-" + key.replace(' ','').replace('\t','')] = row[key].replace(' ','').replace('\t','')
+            results.append(row_mod)
+        return results,list(results[0].keys())
 
 

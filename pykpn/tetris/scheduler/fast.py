@@ -90,7 +90,8 @@ class FastSegmentMapper(SingleVariantSegmentMapper):
         self.__start_time = job_table.time
 
         mapping = [None] * len(self.__job_table)
-        avl_core_types = NamedDimensionalNumber(self.platform.core_types())
+        avl_core_types = NamedDimensionalNumber(
+            dict(self.platform.get_processor_types()))
 
         while None in mapping:
             # List of mappings to finish the applications

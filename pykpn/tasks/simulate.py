@@ -69,3 +69,4 @@ def simulate(cfg):
 
         if trace_cfg is not None and trace_cfg['file'] is not None:
             simulation.system.write_simulation_trace(trace_cfg['file'])
+        hydra.utils.call(cfg['cleanup'])

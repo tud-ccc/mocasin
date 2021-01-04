@@ -67,9 +67,9 @@ _tasks = {
         'to_dot',
         'mapping_to_dot',
         "Visualize a mapping as a dot graph"),
-    'platform_to_autgrp': (
-        'platform_to_autgrp',
-        'platform_to_autgrp',
+    'calculate_platform_symmetries': (
+        'calculate_platform_symmetries',
+        'calculate_platform_symmetries',
         "Calculate the Automorphism Group of a Platform Graph"),
     'platform_to_dot': (
         'to_dot',
@@ -84,10 +84,14 @@ _tasks = {
         'solve_query',
         'solve_query',
         "Generates a mapping based on constraints expressed in a query language"),
-    'tetris' : (
+    'tetris_manager' : (
         'tetris',
+        'tetris_manager',
+        "Run the Tetris manager"),
+    'tetris_scheduler' : (
         'tetris',
-        "Run TETRiS scheduler"),
+        'tetris_scheduler',
+        "Run the Tetris scheduler for a single input state"),
     'visualize': (
         'visualize',
         'visualize',

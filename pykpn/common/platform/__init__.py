@@ -7,6 +7,7 @@ import pydot
 
 import math
 
+from collections import Counter
 from enum import Enum
 
 class CommunicationResourceType(Enum):
@@ -317,7 +318,7 @@ class Platform(object):
     platform by creating the corresponding objects.
     """
 
-    def __init__(self, name):
+    def __init__(self, name, symmetries_json = None):
         """Initialize the platform.
 
         This initializes all attributes to empty dicts. Derived classes should
@@ -328,6 +329,8 @@ class Platform(object):
         self._communication_resources = {}  #: dict of communication resources
         self._primitives = {}               #: dict of communication primitives
         self._schedulers = {}               #: dict of schedulers
+        if symmetries_json is not None:
+            self.ag_json = symmetries_json
 
     def processors(self):
         return self._processors.values()
@@ -408,18 +411,13 @@ class Platform(object):
                 'Primitive %s was already added to the platform' % (x.name))
         self._primitives[x.name] = x
 
-    def core_types(self):
+    def get_processor_types(self):
+        """ Returns the counter of processors of each type.
         """
-        Returns the key-value pairs of processor types and the number of
-        processors of such type.
-        """
-        res = {}
+        res = Counter()
         for p in self.processors():
-            if p.type not in res:
-                res[p.type] = 1
-            else:
-                res[p.type] += 1
-        return res.items()
+            res[p.type] += 1
+        return res
 
     def to_pydot(self):
         """

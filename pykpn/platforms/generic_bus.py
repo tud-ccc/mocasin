@@ -14,7 +14,7 @@ from hydra.utils import instantiate
 class GenericBusPlatform(Platform):
     """Represents a flat bus-based platform"""
 
-    def __init__(self, name, num_processors):
+    def __init__(self, name, num_processors, symmetries_json=None):
         """Initialize the platform
 
         Generate `num_processors` processors and schedulers and connect
@@ -22,7 +22,7 @@ class GenericBusPlatform(Platform):
         connects it to the bus. Based on this bus setup, the primitive for
         communication via shared RAM is generated.
         """
-        super().__init__(name)
+        super().__init__(name,symmetries_json)
 
         fd_pes = FrequencyDomain('fd_pes', 500000000)
         fd_ram = FrequencyDomain('fd_ram', 100000000)
@@ -146,7 +146,7 @@ class GenericClusteredPlatform(Platform):
             self.add_primitive(p)
 
 class DesignerPlatformBus(Platform):
-    def __init__(self, processor_0, name="bus"):
+    def __init__(self, processor_0, name="bus", symmetries_json=None):
         """Initializes an example platform with four processing
         elements connected via an shared memory.
         :param processor_0: the processing element for the platform
@@ -154,7 +154,7 @@ class DesignerPlatformBus(Platform):
         :param name: The name for the returned platform
         :type name: String
         """
-        super(DesignerPlatformBus, self).__init__(name)
+        super(DesignerPlatformBus, self).__init__(name,symmetries_json=symmetries_json)
         #This is a workaround until Hydra 1.1 (with recursive instantiaton!)
         if not isinstance(processor_0,Processor):
             processor_0 = instantiate(processor_0)

@@ -1,5 +1,5 @@
+import csv
 import sys
-import pandas as pd
 import math
 from enum import Enum
 
@@ -18,8 +18,8 @@ class RequestStatus(Enum):
 
 
 class Request:
-    def __init__(self, parent, rid, app, arrival, deadline, start_completion_rate=0.0,
-                 status=RequestStatus.NEW):
+    def __init__(self, parent, rid, app, arrival, deadline,
+                 start_completion_rate=0.0, status=RequestStatus.NEW):
         self.__parent = parent
         self.__rid = rid
         self.__app = app
@@ -96,23 +96,19 @@ class ReqTable:
     def add(self, app_name, arrival, deadline, completion_rate=0.0,
             status=RequestStatus.NEW):
         rid = self.__next_rid
-        r = Request(self, rid, app_name, arrival, deadline, completion_rate, status)
+        r = Request(self, rid, app_name, arrival, deadline, completion_rate,
+                    status)
         self.__next_rid += 1
         self.__reqs.append(r)
         return rid
 
     def read_from_file(self, scenario):
-        sdf = pd.read_csv(scenario, comment='#')
-
-        assert sdf.start_time.unique() == [0]
-        reqs = sdf.to_dict('records')
-
-        for r in reqs:
-            if 'start_completion_rate' in r:
-                sc = r['start_completion_rate']
-            else:
-                sc = 0.0
-            self.add(r['app'], r['start_time'], r['deadline'], sc)
+        with open(scenario) as csv_file:
+            reader = csv.DictReader(csv_file)
+            for row in reader:
+                sc = float(row.get('start_cratio', 0.0))
+                self.add(row['app'], float(row['arrival']),
+                         float(row['deadline']), sc)
 
     def to_list(self):
         return self.__reqs.copy()

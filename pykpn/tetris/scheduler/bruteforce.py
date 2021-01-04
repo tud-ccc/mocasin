@@ -96,7 +96,8 @@ class BruteforceStepScheduler:
     def __schedule_calc_values(self, clist):
         energy = 0
         core_types = NamedDimensionalNumber(
-            self.__parent._platform.core_types(), init_only_names=True)
+            dict(self.__parent._platform.get_processor_types()),
+            init_only_names=True)
         for ts, m in zip(self.__job_table, clist):
             cratio = ts.cratio
             app = ts.app
@@ -208,7 +209,7 @@ class BruteforceStepScheduler:
         (core_types, e) = self.__schedule_calc_values(clist)
 
         if not (core_types <= NamedDimensionalNumber(
-                self.__parent._platform.core_types())):
+                dict(self.__parent._platform.get_processor_types()))):
             return
 
         # Check current energy

@@ -112,7 +112,7 @@ class GeneticMapper(object):
             if self.exec_time:
                 num_params += 1
             if self.num_resources:
-                num_params += len(self.platform.core_types())
+                num_params += len(self.platform.get_processor_types())
             #this will weigh a milisecond as equivalent to an additional core
             #todo: add a general parameter for controlling weights
             deap.creator.create("FitnessMin", deap.base.Fitness, weights=num_params*(-1.0,))
@@ -217,8 +217,8 @@ class GeneticMapper(object):
         _,logbook,hof = self.run_genetic_algorithm()
         mapping = hof[0]
         self.simulation_manager.statistics.log_statistics()
-        with open('evolutionary_logbook.pickle','wb') as f:
-            pickle.dump(logbook,f)
+        with open('evolutionary_logbook.txt','w') as f:
+            f.write(str(logbook))
         result = self.representation.fromRepresentation(np.array(mapping))
         self.simulation_manager.statistics.to_file()
         if self.dump_cache:

@@ -10,8 +10,8 @@ from pykpn.platforms.platformDesigner import PlatformDesigner
 from hydra.utils import instantiate
 
 class DesignerPlatformMesh(Platform):
-    def __init__(self, processor_0, processor_1, name="parallella-styled"):
-        super(DesignerPlatformMesh, self).__init__(name)
+    def __init__(self, processor_0, processor_1, name="parallella-styled", symmetries_json=None):
+        super(DesignerPlatformMesh, self).__init__(name,symmetries_json)
         #This is a workaround until Hydra 1.1 (with recursive instantiaton!)
         if not isinstance(processor_0,Processor):
             processor_0 = instantiate(processor_0)
@@ -22,10 +22,10 @@ class DesignerPlatformMesh(Platform):
         designer.newElement("test_chip")
 
         designer.addPeClusterForProcessor("cluster_0", processor_0, 16)
-        topology = meshTopology(['processor_0', 'processor_1', 'processor_2', 'processor_3', 'processor_4',
-                                 'processor_5', 'processor_6', 'processor_7', 'processor_8', 'processor_9',
-                                 'processor_10', 'processor_11', 'processor_12', 'processor_13', 'processor_14',
-                                 'processor_15'])
+        topology = meshTopology(['processor_0000', 'processor_0001', 'processor_0002', 'processor_0003', 'processor_0004',
+                                 'processor_0005', 'processor_0006', 'processor_0007', 'processor_0008', 'processor_0009',
+                                 'processor_0010', 'processor_0011', 'processor_0012', 'processor_0013', 'processor_0014',
+                                 'processor_0015'])
         designer.createNetworkForCluster("cluster_0", 'testNet', topology, sd, 6000000.0, 100, 150, 100, 60)
 
         designer.addPeClusterForProcessor("cluster_1", processor_1, 2)
