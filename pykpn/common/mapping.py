@@ -3,12 +3,13 @@
 #
 # Authors: Christian Menard, Andres Goens, Gerald Hempel
 
-
+from collections import Counter
 import pydot
 import random
 from pykpn.util import logging
 
 log = logging.getLogger(__name__)
+
 
 class ChannelMappingInfo:
     """Simple record to store mapping infos associated with a KpnChannel.
@@ -45,7 +46,6 @@ class Mapping:
     :ivar dict[str, ProcessMappingInfo] _process_info:
         dict of process mapping infos
     """
-
     def __init__(self, kpn, platform):
         """Initialize a Mapping
 
@@ -198,6 +198,19 @@ class Mapping:
         assert processor in self._process_info[process_name].scheduler.processors
         self._process_info[process_name].affinity = processor
 
+    def get_used_processors(self):
+        """ Returns a set of used processors. """
+        return {self.affinity(p) for p in self.kpn.processes()}
+
+    def get_used_processor_types(self):
+        """ Returns the counter of processors of each type used by the mapping.
+        """
+        processors = self.get_used_processors()
+        res = Counter()
+        for p in processors:
+            res[p.type] += 1
+        return res
+
     def to_string(self):
         """Convert mapping to a simple readable string 
         :rtype: string 
@@ -297,7 +310,7 @@ class Mapping:
             prims = {}
             prim_names = sorted([prim.name for prim in prim_list])
             for j, prim in enumerate(prim_names):
-                prims[prim.name] = j+i
+                prims[prim] = j+i
             for chan in sorted(chans_list,key=(lambda c : c.name)):
                 prim = self.primitive(chan)
                 res.append(prims[prim.name])
@@ -394,7 +407,7 @@ class Mapping:
         self.from_list(mapping.to_list())
     
 
-    def to_pydot(self):
+    def to_pydot(self,channels=True):
         """Convert the mapping to a dot graph
 
         The generated graph visualizes how a KPN application is mapped
@@ -416,11 +429,12 @@ class Mapping:
                 cluster.add_subgraph(p_cluster)
 
         primitive_nodes = {}
-        for p in self.platform.primitives():
-            if p.name not in primitive_nodes:
-                node = pydot.Node('primitive_' + p.name, label=p.name)
-                dot.add_node(node)
-                primitive_nodes[p.name] = node
+        if channels:
+            for p in self.platform.primitives():
+                if p.name not in primitive_nodes:
+                    node = pydot.Node('primitive_' + p.name, label=p.name)
+                    dot.add_node(node)
+                    primitive_nodes[p.name] = node
 
         process_nodes = {}
         for p in self.kpn.processes():
@@ -431,20 +445,21 @@ class Mapping:
             p_cluster.add_node(node)
 
         channel_nodes = {}
-        for c in self.kpn.channels():
-            node = pydot.Node('channel_' + c.name, label=c.name,
-                              shape='diamond')
-            channel_nodes[c.name] = node
-            dot.add_node(node)
-            from_node = process_nodes[c.source.name]
-            dot.add_edge(pydot.Edge(from_node, node, minlen=4))
-            for p in c.sinks:
-                to_node = process_nodes[p.name]
-                dot.add_edge(pydot.Edge(node, to_node, minlen=4))
-            info = self._channel_info[c.name]
-            prim_node = primitive_nodes[info.primitive.name]
-            dot.add_edge(pydot.Edge(node, prim_node, style='dashed',
-                                    arrowhead='none'))
+        if channels:
+            for c in self.kpn.channels():
+                node = pydot.Node('channel_' + c.name, label=c.name,
+                                  shape='diamond')
+                channel_nodes[c.name] = node
+                dot.add_node(node)
+                from_node = process_nodes[c.source.name]
+                dot.add_edge(pydot.Edge(from_node, node, minlen=4))
+                for p in c.sinks:
+                    to_node = process_nodes[p.name]
+                    dot.add_edge(pydot.Edge(node, to_node, minlen=4))
+                info = self._channel_info[c.name]
+                prim_node = primitive_nodes[info.primitive.name]
+                dot.add_edge(pydot.Edge(node, prim_node, style='dashed',
+                                        arrowhead='none'))
 
         return dot
 

@@ -25,6 +25,10 @@ _parsers = {
         'pykpn.mapper.utils',
         'best_time_parser',
         'Parses the execution time from the best mapping found.'),
+    'evolutionary_logbook': (
+        'pykpn.mapper.utils',
+        'evolutionary_logbook_parser',
+        'Parses the evolutionary logbooks from the genetic mapper.'),
 }
 
 def available_parsers():
@@ -73,6 +77,8 @@ def parse_multirun(cfg):
 
     :param cfg: Hydra (Omegaconf) config file.
     """
+    hydra.utils.call(cfg['plugin'])
+
     try:
         parsers = []
         for parser in cfg['parsers']:

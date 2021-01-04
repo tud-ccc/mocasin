@@ -87,3 +87,4 @@ class DefaultFullMapper:
         assert not part_mapping.get_unmapped_channels()
         return part_mapping
 
+

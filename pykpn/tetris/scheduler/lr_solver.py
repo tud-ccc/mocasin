@@ -160,11 +160,13 @@ class LRSolver:
         l_rdp = None
         l_d = None
         if self.__relax_r:
-            l_r = NamedDimensionalNumber(self.__platform.core_types(),
-                                         init_only_names=True)
+            l_r = NamedDimensionalNumber(
+                dict(self.__platform.get_processor_types()),
+                init_only_names=True)
         if self.__relax_rdp:
-            l_rdp = NamedDimensionalNumber(self.__platform.core_types(),
-                                           init_only_names=True)
+            l_rdp = NamedDimensionalNumber(
+                dict(self.__platform.get_processor_types()),
+                init_only_names=True)
         if self.__relax_d:
             l_d = {}
             for j in jobs:
@@ -240,9 +242,9 @@ class LRSolver:
                         for job, _, config in min_configs
                     ],
                     NamedDimensionalNumber(
-                        self.__platform.core_types(),
+                        dict(self.__platform.get_processor_types()),
                         init_only_names=True))) - NamedDimensionalNumber(
-                            self.__platform.core_types())
+                            dict(self.__platform.get_processor_types()))
                 new_l_r = NamedDimensionalNumber.max_per_dim(
                     l[1] + delta * self.__step_size_resource(t), 0.0)
                 if l[1] != new_l_r:
@@ -257,9 +259,10 @@ class LRSolver:
                         if job.deadline != math.inf
                     ],
                     NamedDimensionalNumber(
-                        self.__platform.core_types(),
+                        dict(self.__platform.get_processor_types()),
                         init_only_names=True)) - (NamedDimensionalNumber(
-                            self.__platform.core_types()) * window)
+                            dict(self.__platform.get_processor_types())) *
+                                                  window)
                 new_l_rdp = NamedDimensionalNumber.max_per_dim(
                     l[2] + delta * self.__step_size_rdp(t), 0.0)
                 if l[2] != new_l_rdp:

@@ -1,8 +1,0 @@
-# @package _global_
-defaults:
-  - common
-  - hydra/job_logging: pykpn
-  - tgff: default
-  - platform: default
-  - sdf3: default
-  - platform_to_autgrp_inc

@@ -17,7 +17,7 @@ class DesignerPlatformOdroid(Platform):
             processor_0 = instantiate(processor_0)
         if not isinstance(processor_1,Processor):
             processor_1 = instantiate(processor_1)
-        super(DesignerPlatformOdroid, self).__init__(name)
+        super(DesignerPlatformOdroid, self).__init__(name,kwargs.get('symmetries_json',None))
         if processor_0.frequency_domain.frequency != 1400000000.0:
             log.warning(f"Rescaling processor {processor_0.name} to fit Odroid frequency")
             fd_a7 = FrequencyDomain('fd_a7', 1400000000.0)

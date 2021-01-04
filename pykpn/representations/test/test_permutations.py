@@ -1,7 +1,7 @@
 # Copyright (C) 2017 TU Dresden
 # All Rights Reserved
 #
-# Authors: Andrès Goens, Felix Teweleit
+# Authors: Andrés Goens, Felix Teweleit
 
 from pykpn.representations.permutations import Permutation, PermutationGroup, ProductGroup, SymmetricGroupTranspositions,\
                                                 DuplicateGroup, TrivialGroup, PermutationGroupFromGens

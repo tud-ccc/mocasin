@@ -237,3 +237,36 @@ class ComFullMapper(object):
 
         return ComPartialMapper.generate_mapping_static(self.kpn, self.platform, part_mapping=part_mapping)
 
+
+class InputTupleFullMapper:
+    """Generates a mapping from a list given as input
+    """
+
+    def __init__(self, kpn, platform, trace, representation, input_tuple):
+        """Generates a default mapping for a given platform and KPN application.
+
+        :param kpn: a KPN graph
+        :type kpn: KpnGraph
+        :param platform: a platform
+        :type platform: Platform
+        """
+        self.full_mapper = True
+        self.platform = platform
+        self.kpn = kpn
+        if len(input_tuple) != len(kpn.processes()):
+            log.error(f"Invalid mapping list size: {len(input_tuple)} (expected {len(kpn.processes())})")
+            raise RuntimeError
+        self.mapping_list = input_tuple
+
+        com_mapper = ComFullMapper(kpn,platform)
+        self.proc_mapper = ProcPartialMapper(kpn,platform,com_mapper)
+
+    def generate_mapping(self):
+        """ Generates a mapping from the input list
+
+
+        :param seed: initial seed for the random generator
+        :type seed: integer
+        :param part_mapping: partial mapping to start from
+        """
+        return self.proc_mapper.generate_mapping(self.mapping_list)

@@ -1,6 +1,8 @@
 # @package _global_
--defaults:
-  common
+defaults:
+  - common
+  - plugin: no_plugin
+
 #work at CWD, don't output log
 hydra:
   run:

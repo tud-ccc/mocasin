@@ -92,7 +92,12 @@ class SimulatedAnnealingMapper(object):
         return self.initial_temperature*self.p**np.floor(iter/self.max_rejections)
 
     def query_accept(self,time,temperature):
-        normalized_probability = 1 / (np.exp(time/(0.5*temperature*self.initial_cost)))
+        with np.errstate(over='raise'):
+            try:
+                normalized_probability = 1 / (np.exp(time/(0.5*temperature*self.initial_cost)))
+            except FloatingPointError:
+                normalized_probability = 0
+
         return normalized_probability
 
     def move(self, mapping, temperature):
@@ -148,6 +153,7 @@ class SimulatedAnnealingMapper(object):
                     best_mapping = mapping
                 last_mapping = mapping
                 last_exec_time = cur_exec_time
+                log.info(f"Rejected ({rejections})")
                 rejections = 0
             else:
                 #reject
