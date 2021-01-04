@@ -1,4 +1,5 @@
 import distutils.cmd
+import sys
 
 from setuptools import setup, find_packages
 from setuptools.command.install import install
@@ -17,6 +18,7 @@ install_requirements = [
     'deap',
     'h5py',
     'hydra-core>=1.0.3',
+    'scipy<1.6.0' if sys.version_info < (3, 7) else 'scipy',
     'lxml',
     'matplotlib',
     'networkx',
@@ -27,7 +29,6 @@ install_requirements = [
     'pyyaml',
     'pyxb',
     'recordclass',
-    'scipy==1.5.4',
     'simpy',
     'sortedcontainers',
     'termcolor',
