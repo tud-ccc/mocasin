@@ -1,4 +1,5 @@
 import distutils.cmd
+import sys
 
 from setuptools import setup, find_packages
 from setuptools.command.install import install
@@ -16,7 +17,7 @@ install_requirements = [
     'scipy',
     'cvxpy',
     'cvxopt',
-    'scipy==1.5.4',
+    'scipy' if sys.version_info > (3, 6) else 'scipy<1.6.0',
     'lxml',
     'matplotlib',
     'pint',
