@@ -1,0 +1,118 @@
+<?xml version="1.0"?>
+<sdf3 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.0" type="sdf" xsi:noNamespaceSchemaLocation="http://www.es.ele.tue.nl/sdf3/xsd/sdf3-sdf.xsd">
+  <applicationGraph>
+    <sdf name="g" type="G">
+      <actor name="a0" type="A0">
+        <port name="p2" type="out" rate="1"/>
+        <port name="p3" type="out" rate="1"/>
+      </actor>
+      <actor name="a1" type="A1">
+        <port name="p0" type="in" rate="1"/>
+        <port name="p2" type="out" rate="1"/>
+      </actor>
+      <actor name="a2" type="A2">
+        <port name="p0" type="in" rate="1"/>
+        <port name="p1" type="in" rate="1"/>
+        <port name="p2" type="out" rate="3"/>
+        <port name="p3" type="out" rate="1"/>
+      </actor>
+      <actor name="a3" type="A3">
+        <port name="p0" type="in" rate="1"/>
+        <port name="p1" type="out" rate="1"/>
+      </actor>
+      <actor name="a4" type="A4">
+        <port name="p0" type="in" rate="1"/>
+        <port name="p1" type="in" rate="3"/>
+      </actor>
+      <channel name="ch0" srcActor="a0" srcPort="p2" dstActor="a1" dstPort="p0"/>
+      <channel name="ch1" srcActor="a1" srcPort="p2" dstActor="a2" dstPort="p1"/>
+      <channel name="ch2" srcActor="a2" srcPort="p2" dstActor="a3" dstPort="p0"/>
+      <channel name="ch3" srcActor="a2" srcPort="p3" dstActor="a4" dstPort="p0"/>
+      <channel name="ch4" srcActor="a3" srcPort="p1" dstActor="a4" dstPort="p1"/>
+      <channel name="ch5" srcActor="a0" srcPort="p3" dstActor="a2" dstPort="p0"/>
+    </sdf>
+    <sdfProperties>
+      <actorProperties actor="a0">
+        <processor type="proc_0" default="true">
+          <executionTime time="47"/>
+          <memory>
+            <stateSize max="1"/>
+          </memory>
+        </processor>
+      </actorProperties>
+      <actorProperties actor="a1">
+        <processor type="proc_0" default="true">
+          <executionTime time="53"/>
+          <memory>
+            <stateSize max="1"/>
+          </memory>
+        </processor>
+      </actorProperties>
+      <actorProperties actor="a2">
+        <processor type="proc_0" default="true">
+          <executionTime time="53"/>
+          <memory>
+            <stateSize max="1"/>
+          </memory>
+        </processor>
+      </actorProperties>
+      <actorProperties actor="a3">
+        <processor type="proc_0" default="true">
+          <executionTime time="11"/>
+          <memory>
+            <stateSize max="1"/>
+          </memory>
+        </processor>
+      </actorProperties>
+      <actorProperties actor="a4">
+        <processor type="proc_0" default="true">
+          <executionTime time="96"/>
+          <memory>
+            <stateSize max="1"/>
+          </memory>
+        </processor>
+      </actorProperties>
+      <channelProperties channel="ch0">
+        <bufferSize sz="2" src="2" dst="2" mem="2"/>
+        <tokenSize sz="91"/>
+        <bandwidth min="2"/>
+        <latency min="2"/>
+      </channelProperties>
+      <channelProperties channel="ch1">
+        <bufferSize sz="2" src="2" dst="2" mem="2"/>
+        <tokenSize sz="47"/>
+        <bandwidth min="2"/>
+        <latency min="2"/>
+      </channelProperties>
+      <channelProperties channel="ch2">
+        <bufferSize sz="3" src="3" dst="2" mem="3"/>
+        <tokenSize sz="69"/>
+        <bandwidth min="2"/>
+        <latency min="2"/>
+      </channelProperties>
+      <channelProperties channel="ch3">
+        <bufferSize sz="2" src="2" dst="2" mem="2"/>
+        <tokenSize sz="24"/>
+        <bandwidth min="2"/>
+        <latency min="2"/>
+      </channelProperties>
+      <channelProperties channel="ch4">
+        <bufferSize sz="3" src="2" dst="3" mem="3"/>
+        <tokenSize sz="19"/>
+        <bandwidth min="2"/>
+        <latency min="2"/>
+      </channelProperties>
+      <channelProperties channel="ch5">
+        <bufferSize sz="1" src="1" dst="1" mem="1"/>
+        <tokenSize sz="7"/>
+        <bandwidth min="2"/>
+        <latency min="2"/>
+      </channelProperties>
+      <graphProperties>
+        <timeConstraints>
+          <throughput>0.000370844</throughput>
+        </timeConstraints>
+      </graphProperties>
+    </sdfProperties>
+  </applicationGraph>
+</sdf3>

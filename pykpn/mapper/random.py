@@ -94,7 +94,7 @@ class RandomPartialMapper(object):
         # map channels
         channels = part_mapping.get_unmapped_channels()
         for c in channels:
-            capacity = 4 # fixed channel bound this may cause problems
+            capacity = 16  # fixed channel bound this may cause problems
             suitable_primitives = []
             for p in part_mapping.platform.primitives():
                 src = part_mapping.process_info(c.source).affinity

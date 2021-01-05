@@ -35,6 +35,15 @@ class ProcessMappingInfo:
         self.affinity = affinity
         self.priority = priority
 
+class MappingMetadata:
+    """Simple record to store mapping's energy-utility metadata.
+
+    :ivar float exec_time: the execution time of the mapping
+    :ivar float energy: the energy consumption of the mapping
+    """
+    def __init__(self, exec_time = None, energy = None):
+        self.exec_time = exec_time
+        self.energy = energy
 
 class Mapping:
     """Describes the mapping of a KpnGraph to a Platform.
@@ -64,6 +73,9 @@ class Mapping:
             self._process_info[p.name] = None
         for c in kpn.channels():
             self._channel_info[c.name] = None
+
+        # initialize metadata
+        self.metadata = MappingMetadata()
 
     def update_kpn_object(self,kpn):
         """
@@ -393,7 +405,7 @@ class Mapping:
 
         # map channels
         for i,c in enumerate(self.kpn.channels(),start=i+1):
-            capacity = 4
+            capacity = 16  # fixed channel bound this may cause problems
             suitable_primitives = []
             for p in all_primitives:
                 src = self.process_info(c.source).affinity

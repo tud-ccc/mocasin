@@ -8,5 +8,6 @@ defaults:
   - trace: default
   - representation: SimpleVector
   - mapper: default
+  - sdf3: default
 
 output_file: "${kpn.name}_on_${platform.name}.dot"

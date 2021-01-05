@@ -1,607 +1,357 @@
-#!/usr/bin/env python3
+# Copyright (C) 2020 TU Dresden
+# All Rights Reserved
+#
+# Authors: Robert Khasanov
 
-import math
+from pykpn.tetris.job_state import Job
+from pykpn.tetris.schedule import (Schedule, ScheduleSegment,
+                                   JobSegmentMapping, MAX_END_GAP, ENERGY_EPS,
+                                   TIME_EPS)
+from pykpn.tetris.scheduler.base import SegmentSchedulerBase, SchedulerBase
+
+from collections import Counter
 import heapq
-import time
-
-import copy
-
-from pykpn.tetris.scheduler.base import SchedulerBase
-from pykpn.tetris.context import Context
-from pykpn.tetris.mapping import Mapping, SegmentMapping, JobSegmentMapping
-from pykpn.tetris.job import JobTable
-from pykpn.tetris.extra import NamedDimensionalNumber
-
-EPS = 0.00001
-
-FINISH_MAX_DIFF = 0.5
-
 import logging
+import math
+
 log = logging.getLogger(__name__)
 
 
-class _BfMapping(Mapping):
-    """Mapping class for Bruteforce scheduler.
-
-    This class is used to store intermediate mapping object with
-    additional data.
+def _is_better_eu(a, b):
+    """ Compare two schedules in terms of Energy-Utility Functions.
     """
-    def __init__(self, segments=[], best_case_energy=None):
-        Mapping.__init__(self, segments=segments)
-        assert best_case_energy is not None
-        self.__best_case_energy = best_case_energy
-
-    def copy(self):
-        """_BfMapping: returns a shallow copy of the mapping"""
-        return _BfMapping(self.segments(), self.__best_case_energy)
-
-    @property
-    def best_case_energy(self):
-        return self.__best_case_energy
-
-    @best_case_energy.setter
-    def best_case_energy(self, val):
-        self.__best_case_energy = val
-
-    def __lt__(self, other):
-        if self.count_non_finished_jobs() != other.count_non_finished_jobs():
-            return (self.count_non_finished_jobs() <
-                    other.count_non_finished_jobs())
-        if self.best_case_energy != other.best_case_energy:
-            return self.best_case_energy < other.best_case_energy
-        if self.end_time != other.end_time:
-            return self.end_time > other.end_time
-        if len(self) > 0 and len(other) > 0:
-            if self.last.energy != other.last.energy:
-                return self.last.energy < other.last.energy
-        if self.energy != other.energy:
-            return self.energy < other.energy
-        return id(self) < id(other)
-
-    def count_non_finished_jobs(self):
-        if len(self) == 0:
-            return 0
-        return sum([1 for m in self.last if not m.finished])
+    if b is None:
+        return True
+    if a.energy < b.energy - ENERGY_EPS:
+        return True
+    if a.energy > b.energy + ENERGY_EPS:
+        return False
+    if a.end_time < b.end_time + TIME_EPS:
+        return True
+    return False
 
 
-class BruteforceStepScheduler:
-    def __init__(self, parent_scheduler, job_table, prev_mapping=None,
-                 rescheduling=True, all_combinations=False):
-        assert len(job_table) != 0
-        self.__parent = parent_scheduler
-        self.__job_table = job_table
-        self.__rescheduling = rescheduling
-        self.__prev_mapping = prev_mapping
-        self.__step_best_energy = math.inf
-        self.__force_return = False
-        self.__results = []
-        self.__all_combinations = all_combinations
+def get_jobs_bc_energy(jobs):
+    """ Returns the best energy of job lists.
+    """
+    return sum([(1.0 - j.cratio) * j.request.get_min_energy() for j in jobs
+                if not j.is_terminated()])
 
-        self.__start_time = job_table.time
 
-        if prev_mapping.last is not None:
-            self.__start_energy = prev_mapping.energy
-        else:
-            self.__start_energy = 0.0
+class BruteforceSegmentScheduler(SegmentSchedulerBase):
+    def __init__(self, scheduler):
+        super().__init__(scheduler, scheduler.platform)
 
-        self.__min_segment_time = self.__calc_min_segment_time()
+        # Initialize variables used during the scheduling to None
+        self.__jobs = None
+        self.__step_best_energy = None
+        self.__segment_start_time = None
+        self.__accumulated_energy = None
+        self.__results = None
 
-    def __calc_min_segment_time(self):
-        res = [
-            x.app.best_case_time(start_cratio=x.cratio)
-            for x in self.__job_table
-        ]
-        return min(res)
+    def __eval_min_segment_duration(self):
+        """Evaluate minimal segment duration.
+        """
+        return min([
+            mapping.metadata.exec_time * (1.0 - job.cratio)
+            for job in self.__jobs for mapping in job.request.mappings
+        ])
 
-    def __schedule_calc_values(self, clist):
+    def __eval_core_energy_usage(self, current_mappings):
+        """Evaluate the energy and used processors types of assigned mappings.
+
+        The length of 'current_mappings' equals to the number of already
+        assigned jobs. The energy consumption is evaluated assuming minimal
+        duration of the segment '__min_segment_duration'.
+
+        Args:
+            current_mappings (list of Mapping): The list of mappings
+
+        Returns: a tuple (core_types (Counter), energy (float))
+        """
+        # Initialize the variables to zero values
         energy = 0
-        core_types = NamedDimensionalNumber(
-            dict(self.__parent._platform.get_processor_types()),
-            init_only_names=True)
-        for ts, m in zip(self.__job_table, clist):
-            cratio = ts.cratio
-            app = ts.app
-            config = app.mappings[m]
-            if m != "__idle__":
-                config_rem_time = config.time(start_cratio=cratio)
-                assert config_rem_time > self.__min_segment_time - EPS
-                energy += (config.energy() * self.__min_segment_time /
-                           config.time())
-            core_types += config.core_types
+        core_types = Counter()
+
+        for job, mapping in zip(self.__jobs, current_mappings):
+            cratio = job.cratio
+            if mapping is not None:
+                rratio = 1.0 - cratio
+                config_rem_time = mapping.metadata.exec_time * rratio
+                assert config_rem_time > self.__min_segment_duration - TIME_EPS
+                energy += (mapping.metadata.energy *
+                           self.__min_segment_duration /
+                           mapping.metadata.exec_time)
+                core_types.update(mapping.get_used_processor_types())
         return (core_types, energy)
 
-    def __create_mapping_from_list(self, clist):
-        res = []
-        full_mapping_list = []
+    def __form_schedule_segment(self, job_mappings):
+        """ Construct a schedule segment out of job mappings.
 
-        # Calculate estimated end time
-        for ts, m in zip(self.__job_table, clist):
-            single_job_mapping = JobSegmentMapping(
-                ts.rid, m, start_time=self.__start_time,
-                start_cratio=ts.cratio, finished=True)
-            full_mapping_list.append(single_job_mapping)
+        Args:
+            job_mappings (list of Mapping): The list of job mappings.
 
-        # Check if the scheduling meets deadlines
-        full_meets_deadline = True
-        for sm in full_mapping_list:
-            rid = sm.rid
-            ts = self.__job_table.find_by_rid(rid)
-            d = ts.abs_deadline
-            if sm.end_time > d:
-                full_meets_deadline = False
-            if sm.idle:
-                full_meets_deadline = False
-
-        if full_meets_deadline:
-            cur_energy = sum([x.energy for x in full_mapping_list])
-            total_energy = cur_energy + self.__start_energy
-            if self.__step_best_energy > total_energy:
-                self.__step_best_energy = total_energy
-
-            full_finish_time = max([x.end_time for x in full_mapping_list])
-            new_segment = SegmentMapping(
-                self.__parent._platform, full_mapping_list,
-                time_range=(self.__start_time, full_finish_time))
-            new_mapping = self.__prev_mapping.copy()
-            new_mapping.append_segment(new_segment)
-            new_mapping.best_case_energy = total_energy
-            res.append((full_meets_deadline, total_energy, new_mapping))
-
-        if self.__rescheduling:
-            segment_mapping_list = []
-            min_finish_time = min([x.end_time for x in full_mapping_list])
-            stop_jobs = [
-                x for x in full_mapping_list
-                if x.end_time < min_finish_time + FINISH_MAX_DIFF
-            ]
-            segment_end_time = max([x.end_time for x in stop_jobs])
-            segment_time = segment_end_time - self.__start_time
-            assert segment_time > self.__min_segment_time - EPS
-            for fsm in full_mapping_list:
-                ssm = JobSegmentMapping(fsm.rid, fsm.can_mapping_id,
-                                        start_time=fsm.start_time,
-                                        start_cratio=fsm.start_cratio,
-                                        end_time=segment_end_time)
-                segment_mapping_list.append(ssm)
-
-            # Check if the scheduling meets deadlines
-            segment_meets_deadline = True
-            finished = True
-            for sm in segment_mapping_list:
-                rid = sm.rid
-                ts = self.__job_table.find_by_rid(rid)
-                d = ts.abs_deadline
-                if not sm.finished:
-                    finished = False
-                if sm.end_time > d:
-                    segment_meets_deadline = False
-                app = ts.app
-                min_time_left = app.best_case_time(start_cratio=sm.end_cratio)
-                if min_time_left + sm.end_time > d:
-                    segment_meets_deadline = False
-
-            if segment_meets_deadline:
-                # Evaluate best-case energy consumption
-                cur_energy = sum([x.energy for x in segment_mapping_list])
-                total_energy = cur_energy + self.__start_energy
-                best_case_energy = total_energy
-                for sm in segment_mapping_list:
-                    rid = sm.rid
-                    ts = self.__job_table.find_by_rid(rid)
-                    app = ts.app
-                    bc_energy = app.best_case_energy(
-                        start_cratio=sm.end_cratio)
-                    best_case_energy += bc_energy
-
-                new_segment = SegmentMapping(
-                    self.__parent._platform, segment_mapping_list,
-                    time_range=(self.__start_time, segment_end_time))
-                new_mapping = self.__prev_mapping.copy()
-                new_mapping.append_segment(new_segment)
-                new_mapping.best_case_energy = best_case_energy
-                res.append((segment_meets_deadline, total_energy, new_mapping))
-        return res
-
-    def __schedule_step(self, clist):
-        if self.__force_return:
-            return
-
-        (core_types, e) = self.__schedule_calc_values(clist)
-
-        if not (core_types <= NamedDimensionalNumber(
-                dict(self.__parent._platform.get_processor_types()))):
-            return
-
-        # Check current energy
-        if not self.__all_combinations:
-            if e + self.__start_energy > self.__parent._energy_limit():
-                return
-
-            # Check current energy
-            if e + self.__start_energy > self.__step_best_energy:
-                return
-
-        if len(clist) == len(self.__job_table):
-            only_idle = True
-            for x in clist:
-                if x != "__idle__":
-                    only_idle = False
-            if only_idle:
-                return
-
-            results = self.__create_mapping_from_list(clist)
-            for r, energy, m in results:
-                if r:
-                    self.__results.append(m)
-
-            if not self.__parent._within_time_limit():
-                self.__force_return = True
-            return
-
-        next_app = self.__job_table[len(clist)].app
-        for config in next_app.mappings.keys():
-            if not self.__rescheduling and config == "__idle__":
-                continue
-            self.__schedule_step(clist + [config])
-
-    def schedule(self):
-        self.__schedule_step([])
-        return self.__results
-
-
-class StateMemoryTable:
-
-    COMP_STEP = 0.01
-    TIME_STEP = 0.1
-
-    def __init__(self, num_apps, prune_mem_table=False):
-        self.__num_apps = num_apps
-        self.__table = []
-        self.__prune_mem_table = prune_mem_table
-        self.__added_cnt = 0
-
-    def find_min_energy_from_state(self, task_comp, time, exclude_list=[]):
-        max_energy = 0
-        found = False
-        for idx, s in enumerate(self.__table):
-            if idx in exclude_list:
-                continue
-            if s['time'] > time + EPS:
-                continue
-            rs = True
-            for msc, tc in zip(s['task_comp'], task_comp):
-                if msc + EPS < tc:
-                    rs = False
-                    break
-            if not rs:
-                continue
-            found = True
-            if max_energy < s['min_energy']:
-                max_energy = s['min_energy']
-        if found:
-            return max_energy
-        else:
+        Returns: a ScheduleSegment object
+        """
+        # Skip mappings with all idle jobs
+        only_idle = all(m is None for m in job_mappings)
+        if only_idle:
             return None
 
-    def __prune(self):
-        log.debug("Pruning the memory table. Current size = {}".format(
-            len(self.__table)))
-        to_exclude = []
-        for idx, item in enumerate(self.__table):
-            found_energy = self.find_min_energy_from_state(
-                item['task_comp'], item['time'], to_exclude + [idx])
-            if found_energy is None:
-                continue
-            if found_energy + EPS > item['min_energy']:
-                to_exclude.append(idx)
-        log.debug("Items to remove: {}".format(to_exclude))
-        self.__table = [
-            v for k, v in enumerate(self.__table) if k not in to_exclude
+        # Calculate segment end time
+        jobs_rem_time = [
+            m.metadata.exec_time * (1.0 - j.cratio)
+            for j, m in zip(self.__jobs, job_mappings) if m is not None
         ]
-        log.debug("New size = {}".format(len(self.__table)))
+        segment_duration = max(
+            [t for t in jobs_rem_time if t < min(jobs_rem_time) + MAX_END_GAP])
+        segment_end_time = segment_duration + self.__segment_start_time
+        assert segment_duration > self.__min_segment_duration - TIME_EPS
 
-    def size(self):
-        return len(self.__table)
+        # Construct JobSegmentMapping objects
+        job_segments = []
+        for j, m in zip(self.__jobs, job_mappings):
+            if m is not None:
+                ssm = JobSegmentMapping(j.request, m,
+                                        start_time=self.__segment_start_time,
+                                        start_cratio=j.cratio,
+                                        end_time=segment_end_time)
+                job_segments.append(ssm)
 
-    def add_state(self, task_comp, time, min_energy):
-        assert len(task_comp) == self.__num_apps
-        current_e = self.find_min_energy_from_state(task_comp, time)
-        if current_e is not None:
-            # assert min_energy + EPS > current_e,
-            # "For task_comp = {}, time = {}, found current_e = {},"
-            # " new min_energy = {}".format(
-            # task_comp, time, current_e, min_energy)
-            if abs(min_energy - current_e) < EPS:
+        # Construct a schedule segment
+        new_segment = ScheduleSegment(self.scheduler.platform, job_segments)
+        new_segment.verify()
+        return new_segment
+
+    def __schedule_step(self, current_mappings):
+        """ Perform a single step of the bruteforce algorithm.
+
+        Args:
+            current_mappings (list): list of the chosen mappings for jobs.
+        """
+        (used_cores, e) = self.__eval_core_energy_usage(current_mappings)
+        total_cores = self.scheduler.platform.get_processor_types()
+
+        # Check whether the current used cores do not exceed available cores
+        if (used_cores | total_cores) != total_cores:
+            return
+
+        # Whether all jobs are mapped
+        if len(current_mappings) == len(self.__jobs):
+            segment = self.__form_schedule_segment(current_mappings)
+            if segment is None:
                 return
-            if min_energy < current_e + EPS:
-                return
-        if self.__prune_mem_table and False:
-            task_comp = [
-                math.floor(x / StateMemoryTable.COMP_STEP) *
-                StateMemoryTable.COMP_STEP for x in task_comp
+
+            # Check that all jobs meet dealines
+            for js in segment:
+                if js.end_time > js.request.deadline:
+                    return
+
+            # Generate the job states at the end of the segment
+            new_jobs = [
+                x for x in Job.from_schedule(Schedule(self.platform, segment),
+                                             self.__jobs)
+                if not x.is_terminated()
             ]
-            time = math.ceil(
-                time / StateMemoryTable.TIME_STEP) * StateMemoryTable.TIME_STEP
-        s = {}
-        s['task_comp'] = task_comp
-        s['time'] = time
-        s['min_energy'] = min_energy
-        self.__table.append(s)
 
-        if self.__prune_mem_table:
-            self.__added_cnt += 1
-            if self.__added_cnt % 100 == 0:
-                self.__prune()
+            # Check whether all remaining jobs still meet deadlines
+            if not all(
+                    j.can_meet_deadline(segment.end_time) for j in new_jobs):
+                return
 
-    def dump_str(self):
-        res = "StateMemoryTable:\n"
-        for idx, item in enumerate(self.__table):
-            res += "{}: time = {}, task states = {}, min energy = {}\n".format(
-                idx, item['time'], item['task_comp'], item['min_energy'])
+            new_schedule = self.__prev_schedule.copy()
+            new_schedule.append_segment(segment)
+            self.__results.append((new_schedule, new_jobs))
+            return
+
+        next_job = self.__jobs[len(current_mappings)]
+        for mapping in next_job.request.mappings + [None]:
+            self.__schedule_step(current_mappings + [mapping])
+
+    # TODO: Remove prev_schedule
+    def schedule(self, jobs, segment_start_time=0.0, accumulated_energy=0.0,
+                 prev_schedule=None):
+        """ Schedule the jobs.
+
+        Args:
+            jobs (list of JobState): a list of jobs
+        """
+        # TODO: Remove prev_schedule
+        assert prev_schedule is not None
+
+        assert self.__jobs is None
+
+        # Check that all jobs are in ready state
+        _jobs = []
+        for j in jobs:
+            if j.is_ready() or j.is_running():
+                _jobs.append(j)
+                continue
+            log.warning(
+                "Removing job with a state {} from a job list: {}".format(
+                    j.state, j.to_str()))
+
+        if len(_jobs) == 0:
+            log.warning("No job to schedule")
+            return []
+
+        # Initialize variables
+        self.__jobs = _jobs
+        self.__min_segment_duration = self.__eval_min_segment_duration()
+        self.__step_best_energy = math.inf
+        self.__segment_start_time = segment_start_time
+        self.__results = []
+        self.__accumulated_energy = accumulated_energy
+        self.__prev_schedule = prev_schedule
+
+        # Run step scheduler
+        self.__schedule_step([])
+        results = self.__results
+
+        # Deinitialize variables
+        self.__jobs = None
+        self.__min_segment_duration = None
+        self.__step_best_energy = None
+        self.__results = None
+        self.__segment_start_time = None
+        self.__accumulated_energy = None
+        self.__prev_schedule = None
+
+        return results
+
+
+class ScheduleHeap:
+    def __init__(self):
+        self._index = 0
+        self._data = []
+
+    @staticmethod
+    def _key(schedule, jobs):
+        """ Returns a tuple: (-#finished_jobs, bc_energy, -end_time).
+        """
+        f = schedule.count_finished_jobs()
+        full_bc_energy = schedule.energy + get_jobs_bc_energy(jobs)
+        end_time = schedule.end_time
+        if end_time is None:
+            end_time = -math.inf
+        return (-f, full_bc_energy, -end_time)
+
+    def __len__(self):
+        return len(self._data)
+
+    def empty(self):
+        return len(self._data) == 0
+
+    def push(self, schedule, jobs):
+        key = self._key(schedule, jobs)
+        heapq.heappush(self._data, (key, self._index, (schedule, jobs)))
+        self._index += 1
+
+    def pop(self):
+        return heapq.heappop(self._data)[2]
+
+    def _get_finished_distr(self):
+        res = []
+        for item in self._data:
+            s, _ = item[2]
+            f = s.count_finished_jobs()
+            while len(res) <= f:
+                res.append(0)
+            res[f] += 1
         return res
+
+    def _get_min_bc_energy(self):
+        return min([
+            schedule.energy + get_jobs_bc_energy(jobs)
+            for _, _, (schedule, jobs) in self._data
+        ])
 
 
 class BruteforceScheduler(SchedulerBase):
-    def __init__(self, app_table, platform, **kwargs):
-        super().__init__(app_table, platform)
-        self._platform = platform
-        self.__rescheduling = kwargs['reschedule']
-        self.__drop_high = kwargs["bf_drop"]
+    def __init__(self, platform, **kwargs):
+        super().__init__(platform)
+
         self.__dump_steps = kwargs["bf_dump_steps"]
-
-        self.__time_limit = kwargs["time_limit"]
-
-        self.__scheduled_on_time = True
-        self.__memoization = kwargs["memoization"]
-        self.__dump_mem_table = kwargs["dump_mem_table"]
-        self.__prune_mem_table = kwargs["prune_mem_table"]
+        # Initialize a segment scheduler
+        self.__segment_scheduler = BruteforceSegmentScheduler(self)
 
     @property
     def name(self):
-        if not self.__memoization:
-            res = "Exact"
-        else:
-            res = "Exact-Memo"
-        if self.__time_limit:
-            res += "-TL{:.1f}".format(self.__time_limit)
-        return res
+        return "Exact"
 
-    def _within_time_limit(self):
-        if self.__time_limit is None:
-            return True
-        if time.time() - self.__start_time > self.__time_limit:
-            self.__scheduled_on_time = False
-            return False
-        return True
-
-    def __register_best_scheduling(self, m):
-        self.__best_scheduling = m
+    def __register_best_schedule(self, m):
+        self.__best_schedule = m
         self.__best_energy = m.energy
-        self.__filter_queue()
-        log.debug("Found new best scheduling: energy = {}".format(
+        log.debug("Found new best schedule: energy = {}".format(
             self.__best_energy))
-        log.debug("New scheduling: \n" +
-                  self.__best_scheduling.legacy_dump_str() + '\n')
+        log.debug("New schedule: \n" + self.__best_schedule.to_str() + '\n')
         pass
 
     def _energy_limit(self):
-        return self.__best_energy * (1.0 - self.__drop_high) - EPS
-
-    def __filter_queue(self):
-        energy_limit = self._energy_limit()
-        filtered = [x for x in self.__hq if x.best_case_energy < energy_limit]
-        heapq.heapify(filtered)
-        self.__hq = filtered
-        pass
-
-    def __hq_best_est_energy(self):
-        hq_bc_list = [x.best_case_energy for x in self.__hq]
-        if len(hq_bc_list) > 0:
-            return min(hq_bc_list)
-        else:
-            return math.inf
-
-    def __filter_step_results(self, res):
-        energy_limit = self._energy_limit()
-        new_res = [
-            x for x in res
-            if x.energy < energy_limit and x.best_case_energy < energy_limit
-        ]
-        return new_res
-
-    def __calc_distribution_by_finished(self):
-        num_tasks = len(self.__jobs)
-
-        res = [0] * (num_tasks+1)
-        for i, r in enumerate(res):
-            res[i] = sum(1 for s in self.__hq
-                         if num_tasks - s.count_non_finished_jobs() == i)
-        return res
+        return self.__best_energy + ENERGY_EPS
 
     def __clear(self):
-        self.__best_scheduling = None
+        self.__best_schedule = None
         self.__best_energy = math.inf
-        self._wc_energy = math.inf
-        self.__hq = []
-        if self.__time_limit is not None:
-            self.__start_time = time.time()
 
-    def schedule(self, jobs_start):
+    def schedule(self, jobs, scheduling_start_time=0.0):
         """Find the optimal scheduling.
-        
+
         Args:
-            jobs_start (JobTable): jobs to schedule
+            jobs (list[JobState]): jobs to schedule
+            scheduling_start_time (float): a start time
 
         Returns:
             a tuple (successful, list of configurations)
         """
+        # Initialization
         self.__clear()
-        self.__jobs = jobs_start
+        self.__jobs = jobs
+        self.__scheduling_start_time = scheduling_start_time
 
-        if self.__memoization:
-            return self.__schedule_memoization()
+        # Create ScheduleHeap, push a starting point
+        schedule_heap = ScheduleHeap()
+        schedule_heap.push(Schedule(self.platform, []), self.__jobs)
 
-        # Generate the empty mapping
-        m = None
-
-        heapq.heappush(self.__hq, m)
-
-        finished = []
         step_counter = 0
 
-        while self.__hq:
-            l = len(self.__hq)
-            m = heapq.heappop(self.__hq)
-            if m is None:
-                jobs = self.__jobs.copy()
-                m = _BfMapping(segments=[], best_case_energy=-1)
-                nf = -1
-            else:
-                jobs = JobTable.from_mapping(m)
-                nf = m.count_non_finished_jobs()
-
-            e = m.energy
-            bc = m.best_case_energy
-            if e > self._energy_limit():
-                continue
-
-            if bc > self._energy_limit():
-                continue
-            step_counter += 1
-            # print("len(hq) = {}, e = {:.3f}, bc_energy = {:.3f},"
-            # " self._wc_energy = {:.3f}, non_finished = {},"
-            # " #full_schedulin: {}".format(
-            # l, e, bc, self._wc_energy, nf, len(finished)))
-
-            step_scheduler = BruteforceStepScheduler(
-                self, jobs, m, rescheduling=self.__rescheduling)
-            results = step_scheduler.schedule()
-            results = self.__filter_step_results(results)
-            results.sort()
-
-            for m in results:
-                e = m.energy
-                if e > self._energy_limit():
-                    continue
-                if m.best_case_energy > self._energy_limit():
-                    continue
-                if m.last.finished:
-                    self.__register_best_scheduling(m)
-                    continue
-                heapq.heappush(self.__hq, m)
-
+        while not schedule_heap.empty():
             if step_counter % self.__dump_steps == 0:
-                distr_finished = self.__calc_distribution_by_finished()
-                log.debug("step_counter = {}, queue_size = {}, "
-                          "found_best_energy = {}, hq_best_est_energy = {}, "
-                          "distr_by_finished = {}".format(
-                              step_counter, len(self.__hq), self.__best_energy,
-                              self.__hq_best_est_energy(), distr_finished))
-
-            if not self._within_time_limit():
-                log.debug("Reached time limit, returning")
-                break
-
-        return (self.__best_energy != math.inf, self.__best_scheduling,
-                self.__scheduled_on_time)
-
-    # Run scheduler with memoization
-    def __schedule_memoization(self):
-        self.__mem_step_counter = 0
-        self.__mem_state_table = StateMemoryTable(len(self.__jobs),
-                                                  self.__prune_mem_table)
-        self.__force_return = False
-        self.__schedule_memoization_step(None)
-        return (self.__best_energy != math.inf, self.__best_scheduling,
-                self.__scheduled_on_time)
-
-    # Returns (min energy to finish)
-    def __schedule_memoization_step(self, mapping):
-        if not self._within_time_limit():
-            self.__force_return = True
-            log.debug("Reached time limit, returning")
-            return math.inf
-        self.__mem_step_counter += 1
-        if mapping is None:
-            prev_e = 0.0
-            bc = -1
-            nf = -1
-        else:
-            prev_e = mapping.energy
-            bc = mapping.best_case_energy
-            nf = mapping.count_non_finished_jobs()
-        if bc > self._energy_limit():
-            return (bc - e)
-
-        if self.__mem_step_counter % self.__dump_steps == 0:
-            log.debug("step_counter = {}, found_best_energy = {},"
-                      " size(mem_table) = {}".format(
-                          self.__mem_step_counter, self.__best_energy,
-                          self.__mem_state_table.size()))
-
-        if mapping is not None:
-            cratio_list = [
-                mapping.get_job_end_cratio(x.rid) for x in self.__jobs
-            ]
-            mem_e = self.__mem_state_table.find_min_energy_from_state(
-                cratio_list, mapping.end_time)
-            if self.__dump_mem_table:
-                log.debug(self.__mem_state_table.dump_str())
+                finished_distr = schedule_heap._get_finished_distr()
                 log.debug(
-                    "Check mem table: comp = {}, time = {}, found energy = {}"
-                    .format(cratio_list, mapping.end_time(), mem_e))
-            if mem_e is not None:
-                if self.__dump_mem_table:
-                    log.debug("prev_energy = {}".format(prev_e))
-                if mem_e == math.inf:
-                    if self.__dump_mem_table:
-                        log.debug("Returning")
-                    return math.inf
-                if mem_e + prev_e > self._energy_limit():
-                    if self.__dump_mem_table:
-                        log.debug("Returning")
-                    return mem_e
+                    "step_cnt = {}, heap_size = {}, "
+                    "found_best_energy = {:.3f}, heap_bc_energy = {:.3f}, "
+                    "distr_by_finished = {}".format(
+                        step_counter, len(schedule_heap), self.__best_energy,
+                        schedule_heap._get_min_bc_energy(), finished_distr))
+            step_counter += 1
 
-        if mapping is None:
-            jobs = self.__jobs.copy()
-            passed_mapping = _BfMapping([], -1)
-        else:
-            jobs = JobTable.from_mapping(mapping)
-            passed_mapping = mapping
+            cschedule, cjobs = schedule_heap.pop()
+            cstart_time = self.__scheduling_start_time
+            if len(cschedule.segments()) > 0:
+                cstart_time = cschedule.end_time
 
-        step_scheduler = BruteforceStepScheduler(
-            self, jobs, prev_mapping=passed_mapping,
-            rescheduling=self.__rescheduling, all_combinations=True)
-        results = step_scheduler.schedule()
-        # results = self.__filter_step_results(results)
-        results.sort()
-
-        best_mapping = None
-        child_min_energy = math.inf
-
-        for m in results:
-            if self.__force_return:
-                return child_min_energy
-            e = m.energy
-            if m.best_case_energy > self._energy_limit():
-                if m.best_case_energy - prev_e < child_min_energy:
-                    child_min_energy = m.best_case_energy - prev_e
+            full_bc_energy = cschedule.energy + get_jobs_bc_energy(cjobs)
+            if full_bc_energy > self._energy_limit():
                 continue
-            if m.last.finished:
-                self.__register_best_scheduling(m)
-                best_mapping = m
-                if e - prev_e < child_min_energy:
-                    child_min_energy = e - prev_e
-                continue
-            (child_e) = self.__schedule_memoization_step(m)
-            if e + child_e - prev_e < child_min_energy:
-                child_min_energy = e + child_e - prev_e
 
-        if mapping is not None:
-            self.__mem_state_table.add_state(cratio_list, mapping.end_time,
-                                             child_min_energy)
+            # print("current_jobs", [j.to_str() for j in current_jobs])
+            results = self.__segment_scheduler.schedule(
+                cjobs, segment_start_time=cstart_time,
+                accumulated_energy=cschedule.energy, prev_schedule=cschedule)
+            # print("#segments:", len(segments))
 
-        return child_min_energy
+            for nsegment, njobs in results:
+                # Check whether all jobs are finished
+                all_jobs_finished = all(
+                    nsegment.is_request_completed(j.request)
+                    for j in self.__jobs)
+                if all_jobs_finished:
+                    if _is_better_eu(nsegment, self.__best_schedule):
+                        self.__register_best_schedule(nsegment)
+                    continue
 
-    def total_energy(self):
-        return self.__best_energy
+                # otherwise push the new state into the heap
+                schedule_heap.push(nsegment, njobs)
+
+        return self.__best_schedule
