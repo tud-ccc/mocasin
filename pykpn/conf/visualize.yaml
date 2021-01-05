@@ -8,6 +8,7 @@ defaults:
   - trace: default
   - mapper: default
   - representation: SimpleVector
+  - sdf3: default
 
 task_names: True
 width: 800

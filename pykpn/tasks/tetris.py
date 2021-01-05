@@ -13,10 +13,11 @@ log = logging.getLogger(__name__)
 
 
 def init_logging():
-    logging.getLogger("pykpn.slx.platform.convert_2017_04").setLevel(
-        logging.ERROR)
+    logging.getLogger("pykpn.slx.platform.convert").setLevel(logging.ERROR)
     logging.getLogger("pykpn.slx.platform").setLevel(logging.WARNING)
     logging.getLogger("pykpn.slx.kpn").setLevel(logging.WARNING)
+    logging.getLogger("pykpn.mapper.partial").setLevel(logging.WARNING)
+    logging.getLogger("pykpn.common.mapping").setLevel(logging.WARNING)
 
 
 @hydra.main(config_path='../conf', config_name='tetris_scheduler')
@@ -51,15 +52,15 @@ def tetris_scheduler(cfg):
 
     print("Job table file: " + str(cfg['job_table']))
     print("Scheduler: " + str(scheduling.scheduler.name))
-    print("Scheduling time: {:.5} s".format(scheduling_time))
+    print("Scheduling time: {:.5f} s".format(scheduling_time))
     print("Found schedule: {}".format(scheduling.found_schedule))
     if scheduling.found_schedule:
-        print("Schedule time: {} s".format(scheduling.schedule.end_time))
-        print("Energy consumption: {:.5} J".format(scheduling.schedule.energy))
+        print("Schedule time: {:.5f} s".format(scheduling.schedule.end_time))
+        print("Energy consumption: {:.5f} J".format(scheduling.schedule.energy))
         print("Number of segments: {}".format(len(scheduling.schedule)))
         if cfg["output_schedule"] is not None:
             with open(cfg["output_schedule"], mode="w") as f:
-                scheduling.schedule.legacy_dump(outf=f)
+                print(scheduling.schedule.to_str(verbose=True), file=f)
 
 
 @hydra.main(config_path='../conf', config_name='tetris_manager')

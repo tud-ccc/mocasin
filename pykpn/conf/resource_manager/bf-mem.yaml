@@ -1,23 +1,10 @@
 # @package _group_
 
-_target_: pykpn.tetris.scheduler.bruteforce.BruteforceScheduler
-
-reschedule: true
-
-# Drop schedulings close to current best by bf_drop.
-bf_drop: 0.0
+_target_: pykpn.tetris.scheduler.bruteforce_memo.BruteforceMemoScheduler
 
 # Dump the status of the queue every N steps
 bf_dump_steps: 1000
 
-# Set a time limit
-time_limit:
-
-memoization: true
-
 # Dump the mem table
 dump_mem_table: false
-
-# Enable pruning the mem table
-prune_mem_table: false
 

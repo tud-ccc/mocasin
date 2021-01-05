@@ -1,3 +1,7 @@
+# Copyright (C) 2020 TU Dresden
+# All Rights Reserved
+#
+# Authors: Robert Khasanov
 import csv
 import os
 import time
@@ -20,28 +24,12 @@ class TracePlayer:
         dump_summary (bool): A flag to dump the summary (default: False)
         dump_path (str): A path to summary file
     """
-    def __init__(self, manager, scenario, dump_summary=False, dump_path=""):
+    def __init__(self, manager, requests, dump_summary=False, dump_path=""):
         assert isinstance(manager, ResourceManager)
         self.__manager = manager
 
         # Read scenario from file
-        self.__scenario = scenario
-        assert os.path.exists(scenario)
-        el = []
-        with open(scenario) as csv_file:
-            reader = csv.DictReader(csv_file)
-            for row in reader:
-                el.append({
-                    'arrival': float(row['arrival']),
-                    'app': row['app'],
-                    'deadline': float(row['deadline'])
-                })
-
-        # Check that all events are sorted in the arrival order
-        assert all(el[i]['arrival'] <= el[i + 1]['arrival']
-                   for i in range(len(el) - 1))
-        assert all(x['arrival'] >= 0.0 for x in el)
-        self.__events = el
+        self.__events = requests
 
         # Initialize time
         self.__time = 0.0
@@ -66,11 +54,10 @@ class TracePlayer:
         log.info("Simulation started")
         self.__manager.start()
 
-        for event in self.__events:
-            arr = event['arrival']
-            self.__simulate_to(event['arrival'])
-            self.__manager.new_request(arrival=arr, app=event['app'],
-                                       deadline=event['deadline'])
+        for request in self.__events:
+            arr = request.arrival
+            self.__simulate_to(arr)
+            self.__manager.new_request(request)
 
         new_time = self.__manager.finish()
         self.__time = new_time

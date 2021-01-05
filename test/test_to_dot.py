@@ -82,3 +82,14 @@ def test_tgff_mapping_to_dot(datadir, expected_dir, tgff):
                           cwd=datadir)
     assert filecmp.cmp(os.path.join(expected_dir, dot_file), out_file,
                        shallow=False)
+
+def test_sdf3_kpn_to_dot(datadir, expected_dir):
+    dot_file = "sdf3_medium_cyclic.dot"
+    out_file = os.path.join(datadir, dot_file)
+    subprocess.check_call(["pykpn", "kpn_to_dot",
+                           "kpn=sdf3_reader",
+                           "sdf3.file=../../../sdf3/medium_cyclic.xml",
+                           f"output_file={out_file}"],
+                          cwd=datadir)
+    assert filecmp.cmp(os.path.join(expected_dir, dot_file), out_file,
+                       shallow=False)

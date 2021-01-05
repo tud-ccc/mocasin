@@ -7,6 +7,7 @@ defaults:
   - trace: default
   - representation: SimpleVector
   - mapper : genetic
+  - sdf3: default
 
 outdir : ./
 progress :  false

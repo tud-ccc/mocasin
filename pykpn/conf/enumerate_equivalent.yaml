@@ -8,4 +8,5 @@ defaults:
   - trace: default
   - mapper: from_file
   - representation: Symmetries
+  - sdf3: default
 output_file: equivalent_mappings.txt

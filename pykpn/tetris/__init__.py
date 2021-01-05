@@ -3,14 +3,16 @@
 #
 # Authors: Robert Khasanov
 
-import hydra
-
-from pykpn.tetris.apptable import AppTable
-from pykpn.tetris.context import Context
-from pykpn.tetris.job import JobTable
+from pykpn.tetris.job_state import Job
 from pykpn.tetris.manager import ResourceManager
-from pykpn.tetris.reqtable import ReqTable
 from pykpn.tetris.tracer import TracePlayer
+from pykpn.tetris.tetris_reader import read_applications, read_requests
+
+import hydra
+import logging
+import sys
+
+log = logging.getLogger(__name__)
 
 
 class TetrisScheduling:
@@ -20,24 +22,59 @@ class TetrisScheduling:
     platform. While this class is called from hydra tasks, we dedicate a static
     method to handle hydra configuration object.
     """
-    def __init__(self, scheduler, req_table):
+    def __init__(self, scheduler, reqs):
         self.scheduler = scheduler
-        self.req_table = req_table
-        Context().req_table = self.req_table
+        self.requests = reqs
 
         # Job table
-        self.job_table = JobTable()
-        self.job_table.init_by_req_table(self.req_table)
+        # TODO: no need in a method which generates the whole list, switch to
+        # a single object constructor
+        self.jobs = list(
+            map(lambda x: x.dispatch(), Job.from_requests(self.requests)))
+        log.info("Jobs: {}".format(",".join(x.to_str() for x in self.jobs)))
 
         # Scheduling results
         self.found_schedule = None
         self.schedule = None
-        self.within_time_limit = None
+
+    def check_solution(self):
+        if self.schedule is None:
+            return
+
+        # Verify that a schedule object in a valid state
+        self.schedule.verify()
+
+        failed = False
+
+        # Check whether all jobs finish
+        fjobs = Job.from_schedule(self.schedule, self.jobs)
+        for sj, fj in zip(self.jobs, fjobs):
+            if fj.completed:
+                continue
+            log.error(
+                "Job {} is not completed at the end of the schedule: ".format(
+                    sj.to_str(), fj.to_str()))
+            failed = True
+
+        # Check all jobs meet deadlines
+        for j, js in self.schedule.per_requests().items():
+            if j.deadline >= js[-1].end_time:
+                continue
+            log.error("Job {} does not meet deadline, finished={:.3f}".format(
+                j.to_str(), js[-1].end_time))
+            failed = True
+
+        if failed:
+            log.error("The error occured in the generated schedule:\n")
+            for s in self.schedule:
+                log.error("{}".format(s.to_str()))
+            sys.exit(1)
 
     def run(self):
-        (self.found_schedule, self.schedule,
-         self.within_time_limit) = self.scheduler.schedule(self.job_table)
-        pass
+        self.schedule = self.scheduler.schedule(self.jobs,
+                                                scheduling_start_time=0.0)
+        self.check_solution()
+        self.found_schedule = (self.schedule is not None)
 
     @staticmethod
     def from_hydra(cfg):
@@ -51,19 +88,17 @@ class TetrisScheduling:
         # Set the platform
         platform = hydra.utils.instantiate(cfg['platform'])
 
-        # Initialize application table
+        # Read applications and mappings
         base_apps_dir = cfg['tetris_apps_dir']
-        app_table = AppTable(platform, base_apps_dir)
+        apps = read_applications(base_apps_dir, platform)
 
-        # Initialize a job table, and fill it by job infos from the file
-        req_table = ReqTable(app_table)
-        req_table.read_from_file(cfg['job_table'])
+        # Read jobs file
+        reqs = read_requests(cfg['job_table'], apps)
 
         # Initialize tetris scheduler
-        scheduler = hydra.utils.instantiate(cfg['resource_manager'], app_table,
-                                            platform)
+        scheduler = hydra.utils.instantiate(cfg['resource_manager'], platform)
 
-        scheduling = TetrisScheduling(scheduler, req_table)
+        scheduling = TetrisScheduling(scheduler, reqs)
         return scheduling
 
 
@@ -74,13 +109,10 @@ class TetrisManagement:
     input job request trace and platform. While this class is called from hydra
     tasks, we dedicate a static method to handle hydra configuration object.
     """
-    def __init__(self, manager, tracer, req_table):
+    def __init__(self, manager, tracer, reqs):
         self.manager = manager
         self.tracer = tracer
-        self.req_table = req_table
-        Context().req_table = self.req_table
-
-        # Scheduling results
+        self.requests = reqs
 
     def run(self):
         self.tracer.run()
@@ -97,23 +129,19 @@ class TetrisManagement:
         # Set the platform
         platform = hydra.utils.instantiate(cfg['platform'])
 
-        # Initialize application table
+        # Read applications and mappings
         base_apps_dir = cfg['tetris_apps_dir']
-        app_table = AppTable(platform, base_apps_dir)
+        apps = read_applications(base_apps_dir, platform)
 
-        # Initialize a job table, and fill it by job infos from the file
-        req_table = ReqTable(app_table)
-
-        scenario = cfg['input_jobs']
+        # Read jobs file
+        reqs = read_requests(cfg['input_jobs'], apps)
 
         # Initialize tetris scheduler
-        scheduler = hydra.utils.instantiate(cfg['resource_manager'], app_table,
-                                            platform)
+        scheduler = hydra.utils.instantiate(cfg['resource_manager'], platform)
 
-        manager = ResourceManager(app_table, platform, scheduler,
-                                  cfg['allow_migration'])
+        manager = ResourceManager(platform, scheduler, cfg['allow_migration'])
 
-        tracer = TracePlayer(manager, scenario)
+        tracer = TracePlayer(manager, reqs)
 
-        management = TetrisManagement(manager, tracer, req_table)
+        management = TetrisManagement(manager, tracer, reqs)
         return management
