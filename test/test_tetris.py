@@ -9,7 +9,7 @@ import os
 import pytest
 
 
-def test_tetris_mapping(datadir, expected_dir):
+def test_tetris_schedule(datadir, expected_dir):
     testname = "3337-mix-3-running-deadline_4.csv"
     input_scn = os.path.join(datadir, "tetris", "job_table",
                              "{}".format(testname))
@@ -70,12 +70,12 @@ def run_tetris_scheduler(datadir, scheduler, test_schedule_tuple, options="",
 @pytest.fixture(params=[
     ("hog-1.csv", True, 12.663, 11.866),
     ("hog-1-2.csv", True, 12.353, 14.254),
-    ("hog-big-5-d.csv", True, 84.931, 358.91),
-    ("hog-big-8-d.csv", True, 125.766, 601.98),
+    ("hog-big-5-d.csv", True, 84.931, 358.910),
+    ("hog-big-8-d.csv", True, 125.766, 601.978),
     ("1041-sr_B-1-new-deadline_7.csv", True, 24.379, 31.006),
-    ("1053-af_B-1-new-deadline_7.csv", True, 27.913, 125.33),
+    ("1053-af_B-1-new-deadline_7.csv", True, 27.913, 125.326),
     ("2177-mix-2-new-deadline_2.csv", True, 41.922, 42.123),
-    ("3319-af_B-3-running-deadline_4.csv", True, 78.598, 173.14),
+    ("3319-af_B-3-running-deadline_4.csv", True, 78.598, 173.138),
     ("3337-mix-3-running-deadline_4.csv", True, 13.941, 41.408),
     ("3509-mix-3-running-deadline_5.csv", False, None, None),
     ("3569-mix-3-running-deadline_7.csv", False, None, None),
@@ -91,26 +91,13 @@ def test_tetris_dac(datadir, dac_expected_schedule):
 
 @pytest.fixture(params=[
     ("hog-1.csv", True, 12.663, 11.866),
-    ("hog-big-8-d.csv", True, 125.766, 601.98),
-    ("3337-mix-3-running-deadline_4.csv", True, 11.041, 46.493),
-    ("4405-hog_B-4-new-deadline_6.csv", False, None, None),
-])
-def dac2_expected_schedule(request):
-    return request.param
-
-
-def test_tetris_dac2(datadir, dac2_expected_schedule):
-    run_tetris_scheduler(datadir, "dac-2", dac2_expected_schedule)
-
-
-@pytest.fixture(params=[
-    ("hog-1.csv", True, 12.663, 11.866),
     ("hog-1-2.csv", True, 12.353, 14.254),
     ("hog-big-5-d.csv", False, None, None),
     ("1041-sr_B-1-new-deadline_7.csv", True, 24.379, 31.006),
     ("2177-mix-2-new-deadline_2.csv", True, 41.922, 42.123),
-    ("3319-af_B-3-running-deadline_4.csv", True, 62.667, 158.81),
+    ("3319-af_B-3-running-deadline_4.csv", True, 62.667, 158.809),
     ("3337-mix-3-running-deadline_4.csv", True, 11.015, 43.016),
+    ("3569-mix-3-running-deadline_7.csv", False, None, None),
     ("4405-hog_B-4-new-deadline_6.csv", False, None, None),
 ])
 def fast_expected_schedule(request):
@@ -123,12 +110,13 @@ def test_tetris_fast(datadir, fast_expected_schedule):
 
 @pytest.fixture(params=[
     ("hog-1-2.csv", True, 12.353, 14.254),
-    ("hog-big-5-d.csv", True, 79.872, 366.01),
-    ("hog-big-8-d.csv", True, 114.298, 626.05),
+    ("hog-big-5-d.csv", True, 85.747, 357.768),
+    ("hog-big-8-d.csv", True, 114.298, 626.054),
+    ("2057-sr_B-2-running-deadline_2.csv", True, 39.027, 44.970),
     ("2177-mix-2-new-deadline_2.csv", True, 41.922, 42.123),
-    ("3319-af_B-3-running-deadline_4.csv", True, 67.103, 147.96),
-    ("3337-mix-3-running-deadline_4.csv", True, 12.131, 40.719),
-    ("3509-mix-3-running-deadline_5.csv", True, 37.127, 105.08),
+    ("3319-af_B-3-running-deadline_4.csv", True, 67.103, 147.956),
+    ("3337-mix-3-running-deadline_4.csv", True, 12.676, 40.076),
+    ("3509-mix-3-running-deadline_5.csv", True, 37.127, 105.081),
     ("4405-hog_B-4-new-deadline_6.csv", False, None, None),
 ])
 def wwt15_expected_schedule(request):
@@ -155,12 +143,11 @@ def test_tetris_wwt15_rdp(datadir, wwt15_rdp_expected_schedule):
 
 @pytest.fixture(params=[
     ("hog-1.csv", True, 12.663, 11.866),
-    ("hog-1-2.csv", True, 12.353, 14.254),
-    ("1041-sr_B-1-new-deadline_7.csv", True, 24.379, 31.006),
-    ("1053-af_B-1-new-deadline_7.csv", True, 27.913, 125.33),
+    ("1053-af_B-1-new-deadline_7.csv", True, 27.913, 125.326),
     ("2177-mix-2-new-deadline_2.csv", True, 41.922, 42.123),
-    #     ("3337-mix-3-running-deadline_4.csv", True, 15.144, 32.513), # FIXME: This test is too long, need to find a substitution
     ("3569-mix-3-running-deadline_7.csv", False, None, None),
+    ("3658-mix-3-running-deadline_6.csv", True, 10.692, 46.171),
+    ("4412-hog_B-4-running-deadline_6.csv", True, 80.760, 238.836),
 ])
 def bf_expected_schedule(request):
     return request.param

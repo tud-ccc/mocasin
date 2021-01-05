@@ -1,3 +1,7 @@
+# Copyright (C) 2020 TU Dresden
+# All Rights Reserved
+#
+# Authors: Robert Khasanov
 """This module implements scheduler with an algorithm from:
 
 S. Wildermann, A. Weichslgartner, and J. Teich, “Design methodology
@@ -6,18 +10,18 @@ in 2015 IEEE International Symposium on Object/Component/Service-Oriented
 Real-Time Distributed Computing Workshops, April 2015, pp. 103–110.
 """
 
-from pykpn.tetris.scheduler.base import (SingleVariantSegmentMapper,
+from pykpn.tetris.job_state import Job
+from pykpn.tetris.schedule import (Schedule, ScheduleSegment,
+                                   JobSegmentMapping, MAX_END_GAP)
+from pykpn.tetris.scheduler.base import (SingleVariantSegmentScheduler,
                                          SingleVariantSegmentizedScheduler)
 from pykpn.tetris.scheduler.lr_solver import LRSolver, LRConstraint
-from pykpn.common.platform import Platform
-from pykpn.tetris.job import Job, JobTable
-from pykpn.tetris.mapping import SegmentMapping, JobSegmentMapping
-from pykpn.tetris.extra import NamedDimensionalNumber
 
-import math
+from collections import Counter
 from enum import Enum
-
 import logging
+import math
+
 log = logging.getLogger(__name__)
 
 
@@ -32,7 +36,7 @@ class WWT15ExploreMode(Enum):
     BEST = 2
 
 
-class WWT15SegmentMapper(SingleVariantSegmentMapper):
+class WWT15SegmentScheduler(SingleVariantSegmentScheduler):
     """ MMKP-based application mapping.
 
     At the beginning, using Lagrangian relaxation solver we obtain the
@@ -42,19 +46,19 @@ class WWT15SegmentMapper(SingleVariantSegmentMapper):
     their cost.
 
     Args:
-        parent_scheduler: A segmentized scheduler
+        scheduler: A segmentized scheduler
         platform (Platform): Platform
         sortingKey (SortingKey): By which order application are mapped
         allow_local_violations (bool): whethen we allow to choose "slow"
             configurations which can be compensated in a next segment
     """
-    def __init__(self, parent_scheduler, platform,
+    def __init__(self, scheduler, platform,
                  sorting_key=WWT15SortingKey.MINCOST,
                  allow_local_violations=True,
                  explore_mode=WWT15ExploreMode.ALL,
                  lr_constraints=LRConstraint.RESOURCE, lr_rounds=1000):
 
-        super().__init__(parent_scheduler, platform)
+        super().__init__(scheduler, platform)
 
         self.__sorting_key = sorting_key
         self.__allow_local_violations = allow_local_violations
@@ -62,26 +66,29 @@ class WWT15SegmentMapper(SingleVariantSegmentMapper):
 
         self.__lr_solver = LRSolver(platform, lr_constraints, lr_rounds)
 
-    def schedule(self, jobs):
+    def schedule(self, jobs, segment_start_time=0.0):
 
         # Solve Lagrangian relaxation of MMKP
-        l, min_configs = self.__lr_solver.solve(jobs)
+        log.debug("Solving Lagrangian relaxation of MMKP...")
+        l, job_mappings = self.__lr_solver.solve(
+            jobs, segment_start_time=segment_start_time)
+        log.debug("Found lambda = {}".format(l))
 
-        assert isinstance(l, tuple)
-
-        for j in min_configs:
-            log.debug("Job rid = {}, config = {}[{}], f = {}".format(
-                j[0].rid, j[1], j[2].core_types,
-                LRSolver.job_config_cost(j[0], j[2], l)))
+        for j, m in job_mappings:
+            log.debug("Job {}, mapping {} [e:{:.3f}], f = {:.3f}".format(
+                j.to_str(), m.get_used_processor_types(), m.metadata.energy,
+                LRSolver.job_config_cost(j, m, l)))
 
         # Sort applications by a defined sorting key
         if self.__sorting_key == WWT15SortingKey.MINCOST:
             # Sort applications that f(x_i*, lambda*) <= f(x_j*, lambda*), i < j
-            min_configs.sort(
-                key=lambda j: (LRSolver.job_config_cost(j[0], j[2], l)))
+            job_mappings.sort(
+                key=lambda x: (LRSolver.job_config_cost(x[0], x[1], l)))
         elif self.__sorting_key == WWT15SortingKey.DEADLINE:
+            assert False, "NYI"
             min_configs.sort(key=lambda j: j[0].deadline)
         elif self.__sorting_key == WWT1515SortingKey.MINCOST_DEADLINE_PRODUCT:
+            assert False, "NYI"
             min_configs.sort(key=lambda j: (LRSolver.job_config_costf(
                 j[0], j[2], l) * j[0].deadline))
         else:
@@ -89,105 +96,129 @@ class WWT15SegmentMapper(SingleVariantSegmentMapper):
                 self.__sorting_key)
 
         # Empty resource
-        resources = NamedDimensionalNumber(
-            dict(self.platform.get_processor_types()), init_only_names=True)
+        avail_cores = self.platform.get_processor_types()
 
         # Empty segment mapping
-        segment_mapping = SegmentMapping(self.platform)
+        final_job_mappings = {}
 
-        shortest_end_time = None
+        min_rtime = math.inf
 
         # Map incrementally jobs
-        for jc in min_configs:
-            job = jc[0]
-            app = job.app
+        for job, _ in job_mappings:
+            log.debug("Selecting a mapping for {}".format(job.to_str()))
+            log.debug("Available resources: {}".format(avail_cores))
             cratio = job.cratio
+            rratio = 1.0 - cratio
             # Get all configurations of the job, sort them by f(x_i, lambda)
-            clist = [(name, can_mapping,
-                      LRSolver.job_config_cost(job, can_mapping, l))
-                     for name, can_mapping in job.app.mappings.items()
-                     if name != "__idle__"]
-            clist.sort(key=lambda x: x[2])
-
+            cost_mappings = [(LRSolver.job_config_cost(job, m, l), m)
+                             for m in job.request.mappings]
+            cost_mappings.sort()
             assert self.__explore_mode == WWT15ExploreMode.ALL, "NYI"
 
             added = False
-            for cm_id, can_mapping, _ in clist:
-                # Try to map in this order
-                if (resources + can_mapping.core_types <=
-                        NamedDimensionalNumber(
-                            dict(self.platform.get_processor_types()))):
-                    # It is possible to map on the available resources, check
-                    # whether it satisfies its deadline condition.
-                    if can_mapping.time(start_cratio=cratio) > job.deadline:
-                        # This mapping cannot fit deadline condition.
-                        if self.__allow_local_violations:
-                            # Check whether we may compensate the rate of job
-                            # at the end of the segment
-                            if shortest_end_time is None:
-                                # There is no running jobs yet, do not map
-                                continue
-                            if shortest_end_time > job.deadline:
-                                continue
-                            # Construct a temporary job_segment
-                            job_segment = JobSegmentMapping(
-                                job.rid, cm_id, start_time=jobs.time,
-                                start_cratio=cratio,
-                                end_time=shortest_end_time)
-                            end_cratio = job_segment.end_cratio
-                            if (shortest_end_time +
-                                    app.best_case_time(start_cratio=end_cratio)
-                                    > job.abs_deadline):
-                                # This configuration cannot be compensated
-                                continue
-                        else:
+            for cost, mapping in cost_mappings:
+                # Check if the current mapping fits resources
+                map_cores = mapping.get_used_processor_types()
+                log.debug(
+                    "... Checking mapping: {}, t*:{:.3f}, e*:{:.3f}, f:{:.3f}"
+                    .format(map_cores, mapping.metadata.exec_time * rratio,
+                            mapping.metadata.energy * rratio, cost))
+                if map_cores | avail_cores != avail_cores:
+                    log.debug("....... Not enough resources")
+                    continue
+                # It is possible to map on the available resources, check
+                # whether it satisfies its deadline condition.
+                if mapping.metadata.exec_time * rratio + segment_start_time > job.deadline:
+                    # This mapping cannot fit deadline condition.
+                    # TODO: test whether it is useful
+                    if self.__allow_local_violations:
+                        # Check whether we may compensate the rate of job
+                        # at the end of the segment
+                        if min_rtime + segment_start_time > job.deadline:
+                            log.debug("....... Cannot meet deadline")
                             continue
-                    else:
-                        # This configuration can fit the deadline
+                        # Construct a temporary job_segment
                         job_segment = JobSegmentMapping(
-                            job.rid, cm_id, start_time=jobs.time,
-                            start_cratio=job.cratio, finished=True)
-                    segment_mapping.append_job(job_segment,
-                                               expand_time_range=True)
-                    if shortest_end_time is None:
-                        shortest_end_time = job_segment.end_time
+                            job.request, mapping,
+                            start_time=segment_start_time, start_cratio=cratio,
+                            end_time=segment_start_time + min_rtime)
+                        end_cratio = job_segment.end_cratio
+                        bctime = min([
+                            m.metadata.exec_time for m in job.request.mappings
+                        ]) * (1.0-end_cratio)
+                        if (min_rtime + bctime + segment_start_time >
+                                job.deadline):
+                            # This configuration cannot be compensated
+                            log.debug(
+                                "....... Cannot meet deadline at the end of the current segment after selecting this mapping"
+                            )
+                            continue
+                        final_job_mappings[job] = mapping
+                        log.debug("....... Selected")
                     else:
-                        if job_segment.end_time < shortest_end_time:
-                            shortest_end_time = job_segment.end_time
-                    resources = resources + can_mapping.core_types
-                    added = True
-                    break
+                        assert False, "NYI"
+                        log.debug("....... Cannot meet deadline")
+                        continue
+                else:
+                    # This configuration can fit the deadline
+                    final_job_mappings[job] = mapping
+                    rtime = mapping.metadata.exec_time * rratio
+                    min_rtime = min(min_rtime, rtime)
+                    log.debug("....... Selected")
+                avail_cores -= map_cores
+                added = True
+                break
 
-            if not added:
-                # Add idle mapping
-                # TODO: Special care of idle jobs
-                job_segment = JobSegmentMapping(job.rid, "__idle__",
-                                                start_time=jobs.time,
-                                                start_cratio=job.cratio,
-                                                end_time=math.inf)
-                segment_mapping.append_job(job_segment, expand_time_range=True)
-
-        if shortest_end_time is None:
-            # No running jobs were added
+        if all(m is None for m in final_job_mappings):
             return None
 
-        # Cut at the shortest mapping
-        segment_mapping = segment_mapping.max_full_subsegment_from_start()
+        # Calculate segment end time
+        jobs_rem_time = [
+            m.metadata.exec_time * (1.0 - j.cratio)
+            for j, m in final_job_mappings.items() if m is not None
+        ]
+        # TODO: Allow MAX_END_GAP at the end of the segment
+        # * Make sure that min_rtime also includes such MAX_END_GAP
+        # segment_duration = max(
+        #     [t for t in jobs_rem_time if t < min(jobs_rem_time) + MAX_END_GAP])
+        segment_duration = min(jobs_rem_time)
+        segment_end_time = segment_duration + segment_start_time
 
-        # Check that idle jobs do not miss deadline
-        for jm in segment_mapping:
-            if not jm.idle:
+        # Construct the job_mappings
+        job_segments = []
+        for j, m in final_job_mappings.items():
+            if m is None:
+                assert False, "NYI"
                 continue
-            job = jobs.find_by_rid(jm.rid)
-            if job.abs_deadline < shortest_end_time:
+            ssm = JobSegmentMapping(j.request, m,
+                                    start_time=segment_start_time,
+                                    start_cratio=j.cratio,
+                                    end_time=segment_end_time)
+            job_segments.append(ssm)
+
+        # Construct a schedule segment
+        new_segment = ScheduleSegment(self.platform, job_segments)
+        new_segment.verify()
+        # Check that idle jobs do not miss deadline
+        for j, m in final_job_mappings.items():
+            if m is not None:
+                continue
+            if j.deadline < shortest_end_time:
+                assert False, "NYI"
                 return None
 
-        log.debug("Generated segment: {}".format(segment_mapping.legacy_str()))
-        return segment_mapping
+        # Generate the job states at the end of the segment
+        new_jobs = [
+            x for x in Job.from_schedule(Schedule(self.platform, new_segment),
+                                         jobs) if not x.is_terminated()
+        ]
+
+        log.debug("Generated segment: {}".format(new_segment.to_str()))
+        return new_segment, new_jobs
 
 
 class WWT15Scheduler(SingleVariantSegmentizedScheduler):
-    def __init__(self, app_table, platform, **kwargs):
+    def __init__(self, platform, **kwargs):
         sorting_arg = kwargs["wwt15_sorting"]
         if sorting_arg == "COST":
             self.__sorting_key = WWT15SortingKey.MINCOST
@@ -202,6 +233,7 @@ class WWT15Scheduler(SingleVariantSegmentizedScheduler):
         if explore_arg == "ALL":
             self.__explore_mode = WWT15ExploreMode.ALL
         elif explore_arg == "BEST":
+            assert False, "NYI"
             self.__explore_mode = WWT15ExploreMode.BEST
         else:
             assert False, "Unknown explore mode"
@@ -218,11 +250,11 @@ class WWT15Scheduler(SingleVariantSegmentizedScheduler):
             self.__lr_constraints |= LRConstraint.RDP
 
         self.__lr_rounds = kwargs["wwt15_lr_rounds"]
-        segment_mapper = WWT15SegmentMapper(
+        segment_mapper = WWT15SegmentScheduler(
             self, platform, sorting_key=self.__sorting_key,
             explore_mode=self.__explore_mode,
             lr_constraints=self.__lr_constraints, lr_rounds=self.__lr_rounds)
-        super().__init__(app_table, platform, segment_mapper)
+        super().__init__(platform, segment_mapper)
 
         self.__name = self.__generate_name()
 

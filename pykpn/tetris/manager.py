@@ -1,37 +1,30 @@
-# This file implements classes of Application tables
+# Copyright (C) 2020 TU Dresden
+# All Rights Reserved
 #
-# Author: Robert Khasanov
+# Authors: Robert Khasanov
 
-from pykpn.tetris.scheduler.base import SchedulerBase
+from pykpn.tetris.job_request import JobRequestStatus
+from pykpn.tetris.job_state import Job
+from pykpn.tetris.schedule import Schedule, TIME_EPS
+
 from pykpn.common.platform import Platform
-from pykpn.tetris.apptable import AppTable
-from pykpn.tetris.mapping import Mapping
-from pykpn.tetris.context import Context
-from pykpn.tetris.job import JobTable
-from pykpn.tetris.reqtable import RequestStatus
 
 import logging
 log = logging.getLogger(__name__)
 
 import time
 
-EPS = 0.00001
-
 
 class ResourceManager:
-    def __init__(self, app_table, platform, scheduler, allow_migration=True,
-                 start_time=0.0):
-        assert isinstance(app_table, AppTable)
-        assert isinstance(scheduler, SchedulerBase)
-        assert isinstance(platform, Platform)
-        self.__app_table = app_table
-        self.__scheduler = scheduler
-        self.__platform = platform
-        self.__allow_migration = allow_migration
+    def __init__(self, platform, scheduler, migrations=True, start_time=0.0):
+        self.scheduler = scheduler
+        self.platform = platform
+        self.__migrations = migrations
 
         self.__ctime = start_time
-        self.__job_state_table = None # active_job_table
+        self.__job_state_table = None  # active_job_table
 
+        self.__requests = []
         self.__jobs = None
         self.__active_mapping = None
         self.__history_mapping = None
@@ -41,44 +34,34 @@ class ResourceManager:
         return self.__ctime
 
     @property
-    def app_table(self):
-        return self.__app_table
-
-    @property
-    def scheduler(self):
-        return self.__scheduler
-
-    @property
-    def platform(self):
-        return self.__platform
-
-    @property
-    def allow_migration(self):
-        return self.__allow_migration
-
+    def migrations(self):
+        return self.__migrations
 
     def start(self):
-        self.__jobs = JobTable(time=self.ctime)
-        self.__active_mapping = Mapping()
-        self.__history_mapping = Mapping()
+        self.__jobs = []
+        self.__active_mapping = Schedule(self.platform)
+        self.__history_mapping = Schedule(self.platform)
 
     def __simulate_segment(self, segment):
         """Simulare the RM by a mapping segment."""
         if len(self.__history_mapping) > 0:
             # Assert no gaps in the actual scheduling
             assert abs(self.__history_mapping.end_time -
-                       segment.start_time) < EPS
+                       segment.start_time) < TIME_EPS
 
         self.__history_mapping.append_segment(segment)
 
-        for job in segment:
-            j = self.__jobs.find_by_rid(job.rid)
-            j.cratio = job.end_cratio
-            if job.finished:
-                log.info("t:{:.2f}, job (rid={}) finished".format(
-                    segment.end_time, job.rid))
-                self.__jobs.remove(job.rid)
-        self.__jobs.time = segment.end_time
+        new_jobs = Job.from_schedule(Schedule(self.platform, [segment]),
+                                     init_jobs=self.__jobs)
+
+        for job in new_jobs:
+            if job.is_terminated():
+                log.info("t:{:.2f}, job {} finished".format(
+                    segment.end_time, job.app.name))
+
+        new_jobs = [x for x in new_jobs if not x.is_terminated()]
+
+        self.__jobs = new_jobs
 
     def simulate_to(self, new_time):
         assert isinstance(new_time, (int, float))
@@ -87,22 +70,22 @@ class ResourceManager:
 
         log.debug("Advancing the simulation time to t:{:.2f}".format(new_time))
 
-        new_active_scheduling = Mapping()
+        new_active_scheduling = Schedule(self.platform)
 
         # If there is an active mapping, then update the states by segments
         for segment in self.__active_mapping:
-            assert segment.start_time > self.ctime - EPS, (
+            assert segment.start_time > self.ctime - TIME_EPS, (
                 "The start of the segment ({}) in the past"
                 " (current time is {})".format(segment.start_time, self.ctime))
 
-            if segment.start_time < new_time - EPS:
+            if segment.start_time < new_time - TIME_EPS:
                 # If the segment starts before the new time
-                if segment.end_time - EPS < new_time:
+                if segment.end_time - TIME_EPS < new_time:
                     # Easy case, the whole segment
                     self.__simulate_segment(segment)
                 else:
                     # If the new time in the middle of the segment, then split
-                    s1, s2 = segment.split_at_time(new_time)
+                    s1, s2 = segment.split(new_time)
                     self.__simulate_segment(s1)
                     new_active_scheduling.append_segment(s2)
             else:
@@ -119,43 +102,48 @@ class ResourceManager:
             self.simulate_to(finish_time)
         return self.ctime
 
-    def new_request(self, arrival, app, deadline):
+    def new_request(self, request):
+        arrival = request.arrival
+        app = request.app
+        deadline = request.deadline
         assert self.ctime == arrival
 
-        # Add a new request into request table
-        rid = Context().req_table.add(app, arrival, deadline)
-        log.info(
-            "t:{:.2f}  New request {}, application = {}, deadline = {}".format(
-                arrival, rid, app, deadline))
+        # Add a new request into request list
+        self.__requests.append(request)
+        log.info("t:{:.2f}  New request {}, deadline = {}".format(
+            arrival, app.name, deadline))
 
         # Create a copy of the current job list with the new request
         new_job_list = self.__jobs.copy()
-        new_job_list.add(rid)
+        new_job_list.append(Job.from_request(request))
 
         # Generate scheduling with the new job
         st = time.time()
-        res, scheduling, _ = self.scheduler.schedule(new_job_list)
+        schedule = self.scheduler.schedule(new_job_list,
+                                           scheduling_start_time=self.ctime)
         et = time.time()
-        log.debug("Time to find a scheduling: {}".format(et - st))
+        log.debug("Time to find the schedule: {}".format(et - st))
 
-        if res:
+        if schedule:
             log.info("t:{:.2f}  Request {} is accepted".format(
-                self.ctime, rid))
-            log.debug("t:{:.2f}  {}".format(self.ctime, scheduling))
-            # scheduling.dump_jobs_info()
+                self.ctime, app.name))
+            log.debug("t:{:.2f}  {}".format(self.ctime,
+                                            schedule.to_str(verbose=True)))
             # Update job list and active scheduling
-            self.__jobs.add(rid)
-            self.__active_mapping = scheduling
-            Context().req_table[rid].status = RequestStatus.ACCEPTED
+            job = Job.from_request(request).dispatch()
+            self.__jobs.append(job)
+            self.__active_mapping = schedule
+            request.status = JobRequestStatus.ACCEPTED
         else:
             log.info("t:{:.2f}  Request {} is rejected".format(
-                self.ctime, rid))
-            Context().req_table[rid].status = RequestStatus.REFUSED
+                self.ctime, request.app.name))
+            request.status = JobRequestStatus.REFUSED
 
     def stats(self):
         res = {}
-        res['requests'] = len(Context().req_table)
-        res['accepted'] = Context().req_table.count_accepted_and_finished()
+        res['requests'] = len(self.__requests)
+        res['accepted'] = sum(x.status == JobRequestStatus.ACCEPTED
+                              for x in self.__requests)
         res['energy'] = self.__history_mapping.energy
         res['scheduler'] = self.scheduler.name
         return res
