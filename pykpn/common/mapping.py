@@ -77,6 +77,28 @@ class Mapping:
         # initialize metadata
         self.metadata = MappingMetadata()
 
+    def update_kpn_object(self,kpn):
+        """
+        This function updates the kpn object in the mapping. Assumes both kpns describe the same application (just different python objects).
+        It propagates all the references in the process/channel info dictionaries to the new object.
+        :param kpn:  The new kpn object
+        """
+        self.kpn = kpn
+        processors = self.platform.processors()
+        schedulers = self.platform.schedulers()
+        for p in kpn.processes():
+            proc_info = self._process_info[p.name]
+            affinity = [proc for proc in processors if proc.name == proc_info.affinity.name][0]
+            proc_info.affinity = affinity
+            scheduler = [sched for sched in schedulers if sched.name == proc_info.scheduler.name][0]
+            proc_info.scheduler = scheduler
+
+        primitives = self.platform.primitives()
+        for c in kpn.channels():
+            chan_info = self._channel_info[c.name]
+            primitive = [prim for prim in primitives if prim.name == chan_info.primitive.name][0]
+            chan_info.primitive = primitive
+
     def channel_info(self, channel):
         """Look up the mapping info of a channel.
 

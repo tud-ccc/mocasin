@@ -18,7 +18,7 @@ def test_generate_mapping_slx(datadir, slx_mapper, slx_kpn, representation):
                           cwd=datadir)
 
     try:
-        file_path = os.path.join(datadir, 'generated_mapping')
+        file_path = os.path.join(datadir, 'mapping.pickle')
         file = open(file_path, 'r')
         file.close()
     except FileNotFoundError:
