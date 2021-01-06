@@ -182,3 +182,4 @@ class KpnSimulation(BaseSimulation):
         simulation = KpnSimulation(platform, kpn, mapping, trace)
 
         return simulation
+
