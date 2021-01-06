@@ -5,6 +5,7 @@
 
 from __future__ import print_function
 import numpy as np
+import numba as nb
 import cvxpy as cvx
 import math
 import random
@@ -15,6 +16,7 @@ import json
 from pykpn.representations import metric_spaces as metric
 from pykpn.util import logging
 import pykpn.util.random_distributions.lp as lp
+
 
 log = logging.getLogger(__name__)
 
@@ -73,6 +75,35 @@ def check_distortion(D,E):
             distortion = distort
     return distortion
 
+
+@nb.njit(fastmath=True, cache=True)
+def _f_base_approx(vec,rg,iota):
+    min = np.inf
+    idx = -1
+    for i in range(rg[0],rg[1]):
+        distsq = 0
+        for j in range(vec.shape[0]):
+            distsq += (iota[i,j] - vec[j])**2
+        if distsq < min:
+            min = distsq
+            idx = i
+    return iota[idx]
+
+#((80,), 5, 16, 5, 16, 16, (16, 16))
+@nb.jit(fastmath=True, parallel=True, cache=True)
+def _f_emb_approx(vec,d,k,split_d,split_k,iota,n):
+    res = np.empty((d,k))
+    for i in nb.prange(d):
+        comp = np.empty(k)
+        for j in nb.prange(k):
+            comp[j] = vec[k*i+j]
+
+        if i < split_d:
+            value = _f_base_approx(comp,(0,split_k),iota)
+        else:
+            value = _f_base_approx(comp,(split_k,n),iota)
+        res[i] = value
+    return res
 
 class MetricSpaceEmbeddingBase():
     def __init__(self,M,embedding_matrix_path=None,verbose=False,
@@ -137,13 +168,16 @@ class MetricSpaceEmbeddingBase():
             self.iota[i] = tuple(E[i])
             self.iotainv[tuple(E[i])] = i
 
+        self._f_iota = np.array(list([self.iota[i] for i in range(M.n)])).reshape([M.n,self._k])
+
+
     def i(self,i):
         assert(0 <= i and i <= self.M.n)
         return self.iota[i]
 
     def inv(self,j):
         assert(j in self.iotainv.keys())
-        return self.iotainv[j]
+        return self.iotainv[tuple(j)]
 
 
     @staticmethod
@@ -215,16 +249,21 @@ class MetricSpaceEmbeddingBase():
         return lowerdim,d
 
     def approx(self,vec,rg):
-        idxs = list(rg)
-        vecs = [list(self.iota[i]) for i in idxs]
-        dists = [np.linalg.norm(np.array(v)-np.array(vec)) for v in vecs]
-        idx = idxs[np.argmin(dists)]
-        #print(idx)
-        return self.iota[idx]
+        return _f_base_approx(np.array(vec),rg,self._f_iota)
 
     def invapprox(self,vec):
-        return self.inv(self.approx(vec))
+        approx = self.approx(vec)
+        return self.inv(approx)
 
+@nb.njit(fastmath=True,parallel=True,cache=True)
+def dist_1(mat,vec):
+    res=np.empty(mat.shape[0],dtype=mat.dtype)
+    for i in nb.prange(mat.shape[0]):
+        acc=0
+        for j in range(mat.shape[1]):
+            acc+=(mat[i,j]-vec[j])**2
+        res[i]=np.sqrt(acc)
+    return res
 
 
 
@@ -250,11 +289,11 @@ class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
         return res
 
     def inv(self,vec):
-        #(iota^d)^{-1}: also elementwise 
+        #(iota^d)^{-1}: also elementwise
         assert( type(vec) is list)
         res = []
         for i in vec:
-            res.append(self.iotainv[i])
+            res.append(self.iotainv[tuple(i)])
         return res
 
 
@@ -263,27 +302,15 @@ class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
         #since the subspaces for every component are orthogonal
         #we can find the minimal vectors componentwise
         if type(i_vec) is np.ndarray:
-            vec = list(i_vec.flat)
+            vec = i_vec.flatten()
         elif type(i_vec) is list or type(i_vec) is tuple:
-            vec = i_vec
+            vec = np.array(i_vec).flatten()
         else:
             log.error(f"approx: Type error, unrecognized type ({type(i_vec)})")
             log.error(f"i_vec: {i_vec}")
             raise RuntimeError("unrecognized type.")
-        assert( len(vec) == self._k * self._d or log.error(f"length of vector ({len(vec)}) does not fit to dimensions ({self._k} * {self._d})"))
-
-        res = []
-        for i in range(0,self._d):
-            comp = []
-            for j in range(0,self._k):
-                comp.append(vec[self._k*i +j])
-
-            if i < self._split_d:
-                value = MetricSpaceEmbeddingBase.approx(self, tuple(comp),range(0,self._split_k))
-            else:
-                value = MetricSpaceEmbeddingBase.approx(self, tuple(comp),range(self._split_k,self.M.n))
-            res.append(value)
-
+        assert(vec.shape[0] == self._k * self._d or log.error(f"length of vector ({vec.shape[0]}) does not fit to dimensions ({self._k} * {self._d})"))
+        res = _f_emb_approx(vec,self._d,self._k,self._split_d,self._split_k,self._f_iota,self.M.n)
         return res
 
     def invapprox(self,vec):
@@ -291,7 +318,7 @@ class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
             flat_vec = [item for sublist in vec for item in sublist]
         else:
             flat_vec = vec.flatten()
-        return self.inv(self.approx(flat_vec))
+        return self.inv(self.approx(flat_vec).tolist())
 
     def uniformVector(self):
         k = len(self.iota)
@@ -302,11 +329,10 @@ class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
         return res
 
     def uniformFromBall(self,p,r,npoints=1):
+        #assumes p is flat (for optimization)
         vecs = []
         for _ in range(npoints):
-            p_flat = [item for sublist in map(list,p) for item in sublist]
-            #print(f"k : {self.k}, shape p: {np.array(p).shape},\n p: {p} \n p_flat: {p_flat}")
-            v = (np.array(p_flat)+ np.array(r*lp.uniform_from_p_ball(p=self.p,n=self._k*self._d))).tolist()
+            v = (np.array(p)+ np.array(r*lp.uniform_from_p_ball(p=self.p,n=self._k*self._d))).tolist()
             vecs.append(self.approx(v))
             
         return vecs

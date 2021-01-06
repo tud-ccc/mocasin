@@ -597,7 +597,7 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
         return as_array
 
     def _elem2SimpleVec(self,x):
-        return self.inv(self.approx(x[:(self._k*self._d)]))
+        return self.inv(self.approx(x[:(self._k*self._d)]).tolist())
 
     def _uniform(self):
         res = np.array(self.uniformVector()).flatten()
@@ -609,10 +609,7 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
     def _uniformFromBall(self,p,r,npoints=1):
         log.debug(f"Uniform from ball with radius r={r} around point p={p}")
         #print(f"point of type {type(p)} and shape {p.shape}")
-        point = []
-        for i in range(self._d):
-            val = []
-            point.append(list(p)[self._k*i:self._k*(i+1)])
+        point = np.array(p).flatten()
         results_raw = MetricSpaceEmbedding.uniformFromBall(self,point,r,npoints)
         results = list(map(lambda x : np.array(list(np.array(x).flat)),results_raw))
         if self.extra_dims:

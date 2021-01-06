@@ -128,5 +128,23 @@ def D():
     [2., 4., 2., 4., 4., 4., 4., 2., 2., 4., 4., 2., 1., 4., 2., 4., 4., 4., 4., 0.]])
 
 
+@pytest.fixture
+def d():
+    return 11
 
+@pytest.fixture
+def k():
+    return 17
+
+@pytest.fixture
+def split_d():
+    return 8
+
+@pytest.fixture
+def split_k():
+    return 12
+
+@pytest.fixture
+def n():
+    return 5
 
