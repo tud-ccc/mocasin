@@ -65,11 +65,12 @@ def check_distortion(D,E):
     for dist in it:
         x, y = it.multi_index
         distance_vecs = np.linalg.norm(E[x] - E[y])
-        if dist != 0:
+        if dist != 0 and distance_vecs != 0:
             distort = np.abs(distance_vecs / dist)
-        elif distance_vecs != 0:
+            distort = max(distort,1/distort)
+        elif distance_vecs != 0: #dist = 0
             distort = 1 + np.abs(distance_vecs)
-        else:
+        else: #both 0
             distort = 0
         if distort > distortion:
             distortion = distort
