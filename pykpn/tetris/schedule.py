@@ -16,6 +16,7 @@ from pykpn.tetris.job_request import JobRequestInfo
 
 from pykpn.common.mapping import Mapping
 from pykpn.common.platform import Platform
+from pykpn.representations import SimpleVectorRepresentation
 
 from collections import Counter
 from functools import reduce
@@ -269,7 +270,7 @@ class ScheduleSegment:
             res = res and jm.finished
         return res
 
-    def verify(self):
+    def verify(self, only_counters=False):
         """ Verify that ScheduleSegment in a consistent stay.
         """
         failed = False
@@ -289,11 +290,21 @@ class ScheduleSegment:
                 failed = True
 
         # Check that there are enough processors
-        cores_used = self.get_used_processor_types()
-        cores_total = self.platform.get_processor_types()
-        if (cores_used | cores_total) != cores_total:
-            log.error("Not enough available processors for a schedule segment")
-            failed = True
+        if only_counters:
+            cores_used = self.get_used_processor_types()
+            cores_total = self.platform.get_processor_types()
+            if (cores_used | cores_total) != cores_total:
+                log.error(
+                    "Not enough available processors for a schedule segment")
+                failed = True
+        else:
+            for j1, j2 in itertools.combinations(self.jobs(), r=2):
+                j1_cores = j1.mapping.get_used_processors()
+                j2_cores = j2.mapping.get_used_processors()
+                if j1_cores.intersection(j2_cores):
+                    log.error(
+                        f"Some jobs share the jobs: {j1_cores}, {j2_cores}")
+                    failed = True
 
         if failed:
             log.error("Some errors found in a segment schedule: {}".format(
@@ -466,10 +477,10 @@ class Schedule:
     def __iter__(self):
         yield from self.__segments
 
-    def verify(self):
+    def verify(self, only_counters=False):
         # Verify segments
         for segment in self:
-            segment.verify()
+            segment.verify(only_counters=only_counters)
 
         failed = False
 
@@ -556,3 +567,44 @@ class Schedule:
                 if j.request == request and j.finished:
                     return True
         return False
+
+    def is_any_request_migrated(self):
+        """ Returns whether any job migrates in the schedule. """
+        job_schedules = self.per_requests()
+        for job, segments in job_schedules.items():
+            rep = SimpleVectorRepresentation(job.app, self.platform)
+            start_mapping_list = rep.toRepresentation(segments[0].mapping)
+            itersegments = iter(segments)
+            next(itersegments)
+            for jm in itersegments:
+                # Compare mappings here
+                segment_mapping_list = rep.toRepresentation(jm.mapping)
+                if start_mapping_list != segment_mapping_list:
+                    return True
+        return False
+
+    def get_job_mappings(self):
+        """ Returns the pairs of jobs and used mappings during the schedule.
+
+        The mappings are given without time ranges, and duplications. The order
+        of the mappings is undefined, though implemented in the order appeared
+        in the schedule.
+
+        Returns: a dict of job and list of mappings.
+        """
+        job_schedules = self.per_requests()
+        rdict = {}
+        for job, segments in job_schedules.items():
+            rep = SimpleVectorRepresentation(job.app, self.platform)
+            job_mapping_list = []
+            for segment in segments:
+                mapping_vect = rep.toRepresentation(segment.mapping)
+                # Check that it is not already included:
+                already_included = any(
+                    rep.toRepresentation(m) == mapping_vect
+                    for m in job_mapping_list)
+                if already_included:
+                    continue
+                job_mapping_list.append(segment.mapping)
+            rdict[job] = job_mapping_list
+        return rdict

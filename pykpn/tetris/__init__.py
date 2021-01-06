@@ -42,7 +42,7 @@ class TetrisScheduling:
             return
 
         # Verify that a schedule object in a valid state
-        self.schedule.verify()
+        self.schedule.verify(only_counters=not self.scheduler.rotations)
 
         failed = False
 

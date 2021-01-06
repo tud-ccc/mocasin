@@ -1,4 +1,3 @@
-from unittest.mock import Mock
 import pytest
 
 from pykpn.common.kpn import KpnProcess, KpnGraph
@@ -29,14 +28,14 @@ def kpn():
 
 
 @pytest.fixture
-def platform(num_procs):
+def platform(num_procs, mocker):
     p = Platform('platform')
     procs = []
     for i in range(num_procs):
-        proc = Processor(('processor' + str(i)), 'proctype', Mock())
+        proc = Processor(('processor' + str(i)), 'proctype', mocker.Mock())
         procs.append(proc)
         p.add_processor(proc)
-    policies = [Mock()]
+    policies = [mocker.Mock()]
     sched = Scheduler('name', procs, policies)
     p.add_scheduler(sched)
     return p

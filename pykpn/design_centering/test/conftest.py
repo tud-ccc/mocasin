@@ -5,7 +5,6 @@ from pykpn.common.platform import Platform, Processor, Scheduler
 from pykpn.common.mapping import Mapping
 from pykpn.representations import SimpleVectorRepresentation
 from scipy.linalg import sqrtm
-from unittest.mock import Mock
 from pykpn.design_centering.volume import *
 import pykpn.design_centering.sample as sample
 
@@ -77,14 +76,14 @@ def kpn():
 
 
 @pytest.fixture
-def platform(num_procs):
+def platform(num_procs, mocker):
     p = Platform('platform')
     procs = []
     for i in range(num_procs):
-        proc = Processor(('processor' + str(i)), 'proctype', Mock())
+        proc = Processor(('processor' + str(i)), 'proctype', mocker.Mock())
         procs.append(proc)
         p.add_processor(proc)
-    policy = Mock()
+    policy = mocker.Mock()
     sched = Scheduler('name', procs, policy)
     p.add_scheduler(sched)
     return p

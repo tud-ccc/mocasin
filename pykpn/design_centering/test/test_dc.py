@@ -3,7 +3,6 @@
 #
 # Author: Gerald Hempel
 
-from unittest.mock import Mock
 from pykpn.representations import SimpleVectorRepresentation
 
 #imports to run DC

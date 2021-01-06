@@ -24,7 +24,7 @@ def enumerate_equivalent(cfg):
     mapping = hydra.utils.instantiate(cfg['mapper'], kpn, platform, trace,representation).generate_mapping()
 
     log.info(("calculating orbit for mapping:" + str(mapping.to_list())))
-    orbit = representation.allEquivalent(mapping.to_list())
+    orbit = representation.allEquivalent(mapping)
     log.info("orbit of size: " + str(len(orbit)))
     with open(cfg['output_file'],'w') as output_file:
         for i,elem in enumerate(orbit):

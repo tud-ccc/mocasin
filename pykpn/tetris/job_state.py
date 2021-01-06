@@ -46,6 +46,7 @@ class Job:
         assert isinstance(cratio, float)
         self.__request = request
         self.__mapping = mapping
+        self.__last_mapping = mapping
 
         self.__state = state
         self.__cratio = cratio
@@ -62,6 +63,10 @@ class Job:
     @property
     def mapping(self):
         return self.__mapping
+
+    @property
+    def last_mapping(self):
+        return self.__last_mapping
 
     @property
     def deadline(self):
@@ -113,9 +118,10 @@ class Job:
         failed = False
         # Mapping should be assigned only when the job in running state
         if self.is_running():
-            if self.mapping is None:
-                log.error("There must be a mapping in a {} state".format(
-                    self.state))
+            if self.mapping is None or self.last_mapping is None:
+                log.error(
+                    "There must be a [last] mapping in a {} state".format(
+                        self.state))
                 failed = True
         else:
             if self.mapping is not None:
@@ -242,6 +248,7 @@ class Job:
 
         # Advance the job state
         self.__mapping = job_segment.mapping
+        self.__last_mapping = job_segment.mapping
         self.__cratio = job_segment.end_cratio
         self.__state = JobStates.RUNNING
         if job_segment.finished:

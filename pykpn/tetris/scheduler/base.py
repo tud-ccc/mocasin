@@ -4,6 +4,7 @@
 # Authors: Robert Khasanov
 
 from pykpn.tetris.job_state import Job
+from pykpn.tetris.orbit_lookup import OrbitLookupManager
 from pykpn.tetris.schedule import Schedule
 
 from abc import ABC, abstractmethod
@@ -21,17 +22,34 @@ class SegmentSchedulerBase(ABC):
 
 
 class SchedulerBase(ABC):
-    def __init__(self, platform, migrations=True, preemptions=True):
+    def __init__(self, platform, orbit_lookup_manager=None, migrations=True,
+                 preemptions=True, rotations=False, **kwargs):
         """A base class for tetris scheduler
+
+        If rotations is False, the scheduler does not rotate the mappings. In
+        the final scheduler it is only checked that total number of used cores
+        of corresponding type does not exceed the number of cores in the
+        platform.
+
+        If orbit_lookup is None, then a new orbit lookup manager will be
+        constructed. Otherwise, it will use one supplied, which is useful in
+        case jobs scheduled several times.
 
         Args:
             platform (Platform): a platform
+            orbit_lookup (OrbitLookupManager): an orbit lookup manager
             migrations (bool): whether scheduler can migrate processes
             preemptions (bool): whether scheduler can preempt processes
+            rotations (bool): whether the scheduler rotate the mappings
         """
         self.__platform = platform
         self.__migrations = migrations
         self.__preemptions = preemptions
+        self.__rotations = rotations
+        if orbit_lookup_manager is None:
+            orbit_lookup_manager = OrbitLookupManager(self.platform)
+        self.__orbit_lookup_manager = orbit_lookup_manager
+
         super().__init__()
 
     @property
@@ -50,6 +68,14 @@ class SchedulerBase(ABC):
     @property
     def preemptions(self):
         return self.__preemptions
+
+    @property
+    def rotations(self):
+        return self.__rotations
+
+    @property
+    def orbit_lookup_manager(self):
+        return self.__orbit_lookup_manager
 
     @abstractmethod
     def schedule(self, jobs, scheduling_start_time=0.0):
