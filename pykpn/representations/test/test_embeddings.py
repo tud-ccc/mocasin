@@ -83,7 +83,7 @@ class TestEmbeddings(object):
                 assert dist <= sigma_embedding_dist and sigma_embedding_dist <= d * dist
 
     def test_numba_acceleration_functions(self,d,k,split_d,split_k,n):
-        iota = np.random.rand(k, n)
+        iota = np.random.rand(n, k)
         vec = np.random.rand(d)
         res = _f_emb_approx(vec, d, k, split_d, split_k, iota, n)
-        assert res.shape == (d,n)
+        assert res.shape == (d,k)
