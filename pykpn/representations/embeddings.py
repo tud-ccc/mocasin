@@ -75,7 +75,18 @@ def check_distortion(D,E):
             distortion = distort
     return distortion
 
-
+# To whomever someday has the misfortune of having to mantain this code:
+# I'm sorry. These functions are confusing. I'll try my best to explain them.
+# The basic idea here is speeding up the approximation of a vector in the
+# representation to the closest vector representing an actual mapping.
+# It's split in two functions that we compile with the numba JIT,
+# the base case (from the MetricSpaceEmbeddingBase class) and the full
+# one. The base case just takes a vector and a range, as well as the
+# lookup matrix iota. The range represents the indices we care about in
+# the vector, since we split the vector in two parts, one for the PEs
+# and one for the channels. We basically take the vector with the least
+# distance to the one we want to approximate and that's our approximation.
+#
 @nb.njit(fastmath=True, cache=True)
 def _f_base_approx(vec,rg,iota):
     min = np.inf
@@ -84,13 +95,21 @@ def _f_base_approx(vec,rg,iota):
         distsq = 0
         for j in range(vec.shape[0]):
             distsq += (iota[i,j] - vec[j])**2
+            #we don't need to take the square root,
+            #since we just care about the minimizing index
         if distsq < min:
             min = distsq
             idx = i
     return iota[idx]
 
-#((80,), 5, 16, 5, 16, 16, (16, 16))
-@nb.jit(fastmath=True, parallel=True, cache=True)
+# For the general case we do the splitting into a mapping of proceses to PEs
+# and a mapping of channels to primitives. That's why we have the two values,
+# split_k and split_d. The value k is for the number of PEs and primitives,
+# and split_k tells us where the PEs end and the primitives start. The d
+# value, on the other hand, represents the number of processes+channels,
+# and split_d accordingly tells us where the processes end and the channels
+# start
+@nb.njit(fastmath=True, parallel=True, cache=True)
 def _f_emb_approx(vec,d,k,split_d,split_k,iota,n):
     res = np.empty((d,k))
     for i in nb.prange(d):
