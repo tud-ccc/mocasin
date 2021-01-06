@@ -6,4 +6,5 @@ defaults:
   - kpn: default
   - trace: default
   - sdf3: default
-  - kpn_to_dot_inc
+
+output_file: "${kpn.name}.dot"
