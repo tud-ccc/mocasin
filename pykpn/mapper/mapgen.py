@@ -29,7 +29,7 @@ class MappingGeneratorPartial(MappingGenerator):
 class MappingGeneratorOrbit(MappingGenerator):
     def __init__(self,representation,mapping):
         # this is not a true (lazy) generator... the next line already generates the whole orbit.
-        self.orbit_gen = representation.allEquivalent(mapping.to_list())
+        self.orbit_gen = representation.allEquivalent(mapping)
         self.representation = representation
         self.next_mapping_index = 0
 
