@@ -3,9 +3,6 @@
 #
 # Authors: Christian Menard
 
-
-from unittest.mock import Mock
-
 import simpy
 
 import pytest
@@ -14,8 +11,8 @@ from pykpn.simulate.process import ProcessState
 
 
 @pytest.fixture
-def running_process(env, kpn_process, processor):
-    kpn_process.workload = Mock()  # disable the normal workload
+def running_process(env, kpn_process, processor, mocker):
+    kpn_process.workload = mocker.Mock()  # disable the normal workload
     kpn_process.start()
     env.run()
     kpn_process.activate(processor)
@@ -42,23 +39,23 @@ class TestRuntimeChannel:
         assert len(channel._sinks) == 0
         assert len(channel._fifo_state) == 0
 
-    def test_set_src(self, channel):
-        process = Mock()
+    def test_set_src(self, channel, mocker):
+        process = mocker.Mock()
         channel.set_src(process)
         assert channel._src is process
         with pytest.raises(AssertionError):
             channel.set_src(process)
 
-    def test_add_sink(self, channel):
-        process = Mock()
+    def test_add_sink(self, channel, mocker):
+        process = mocker.Mock()
         channel.add_sink(process)
         assert process in channel._sinks
         assert channel._fifo_state[process.name] == 0
 
-    def test_can_produce(self, channel):
-        src = Mock()
-        sink1 = Mock()
-        sink2 = Mock()
+    def test_can_produce(self, channel, mocker):
+        src = mocker.Mock()
+        sink1 = mocker.Mock()
+        sink2 = mocker.Mock()
         with pytest.raises(ValueError):
             channel.can_produce(src, 1)
         channel.set_src(src)
@@ -91,10 +88,10 @@ class TestRuntimeChannel:
         with pytest.raises(ValueError):
             list(channel.can_produce(src, 2.5))
 
-    def test_can_consume(self, channel):
-        src = Mock()
-        sink1 = Mock()
-        sink2 = Mock()
+    def test_can_consume(self, channel, mocker):
+        src = mocker.Mock()
+        sink1 = mocker.Mock()
+        sink2 = mocker.Mock()
         with pytest.raises(ValueError):
             channel.can_consume(sink1, 1)
         with pytest.raises(ValueError):
@@ -151,10 +148,10 @@ class TestRuntimeChannel:
         chan.tokens_consumed = env.event()
 
     @pytest.mark.parametrize('num', range(1, 4))
-    def test_wait_for_tokens(self, env, blocked_process, channel, num):
+    def test_wait_for_tokens(self, env, blocked_process, channel, num, mocker):
         sink1 = blocked_process
-        sink2 = Mock()
-        src = Mock()
+        sink2 = mocker.Mock()
+        src = mocker.Mock()
 
         channel.set_src(src)
         channel.add_sink(sink1)
@@ -181,9 +178,9 @@ class TestRuntimeChannel:
         assert sink1.check_state(ProcessState.READY)
 
     @pytest.mark.parametrize('num', range(1, 4))
-    def test_wait_for_slots(self, env, blocked_process, channel, num):
-        sink1 = Mock()
-        sink2 = Mock()
+    def test_wait_for_slots(self, env, blocked_process, channel, num, mocker):
+        sink1 = mocker.Mock()
+        sink2 = mocker.Mock()
         src = blocked_process
 
         channel.set_src(src)
@@ -214,10 +211,10 @@ class TestRuntimeChannel:
         assert wait_process.ok
         assert sink1.check_state(ProcessState.READY)
 
-    def test_consume_invalid(self, channel):
-        sink1 = Mock()
-        sink2 = Mock()
-        src = Mock()
+    def test_consume_invalid(self, channel, mocker):
+        sink1 = mocker.Mock()
+        sink2 = mocker.Mock()
+        src = mocker.Mock()
 
         channel.set_src(src)
         channel.add_sink(sink1)
@@ -226,10 +223,10 @@ class TestRuntimeChannel:
         with pytest.raises(AssertionError):
             list(channel.consume(sink1, 1))
 
-    def test_produce_invalid(self, channel):
-        sink1 = Mock()
-        sink2 = Mock()
-        src = Mock()
+    def test_produce_invalid(self, channel, mocker):
+        sink1 = mocker.Mock()
+        sink2 = mocker.Mock()
+        src = mocker.Mock()
 
         channel.set_src(src)
         channel.add_sink(sink1)
@@ -242,10 +239,10 @@ class TestRuntimeChannel:
         with pytest.raises(AssertionError):
             list(channel.produce(src, 1))
 
-    def test_consume(self, env, channel, running_process):
+    def test_consume(self, env, channel, running_process, mocker):
         sink1 = running_process
-        sink2 = Mock()
-        src = Mock()
+        sink2 = mocker.Mock()
+        src = mocker.Mock()
 
         channel.set_src(src)
         channel.add_sink(sink1)
@@ -280,7 +277,7 @@ class TestRuntimeChannel:
         # try again with some communication phases
         phases = []
         for i in range(1, 6):
-            p = Mock()
+            p = mocker.Mock()
             p.get_costs.side_effect = lambda x, i=i: i * 10
             p.resources = []
             phases.append(p)
@@ -300,7 +297,7 @@ class TestRuntimeChannel:
         resources = []
         for p in phases:
             for i in range(3):
-                r = Mock()
+                r = mocker.Mock()
                 r.simpy_resource = simpy.Resource(env)
                 resources.append(r)
                 p.resources.append(r)
@@ -329,9 +326,9 @@ class TestRuntimeChannel:
 
         assert all([r.simpy_resource.count == 0 for r in resources])
 
-    def test_produce(self, env, channel, running_process):
-        sink1 = Mock()
-        sink2 = Mock()
+    def test_produce(self, env, channel, running_process, mocker):
+        sink1 = mocker.Mock()
+        sink2 = mocker.Mock()
         src = running_process
 
         channel.set_src(src)
@@ -365,7 +362,7 @@ class TestRuntimeChannel:
         # try again with some communication phases
         phases = []
         for i in range(1, 6):
-            p = Mock()
+            p = mocker.Mock()
             p.get_costs.side_effect = lambda x, i=i: i * 10
             p.resources = []
             phases.append(p)
@@ -386,7 +383,7 @@ class TestRuntimeChannel:
         resources = []
         for p in phases:
             for i in range(3):
-                r = Mock()
+                r = mocker.Mock()
                 r.simpy_resource = simpy.Resource(env)
                 resources.append(r)
                 p.resources.append(r)

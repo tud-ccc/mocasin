@@ -198,7 +198,7 @@ class WWT15SegmentScheduler(SingleVariantSegmentScheduler):
 
         # Construct a schedule segment
         new_segment = ScheduleSegment(self.platform, job_segments)
-        new_segment.verify()
+        new_segment.verify(only_counters=not self.scheduler.rotations)
         # Check that idle jobs do not miss deadline
         for j, m in final_job_mappings.items():
             if m is not None:

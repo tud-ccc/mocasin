@@ -10,6 +10,7 @@ from pykpn.tetris.schedule import (Schedule, ScheduleSegment,
 from pykpn.tetris.scheduler.base import SegmentSchedulerBase, SchedulerBase
 
 from collections import Counter
+from functools import reduce
 import heapq
 import logging
 import math
@@ -48,6 +49,11 @@ class BruteforceSegmentScheduler(SegmentSchedulerBase):
         self.__segment_start_time = None
         self.__accumulated_energy = None
         self.__results = None
+
+        if not self.scheduler.preemptions:
+            raise RuntimeError(
+                "Non-preemptable workload is not yet supported by bruteforce scheduler"
+            )
 
     def __eval_min_segment_duration(self):
         """Evaluate minimal segment duration.
@@ -120,8 +126,115 @@ class BruteforceSegmentScheduler(SegmentSchedulerBase):
 
         # Construct a schedule segment
         new_segment = ScheduleSegment(self.scheduler.platform, job_segments)
-        new_segment.verify()
+        new_segment.verify(only_counters=not self.scheduler.rotations)
         return new_segment
+
+    def _rotate_mappings_step(self, init_mappings, rotated_mappings,
+                              all_variants):
+        """ A step of rotate mappings algorithm.
+
+        Returns: whether it found at least one valid rotation.
+        """
+        if len(init_mappings) == len(rotated_mappings):
+            # This is a valid rotation
+            self._rotated_mappings.append(rotated_mappings)
+            return True
+
+        index = len(rotated_mappings)
+        job = self.__jobs[index]
+        mapping = init_mappings[index]
+        if mapping is None:
+            variants = [None]
+        elif not self.scheduler.migrations and job.last_mapping is not None:
+            variants = [mapping]
+        else:
+            variants = self.scheduler.orbit_lookup_manager.get_orbit(
+                job.app, mapping)
+        used_cores = reduce(set.union, [
+            m.get_used_processors() for m in rotated_mappings if m is not None
+        ], set())
+        found = False
+        for m in variants:
+            if m is not None:
+                if m.get_used_processors().intersection(used_cores):
+                    continue
+            if self._rotate_mappings_step(init_mappings,
+                                          rotated_mappings + [m],
+                                          all_variants):
+                found = True
+            if not all_variants and found:
+                return True
+        return found
+
+    def _rotate_mappings(self, init_mappings, all_variants=False):
+        """ Find equivalent non-overlaping mappings for given one.
+
+        If all_variants is true, the function returns all possible valid
+        rotations, otherwise it returns at most one rotation.
+
+        Args:
+            init_mappings (list of Mapping): The list of job mappings.
+            all_variants (bool): generate all valid rotations
+
+        Returns:
+            a list of tuples, each tuple has length of the number of jobs, each
+                element of the tuple is a mapping object.
+        """
+        self._rotated_mappings = []
+        self._rotate_mappings_step(init_mappings, [], all_variants)
+        result = self._rotated_mappings
+        self._rotated_mappings
+        return result
+
+    def __form_segment_variants(self, init_mappings):
+        """ Construct schedule segment variants given the mappings.
+
+        Args:
+            mappings (list of Mapping): The list of job mappings.
+
+        Returns: a list of pairs (Schedule, list of Jobs) objects
+        """
+        # 1. Check whether we need to find all variants.
+        # This is determined, by whether there is any idle jobs with already
+        # specified mapping.
+        if not self.scheduler.migrations:
+            all_variants = any(m is None and j.last_mapping is not None
+                               for j, m in zip(self.__jobs, init_mappings))
+        else:
+            all_variants = False
+
+        # 2. Rotate mappings
+        if self.scheduler.rotations:
+            mappings_variants = self._rotate_mappings(
+                init_mappings, all_variants=all_variants)
+        else:
+            mappings_variants = [init_mappings]
+
+        for mappings in mappings_variants:
+            # 3. Construct the schedule segment
+            segment = self.__form_schedule_segment(mappings)
+            if segment is None:
+                continue
+
+            # 4. Check that all jobs meet dealines
+            if any(js.end_time > js.request.deadline for js in segment):
+                continue
+
+            # Generate the job states at the end of the segment
+            njobs = [
+                x for x in Job.from_schedule(Schedule(self.platform, segment),
+                                             self.__jobs)
+                if not x.is_terminated()
+            ]
+
+            # 5. Check whether all remaining jobs still meet deadlines
+            if not all(j.can_meet_deadline(segment.end_time) for j in njobs):
+                continue
+
+            # 6. Save segment
+            new_schedule = self.__prev_schedule.copy()
+            new_schedule.append_segment(segment)
+            self.__results.append((new_schedule, njobs))
 
     def __schedule_step(self, current_mappings):
         """ Perform a single step of the bruteforce algorithm.
@@ -138,34 +251,17 @@ class BruteforceSegmentScheduler(SegmentSchedulerBase):
 
         # Whether all jobs are mapped
         if len(current_mappings) == len(self.__jobs):
-            segment = self.__form_schedule_segment(current_mappings)
-            if segment is None:
-                return
-
-            # Check that all jobs meet dealines
-            for js in segment:
-                if js.end_time > js.request.deadline:
-                    return
-
-            # Generate the job states at the end of the segment
-            new_jobs = [
-                x for x in Job.from_schedule(Schedule(self.platform, segment),
-                                             self.__jobs)
-                if not x.is_terminated()
-            ]
-
-            # Check whether all remaining jobs still meet deadlines
-            if not all(
-                    j.can_meet_deadline(segment.end_time) for j in new_jobs):
-                return
-
-            new_schedule = self.__prev_schedule.copy()
-            new_schedule.append_segment(segment)
-            self.__results.append((new_schedule, new_jobs))
+            self.__form_segment_variants(current_mappings)
             return
 
         next_job = self.__jobs[len(current_mappings)]
-        for mapping in next_job.request.mappings + [None]:
+        next_mappings = []
+        if self.scheduler.migrations or next_job.last_mapping is None:
+            next_mappings.extend(next_job.request.mappings)
+        else:
+            next_mappings.append(next_job.last_mapping)
+        next_mappings.append(None)
+        for mapping in next_mappings:
             self.__schedule_step(current_mappings + [mapping])
 
     # TODO: Remove prev_schedule
@@ -269,11 +365,16 @@ class ScheduleHeap:
 
 class BruteforceScheduler(SchedulerBase):
     def __init__(self, platform, **kwargs):
-        super().__init__(platform)
+        super().__init__(platform, **kwargs)
 
         self.__dump_steps = kwargs["bf_dump_steps"]
         # Initialize a segment scheduler
         self.__segment_scheduler = BruteforceSegmentScheduler(self)
+
+        if not self.preemptions:
+            raise RuntimeError(
+                "Non-preemptable workload is not yet supported by bruteforce scheduler"
+            )
 
     @property
     def name(self):

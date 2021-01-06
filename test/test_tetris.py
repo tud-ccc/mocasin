@@ -90,6 +90,19 @@ def test_tetris_dac(datadir, dac_expected_schedule):
 
 
 @pytest.fixture(params=[
+    ("3319-af_B-3-running-deadline_4.csv", True, 78.598, 173.138),
+    ("3337-mix-3-running-deadline_4.csv", True, 13.941, 41.408),
+])
+def dac_rot_expected_schedule(request):
+    return request.param
+
+
+def test_tetris_dac_rotations(datadir, dac_rot_expected_schedule):
+    run_tetris_scheduler(datadir, "dac", dac_rot_expected_schedule,
+                         "+resource_manager.rotations=True")
+
+
+@pytest.fixture(params=[
     ("hog-1.csv", True, 12.663, 11.866),
     ("hog-1-2.csv", True, 12.353, 14.254),
     ("hog-big-5-d.csv", False, None, None),
@@ -152,12 +165,38 @@ def test_tetris_wwt15_rdp(datadir, wwt15_rdp_expected_schedule):
 def bf_expected_schedule(request):
     return request.param
 
+
 def test_tetris_bf(datadir, bf_expected_schedule):
     run_tetris_scheduler(datadir, "bf", bf_expected_schedule)
 
 
 def test_tetris_bf_mem(datadir, bf_expected_schedule):
     run_tetris_scheduler(datadir, "bf-mem", bf_expected_schedule)
+
+
+@pytest.fixture(params=[
+    ("3337-mix-3-running-deadline_4.csv", True, 14.803, 36.681),
+])
+def bf_nomig_expected_schedule(request):
+    return request.param
+
+
+@pytest.fixture(params=[
+    ("2177-mix-2-new-deadline_2.csv", True, 41.922, 42.123),
+])
+def bf_rot_nomig_expected_schedule(request):
+    return request.param
+
+
+def test_tetris_bf_nomig(datadir, bf_nomig_expected_schedule):
+    run_tetris_scheduler(datadir, "bf", bf_nomig_expected_schedule,
+                         options="+resource_manager.migrations=False")
+
+
+def test_tetris_bf_rot_nomig(datadir, bf_rot_nomig_expected_schedule):
+    run_tetris_scheduler(
+        datadir, "bf", bf_rot_nomig_expected_schedule, options=
+        "+resource_manager.migrations=False +resource_manager.rotations=True")
 
 
 @pytest.fixture(params=[

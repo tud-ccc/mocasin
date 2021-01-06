@@ -71,13 +71,27 @@ class StateMemoryTable:
 
 class BruteforceMemoScheduler(SchedulerBase):
     def __init__(self, platform, **kwargs):
-        super().__init__(platform)
+        super().__init__(platform, **kwargs)
 
         self.__dump_steps = kwargs["bf_dump_steps"]
         self.__dump_mem_table = kwargs["dump_mem_table"]
 
         # Initialize a step scheduler
         self.__segment_scheduler = BruteforceSegmentScheduler(self)
+
+        if self.rotations:
+            raise RuntimeError(
+                "Rotations are not yet supported by bruteforce-memo scheduler")
+
+        if not self.migrations:
+            raise RuntimeError(
+                "Non-migratable workload is not yet supported by bruteforce-memo scheduler"
+            )
+
+        if not self.preemptions:
+            raise RuntimeError(
+                "Non-preemptable workload is not yet supported by bruteforce-memo scheduler"
+            )
 
     @property
     def name(self):
