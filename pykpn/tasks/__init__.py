@@ -31,10 +31,6 @@ def print_help(cfg=None):
 
 
 _tasks = {
-    'csv_plot': (
-        'csv_plot',
-        'csv_plot',
-        "???"),
     'find_design_center': (
         'find_design_center',
         'dc_task',

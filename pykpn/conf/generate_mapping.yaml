@@ -14,6 +14,3 @@ simulate_best : true
 objective : runtime
 outdir : ./
 progress :  true
-plot_distribution: false
-visualize : false
-show_plots : false
