@@ -87,6 +87,7 @@ def generate_mapping(cfg):
         with open(outdir + 'best_time.txt','w') as f:
             f.write(str(exec_time))
 
+    #NOTE: we might want to remove this when removing all SLX dependencies!
     if cfg['kpn']['_target_'] == 'pykpn.slx.kpn.SlxKpnGraph':
         export_slx_mapping(result,
                            os.path.join(outdir, 'generated_mapping.mapping'))
