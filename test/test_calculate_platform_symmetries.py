@@ -11,15 +11,16 @@ def test_calculate_platform_symmetries_slx(datadir, expected_dir, slx_platform, 
     file_name = "%s.autgrp" % slx_platform
     out_file = os.path.join(datadir, file_name)
 
+    if mpsym:
+        file_name += ".json"
+        out_file += ".json"
+
     subprocess.check_call(["pykpn", "calculate_platform_symmetries",
                            "platform=%s" % slx_platform,
                            "out_file=%s" % out_file,
                            "mpsym=%s" % str(mpsym)],
                           cwd=datadir)
-    if mpsym:
-        file_name += ".json"
-        out_file += ".json"
-    else:
+    if not mpsym:
         file_name += ".out"
         out_file += ".out"
     assert filecmp.cmp(os.path.join(expected_dir, file_name), out_file,
@@ -29,16 +30,17 @@ def test_calculate_platform_symmetries_designer(datadir, expected_dir, designer_
     file_name = "%s.autgrp" % designer_platform_small
     out_file = os.path.join(datadir, file_name)
 
+    if mpsym:
+        file_name += ".json"
+        out_file += ".json"
+
     subprocess.check_call(["pykpn", "calculate_platform_symmetries",
                            "platform=%s" % designer_platform_small,
                            "out_file=%s" % out_file,
                            "mpsym=%s" % str(mpsym)],
                           cwd=datadir)
 
-    if mpsym:
-        file_name += ".json"
-        out_file += ".json"
-    else:
+    if not mpsym:
         file_name += ".out"
         out_file += ".out"
     assert filecmp.cmp(os.path.join(expected_dir, file_name), out_file,
