@@ -64,7 +64,7 @@ def calculate_platform_symmetries(cfg):
            mpsym = False
 
     if mpsym:
-        out_filename = cfg['out_file'] + ".json"
+        out_filename = str(cfg['out_file'])
         mpsym_autgrp = pympsym.ArchGraphAutomorphisms([pympsym.Perm(g) for g in autgrp])
         json_out = mpsym_autgrp.to_json()
         with open(out_filename, 'w') as f:
