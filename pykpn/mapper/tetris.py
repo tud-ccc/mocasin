@@ -25,10 +25,15 @@ def powerset(iterable):
     s = list(iterable)
     return chain.from_iterable(combinations(s, r) for r in range(len(s) + 1))
 
-
+# This class is closely related to Tetris package, probably it should be located
+# in Tetris subpackage. At the same time the class has the interface, similar as
+# other mapper classes. For a while I decided to put it in the "mapper" folder.
+# TODO: Think about where this class should be located
 class TetrisMapper(object):
     def __init__(self, platform, scheduler, pareto_dir="pareto_mappings/"):
-        """Generates a full mapping for a given platform and KPN application.
+        """A multi-application mapper based on Tetris RM.
+
+        Generates a full mapping for a given platform and KPN application.
 
         :param platform: a platform
         :type platform: Platform
@@ -94,6 +99,9 @@ class TetrisMapper(object):
                     #log.warning("The mapping has no energy value, "
                     #            "approximated it")
                     cnt = par_mappings[i].get_used_processor_types()
+                    # This approximation is made as workaround. Ideally, we
+                    # would need create a some sort of energy model.
+                    # TODO (#67): create a simple energy model.
                     par_mappings[i].metadata.energy = (
                         par_mappings[i].metadata.exec_time *
                         (cnt['ARM_CORTEX_A7'] * 0.192 +
@@ -120,6 +128,8 @@ class TetrisMapper(object):
         # Prepare job requests
         job_requests = []
         for kpn, mappings in pareto_fronts.items():
+            # The deadline value is very specific to 5g use case
+            # TODO: pass deadline parameter in argument of the method
             job_requests.append(
                 JobRequestInfo(kpn, mappings, 0.0, deadline=2.5))
         jobs = list(
