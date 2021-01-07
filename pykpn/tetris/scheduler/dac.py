@@ -163,9 +163,6 @@ class DacScheduler(SchedulerBase):
                 job.app, mapping)
             best_result = math.inf, None
             for m in equivalent_mappings:
-                # TODO: do it in the orbit lookup manager
-                m.metadata.exec_time = mapping.metadata.exec_time
-                m.metadata.energy = mapping.metadata.energy
                 m_schedule = schedule.copy()
                 m_result = self._append_job_mapping_to_schedule(
                     m_schedule, job, m)
