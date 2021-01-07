@@ -19,18 +19,32 @@ from pykpn.representations import MappingRepresentation
 log = logging.getLogger(__name__)
 eps = 1e-8
 
-#can't use `nopython` because of np.allclose apparently
-@nb.jit(fastmath=True, parallel=True, cache=True)
-def _calculate_gammas(grads,old_grads,xs,old_xs):
-    gammas = []
-    for i in nb.prange(len(grads)):
-        if np.allclose(grads[i],old_grads[i]):
-            gammas.append(np.int64(1))
-            continue
-        grad_diff = old_grads[i] - grads[i]
-        gamma = np.dot(old_xs[i] - xs[i], grad_diff) / np.dot(grad_diff, grad_diff)
-        gammas.append(gamma)
-    return gammas
+import sys
+if sys.version_info[0:2] == (3,7):
+    def _calculate_gammas(grads, old_grads, xs, old_xs):
+        gammas = []
+        for i in range(len(grads)):
+            if np.allclose(grads[i], old_grads[i]):
+                gammas.append(np.int64(1))
+                continue
+            grad_diff = old_grads[i] - grads[i]
+            gamma = np.dot(old_xs[i] - xs[i], grad_diff) / np.dot(grad_diff, grad_diff)
+            gammas.append(gamma)
+        return gammas
+
+else:
+    #can't use `nopython` because of np.allclose apparently
+    @nb.jit(fastmath=True, parallel=True, cache=True)
+    def _calculate_gammas(grads,old_grads,xs,old_xs):
+        gammas = []
+        for i in nb.prange(len(grads)):
+            if np.allclose(grads[i],old_grads[i]):
+                gammas.append(np.int64(1))
+                continue
+            grad_diff = old_grads[i] - grads[i]
+            gamma = np.dot(old_xs[i] - xs[i], grad_diff) / np.dot(grad_diff, grad_diff)
+            gammas.append(gamma)
+        return gammas
 
 
 class GradientDescentMapper(object):
