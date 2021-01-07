@@ -11,7 +11,7 @@ import os
 import pickle
 
 from pykpn.tgff.tgffSimulation import TgffReferenceError
-
+from pykpn.mapper.genetic import GeneticMapper
 log = logging.getLogger(__name__)
 
 
@@ -46,8 +46,8 @@ def pareto_front(cfg):
         platform = hydra.utils.instantiate(cfg['platform'])
         trace = hydra.utils.instantiate(cfg['trace'])
         representation = hydra.utils.instantiate(cfg['representation'],kpn,platform)
-        if cfg['mapper']._target_ != 'pykpn.mapper.genetic.GeneticMapper':
-            raise RuntimeError(f"The pareto front task needs to be called with the genetic mapper. Called with {cfg['mapper']._target_}")
+        if cfg['mapper']._target_ != 'pykpn.mapper.genetic.GeneticMapper' and cfg['mapper']._target_ != 'pykpn.mapper.fair.StaticCFSMapper' :
+            raise RuntimeError(f"The pareto front task needs to be called with the genetic mapper or the static cfs mapper. Called with {cfg['mapper']._target_}")
         mapper = hydra.utils.instantiate(cfg['mapper'], kpn, platform,trace,representation)
     except TgffReferenceError:
         # Special exception indicates a bad combination of tgff components
@@ -69,6 +69,8 @@ def pareto_front(cfg):
             p.dump(result)
 
     for i,result in enumerate(results):
+        if not hasattr(mapper,'evaluate_mapping'):
+            mapper = GeneticMapper(kpn,platform,trace,representation,objective_num_resources=True)
         with open(outdir + f"results{i}.txt",'w') as f:
             f.write(str(mapper.evaluate_mapping(mapper.representation.toRepresentation(result))))
 
