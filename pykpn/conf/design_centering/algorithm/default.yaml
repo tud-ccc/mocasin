@@ -10,5 +10,4 @@ deg_s_polynomial : 2
 max_pe : 16
 distr : uniform
 keep_metrics : True
-visualize_mappings : false
 record_samples : false

@@ -178,7 +178,6 @@ def conf(num_samples):
                      'periodic_boundary_conditions' : False ,
                      'distr' : 'uniform',
                      'record_samples' : False,
-                     'visualize_mappings' : False,
                      'show_polynomials' : False,
                      'deg_p_polynomial' : 2,
                      'deg_s_polynomial' : 2,

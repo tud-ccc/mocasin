@@ -44,10 +44,6 @@ def generate_mapping(cfg):
         * **trace:** the input trace. The task expects a configuration dict
           that can be instantiated to a
           :class:`~pykpn.common.trace.TraceGenerator` object.
-        * **visualize:** a flag indicating whether to visualize the mapping
-          space using t-SNE
-        * **show_plots:** a flag indicating whether to open all plots or just
-            write them to files.
 
     It is recommended to use the silent all logginf o (``-s``) to suppress all logging
     output from the individual simulations.
@@ -91,41 +87,6 @@ def generate_mapping(cfg):
     if cfg['kpn']['_target_'] == 'pykpn.slx.kpn.SlxKpnGraph':
         export_slx_mapping(result,
                            os.path.join(outdir, 'generated_mapping.mapping'))
-    #moved this from random mapper. It should be part of the task, not the mapper.
-    # export all mappings if requested
-    # idx = 1
-    #if self.export_all:
-    #    for mapping in mappings:
-    #        mapping_name = 'rnd_%08d.mapping' % idx
-    #        #FIXME: We assume an slx output here, this should be configured
-    #        export_slx_mapping(mapping, os.path.join(self.out_dir, mapping_name))
-    #        idx += 1
-
-    # plot result distribution
-    #if self.plot_distribution:
-    #    import matplotlib.pyplot as plt
-    #    # exec time in milliseconds
-    #    plt.hist(exec_times, bins=int(self.num_iterations / 20), density=True)
-    #    plt.yscale('log', nonposy='clip')
-    #    plt.title("Mapping Distribution")
-    #    plt.xlabel("Execution Time [ms]")
-    #    plt.ylabel("Probability")
-
-    #    if self.show_plots:
-    #        plt.show()
-
-    #    plt.savefig("distribution.pdf")
-
-    ## visualize searched space
-    #if self.visualize:
-
-    #    plot.visualize_mapping_space(mappings,
-    #                                 exec_times,
-    #                                 self.representation,
-    #                                 show_plot=self.show_plots,
-    #                                 tick=self.tick,
-    #                                 history=self.history)
-
 
     hydra.utils.call(cfg['cleanup'])
     del mapper

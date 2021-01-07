@@ -5,4 +5,5 @@ defaults:
   - tgff: default
   - platform: default
   - sdf3: default
-  - platform_to_dot_inc
+
+output_file: "${platform.name}.dot"

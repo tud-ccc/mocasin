@@ -9,7 +9,6 @@ from pykpn.design_centering import oracle
 from pykpn.design_centering import sample as dc_sample
 from pykpn.design_centering import util as dc_util
 from pykpn.util import logging
-from pykpn.util import plot # t-SNE plotting stuff
 from pykpn.representations import MappingRepresentation
 import sys
 
@@ -21,7 +20,7 @@ class DesignCentering(object):
                  hitting_probability=[0.4, 0.5, 0.5, 0.7, 0.9],
                  hitting_probability_threshold=0.7, deg_p_polynomial=2, deg_s_polynomial=2,
                  step_width=[0.9, 0.7, 0.6, 0.5, 0.1], adapt_samples=10, max_samples=50,
-                 record_samples=False, show_polynomials=False, distr='uniform', visualize_mappings=False,
+                 record_samples=False, show_polynomials=False, distr='uniform',
                  keep_metrics=True, max_pe=16):
         self.vol = init_vol
         self.oracle = oracle
@@ -34,7 +33,6 @@ class DesignCentering(object):
         self.record_samples = record_samples
         self.show_polynomials = show_polynomials
         self.distr = distr
-        self.visualize_mappings = visualize_mappings
         self.keep_metrics = keep_metrics
         self.max_pe = max_pe
         self.p_value = self.__adapt_poly(hitting_probability, deg_p_polynomial)
@@ -148,75 +146,6 @@ class DesignCentering(object):
         center_sample = dc_sample.Sample(sample=best_center, representation=self.representation)
         center_sample_result = self.oracle.validate_set([center_sample])
 
-        if self.visualize_mappings:
-
-            if(self.keep_metrics):
-                self.visualize_mappings(s_set.sample_groups, self.adapt_samples, history['centers'])
-            else:
-                self.visualize_mappings(s_set.sample_groups)
-
         log.debug("dc: center sample: {} {} {}".format(str(center_sample_result), str(center_sample), str(center)))
 
         return center_sample_result[0], history
-    
-    def visualize_mappings(self, sample_groups, tick=0, center_history=[]):
-        # put all evaluated samples in a big array
-        mappings = []
-        exec_times = []
-
-        history = self.oracle.validate_set(center_history)
-        for h in history:
-            mappings.append(h.getSimContext().app_contexts[0].mapping)
-            exec_times.append(0)
-
-        log.debug("dc: samples to visualize: {}".format(str(sample_groups)))
-        c = 0
-        for g in sample_groups:
-            c = c + 0.1
-            for s in g:
-                mappings.append(s.getSimContext().app_contexts[0].mapping)
-                exec_times.append(float(s.getSimContext().exec_time / 1000000000.0))
-                #exec_times.append(float(c))
-
-        log.info("==== Drawing Mapping Space ====")
-        # it seems there are samples inside
-        #plot.visualize_mapping_space(mappings, exec_times)
-        
-        thresholds = []
-        #>>> visualize feasibility threshold in T-sne
-        #for e in exec_times:
-        #    if e < conf.threshold:
-        #        thresholds.append(1)
-        #    else:
-        #        thresholds.append(0)
-        #thresholds[-1] = 0.5
-        #>>> visualize ARM usage in T-sne
-        for m in mappings:
-            pes_list = list(m.platform.processors())
-            procs_list = m.kpn.processes()
-
-            # map PEs to an integer
-            #pes = {}
-            #for i, pe in enumerate(pes_list):
-            #    pes[pe.name] = i
-            res = []
-            for proc in procs_list:
-                res.append(m.affinity(proc).name)
-
-            log.debug("dc: results {}".format(str(res)))
-            if "ARM0" in res or "ARM1" in res:
-                thresholds.append(1)
-            elif "ARM0" in res and "ARM1" in res and "E00" in res:
-                thresholds.append(0.8)
-            elif "ARM0" in res and "ARM1" in res and  "E01" in res:
-                thresholds.append(0.6)
-            else:
-                thresholds.append(0)
-        thresholds[-1] = 0.5
-        #print("thresholds: {}".format(thresholds))
-        plot.visualize_mapping_space(mappings, exec_times,
-                                     None,
-                                     self.representation,
-                                     tick,
-                                     len(center_history))
-
