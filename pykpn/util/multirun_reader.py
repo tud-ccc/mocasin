@@ -7,6 +7,7 @@
 
 import yaml
 import csv
+import h5py
 from os import listdir
 from os.path import abspath, isdir, join
 
@@ -29,15 +30,58 @@ def parse_override_string(override_string):
     parameters[key] = parameters_lists[-1]
     return parameters
 
-def write_to_csv(keys,results,csv_out):
+def write_to_csv(keys,results_dict,csv_out):
+    results = []
+    for file in results_dict:
+        new_vals = [results_dict[file]['params']]
+        for parser in results_dict[file]['parsers']:
+            outputs = results_dict[file]['parsers'][parser]
+            if type(outputs) == list:
+                updated = []
+                for val in new_vals:
+                    for out in outputs:
+                        updated.append({**val, **out})
+                new_vals = updated
+            elif type(outputs) == dict:
+                updated = []
+                for val in new_vals:
+                    updated.append({**val, **outputs})
+                new_vals = updated
+            else:
+                log.error(f"Parser error, invalid results: {outputs}")
+                raise RuntimeError
+
+        results = results + new_vals
     with open(csv_out,'w') as f:
         writer = csv.DictWriter(f,keys)
         writer.writeheader()
         for res in results:
             writer.writerow(res)
 
+def write_to_h5(results,h5_out):
+    f = h5py.File(h5_out,'w')
+    for dir_full in results:
+        dir = dir_full.replace('/','.')
+        f.create_group(dir)
+        for param in results[dir_full]['params']:
+            f[dir].attrs[param] = results[dir_full]['params'][param]
+        for parser in results[dir_full]['parsers']:
+            f[dir].create_group(parser)
+            res = results[dir_full]['parsers'][parser]
+            if type(res) == dict:
+                for param in res:
+                    f[dir][parser].attrs[param] = res[param]
+            elif type(res) == list:
+                for i,vals in enumerate(res):
+                    f[dir][parser].create_group(str(i))
+                    for param in vals:
+                        f[dir][parser][str(i)].attrs[param] = res[i][param]
+
+    f.close()
+
 
 def read_multirun(path,outputs_parsers = None,output_format = 'csv'):
+
     if outputs_parsers is None:
         outputs_parsers = []
     multirun_file  = abspath(path) + "/multirun.yaml"
@@ -48,9 +92,9 @@ def read_multirun(path,outputs_parsers = None,output_format = 'csv'):
     keys = set(multirun_parameters.keys())
 
     directories = filter(isdir, [join(path,dir) for dir in listdir(path)])
-    csv_out = path.replace('/','.') + "." + output_format
+    out_file = path.replace('/','.') + "." + output_format
 
-    results = []
+    results = {}
     for dir in directories:
         with open(dir + "/.hydra/hydra.yaml") as f:
             iteration_config = yaml.load(f, Loader=yaml.SafeLoader)
@@ -59,20 +103,17 @@ def read_multirun(path,outputs_parsers = None,output_format = 'csv'):
             results_dict = {}
             for param in parameters:
                 results_dict[param] = parameters[param][0]
+        results[dir] = { 'params' : results_dict , 'parsers' : {}}
 
         for parser in outputs_parsers:
             outputs,newkeys = parser(dir)
-            if type(outputs) == list:
-                for out in outputs:
-                    results.append({**results_dict, **out})
-            elif type(outputs) == dict:
-                results.append({**results_dict, **outputs})
-            else:
-                log.error(f"Parser error, invalid results: {outputs}")
-                raise RuntimeError
+            results[dir]['parsers'][parser.__name__] = outputs
             keys = keys.union(newkeys)
     if output_format == 'csv':
-        write_to_csv(keys,results,csv_out)
+        write_to_csv(keys,results,out_file)
+    elif output_format == 'h5':
+        write_to_h5(results,out_file)
     else:
         raise RuntimeError(f"Output format {output_format} not supported.")
+
 

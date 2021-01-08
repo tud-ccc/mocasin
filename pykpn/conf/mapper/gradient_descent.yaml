@@ -1,8 +1,10 @@
 # @package _group_
 
 _target_: pykpn.mapper.gradient_descent.GradientDescentMapper
-gd_iterations : 100
-stepsize : 2
+gd_iterations : 20
+parallel_points : 5
+stepsize : 1
+momentum_decay : 0.5
 random_seed : 42
 record_statistics: true
 dump_cache: false

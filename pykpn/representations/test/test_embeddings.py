@@ -4,7 +4,7 @@
 # Authors: Andrés Goens, Felix Teweleit
 
 
-from pykpn.representations.embeddings import MetricSpaceEmbeddingBase, MetricSpaceEmbedding
+from pykpn.representations.embeddings import MetricSpaceEmbeddingBase, MetricSpaceEmbedding, _f_emb_approx
 from pykpn.representations.metric_spaces import FiniteMetricSpaceLP
 import numpy as np
 import pytest
@@ -22,7 +22,7 @@ class TestEmbeddings(object):
         E = MetricSpaceEmbeddingBase(M)
 
         for _ in range(N):
-            result = E.approx(np.random.random(E._k))
+            result = E.approx(np.random.random(E._k),rg=(0,E._k))
             found = False
             for vec in E.iotainv.keys():
                 if np.allclose(vec,result):
@@ -58,7 +58,6 @@ class TestEmbeddings(object):
         M = exampleClusterArch
         E = MetricSpaceEmbeddingBase(M)
         Evec = MetricSpaceEmbedding(M, dimension)
-        
         result = Evec.invapprox(np.random.random((dimension*E._k)).flatten())
         
         for value in result:
@@ -66,10 +65,9 @@ class TestEmbeddings(object):
             
     def test_Par_invapprox(self, exampleParallella16, dimension):
         Par = MetricSpaceEmbedding(exampleParallella16, dimension)
-        
         result = Par.invapprox((10*np.random.random((dimension,Par._k))).flatten())
         for value in result:
-            assert(value >= 0 and value < 16)
+            assert(value >= 0 and value < 18)
     
     def test_calculate_embedding_matrix(self, D):
         L,d = np.array(MetricSpaceEmbeddingBase.calculateEmbeddingMatrix(D))
@@ -83,3 +81,9 @@ class TestEmbeddings(object):
                 dist = D[i,j]
                 sigma_embedding_dist = np.linalg.norm(iota[i].flatten()-iota[j].flatten())
                 assert dist <= sigma_embedding_dist and sigma_embedding_dist <= d * dist
+
+    def test_numba_acceleration_functions(self,d,k,split_d,split_k,n):
+        iota = np.random.rand(n, k)
+        vec = np.random.rand(d)
+        res = _f_emb_approx(vec, d, k, split_d, split_k, iota, n)
+        assert res.shape == (d,k)

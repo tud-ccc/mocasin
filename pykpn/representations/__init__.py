@@ -23,7 +23,7 @@ except ModuleNotFoundError:
 
 from pykpn.mapper.partial import ProcPartialMapper, ComFullMapper
 
-from .metric_spaces import FiniteMetricSpace, FiniteMetricSpaceSym, FiniteMetricSpaceLP, FiniteMetricSpaceLPSym, arch_graph_to_distance_metric
+from .metric_spaces import FiniteMetricSpace, FiniteMetricSpaceSym, FiniteMetricSpaceLP, FiniteMetricSpaceLPSym, arch_to_distance_metric
 from .embeddings import MetricSpaceEmbedding
 from .automorphisms import to_labeled_edge_graph, edge_to_node_autgrp, list_to_tuple_permutation
 from .permutations import Permutation, PermutationGroup
@@ -140,7 +140,11 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         Procs = sorted(list(self.kpn._processes.keys()))
         PEs = sorted(list(self.platform._processors.keys()))
         pe_mapping = list(randint(0,len(PEs),size=len(Procs)))
-        return SimpleVectorRepresentation.randomPrimitives(self,pe_mapping)
+        if self.channels:
+            return SimpleVectorRepresentation.randomPrimitives(self,pe_mapping)
+        else:
+            return pe_mapping
+
     def randomPrimitives(self,pe_mapping):
         Procs = sorted(list(self.kpn._processes.keys()))
         PEs = sorted(list(self.platform._processors.keys()))
@@ -390,10 +394,11 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
 
     def _simpleVec2Elem(self,x):
         x_ = x[:self._d]
+        _x = x[self._d:] #keep channels if exist (they should be mapped accordingly...)
         if self.sym_library:
-            return list(self._ag.representative(x_))
+            return list(self._ag.representative(x_)) + _x
         else:
-            return self._G.tuple_normalize(x_)
+            return self._G.tuple_normalize(x_) + _x
 
     def changed_parameters(self):
         return False
@@ -430,7 +435,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         return res
 
     def toRepresentation(self,mapping):
-        return self._simpleVec2Elem(mapping.to_list())
+        return self._simpleVec2Elem(mapping.to_list(channels=self.channels))
 
     def toRepresentationNoncanonical(self,mapping):
         return SimpleVectorRepresentation.toRepresentation(self,mapping)
@@ -532,21 +537,53 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
     space emebedding for the single-process case. This provably preserves the distortion
     and makes calculations much more efficient.
 
+    The additional option, extra_dims, adds additional dimensions for each PE to count
+    when multiple processes are mapped to the same PE. The scaling factor for those extra
+    dimensions is controlled by the value of extra_dims_factor.
+
     """
-    def __init__(self,kpn, platform, norm_p):
-        self._topologyGraph = platform.to_adjacency_dict()
-        M_matrix, self._arch_nc, self._arch_nc_inv = arch_graph_to_distance_metric(self._topologyGraph)
+    def __init__(self,kpn, platform, norm_p,extra_dimensions=True,
+                 extra_dimensions_factor=3,ignore_channels=True,
+                 target_distortion=1.1,jlt_tries=10,
+                 verbose=False):
+        # todo: make sure the correspondence of cores is correct!
+        M_matrix, self._arch_nc, self._arch_nc_inv = \
+            arch_to_distance_metric(platform,heterogeneity=extra_dimensions)
         self._M = FiniteMetricSpace(M_matrix)
         self.kpn = kpn
         self.platform = platform
+        self.extra_dims = extra_dimensions
+        self.jlt_tries = jlt_tries
+        self.target_distortion = target_distortion
+        self.ignore_channels = ignore_channels
+        self.verbose = verbose
+        if hasattr(platform, 'embedding_json'):
+            self.embedding_matrix_path = platform.embedding_json
+        else:
+            self.embedding_matrix_path = None
+
+        if not self.ignore_channels:
+            log.warning("Not ignoring channels might lead"
+                        " to invalid mappings when approximating.")
+        self.extra_dims_factor = extra_dimensions_factor
         self._d = len(kpn.processes())
+        if self.extra_dims:
+            self._split_d = self._d
+            self._split_k = len(platform.processors())
+            self._d += len(kpn.channels())
         self.p = norm_p
         com_mapper = ComFullMapper(kpn,platform)
         self.list_mapper = ProcPartialMapper(kpn,platform,com_mapper)
         init_app_ncs(self,kpn)
         if self.p != 2:
-            log.error(f"Metric space embeddings only supports p = 2. For p = 1, for example, finding such an embedding is NP-hard (See Matousek, J.,  Lectures on Discrete Geometry, Chap. 15.5)")
-        MetricSpaceEmbedding.__init__(self,self._M,self._d)
+            log.error(f"Metric space embeddings only supports p = 2."
+                      f" For p = 1, for example, finding such an embedding"
+                      f" is NP-hard (See Matousek, J.,  Lectures on Discrete"
+                      f" Geometry, Chap. 15.5)")
+        MetricSpaceEmbedding.\
+            __init__(self,self._M,self._d, jlt_tries=self.jlt_tries,
+                     embedding_matrix_path = self.embedding_matrix_path,
+                     target_distortion=self.target_distortion, verbose=verbose)
         log.info(f"Found embedding with distortion: {self.distortion}")
 
     def changed_parameters(self,norm_p):
@@ -554,11 +591,13 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
 
     def _simpleVec2Elem(self,x):
         proc_vec = x[:self._d]
-        as_array = np.array(self.i(proc_vec)).flatten()# [value for comp in self.i(x) for value in comp]
+        as_array = np.array(self.i(proc_vec)).flatten()
+        #[value for comp in self.i(x) for value in comp]
+
         return as_array
 
     def _elem2SimpleVec(self,x):
-        return self.inv(self.approx(x))
+        return self.inv(self.approx(x[:(self._k*self._d)]).tolist())
 
     def _uniform(self):
         res = np.array(self.uniformVector()).flatten()
@@ -570,12 +609,12 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
     def _uniformFromBall(self,p,r,npoints=1):
         log.debug(f"Uniform from ball with radius r={r} around point p={p}")
         #print(f"point of type {type(p)} and shape {p.shape}")
-        point = []
-        for i in range(self._d):
-            val = []
-            point.append(list(p)[self._k*i:self._k*(i+1)])
+        point = np.array(p).flatten()
         results_raw = MetricSpaceEmbedding.uniformFromBall(self,point,r,npoints)
         results = list(map(lambda x : np.array(list(np.array(x).flat)),results_raw))
+        if self.extra_dims:
+            results = list(map(lambda x : self._simpleVec2Elem(self._elem2SimpleVec(x)),results))
+
         #print(f"results uniform from ball: {results}")
         return results
 
@@ -588,20 +627,24 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
 
 
     def toRepresentation(self,mapping):
-        return self._simpleVec2Elem(mapping.to_list())
+        return self._simpleVec2Elem(mapping.to_list(channels=self.extra_dims))
 
     def fromRepresentation(self,mapping):
-        mapping_obj = self.list_mapper.generate_mapping(self._elem2SimpleVec(mapping))
+        simple_vec = self._elem2SimpleVec(mapping)
+        if self.ignore_channels:
+            simple_vec = simple_vec[:self._split_d]
+        mapping_obj = self.list_mapper.generate_mapping(simple_vec)
         return mapping_obj
 
     def _distance(self,x,y):
         return lp.p_norm(x-y,self.p)
 
     def distance(self,x,y):
-        return self._distance(x.to_list(),y.to_list())
+        return self._distance(self.toRepresentation(x),self.toRepresentation(y))
 
     def approximate(self,x):
-        return np.array(self.approx(x)).flatten()
+        res = np.array(self.approx(x[:(self._d*self._k)])).flatten()
+        return res
 
     def crossover(self, m1, m2, k):
         return self._crossover(self.toRepresentation(m1), self.toRepresentation(m2), k)
@@ -621,37 +664,74 @@ class MetricEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepre
 
 class SymmetryEmbeddingRepresentation(MetricSpaceEmbedding, metaclass=MappingRepresentation):
     """Symmetry Embedding Representation
-    A representation combining symmetries with an embedding of a metric space. Currently still work in progress
-    and not ready for using.
+    A representation combining symmetries with an embedding of a metric space.
+    The mapping is first normalized using symmetries and then converted with the embedding.
     """
-    def __init__(self,kpn, platform):
-        raise RuntimeError("representation not properly implemented")
-        self.kpn = kpn
-        self.platform = platform
-        self._d = len(kpn.processes())
-        self._topologyGraph = platform.to_adjacency_dict()
-        init_app_ncs(self,kpn)
-        n = len(self.platform.processors())
-        M_matrix, self._arch_nc, self._arch_nc_inv = arch_graph_to_distance_metric(self._topologyGraph)
-        adjacency_dict, num_vertices, coloring, self._arch_nc = to_labeled_edge_graph(self._topologyGraph)
-        nautygraph = pynauty.Graph(num_vertices,True,adjacency_dict, coloring)
-        autgrp_edges = pynauty.autgrp(nautygraph)
-        autgrp, new_nodes_correspondence = edge_to_node_autgrp(autgrp_edges[0],self._arch_nc)
-        permutations_lists = map(list_to_tuple_permutation,autgrp)
-        permutations = [Permutation(p,n= n) for p in permutations_lists]
-        self._G = PermutationGroup(permutations)
-        M = FiniteMetricSpace(M_matrix)
-        self._M = FiniteMetricSpaceLPSym(M,self._G,self._d)
-        self._M._populateD()
-        MetricSpaceEmbedding.__init__(self,self._M,1)
+    def __init__(self, kpn, platform, norm_p, verbose=False,
+                 periodic_boundary_conditions=False, jlt_tries=10,
+                 extra_dimensions=True, extra_dimensions_factor=3,
+                 ignore_channels=True, target_distortion=1.1,
+                 canonical_operations=True, disable_mpsym=False):
+
+        self.sym =\
+            SymmetryRepresentation(kpn,platform,channels=extra_dimensions,
+                                   norm_p=norm_p, disable_mpsym=disable_mpsym,
+                                   periodic_boundary_conditions = periodic_boundary_conditions,
+                                   canonical_operations=canonical_operations)
+        self.emb =\
+            MetricEmbeddingRepresentation(kpn,platform,norm_p,verbose=verbose,
+                                          extra_dimensions=extra_dimensions,
+                                          extra_dimensions_factor=extra_dimensions_factor,
+                                          target_distortion=target_distortion,
+                                          jlt_tries=jlt_tries,ignore_channels=ignore_channels)
+        self.canonical_operations = canonical_operations
+        log.warning("The SymmetryEmbedding representation is not well-tested yet."
+                    " In particular, it currently ignores the symmetries of the channels,"
+                    "which should not be very problematic, however.")
 
     def _simpleVec2Elem(self,x):
-        proc_vec = x[:self._d]
-        return self.i(proc_vec)# [value for comp in self.i(x) for value in comp]
+        canonical = self.sym._simpleVec2Elem(x)
+        return self.emb._simpleVec2Elem(canonical)
 
     def _elem2SimpleVec(self,x):
-        return self.invapprox(x)
+        return self.emb._elem2SimpleVec(x)
 
     def _uniform(self):
-        return self.uniformVector()
+        return self.emb._uniform()
 
+    def uniformFromBall(self,p,r,npoints=1):
+        return self.emb.uniformFromBall(p,r,npoints=npoints)
+
+    def _uniformFromBall(self,p,r,npoints=1):
+        return self.emb._uniformFromBall(p,r,npoints=npoints)
+
+    def changed_parameters(self,norm_p):
+        return self.emb.changed_parameters(norm_p) or\
+               self.sym.changed_parameters()
+
+    def toRepresentation(self,mapping):
+        canonical = self.sym.toRepresentation(mapping)
+        return self._simpleVec2Elem(canonical)
+
+    def toRepresentationNoncanonical(self,mapping):
+        return self.emb.toRepresentation(mapping)
+
+    def fromRepresentation(self,mapping):
+        return self.emb.fromRepresentation(mapping)
+
+    def _distance(self,x,y):
+        return lp.p_norm(x-y,self.p)
+
+    def distance(self,x,y):
+        return self._distance(self.toRepresenatation(x),self.toRepresentation(y))
+
+    def approximate(self,x):
+        res = self.emb._elem2SimpleVec(self.emb.approximate(x))
+        can = self.sym._simpleVec2Elem(res)
+        return self.emb._simpleVec2Elem(can)
+
+    def crossover(self, m1, m2, k):
+        return self.approximate(self.emb._crossover(self.toRepresentation(m1), self.toRepresentation(m2), k))
+
+    def _crossover(self, m1, m2, k):
+        return self.emb._crossover(m1,m2,k)

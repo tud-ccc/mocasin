@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright (C) 2019 TU Dresden
+# Copyright (C) 2019-2020 TU Dresden
 # All Rights Reserved
 #
 # Authors: Andres Goens, Christian Menard
@@ -8,6 +8,7 @@
 import logging
 import sys
 import traceback
+import cProfile
 
 from pykpn.tasks import execute_task
 
@@ -56,6 +57,16 @@ def main():
         log.error(traceback.format_exc())
         if fail_on_exception:
             sys.exit(1)
+def profile():
+    """
+    This script is a wrapper around the pykpn launcher, which replaces
+    starts a profiling run.
+    """
+    profiler = cProfile.Profile()
+    profiler.enable()
+    main()
+    profiler.dump_stats("profile_dump")
+    profiler.print_stats()
 
 if __name__ == "__main__":
     main()

@@ -22,6 +22,7 @@ class DataReader:
             raise RuntimeError("KpnGraph object is not valid")
 
         self._mProcessNames = []
+        self._mProcessorNumbers = {}
         self._mDataDict = {}
         self._mMappingDict = OrderedDict()
         self._mPlatform = platform
@@ -29,8 +30,10 @@ class DataReader:
         self._mComMapper = ComFullMapper(kpn, platform)
         self._mMapper = ProcPartialMapper(kpn, platform, self._mComMapper)
 
-        for process in self._mKpnInstance.processes():
-            self._mProcessNames.append(process.name)
+        for process in sorted([x.name for x in self._mKpnInstance.processes()]):
+            self._mProcessNames.append(process)
+        for i,pe in enumerate(sorted([x.name for x in self._mPlatform.processors()])):
+            self._mProcessorNumbers[pe] = i
 
         if attribute == 'default':
             self._desiredProperty = 'wall_clock_time'
@@ -120,22 +123,9 @@ class DataReader:
         for entry in self._mDataDict:
             fromList = []
 
-            for key in self._mDataDict[entry]:
-                if key != self._desiredProperty:
-                    asString = list(self._mDataDict[entry][key])
-                    asNumber = ''
-
-                    i = len(asString)
-                    while (i > 0):
-                        i -= 1
-                        try:
-                            int(asString[i])
-                            asNumber = asString[i] + asNumber
-                        except:
-                            break
-
-                    asNumber = int(asNumber)
-                    fromList.append(asNumber)
+            for key in self._mProcessNames:
+                pe = self._mProcessorNumbers[self._mDataDict[entry][key]]
+                fromList.append(pe)
 
             if fromList != []:
                 mapping = self._mMapper.generate_mapping(fromList)

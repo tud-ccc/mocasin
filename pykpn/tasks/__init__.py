@@ -66,7 +66,11 @@ _tasks = {
     'calculate_platform_symmetries': (
         'calculate_platform_symmetries',
         'calculate_platform_symmetries',
-        "Calculate the Automorphism Group of a Platform Graph"),
+        "Calculate the automorphism group of a platform graph"),
+    'calculate_platform_embedding': (
+        'calculate_platform_embedding',
+        'calculate_platform_embedding',
+        "Calculate a low-distortion embedding for a platform"),
     'platform_to_dot': (
         'to_dot',
         'platform_to_dot',

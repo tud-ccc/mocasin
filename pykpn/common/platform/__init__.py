@@ -318,7 +318,7 @@ class Platform(object):
     platform by creating the corresponding objects.
     """
 
-    def __init__(self, name, symmetries_json = None):
+    def __init__(self, name, symmetries_json = None, embedding_json = None):
         """Initialize the platform.
 
         This initializes all attributes to empty dicts. Derived classes should
@@ -331,6 +331,8 @@ class Platform(object):
         self._schedulers = {}               #: dict of schedulers
         if symmetries_json is not None:
             self.ag_json = symmetries_json
+        if embedding_json is not None:
+            self.embedding_json = embedding_json
 
     def processors(self):
         return self._processors.values()
@@ -464,7 +466,7 @@ class Platform(object):
         for a simple token of size 8.
         Schedulers and communication primitives are not considered.
         
-        precision: number of siginifcant figures to consider on costs.
+        precision: number of significant figures to consider on costs.
         for full precision, select -1
         """
         num_vertices = 0
@@ -502,3 +504,29 @@ class Platform(object):
         for elem in adjacency_dict:
             res[elem] = [(adjacent, adjacency_dict[elem][adjacent]) for adjacent in adjacency_dict[elem]]
         return res
+
+    def to_primitive_latency_dict(self, precision=5):
+        """
+        Convert the platform to a latency dictionary.
+
+        For each communication primitive, the dictionary contains
+        another dictionary with the static communication cost for a simple
+        token of size 8 for every producer/consumer pair.
+        Schedulers and processing elements are not considered.
+
+        precision: number of significant figures to consider on costs.
+        for full precision, select -1
+        """
+        latency_dict = {}
+        for p in self.primitives():
+            latency_dict[p.name] = {}
+            for x in p.producers:
+                for y in p.consumers:
+
+                    cost = p.static_costs(x, y, token_size=8)
+                    if precision < 0 or cost == 0:
+                        pass
+                    else:
+                        cost = round(cost, precision - 1 - int(math.floor(math.log10(abs(cost)))))
+                    latency_dict[p.name][(x.name,y.name)] = cost
+        return latency_dict

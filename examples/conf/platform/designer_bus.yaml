@@ -9,3 +9,5 @@ processor_0:
   type : 'proc_type_0'
   frequency : 2000000000
 symmetries_json: "../../../platform/symmetries/designer_bus.json"
+embedding_json: "../../../platform/embeddings/designer_bus.json"
+name : "designer_bus"

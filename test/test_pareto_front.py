@@ -10,6 +10,7 @@ def test_pareto_front_slx(datadir, slx_kpn,representation):
     subprocess.check_call(["pykpn", "pareto_front",
                            "kpn=%s" % slx_kpn,
                            "platform=exynos",
+                           "platform.embedding_json=None",
                            "representation=%s" % representation,
                            "outdir=../../../",
                            "trace=slx_default"],

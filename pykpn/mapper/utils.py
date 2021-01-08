@@ -9,6 +9,7 @@ import multiprocessing as mp
 import numpy as np
 from copy import deepcopy
 import csv
+import h5py
 
 from pykpn.common.mapping import Mapping
 from pykpn.simulate import KpnSimulation
@@ -199,6 +200,14 @@ class SimulationManager(object):
         for mapping in self._cache:
             file.write(f"\"{str(mapping).replace('(','').replace(')','')}\",{self._cache[mapping]}\n")
         file.close()
+
+        filename = filename.replace('csv','h5')
+        log.info(f"dumping cache to {filename}")
+        f = h5py.File(filename,'w')
+        for i,mapping in enumerate(self._cache):
+            f.create_dataset(str(i),data=np.array(mapping),compression='gzip')
+            f[str(i)].attrs['runtime'] = self._cache[mapping]
+        f.close()
         log.info("cache dumped.")
 
 
@@ -267,7 +276,6 @@ def best_time_parser(dir):
     return results, list(results.keys())
 
 def evolutionary_logbook_parser(dir):
-
     with open(os.path.join(dir,'evolutionary_logbook.txt'), 'r') as f:
         results = []
         reader = csv.DictReader(f,dialect='excel-tab')
@@ -277,5 +285,24 @@ def evolutionary_logbook_parser(dir):
                 row_mod["genetic-" + key.replace(' ','').replace('\t','')] = row[key].replace(' ','').replace('\t','')
             results.append(row_mod)
         return results,list(results[0].keys())
+
+def cache_dump_csv_parser(dir):
+    with open(os.path.join(dir,'mapping_cache.csv'), 'r') as f:
+        reader = csv.DictReader(f)
+        keys = reader.fieldnames
+        results = []
+        for row in reader:
+            results.append(row)
+    return results, keys
+
+def cache_dump_h5_parser(dir):
+    with h5py.File(os.path.join(dir,'mapping_cache.h5'), 'r') as f:
+        results = []
+        keys = ['mapping', 'runtime']
+        for m in f:
+            mapping = np.array(f[m])
+            runtime = f[m].attrs['runtime']
+            results.append({ 'mapping' : mapping, 'runtime' : runtime})
+    return results, keys
 
 

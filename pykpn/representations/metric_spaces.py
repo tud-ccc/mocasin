@@ -1,7 +1,4 @@
-# Copyright (C) 2017-2019 TU Dresden
-# All Rights Reserved
-#
-# Author: Andres Goens
+
 
 from __future__ import print_function
 import logging
@@ -181,7 +178,7 @@ class FiniteMetricSpaceSym(FiniteMetricSpace):
     def _populateD(self):
         #print("Populating D...",end='')
         if self.n == -1:
-            self.n = len( G.enumerate_orbits()) # should I remove this per default? Could be very expensive!
+            self.n = len( self.G.enumerate_orbits()) # should I remove this per default? Could be very expensive!
         stdout.flush()
         self.D = np.zeros((self.n,self.n))
         for (x,y) in product(range(self.n),repeat=2):
@@ -321,7 +318,80 @@ def make_graph_symmetric(graph):
             symmetric_graph[node_from].append((node_to,round(avg)))
     return symmetric_graph
 
-def arch_graph_to_distance_metric(arch_graph,scaling=True):
+
+def arch_to_distance_metric(architecture, scaling=True,heterogeneity=True,
+                            cycles=10000,min_dist_factor=0.1):
+    if heterogeneity:
+        primitives_graph = architecture.to_primitive_latency_dict()
+
+    inf = float('inf')
+    n = 0
+    nodes_correspondence = {}
+    nc_inv = {}
+    if heterogeneity:
+        times_named = {}
+        for node in architecture.processors():
+            nodes_correspondence[n] = node.name
+            nc_inv[node.name] = n
+            n += 1
+            times_named[node.name] = node.frequency_domain.cycles_to_ticks(cycles)
+        for node in primitives_graph:
+            nodes_correspondence[n] = node
+            nc_inv[node] = n
+            n += 1
+            times_named[node] = min([val for val in primitives_graph[node].values() if val != 0])
+    else: #mcsoc'18 variant
+        arch_graph = architecture.to_adjacency_dict()
+        graph = make_graph_symmetric(arch_graph)
+        dist_metric_named = {}
+        for node in graph:
+            nodes_correspondence[n] = node
+            nc_inv[node] = n
+            n += 1
+            dist_metric_named[node] = dijkstra(graph, node)
+
+    if scaling:
+        if heterogeneity: #new method
+            scaling_factor = np.mean(
+                [times_named[node] for node in times_named.keys()])
+            for node in times_named:
+                times_named[node] /= float(scaling_factor)
+        else: #mcsoc'18
+            scaling_factor = np.mean(
+                [dist_metric_named[node_from][node_to] for node_from in
+                 dist_metric_named.keys() for node_to in
+                 dist_metric_named[node_from].keys()])
+            for node_from in graph:
+                for node_to in dist_metric_named[node_from]:
+                   dist_metric_named[node_from][node_to] /= float(scaling_factor)
+    if heterogeneity:
+        min_dist = min([times_named[node] for node in times_named])
+
+
+    #We use the corresp. dictionaries to make sure we don't mess up the order
+    res = []
+    for node_from in range(0,n):
+        line = [inf]*n
+        if heterogeneity:
+            for node_to in range(0,n):
+                #this makes no sense when node_to and node_from are one of each,
+                #a primitive and proc,but we leave it so the embedding can be calculated.
+                node_to_named = nodes_correspondence[node_to]
+                node_from_named = nodes_correspondence[node_from]
+                delta = np.abs(times_named[node_to_named]
+                               - times_named[node_from_named])
+                if node_to != node_from:
+                    delta = delta + min_dist*min_dist_factor
+                line[nc_inv[node_to_named]] = delta
+        else:
+            for node_to_named in dist_metric_named[nodes_correspondence[node_from]]:
+                line[nc_inv[node_to_named]] = dist_metric_named[nodes_correspondence[node_from]][node_to_named]
+        res.append(line)
+    return res,nodes_correspondence,nc_inv
+        
+
+def arch_to_distance_metric_naive(arch,scaling=True):
+    arch_graph= arch.to_adjacency_dict()
     inf = float('inf')
     n = 0
     nodes_correspondence = {}
@@ -347,4 +417,3 @@ def arch_graph_to_distance_metric(arch_graph,scaling=True):
             line[nc_inv[node_to_named]] = dist_metric_named[nodes_correspondence[node_from]][node_to_named]
         res.append(line)
     return res,nodes_correspondence,nc_inv
-        

@@ -12,8 +12,8 @@ from hydra.utils import instantiate
 class DesignerPlatformCoolidge(Platform):
     #The topology and latency numbers (!) of this should come from the MPPA3 Coolidge
     #sheet published by Kalray
-    def __init__(self, processor_0, processor_1, name="coolidge", symmetries_json=None):
-        super(DesignerPlatformCoolidge, self).__init__(name,symmetries_json)
+    def __init__(self, processor_0, processor_1, name="coolidge", symmetries_json=None,embedding_json=None):
+        super(DesignerPlatformCoolidge, self).__init__(name,symmetries_json,embedding_json)
 
         #workaround until Hydra 1.1
         if not isinstance(processor_0,Processor):

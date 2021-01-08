@@ -3,5 +3,5 @@ _target_: pykpn.representations.SymmetryRepresentation
 channels: false
 periodic_boundary_conditions: false
 norm_p: 2
-canonical_operations: false
+canonical_operations: true
 disable_mpsym : false

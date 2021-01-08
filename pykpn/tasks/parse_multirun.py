@@ -25,6 +25,14 @@ _parsers = {
         'pykpn.mapper.utils',
         'best_time_parser',
         'Parses the execution time from the best mapping found.'),
+    'cache_dump_csv': (
+        'pykpn.mapper.utils',
+        'cache_dump_csv_parser',
+        'Parses cache dumps (csv) from iterative mappers.'),
+    'cache_dump_h5': (
+        'pykpn.mapper.utils',
+        'cache_dump_h5_parser',
+        'Parses cache dumps (h5) from iterative mappers.'),
     'evolutionary_logbook': (
         'pykpn.mapper.utils',
         'evolutionary_logbook_parser',
@@ -86,7 +94,7 @@ def parse_multirun(cfg):
         path = cfg['path']
         if path == "":
             path = sorted([x.path for x in scandir("multirun/") if x.is_dir()])[-1]
-        read_multirun(path,parsers)
+        read_multirun(path,parsers,output_format=cfg['output_format'])
     except ParserNotFoundException:
         print_usage()
         raise ParserNotFoundException()
