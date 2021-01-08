@@ -3,8 +3,8 @@
 #
 # Authors: Robert Khasanov
 
-from pykpn.tetris.schedule import (Schedule, ScheduleSegment,
-                                   JobSegmentMapping, TIME_EPS)
+from pykpn.tetris.schedule import (Schedule, MultiJobSegmentMapping,
+                                   SingleJobSegmentMapping, TIME_EPS)
 from pykpn.tetris.scheduler.base import SchedulerBase
 
 from collections import Counter
@@ -108,10 +108,10 @@ class MedfScheduler(SchedulerBase):
             else:
                 segment_to_add = segment
 
-            jm = JobSegmentMapping(job.request, mapping,
-                                   start_time=segment_to_add.start_time,
-                                   start_cratio=cur_cratio,
-                                   end_time=segment_to_add.end_time)
+            jm = SingleJobSegmentMapping(job.request, mapping,
+                                         start_time=segment_to_add.start_time,
+                                         start_cratio=cur_cratio,
+                                         end_time=segment_to_add.end_time)
             segment_to_add.append_job(jm)
             cur_cratio = jm.end_cratio
             cur_rtime = mapping.metadata.exec_time * (1.0-cur_cratio)
@@ -127,10 +127,11 @@ class MedfScheduler(SchedulerBase):
             if len(schedule) != 0:
                 segment_start_time = schedule.end_time
 
-            jm = JobSegmentMapping(job.request, mapping,
-                                   start_time=segment_start_time,
-                                   start_cratio=cur_cratio, finished=True)
-            new_segment = ScheduleSegment(self.platform, jobs=[jm])
+            jm = SingleJobSegmentMapping(job.request, mapping,
+                                         start_time=segment_start_time,
+                                         start_cratio=cur_cratio,
+                                         finished=True)
+            new_segment = MultiJobSegmentMapping(self.platform, jobs=[jm])
             schedule.append_segment(new_segment)
             job_finish_time = jm.end_time
 

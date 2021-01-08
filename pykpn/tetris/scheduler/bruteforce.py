@@ -4,9 +4,9 @@
 # Authors: Robert Khasanov
 
 from pykpn.tetris.job_state import Job
-from pykpn.tetris.schedule import (Schedule, ScheduleSegment,
-                                   JobSegmentMapping, MAX_END_GAP, ENERGY_EPS,
-                                   TIME_EPS)
+from pykpn.tetris.schedule import (Schedule, MultiJobSegmentMapping,
+                                   SingleJobSegmentMapping, MAX_END_GAP,
+                                   ENERGY_EPS, TIME_EPS)
 from pykpn.tetris.scheduler.base import SegmentSchedulerBase, SchedulerBase
 
 from collections import Counter
@@ -97,7 +97,7 @@ class BruteforceSegmentScheduler(SegmentSchedulerBase):
         Args:
             job_mappings (list of Mapping): The list of job mappings.
 
-        Returns: a ScheduleSegment object
+        Returns: a MultiJobSegmentMapping object
         """
         # Skip mappings with all idle jobs
         only_idle = all(m is None for m in job_mappings)
@@ -114,18 +114,18 @@ class BruteforceSegmentScheduler(SegmentSchedulerBase):
         segment_end_time = segment_duration + self.__segment_start_time
         assert segment_duration > self.__min_segment_duration - TIME_EPS
 
-        # Construct JobSegmentMapping objects
+        # Construct SingleJobSegmentMapping objects
         job_segments = []
         for j, m in zip(self.__jobs, job_mappings):
             if m is not None:
-                ssm = JobSegmentMapping(j.request, m,
-                                        start_time=self.__segment_start_time,
-                                        start_cratio=j.cratio,
-                                        end_time=segment_end_time)
+                ssm = SingleJobSegmentMapping(
+                    j.request, m, start_time=self.__segment_start_time,
+                    start_cratio=j.cratio, end_time=segment_end_time)
                 job_segments.append(ssm)
 
         # Construct a schedule segment
-        new_segment = ScheduleSegment(self.scheduler.platform, job_segments)
+        new_segment = MultiJobSegmentMapping(self.scheduler.platform,
+                                             job_segments)
         new_segment.verify(only_counters=not self.scheduler.rotations)
         return new_segment
 

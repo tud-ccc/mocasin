@@ -33,7 +33,7 @@ MAX_END_GAP = 0.5
 log = logging.getLogger(__name__)
 
 
-class JobSegmentMapping:
+class SingleJobSegmentMapping:
     """A mapping of a single job on a time segment.
 
     Each mapping is defined by the job request, time segment and the completion
@@ -221,13 +221,15 @@ class JobSegmentMapping:
         return res_str
 
 
-class ScheduleSegment:
-    """ Job mappings defined on a single time segment
+class MultiJobSegmentMapping:
+    """ Multiple Job Segment Mapping.
+
+    This class contains the job's mappings active in a schedule segment.
 
     Args:
         platform (Platform): The platform model
-        jobs (:obj:`list` of :obj:`SingleJobMapping`): A list of
-            JobSegmentMapping objects
+        jobs (:obj:`list` of :obj:`SingleJobSegmentMapping`): A list of
+            SingleJobSegmentMapping objects
     """
     def __init__(self, platform, jobs=[]):
         self.platform = platform
@@ -258,7 +260,9 @@ class ScheduleSegment:
         return sum([x.energy for x in self.__jobs])
 
     def jobs(self):
-        """list(JobSegmentMapping): Returns a shallow copy of job mappings."""
+        """list(SingleJobSegmentMapping): Returns a shallow copy of
+        single job segment mappings.
+        """
         return self.__jobs.copy()
 
     @property
@@ -272,7 +276,7 @@ class ScheduleSegment:
         return res
 
     def verify(self, only_counters=False):
-        """ Verify that ScheduleSegment in a consistent stay.
+        """ Verify that MultiJobSegmentMapping in a consistent stay.
         """
         failed = False
         # All JobSegmentMappings should have the same time range
@@ -321,7 +325,7 @@ class ScheduleSegment:
     def append_job(self, job):
         """Add a new job mapping to the current object."""
         assert job is not None
-        assert isinstance(job, JobSegmentMapping)
+        assert isinstance(job, SingleJobSegmentMapping)
 
         self.__jobs.append(job)
 
@@ -359,19 +363,20 @@ class ScheduleSegment:
             " the segment time range [{}, {})".format(time, self.start_time,
                                                       self.end_time))
 
-        m1 = ScheduleSegment(self.platform)
-        m2 = ScheduleSegment(self.platform)
+        m1 = MultiJobSegmentMapping(self.platform)
+        m2 = MultiJobSegmentMapping(self.platform)
         for jm in self:
-            jm1 = JobSegmentMapping(jm.request, jm.mapping,
-                                    start_time=jm.start_time,
-                                    start_cratio=jm.start_cratio,
-                                    end_time=time)
+            jm1 = SingleJobSegmentMapping(jm.request, jm.mapping,
+                                          start_time=jm.start_time,
+                                          start_cratio=jm.start_cratio,
+                                          end_time=time)
             m1.append_job(jm1)
             if jm1.finished:
                 continue
-            jm2 = JobSegmentMapping(jm.request, jm.mapping, start_time=time,
-                                    start_cratio=jm1.end_cratio,
-                                    end_time=jm.end_time)
+            jm2 = SingleJobSegmentMapping(jm.request, jm.mapping,
+                                          start_time=time,
+                                          start_cratio=jm1.end_cratio,
+                                          end_time=jm.end_time)
             m2.append_job(jm2)
         return m1, m2
 
@@ -395,12 +400,12 @@ class Schedule:
         self.__segments = []
 
         # yapf: disable
-        assert isinstance(segments, (list, ScheduleSegment)), (
-                "segments must be a list or a ScheduleSegment, but it is {}"
-                .format(type(segments)))
+        assert isinstance(segments, (list, MultiJobSegmentMapping)), (
+                f"segments must be a list or a MultiJobSegmentMapping, "
+                f"but it is {type(segments)}")
         # yapf: enable
 
-        if isinstance(segments, ScheduleSegment):
+        if isinstance(segments, MultiJobSegmentMapping):
             segments = [segments]
 
         for s in segments:
@@ -427,20 +432,22 @@ class Schedule:
 
     @property
     def first(self):
-        """ScheduleSegment: the first schedule segment"""
+        """MultiJobSegmentMapping: the first schedule segment"""
         if len(self.__segments) == 0:
             return None
         return self.__segments[0]
 
     @property
     def last(self):
-        """ScheduleSegment: the last schedule segment"""
+        """MultiJobSegmentMapping: the last schedule segment"""
         if len(self.__segments) == 0:
             return None
         return self.__segments[-1]
 
     def segments(self):
-        """list(ScheduleSegment): Returns a shallow copy of schedule segments"""
+        """list(MultiJobSegmentMapping): Returns a shallow copy of
+        multi job segment mappings.
+        """
         return self.__segments.copy()
 
     def copy(self):
@@ -448,7 +455,7 @@ class Schedule:
         copy_segments = []
         for segment in self.__segments:
             copy_segments.append(
-                ScheduleSegment(segment.platform, segment.jobs()))
+                MultiJobSegmentMapping(segment.platform, segment.jobs()))
 
         return Schedule(self.platform, copy_segments)
 
@@ -460,7 +467,7 @@ class Schedule:
 
         Args:
             index (int): The position where a segment needs to be inserted
-            segment (ScheduleSegment): The segment to insert.
+            segment (MultiJobSegmentMapping): The segment to insert.
         """
         self.__segments.insert(index, segment)
 
@@ -508,7 +515,7 @@ class Schedule:
             [t:(<start_time>, <end_time>) <n> job(s), PEs: <cores_used>, e:<energy> ]
         where the format of <cores_used>: (<type>: <count>, ...)
 
-        If verbose is True, it also returns the information of job schedule segments.
+        If verbose is True, it also returns the information of job segment mappings.
         """
         res = (f"Schedule t:({self.start_time:.3f}, {self.end_time:.3f}), "
                f"e:{self.energy:.3f}\n")
@@ -532,8 +539,8 @@ class Schedule:
 
     def per_requests(self, none_as_idle=False):
         """ Returns a dict of 'JobRequestInfo' objects involved in the schedule
-        with the list of 'JobSegmentMapping' objects. If 'none_as_idle' is true,
-        add None values for the segment where the job was idle or finished.
+        with the list of 'SingleJobSegmentMapping' objects. If 'none_as_idle' is
+        true, add None values for the segment where the job was idle or finished.
         """
         res = {}
         for i, segment in enumerate(self):

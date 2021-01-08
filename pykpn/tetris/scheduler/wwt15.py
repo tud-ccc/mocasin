@@ -11,8 +11,8 @@ Real-Time Distributed Computing Workshops, April 2015, pp. 103–110.
 """
 
 from pykpn.tetris.job_state import Job
-from pykpn.tetris.schedule import (Schedule, ScheduleSegment,
-                                   JobSegmentMapping, MAX_END_GAP)
+from pykpn.tetris.schedule import (Schedule, MultiJobSegmentMapping,
+                                   SingleJobSegmentMapping, MAX_END_GAP)
 from pykpn.tetris.scheduler.base import (SingleVariantSegmentScheduler,
                                          SingleVariantSegmentizedScheduler)
 from pykpn.tetris.scheduler.lr_solver import LRSolver, LRConstraint
@@ -138,7 +138,7 @@ class WWT15SegmentScheduler(SingleVariantSegmentScheduler):
                             log.debug("....... Cannot meet deadline")
                             continue
                         # Construct a temporary job_segment
-                        job_segment = JobSegmentMapping(
+                        job_segment = SingleJobSegmentMapping(
                             job.request, mapping,
                             start_time=segment_start_time, start_cratio=cratio,
                             end_time=segment_start_time + min_rtime)
@@ -190,14 +190,14 @@ class WWT15SegmentScheduler(SingleVariantSegmentScheduler):
             if m is None:
                 assert False, "NYI"
                 continue
-            ssm = JobSegmentMapping(j.request, m,
-                                    start_time=segment_start_time,
-                                    start_cratio=j.cratio,
-                                    end_time=segment_end_time)
+            ssm = SingleJobSegmentMapping(j.request, m,
+                                          start_time=segment_start_time,
+                                          start_cratio=j.cratio,
+                                          end_time=segment_end_time)
             job_segments.append(ssm)
 
         # Construct a schedule segment
-        new_segment = ScheduleSegment(self.platform, job_segments)
+        new_segment = MultiJobSegmentMapping(self.platform, job_segments)
         new_segment.verify(only_counters=not self.scheduler.rotations)
         # Check that idle jobs do not miss deadline
         for j, m in final_job_mappings.items():
