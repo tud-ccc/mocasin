@@ -7,7 +7,7 @@ from pykpn.tetris.job_state import Job
 from pykpn.tetris.schedule import (Schedule, MultiJobSegmentMapping,
                                    SingleJobSegmentMapping, MAX_END_GAP,
                                    ENERGY_EPS, TIME_EPS)
-from pykpn.tetris.scheduler.base import SegmentSchedulerBase, SchedulerBase
+from pykpn.tetris.scheduler import SchedulerBase
 
 from collections import Counter
 from functools import reduce
@@ -39,9 +39,10 @@ def get_jobs_bc_energy(jobs):
                 if not j.is_terminated()])
 
 
-class BruteforceSegmentScheduler(SegmentSchedulerBase):
+class BruteforceSegmentGenerator:
     def __init__(self, scheduler):
-        super().__init__(scheduler, scheduler.platform)
+        self.scheduler = scheduler
+        self.platform = scheduler.platform
 
         # Initialize variables used during the scheduling to None
         self.__jobs = None
@@ -265,8 +266,8 @@ class BruteforceSegmentScheduler(SegmentSchedulerBase):
             self.__schedule_step(current_mappings + [mapping])
 
     # TODO: Remove prev_schedule
-    def schedule(self, jobs, segment_start_time=0.0, accumulated_energy=0.0,
-                 prev_schedule=None):
+    def generate_segments(self, jobs, segment_start_time=0.0,
+                          accumulated_energy=0.0, prev_schedule=None):
         """ Schedule the jobs.
 
         Args:
@@ -369,7 +370,7 @@ class BruteforceScheduler(SchedulerBase):
 
         self.__dump_steps = kwargs["bf_dump_steps"]
         # Initialize a segment scheduler
-        self.__segment_scheduler = BruteforceSegmentScheduler(self)
+        self.__segment_generator = BruteforceSegmentGenerator(self)
 
         if not self.preemptions:
             raise RuntimeError(
@@ -437,7 +438,7 @@ class BruteforceScheduler(SchedulerBase):
                 continue
 
             # print("current_jobs", [j.to_str() for j in current_jobs])
-            results = self.__segment_scheduler.schedule(
+            results = self.__segment_generator.generate_segments(
                 cjobs, segment_start_time=cstart_time,
                 accumulated_energy=cschedule.energy, prev_schedule=cschedule)
             # print("#segments:", len(segments))

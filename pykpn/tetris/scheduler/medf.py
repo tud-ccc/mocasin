@@ -5,7 +5,7 @@
 
 from pykpn.tetris.schedule import (Schedule, MultiJobSegmentMapping,
                                    SingleJobSegmentMapping, TIME_EPS)
-from pykpn.tetris.scheduler.base import SchedulerBase
+from pykpn.tetris.scheduler import SchedulerBase
 
 from collections import Counter
 import copy

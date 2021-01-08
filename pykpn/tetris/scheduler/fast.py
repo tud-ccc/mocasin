@@ -6,8 +6,7 @@
 from pykpn.tetris.job_state import Job
 from pykpn.tetris.schedule import (Schedule, MultiJobSegmentMapping,
                                    SingleJobSegmentMapping, MAX_END_GAP)
-from pykpn.tetris.scheduler.base import (SingleVariantSegmentScheduler,
-                                         SingleVariantSegmentizedScheduler)
+from pykpn.tetris.scheduler import (SegmentMapperBase, SegmentedScheduler)
 
 import logging
 import math
@@ -15,7 +14,7 @@ import math
 log = logging.getLogger(__name__)
 
 
-class FastSegmentScheduler(SingleVariantSegmentScheduler):
+class FastSegmentMapper(SegmentMapperBase):
     """ TODO: Add a description"""
     def __init__(self, scheduler, platform):
 
@@ -83,7 +82,7 @@ class FastSegmentScheduler(SingleVariantSegmentScheduler):
         new_segment.verify(only_counters=not self.scheduler.rotations)
         return new_segment
 
-    def schedule(self, jobs, segment_start_time=0.0):
+    def generate_segment(self, jobs, segment_start_time=0.0):
         self.__segment_start_time = segment_start_time
 
         job_mappings = {}
@@ -157,14 +156,14 @@ class FastSegmentScheduler(SingleVariantSegmentScheduler):
         return segment, new_jobs
 
 
-class FastScheduler(SingleVariantSegmentizedScheduler):
+class FastScheduler(SegmentedScheduler):
     def __init__(self, platform, **kwargs):
         """Fast scheduler.
 
         :param platform: a platform
         :type platform: Platform
         """
-        segment_mapper = FastSegmentScheduler(self, platform)
+        segment_mapper = FastSegmentMapper(self, platform)
         super().__init__(platform, segment_mapper)
 
     @property

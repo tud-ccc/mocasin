@@ -13,8 +13,7 @@ Real-Time Distributed Computing Workshops, April 2015, pp. 103–110.
 from pykpn.tetris.job_state import Job
 from pykpn.tetris.schedule import (Schedule, MultiJobSegmentMapping,
                                    SingleJobSegmentMapping, MAX_END_GAP)
-from pykpn.tetris.scheduler.base import (SingleVariantSegmentScheduler,
-                                         SingleVariantSegmentizedScheduler)
+from pykpn.tetris.scheduler import (SegmentMapperBase, SegmentedScheduler)
 from pykpn.tetris.scheduler.lr_solver import LRSolver, LRConstraint
 
 from collections import Counter
@@ -36,7 +35,7 @@ class WWT15ExploreMode(Enum):
     BEST = 2
 
 
-class WWT15SegmentScheduler(SingleVariantSegmentScheduler):
+class WWT15SegmentMapper(SegmentMapperBase):
     """ MMKP-based application mapping.
 
     At the beginning, using Lagrangian relaxation solver we obtain the
@@ -66,7 +65,7 @@ class WWT15SegmentScheduler(SingleVariantSegmentScheduler):
 
         self.__lr_solver = LRSolver(platform, lr_constraints, lr_rounds)
 
-    def schedule(self, jobs, segment_start_time=0.0):
+    def generate_segment(self, jobs, segment_start_time=0.0):
 
         # Solve Lagrangian relaxation of MMKP
         log.debug("Solving Lagrangian relaxation of MMKP...")
@@ -217,7 +216,7 @@ class WWT15SegmentScheduler(SingleVariantSegmentScheduler):
         return new_segment, new_jobs
 
 
-class WWT15Scheduler(SingleVariantSegmentizedScheduler):
+class WWT15Scheduler(SegmentedScheduler):
     def __init__(self, platform, **kwargs):
         sorting_arg = kwargs["wwt15_sorting"]
         if sorting_arg == "COST":
@@ -250,7 +249,7 @@ class WWT15Scheduler(SingleVariantSegmentizedScheduler):
             self.__lr_constraints |= LRConstraint.RDP
 
         self.__lr_rounds = kwargs["wwt15_lr_rounds"]
-        segment_mapper = WWT15SegmentScheduler(
+        segment_mapper = WWT15SegmentMapper(
             self, platform, sorting_key=self.__sorting_key,
             explore_mode=self.__explore_mode,
             lr_constraints=self.__lr_constraints, lr_rounds=self.__lr_rounds)
