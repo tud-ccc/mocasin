@@ -14,7 +14,7 @@ import math
 log = logging.getLogger(__name__)
 
 
-class FastSegmentMapper(SegmentMapperBase):
+class SegMedfSegmentMapper(SegmentMapperBase):
     """ TODO: Add a description"""
     def __init__(self, scheduler, platform):
 
@@ -156,16 +156,16 @@ class FastSegmentMapper(SegmentMapperBase):
         return segment, new_jobs
 
 
-class FastScheduler(SegmentedScheduler):
+class SegMedfScheduler(SegmentedScheduler):
     def __init__(self, platform, **kwargs):
-        """Fast scheduler.
+        """Segmented Maximum energy Difference First scheduler.
 
         :param platform: a platform
         :type platform: Platform
         """
-        segment_mapper = FastSegmentMapper(self, platform)
+        segment_mapper = SegMedfSegmentMapper(self, platform)
         super().__init__(platform, segment_mapper)
 
     @property
     def name(self):
-        return "FAST"
+        return "Segmented MEDF"

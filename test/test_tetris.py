@@ -116,13 +116,13 @@ def test_tetris_medf_rotations(datadir, medf_rot_expected_schedule):
     ("3569-mix-3-running-deadline_7.csv", False, None, None),
     ("4405-hog_B-4-new-deadline_6.csv", False, None, None),
 ])
-def fast_expected_schedule(request):
+def segmedf_expected_schedule(request):
     return request.param
 
 
 @pytest.mark.xfail(reason="Required files are not in the repository anymore")
-def test_tetris_fast(datadir, fast_expected_schedule):
-    run_tetris_scheduler(datadir, "fast", fast_expected_schedule)
+def test_tetris_segmedf(datadir, segmedf_expected_schedule):
+    run_tetris_scheduler(datadir, "seg_medf", segmedf_expected_schedule)
 
 
 @pytest.fixture(params=[
