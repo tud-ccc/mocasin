@@ -1,5 +1,9 @@
 import distutils.cmd
+import os
+import urllib.request
 import sys
+import tarfile
+import tempfile
 
 from setuptools import setup, find_packages
 from setuptools.command.install import install
@@ -62,10 +66,31 @@ class InstallPynautyCommand(distutils.cmd.Command):
         First, run ``make pynauty`` to build the c library. Then, run ``python
         setup.py install`` to install pynauty.
         """
-        subprocess.check_call(["make", "pynauty"],
-                              cwd="third_party_dependencies/pynauty-0.6")
-        subprocess.check_call(["python", "setup.py", "install"],
-                              cwd="third_party_dependencies/pynauty-0.6")
+        cwd = os.getcwd()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            os.chdir(tmpdir)
+            print("Downloading nauty")
+            urllib.request.urlretrieve(
+                "http://users.cecs.anu.edu.au/~bdm/nauty/nauty27r1.tar.gz",
+                "nauty27r1.tar.gz")
+            print("Downloading pynauty")
+            urllib.request.urlretrieve(
+                "https://web.cs.dal.ca/~peter/software/pynauty/pynauty-0.6.0.tar.gz",
+                "pynauty-0.6.0.tar.gz")
+            print("Extracting pynauty")
+            with tarfile.open("pynauty-0.6.0.tar.gz") as tar:
+                tar.extractall(".")
+            print("Extracting nauty")
+            with tarfile.open("nauty27r1.tar.gz") as tar:
+                tar.extractall("pynauty-0.6.0/")
+            os.rename("pynauty-0.6.0/nauty27r1", "pynauty-0.6.0/nauty")
+            print("Build pynauty")
+            subprocess.check_call(["make", "pynauty"],
+                                  cwd=f"{tmpdir}/pynauty-0.6.0")
+            print("Install pynauty")
+            subprocess.check_call(["python", "setup.py", "install"],
+                                  cwd=f"{tmpdir}/pynauty-0.6.0")
+        os.chdir(cwd)
 
 
 class InstallCommand(install):
