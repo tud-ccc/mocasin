@@ -3,7 +3,6 @@
 #
 # Authors: Robert Khasanov
 
-# from pykpn.tetris.job_state import Job
 from pykpn.tetris.schedule import (Schedule, ScheduleSegment,
                                    JobSegmentMapping, TIME_EPS)
 from pykpn.tetris.scheduler.base import SchedulerBase
@@ -23,17 +22,18 @@ def get_mapping_time_core_product(mapping, cratio=0.0):
          for k, v in mapping.get_used_processor_types().items()})
 
 
-class DacScheduler(SchedulerBase):
+class MedfScheduler(SchedulerBase):
     def __init__(self, platform, **kwargs):
+        """ Maximum Energy Difference First Scheduler. """
         super().__init__(platform, **kwargs)
 
         if not self.preemptions:
             raise RuntimeError(
-                "DacScheduler only generates schedules with preemtpions")
+                "MedfScheduler only generates schedules with preemtpions")
 
     @property
     def name(self):
-        return "NUEP19'"
+        return "MEDF"
 
     def _filter_job_mappings_by_deadline_jars(self, job, time_core_jars):
         """ Filters mappings which can feet core jars and deadlines.

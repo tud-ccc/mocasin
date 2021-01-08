@@ -14,13 +14,13 @@ def test_tetris_schedule(datadir, expected_dir):
     testname = "3337-mix-3-running-deadline_4.csv"
     input_scn = os.path.join(datadir, "tetris", "job_table",
                              "{}".format(testname))
-    out_name = "3337_dac_mapping.out"
+    out_name = "3337_medf_mapping.out"
     out_path = os.path.join(datadir, out_name)
     tetris_base = os.path.join(datadir, "tetris", "apps")
     cmd = ("pykpn " + "tetris_scheduler " +
            "tetris_apps_dir={} ".format(tetris_base) +
            "job_table={} ".format(input_scn) +
-           "resource_manager=dac platform=exynos " +
+           "resource_manager=medf platform=exynos " +
            "output_schedule={} ".format(out_path))
     subprocess.check_call(cmd.split(), cwd=datadir)
 
@@ -82,26 +82,26 @@ def run_tetris_scheduler(datadir, scheduler, test_schedule_tuple, options="",
     ("3569-mix-3-running-deadline_7.csv", False, None, None),
     ("4405-hog_B-4-new-deadline_6.csv", False, None, None),
 ])
-def dac_expected_schedule(request):
+def medf_expected_schedule(request):
     return request.param
 
 
 @pytest.mark.xfail(reason="Required files are not in the repository anymore")
-def test_tetris_dac(datadir, dac_expected_schedule):
-    run_tetris_scheduler(datadir, "dac", dac_expected_schedule)
+def test_tetris_medf(datadir, medf_expected_schedule):
+    run_tetris_scheduler(datadir, "medf", medf_expected_schedule)
 
 
 @pytest.fixture(params=[
     ("3319-af_B-3-running-deadline_4.csv", True, 78.598, 173.138),
     ("3337-mix-3-running-deadline_4.csv", True, 13.941, 41.408),
 ])
-def dac_rot_expected_schedule(request):
+def medf_rot_expected_schedule(request):
     return request.param
 
 
 @pytest.mark.xfail(reason="Required files are not in the repository anymore")
-def test_tetris_dac_rotations(datadir, dac_rot_expected_schedule):
-    run_tetris_scheduler(datadir, "dac", dac_rot_expected_schedule,
+def test_tetris_medf_rotations(datadir, medf_rot_expected_schedule):
+    run_tetris_scheduler(datadir, "medf", medf_rot_expected_schedule,
                          "+resource_manager.rotations=True")
 
 
@@ -227,7 +227,7 @@ def test_tetris_manager(datadir, expected_dir, tetris_manager_test):
     cmd = ("pykpn " + "tetris_manager " +
            "tetris_apps_dir={} ".format(tetris_base) +
            "input_jobs={} ".format(input_scn) +
-           "resource_manager={} ".format("dac") + "platform=exynos " +
+           "resource_manager={} ".format("medf") + "platform=exynos " +
            "log_level=INFO " + "output_trace={} ".format(out_path))
     subprocess.check_call(cmd.split(), cwd=datadir)
 

@@ -31,7 +31,7 @@ class FastSegmentScheduler(SingleVariantSegmentScheduler):
         Returns: a list of mappings satisfying deadline and resources
         conditions.
         """
-        # TODO: This function is similar to DAC?
+        # TODO: This function is similar to Medf?
         res = []
         rratio = 1.0 - job.cratio
         rdeadline = job.request.deadline - self.__segment_start_time
