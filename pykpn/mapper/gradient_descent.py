@@ -187,7 +187,8 @@ class GradientDescentMapper(object):
                     finished_points.append(i)
 
             for i in finished_points:
-                active_points.remove(i)
+                if i in active_points:
+                    active_points.remove(i)
             if len(active_points) == 0:
                 break
 
