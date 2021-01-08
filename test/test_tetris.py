@@ -136,28 +136,29 @@ def test_tetris_segmedf(datadir, segmedf_expected_schedule):
     ("3509-mix-3-running-deadline_5.csv", True, 37.127, 105.081),
     ("4405-hog_B-4-new-deadline_6.csv", False, None, None),
 ])
-def wwt15_expected_schedule(request):
+def seglr_expected_schedule(request):
     return request.param
 
 
 @pytest.mark.xfail(reason="Required files are not in the repository anymore")
-def test_tetris_wwt15(datadir, wwt15_expected_schedule):
-    run_tetris_scheduler(datadir, "wwt15", wwt15_expected_schedule)
+def test_tetris_seglr(datadir, seglr_expected_schedule):
+    run_tetris_scheduler(datadir, "seg_lr", seglr_expected_schedule)
 
 
 @pytest.fixture(params=[
     ("hog-1-2.csv", ),
     ("2177-mix-2-new-deadline_2.csv", ),
 ])
-def wwt15_rdp_expected_schedule(request):
+def seglr_rdp_expected_schedule(request):
     return request.param
 
 
 @pytest.mark.xfail(reason="Required files are not in the repository anymore")
-def test_tetris_wwt15_rdp(datadir, wwt15_rdp_expected_schedule):
-    run_tetris_scheduler(datadir, "wwt15", wwt15_rdp_expected_schedule,
-                         options="resource_manager.wwt15_lr=['R','D','RDP']",
-                         check_result=False)
+def test_tetris_seglr_rdp(datadir, seglr_rdp_expected_schedule):
+    run_tetris_scheduler(
+        datadir, "seg_lr", seglr_rdp_expected_schedule,
+        options="resource_manager.seg_lr_constraints=['R','D','RDP']",
+        check_result=False)
 
 
 @pytest.fixture(params=[
