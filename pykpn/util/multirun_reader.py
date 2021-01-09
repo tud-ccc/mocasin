@@ -8,8 +8,7 @@
 import yaml
 import csv
 import h5py
-from os import listdir
-from os.path import abspath, isdir, join
+import os
 
 from pykpn.util import logging
 log = logging.getLogger(__name__)
@@ -84,14 +83,14 @@ def read_multirun(path,outputs_parsers = None,output_format = 'csv'):
 
     if outputs_parsers is None:
         outputs_parsers = []
-    multirun_file  = abspath(path) + "/multirun.yaml"
+    multirun_file  = os.path.abspath(path) + "/multirun.yaml"
     with open(multirun_file,'r') as f:
         multirun_config = yaml.load(f,Loader=yaml.SafeLoader)
     parameters_str = multirun_config['hydra']['job']['override_dirname']
     multirun_parameters = parse_override_string(parameters_str)
     keys = set(multirun_parameters.keys())
 
-    directories = filter(isdir, [join(path,dir) for dir in listdir(path)])
+    directories = filter(os.path.isdir, [os.path.join(path,dir) for dir in os.listdir(path)])
     out_file = path.replace('/','.') + "." + output_format
 
     results = {}
@@ -116,4 +115,13 @@ def read_multirun(path,outputs_parsers = None,output_format = 'csv'):
     else:
         raise RuntimeError(f"Output format {output_format} not supported.")
 
-
+def total_time_estimator(dir):
+    times = []
+    for subdir,_,files in os.walk(dir):
+        for file in files:
+            fname = os.path.join(subdir,file)
+            times.append(os.path.getctime(fname))
+            times.append(os.path.getmtime(fname))
+    estimated_time = max(times) - min(times)
+    results = {'estimated_total_time' : estimated_time}
+    return results, list(results.keys())

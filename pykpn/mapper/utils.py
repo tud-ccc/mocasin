@@ -270,39 +270,51 @@ def statistics_parser(dir):
    return results,list(results.keys())
 
 def best_time_parser(dir):
-    with open(os.path.join(dir, "best_time.txt"), 'r') as f:
-        exec_time = float(f.readline())
-    results = {'best_mapping_time' : exec_time}
-    return results, list(results.keys())
+    try:
+        with open(os.path.join(dir, "best_time.txt"), 'r') as f:
+            exec_time = float(f.readline())
+        results = {'best_mapping_time' : exec_time}
+        return results, list(results.keys())
+    except FileNotFoundError:
+        return {},[]
 
 def evolutionary_logbook_parser(dir):
-    with open(os.path.join(dir,'evolutionary_logbook.txt'), 'r') as f:
-        results = []
-        reader = csv.DictReader(f,dialect='excel-tab')
-        for row in reader:
-            row_mod = {}
-            for key in row:
-                row_mod["genetic-" + key.replace(' ','').replace('\t','')] = row[key].replace(' ','').replace('\t','')
-            results.append(row_mod)
-        return results,list(results[0].keys())
+    try:
+        with open(os.path.join(dir,'evolutionary_logbook.txt'), 'r') as f:
+            results = []
+            reader = csv.DictReader(f,dialect='excel-tab')
+            for row in reader:
+                row_mod = {}
+                for key in row:
+                    row_mod["genetic-" + key.replace(' ','').replace('\t','')] = row[key].replace(' ','').replace('\t','')
+                results.append(row_mod)
+            return results,list(results[0].keys())
+    except FileNotFoundError:
+        return {},[]
 
 def cache_dump_csv_parser(dir):
-    with open(os.path.join(dir,'mapping_cache.csv'), 'r') as f:
-        reader = csv.DictReader(f)
-        keys = reader.fieldnames
-        results = []
-        for row in reader:
-            results.append(row)
-    return results, keys
+    try:
+        with open(os.path.join(dir,'mapping_cache.csv'), 'r') as f:
+            reader = csv.DictReader(f)
+            keys = reader.fieldnames
+            results = []
+            for row in reader:
+                results.append(row)
+        return results, keys
+    except FileNotFoundError:
+        return {},[]
 
 def cache_dump_h5_parser(dir):
-    with h5py.File(os.path.join(dir,'mapping_cache.h5'), 'r') as f:
-        results = []
-        keys = ['mapping', 'runtime']
-        for m in f:
-            mapping = np.array(f[m])
-            runtime = f[m].attrs['runtime']
-            results.append({ 'mapping' : mapping, 'runtime' : runtime})
-    return results, keys
+    try:
+        with h5py.File(os.path.join(dir,'mapping_cache.h5'), 'r') as f:
+            results = []
+            keys = ['mapping', 'runtime']
+            for m in f:
+                mapping = np.array(f[m])
+                runtime = f[m].attrs['runtime']
+                results.append({ 'mapping' : mapping, 'runtime' : runtime})
+        return results, keys
+    except FileNotFoundError:
+        return {},[]
 
 

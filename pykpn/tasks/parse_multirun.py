@@ -37,6 +37,10 @@ _parsers = {
         'pykpn.mapper.utils',
         'evolutionary_logbook_parser',
         'Parses the evolutionary logbooks from the genetic mapper.'),
+    'estimated_total_time': (
+        'pykpn.util.multirun_reader',
+        'total_time_estimator',
+        'Estimates the total execution time for each run using timestamps.'),
 }
 
 def available_parsers():
