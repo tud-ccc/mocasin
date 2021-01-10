@@ -14,5 +14,5 @@ hydra:
 
 parsers: []
 output_format : csv
-output_filename : none
+output_filename : Null
 path: ""
