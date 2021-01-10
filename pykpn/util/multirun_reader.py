@@ -23,6 +23,9 @@ def parse_override_string(override_string):
     #dont iterate until end (special case)
     for l in parameters_lists[1:-1]:
         values = l[:-1]
+        if type(values) == list and len(values) > 1:
+            # TODO: make multiple keys instead
+            values = [','.join(values)]
         parameters[key] = values
         key = l[-1]
     #treat special case at the end
@@ -79,7 +82,7 @@ def write_to_h5(results,h5_out):
     f.close()
 
 
-def read_multirun(path,outputs_parsers = None,output_format = 'csv'):
+def read_multirun(path,outputs_parsers = None,output_format = 'csv',output_filename=None):
 
     if outputs_parsers is None:
         outputs_parsers = []
@@ -91,7 +94,10 @@ def read_multirun(path,outputs_parsers = None,output_format = 'csv'):
     keys = set(multirun_parameters.keys())
 
     directories = filter(os.path.isdir, [os.path.join(path,dir) for dir in os.listdir(path)])
-    out_file = path.replace('/','.') + "." + output_format
+    if output_filename is None:
+        out_file = path.replace('/','.') + "." + output_format
+    else:
+        out_file = output_filename + "." + output_format
 
     results = {}
     for dir in directories:
