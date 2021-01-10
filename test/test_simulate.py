@@ -3,7 +3,7 @@
 #
 # Authors: Christian Menard
 
-
+import pytest
 import subprocess
 
 
@@ -16,6 +16,7 @@ slx_expected_sim_time = {
 }
 
 
+@pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_slx_simulate(datadir, slx_kpn_platform_pair):
     kpn, platform = slx_kpn_platform_pair
     res = subprocess.run(["pykpn", "simulate",

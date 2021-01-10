@@ -5,11 +5,10 @@
 
 import os
 import subprocess
-import filecmp
 import pytest
 
-#TODO: Add test for parallella. But something seems to not work atm
 
+@pytest.mark.xfail(reason="Required files are not in the repository anymore")
 @pytest.mark.parametrize("platform", ["exynos", "multidsp"])
 def test_enumerate_equivalent_exynos(datadir, expected_dir, platform):
     file_name = "equivalent_mappings_audio_filter_%s.txt" % platform

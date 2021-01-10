@@ -3,10 +3,12 @@
 #
 # Authors: Felix Teweleit, Andres Goens
 
+import pytest
 import subprocess
 import os
 
 
+@pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_generate_mapping_slx(datadir, slx_mapper, slx_kpn, representation):
     subprocess.check_call(["pykpn", "generate_mapping",
                            "kpn=%s" % slx_kpn,

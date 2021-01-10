@@ -5,10 +5,12 @@
 
 
 import filecmp
+import pytest
 import subprocess
 import os
 
 
+@pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_slx_kpn_to_dot(datadir, expected_dir, slx_kpn):
     dot_file = "%s.dot" % slx_kpn
     out_file = os.path.join(datadir, dot_file)
@@ -20,6 +22,7 @@ def test_slx_kpn_to_dot(datadir, expected_dir, slx_kpn):
                        shallow=False)
 
 
+@pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_slx_platform_to_dot(datadir, expected_dir, slx_platform):
     dot_file = "%s.dot" % slx_platform
     out_file = os.path.join(datadir, dot_file)
@@ -31,6 +34,7 @@ def test_slx_platform_to_dot(datadir, expected_dir, slx_platform):
                        shallow=False)
 
 
+@pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_slx_mapping_to_dot(datadir, expected_dir, slx_kpn_platform_pair):
     kpn, platform = slx_kpn_platform_pair
     dot_file = "%s_on_%s.dot" % (kpn, platform)
@@ -82,6 +86,7 @@ def test_tgff_mapping_to_dot(datadir, expected_dir, tgff):
                           cwd=datadir)
     assert filecmp.cmp(os.path.join(expected_dir, dot_file), out_file,
                        shallow=False)
+
 
 def test_sdf3_kpn_to_dot(datadir, expected_dir):
     dot_file = "sdf3_medium_cyclic.dot"

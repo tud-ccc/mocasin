@@ -9,6 +9,7 @@ import os
 import pytest
 
 
+@pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_tetris_schedule(datadir, expected_dir):
     testname = "3337-mix-3-running-deadline_4.csv"
     input_scn = os.path.join(datadir, "tetris", "job_table",
@@ -85,6 +86,7 @@ def dac_expected_schedule(request):
     return request.param
 
 
+@pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_tetris_dac(datadir, dac_expected_schedule):
     run_tetris_scheduler(datadir, "dac", dac_expected_schedule)
 
@@ -97,6 +99,7 @@ def dac_rot_expected_schedule(request):
     return request.param
 
 
+@pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_tetris_dac_rotations(datadir, dac_rot_expected_schedule):
     run_tetris_scheduler(datadir, "dac", dac_rot_expected_schedule,
                          "+resource_manager.rotations=True")
@@ -117,6 +120,7 @@ def fast_expected_schedule(request):
     return request.param
 
 
+@pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_tetris_fast(datadir, fast_expected_schedule):
     run_tetris_scheduler(datadir, "fast", fast_expected_schedule)
 
@@ -136,6 +140,7 @@ def wwt15_expected_schedule(request):
     return request.param
 
 
+@pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_tetris_wwt15(datadir, wwt15_expected_schedule):
     run_tetris_scheduler(datadir, "wwt15", wwt15_expected_schedule)
 
@@ -148,6 +153,7 @@ def wwt15_rdp_expected_schedule(request):
     return request.param
 
 
+@pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_tetris_wwt15_rdp(datadir, wwt15_rdp_expected_schedule):
     run_tetris_scheduler(datadir, "wwt15", wwt15_rdp_expected_schedule,
                          options="resource_manager.wwt15_lr=['R','D','RDP']",
@@ -166,10 +172,12 @@ def bf_expected_schedule(request):
     return request.param
 
 
+@pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_tetris_bf(datadir, bf_expected_schedule):
     run_tetris_scheduler(datadir, "bf", bf_expected_schedule)
 
 
+@pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_tetris_bf_mem(datadir, bf_expected_schedule):
     run_tetris_scheduler(datadir, "bf-mem", bf_expected_schedule)
 
@@ -188,11 +196,13 @@ def bf_rot_nomig_expected_schedule(request):
     return request.param
 
 
+@pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_tetris_bf_nomig(datadir, bf_nomig_expected_schedule):
     run_tetris_scheduler(datadir, "bf", bf_nomig_expected_schedule,
                          options="+resource_manager.migrations=False")
 
 
+@pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_tetris_bf_rot_nomig(datadir, bf_rot_nomig_expected_schedule):
     run_tetris_scheduler(
         datadir, "bf", bf_rot_nomig_expected_schedule, options=
@@ -206,6 +216,7 @@ def tetris_manager_test(request):
     return request.param
 
 
+@pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_tetris_manager(datadir, expected_dir, tetris_manager_test):
     testname = os.path.splitext(tetris_manager_test)[0]
     input_scn = os.path.join(datadir, "tetris", "request_trace",

@@ -5,6 +5,7 @@
 
 from pykpn.gui.utils import listOperations as lo
 from pykpn.gui.utils import platformOperations as po
+import pytest
 
 class TestListOperations(object):
 
@@ -66,51 +67,65 @@ class TestListOperations(object):
 
 class TestPlatformOperations(object):
     
+    @pytest.mark.xfail(reason="Required files are not in the repository anymore")
     def test_peToString_1(self, exynos):
         result = po.peToString(exynos.processors())
         assert(result == ['ARM00','ARM01','ARM02','ARM03','ARM04','ARM05','ARM06','ARM07'])
     
+    @pytest.mark.xfail(reason="Required files are not in the repository anymore")
     def test_peToString_2(self, parallella):
         result = po.peToString(parallella.processors())
         assert(result == ['ARM0', 'ARM1', 'E00', 'E01', 'E02', 'E03', 'E04', 'E05', 'E06',
                           'E07', 'E08', 'E09', 'E10', 'E11', 'E12', 'E13', 'E14', 'E15'])
     
+    @pytest.mark.xfail(reason="Required files are not in the repository anymore")
     def test_peToString_3(self, multiDSP):
         result = po.peToString(multiDSP.processors())
         assert(result == ['dsp0', 'dsp1', 'dsp2', 'dsp3', 'dsp4'])
+
     
+    @pytest.mark.xfail(reason="Required files are not in the repository anymore")
     def test_getSortedProcessorScheme_1(self, exynos):
         result = po.peToString(exynos.processors())
         result = po.getSortedProcessorScheme(result)
         assert(result == ['ARM00','ARM01','ARM02','ARM03','ARM04','ARM05','ARM06','ARM07'])
-        
+
+    
+    @pytest.mark.xfail(reason="Required files are not in the repository anymore")
     def test_getSortedProcessorScheme_2(self, parallella):
         result = po.peToString(parallella.processors())
         result = po.getSortedProcessorScheme(result)
         assert(result == ['ARM0', 'E00', 'ARM1', 'E01', 'E02', 'E03', 'E04', 'E05', 'E06',
                           'E07', 'E08', 'E09', 'E10', 'E11', 'E12', 'E13', 'E14', 'E15'])
-        
+
+    
+    @pytest.mark.xfail(reason="Required files are not in the repository anymore")
     def test_getSortedProcessorScheme_3(self, multiDSP):
         result = po.peToString(multiDSP.processors())
         result = po.getSortedProcessorScheme(result)
         assert(result == ['dsp0', 'dsp1', 'dsp2', 'dsp3', 'dsp4'])
-        
+
+
+    @pytest.mark.xfail(reason="Required files are not in the repository anymore")
     def test_getMembersOfPrimitive_1(self, exynos):
         primitive = exynos.find_primitive('comm_DRAM')
         result = po.getMembersOfPrimitive(primitive)
         assert(result == ['ARM00','ARM01','ARM02','ARM03','ARM04','ARM05','ARM06','ARM07'])
         
+    @pytest.mark.xfail(reason="Required files are not in the repository anymore")
     def test_getMembersOfPrimitive_2(self, parallella):
         primitive = parallella.find_primitive('EMEM')
         result = po.getMembersOfPrimitive(primitive)
         assert(result == ['ARM0', 'ARM1', 'E00', 'E01', 'E02', 'E03', 'E04', 'E05', 'E06',
                           'E07', 'E08', 'E09', 'E10', 'E11', 'E12', 'E13', 'E14', 'E15'])
         
+    @pytest.mark.xfail(reason="Required files are not in the repository anymore")
     def test_getMembersOfPrimitive_3(self, multiDSP):
         primitive = multiDSP.find_primitive('comm_cp_shared_shared_memory')
         result = po.getMembersOfPrimitive(primitive)
         assert(result == ['dsp0', 'dsp1', 'dsp2', 'dsp3', 'dsp4'])
         
+    @pytest.mark.xfail(reason="Required files are not in the repository anymore")
     def test_getPlatformDescription_1(self, exynos):
         processors = exynos.processors()
         primitives = exynos.primitives()
@@ -122,6 +137,7 @@ class TestPlatformOperations(object):
                         ['ARM04'])]), ('comm_L1_ARM05', [('comm_L1_ARM05', ['ARM05'])]), ('comm_L1_ARM06',
                         [('comm_L1_ARM06', ['ARM06'])]), ('comm_L1_ARM07', [('comm_L1_ARM07', ['ARM07'])])])])])])])
     
+    @pytest.mark.xfail(reason="Required files are not in the repository anymore")
     def test_getPlatformDescription_2(self, parallella):
         processors = parallella.processors()
         primitives = parallella.primitives()
@@ -133,12 +149,14 @@ class TestPlatformOperations(object):
                         ['E00', 'E01', 'E02', 'E03', 'E04', 'E05', 'E06', 'E07', 'E08', 'E09', 'E10', 'E11', 'E12', 'E13', 'E14',
                          'E15'])])])])])])])])])])])])])])])])])])
     
+    @pytest.mark.xfail(reason="Required files are not in the repository anymore")
     def test_getPlatformDescription_3(self, multiDSP):
         processors = multiDSP.processors()
         primitives = multiDSP.primitives()
         result = po.getPlatformDescription(processors, primitives)
         assert(result == [('comm_cp_shared_shared_memory', ['dsp0', 'dsp1', 'dsp2', 'dsp3', 'dsp4'])])
 
+    @pytest.mark.xfail(reason="Required files are not in the repository anymore")
     def test_findEqualPrimitives_1(self, exynos):
         result = po.findEqualPrimitives(exynos)
         assert(result == [['comm_L1_ARM00', 'comm_L1_ARM00_putget'], ['comm_L1_ARM01', 'comm_L1_ARM01_putget'],
@@ -148,6 +166,7 @@ class TestPlatformOperations(object):
                           ['comm_L2_A7', 'comm_L2_A7_putget'], ['comm_L2_A15', 'comm_L2_A15_putget'],
                           ['comm_DRAM', 'comm_DRAM_putget']])
     
+    @pytest.mark.xfail(reason="Required files are not in the repository anymore")
     def test_findEqualPrimitives_2(self, parallella):
         result = po.findEqualPrimitives(parallella)
         assert(result == [['EMEM'], ['hostToHostCached'], ['meshDirect_E00', 'meshDirect_E01', 'meshDirect_E02',
@@ -155,10 +174,12 @@ class TestPlatformOperations(object):
                         'meshDirect_E08', 'meshDirect_E09', 'meshDirect_E10', 'meshDirect_E11', 'meshDirect_E12',
                         'meshDirect_E13', 'meshDirect_E14', 'meshDirect_E15']])
         
+    @pytest.mark.xfail(reason="Required files are not in the repository anymore")
     def test_findEqualPrimitives_3(self, multiDSP):
         result = po.findEqualPrimitives(multiDSP)
         assert(result == [['comm_cp_shared_shared_memory']])
         
+    @pytest.mark.xfail(reason="Required files are not in the repository anymore")
     def test_mergeEqualPrimitives_1(self, exynos):
         processors = exynos.processors()
         primitives = exynos.primitives()
@@ -170,6 +191,7 @@ class TestPlatformOperations(object):
                         ['ARM04']), ('network_on_chip', ['ARM05']), ('network_on_chip', ['ARM06']), ('network_on_chip',
                         ['ARM07'])])])])
 
+    @pytest.mark.xfail(reason="Required files are not in the repository anymore")
     def test_mergeEqualPrimitives_2(self, parallella):
         processors = parallella.processors()
         primitives = parallella.primitives()
@@ -181,6 +203,7 @@ class TestPlatformOperations(object):
                          'E13', 'E14', 'E15'])])])])
 
     
+    @pytest.mark.xfail(reason="Required files are not in the repository anymore")
     def test_mergeEqualPrimitives_3(self, multiDSP):
         processors = multiDSP.processors()
         primitives = multiDSP.primitives()
@@ -189,6 +212,7 @@ class TestPlatformOperations(object):
         result = po.mergeEqualPrimitives(platformDescription, equalList)
         assert(result == [('comm_cp_shared_shared_memory', ['dsp0', 'dsp1', 'dsp2', 'dsp3', 'dsp4'])])
 
+    @pytest.mark.xfail(reason="Required files are not in the repository anymore")
     def test_createNOCMatrix(self, parallella):
         processors = parallella.processors()
         primitives = parallella.primitives()
@@ -199,6 +223,7 @@ class TestPlatformOperations(object):
         assert(result == [('EMEM', [('hostToHostCached', ['ARM0', 'ARM1']), ('network_on_chip', ['E00', 'E01', 'E02',
                         'E03', 'E04', 'E05', 'E06', 'E07', 'E08', 'E09', 'E10', 'E11', 'E12', 'E13', 'E14', 'E15'])])])
 
+    @pytest.mark.xfail(reason="Required files are not in the repository anymore")
     def test_organizePEs(self, parallella):
         peList =  [('network_on_chip', ['E00', 'E01', 'E02', 'E03', 'E04', 'E05', 'E06', 'E07', 'E08', 'E09', 'E10', 
                     'E11', 'E12', 'E13', 'E14', 'E15'])]

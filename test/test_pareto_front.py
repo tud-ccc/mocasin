@@ -5,7 +5,9 @@
 
 import subprocess
 import os
+import pytest
 
+@pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_pareto_front_slx(datadir, slx_kpn,representation):
     subprocess.check_call(["pykpn", "pareto_front",
                            "kpn=%s" % slx_kpn,

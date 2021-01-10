@@ -6,7 +6,10 @@
 from arpeggio import visit_parse_tree
 from pykpn.ontologies.logicLanguage import SemanticAnalysis
 
+import pytest
 
+
+@pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_query_1(parser, kpnGraph, platform, cfg):
     inputQuery = "EXISTS ARM04 PROCESSING AND src MAPPED ARM03"
     parse_tree = parser.parse(inputQuery)
@@ -15,6 +18,7 @@ def test_query_1(parser, kpnGraph, platform, cfg):
     assert(len(result) == 1)
     assert(len(result[0]) == 2)
     
+@pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_query_2(parser, kpnGraph, platform, cfg):
     inputQuery = "EXISTS ARM04 PROCESSING OR src MAPPED ARM03"
     parse_tree = parser.parse(inputQuery)
@@ -24,6 +28,7 @@ def test_query_2(parser, kpnGraph, platform, cfg):
     for constraintSet in result:
         assert(len(constraintSet) == 1)
         
+@pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_query_3(parser, kpnGraph, platform, cfg):
     inputQuery = "EXISTS ((ARM01 PROCESSING AND ARM02 PROCESSING) OR (ARM07 PROCESSING AND ARM06 PROCESSING)) AND (src MAPPED ARM03 OR filter_l MAPPED ARM04 OR filter_r MAPPED ARM05)"
     parse_tree = parser.parse(inputQuery)
@@ -33,6 +38,7 @@ def test_query_3(parser, kpnGraph, platform, cfg):
     for constraintSet in result:
         assert(len(constraintSet) == 3)
     
+@pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_query_4(parser, kpnGraph, platform, cfg):
     inputQuery = "EXISTS fft_r MAPPED ARM00 AND sink MAPPED ARM01 AND filter_l MAPPED ARM01 AND ARM05 PROCESSING AND ARM07 PROCESSING"
     parse_tree = parser.parse(inputQuery)
@@ -41,6 +47,7 @@ def test_query_4(parser, kpnGraph, platform, cfg):
     assert(len(result) == 1)
     assert(len(result[0]) == 5)
         
+@pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_query_5(parser, kpnGraph, platform, cfg):
     inputQuery = "EXISTS (ARM00 PROCESSING) AND ((fft_l MAPPED ARM01) OR ((sink MAPPED ARM03) AND ((ARM04 PROCESSING) OR ((ARM02 PROCESSING) OR ((ARM01 PROCESSING) AND (sink MAPPED ARM02))))))"
     parse_tree = parser.parse(inputQuery)
@@ -70,6 +77,7 @@ def test_query_5(parser, kpnGraph, platform, cfg):
     assert(lenFour == 1)
     assert(lenDefault == 0)
         
+@pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_query_6(parser, kpnGraph, platform, cfg):
     inputQuery = "EXISTS (ARM00 PROCESSING) OR ((fft_l MAPPED ARM01) AND ((sink MAPPED ARM03) OR ((ARM04 PROCESSING) AND ((ARM02 PROCESSING) OR ((ARM03 PROCESSING) OR ((ARM01 PROCESSING) AND (sink MAPPED ARM02)))))))"
     parse_tree = parser.parse(inputQuery)
@@ -103,6 +111,7 @@ def test_query_6(parser, kpnGraph, platform, cfg):
     assert(lenFour == 1)
     assert(lenDefault == 0)
         
+@pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_query_7(parser, kpnGraph, platform, cfg):
     inputQuery = "EXISTS ARM04 PROCESSING AND RUNNING TOGETHER [src, sink, fft_l ]"
     parse_tree = parser.parse(inputQuery)
@@ -111,6 +120,7 @@ def test_query_7(parser, kpnGraph, platform, cfg):
     assert(len(result) == 1)
     assert(len(result[0]) == 2)
         
+@pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_query_8(parser, kpnGraph, platform, cfg):
     inputQuery = "EXISTS RUNNING TOGETHER [src, sink, ifft_r ] AND ARM02 PROCESSING AND ARM03 PROCESSING AND src MAPPED ARM07"
     parse_tree = parser.parse(inputQuery)
@@ -119,6 +129,7 @@ def test_query_8(parser, kpnGraph, platform, cfg):
     assert(len(result) == 1)
     assert(len(result[0]) == 4)
 
+@pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_query_9(parser, kpnGraph, platform, cfg):
     mapDict = {"map_one" : None}
     inputQuery = "EXISTS ARM04 PROCESSING AND src MAPPED ARM03 AND EQUALS map_one"
@@ -128,6 +139,7 @@ def test_query_9(parser, kpnGraph, platform, cfg):
     assert(len(result) == 1)
     assert(len(result[0]) == 3)
         
+@pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_query_10(parser, kpnGraph, platform, cfg):
     mapDict = {"map_one" : None, "map_two" : None}
     inputQuery = "EXISTS (ARM04 PROCESSING AND EQUALS map_one) OR (src MAPPED ARM03 AND EQUALS map_two)"

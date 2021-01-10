@@ -6,7 +6,9 @@
 import subprocess
 import filecmp
 import os
+import pytest
 
+@pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_calculate_platform_symmetries_slx(datadir, expected_dir, slx_platform, mpsym):
     file_name = "%s.autgrp" % slx_platform
     out_file = os.path.join(datadir, file_name)

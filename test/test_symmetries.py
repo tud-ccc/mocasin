@@ -8,6 +8,7 @@ import os
 import pytest
 
 
+@pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_symmetries_slx(datadir,slx_platform):
     subprocess.check_call(["pykpn", "generate_mapping",
                            "kpn=audio_filter",

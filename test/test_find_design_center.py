@@ -18,6 +18,7 @@ thresholds = {
 }
 
 
+@pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_dc_slx(datadir, slx_kpn_platform_pair):
     kpn, platform = slx_kpn_platform_pair
 
