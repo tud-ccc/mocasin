@@ -71,6 +71,7 @@ def test_tgff_simulate(datadir, tgff):
     assert found_line
 
 
+@pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_sdf3_simulate(datadir):
     res = subprocess.run(["pykpn", "simulate",
                           "platform=exynos",
