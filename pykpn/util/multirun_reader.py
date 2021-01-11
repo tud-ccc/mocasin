@@ -8,8 +8,7 @@
 import yaml
 import csv
 import h5py
-from os import listdir
-from os.path import abspath, isdir, join
+import os
 
 from pykpn.util import logging
 log = logging.getLogger(__name__)
@@ -24,6 +23,9 @@ def parse_override_string(override_string):
     #dont iterate until end (special case)
     for l in parameters_lists[1:-1]:
         values = l[:-1]
+        if type(values) == list and len(values) > 1:
+            # TODO: make multiple keys instead
+            values = [','.join(values)]
         parameters[key] = values
         key = l[-1]
     #treat special case at the end
@@ -80,19 +82,22 @@ def write_to_h5(results,h5_out):
     f.close()
 
 
-def read_multirun(path,outputs_parsers = None,output_format = 'csv'):
+def read_multirun(path,outputs_parsers = None,output_format = 'csv',output_filename=None):
 
     if outputs_parsers is None:
         outputs_parsers = []
-    multirun_file  = abspath(path) + "/multirun.yaml"
+    multirun_file  = os.path.abspath(path) + "/multirun.yaml"
     with open(multirun_file,'r') as f:
         multirun_config = yaml.load(f,Loader=yaml.SafeLoader)
     parameters_str = multirun_config['hydra']['job']['override_dirname']
     multirun_parameters = parse_override_string(parameters_str)
     keys = set(multirun_parameters.keys())
 
-    directories = filter(isdir, [join(path,dir) for dir in listdir(path)])
-    out_file = path.replace('/','.') + "." + output_format
+    directories = filter(os.path.isdir, [os.path.join(path,dir) for dir in os.listdir(path)])
+    if output_filename is None:
+        out_file = path.replace('/','.') + "." + output_format
+    else:
+        out_file = output_filename + "." + output_format
 
     results = {}
     for dir in directories:
@@ -116,4 +121,13 @@ def read_multirun(path,outputs_parsers = None,output_format = 'csv'):
     else:
         raise RuntimeError(f"Output format {output_format} not supported.")
 
-
+def total_time_estimator(dir):
+    times = []
+    for subdir,_,files in os.walk(dir):
+        for file in files:
+            fname = os.path.join(subdir,file)
+            times.append(os.path.getctime(fname))
+            times.append(os.path.getmtime(fname))
+    estimated_time = max(times) - min(times)
+    results = {'estimated_total_time' : estimated_time}
+    return results, list(results.keys())

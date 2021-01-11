@@ -48,18 +48,11 @@ def generate_mapping(cfg):
     It is recommended to use the silent all logginf o (``-s``) to suppress all logging
     output from the individual simulations.
 """
-    try:
-        platform = hydra.utils.instantiate(cfg['platform'])
-        trace = hydra.utils.instantiate(cfg['trace'])
-        kpn = hydra.utils.instantiate(cfg['kpn'])
-        representation = hydra.utils.instantiate(cfg['representation'],kpn,platform)
-        mapper = hydra.utils.instantiate(cfg['mapper'], kpn, platform, trace, representation)
-    except TgffReferenceError:
-        # Special exception indicates a bad combination of tgff components
-        # can be thrown during multiruns and should not stop the hydra
-        # execution
-        log.warning("Referenced non existing tgff component!")
-        return
+    platform = hydra.utils.instantiate(cfg['platform'])
+    trace = hydra.utils.instantiate(cfg['trace'])
+    kpn = hydra.utils.instantiate(cfg['kpn'])
+    representation = hydra.utils.instantiate(cfg['representation'],kpn,platform)
+    mapper = hydra.utils.instantiate(cfg['mapper'], kpn, platform, trace, representation)
 
     #Run mapper
     result = mapper.generate_mapping()

@@ -49,6 +49,9 @@ class TraceGeneratorWrapper:
             _parsed_tgff_files.update( {tgff_file : Parser().parse_file(tgff_file,proc_type_list)} )
 
         tgff_components = _parsed_tgff_files[tgff_file]
+        if graph_name not in tgff_components[0]:
+            raise TgffReferenceError()
+
         processor_dict = {}
 
         for processor in tgff_components[1]:

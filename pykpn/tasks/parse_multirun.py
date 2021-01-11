@@ -37,6 +37,10 @@ _parsers = {
         'pykpn.mapper.utils',
         'evolutionary_logbook_parser',
         'Parses the evolutionary logbooks from the genetic mapper.'),
+    'estimated_total_time': (
+        'pykpn.util.multirun_reader',
+        'total_time_estimator',
+        'Estimates the total execution time for each run using timestamps.'),
 }
 
 def available_parsers():
@@ -94,7 +98,7 @@ def parse_multirun(cfg):
         path = cfg['path']
         if path == "":
             path = sorted([x.path for x in scandir("multirun/") if x.is_dir()])[-1]
-        read_multirun(path,parsers,output_format=cfg['output_format'])
+        read_multirun(path,parsers,output_format=cfg['output_format'],output_filename=cfg['output_filename'])
     except ParserNotFoundException:
         print_usage()
         raise ParserNotFoundException()
