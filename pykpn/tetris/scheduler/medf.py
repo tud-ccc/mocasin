@@ -3,10 +3,9 @@
 #
 # Authors: Robert Khasanov
 
-# from pykpn.tetris.job_state import Job
-from pykpn.tetris.schedule import (Schedule, ScheduleSegment,
-                                   JobSegmentMapping, TIME_EPS)
-from pykpn.tetris.scheduler.base import SchedulerBase
+from pykpn.tetris.schedule import (Schedule, MultiJobSegmentMapping,
+                                   SingleJobSegmentMapping, TIME_EPS)
+from pykpn.tetris.scheduler import SchedulerBase
 
 from collections import Counter
 import copy
@@ -23,17 +22,18 @@ def get_mapping_time_core_product(mapping, cratio=0.0):
          for k, v in mapping.get_used_processor_types().items()})
 
 
-class DacScheduler(SchedulerBase):
+class MedfScheduler(SchedulerBase):
     def __init__(self, platform, **kwargs):
+        """ Maximum Energy Difference First Scheduler. """
         super().__init__(platform, **kwargs)
 
         if not self.preemptions:
             raise RuntimeError(
-                "DacScheduler only generates schedules with preemtpions")
+                "MedfScheduler only generates schedules with preemtpions")
 
     @property
     def name(self):
-        return "NUEP19'"
+        return "MEDF"
 
     def _filter_job_mappings_by_deadline_jars(self, job, time_core_jars):
         """ Filters mappings which can feet core jars and deadlines.
@@ -108,10 +108,10 @@ class DacScheduler(SchedulerBase):
             else:
                 segment_to_add = segment
 
-            jm = JobSegmentMapping(job.request, mapping,
-                                   start_time=segment_to_add.start_time,
-                                   start_cratio=cur_cratio,
-                                   end_time=segment_to_add.end_time)
+            jm = SingleJobSegmentMapping(job.request, mapping,
+                                         start_time=segment_to_add.start_time,
+                                         start_cratio=cur_cratio,
+                                         end_time=segment_to_add.end_time)
             segment_to_add.append_job(jm)
             cur_cratio = jm.end_cratio
             cur_rtime = mapping.metadata.exec_time * (1.0-cur_cratio)
@@ -127,10 +127,11 @@ class DacScheduler(SchedulerBase):
             if len(schedule) != 0:
                 segment_start_time = schedule.end_time
 
-            jm = JobSegmentMapping(job.request, mapping,
-                                   start_time=segment_start_time,
-                                   start_cratio=cur_cratio, finished=True)
-            new_segment = ScheduleSegment(self.platform, jobs=[jm])
+            jm = SingleJobSegmentMapping(job.request, mapping,
+                                         start_time=segment_start_time,
+                                         start_cratio=cur_cratio,
+                                         finished=True)
+            new_segment = MultiJobSegmentMapping(self.platform, jobs=[jm])
             schedule.append_segment(new_segment)
             job_finish_time = jm.end_time
 

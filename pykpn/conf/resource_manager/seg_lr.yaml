@@ -1,21 +1,21 @@
 # @package _group_
 
-_target_: pykpn.tetris.scheduler.wwt15.WWT15Scheduler
+_target_: pykpn.tetris.scheduler.seg_lr.SegLRScheduler
 # A high-level mapper algorithm: segmentized (SEG), joint-fixed (JF),
 # joint-dynamic (JD)
-# wwt15_type: SEG
+# seg_lr_type: SEG
 
 # Determines an order, in which applications are mapped.
 # Options: COST, DEADLINE, CDP.
-wwt15_sorting: COST
+seg_lr_sorting: COST
 
 # In segmentizes version, which points might form the segment: all points (ALL),
 # or only best (if possible, not to violate deadlines) (BEST)
-wwt15_seg_explore: ALL
+seg_lr_explore: ALL
 
 # Enable constraints in Lagrangian relaxation solver:
 # constaint on resources (R), on delay (D), on resource-delay-product (RDP).
-wwt15_lr: []
+seg_lr_constraints: []
 
 # Number of iterations (rounds) in Lagrangian relaxation
-wwt15_lr_rounds: 1000
+seg_lr_iters: 1000

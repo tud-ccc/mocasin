@@ -11,10 +11,9 @@ Real-Time Distributed Computing Workshops, April 2015, pp. 103–110.
 """
 
 from pykpn.tetris.job_state import Job
-from pykpn.tetris.schedule import (Schedule, ScheduleSegment,
-                                   JobSegmentMapping, MAX_END_GAP)
-from pykpn.tetris.scheduler.base import (SingleVariantSegmentScheduler,
-                                         SingleVariantSegmentizedScheduler)
+from pykpn.tetris.schedule import (Schedule, MultiJobSegmentMapping,
+                                   SingleJobSegmentMapping, MAX_END_GAP)
+from pykpn.tetris.scheduler import (SegmentMapperBase, SegmentedScheduler)
 from pykpn.tetris.scheduler.lr_solver import LRSolver, LRConstraint
 
 from collections import Counter
@@ -25,18 +24,18 @@ import math
 log = logging.getLogger(__name__)
 
 
-class WWT15SortingKey(Enum):
-    MINCOST = 1  # Min config cost (as in [WWT15])
+class SegLRSortingKey(Enum):
+    MINCOST = 1  # Min config cost (as in [SegLR])
     DEADLINE = 2
     MINCOST_DEADLINE_PRODUCT = 3
 
 
-class WWT15ExploreMode(Enum):
+class SegLRExploreMode(Enum):
     ALL = 1
     BEST = 2
 
 
-class WWT15SegmentScheduler(SingleVariantSegmentScheduler):
+class SegLRSegmentMapper(SegmentMapperBase):
     """ MMKP-based application mapping.
 
     At the beginning, using Lagrangian relaxation solver we obtain the
@@ -53,9 +52,9 @@ class WWT15SegmentScheduler(SingleVariantSegmentScheduler):
             configurations which can be compensated in a next segment
     """
     def __init__(self, scheduler, platform,
-                 sorting_key=WWT15SortingKey.MINCOST,
+                 sorting_key=SegLRSortingKey.MINCOST,
                  allow_local_violations=True,
-                 explore_mode=WWT15ExploreMode.ALL,
+                 explore_mode=SegLRExploreMode.ALL,
                  lr_constraints=LRConstraint.RESOURCE, lr_rounds=1000):
 
         super().__init__(scheduler, platform)
@@ -66,7 +65,7 @@ class WWT15SegmentScheduler(SingleVariantSegmentScheduler):
 
         self.__lr_solver = LRSolver(platform, lr_constraints, lr_rounds)
 
-    def schedule(self, jobs, segment_start_time=0.0):
+    def generate_segment(self, jobs, segment_start_time=0.0):
 
         # Solve Lagrangian relaxation of MMKP
         log.debug("Solving Lagrangian relaxation of MMKP...")
@@ -80,14 +79,14 @@ class WWT15SegmentScheduler(SingleVariantSegmentScheduler):
                 LRSolver.job_config_cost(j, m, l)))
 
         # Sort applications by a defined sorting key
-        if self.__sorting_key == WWT15SortingKey.MINCOST:
+        if self.__sorting_key == SegLRSortingKey.MINCOST:
             # Sort applications that f(x_i*, lambda*) <= f(x_j*, lambda*), i < j
             job_mappings.sort(
                 key=lambda x: (LRSolver.job_config_cost(x[0], x[1], l)))
-        elif self.__sorting_key == WWT15SortingKey.DEADLINE:
+        elif self.__sorting_key == SegLRSortingKey.DEADLINE:
             assert False, "NYI"
             min_configs.sort(key=lambda j: j[0].deadline)
-        elif self.__sorting_key == WWT1515SortingKey.MINCOST_DEADLINE_PRODUCT:
+        elif self.__sorting_key == SegLR15SortingKey.MINCOST_DEADLINE_PRODUCT:
             assert False, "NYI"
             min_configs.sort(key=lambda j: (LRSolver.job_config_costf(
                 j[0], j[2], l) * j[0].deadline))
@@ -113,7 +112,7 @@ class WWT15SegmentScheduler(SingleVariantSegmentScheduler):
             cost_mappings = [(LRSolver.job_config_cost(job, m, l), m)
                              for m in job.request.mappings]
             cost_mappings.sort()
-            assert self.__explore_mode == WWT15ExploreMode.ALL, "NYI"
+            assert self.__explore_mode == SegLRExploreMode.ALL, "NYI"
 
             added = False
             for cost, mapping in cost_mappings:
@@ -138,7 +137,7 @@ class WWT15SegmentScheduler(SingleVariantSegmentScheduler):
                             log.debug("....... Cannot meet deadline")
                             continue
                         # Construct a temporary job_segment
-                        job_segment = JobSegmentMapping(
+                        job_segment = SingleJobSegmentMapping(
                             job.request, mapping,
                             start_time=segment_start_time, start_cratio=cratio,
                             end_time=segment_start_time + min_rtime)
@@ -190,14 +189,14 @@ class WWT15SegmentScheduler(SingleVariantSegmentScheduler):
             if m is None:
                 assert False, "NYI"
                 continue
-            ssm = JobSegmentMapping(j.request, m,
-                                    start_time=segment_start_time,
-                                    start_cratio=j.cratio,
-                                    end_time=segment_end_time)
+            ssm = SingleJobSegmentMapping(j.request, m,
+                                          start_time=segment_start_time,
+                                          start_cratio=j.cratio,
+                                          end_time=segment_end_time)
             job_segments.append(ssm)
 
         # Construct a schedule segment
-        new_segment = ScheduleSegment(self.platform, job_segments)
+        new_segment = MultiJobSegmentMapping(self.platform, job_segments)
         new_segment.verify(only_counters=not self.scheduler.rotations)
         # Check that idle jobs do not miss deadline
         for j, m in final_job_mappings.items():
@@ -217,28 +216,28 @@ class WWT15SegmentScheduler(SingleVariantSegmentScheduler):
         return new_segment, new_jobs
 
 
-class WWT15Scheduler(SingleVariantSegmentizedScheduler):
+class SegLRScheduler(SegmentedScheduler):
     def __init__(self, platform, **kwargs):
-        sorting_arg = kwargs["wwt15_sorting"]
+        sorting_arg = kwargs["seg_lr_sorting"]
         if sorting_arg == "COST":
-            self.__sorting_key = WWT15SortingKey.MINCOST
+            self.__sorting_key = SegLRSortingKey.MINCOST
         elif sorting_arg == "DEADLINE":
-            self.__sorting_key = WWT15SortingKey.DEADLINE
+            self.__sorting_key = SegLRSortingKey.DEADLINE
         elif sorting_arg == "CDP":
-            self.__sorting_key = WWT15SortingKey.CDP
+            self.__sorting_key = SegLRSortingKey.CDP
         else:
             assert False, "Unknown sorting key"
 
-        explore_arg = kwargs["wwt15_seg_explore"]
+        explore_arg = kwargs["seg_lr_explore"]
         if explore_arg == "ALL":
-            self.__explore_mode = WWT15ExploreMode.ALL
+            self.__explore_mode = SegLRExploreMode.ALL
         elif explore_arg == "BEST":
             assert False, "NYI"
-            self.__explore_mode = WWT15ExploreMode.BEST
+            self.__explore_mode = SegLRExploreMode.BEST
         else:
             assert False, "Unknown explore mode"
 
-        lr_constraints_arg = kwargs["wwt15_lr"]
+        lr_constraints_arg = kwargs["seg_lr_constraints"]
         if len(lr_constraints_arg) == 0:
             lr_constraints_arg.append("R")
         self.__lr_constraints = LRConstraint.NULL
@@ -249,8 +248,8 @@ class WWT15Scheduler(SingleVariantSegmentizedScheduler):
         if "RDP" in lr_constraints_arg:
             self.__lr_constraints |= LRConstraint.RDP
 
-        self.__lr_rounds = kwargs["wwt15_lr_rounds"]
-        segment_mapper = WWT15SegmentScheduler(
+        self.__lr_rounds = kwargs["seg_lr_iters"]
+        segment_mapper = SegLRSegmentMapper(
             self, platform, sorting_key=self.__sorting_key,
             explore_mode=self.__explore_mode,
             lr_constraints=self.__lr_constraints, lr_rounds=self.__lr_rounds)
@@ -259,30 +258,31 @@ class WWT15Scheduler(SingleVariantSegmentizedScheduler):
         self.__name = self.__generate_name()
 
     def __generate_name(self):
-        res = "WWT15-SEG-"
-        if self.__sorting_key == WWT15SortingKey.MINCOST:
-            res += "C-"
-        elif self.__sorting_key == WWT15SortingKey.DEADLINE:
-            res += "D-"
-        elif self.__sorting_key == WWT15SortingKey.CDP:
-            res += "CDP-"
+        res = "Segmented LR (sorting="
+        if self.__sorting_key == SegLRSortingKey.MINCOST:
+            res += "C"
+        elif self.__sorting_key == SegLRSortingKey.DEADLINE:
+            res += "D"
+        elif self.__sorting_key == SegLRSortingKey.CDP:
+            res += "CDP"
         else:
             assert False, "Unknown sorting key"
-        if self.__explore_mode == WWT15ExploreMode.ALL:
-            res += "EA-"
-        elif self.__explore_mode == WWT15ExploreMode.BEST:
-            res += "EB-"
+        res += ", explore="
+        if self.__explore_mode == SegLRExploreMode.ALL:
+            res += "EA"
+        elif self.__explore_mode == SegLRExploreMode.BEST:
+            res += "EB"
         else:
             assert False, "Unknown explore mode"
-        res += "LR"
+        res += ", constraints="
         if bool(self.__lr_constraints & LRConstraint.RESOURCE):
             res += "R"
         if bool(self.__lr_constraints & LRConstraint.DELAY):
             res += "D"
         if bool(self.__lr_constraints & LRConstraint.RDP):
             res += "P"
-        res += "-"
-        res += "R{}".format(self.__lr_rounds)
+        res += ", rounds="
+        res += "{})".format(self.__lr_rounds)
 
         return res
 

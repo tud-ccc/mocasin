@@ -4,10 +4,9 @@
 # Authors: Robert Khasanov
 
 from pykpn.tetris.job_state import Job
-from pykpn.tetris.schedule import (Schedule, ScheduleSegment,
-                                   JobSegmentMapping, MAX_END_GAP)
-from pykpn.tetris.scheduler.base import (SingleVariantSegmentScheduler,
-                                         SingleVariantSegmentizedScheduler)
+from pykpn.tetris.schedule import (Schedule, MultiJobSegmentMapping,
+                                   SingleJobSegmentMapping, MAX_END_GAP)
+from pykpn.tetris.scheduler import (SegmentMapperBase, SegmentedScheduler)
 
 import logging
 import math
@@ -15,7 +14,7 @@ import math
 log = logging.getLogger(__name__)
 
 
-class FastSegmentScheduler(SingleVariantSegmentScheduler):
+class SegMedfSegmentMapper(SegmentMapperBase):
     """ TODO: Add a description"""
     def __init__(self, scheduler, platform):
 
@@ -31,7 +30,7 @@ class FastSegmentScheduler(SingleVariantSegmentScheduler):
         Returns: a list of mappings satisfying deadline and resources
         conditions.
         """
-        # TODO: This function is similar to DAC?
+        # TODO: This function is similar to Medf?
         res = []
         rratio = 1.0 - job.cratio
         rdeadline = job.request.deadline - self.__segment_start_time
@@ -69,22 +68,21 @@ class FastSegmentScheduler(SingleVariantSegmentScheduler):
             [t for t in jobs_rem_time if t < min(jobs_rem_time) + MAX_END_GAP])
         segment_end_time = segment_duration + self.__segment_start_time
 
-        # Construct JobSegmentMapping objects
+        # Construct SingleJobSegmentMapping objects
         job_segments = []
         for j, m in job_mappings.items():
             if m is not None:
-                ssm = JobSegmentMapping(j.request, m,
-                                        start_time=self.__segment_start_time,
-                                        start_cratio=j.cratio,
-                                        end_time=segment_end_time)
+                ssm = SingleJobSegmentMapping(
+                    j.request, m, start_time=self.__segment_start_time,
+                    start_cratio=j.cratio, end_time=segment_end_time)
                 job_segments.append(ssm)
 
         # Construct a schedule segment
-        new_segment = ScheduleSegment(self.platform, job_segments)
+        new_segment = MultiJobSegmentMapping(self.platform, job_segments)
         new_segment.verify(only_counters=not self.scheduler.rotations)
         return new_segment
 
-    def schedule(self, jobs, segment_start_time=0.0):
+    def generate_segment(self, jobs, segment_start_time=0.0):
         self.__segment_start_time = segment_start_time
 
         job_mappings = {}
@@ -158,16 +156,16 @@ class FastSegmentScheduler(SingleVariantSegmentScheduler):
         return segment, new_jobs
 
 
-class FastScheduler(SingleVariantSegmentizedScheduler):
+class SegMedfScheduler(SegmentedScheduler):
     def __init__(self, platform, **kwargs):
-        """Fast scheduler.
+        """Segmented Maximum energy Difference First scheduler.
 
         :param platform: a platform
         :type platform: Platform
         """
-        segment_mapper = FastSegmentScheduler(self, platform)
+        segment_mapper = SegMedfSegmentMapper(self, platform)
         super().__init__(platform, segment_mapper)
 
     @property
     def name(self):
-        return "FAST"
+        return "Segmented MEDF"

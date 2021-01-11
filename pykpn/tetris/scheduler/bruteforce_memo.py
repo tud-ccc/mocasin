@@ -5,8 +5,8 @@
 
 from pykpn.tetris.job_state import Job
 from pykpn.tetris.schedule import (Schedule, ENERGY_EPS, TIME_EPS)
-from pykpn.tetris.scheduler.base import SchedulerBase
-from pykpn.tetris.scheduler.bruteforce import (BruteforceSegmentScheduler,
+from pykpn.tetris.scheduler import SchedulerBase
+from pykpn.tetris.scheduler.bruteforce import (BruteforceSegmentGenerator,
                                                get_jobs_bc_energy,
                                                _is_better_eu)
 
@@ -77,7 +77,7 @@ class BruteforceMemoScheduler(SchedulerBase):
         self.__dump_mem_table = kwargs["dump_mem_table"]
 
         # Initialize a step scheduler
-        self.__segment_scheduler = BruteforceSegmentScheduler(self)
+        self.__segment_generator = BruteforceSegmentGenerator(self)
 
         if self.rotations:
             raise RuntimeError(
@@ -174,7 +174,7 @@ class BruteforceMemoScheduler(SchedulerBase):
                 return mem_e
 
         # Get child segments
-        results = self.__segment_scheduler.schedule(
+        results = self.__segment_generator.generate_segments(
             cjobs, segment_start_time=cstart_time,
             accumulated_energy=cschedule.energy, prev_schedule=cschedule)
 
