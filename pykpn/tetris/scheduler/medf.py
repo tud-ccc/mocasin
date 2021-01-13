@@ -31,6 +31,9 @@ class MedfScheduler(SchedulerBase):
             raise RuntimeError(
                 "MedfScheduler only generates schedules with preemtpions")
 
+        if self.rotations:
+            raise RuntimeError(
+                "MedfScheduler does not support rotations")
     @property
     def name(self):
         return "MEDF"
@@ -92,11 +95,7 @@ class MedfScheduler(SchedulerBase):
                     # This segment has no enough resources
                     continue
             else:
-                # Check that the mapping can fit the processors
-                segment_procs = segment.get_used_processors()
-                overlap_procs = segment_procs.intersection(mapping_procs)
-                if overlap_procs:
-                    continue
+                assert False, "NYI"
 
             if cur_rtime < segment.duration - TIME_EPS:
                 s1, s2 = segment.split(segment.start_time + cur_rtime)
@@ -142,9 +141,6 @@ class MedfScheduler(SchedulerBase):
     def _form_schedule_with_job_mapping(self, schedule, job, mapping):
         """ Form a schedule with a job mapping.
 
-        If rotations are allowed, the scheduler choose the variant, which
-        minimizes finish time of the new job.
-
         Args:
             schedule (Schedule): a current schedule
             job (Job): a job
@@ -157,27 +153,7 @@ class MedfScheduler(SchedulerBase):
         counter_result = self._append_job_mapping_to_schedule(
             counter_schedule, job, mapping, check_only_counters=True)
         successful, counter_end_time = counter_result
-        if self.rotations:
-            if not successful:
-                return None
-            equivalent_mappings = self.orbit_lookup_manager.get_orbit(
-                job.app, mapping)
-            best_result = math.inf, None
-            for m in equivalent_mappings:
-                m_schedule = schedule.copy()
-                m_result = self._append_job_mapping_to_schedule(
-                    m_schedule, job, m)
-                m_successful, m_end_time = m_result
-                if not m_successful:
-                    continue
-                if m_end_time - counter_end_time < TIME_EPS:
-                    # Found best schedule
-                    return m_schedule
-                if m_end_time < best_result[0]:
-                    best_result = m_end_time, m_schedule
-            return best_result[1]
-        else:
-            return counter_schedule if successful else None
+        return counter_schedule if successful else None
 
     def _form_schedule(self, job_mappings):
         ordered_job_mappings = sorted(job_mappings.items(),
