@@ -1,2 +1,3 @@
 [tool.black]
 line-length = 80
+exclude = "doc|mocasin/sdf3/_sdf_parser.py|mocasin/slx/mapping/slxmapping.py|mocasin/slx/mapping/_slxplatform.py|mocasin/slx/platform/parse.py"
