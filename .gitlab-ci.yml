@@ -60,3 +60,12 @@ test-python3.6-install:
   script:
   - python setup.py install
   - python setup.py test
+
+check-formatting:
+  stage: test
+  image: python:3.8
+  tags:
+    - python3.8
+  script:
+    - pip install black
+    - black --check .
