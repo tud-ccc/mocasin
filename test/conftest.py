@@ -60,11 +60,11 @@ def designer_platform_small(request):
 def designer_platform_large(request):
     return request.param
 
-@pytest.fixture(params=["slx_default", "random", "static_cfs", "random_walk", "tabu_search", "gradient_descent", "genetic",  "simulated_annealing", "gbm"])
+@pytest.fixture(params=["slx_default", "random", "static_cfs", "random_walk", "tabu_search", "gradient_descent", "genetic",  "simulated_annealing"])
 def slx_mapper(request):
     return request.param
 
-@pytest.fixture(params=["random", "random_walk", "gbm"])
+@pytest.fixture(params=["random", "random_walk"])
 def tgff_mapper(request):
     return request.param
 
