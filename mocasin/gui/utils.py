@@ -6,10 +6,10 @@
 from collections.abc import Sequence
 from itertools import chain, count
 
+
 class listOperations(object):
-    """Class contains custom functions to operate on lists, that are needed to prepare platforms and mappings to be drawn.
-    """
-    
+    """Class contains custom functions to operate on lists, that are needed to prepare platforms and mappings to be drawn."""
+
     @staticmethod
     def convertToMatrix(givenList):
         """Converts a list in a square matrix, represented by a list, that contains a list for each row with an entry for each element in that row.
@@ -17,18 +17,18 @@ class listOperations(object):
         :returns: The matrix represented by a list of lists.
         :rtype list[list[]]:
         """
-        i = 2 
-        while(i*i < len(givenList)):
+        i = 2
+        while i * i < len(givenList):
             i = i + 1
-        if(i*i == len(givenList)): 
+        if i * i == len(givenList):
             animationMatrix = []
             actualRow = 0
             entryToAdd = 0
-            while(actualRow < i):
+            while actualRow < i:
                 actualRow += 1
                 actualColumn = 0
                 tmpList = []
-                while(actualColumn < i):
+                while actualColumn < i:
                     tmpList.append(givenList[entryToAdd])
                     actualColumn += 1
                     entryToAdd += 1
@@ -36,28 +36,28 @@ class listOperations(object):
             return animationMatrix
         else:
             j = 1
-            while not ((len(givenList)-j)/i).is_integer():
+            while not ((len(givenList) - j) / i).is_integer():
                 j += 1
-            k = (len(givenList)-j) / i
+            k = (len(givenList) - j) / i
             animationMatrix = []
             actualRow = 0
             entryToAdd = 0
-            while(actualRow < k):
+            while actualRow < k:
                 tmpList = []
                 actualRow += 1
                 actualColumn = 0
-                while(actualColumn < i):
+                while actualColumn < i:
                     tmpList.append(givenList[entryToAdd])
                     entryToAdd += 1
                     actualColumn += 1
                 animationMatrix.append(tmpList)
             tmpList = []
-            while(j > 0):
-                tmpList.append(givenList[len(givenList)-(j)])
+            while j > 0:
+                tmpList.append(givenList[len(givenList) - (j)])
                 j -= 1
             animationMatrix.append(tmpList)
             return animationMatrix
-    
+
     @staticmethod
     def getDimension(givenMatrix):
         """Returns the maximal dimension of a matrix.
@@ -76,7 +76,7 @@ class listOperations(object):
             else:
                 continue
         return j
-    
+
     @staticmethod
     def containsItem(givenList, element):
         """Checks if the given list contains the given element. The element can be in sub-lists or tuples or lists in tuples contained by the given list.
@@ -100,7 +100,7 @@ class listOperations(object):
                     return True
                 if listOperations.containsItem(givenList[1], element):
                     return True
-        return False        
+        return False
 
     @staticmethod
     def depth(seq):
@@ -108,25 +108,27 @@ class listOperations(object):
         try:
             for level in count():
                 seq = chain([next(seq)], seq)
-                seq = chain.from_iterable(s for s in seq if isinstance(s, Sequence))
+                seq = chain.from_iterable(
+                    s for s in seq if isinstance(s, Sequence)
+                )
         except StopIteration:
             return level
-    
-class platformOperations (object):
-    """Contains functions to operate on attributes of an mocasin Platform object or created platform descriptions. Necessary for platforms to be drawn.
-    """
-    
+
+
+class platformOperations(object):
+    """Contains functions to operate on attributes of an mocasin Platform object or created platform descriptions. Necessary for platforms to be drawn."""
+
     @staticmethod
     def getSortedProcessorScheme(peList):
         """Sorts a list of processing elements by there indices if they are contained in there names.
         :param list[str] peList: List of names of processing elements.
         :returns: A list containing the same processing elements but now in order if there indices.
         :rtype list[str]:
-        """     
+        """
         processors = []
         for pe in peList:
             tmpList = list(pe)
-            tmpString = ''
+            tmpString = ""
             for item in tmpList:
                 if item.isdigit():
                     tmpString += item
@@ -151,7 +153,7 @@ class platformOperations (object):
         for item in ordered:
             finalList.append(item[1])
         return finalList
-    
+
     @staticmethod
     def peToString(peList):
         """Returns a list of just the names of processing elements for a list of mocasin Processors.
@@ -163,7 +165,7 @@ class platformOperations (object):
         for processor in peList:
             stringList.append(processor.name)
         return stringList
-    
+
     @staticmethod
     def getMembersOfPrimitive(primitive):
         """Returns a list of all consumers or producers for a primitive.
@@ -179,39 +181,45 @@ class platformOperations (object):
             if members.count(producer.name) == 0:
                 members.append(producer.name)
         return members
-    
+
     @staticmethod
     def getPlatformDescription(peList, primitives):
         """Returns a hierarchic list of tuples where each tuple contains the name of a primitive and a list of minor primitives or processing elements.
         :param list[Processor] peList: The list of all processing elements of the platform.
         :param list[Primitive] primitives: A list of all primitives of the platform.
         :returns: A list of tuples containing primitive names and a list of their minor primitives or processing elements.
-        :rtype list[(str, [(str, [str])])]:  
+        :rtype list[(str, [(str, [str])])]:
         """
-        i = 1   
+        i = 1
         primitiveStructure = []
         primitives = list(primitives)
         peList = platformOperations.peToString(peList)
-        while(0 < len(primitives)):
+        while 0 < len(primitives):
             primitivesCopy = list(primitives)
             for primitive in primitivesCopy:
                 members = platformOperations.getMembersOfPrimitive(primitive)
                 if len(members) == i:
                     tempMemberSet = []
                     for member in members:
-                        if not listOperations.containsItem(tempMemberSet, member):
+                        if not listOperations.containsItem(
+                            tempMemberSet, member
+                        ):
                             isInserted = False
                             for entry in primitiveStructure:
-                                if listOperations.containsItem(entry[1], member):
+                                if listOperations.containsItem(
+                                    entry[1], member
+                                ):
                                     tempMemberSet.append(entry)
-                                    primitiveStructure.pop(primitiveStructure.index(entry))
+                                    primitiveStructure.pop(
+                                        primitiveStructure.index(entry)
+                                    )
                                     isInserted = True
                             if not isInserted:
                                 tempMemberSet.append(member)
                     name = primitive.name.split("_")
                     newName = ""
                     for fragment in name:
-                        if fragment == 'putget':
+                        if fragment == "putget":
                             continue
                         else:
                             if len(newName) == 0:
@@ -223,9 +231,9 @@ class platformOperations (object):
                 else:
                     pass
             i += 1
-            
+
         return primitiveStructure
-    
+
     @staticmethod
     def findEqualPrimitives(platform):
         """Find for a platform all primitives which connects exactly the same processing elements.
@@ -234,14 +242,16 @@ class platformOperations (object):
         :rtype list[list[str]]:
         """
         primitives = list(platform.primitives())
-        primitiveList =  []
+        primitiveList = []
         for primitive in primitives:
             if primitiveList == []:
                 primitiveList.append([primitive])
             else:
                 isInserted = False
                 for item in primitiveList:
-                    if platformOperations.getMembersOfPrimitive(primitive) == platformOperations.getMembersOfPrimitive(item[0]):
+                    if platformOperations.getMembersOfPrimitive(
+                        primitive
+                    ) == platformOperations.getMembersOfPrimitive(item[0]):
                         item.append(primitive)
                         isInserted = True
                         break
@@ -257,12 +267,12 @@ class platformOperations (object):
             else:
                 primitiveNames.append(item.name)
         return primitiveNames
-    
+
     @staticmethod
     def mergeEqualPrimitives(platformDescription, equalList):
         """Merges all primitives that are equal in a platform description into one primitive.
         :param list[(str, [(str, [str])])] platformDescription: A list of tuples containing primitive names and a list of their minor primitives or processing elements.
-        :param list[list[str]] equalList: A list containing a list which contains all primitives connecting exactly the same processing elements. 
+        :param list[list[str]] equalList: A list containing a list which contains all primitives connecting exactly the same processing elements.
         """
         copy = platformDescription
         mergedDescription = []
@@ -271,38 +281,61 @@ class platformOperations (object):
                 if isinstance(item, tuple):
                     noc = False
                     for equalSheet in equalList:
-                            if listOperations.containsItem(equalSheet, item[0]) and len(equalSheet) > 2:
-                                noc = True
-                                break
+                        if (
+                            listOperations.containsItem(equalSheet, item[0])
+                            and len(equalSheet) > 2
+                        ):
+                            noc = True
+                            break
                     if noc:
-                        newItem = ('network_on_chip', [])
+                        newItem = ("network_on_chip", [])
                     else:
-                        newItem = (item[0],[])
+                        newItem = (item[0], [])
                     if len(item[1]) == 1 and isinstance(item[1][0], tuple):
-                        for toAppend in platformOperations.mergeEqualPrimitives(item[1][0][1], equalList):
+                        for toAppend in platformOperations.mergeEqualPrimitives(
+                            item[1][0][1], equalList
+                        ):
                             newItem[1].append(toAppend)
-                    elif len(item[1]) == 1 and not isinstance(item[1][0], tuple):
+                    elif len(item[1]) == 1 and not isinstance(
+                        item[1][0], tuple
+                    ):
                         newItem[1].append(item[1][0])
-                    elif len(item[1])>1:
+                    elif len(item[1]) > 1:
                         for innerItem in item[1]:
-                            if(isinstance(innerItem, tuple)) and len(innerItem[1]) == 1:
-                                newInnerItem = ('network_on_chip',platformOperations.mergeEqualPrimitives(innerItem[1], equalList))
+                            if (isinstance(innerItem, tuple)) and len(
+                                innerItem[1]
+                            ) == 1:
+                                newInnerItem = (
+                                    "network_on_chip",
+                                    platformOperations.mergeEqualPrimitives(
+                                        innerItem[1], equalList
+                                    ),
+                                )
                                 newItem[1].append(newInnerItem)
-                            elif(isinstance(innerItem, tuple)):
-                                newInnerItem = (innerItem[0],platformOperations.mergeEqualPrimitives(innerItem[1], equalList))
+                            elif isinstance(innerItem, tuple):
+                                newInnerItem = (
+                                    innerItem[0],
+                                    platformOperations.mergeEqualPrimitives(
+                                        innerItem[1], equalList
+                                    ),
+                                )
                                 newItem[1].append(newInnerItem)
                             else:
                                 newItem[1].append(innerItem)
                     mergedDescription.append(newItem)
                 else:
                     mergedDescription.append(item)
-            
+
             if mergedDescription != copy:
-                mergedDescription = platformOperations.mergeEqualPrimitives(mergedDescription, equalList)
-            return mergedDescription        
+                mergedDescription = platformOperations.mergeEqualPrimitives(
+                    mergedDescription, equalList
+                )
+            return mergedDescription
         else:
-            raise RuntimeError('you are trying to merge something, that is rather a list or an tuple. Please stop!')
-        
+            raise RuntimeError(
+                "you are trying to merge something, that is rather a list or an tuple. Please stop!"
+            )
+
     @staticmethod
     def createNocMatrix(platformDescription, platform):
         """Searches for the network on chip component in a platform and organizes the processing elements on it.
@@ -314,16 +347,26 @@ class platformOperations (object):
         newDescription = []
         for element in platformDescription:
             if isinstance(element, tuple):
-                if element[0] == 'network_on_chip':
-                    element = (element[0], platformOperations.organizePEs(element[1], platform.to_adjacency_dict()))
+                if element[0] == "network_on_chip":
+                    element = (
+                        element[0],
+                        platformOperations.organizePEs(
+                            element[1], platform.to_adjacency_dict()
+                        ),
+                    )
                     newDescription.append(element)
                 else:
-                    element = (element[0], platformOperations.createNocMatrix(element[1], platform))
+                    element = (
+                        element[0],
+                        platformOperations.createNocMatrix(
+                            element[1], platform
+                        ),
+                    )
                     newDescription.append(element)
             else:
                 newDescription.append(element)
         return newDescription
-    
+
     @staticmethod
     def organizePEs(peList, adjacencyDict):
         """Organizes the processing elements in the given list in a way, that every processing element has a physical link to its neighbor.
@@ -336,7 +379,7 @@ class platformOperations (object):
         peValues = []
         for entry in adjacencyDict:
             if listOperations.containsItem(peList, entry):
-                minimalCost = 1000000000 #this is just a number so high, that there must be a value below
+                minimalCost = 1000000000  # this is just a number so high, that there must be a value below
                 peWithMinimalCost = []
                 for tupel in adjacencyDict[entry]:
                     if tupel[1] < minimalCost and tupel[1] > 0:
@@ -344,16 +387,17 @@ class platformOperations (object):
                         peWithMinimalCost = []
                     if tupel[1] == minimalCost:
                         peWithMinimalCost.append(tupel[0])
-                peValues.append([entry, len(peWithMinimalCost), peWithMinimalCost])
-        
-        
+                peValues.append(
+                    [entry, len(peWithMinimalCost), peWithMinimalCost]
+                )
+
         organizedPEs = []
         firstRow = True
         rowLength = 0
-        lastAppended = 0        #keep the amount of neighbors of the last appended PE and the PE before that, to check if new row had begun 
+        lastAppended = 0  # keep the amount of neighbors of the last appended PE and the PE before that, to check if new row had begun
         lastlastAppended = 0
-        while(len(peValues) > 0):
-            
+        while len(peValues) > 0:
+
             if len(organizedPEs) == 0:
                 for entry in peValues:
                     if entry[1] == 2:
@@ -362,10 +406,9 @@ class platformOperations (object):
                         lastAppended = entry[1]
                         break
                 continue
-            
-            
+
             candidates = []
-            
+
             if firstRow:
                 if lastAppended < lastlastAppended:
                     rowLength = len(organizedPEs)
@@ -373,32 +416,38 @@ class platformOperations (object):
                     lastEntry = organizedPEs[len(organizedPEs) - rowLength]
                 else:
                     lastEntry = organizedPEs[len(organizedPEs) - 1]
-                
+
                 for entry in peValues:
-                    if listOperations.containsItem(entry[2], lastEntry) and (entry[1] == 2 or entry[1] == 3):
+                    if listOperations.containsItem(entry[2], lastEntry) and (
+                        entry[1] == 2 or entry[1] == 3
+                    ):
                         candidates.append(entry)
-                
+
             if not firstRow:
                 if lastAppended < lastlastAppended:
                     lastEntry = organizedPEs[len(organizedPEs) - rowLength]
                 else:
                     lastEntry = organizedPEs[len(organizedPEs) - 1]
-            
+
                 for entry in peValues:
                     if listOperations.containsItem(entry[2], lastEntry):
                         candidates.append(entry)
-            
+
             if len(candidates) == 0:
-                raise RuntimeError('No neighbor found for PE: ' + lastEntry + ' in NOC')
-            
+                raise RuntimeError(
+                    "No neighbor found for PE: " + lastEntry + " in NOC"
+                )
+
             elif len(candidates) == 1:
                 organizedPEs.append(candidates[0][0])
                 peValues.pop(peValues.index(candidates[0]))
                 lastlastAppended = lastAppended
                 lastAppended = candidates[0][1]
-            
+
             else:
-                toAppend = platformOperations.lovedNeighbor(candidates, organizedPEs)
+                toAppend = platformOperations.lovedNeighbor(
+                    candidates, organizedPEs
+                )
                 organizedPEs.append(toAppend[0])
                 peValues.pop(peValues.index(toAppend))
                 lastlastAppended = lastAppended
@@ -421,11 +470,11 @@ class platformOperations (object):
                 if listOperations.containsItem(domicile, neighbor):
                     i += 1
             amountOfNeighbors.append((i, candidate))
-        
+
         favourite = amountOfNeighbors[0]
-        
+
         for neighbor in amountOfNeighbors:
             if neighbor[0] > favourite[0]:
                 favourite = neighbor
-        
+
         return favourite[1]

@@ -16,12 +16,25 @@ log = logging.getLogger(__name__)
 
 
 class DesignCentering(object):
-    def __init__(self, init_vol, oracle, sample_generator, representation,
-                 hitting_probability=[0.4, 0.5, 0.5, 0.7, 0.9],
-                 hitting_probability_threshold=0.7, deg_p_polynomial=2, deg_s_polynomial=2,
-                 step_width=[0.9, 0.7, 0.6, 0.5, 0.1], adapt_samples=10, max_samples=50,
-                 record_samples=False, show_polynomials=False, distr='uniform',
-                 keep_metrics=True, max_pe=16):
+    def __init__(
+        self,
+        init_vol,
+        oracle,
+        sample_generator,
+        representation,
+        hitting_probability=[0.4, 0.5, 0.5, 0.7, 0.9],
+        hitting_probability_threshold=0.7,
+        deg_p_polynomial=2,
+        deg_s_polynomial=2,
+        step_width=[0.9, 0.7, 0.6, 0.5, 0.1],
+        adapt_samples=10,
+        max_samples=50,
+        record_samples=False,
+        show_polynomials=False,
+        distr="uniform",
+        keep_metrics=True,
+        max_pe=16,
+    ):
         self.vol = init_vol
         self.oracle = oracle
         self.representation = representation
@@ -40,12 +53,14 @@ class DesignCentering(object):
         if hitting_probability_threshold <= 1:
             self.p_threshold = hitting_probability_threshold
         else:
-            log.error(f"Hitting probability threshold ({hitting_probability_threshold}) is unreachable (>1)")
+            log.error(
+                f"Hitting probability threshold ({hitting_probability_threshold}) is unreachable (>1)"
+            )
             sys.exit(1)
 
     def __adapt_poly(self, support_values, deg):
         num = len(support_values)
-        x_interval = self.max_samples/(num - 1)
+        x_interval = self.max_samples / (num - 1)
         x = []
         y = []
         ret = []
@@ -78,11 +93,13 @@ class DesignCentering(object):
 
     def ds_explore(self):
         """ explore design space (main loop of the DC algorithm) """
-        history = {'samples' : [], 'centers' : [], 'radii' : []}
+        history = {"samples": [], "centers": [], "radii": []}
 
-        #check starting center
+        # check starting center
         center = self.vol.center
-        current_center = dc_sample.Sample(sample=center, representation=self.representation)
+        current_center = dc_sample.Sample(
+            sample=center, representation=self.representation
+        )
         best_area = 0
         best_center = current_center
 
@@ -90,24 +107,36 @@ class DesignCentering(object):
             s = self.sample_generator
             log.debug("dc: Current iteration {}".format(i))
             s_set = dc_sample.SampleSet()
-            samples = s.gen_samples_in_ball(self.vol, self.distr, nsamples=self.adapt_samples)
+            samples = s.gen_samples_in_ball(
+                self.vol, self.distr, nsamples=self.adapt_samples
+            )
             dup = self.adapt_samples - self.__has_duplicate(samples)
 
             if dup > 0:
-                log.warning("DC: Sample-list of {} elements has {} duplicates.".format(self.adapt_samples, dup))
-            
-            #put samples as paramater in simulation
+                log.warning(
+                    "DC: Sample-list of {} elements has {} duplicates.".format(
+                        self.adapt_samples, dup
+                    )
+                )
+
+            # put samples as paramater in simulation
             log.info("dc: Input samples:\n {} ".format(samples))
-            samples = self.oracle.validate_set(samples) # validate multiple samples
+            samples = self.oracle.validate_set(
+                samples
+            )  # validate multiple samples
             log.info("dc: Output samples:\n {}".format(samples))
 
             s_set.add_sample_list(samples)
             s_set.add_sample_group(samples)
 
-            log.debug("dc: Output fesaible samples:\n {}".format(s_set.get_feasible()))
+            log.debug(
+                "dc: Output fesaible samples:\n {}".format(s_set.get_feasible())
+            )
             center = self.vol.adapt_center(s_set)
-            #center = list(map(int, center))
-            current_center = dc_sample.Sample(sample=center, representation=self.representation)
+            # center = list(map(int, center))
+            current_center = dc_sample.Sample(
+                sample=center, representation=self.representation
+            )
             self.oracle.validate_set([current_center])
 
             if not current_center.getFeasibility():
@@ -118,34 +147,51 @@ class DesignCentering(object):
             #     c_old = dc_sample.GeometricSample(old_center)
             #     new_center = self.vol.correct_center(s_set, c_cur, c_old)
             #     print("Correction of infeasible center: {} take {} instead".format(center, new_center))
-            cur_p = self.vol.adapt_volume(s_set, self.p_value[i], self.s_value[i])
-            log.debug("dc: center: {} radius: {:f} p_emp: {}, target_p {}".format(self.vol.center,
-                                                                                  self.vol.radius,
-                                                                                  cur_p,
-                                                                                  self.p_value[i]))
-            area = cur_p * self.vol.radius**self.vol.true_dim
+            cur_p = self.vol.adapt_volume(
+                s_set, self.p_value[i], self.s_value[i]
+            )
+            log.debug(
+                "dc: center: {} radius: {:f} p_emp: {}, target_p {}".format(
+                    self.vol.center, self.vol.radius, cur_p, self.p_value[i]
+                )
+            )
+            area = cur_p * self.vol.radius ** self.vol.true_dim
 
-            if cur_p >= self.p_threshold and area >= best_area and current_center.getFeasibility():
+            if (
+                cur_p >= self.p_threshold
+                and area >= best_area
+                and current_center.getFeasibility()
+            ):
                 best_area = area
                 best_center = center
-                log.info(f"found a better center (radius {self.vol.radius}, p {cur_p}). updating.")
+                log.info(
+                    f"found a better center (radius {self.vol.radius}, p {cur_p}). updating."
+                )
 
             if self.record_samples:
                 for sample in samples:
-                    history['samples'].append(sample)
-                history['centers'].append(current_center)
-                history['radii'].append(self.vol.radius)
+                    history["samples"].append(sample)
+                history["centers"].append(current_center)
+                history["radii"].append(self.vol.radius)
 
         if best_area == 0:
-            log.error("Could not find a center within hitting probability threshold."
-                      "Returning last center candidate found.")
+            log.error(
+                "Could not find a center within hitting probability threshold."
+                "Returning last center candidate found."
+            )
             best_center = center
 
-        #modify last sample
-        #TODO build mapping from center (this destroys parallel execution)
-        center_sample = dc_sample.Sample(sample=best_center, representation=self.representation)
+        # modify last sample
+        # TODO build mapping from center (this destroys parallel execution)
+        center_sample = dc_sample.Sample(
+            sample=best_center, representation=self.representation
+        )
         center_sample_result = self.oracle.validate_set([center_sample])
 
-        log.debug("dc: center sample: {} {} {}".format(str(center_sample_result), str(center_sample), str(center)))
+        log.debug(
+            "dc: center sample: {} {} {}".format(
+                str(center_sample_result), str(center_sample), str(center)
+            )
+        )
 
         return center_sample_result[0], history

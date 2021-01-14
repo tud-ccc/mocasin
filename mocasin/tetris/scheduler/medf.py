@@ -3,8 +3,12 @@
 #
 # Authors: Robert Khasanov
 
-from mocasin.tetris.schedule import (Schedule, MultiJobSegmentMapping,
-                                   SingleJobSegmentMapping, TIME_EPS)
+from mocasin.tetris.schedule import (
+    Schedule,
+    MultiJobSegmentMapping,
+    SingleJobSegmentMapping,
+    TIME_EPS,
+)
 from mocasin.tetris.scheduler import SchedulerBase
 
 from collections import Counter
@@ -16,10 +20,10 @@ log = logging.getLogger(__name__)
 
 
 def get_mapping_time_core_product(mapping, cratio=0.0):
-    rtime = mapping.metadata.exec_time * (1.0-cratio)
+    rtime = mapping.metadata.exec_time * (1.0 - cratio)
     return Counter(
-        {k: v * rtime
-         for k, v in mapping.get_used_processor_types().items()})
+        {k: v * rtime for k, v in mapping.get_used_processor_types().items()}
+    )
 
 
 class MedfScheduler(SchedulerBase):
@@ -29,17 +33,18 @@ class MedfScheduler(SchedulerBase):
 
         if not self.preemptions:
             raise RuntimeError(
-                "MedfScheduler only generates schedules with preemtpions")
+                "MedfScheduler only generates schedules with preemtpions"
+            )
 
         if self.rotations:
-            raise RuntimeError(
-                "MedfScheduler does not support rotations")
+            raise RuntimeError("MedfScheduler does not support rotations")
+
     @property
     def name(self):
         return "MEDF"
 
     def _filter_job_mappings_by_deadline_jars(self, job, time_core_jars):
-        """ Filters mappings which can feet core jars and deadlines.
+        """Filters mappings which can feet core jars and deadlines.
 
         Args:
             job (Job): a job
@@ -60,8 +65,9 @@ class MedfScheduler(SchedulerBase):
             res.append(m)
         return res
 
-    def _append_job_mapping_to_schedule(self, schedule, job, mapping,
-                                        check_only_counters=False):
+    def _append_job_mapping_to_schedule(
+        self, schedule, job, mapping, check_only_counters=False
+    ):
         """Add a job mappings to a schedule
 
         Args:
@@ -77,7 +83,7 @@ class MedfScheduler(SchedulerBase):
             job_finish_time (float): finish time of the job
         """
         cur_cratio = job.cratio
-        cur_rtime = mapping.metadata.exec_time * (1.0-cur_cratio)
+        cur_rtime = mapping.metadata.exec_time * (1.0 - cur_cratio)
         job_finish_time = None
 
         platform_proc_types = self.platform.get_processor_types()
@@ -89,9 +95,11 @@ class MedfScheduler(SchedulerBase):
             if check_only_counters:
                 # Check only the counters
                 added_segment_proc_types = (
-                    segment.get_used_processor_types() + mapping_proc_types)
-                if ((added_segment_proc_types | platform_proc_types) !=
-                        platform_proc_types):
+                    segment.get_used_processor_types() + mapping_proc_types
+                )
+                if (
+                    added_segment_proc_types | platform_proc_types
+                ) != platform_proc_types:
                     # This segment has no enough resources
                     continue
             else:
@@ -99,7 +107,7 @@ class MedfScheduler(SchedulerBase):
 
             if cur_rtime < segment.duration - TIME_EPS:
                 s1, s2 = segment.split(segment.start_time + cur_rtime)
-                #Remove old segment, insert new two segments
+                # Remove old segment, insert new two segments
                 schedule.remove_segment(index)
                 schedule.insert_segment(index, s2)
                 schedule.insert_segment(index, s1)
@@ -107,13 +115,16 @@ class MedfScheduler(SchedulerBase):
             else:
                 segment_to_add = segment
 
-            jm = SingleJobSegmentMapping(job.request, mapping,
-                                         start_time=segment_to_add.start_time,
-                                         start_cratio=cur_cratio,
-                                         end_time=segment_to_add.end_time)
+            jm = SingleJobSegmentMapping(
+                job.request,
+                mapping,
+                start_time=segment_to_add.start_time,
+                start_cratio=cur_cratio,
+                end_time=segment_to_add.end_time,
+            )
             segment_to_add.append_job(jm)
             cur_cratio = jm.end_cratio
-            cur_rtime = mapping.metadata.exec_time * (1.0-cur_cratio)
+            cur_rtime = mapping.metadata.exec_time * (1.0 - cur_cratio)
             if jm.finished:
                 # If the segment is a right fit for a job
                 job_finish_time = jm.end_time
@@ -126,20 +137,23 @@ class MedfScheduler(SchedulerBase):
             if len(schedule) != 0:
                 segment_start_time = schedule.end_time
 
-            jm = SingleJobSegmentMapping(job.request, mapping,
-                                         start_time=segment_start_time,
-                                         start_cratio=cur_cratio,
-                                         finished=True)
+            jm = SingleJobSegmentMapping(
+                job.request,
+                mapping,
+                start_time=segment_start_time,
+                start_cratio=cur_cratio,
+                finished=True,
+            )
             new_segment = MultiJobSegmentMapping(self.platform, jobs=[jm])
             schedule.append_segment(new_segment)
             job_finish_time = jm.end_time
 
         # Check deadline
-        res = (job_finish_time <= job.request.deadline)
+        res = job_finish_time <= job.request.deadline
         return (res, job_finish_time)
 
     def _form_schedule_with_job_mapping(self, schedule, job, mapping):
-        """ Form a schedule with a job mapping.
+        """Form a schedule with a job mapping.
 
         Args:
             schedule (Schedule): a current schedule
@@ -151,13 +165,15 @@ class MedfScheduler(SchedulerBase):
         """
         counter_schedule = schedule.copy()
         counter_result = self._append_job_mapping_to_schedule(
-            counter_schedule, job, mapping, check_only_counters=True)
+            counter_schedule, job, mapping, check_only_counters=True
+        )
         successful, counter_end_time = counter_result
         return counter_schedule if successful else None
 
     def _form_schedule(self, job_mappings):
-        ordered_job_mappings = sorted(job_mappings.items(),
-                                      key=lambda kv: kv[0].request.deadline)
+        ordered_job_mappings = sorted(
+            job_mappings.items(), key=lambda kv: kv[0].request.deadline
+        )
 
         schedule = Schedule(self.platform)
 
@@ -168,7 +184,7 @@ class MedfScheduler(SchedulerBase):
         return schedule
 
     def _map_infinite_jobs(self):
-        """ Map jobs without deadlines.
+        """Map jobs without deadlines.
 
         Since the algorithm uses an internal data structures "jars" initialized
         with the max deadline, we want to choose the mappings for infinite
@@ -179,7 +195,8 @@ class MedfScheduler(SchedulerBase):
         jobs = self.__jobs
         job_mappings = {
             j: min(j.request.mappings, key=lambda m: m.metadata.energy)
-            for j in jobs if j.request.deadline == math.inf
+            for j in jobs
+            if j.request.deadline == math.inf
         }
         return job_mappings
 
@@ -189,15 +206,21 @@ class MedfScheduler(SchedulerBase):
         job_mappings = self._map_infinite_jobs()
         schedule = self._form_schedule(job_mappings)
 
-        max_deadline = max([
-            j.request.deadline - scheduling_start_time
-            for j in jobs if j.request.deadline != math.inf
-        ], default=0)
+        max_deadline = max(
+            [
+                j.request.deadline - scheduling_start_time
+                for j in jobs
+                if j.request.deadline != math.inf
+            ],
+            default=0,
+        )
 
-        time_core_jars = Counter({
-            k: v * max_deadline
-            for k, v in self.platform.get_processor_types().items()
-        })
+        time_core_jars = Counter(
+            {
+                k: v * max_deadline
+                for k, v in self.platform.get_processor_types().items()
+            }
+        )
 
         while any(j not in job_mappings for j in jobs):
             log.debug("Jars: {}".format(time_core_jars))
@@ -205,22 +228,29 @@ class MedfScheduler(SchedulerBase):
             to_finish = {}
             diff = (-math.inf, None)
             for job in (j for j in jobs if j not in job_mappings):
-                to_finish[job] = (self._filter_job_mappings_by_deadline_jars(
-                    job, time_core_jars))
+                to_finish[job] = self._filter_job_mappings_by_deadline_jars(
+                    job, time_core_jars
+                )
                 to_finish[job].sort(key=lambda m: m.metadata.energy)
-                log.debug("to_finish[{}]: {}".format(job.to_str(), [
-                    m.metadata.energy * (1.0 - job.cratio)
-                    for m in to_finish[job]
-                ]))
+                log.debug(
+                    "to_finish[{}]: {}".format(
+                        job.to_str(),
+                        [
+                            m.metadata.energy * (1.0 - job.cratio)
+                            for m in to_finish[job]
+                        ],
+                    )
+                )
                 if len(to_finish[job]) == 0:
                     continue
                 if len(to_finish[job]) == 1:
                     diff = (math.inf, job)
                     continue
                 # Check energy difference between first two mappings
-                cdiff = (1.0 -
-                         job.cratio) * (to_finish[job][1].metadata.energy -
-                                        to_finish[job][0].metadata.energy)
+                cdiff = (1.0 - job.cratio) * (
+                    to_finish[job][1].metadata.energy
+                    - to_finish[job][0].metadata.energy
+                )
                 if cdiff > diff[0]:
                     diff = (cdiff, job)
             _, job_d = diff
@@ -245,12 +275,20 @@ class MedfScheduler(SchedulerBase):
 
                     # update time_core_jars
                     m_time_core_prod = get_mapping_time_core_product(
-                        current_mapping, job_d.cratio)
+                        current_mapping, job_d.cratio
+                    )
                     time_core_jars -= m_time_core_prod
-                    log.debug('Job_mappings: {}'.format([
-                        (j.to_str(), m.get_used_processor_types(),
-                         m.metadata.energy * (1.0 - j.cratio))
-                        for j, m in job_mappings.items()
-                    ]))
+                    log.debug(
+                        "Job_mappings: {}".format(
+                            [
+                                (
+                                    j.to_str(),
+                                    m.get_used_processor_types(),
+                                    m.metadata.energy * (1.0 - j.cratio),
+                                )
+                                for j, m in job_mappings.items()
+                            ]
+                        )
+                    )
 
         return schedule

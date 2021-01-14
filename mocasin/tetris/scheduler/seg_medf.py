@@ -4,9 +4,13 @@
 # Authors: Robert Khasanov
 
 from mocasin.tetris.job_state import Job
-from mocasin.tetris.schedule import (Schedule, MultiJobSegmentMapping,
-                                   SingleJobSegmentMapping, MAX_END_GAP)
-from mocasin.tetris.scheduler import (SegmentMapperBase, SegmentedScheduler)
+from mocasin.tetris.schedule import (
+    Schedule,
+    MultiJobSegmentMapping,
+    SingleJobSegmentMapping,
+    MAX_END_GAP,
+)
+from mocasin.tetris.scheduler import SegmentMapperBase, SegmentedScheduler
 
 import logging
 import math
@@ -16,12 +20,13 @@ log = logging.getLogger(__name__)
 
 class SegMedfSegmentMapper(SegmentMapperBase):
     """ TODO: Add a description"""
+
     def __init__(self, scheduler, platform):
 
         super().__init__(scheduler, platform)
 
     def _filter_job_mappings_by_deadline_resources(self, job, free_cores):
-        """ Filters mappings which can feet deadline resources.
+        """Filters mappings which can feet deadline resources.
 
         Args:
             job (Job): a job
@@ -49,7 +54,7 @@ class SegMedfSegmentMapper(SegmentMapperBase):
     def _form_schedule_segment(self, job_mappings):
         # TODO: This function is very similar to one in Bruteforce.
         # Consider placing it in a base class
-        """ Generate a schedule segment out of job_mappings.
+        """Generate a schedule segment out of job_mappings.
 
         Args:
             job_mappings (dict): a dict of job mappings
@@ -62,10 +67,12 @@ class SegMedfSegmentMapper(SegmentMapperBase):
         # Calculate segment end time
         jobs_rem_time = [
             m.metadata.exec_time * (1.0 - j.cratio)
-            for j, m in job_mappings.items() if m is not None
+            for j, m in job_mappings.items()
+            if m is not None
         ]
         segment_duration = max(
-            [t for t in jobs_rem_time if t < min(jobs_rem_time) + MAX_END_GAP])
+            [t for t in jobs_rem_time if t < min(jobs_rem_time) + MAX_END_GAP]
+        )
         segment_end_time = segment_duration + self.__segment_start_time
 
         # Construct SingleJobSegmentMapping objects
@@ -73,8 +80,12 @@ class SegMedfSegmentMapper(SegmentMapperBase):
         for j, m in job_mappings.items():
             if m is not None:
                 ssm = SingleJobSegmentMapping(
-                    j.request, m, start_time=self.__segment_start_time,
-                    start_cratio=j.cratio, end_time=segment_end_time)
+                    j.request,
+                    m,
+                    start_time=self.__segment_start_time,
+                    start_cratio=j.cratio,
+                    end_time=segment_end_time,
+                )
                 job_segments.append(ssm)
 
         # Construct a schedule segment
@@ -97,14 +108,21 @@ class SegMedfSegmentMapper(SegmentMapperBase):
                 # Skip jobs with found mappings
                 if job in job_mappings:
                     continue
-                to_finish[job] = (
-                    self._filter_job_mappings_by_deadline_resources(
-                        job, avl_core_types))
+                to_finish[
+                    job
+                ] = self._filter_job_mappings_by_deadline_resources(
+                    job, avl_core_types
+                )
                 to_finish[job].sort(key=lambda m: m.metadata.energy)
-                log.debug("to_finish[{}]: {}".format(job.to_str(), [
-                    m.metadata.energy * (1.0 - job.cratio)
-                    for m in to_finish[job]
-                ]))
+                log.debug(
+                    "to_finish[{}]: {}".format(
+                        job.to_str(),
+                        [
+                            m.metadata.energy * (1.0 - job.cratio)
+                            for m in to_finish[job]
+                        ],
+                    )
+                )
                 if len(to_finish[job]) == 0:
                     job_mappings[job] = None
                     continue
@@ -112,9 +130,10 @@ class SegMedfSegmentMapper(SegmentMapperBase):
                     diff = (math.inf, job)
                     continue
                 # Check energy difference between first two mappings
-                cdiff = (1.0 -
-                         job.cratio) * (to_finish[job][1].metadata.energy -
-                                        to_finish[job][0].metadata.energy)
+                cdiff = (1.0 - job.cratio) * (
+                    to_finish[job][1].metadata.energy
+                    - to_finish[job][0].metadata.energy
+                )
                 if cdiff > diff[0]:
                     diff = (cdiff, job)
             _, job_d = diff
@@ -126,11 +145,20 @@ class SegMedfSegmentMapper(SegmentMapperBase):
             m = to_finish[job_d][0]
             avl_core_types -= m.get_used_processor_types()
             job_mappings[job_d] = m
-            log.debug('Job_mappings: {}'.format([
-                (j.to_str(), m.get_used_processor_types(),
-                 m.metadata.energy * (1.0 - j.cratio)) if m is not None else
-                (j.to_str(), None) for j, m in job_mappings.items()
-            ]))
+            log.debug(
+                "Job_mappings: {}".format(
+                    [
+                        (
+                            j.to_str(),
+                            m.get_used_processor_types(),
+                            m.metadata.energy * (1.0 - j.cratio),
+                        )
+                        if m is not None
+                        else (j.to_str(), None)
+                        for j, m in job_mappings.items()
+                    ]
+                )
+            )
 
         segment = self._form_schedule_segment(job_mappings)
         # TODO: this is copied from bruteforce, put it in a separate functions

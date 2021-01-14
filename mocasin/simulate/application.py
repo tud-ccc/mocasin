@@ -69,7 +69,7 @@ class RuntimeKpnApplication(RuntimeApplication):
         if mapping.platform != system.platform:
             raise RuntimeError(f"Mapping {name} to an incompatible platform")
 
-        log.debug('initialize new runtime application: %s', name)
+        log.debug("initialize new runtime application: %s", name)
         logging.inc_indent()
 
         # Instantiate all channels
@@ -77,7 +77,8 @@ class RuntimeKpnApplication(RuntimeApplication):
         for c in kpn_graph.channels():
             mapping_info = mapping.channel_info(c)
             self._channels[c.name] = RuntimeChannel(
-                c.name, mapping_info, c.token_size, self)
+                c.name, mapping_info, c.token_size, self
+            )
 
         # Instantiate all processes
         self._processes = {}
@@ -90,13 +91,15 @@ class RuntimeKpnApplication(RuntimeApplication):
             logging.inc_indent()
             for c in p.incoming_channels:
                 rc = self._channels[c.name]
-                log.debug('make process %s a sink to %s', proc.full_name,
-                          rc.name)
+                log.debug(
+                    "make process %s a sink to %s", proc.full_name, rc.name
+                )
                 proc.connect_to_incomming_channel(rc)
             for c in p.outgoing_channels:
                 rc = self._channels[c.name]
-                log.debug('make process %s a source to %s', proc.full_name,
-                          rc.name)
+                log.debug(
+                    "make process %s a source to %s", proc.full_name, rc.name
+                )
                 proc.connect_to_outgoing_channel(rc)
             logging.dec_indent()
         logging.dec_indent()
@@ -138,8 +141,9 @@ class RuntimeKpnApplication(RuntimeApplication):
         for process, mapping_info in self._mapping_infos.items():
             self.system.start_process(process, mapping_info)
         finished = self.env.all_of([p.finished for p in self.processes()])
-        finished.callbacks.append(lambda _: self._log.info(
-            f"Application {self.name} terminates"))
+        finished.callbacks.append(
+            lambda _: self._log.info(f"Application {self.name} terminates")
+        )
         yield finished
 
     def kill(self):

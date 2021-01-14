@@ -8,9 +8,11 @@ import subprocess
 
 
 slx_expected_sim_time = {
-    "audio_filter": {"exynos": "19.844971309 ms",
-                     "multidsp": "95.812062675 ms",
-                     "parallella": "193.346008966 ms"},
+    "audio_filter": {
+        "exynos": "19.844971309 ms",
+        "multidsp": "95.812062675 ms",
+        "parallella": "193.346008966 ms",
+    },
     "hog": {"exynos": "506.852794637 ms"},
     "speaker_recognition": {"exynos": "22.650786172 ms"},
 }
@@ -19,24 +21,30 @@ slx_expected_sim_time = {
 @pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_slx_simulate(datadir, slx_kpn_platform_pair):
     kpn, platform = slx_kpn_platform_pair
-    res = subprocess.run(["mocasin", "simulate",
-                          f"kpn={kpn}",
-                          f"platform={platform}",
-                          "mapper=slx_default",
-                          "trace=slx_default"],
-                         cwd=datadir,
-                         check=True,
-                         stdout=subprocess.PIPE)
+    res = subprocess.run(
+        [
+            "mocasin",
+            "simulate",
+            f"kpn={kpn}",
+            f"platform={platform}",
+            "mapper=slx_default",
+            "trace=slx_default",
+        ],
+        cwd=datadir,
+        check=True,
+        stdout=subprocess.PIPE,
+    )
 
     found_line = False
     stdout = res.stdout.decode()
-    for line in stdout.split('\n'):
+    for line in stdout.split("\n"):
         if line.startswith("Total simulated time: "):
             time = line[22:]
             assert time == slx_expected_sim_time[kpn][platform]
             found_line = True
 
     assert found_line
+
 
 tgff_expected_sim_time = {
     "auto-indust-cords": "524.0033275 ms",
@@ -51,18 +59,23 @@ tgff_expected_sim_time = {
 
 
 def test_tgff_simulate(datadir, tgff):
-    res = subprocess.run(["mocasin", "simulate",
-                          "platform=designer_bus",
-                          "kpn=tgff_reader",
-                          "trace=tgff_reader",
-                          "mapper=default",
-                          f"tgff.file={tgff}.tgff"],
-                         cwd=datadir,
-                         check=True,
-                         stdout=subprocess.PIPE)
+    res = subprocess.run(
+        [
+            "mocasin",
+            "simulate",
+            "platform=designer_bus",
+            "kpn=tgff_reader",
+            "trace=tgff_reader",
+            "mapper=default",
+            f"tgff.file={tgff}.tgff",
+        ],
+        cwd=datadir,
+        check=True,
+        stdout=subprocess.PIPE,
+    )
     found_line = False
     stdout = res.stdout.decode()
-    for line in stdout.split('\n'):
+    for line in stdout.split("\n"):
         if line.startswith("Total simulated time: "):
             time = line[22:]
             assert time == tgff_expected_sim_time[tgff]
@@ -73,18 +86,23 @@ def test_tgff_simulate(datadir, tgff):
 
 @pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_sdf3_simulate(datadir):
-    res = subprocess.run(["mocasin", "simulate",
-                          "platform=exynos",
-                          "kpn=sdf3_reader",
-                          "trace=sdf3_reader",
-                          "mapper=static_cfs",
-                          "sdf3.file=../../../sdf3/medium_cyclic.xml"],
-                         cwd=datadir,
-                         check=True,
-                         stdout=subprocess.PIPE)
+    res = subprocess.run(
+        [
+            "mocasin",
+            "simulate",
+            "platform=exynos",
+            "kpn=sdf3_reader",
+            "trace=sdf3_reader",
+            "mapper=static_cfs",
+            "sdf3.file=../../../sdf3/medium_cyclic.xml",
+        ],
+        cwd=datadir,
+        check=True,
+        stdout=subprocess.PIPE,
+    )
     found_line = False
     stdout = res.stdout.decode()
-    for line in stdout.split('\n'):
+    for line in stdout.split("\n"):
         if line.startswith("Total simulated time: "):
             time = line[22:]
             assert time == "1.340782929 ms"

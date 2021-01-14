@@ -1,5 +1,4 @@
-# Copyright (C) 2017 TU Dresden
-# All Rights Reserved
+# Copyright (C) 2017 TU Dresden# All Rights Reserved
 #
 # Authors: Christian Menard
 
@@ -46,7 +45,7 @@ class RuntimeSystem:
             platform (Platform): the platform to be simulated
             env: the simpy environment
         """
-        log.info('Initialize the system')
+        log.info("Initialize the system")
         logging.inc_indent()
 
         self._env = env
@@ -68,18 +67,21 @@ class RuntimeSystem:
         for sched in platform.schedulers():
             if len(sched.processors) == 1:
                 proc = sched.processors[0]
-                scheduler = create_scheduler(sched.name, proc, sched.policy,
-                                             self)
+                scheduler = create_scheduler(
+                    sched.name, proc, sched.policy, self
+                )
                 self._schedulers.append(scheduler)
                 self._processors_to_schedulers[proc] = scheduler
             else:
-                log.warning('True multi-processor scheduling is not supported '
-                            'yet! -> split the %s scheduler into multiple '
-                            'single-processor schedulers', sched.name)
+                log.warning(
+                    "True multi-processor scheduling is not supported "
+                    "yet! -> split the %s scheduler into multiple "
+                    "single-processor schedulers",
+                    sched.name,
+                )
                 for proc in sched.processors:
-                    name = '%s_%s' % (sched.name, proc.name)
-                    scheduler = create_scheduler(name, proc, sched.policy,
-                                                 self)
+                    name = "%s_%s" % (sched.name, proc.name)
+                    scheduler = create_scheduler(name, proc, sched.policy, self)
                     self._schedulers.append(scheduler)
                     self._processors_to_schedulers[proc] = scheduler
 
@@ -99,7 +101,7 @@ class RuntimeSystem:
         # the communication resource by an attribute 'simpy_resource' that
         # points to the simpy resource.
         for r in platform.communication_resources():
-            if r.exclusive and not hasattr(r, 'simpy_resource'):
+            if r.exclusive and not hasattr(r, "simpy_resource"):
                 r.simpy_resource = Resource(self.env, capacity=1)
 
         logging.dec_indent()
@@ -117,7 +119,8 @@ class RuntimeSystem:
         """
         if process in self._processes:
             raise RuntimeError(
-                f"The process {process.name} was already started!")
+                f"The process {process.name} was already started!"
+            )
         self._processes.add(process)
         processor = mapping_info.affinity
         scheduler = self._processors_to_schedulers[processor]
@@ -128,19 +131,17 @@ class RuntimeSystem:
         # create an init event in order to give the trace viewer a hint
         # on the maximum value
         for s in self._schedulers:
-            self.trace_writer.update_counter("load",
-                                             s._processor.name,
-                                             [1.0],
-                                             category="Load")
+            self.trace_writer.update_counter(
+                "load", s._processor.name, [1.0], category="Load"
+            )
 
         granularity, time_frame = self.load_trace_cfg
         while True:
             for s in self._schedulers:
-                load = s.average_load(time_frame),
-                self.trace_writer.update_counter("load",
-                                                 s._processor.name,
-                                                 load,
-                                                 category="Load")
+                load = (s.average_load(time_frame),)
+                self.trace_writer.update_counter(
+                    "load", s._processor.name, load, category="Load"
+                )
             yield self.env.timeout(granularity)
 
     def start_schedulers(self):
@@ -154,13 +155,14 @@ class RuntimeSystem:
         some_blocked = False
         for p in self._processes:
             if p.check_state(ProcessState.BLOCKED):
-                log.error('The process %s is blocked', p.name)
+                log.error("The process %s is blocked", p.name)
                 some_blocked = True
             elif not p.check_state(ProcessState.FINISHED):
-                log.warning('The process %s did not finish its execution!',
-                            p.name)
+                log.warning(
+                    "The process %s did not finish its execution!", p.name
+                )
         if some_blocked:
-            raise SimulationError('There is a deadlock!')
+            raise SimulationError("There is a deadlock!")
 
     def get_scheduler(self, processor):
         """Look up the scheduler for a given processor

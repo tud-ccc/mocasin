@@ -20,8 +20,15 @@ class JobRequestStatus(Enum):
 
 
 class JobRequestInfo:
-    def __init__(self, app, mappings, arrival, deadline=math.inf,
-                 status=JobRequestStatus.ARRIVED, start_cratio=0.0):
+    def __init__(
+        self,
+        app,
+        mappings,
+        arrival,
+        deadline=math.inf,
+        status=JobRequestStatus.ARRIVED,
+        start_cratio=0.0,
+    ):
         assert isinstance(app, KpnGraph)
         assert isinstance(mappings, list)
         assert isinstance(arrival, float)
@@ -93,28 +100,35 @@ class JobRequestInfo:
         self.__finish = finish
 
     def to_str(self):
-        res = ("(Job request app={} arrival[cratio]={}[{}] " +
-               "deadline={} status={} finished={})").format(
-                   self.__app.name, self.__arrival, self.__start_cratio,
-                   self.__deadline, self.__status, self.__finish)
+        res = (
+            "(Job request app={} arrival[cratio]={}[{}] "
+            + "deadline={} status={} finished={})"
+        ).format(
+            self.__app.name,
+            self.__arrival,
+            self.__start_cratio,
+            self.__deadline,
+            self.__status,
+            self.__finish,
+        )
         return res
 
     def get_min_exec_time(self):
-        """ Returns the minimum execution time over all mappings.
-        """
+        """Returns the minimum execution time over all mappings."""
         if self.__memo_min_exec_time is not None:
             return self.__memo_min_exec_time
 
         self.__memo_min_exec_time = min(
-            [m.metadata.exec_time for m in self.__mappings])
+            [m.metadata.exec_time for m in self.__mappings]
+        )
         return self.__memo_min_exec_time
 
     def get_min_energy(self):
-        """ Returns the minimum energy consumption over all mappings.
-        """
+        """Returns the minimum energy consumption over all mappings."""
         if self.__memo_min_energy is not None:
             return self.__memo_min_energy
 
         self.__memo_min_energy = min(
-            [m.metadata.energy for m in self.__mappings])
+            [m.metadata.energy for m in self.__mappings]
+        )
         return self.__memo_min_energy

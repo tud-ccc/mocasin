@@ -6,8 +6,11 @@
 
 from collections import deque
 
-from mocasin.common.platform import (CommunicationPhase, CommunicationResource,
-    Primitive, Processor)
+from mocasin.common.platform import (
+    CommunicationPhase,
+    CommunicationResource,
+    Primitive,
+)
 
 
 class Bus(CommunicationResource):
@@ -18,10 +21,24 @@ class Bus(CommunicationResource):
     function :func:`~primitives_from_buses` for generation of primitives.
     """
 
-    def __init__(self, name, frequency_domain, latency=1,
-                 throughput=float('inf'), exclusive=False):
-        super().__init__(name, frequency_domain, latency, latency, throughput,
-                         throughput, exclusive, False)
+    def __init__(
+        self,
+        name,
+        frequency_domain,
+        latency=1,
+        throughput=float("inf"),
+        exclusive=False,
+    ):
+        super().__init__(
+            name,
+            frequency_domain,
+            latency,
+            latency,
+            throughput,
+            throughput,
+            exclusive,
+            False,
+        )
 
         self._processors = []
         self._storages = []
@@ -97,7 +114,7 @@ def primitives_from_buses(buses):
     primitives = []
     # create a primitive per storage
     for storage in storages:
-        prim = Primitive('cp_%s' % (storage.name))
+        prim = Primitive("cp_%s" % (storage.name))
 
         # find the bus that connects to this storage
         storage_bus = None
@@ -109,9 +126,9 @@ def primitives_from_buses(buses):
         connections = storage_bus.get_processor_connections()
         for c_buses, c_processors in connections:
             produce = CommunicationPhase(
-                'produce', c_buses + [storage], 'write')
-            consume = CommunicationPhase(
-                'consume', c_buses + [storage], 'read')
+                "produce", c_buses + [storage], "write"
+            )
+            consume = CommunicationPhase("consume", c_buses + [storage], "read")
             for p in c_processors:
                 prim.add_producer(p, produce)
                 prim.add_consumer(p, consume)

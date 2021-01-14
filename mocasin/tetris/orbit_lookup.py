@@ -7,11 +7,12 @@ from mocasin.representations import SymmetryRepresentation
 
 
 class OrbitLookupManager:
-    """ Orbit lookup manager.
+    """Orbit lookup manager.
 
     Calculating the orbit takes much time. This class is needed to reduce such
     overhead by caching the already calculated orbits.
     """
+
     def __init__(self, platform):
         self.platform = platform
         self._representations = {}
@@ -19,7 +20,7 @@ class OrbitLookupManager:
         pass
 
     def _calculate_orbit(self, kpn, mapping):
-        """ Calcualtes the orbit for the mapping.
+        """Calcualtes the orbit for the mapping.
 
         Args:
             kpn (KpnGraph): a kpn application
@@ -29,7 +30,8 @@ class OrbitLookupManager:
         """
         if kpn not in self._representations:
             self._representations[kpn] = SymmetryRepresentation(
-                kpn, self.platform)
+                kpn, self.platform
+            )
         equivalent_mappings = self._representations[kpn].allEquivalent(mapping)
         return equivalent_mappings
 

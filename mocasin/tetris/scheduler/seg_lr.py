@@ -11,9 +11,13 @@ Real-Time Distributed Computing Workshops, April 2015, pp. 103–110.
 """
 
 from mocasin.tetris.job_state import Job
-from mocasin.tetris.schedule import (Schedule, MultiJobSegmentMapping,
-                                   SingleJobSegmentMapping, MAX_END_GAP)
-from mocasin.tetris.scheduler import (SegmentMapperBase, SegmentedScheduler)
+from mocasin.tetris.schedule import (
+    Schedule,
+    MultiJobSegmentMapping,
+    SingleJobSegmentMapping,
+    MAX_END_GAP,
+)
+from mocasin.tetris.scheduler import SegmentMapperBase, SegmentedScheduler
 from mocasin.tetris.scheduler.lr_solver import LRSolver, LRConstraint
 
 from collections import Counter
@@ -36,7 +40,7 @@ class SegLRExploreMode(Enum):
 
 
 class SegLRSegmentMapper(SegmentMapperBase):
-    """ MMKP-based application mapping.
+    """MMKP-based application mapping.
 
     At the beginning, using Lagrangian relaxation solver we obtain the
     multipliers lambda* and the corresponding selection of operating points x*.
@@ -51,11 +55,17 @@ class SegLRSegmentMapper(SegmentMapperBase):
         allow_local_violations (bool): whethen we allow to choose "slow"
             configurations which can be compensated in a next segment
     """
-    def __init__(self, scheduler, platform,
-                 sorting_key=SegLRSortingKey.MINCOST,
-                 allow_local_violations=True,
-                 explore_mode=SegLRExploreMode.ALL,
-                 lr_constraints=LRConstraint.RESOURCE, lr_rounds=1000):
+
+    def __init__(
+        self,
+        scheduler,
+        platform,
+        sorting_key=SegLRSortingKey.MINCOST,
+        allow_local_violations=True,
+        explore_mode=SegLRExploreMode.ALL,
+        lr_constraints=LRConstraint.RESOURCE,
+        lr_rounds=1000,
+    ):
 
         super().__init__(scheduler, platform)
 
@@ -70,29 +80,40 @@ class SegLRSegmentMapper(SegmentMapperBase):
         # Solve Lagrangian relaxation of MMKP
         log.debug("Solving Lagrangian relaxation of MMKP...")
         l, job_mappings = self.__lr_solver.solve(
-            jobs, segment_start_time=segment_start_time)
+            jobs, segment_start_time=segment_start_time
+        )
         log.debug("Found lambda = {}".format(l))
 
         for j, m in job_mappings:
-            log.debug("Job {}, mapping {} [e:{:.3f}], f = {:.3f}".format(
-                j.to_str(), m.get_used_processor_types(), m.metadata.energy,
-                LRSolver.job_config_cost(j, m, l)))
+            log.debug(
+                "Job {}, mapping {} [e:{:.3f}], f = {:.3f}".format(
+                    j.to_str(),
+                    m.get_used_processor_types(),
+                    m.metadata.energy,
+                    LRSolver.job_config_cost(j, m, l),
+                )
+            )
 
         # Sort applications by a defined sorting key
         if self.__sorting_key == SegLRSortingKey.MINCOST:
             # Sort applications that f(x_i*, lambda*) <= f(x_j*, lambda*), i < j
             job_mappings.sort(
-                key=lambda x: (LRSolver.job_config_cost(x[0], x[1], l)))
+                key=lambda x: (LRSolver.job_config_cost(x[0], x[1], l))
+            )
         elif self.__sorting_key == SegLRSortingKey.DEADLINE:
             assert False, "NYI"
             min_configs.sort(key=lambda j: j[0].deadline)
         elif self.__sorting_key == SegLR15SortingKey.MINCOST_DEADLINE_PRODUCT:
             assert False, "NYI"
-            min_configs.sort(key=lambda j: (LRSolver.job_config_costf(
-                j[0], j[2], l) * j[0].deadline))
+            min_configs.sort(
+                key=lambda j: (
+                    LRSolver.job_config_costf(j[0], j[2], l) * j[0].deadline
+                )
+            )
         else:
             assert False, "Sorting key is not known: {}".format(
-                self.__sorting_key)
+                self.__sorting_key
+            )
 
         # Empty resource
         avail_cores = self.platform.get_processor_types()
@@ -109,8 +130,10 @@ class SegLRSegmentMapper(SegmentMapperBase):
             cratio = job.cratio
             rratio = 1.0 - cratio
             # Get all configurations of the job, sort them by f(x_i, lambda)
-            cost_mappings = [(LRSolver.job_config_cost(job, m, l), m)
-                             for m in job.request.mappings]
+            cost_mappings = [
+                (LRSolver.job_config_cost(job, m, l), m)
+                for m in job.request.mappings
+            ]
             cost_mappings.sort()
             assert self.__explore_mode == SegLRExploreMode.ALL, "NYI"
 
@@ -119,15 +142,22 @@ class SegLRSegmentMapper(SegmentMapperBase):
                 # Check if the current mapping fits resources
                 map_cores = mapping.get_used_processor_types()
                 log.debug(
-                    "... Checking mapping: {}, t*:{:.3f}, e*:{:.3f}, f:{:.3f}"
-                    .format(map_cores, mapping.metadata.exec_time * rratio,
-                            mapping.metadata.energy * rratio, cost))
+                    "... Checking mapping: {}, t*:{:.3f}, e*:{:.3f}, f:{:.3f}".format(
+                        map_cores,
+                        mapping.metadata.exec_time * rratio,
+                        mapping.metadata.energy * rratio,
+                        cost,
+                    )
+                )
                 if map_cores | avail_cores != avail_cores:
                     log.debug("....... Not enough resources")
                     continue
                 # It is possible to map on the available resources, check
                 # whether it satisfies its deadline condition.
-                if mapping.metadata.exec_time * rratio + segment_start_time > job.deadline:
+                if (
+                    mapping.metadata.exec_time * rratio + segment_start_time
+                    > job.deadline
+                ):
                     # This mapping cannot fit deadline condition.
                     # TODO: test whether it is useful
                     if self.__allow_local_violations:
@@ -138,15 +168,20 @@ class SegLRSegmentMapper(SegmentMapperBase):
                             continue
                         # Construct a temporary job_segment
                         job_segment = SingleJobSegmentMapping(
-                            job.request, mapping,
-                            start_time=segment_start_time, start_cratio=cratio,
-                            end_time=segment_start_time + min_rtime)
+                            job.request,
+                            mapping,
+                            start_time=segment_start_time,
+                            start_cratio=cratio,
+                            end_time=segment_start_time + min_rtime,
+                        )
                         end_cratio = job_segment.end_cratio
-                        bctime = min([
-                            m.metadata.exec_time for m in job.request.mappings
-                        ]) * (1.0-end_cratio)
-                        if (min_rtime + bctime + segment_start_time >
-                                job.deadline):
+                        bctime = min(
+                            [m.metadata.exec_time for m in job.request.mappings]
+                        ) * (1.0 - end_cratio)
+                        if (
+                            min_rtime + bctime + segment_start_time
+                            > job.deadline
+                        ):
                             # This configuration cannot be compensated
                             log.debug(
                                 "....... Cannot meet deadline at the end of the current segment after selecting this mapping"
@@ -174,7 +209,8 @@ class SegLRSegmentMapper(SegmentMapperBase):
         # Calculate segment end time
         jobs_rem_time = [
             m.metadata.exec_time * (1.0 - j.cratio)
-            for j, m in final_job_mappings.items() if m is not None
+            for j, m in final_job_mappings.items()
+            if m is not None
         ]
         # TODO: Allow MAX_END_GAP at the end of the segment
         # * Make sure that min_rtime also includes such MAX_END_GAP
@@ -189,10 +225,13 @@ class SegLRSegmentMapper(SegmentMapperBase):
             if m is None:
                 assert False, "NYI"
                 continue
-            ssm = SingleJobSegmentMapping(j.request, m,
-                                          start_time=segment_start_time,
-                                          start_cratio=j.cratio,
-                                          end_time=segment_end_time)
+            ssm = SingleJobSegmentMapping(
+                j.request,
+                m,
+                start_time=segment_start_time,
+                start_cratio=j.cratio,
+                end_time=segment_end_time,
+            )
             job_segments.append(ssm)
 
         # Construct a schedule segment
@@ -208,8 +247,11 @@ class SegLRSegmentMapper(SegmentMapperBase):
 
         # Generate the job states at the end of the segment
         new_jobs = [
-            x for x in Job.from_schedule(Schedule(self.platform, new_segment),
-                                         jobs) if not x.is_terminated()
+            x
+            for x in Job.from_schedule(
+                Schedule(self.platform, new_segment), jobs
+            )
+            if not x.is_terminated()
         ]
 
         log.debug("Generated segment: {}".format(new_segment.to_str()))
@@ -250,9 +292,13 @@ class SegLRScheduler(SegmentedScheduler):
 
         self.__lr_rounds = kwargs["seg_lr_iters"]
         segment_mapper = SegLRSegmentMapper(
-            self, platform, sorting_key=self.__sorting_key,
+            self,
+            platform,
+            sorting_key=self.__sorting_key,
             explore_mode=self.__explore_mode,
-            lr_constraints=self.__lr_constraints, lr_rounds=self.__lr_rounds)
+            lr_constraints=self.__lr_constraints,
+            lr_rounds=self.__lr_rounds,
+        )
         super().__init__(platform, segment_mapper)
 
         self.__name = self.__generate_name()

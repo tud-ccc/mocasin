@@ -12,7 +12,7 @@ from abc import ABC, abstractmethod
 
 class SegmentMapperBase(ABC):
     def __init__(self, scheduler, platform):
-        """ Segment Mapper base class.
+        """Segment Mapper base class.
 
         This class generates a multi job segment mapping.
         """
@@ -27,8 +27,15 @@ class SegmentMapperBase(ABC):
 
 
 class SchedulerBase(ABC):
-    def __init__(self, platform, orbit_lookup_manager=None, migrations=True,
-                 preemptions=True, rotations=False, **kwargs):
+    def __init__(
+        self,
+        platform,
+        orbit_lookup_manager=None,
+        migrations=True,
+        preemptions=True,
+        rotations=False,
+        **kwargs
+    ):
         """A base class for tetris scheduler
 
         If rotations is False, the scheduler does not rotate the mappings. In
@@ -84,7 +91,7 @@ class SchedulerBase(ABC):
 
     @abstractmethod
     def schedule(self, jobs, scheduling_start_time=0.0):
-        """ Schedule jobs.
+        """Schedule jobs.
 
         Args:
             jobs (list[JobState]): input jobs
@@ -103,6 +110,7 @@ class SegmentedScheduler(SchedulerBase):
         platform (Platform): A platform
         segment_mapper: A segment scheduler
     """
+
     def __init__(self, platform, segment_mapper):
         super().__init__(platform)
         assert isinstance(segment_mapper, SegmentMapperBase)
@@ -118,7 +126,8 @@ class SegmentedScheduler(SchedulerBase):
 
         while cjobs is not None and len(cjobs) > 0:
             res_segment = self.segment_mapper.generate_segment(
-                cjobs, segment_start_time=ctime)
+                cjobs, segment_start_time=ctime
+            )
             if res_segment is None:
                 # No feasible segment found
                 cjobs = None

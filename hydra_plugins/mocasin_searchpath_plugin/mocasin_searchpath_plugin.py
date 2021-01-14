@@ -23,13 +23,16 @@ class MocasinSearchPathPlugin(SearchPathPlugin):
 
     def manipulate_search_path(self, search_path):
         search_path.prepend(
-            provider="mocasin-searchpath-plugin", path="conf/", anchor="main")
+            provider="mocasin-searchpath-plugin", path="conf/", anchor="main"
+        )
 
         # append paths from the environment variable MOCASIN_CONF_PATH
-        mocasin_conf_path = os.environ.get('MOCASIN_CONF_PATH')
+        mocasin_conf_path = os.environ.get("MOCASIN_CONF_PATH")
         if mocasin_conf_path is not None:
             split = mocasin_conf_path.split(":")
             for path in split:
                 search_path.prepend(
-                    provider="mocasin-searchpath-plugin", path=path,
-                    anchor="main")
+                    provider="mocasin-searchpath-plugin",
+                    path=path,
+                    anchor="main",
+                )

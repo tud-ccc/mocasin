@@ -12,7 +12,8 @@ import os
 
 log = logging.getLogger(__name__)
 
-@hydra.main(config_path='../conf', config_name='calculate_platform_embedding')
+
+@hydra.main(config_path="../conf", config_name="calculate_platform_embedding")
 def calculate_platform_embedding(cfg):
     """Calculate the Automorphism Group of a Platform Graph
 
@@ -27,16 +28,21 @@ def calculate_platform_embedding(cfg):
         * **mpsym:** a boolean value selecting mpsym as backend (and JSON as output)
         Otherwise it outputs plaintext from the python implementation.
     """
-    platform = hydra.utils.instantiate(cfg['platform'])
-    json_file = cfg['platform']['embedding_json']
+    platform = hydra.utils.instantiate(cfg["platform"])
+    json_file = cfg["platform"]["embedding_json"]
     if json_file is not None and os.path.exists(json_file):
         log.info("JSON file already found. Removing and recalculating")
         os.remove(json_file)
-    if cfg['representation']._target_ !=\
-            'mocasin.representations.MetricEmbeddingRepresentation':
-        raise RuntimeError(f"The enumerate equvialent task needs to be called "
-                           f"with the MetricSpaceEmbeddings representation."
-                           f" Called with {cfg['representation']._target_}")
-    kpn = KpnGraph(name='EmptyGraph')
-    representation = hydra.utils.instantiate(cfg['representation'], kpn, platform)
-
+    if (
+        cfg["representation"]._target_
+        != "mocasin.representations.MetricEmbeddingRepresentation"
+    ):
+        raise RuntimeError(
+            f"The enumerate equvialent task needs to be called "
+            f"with the MetricSpaceEmbeddings representation."
+            f" Called with {cfg['representation']._target_}"
+        )
+    kpn = KpnGraph(name="EmptyGraph")
+    representation = hydra.utils.instantiate(
+        cfg["representation"], kpn, platform
+    )

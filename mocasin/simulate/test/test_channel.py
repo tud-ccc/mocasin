@@ -32,9 +32,8 @@ def blocked_process(env, running_process):
 
 
 class TestRuntimeChannel:
-
     def test_init(self, channel):
-        assert channel.name == 'test_chan'
+        assert channel.name == "test_chan"
         assert channel._src is None
         assert len(channel._sinks) == 0
         assert len(channel._fifo_state) == 0
@@ -147,7 +146,7 @@ class TestRuntimeChannel:
         chan.tokens_consumed.succeed()
         chan.tokens_consumed = env.event()
 
-    @pytest.mark.parametrize('num', range(1, 4))
+    @pytest.mark.parametrize("num", range(1, 4))
     def test_wait_for_tokens(self, env, blocked_process, channel, num, mocker):
         sink1 = blocked_process
         sink2 = mocker.Mock()
@@ -158,7 +157,8 @@ class TestRuntimeChannel:
         channel.add_sink(sink2)
 
         wait_process = env.process(
-            channel.wait_for_tokens(blocked_process, num))
+            channel.wait_for_tokens(blocked_process, num)
+        )
 
         env.run()
         assert not wait_process.processed
@@ -177,7 +177,7 @@ class TestRuntimeChannel:
         assert wait_process.ok
         assert sink1.check_state(ProcessState.READY)
 
-    @pytest.mark.parametrize('num', range(1, 4))
+    @pytest.mark.parametrize("num", range(1, 4))
     def test_wait_for_slots(self, env, blocked_process, channel, num, mocker):
         sink1 = mocker.Mock()
         sink2 = mocker.Mock()
@@ -191,8 +191,7 @@ class TestRuntimeChannel:
         channel._fifo_state[sink1.name] = 4
         channel._fifo_state[sink2.name] = 4
 
-        wait_process = env.process(
-            channel.wait_for_slots(blocked_process, num))
+        wait_process = env.process(channel.wait_for_slots(blocked_process, num))
 
         env.run()
         assert not wait_process.processed
@@ -253,7 +252,7 @@ class TestRuntimeChannel:
         channel._fifo_state[sink2.name] = 4
 
         # setup the primitive
-        prim = Primitive('test_prim')
+        prim = Primitive("test_prim")
         channel._primitive = prim
 
         # sink1 processor not added yet -> should fail
@@ -336,7 +335,7 @@ class TestRuntimeChannel:
         channel.add_sink(sink2)
 
         # setup the primitive
-        prim = Primitive('test_prim')
+        prim = Primitive("test_prim")
         channel._primitive = prim
 
         # src processor not added yet -> should fail

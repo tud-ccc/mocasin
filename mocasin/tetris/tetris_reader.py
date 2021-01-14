@@ -20,7 +20,7 @@ MAPPINGS_SUFFIX = ".mappings.csv"
 
 
 def read_applications(base_dir, platform):
-    """ Read application and mappings from base directory.
+    """Read application and mappings from base directory.
 
     The base directory includes the subdirectories with the name of application,
     each subdirectory consists of cpn.xml describing the KPN application, and
@@ -33,8 +33,9 @@ def read_applications(base_dir, platform):
     Returns:
         a dict {app_name: (kpn, [mapping, ..])}
     """
-    assert os.path.isdir(base_dir), (
-        "The folder '{}' does not exist".format(base_dir))
+    assert os.path.isdir(base_dir), "The folder '{}' does not exist".format(
+        base_dir
+    )
     log.info("Reading applications:")
     apps = {}
     for name in os.listdir(base_dir):
@@ -43,15 +44,15 @@ def read_applications(base_dir, platform):
             continue
         app_file = os.path.join(app_folder, CPN_FILENAME)
         kpn = SlxKpnGraph(name, app_file)
-        mapping_file = os.path.join(app_folder,
-                                    platform.name + MAPPINGS_SUFFIX)
+        mapping_file = os.path.join(app_folder, platform.name + MAPPINGS_SUFFIX)
         reader_kwargs = {
-            'attribute': [],
-            'exec_time_col': 'executionTime',
-            'energy_col': 'totalEnergy',
+            "attribute": [],
+            "exec_time_col": "executionTime",
+            "energy_col": "totalEnergy",
         }
-        mappings_reader = DataReader(platform, kpn, mapping_file,
-                                     **reader_kwargs)
+        mappings_reader = DataReader(
+            platform, kpn, mapping_file, **reader_kwargs
+        )
         mappings = [m[0] for m in mappings_reader.formMappings().values()]
         apps.update({name: (kpn, mappings)})
         log.info("   * {}".format(name))
@@ -59,7 +60,7 @@ def read_applications(base_dir, platform):
 
 
 def read_requests(jobs_file, apps):
-    """ Read job requests and their state states.
+    """Read job requests and their state states.
 
     Example of csv file:
     app,arrival,deadline,start_cratio
@@ -74,14 +75,18 @@ def read_requests(jobs_file, apps):
     with open(jobs_file) as csvFile:
         reader = csv.DictReader(csvFile)
         for row in reader:
-            app = apps[row['app']][0]
-            mappings = apps[row['app']][1]
-            start_cratio = float(row.get('start_cratio', 0.0))
-            deadline = float(row['deadline'])
+            app = apps[row["app"]][0]
+            mappings = apps[row["app"]][1]
+            start_cratio = float(row.get("start_cratio", 0.0))
+            deadline = float(row["deadline"])
             if deadline < 0:
                 deadline = math.inf
-            request = JobRequestInfo(app, mappings, float(row['arrival']),
-                                     deadline=deadline,
-                                     start_cratio=start_cratio)
+            request = JobRequestInfo(
+                app,
+                mappings,
+                float(row["arrival"]),
+                deadline=deadline,
+                start_cratio=start_cratio,
+            )
             reqs.append(request)
     return reqs

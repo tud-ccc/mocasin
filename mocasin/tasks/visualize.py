@@ -9,17 +9,20 @@ import tkinter as tk
 from mocasin.gui.drawAPI import drawAPI
 
 
-@hydra.main(config_path='../conf', config_name='visualize')
+@hydra.main(config_path="../conf", config_name="visualize")
 def visualize(cfg):
-    kpn = hydra.utils.instantiate(cfg['kpn'])
-    platform = hydra.utils.instantiate(cfg['platform'])
-    trace = hydra.utils.instantiate(cfg['trace'])
-    representation = hydra.utils.instantiate(cfg['representation'],kpn,platform)
-    mapping = hydra.utils.instantiate(cfg['mapper'], kpn, platform,
-                                      trace, representation).generate_mapping()
-    task_names = cfg['task_names']
-    width = cfg['width']
-    height = cfg['height']
+    kpn = hydra.utils.instantiate(cfg["kpn"])
+    platform = hydra.utils.instantiate(cfg["platform"])
+    trace = hydra.utils.instantiate(cfg["trace"])
+    representation = hydra.utils.instantiate(
+        cfg["representation"], kpn, platform
+    )
+    mapping = hydra.utils.instantiate(
+        cfg["mapper"], kpn, platform, trace, representation
+    ).generate_mapping()
+    task_names = cfg["task_names"]
+    width = cfg["width"]
+    height = cfg["height"]
 
     root = tk.Tk()
     window(root, platform, mapping, task_names, width, height)

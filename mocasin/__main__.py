@@ -46,8 +46,8 @@ def main():
     # fails. Therefore, calling exit() is prevented if the
     # '--no-fail-on-exception' flag is given.
     fail_on_exception = True
-    if '--no-fail-on-exception' in sys.argv:
-        sys.argv.remove('--no-fail-on-exception')
+    if "--no-fail-on-exception" in sys.argv:
+        sys.argv.remove("--no-fail-on-exception")
         fail_on_exception = False
 
     try:
@@ -57,6 +57,8 @@ def main():
         log.error(traceback.format_exc())
         if fail_on_exception:
             sys.exit(1)
+
+
 def profile():
     """
     This script is a wrapper around the mocasin launcher, which replaces
@@ -67,6 +69,7 @@ def profile():
     main()
     profiler.dump_stats("profile_dump")
     profiler.print_stats()
+
 
 if __name__ == "__main__":
     main()

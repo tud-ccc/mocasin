@@ -10,6 +10,7 @@ from mocasin.tetris.schedule import Schedule, TIME_EPS
 from mocasin.common.platform import Platform
 
 import logging
+
 log = logging.getLogger(__name__)
 
 import time
@@ -46,18 +47,24 @@ class ResourceManager:
         """Simulare the RM by a mapping segment."""
         if len(self.__history_mapping) > 0:
             # Assert no gaps in the actual scheduling
-            assert abs(self.__history_mapping.end_time -
-                       segment.start_time) < TIME_EPS
+            assert (
+                abs(self.__history_mapping.end_time - segment.start_time)
+                < TIME_EPS
+            )
 
         self.__history_mapping.append_segment(segment)
 
-        new_jobs = Job.from_schedule(Schedule(self.platform, [segment]),
-                                     init_jobs=self.__jobs)
+        new_jobs = Job.from_schedule(
+            Schedule(self.platform, [segment]), init_jobs=self.__jobs
+        )
 
         for job in new_jobs:
             if job.is_terminated():
-                log.info("t:{:.2f}, job {} finished".format(
-                    segment.end_time, job.app.name))
+                log.info(
+                    "t:{:.2f}, job {} finished".format(
+                        segment.end_time, job.app.name
+                    )
+                )
 
         new_jobs = [x for x in new_jobs if not x.is_terminated()]
 
@@ -76,7 +83,8 @@ class ResourceManager:
         for segment in self.__active_mapping:
             assert segment.start_time > self.ctime - TIME_EPS, (
                 "The start of the segment ({}) in the past"
-                " (current time is {})".format(segment.start_time, self.ctime))
+                " (current time is {})".format(segment.start_time, self.ctime)
+            )
 
             if segment.start_time < new_time - TIME_EPS:
                 # If the segment starts before the new time
@@ -110,8 +118,11 @@ class ResourceManager:
 
         # Add a new request into request list
         self.__requests.append(request)
-        log.info("t:{:.2f}  New request {}, deadline = {}".format(
-            arrival, app.name, deadline))
+        log.info(
+            "t:{:.2f}  New request {}, deadline = {}".format(
+                arrival, app.name, deadline
+            )
+        )
 
         # Create a copy of the current job list with the new request
         new_job_list = self.__jobs.copy()
@@ -119,31 +130,38 @@ class ResourceManager:
 
         # Generate scheduling with the new job
         st = time.time()
-        schedule = self.scheduler.schedule(new_job_list,
-                                           scheduling_start_time=self.ctime)
+        schedule = self.scheduler.schedule(
+            new_job_list, scheduling_start_time=self.ctime
+        )
         et = time.time()
         log.debug("Time to find the schedule: {}".format(et - st))
 
         if schedule:
-            log.info("t:{:.2f}  Request {} is accepted".format(
-                self.ctime, app.name))
-            log.debug("t:{:.2f}  {}".format(self.ctime,
-                                            schedule.to_str(verbose=True)))
+            log.info(
+                "t:{:.2f}  Request {} is accepted".format(self.ctime, app.name)
+            )
+            log.debug(
+                "t:{:.2f}  {}".format(self.ctime, schedule.to_str(verbose=True))
+            )
             # Update job list and active scheduling
             job = Job.from_request(request).dispatch()
             self.__jobs.append(job)
             self.__active_mapping = schedule
             request.status = JobRequestStatus.ACCEPTED
         else:
-            log.info("t:{:.2f}  Request {} is rejected".format(
-                self.ctime, request.app.name))
+            log.info(
+                "t:{:.2f}  Request {} is rejected".format(
+                    self.ctime, request.app.name
+                )
+            )
             request.status = JobRequestStatus.REFUSED
 
     def stats(self):
         res = {}
-        res['requests'] = len(self.__requests)
-        res['accepted'] = sum(x.status == JobRequestStatus.ACCEPTED
-                              for x in self.__requests)
-        res['energy'] = self.__history_mapping.energy
-        res['scheduler'] = self.scheduler.name
+        res["requests"] = len(self.__requests)
+        res["accepted"] = sum(
+            x.status == JobRequestStatus.ACCEPTED for x in self.__requests
+        )
+        res["energy"] = self.__history_mapping.energy
+        res["scheduler"] = self.scheduler.name
         return res

@@ -6,7 +6,11 @@
 import random
 
 from mocasin.util import logging
-from mocasin.common.mapping import ChannelMappingInfo, Mapping, ProcessMappingInfo
+from mocasin.common.mapping import (
+    ChannelMappingInfo,
+    Mapping,
+    ProcessMappingInfo,
+)
 
 log = logging.getLogger(__name__)
 
@@ -40,7 +44,7 @@ class RandomPartialMapper(object):
         self.kpn = kpn
 
     def generate_mapping(self, part_mapping=None):
-        """ Generates a random mapping
+        """Generates a random mapping
 
         The generated mapping takes a partial mapping (that may also be empty)
         as starting point. All open mapping decissions were taken by generated
@@ -52,44 +56,62 @@ class RandomPartialMapper(object):
         :type part_mapping: Mapping
         """
 
-        #generate new mapping if no partial mapping is given
+        # generate new mapping if no partial mapping is given
         if not part_mapping:
             part_mapping = Mapping(self.kpn, self.platform)
 
         # check if the platform/kpn is equivalent
-        if not part_mapping.platform is self.platform or not part_mapping.kpn is self.kpn:
-            raise RuntimeError('rand_map: Try to map partial mapping of platform,KPN %s,%s to %s,%s',
-                               part_mapping.platform.name, part_mapping.kpn.name,
-                               self.platform.name, self.kpn.name)
+        if (
+            not part_mapping.platform is self.platform
+            or not part_mapping.kpn is self.kpn
+        ):
+            raise RuntimeError(
+                "rand_map: Try to map partial mapping of platform,KPN %s,%s to %s,%s",
+                part_mapping.platform.name,
+                part_mapping.kpn.name,
+                self.platform.name,
+                self.kpn.name,
+            )
 
         available_processors = list(self.platform.processors())
         if self.support_first:
-            num = random.randint(1,len(available_processors))
-            available_processors = random.sample(available_processors,num)
+            num = random.randint(1, len(available_processors))
+            available_processors = random.sample(available_processors, num)
 
         # map processes
         processes = part_mapping.get_unmapped_processes()
-        #print("remaining process list: {}".format(processes))
+        # print("remaining process list: {}".format(processes))
         for p in processes:
             affinity = None
             scheduler_list = list(self.platform.schedulers())
             while affinity is None and len(scheduler_list) > 0:
                 i = random.randrange(0, len(scheduler_list))
                 scheduler = scheduler_list.pop(i)
-                processors = [proc for proc in scheduler.processors if proc in available_processors]
+                processors = [
+                    proc
+                    for proc in scheduler.processors
+                    if proc in available_processors
+                ]
                 if len(processors) == 0:
                     continue
                 i = random.randrange(0, len(processors))
                 affinity = processors[i]
             if affinity is None:
-                raise RuntimeError(f"Could not find an appropriate scheduler for any of the processors: {available_processors}")
+                raise RuntimeError(
+                    f"Could not find an appropriate scheduler for any of the processors: {available_processors}"
+                )
 
             priority = random.randrange(0, 20)
             info = ProcessMappingInfo(scheduler, affinity, priority)
             part_mapping.add_process_info(p, info)
-            log.debug('rand_map: map process %s to scheduler %s and processor %s '
-                      '(priority: %d)', p.name, scheduler.name, affinity.name,
-                      priority)
+            log.debug(
+                "rand_map: map process %s to scheduler %s and processor %s "
+                "(priority: %d)",
+                p.name,
+                scheduler.name,
+                affinity.name,
+                priority,
+            )
 
         # map channels
         channels = part_mapping.get_unmapped_channels()
@@ -102,16 +124,19 @@ class RandomPartialMapper(object):
                 if p.is_suitable(src, sinks):
                     suitable_primitives.append(p)
             if len(suitable_primitives) == 0:
-                raise RuntimeError('rand_map: Mapping failed! No suitable primitive for '
-                                   'communication from %s to %s found!' %
-                                   (src.name, str(sinks)))
+                raise RuntimeError(
+                    "rand_map: Mapping failed! No suitable primitive for "
+                    "communication from %s to %s found!"
+                    % (src.name, str(sinks))
+                )
             i = random.randrange(0, len(suitable_primitives))
             primitive = suitable_primitives[i]
             info = ChannelMappingInfo(primitive, capacity)
             part_mapping.add_channel_info(c, info)
-            log.debug('rand_map: map channel %s to the primitive %s and bound to %d '
-                      'tokens' % (c.name, primitive.name, capacity))
-
+            log.debug(
+                "rand_map: map channel %s to the primitive %s and bound to %d "
+                "tokens" % (c.name, primitive.name, capacity)
+            )
 
             # finally check if the mapping is fully specified
         assert not part_mapping.get_unmapped_processes()
@@ -125,14 +150,19 @@ class RandomPartialMapperHydra(RandomPartialMapper):
     hydra config file.
     TODO: do we need this??
     """
+
     def __init__(self, kpn, platform, config):
-        random_seed = config['mapper']['random_seed']
-        super(RandomPartialMapperHydra, self).__init__(kpn, platform, seed=random_seed)
+        random_seed = config["mapper"]["random_seed"]
+        super(RandomPartialMapperHydra, self).__init__(
+            kpn, platform, seed=random_seed
+        )
+
 
 class RandomMapper(RandomPartialMapper):
     """Generates a random mapping
     This class is a FullMapper wrapper
     for RandomPartialMapper.
     """
+
     def __init__(self, kpn, platform, trace, representation, random_seed=None):
         super().__init__(kpn, platform, seed=random_seed)

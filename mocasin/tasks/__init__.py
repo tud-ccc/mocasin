@@ -25,81 +25,86 @@ from importlib import import_module
 log = logging.getLogger(__name__)
 
 
-@hydra.main(config_path='conf', config_name='help')
+@hydra.main(config_path="conf", config_name="help")
 def print_help(cfg=None):
     _print_help_impl()
 
 
 _tasks = {
-    'find_design_center': (
-        'find_design_center',
-        'dc_task',
-        "generate a mapping using the design centering algorithm"),
-    'enumerate_equivalent': (
-        'enumerate_equivalent',
-        'enumerate_equivalent',
-        "ennumerate all mappings equivalent to the given mapping"),
-    'generate_mapping': (
-        'generate_mapping',
-        'generate_mapping',
-        "Generate a mapping."),
-    'pareto_front': (
-        'pareto_front',
-        'pareto_front',
-        "Generate a pareto front of mappings."),
-    'generate_yaml': (
-        'generate_yaml',
-        'generate_yaml',
-        "Generates a bunch of yaml files"),
-    'help': (
-        None,
-        None,
-        "Print a help message"),
-    'kpn_to_dot': (
-        'to_dot',
-        'kpn_to_dot',
-        "Visualize a KPN application as a dot graph"),
-    'mapping_to_dot': (
-        'to_dot',
-        'mapping_to_dot',
-        "Visualize a mapping as a dot graph"),
-    'calculate_platform_symmetries': (
-        'calculate_platform_symmetries',
-        'calculate_platform_symmetries',
-        "Calculate the automorphism group of a platform graph"),
-    'calculate_platform_embedding': (
-        'calculate_platform_embedding',
-        'calculate_platform_embedding',
-        "Calculate a low-distortion embedding for a platform"),
-    'platform_to_dot': (
-        'to_dot',
-        'platform_to_dot',
-        "Visualize a platform as a dot graph"),
-    'simulate': (
-        'simulate',
-        'simulate',
+    "find_design_center": (
+        "find_design_center",
+        "dc_task",
+        "generate a mapping using the design centering algorithm",
+    ),
+    "enumerate_equivalent": (
+        "enumerate_equivalent",
+        "enumerate_equivalent",
+        "ennumerate all mappings equivalent to the given mapping",
+    ),
+    "generate_mapping": (
+        "generate_mapping",
+        "generate_mapping",
+        "Generate a mapping.",
+    ),
+    "pareto_front": (
+        "pareto_front",
+        "pareto_front",
+        "Generate a pareto front of mappings.",
+    ),
+    "generate_yaml": (
+        "generate_yaml",
+        "generate_yaml",
+        "Generates a bunch of yaml files",
+    ),
+    "help": (None, None, "Print a help message"),
+    "kpn_to_dot": (
+        "to_dot",
+        "kpn_to_dot",
+        "Visualize a KPN application as a dot graph",
+    ),
+    "mapping_to_dot": (
+        "to_dot",
+        "mapping_to_dot",
+        "Visualize a mapping as a dot graph",
+    ),
+    "calculate_platform_symmetries": (
+        "calculate_platform_symmetries",
+        "calculate_platform_symmetries",
+        "Calculate the automorphism group of a platform graph",
+    ),
+    "calculate_platform_embedding": (
+        "calculate_platform_embedding",
+        "calculate_platform_embedding",
+        "Calculate a low-distortion embedding for a platform",
+    ),
+    "platform_to_dot": (
+        "to_dot",
+        "platform_to_dot",
+        "Visualize a platform as a dot graph",
+    ),
+    "simulate": (
+        "simulate",
+        "simulate",
         "Replay traces to simulate the execution of a KPN application on a "
-        "given platform"),
-    'solve_query' : (
-        'solve_query',
-        'solve_query',
-        "Generates a mapping based on constraints expressed in a query language"),
-    'tetris_manager' : (
-        'tetris',
-        'tetris_manager',
-        "Run the Tetris manager"),
-    'tetris_scheduler' : (
-        'tetris',
-        'tetris_scheduler',
-        "Run the Tetris scheduler for a single input state"),
-    'visualize': (
-        'visualize',
-        'visualize',
-        "Visualize a mapping in the GUI"),
-    'parse_multirun': (
-        'parse_multirun',
-        'parse_multirun',
-        "Parse the directory structure after executing a multirun job"),
+        "given platform",
+    ),
+    "solve_query": (
+        "solve_query",
+        "solve_query",
+        "Generates a mapping based on constraints expressed in a query language",
+    ),
+    "tetris_manager": ("tetris", "tetris_manager", "Run the Tetris manager"),
+    "tetris_scheduler": (
+        "tetris",
+        "tetris_scheduler",
+        "Run the Tetris scheduler for a single input state",
+    ),
+    "visualize": ("visualize", "visualize", "Visualize a mapping in the GUI"),
+    "parse_multirun": (
+        "parse_multirun",
+        "parse_multirun",
+        "Parse the directory structure after executing a multirun job",
+    ),
 }
 """A dictionary that maps task names to descriptors of callable functions."""
 
@@ -120,10 +125,12 @@ def _print_help_impl():
         task = "  %s: " % kv[0]
         print("%s%s" % ("{:<24}".format(task), desc_lines[0]))
         for line in desc_lines[1:]:
-            print("%s%s" % ("{:<24}".format(''), line))
+            print("%s%s" % ("{:<24}".format(""), line))
     print("")
     print("Optional arguments:")
-    print(" --no-fail-on-exception If this flag is given, mocasin does not exit")
+    print(
+        " --no-fail-on-exception If this flag is given, mocasin does not exit"
+    )
     print("                        with an error code in case of an internal")
     print("                        exception. This is useful in combination")
     print("                        with hydra mutlirun if execution should")
@@ -147,7 +154,7 @@ def execute_task(task):
         print_help()
         sys.exit(-1)
 
-    if task == 'help':
+    if task == "help":
         print_help()
     else:
         # load the task

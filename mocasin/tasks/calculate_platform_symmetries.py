@@ -16,7 +16,8 @@ try:
 except ModuleNotFoundError:
     log.warning("mpsym could not be loaded")
 
-@hydra.main(config_path='../conf', config_name='calculate_platform_symmetries')
+
+@hydra.main(config_path="../conf", config_name="calculate_platform_symmetries")
 def calculate_platform_symmetries(cfg):
     """Calculate the Automorphism Group of a Platform Graph
 
@@ -31,28 +32,41 @@ def calculate_platform_symmetries(cfg):
         * **mpsym:** a boolean value selecting mpsym as backend (and JSON as output)
         Otherwise it outputs plaintext from the python implementation.
     """
-    platform = hydra.utils.instantiate(cfg['platform'])
+    platform = hydra.utils.instantiate(cfg["platform"])
     log.info("start converting platform to edge graph for automorphisms.")
     plat_graph = platform.to_adjacency_dict()
-    mpsym = cfg['mpsym']
+    mpsym = cfg["mpsym"]
 
-    adjacency_dict, num_vertices, coloring, nodes_correspondence = aut.to_labeled_edge_graph(plat_graph)
+    (
+        adjacency_dict,
+        num_vertices,
+        coloring,
+        nodes_correspondence,
+    ) = aut.to_labeled_edge_graph(plat_graph)
     log.info("done converting platform to edge graph for automorphisms.")
-    #print(nodes_correspondence)
-    #print(coloring)
-    #print(len(coloring))
-    #print(str(edge_graph))
-    log.info("start calculating the automorphism group of the (edge) graph with " + str(num_vertices) +  " nodes using nauty.")
-    nautygraph = pynauty.Graph(num_vertices,True,adjacency_dict, coloring)
+    # print(nodes_correspondence)
+    # print(coloring)
+    # print(len(coloring))
+    # print(str(edge_graph))
+    log.info(
+        "start calculating the automorphism group of the (edge) graph with "
+        + str(num_vertices)
+        + " nodes using nauty."
+    )
+    nautygraph = pynauty.Graph(num_vertices, True, adjacency_dict, coloring)
     autgrp_edges = pynauty.autgrp(nautygraph)
-    log.info("done calculating the automorphism group of the (edge) graph using nauty.")
+    log.info(
+        "done calculating the automorphism group of the (edge) graph using nauty."
+    )
 
     log.info("start coverting automorhpism of edges to nodes.")
-    autgrp, new_nodes_correspondence = aut.edge_to_node_autgrp(autgrp_edges[0],nodes_correspondence)
-    permutations_lists = map(aut.list_to_tuple_permutation,autgrp)
-    #permutations = map(perm.Permutation,permutations_lists)
-    #permgrp = perm.PermutationGroup(list(permutations))
-    #print(permgrp.point_orbit(0))
+    autgrp, new_nodes_correspondence = aut.edge_to_node_autgrp(
+        autgrp_edges[0], nodes_correspondence
+    )
+    permutations_lists = map(aut.list_to_tuple_permutation, autgrp)
+    # permutations = map(perm.Permutation,permutations_lists)
+    # permgrp = perm.PermutationGroup(list(permutations))
+    # print(permgrp.point_orbit(0))
     log.info("done coverting automorhpism of edges to nodes.")
 
     log.info("start writing to file.")
@@ -60,21 +74,25 @@ def calculate_platform_symmetries(cfg):
         try:
             pympsym
         except NameError:
-           log.error("Configured for mpsym output but could not load pympsym. Fallback to python implementation")
-           mpsym = False
+            log.error(
+                "Configured for mpsym output but could not load pympsym. Fallback to python implementation"
+            )
+            mpsym = False
 
     if mpsym:
-        out_filename = str(cfg['out_file'])
-        mpsym_autgrp = pympsym.ArchGraphAutomorphisms([pympsym.Perm(g) for g in autgrp])
+        out_filename = str(cfg["out_file"])
+        mpsym_autgrp = pympsym.ArchGraphAutomorphisms(
+            [pympsym.Perm(g) for g in autgrp]
+        )
         json_out = mpsym_autgrp.to_json()
-        with open(out_filename, 'w') as f:
+        with open(out_filename, "w") as f:
             f.write(json_out)
     else:
-        out_filename = cfg['out_file'] + ".out"
-        with open(out_filename, 'w') as f:
+        out_filename = cfg["out_file"] + ".out"
+        with open(out_filename, "w") as f:
             f.write("Platform Graph:")
             f.write(str(plat_graph))
-            #f.write("Edge Group with ~" + str(autgrp_edges[1]) + " * 10^" + str(autgrp_edges[2]) + " elements.\n")
+            # f.write("Edge Group with ~" + str(autgrp_edges[1]) + " * 10^" + str(autgrp_edges[2]) + " elements.\n")
             f.write("Symmetry group generators:")
             f.write(str(list(permutations_lists)))
             f.write("\nCorrespondence:")

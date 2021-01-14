@@ -39,8 +39,15 @@ class Job:
         cratio (float): a completion ratio
         completed (bool): a completed flag
     """
-    def __init__(self, request, mapping=None, state=JobStates.NEW, cratio=0.0,
-                 completed=False):
+
+    def __init__(
+        self,
+        request,
+        mapping=None,
+        state=JobStates.NEW,
+        cratio=0.0,
+        completed=False,
+    ):
         assert isinstance(request, JobRequestInfo)
         assert isinstance(mapping, (Mapping, type(None)))
         assert isinstance(cratio, float)
@@ -113,44 +120,53 @@ class Job:
         return self.__completed
 
     def __verify(self):
-        """ Verify that the object in a sane state.
-        """
+        """Verify that the object in a sane state."""
         failed = False
         # Mapping should be assigned only when the job in running state
         if self.is_running():
             if self.mapping is None or self.last_mapping is None:
                 log.error(
                     "There must be a [last] mapping in a {} state".format(
-                        self.state))
+                        self.state
+                    )
+                )
                 failed = True
         else:
             if self.mapping is not None:
-                log.error("There must be no mapping in a {} state".format(
-                    self.state))
+                log.error(
+                    "There must be no mapping in a {} state".format(self.state)
+                )
                 failed = True
 
         # Correspondence of values: state, cratio and completed
         if self.is_new():
             if self.cratio != self.request.start_cratio:
                 log.error(
-                    "In a {} state, a cratio must equal a start cratio of the request"
-                    .format(self.state))
+                    "In a {} state, a cratio must equal a start cratio of the request".format(
+                        self.state
+                    )
+                )
                 failed = True
             if self.completed:
                 log.error(
                     "In a {} state, a job cannot be in completed state".format(
-                        self.state))
+                        self.state
+                    )
+                )
                 failed = True
         else:
             if self.cratio < self.request.start_cratio:
-                log.error("In a {} state, a cratio must be greater than or "
-                          "equal to a start cratio of the request".format(
-                              self.state))
+                log.error(
+                    "In a {} state, a cratio must be greater than or "
+                    "equal to a start cratio of the request".format(self.state)
+                )
                 failed = True
 
             if self.cratio > 1.0:
-                log.error("In a {} state, a cratio must be less than or "
-                          "equal to 1.0".format(self.state))
+                log.error(
+                    "In a {} state, a cratio must be less than or "
+                    "equal to 1.0".format(self.state)
+                )
                 failed = True
 
             if self.is_terminated:
@@ -160,14 +176,18 @@ class Job:
             else:
                 if self.completed:
                     log.error(
-                        "In a {} state, a job cannot be in completed state"
-                        .format(self.state))
+                        "In a {} state, a job cannot be in completed state".format(
+                            self.state
+                        )
+                    )
                     failed = True
 
         if failed:
             log.error(
                 "Some errors occured, see messages above.\n{}\n{}".format(
-                    self.to_str(), self.request.to_str()))
+                    self.to_str(), self.request.to_str()
+                )
+            )
             assert False
 
     def to_str(self):
@@ -175,13 +195,18 @@ class Job:
         if self.completed:
             completed_str = "[F]"
         res = "(Job app={} deadline={} mapping={} state={} cratio={:.3f}{})".format(
-            self.app.name, self.deadline, self.mapping, self.state,
-            self.cratio, completed_str)
+            self.app.name,
+            self.deadline,
+            self.mapping,
+            self.state,
+            self.cratio,
+            completed_str,
+        )
         return res
 
     @staticmethod
     def from_request(req):
-        """ Generate job states from the job request
+        """Generate job states from the job request
 
         Args:
             req (JobRequestInfo): a job request
@@ -191,7 +216,7 @@ class Job:
     @staticmethod
     # TODO: remove
     def from_requests(reqs):
-        """ Generate job states from job requests
+        """Generate job states from job requests
 
         Args:
             reqs (list): a list of JobRequestInfo objects
@@ -203,7 +228,7 @@ class Job:
         return jobs
 
     def can_meet_deadline(self, ctime):
-        """ Returns whether the job can meet a deadline.
+        """Returns whether the job can meet a deadline.
 
         If a job in a TERMINATED state, the function returns true if the job is
         completed, otherwise it returns false.
@@ -217,10 +242,10 @@ class Job:
         if self.is_terminated():
             return self.completed
 
-        return (self.request.get_min_exec_time() * rratio <= rtime)
+        return self.request.get_min_exec_time() * rratio <= rtime
 
     def dispatch(self):
-        """ Dispatch the job, that it could execute.
+        """Dispatch the job, that it could execute.
 
         Returns: the object itself (to allow chaining).
         """
@@ -230,7 +255,7 @@ class Job:
         return self
 
     def advance(self, job_segment):
-        """ Advance the JobState by a job segment mapping.
+        """Advance the JobState by a job segment mapping.
 
         Args:
             job_segment (JobSegmentMapping): a job segment mapping
@@ -242,9 +267,11 @@ class Job:
         assert abs(self.cratio - job_segment.start_cratio) < CRATIO_EPS, (
             "Cannot apply job to a job segment:\n"
             "job: {}\n"
-            "segment: {}".format(self.to_str(), job_segment.to_str()))
-        assert self.is_ready() or self.is_running(), (
-            "Cannot advance the job with a state {}".format(self.state))
+            "segment: {}".format(self.to_str(), job_segment.to_str())
+        )
+        assert (
+            self.is_ready() or self.is_running()
+        ), "Cannot advance the job with a state {}".format(self.state)
 
         # Advance the job state
         self.__mapping = job_segment.mapping
@@ -259,7 +286,7 @@ class Job:
         return self
 
     def idle(self):
-        """ Put job in an idle state
+        """Put job in an idle state
 
         Returns: the object itself to allow chaining.
         """
@@ -272,7 +299,7 @@ class Job:
 
     @staticmethod
     def from_schedule(schedule, init_jobs=None):
-        """ Generate jobs from a schedule
+        """Generate jobs from a schedule
 
         If 'init_jobs' is None, then this list is constructed with job requests
         present in the schedule and their start_cratio at first segment related

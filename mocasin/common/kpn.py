@@ -35,8 +35,10 @@ class KpnProcess(object):
             assigned
         """
         if channel.source is not None:
-            raise RuntimeError('The channel %s is already connected to a '
-                               'source process!', channel.name)
+            raise RuntimeError(
+                "The channel %s is already connected to a " "source process!",
+                channel.name,
+            )
         channel.source = self
         self.outgoing_channels.append(channel)
 
@@ -103,7 +105,7 @@ class KpnGraph(object):
 
     def processes(self):
         return self._processes.values()
-    
+
     def process_names(self):
         return list(self._processes.keys())
 
@@ -113,27 +115,29 @@ class KpnGraph(object):
     def add_process(self, x):
         if x.name in self._processes:
             raise RuntimeError(
-                'Process %s was already added to the graph' % (x.name))
+                "Process %s was already added to the graph" % (x.name)
+            )
         self._processes[x.name] = x
 
     def add_channel(self, x):
         if x.name in self._channels:
             raise RuntimeError(
-                'Channel %s was already added to the graph' % (x.name))
+                "Channel %s was already added to the graph" % (x.name)
+            )
         self._channels[x.name] = x
 
     def sort(self):
         """Sort process list in topological order"""
         pass
 
-    def to_pydot(self,channels=True):
+    def to_pydot(self, channels=True):
         """Convert the KPN graph to a dot graph."""
-        dot = pydot.Dot(graph_type='digraph')
+        dot = pydot.Dot(graph_type="digraph")
 
         process_nodes = {}
 
         for p in self._processes.keys():
-            node = pydot.Node('process_' + p, label=p)
+            node = pydot.Node("process_" + p, label=p)
             process_nodes[p] = node
             dot.add_node(node)
 

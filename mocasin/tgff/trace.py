@@ -4,14 +4,14 @@
 # Authors: Felix Teweleit
 
 from mocasin.common.trace import TraceGenerator, TraceSegment
- 
+
+
 class TgffTraceGenerator(TraceGenerator):
-    """A trace generator based on the tgff representation.
-    """
-    
+    """A trace generator based on the tgff representation."""
+
     def __init__(self, processor_list, tgff_graph, repetition):
-        """ Initializes the generator
-    
+        """Initializes the generator
+
         :param processor_list: a list of all processors a
                                 trace is available for.
         :type processor_list: list[TgffProcessor]
@@ -25,28 +25,30 @@ class TgffTraceGenerator(TraceGenerator):
         self._trace_dict = {}
         self._tgff_graph = tgff_graph
         self._initialize_trace_dict(tgff_graph)
-    
+
     def next_segment(self, process_name, processor_type):
         """Returns the next trace segment
-        
-        :param process_name: the name of the specific process 
+
+        :param process_name: the name of the specific process
         :type process_name: string
         :param processor_type: the name of the executing processor
         :type processor_type: string
         """
-        
+
         if not process_name in self._trace_dict:
             raise RuntimeError("Unknown specified process!")
 
-        #if not processor_type < len(self._processor_list) and processor_type >= 0:
-            #raise RuntimeError("Unknown specified processor")
+        # if not processor_type < len(self._processor_list) and processor_type >= 0:
+        # raise RuntimeError("Unknown specified processor")
         if not processor_type in self._processor_list:
-            raise RuntimeError(f"Unknown processor type {processor_type}! Known are: {self._processor_list}")
+            raise RuntimeError(
+                f"Unknown processor type {processor_type}! Known are: {self._processor_list}"
+            )
 
         processor = self._processor_list[processor_type]
         process = self._trace_dict[process_name]
         segment = TraceSegment()
-        
+
         if process[0] == 0:
             segment.terminate = True
         else:
@@ -56,34 +58,43 @@ class TgffTraceGenerator(TraceGenerator):
                 return self.next_segment(process_name, processor_type)
             else:
                 trace_parameter = process[2][process[1]]
-                
-                if trace_parameter[0] == 'r':
+
+                if trace_parameter[0] == "r":
                     segment.n_tokens = 1
                     segment.read_from_channel = trace_parameter[1]
-                elif trace_parameter[0] == 'e':
-                    segment.processing_cycles = processor.get_operation(trace_parameter[1])
-                elif trace_parameter[0] == 'w':
+                elif trace_parameter[0] == "e":
+                    segment.processing_cycles = processor.get_operation(
+                        trace_parameter[1]
+                    )
+                elif trace_parameter[0] == "w":
                     segment.n_tokens = 1
                     segment.write_to_channel = trace_parameter[1]
-                
-                process[1] += 1                
-        
+
+                process[1] += 1
+
         return segment
-    
+
     def reset(self):
         """Resets the generator.
-        
-        This method resets the generator to its initial state. 
+
+        This method resets the generator to its initial state.
         Therefore it is not needed to instantiate a new generator
         if a trace has to be calculated twice.
         """
         self._trace_dict = {}
         self._initialize_trace_dict(self._tgff_graph)
-        
-    
+
     def _initialize_trace_dict(self, tgff_graph):
-        """Initializes an internal structure to keep track 
+        """Initializes an internal structure to keep track
         of the current status for each trace.
         """
         for task in tgff_graph.tasks:
-            self._trace_dict.update({task : [self._repetition, 0, tgff_graph.get_execution_order(task)]})
+            self._trace_dict.update(
+                {
+                    task: [
+                        self._repetition,
+                        0,
+                        tgff_graph.get_execution_order(task),
+                    ]
+                }
+            )

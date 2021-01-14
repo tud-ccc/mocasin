@@ -30,6 +30,7 @@ class ContextSwitchMode(Enum):
         useful to model protothreads. Process blocks/finishes -> schedule ->
         activate process
     """
+
     ALWAYS = 0
     AFTER_SCHEDULING = 1
     NEVER = 2
@@ -61,8 +62,15 @@ class RuntimeScheduler(object):
     :type current_process: RuntimeProcess
     """
 
-    def __init__(self, name, processor, context_switch_mode, scheduling_cycles,
-                 time_slice, system):
+    def __init__(
+        self,
+        name,
+        processor,
+        context_switch_mode,
+        scheduling_cycles,
+        time_slice,
+        system,
+    ):
         """Initialize a runtime scheduler.
 
         :param str name: the scheduler name
@@ -74,7 +82,7 @@ class RuntimeScheduler(object):
             scheduling decision
         :param system:  the runtime system this scheduler belongs to
         """
-        log.debug('Initialize new scheduler (%s)', name)
+        log.debug("Initialize new scheduler (%s)", name)
 
         self.name = name
         self._processor = processor
@@ -137,9 +145,11 @@ class RuntimeScheduler(object):
                     active_time += now - timestamp
             now = timestamp
         if not reached_stop and len(self._load_trace) == _MAX_DEQUE_LEN:
-            log.warn("Cannot calculate load accurately as the trace data is "
-                     "not long enough.")
-        return float(active_time)/float(time_frame)
+            log.warn(
+                "Cannot calculate load accurately as the trace data is "
+                "not long enough."
+            )
+        return float(active_time) / float(time_frame)
 
     def add_process(self, process):
         """Add a process to this scheduler.
@@ -150,10 +160,12 @@ class RuntimeScheduler(object):
         :param process: the process to be added
         :type process: RuntimeProcess
         """
-        self._log.debug('add process %s', process.full_name)
+        self._log.debug("add process %s", process.full_name)
         if not process.check_state(ProcessState.CREATED):
-            raise RuntimeError('Processes that are already started cannot be '
-                               'added to a scheduler')
+            raise RuntimeError(
+                "Processes that are already started cannot be "
+                "added to a scheduler"
+            )
         self._processes.append(process)
         process.ready.callbacks.append(self._cb_process_ready)
         process.finished.callbacks.append(self._cb_process_finished)
@@ -167,10 +179,12 @@ class RuntimeScheduler(object):
             ``event.value`` to be a valid RuntimeProcess object.
         """
         if not isinstance(event.value, RuntimeProcess):
-            raise ValueError('Expected a RuntimeProcess to be passed as value '
-                             'of the triggering event!')
+            raise ValueError(
+                "Expected a RuntimeProcess to be passed as value "
+                "of the triggering event!"
+            )
         process = event.value
-        if (process not in self._ready_queue):
+        if process not in self._ready_queue:
             self._ready_queue.append(process)
         process.ready.callbacks.append(self._cb_process_ready)
 
@@ -187,8 +201,10 @@ class RuntimeScheduler(object):
             ``event.value`` to be a valid RuntimeProcess object.
         """
         if not isinstance(event.value, RuntimeProcess):
-            raise ValueError('Expected a RuntimeProcess to be passed as value '
-                             'of the triggering event!')
+            raise ValueError(
+                "Expected a RuntimeProcess to be passed as value "
+                "of the triggering event!"
+            )
         process = event.value
         try:
             self._ready_queue.remove(process)
@@ -205,15 +221,16 @@ class RuntimeScheduler(object):
         :rtype: (RuntimeKpnProcess, int)
         """
         raise NotImplementedError(
-            'This method needs to be overridden by a subclass')
+            "This method needs to be overridden by a subclass"
+        )
 
     def run(self):
         log = self._log
 
-        log.debug('scheduler starts')
+        log.debug("scheduler starts")
 
         while True:
-            log.debug('run scheduling algorithm')
+            log.debug("run scheduling algorithm")
 
             cp = self.current_process
             np = self.schedule()
@@ -227,22 +244,25 @@ class RuntimeScheduler(object):
                 ticks = self._processor.ticks(self._scheduling_cycles)
                 yield self.env.timeout(ticks)
 
-                log.debug('schedule process %s next', np.full_name)
+                log.debug("schedule process %s next", np.full_name)
 
                 # pay for context switching
                 mode = self._context_switch_mode
                 if mode == ContextSwitchMode.ALWAYS:
-                    log.debug('load context of process %s', np.full_name)
+                    log.debug("load context of process %s", np.full_name)
                     ticks = self._processor.context_load_ticks()
                     yield self.env.timeout(ticks)
-                elif (mode == ContextSwitchMode.AFTER_SCHEDULING and
-                      np is not self.current_process):
+                elif (
+                    mode == ContextSwitchMode.AFTER_SCHEDULING
+                    and np is not self.current_process
+                ):
                     if cp is not None:
-                        log.debug('store the context of process %s',
-                                  cp.full_name)
+                        log.debug(
+                            "store the context of process %s", cp.full_name
+                        )
                         ticks = self._processor.context_store_ticks()
                         yield self.env.timeout(ticks)
-                    log.debug('load context of process %s', np.full_name)
+                    log.debug("load context of process %s", np.full_name)
                     ticks = self._processor.context_load_ticks()
                     yield self.env.timeout(ticks)
 
@@ -261,10 +281,12 @@ class RuntimeScheduler(object):
                 yield self.env.timeout(0)
                 # record the process activation in the simulation trace
                 if self._system.platform_trace_enabled:
-                    self.trace_writer.begin_duration(self._system.platform.name,
-                                                     self._processor.name,
-                                                     np.full_name,
-                                                     category="Schedule")
+                    self.trace_writer.begin_duration(
+                        self._system.platform.name,
+                        self._processor.name,
+                        np.full_name,
+                        category="Schedule",
+                    )
 
                 # execute the process workload
                 workload = self.env.process(self.current_process.workload())
@@ -280,27 +302,32 @@ class RuntimeScheduler(object):
                         # continuing
                         yield workload
                         assert not self.current_process.check_state(
-                            ProcessState.RUNNING)
+                            ProcessState.RUNNING
+                        )
                 else:
                     yield workload
 
                 # record the process halting in the simulation trace
                 if self._system.platform_trace_enabled:
-                    self.trace_writer.end_duration(self._system.platform.name,
-                                                   self._processor.name,
-                                                   np.full_name,
-                                                   category="Schedule")
+                    self.trace_writer.end_duration(
+                        self._system.platform.name,
+                        self._processor.name,
+                        np.full_name,
+                        category="Schedule",
+                    )
 
                 # pay for context switching
                 if self._context_switch_mode == ContextSwitchMode.ALWAYS:
-                    self._log.debug('store the context of process %s',
-                                    np.full_name)
+                    self._log.debug(
+                        "store the context of process %s", np.full_name
+                    )
                     yield self.env.timeout(
-                        self._processor.context_store_ticks())
+                        self._processor.context_store_ticks()
+                    )
             else:
                 # Wait for ready events if the scheduling algorithm did not
                 # find a process that is ready for execution
-                self._log.debug('There is no ready process -> sleep')
+                self._log.debug("There is no ready process -> sleep")
                 # Record the idle event in our internal load trace
                 if len(self._load_trace) == 0 or self._load_trace[0][1] == 1:
                     self._load_trace.appendleft((self.env.now, 0))
@@ -320,14 +347,16 @@ class DummyScheduler(RuntimeScheduler):
     before starting a new one.
     """
 
-    def __init__(self, name, processor, context_switch_mode, scheduling_cycles,
-                 env):
+    def __init__(
+        self, name, processor, context_switch_mode, scheduling_cycles, env
+    ):
         """Initialize a dummy scheduler
 
         Calls :func:`RuntimeScheduler.__init__`.
         """
-        super().__init__(name, processor, context_switch_mode,
-                         scheduling_cycles, None, env)
+        super().__init__(
+            name, processor, context_switch_mode, scheduling_cycles, None, env
+        )
 
     def schedule(self):
         """Perform the scheduling.
@@ -360,14 +389,16 @@ class FifoScheduler(RuntimeScheduler):
     Always schedules the process that became ready first
     """
 
-    def __init__(self, name, processor, context_switch_mode, scheduling_cycles,
-                 env):
+    def __init__(
+        self, name, processor, context_switch_mode, scheduling_cycles, env
+    ):
         """Initialize a FIFO scheduler
 
         Calls :func:`RuntimeScheduler.__init__`.
         """
-        super().__init__(name, processor, context_switch_mode,
-                         scheduling_cycles, None, env)
+        super().__init__(
+            name, processor, context_switch_mode, scheduling_cycles, None, env
+        )
 
     def schedule(self):
         """Perform the scheduling.
@@ -380,8 +411,9 @@ class FifoScheduler(RuntimeScheduler):
             # Schedule next ready process if no process was loaded before
             if len(self._ready_queue) > 0:
                 return self._ready_queue[0]
-        elif (cp.check_state(ProcessState.FINISHED) or
-              cp.check_state(ProcessState.BLOCKED)):
+        elif cp.check_state(ProcessState.FINISHED) or cp.check_state(
+            ProcessState.BLOCKED
+        ):
             # Schedule next ready process if current process finished or is
             # blocked
             if len(self._ready_queue) > 0:
@@ -395,33 +427,42 @@ class FifoScheduler(RuntimeScheduler):
 
 
 class RoundRobinScheduler(RuntimeScheduler):
-    """
-    """
-    def __init__(self, name, processor, context_switch_mode, scheduling_cycles,
-                 time_slice, env):
+    """"""
+
+    def __init__(
+        self,
+        name,
+        processor,
+        context_switch_mode,
+        scheduling_cycles,
+        time_slice,
+        env,
+    ):
         """Initialize a RoundRobin scheduler
 
         Calls :func:`RuntimeScheduler.__init__`.
         """
         if time_slice is None:
-            raise RuntimeError("time_slice must be defined for a RoundRobin "
-                               "scheduler")
-        super(RoundRobinScheduler, self).__init__(name,
-                                                  processor,
-                                                  context_switch_mode,
-                                                  scheduling_cycles,
-                                                  time_slice,
-                                                  env)
+            raise RuntimeError(
+                "time_slice must be defined for a RoundRobin " "scheduler"
+            )
+        super(RoundRobinScheduler, self).__init__(
+            name,
+            processor,
+            context_switch_mode,
+            scheduling_cycles,
+            time_slice,
+            env,
+        )
 
-        #status var, keeps track of position in process list
+        # status var, keeps track of position in process list
         self._queue_position = 0
 
     def schedule(self):
-        """Perform the scheduling.
-        """
+        """Perform the scheduling."""
         cp = self.current_process
 
-        #if current process is ready and not currently in ready queue append
+        # if current process is ready and not currently in ready queue append
         if cp is not None and cp.check_state(ProcessState.READY):
             if cp not in self._ready_queue:
                 self._ready_queue.append(cp)
@@ -436,7 +477,7 @@ class RoundRobinScheduler(RuntimeScheduler):
         stop_at = check_next
 
         while True:
-            #check if process is in ready queue and if so, return it
+            # check if process is in ready queue and if so, return it
             if self._processes[check_next] in self._ready_queue:
                 self._queue_position = check_next
                 return self._processes[check_next]
@@ -446,7 +487,7 @@ class RoundRobinScheduler(RuntimeScheduler):
             if check_next == stop_at:
                 break
 
-        #if no process is ready, we sleep and start at same position next time
+        # if no process is ready, we sleep and start at same position next time
         return None
 
 
@@ -463,21 +504,35 @@ def create_scheduler(name, processor, policy, env):
     Returns:
         RuntimeScheduler: a runtime scheduler object
     """
-    if policy.name == 'Dummy':
-        s = DummyScheduler(name, processor, ContextSwitchMode.NEVER,
-                           policy.scheduling_cycles, env)
-    if policy.name == 'FIFO':
-        s = FifoScheduler(name, processor, ContextSwitchMode.AFTER_SCHEDULING,
-                          policy.scheduling_cycles, env)
-    elif policy.name == 'RoundRobin':
-        s = RoundRobinScheduler(name, processor,
-                                ContextSwitchMode.AFTER_SCHEDULING,
-                                policy.scheduling_cycles,
-                                policy.time_slice,
-                                env)
+    if policy.name == "Dummy":
+        s = DummyScheduler(
+            name,
+            processor,
+            ContextSwitchMode.NEVER,
+            policy.scheduling_cycles,
+            env,
+        )
+    if policy.name == "FIFO":
+        s = FifoScheduler(
+            name,
+            processor,
+            ContextSwitchMode.AFTER_SCHEDULING,
+            policy.scheduling_cycles,
+            env,
+        )
+    elif policy.name == "RoundRobin":
+        s = RoundRobinScheduler(
+            name,
+            processor,
+            ContextSwitchMode.AFTER_SCHEDULING,
+            policy.scheduling_cycles,
+            policy.time_slice,
+            env,
+        )
     else:
         raise NotImplementedError(
-            'The simulation module does not implement the %s scheduling '
-            'policy' % (policy.name))
+            "The simulation module does not implement the %s scheduling "
+            "policy" % (policy.name)
+        )
 
     return s

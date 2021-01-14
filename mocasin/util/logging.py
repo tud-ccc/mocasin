@@ -17,12 +17,7 @@ import copy
 from termcolor import colored
 
 
-COLORS = {
-    'INFO': 'green',
-    'WARNING': 'yellow',
-    'ERROR': 'red',
-    'DEBUG': 'blue'
-}
+COLORS = {"INFO": "green", "WARNING": "yellow", "ERROR": "red", "DEBUG": "blue"}
 """Maps logging levels to colors"""
 
 
@@ -76,27 +71,28 @@ class MocasinFormatter(l.Formatter):
         # make sure not to modify the original record object
         record = copy.deepcopy(record)
         # add brackets
-        levelname = '[%s]' % record.levelname
+        levelname = "[%s]" % record.levelname
         # fill with spaces
-        levelname = '%-9s' % levelname
+        levelname = "%-9s" % levelname
         # colorize
         if self._use_color:
             if record.levelname in COLORS:
                 color = COLORS[record.levelname]
             else:
-                color = 'red'
-            levelname = colored(levelname, color, attrs=['bold'])
-            record.name = colored(record.name, 'cyan')
+                color = "red"
+            levelname = colored(levelname, color, attrs=["bold"])
+            record.name = colored(record.name, "cyan")
         record.levelname = levelname
 
         global _indent_level
         if _indent_level > 0:
-            indent_string = '%s* ' % (' ' * _indent_level * 2)
+            indent_string = "%s* " % (" " * _indent_level * 2)
             record.msg = indent_string + record.msg
 
         # ensure that multiline messages are properly indented
-        record.msg = record.msg.replace('\n', '\n%s' % (
-            ' ' * (10 + _indent_level * 2)))
+        record.msg = record.msg.replace(
+            "\n", "\n%s" % (" " * (10 + _indent_level * 2))
+        )
 
         return super().format(record)
 

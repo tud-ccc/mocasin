@@ -7,8 +7,11 @@
 import pint
 
 from mocasin.util import logging
-from mocasin.common.mapping import (ChannelMappingInfo, Mapping,
-                                  ProcessMappingInfo)
+from mocasin.common.mapping import (
+    ChannelMappingInfo,
+    Mapping,
+    ProcessMappingInfo,
+)
 from mocasin.slx.mapping import slxmapping
 
 
@@ -24,7 +27,8 @@ class SlxMapper:
     calling the generate_mapping method.  This implements the common mapper
     interface.
     """
-    def __init__(self, kpn, platform,trace,representation, xml_file=None):
+
+    def __init__(self, kpn, platform, trace, representation, xml_file=None):
         self.mapping = SlxMapping(kpn, platform, xml_file)
 
     def generate_mapping(self):
@@ -32,11 +36,10 @@ class SlxMapper:
 
 
 class SlxMapping(Mapping):
-
     def __init__(self, kpn, platform, xml_file):
         super().__init__(kpn, platform)
 
-        log.info('Start parsing the SLX mapping ' + xml_file)
+        log.info("Start parsing the SLX mapping " + xml_file)
 
         # load the xml
         with open(xml_file) as f:
@@ -57,12 +60,15 @@ class SlxMapping(Mapping):
             p_name = xp.ProcessorAffinityRef[0].processor
             processor = platform.find_processor(p_name)
             priority = int(xp.priority)
-            info = ProcessMappingInfo(process_scheduler[name], processor,
-                                      priority)
+            info = ProcessMappingInfo(
+                process_scheduler[name], processor, priority
+            )
             self._process_info[name] = info
-            log.debug('map process %s to scheduler %s and affinity %s '
-                      '(priority: %d)' % (name, process_scheduler[name].name,
-                                          p_name, priority))
+            log.debug(
+                "map process %s to scheduler %s and affinity %s "
+                "(priority: %d)"
+                % (name, process_scheduler[name].name, p_name, priority)
+            )
 
         # parse channels
         for xc in xml_mapping.Channel:
@@ -70,10 +76,12 @@ class SlxMapping(Mapping):
             prim = platform.find_primitive(xc.commPrimitive)
             info = ChannelMappingInfo(prim, capacity)
             self._channel_info[xc.id] = info
-            log.debug('map channel %s to primitive %s and bound to %s tokens'
-                      % (xc.id, prim.name, capacity))
+            log.debug(
+                "map channel %s to primitive %s and bound to %s tokens"
+                % (xc.id, prim.name, capacity)
+            )
 
-        log.info('Done parsing the SLX mapping')
+        log.info("Done parsing the SLX mapping")
 
     def export(self, file_name):
         export_slx_mapping(self, file_name)
@@ -81,7 +89,7 @@ class SlxMapping(Mapping):
 
 def export_slx_mapping(mapping, file_name):
     xml_mapping = slxmapping.MappingType()
-    xml_mapping.version = '1.0'
+    xml_mapping.version = "1.0"
     xml_mapping.platformName = mapping.kpn.name
     xml_mapping.applicationName = mapping.platform.name
 
@@ -150,7 +158,7 @@ def export_slx_mapping(mapping, file_name):
 
         xml_mapping.Scheduler.append(xml_scheduler)
 
-    with open(file_name, 'w+') as f:
-        dom = xml_mapping.toDOM(element_name='slxmapping:Mapping')
+    with open(file_name, "w+") as f:
+        dom = xml_mapping.toDOM(element_name="slxmapping:Mapping")
         f.write(dom.toprettyxml())
-        log.info('wrote %s', file_name)
+        log.info("wrote %s", file_name)

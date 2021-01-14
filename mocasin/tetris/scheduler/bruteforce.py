@@ -4,9 +4,14 @@
 # Authors: Robert Khasanov
 
 from mocasin.tetris.job_state import Job
-from mocasin.tetris.schedule import (Schedule, MultiJobSegmentMapping,
-                                   SingleJobSegmentMapping, MAX_END_GAP,
-                                   ENERGY_EPS, TIME_EPS)
+from mocasin.tetris.schedule import (
+    Schedule,
+    MultiJobSegmentMapping,
+    SingleJobSegmentMapping,
+    MAX_END_GAP,
+    ENERGY_EPS,
+    TIME_EPS,
+)
 from mocasin.tetris.scheduler import SchedulerBase
 
 from collections import Counter
@@ -19,8 +24,7 @@ log = logging.getLogger(__name__)
 
 
 def _is_better_eu(a, b):
-    """ Compare two schedules in terms of Energy-Utility Functions.
-    """
+    """Compare two schedules in terms of Energy-Utility Functions."""
     if b is None:
         return True
     if a.energy < b.energy - ENERGY_EPS:
@@ -33,10 +37,14 @@ def _is_better_eu(a, b):
 
 
 def get_jobs_bc_energy(jobs):
-    """ Returns the best energy of job lists.
-    """
-    return sum([(1.0 - j.cratio) * j.request.get_min_energy() for j in jobs
-                if not j.is_terminated()])
+    """Returns the best energy of job lists."""
+    return sum(
+        [
+            (1.0 - j.cratio) * j.request.get_min_energy()
+            for j in jobs
+            if not j.is_terminated()
+        ]
+    )
 
 
 class BruteforceSegmentGenerator:
@@ -57,12 +65,14 @@ class BruteforceSegmentGenerator:
             )
 
     def __eval_min_segment_duration(self):
-        """Evaluate minimal segment duration.
-        """
-        return min([
-            mapping.metadata.exec_time * (1.0 - job.cratio)
-            for job in self.__jobs for mapping in job.request.mappings
-        ])
+        """Evaluate minimal segment duration."""
+        return min(
+            [
+                mapping.metadata.exec_time * (1.0 - job.cratio)
+                for job in self.__jobs
+                for mapping in job.request.mappings
+            ]
+        )
 
     def __eval_core_energy_usage(self, current_mappings):
         """Evaluate the energy and used processors types of assigned mappings.
@@ -86,14 +96,16 @@ class BruteforceSegmentGenerator:
                 rratio = 1.0 - cratio
                 config_rem_time = mapping.metadata.exec_time * rratio
                 assert config_rem_time > self.__min_segment_duration - TIME_EPS
-                energy += (mapping.metadata.energy *
-                           self.__min_segment_duration /
-                           mapping.metadata.exec_time)
+                energy += (
+                    mapping.metadata.energy
+                    * self.__min_segment_duration
+                    / mapping.metadata.exec_time
+                )
                 core_types.update(mapping.get_used_processor_types())
         return (core_types, energy)
 
     def __form_schedule_segment(self, job_mappings):
-        """ Construct a schedule segment out of job mappings.
+        """Construct a schedule segment out of job mappings.
 
         Args:
             job_mappings (list of Mapping): The list of job mappings.
@@ -108,10 +120,12 @@ class BruteforceSegmentGenerator:
         # Calculate segment end time
         jobs_rem_time = [
             m.metadata.exec_time * (1.0 - j.cratio)
-            for j, m in zip(self.__jobs, job_mappings) if m is not None
+            for j, m in zip(self.__jobs, job_mappings)
+            if m is not None
         ]
         segment_duration = max(
-            [t for t in jobs_rem_time if t < min(jobs_rem_time) + MAX_END_GAP])
+            [t for t in jobs_rem_time if t < min(jobs_rem_time) + MAX_END_GAP]
+        )
         segment_end_time = segment_duration + self.__segment_start_time
         assert segment_duration > self.__min_segment_duration - TIME_EPS
 
@@ -120,19 +134,25 @@ class BruteforceSegmentGenerator:
         for j, m in zip(self.__jobs, job_mappings):
             if m is not None:
                 ssm = SingleJobSegmentMapping(
-                    j.request, m, start_time=self.__segment_start_time,
-                    start_cratio=j.cratio, end_time=segment_end_time)
+                    j.request,
+                    m,
+                    start_time=self.__segment_start_time,
+                    start_cratio=j.cratio,
+                    end_time=segment_end_time,
+                )
                 job_segments.append(ssm)
 
         # Construct a schedule segment
-        new_segment = MultiJobSegmentMapping(self.scheduler.platform,
-                                             job_segments)
+        new_segment = MultiJobSegmentMapping(
+            self.scheduler.platform, job_segments
+        )
         new_segment.verify(only_counters=not self.scheduler.rotations)
         return new_segment
 
-    def _rotate_mappings_step(self, init_mappings, rotated_mappings,
-                              all_variants):
-        """ A step of rotate mappings algorithm.
+    def _rotate_mappings_step(
+        self, init_mappings, rotated_mappings, all_variants
+    ):
+        """A step of rotate mappings algorithm.
 
         Returns: whether it found at least one valid rotation.
         """
@@ -150,25 +170,32 @@ class BruteforceSegmentGenerator:
             variants = [mapping]
         else:
             variants = self.scheduler.orbit_lookup_manager.get_orbit(
-                job.app, mapping)
-        used_cores = reduce(set.union, [
-            m.get_used_processors() for m in rotated_mappings if m is not None
-        ], set())
+                job.app, mapping
+            )
+        used_cores = reduce(
+            set.union,
+            [
+                m.get_used_processors()
+                for m in rotated_mappings
+                if m is not None
+            ],
+            set(),
+        )
         found = False
         for m in variants:
             if m is not None:
                 if m.get_used_processors().intersection(used_cores):
                     continue
-            if self._rotate_mappings_step(init_mappings,
-                                          rotated_mappings + [m],
-                                          all_variants):
+            if self._rotate_mappings_step(
+                init_mappings, rotated_mappings + [m], all_variants
+            ):
                 found = True
             if not all_variants and found:
                 return True
         return found
 
     def _rotate_mappings(self, init_mappings, all_variants=False):
-        """ Find equivalent non-overlaping mappings for given one.
+        """Find equivalent non-overlaping mappings for given one.
 
         If all_variants is true, the function returns all possible valid
         rotations, otherwise it returns at most one rotation.
@@ -188,7 +215,7 @@ class BruteforceSegmentGenerator:
         return result
 
     def __form_segment_variants(self, init_mappings):
-        """ Construct schedule segment variants given the mappings.
+        """Construct schedule segment variants given the mappings.
 
         Args:
             mappings (list of Mapping): The list of job mappings.
@@ -199,15 +226,18 @@ class BruteforceSegmentGenerator:
         # This is determined, by whether there is any idle jobs with already
         # specified mapping.
         if not self.scheduler.migrations:
-            all_variants = any(m is None and j.last_mapping is not None
-                               for j, m in zip(self.__jobs, init_mappings))
+            all_variants = any(
+                m is None and j.last_mapping is not None
+                for j, m in zip(self.__jobs, init_mappings)
+            )
         else:
             all_variants = False
 
         # 2. Rotate mappings
         if self.scheduler.rotations:
             mappings_variants = self._rotate_mappings(
-                init_mappings, all_variants=all_variants)
+                init_mappings, all_variants=all_variants
+            )
         else:
             mappings_variants = [init_mappings]
 
@@ -223,8 +253,10 @@ class BruteforceSegmentGenerator:
 
             # Generate the job states at the end of the segment
             njobs = [
-                x for x in Job.from_schedule(Schedule(self.platform, segment),
-                                             self.__jobs)
+                x
+                for x in Job.from_schedule(
+                    Schedule(self.platform, segment), self.__jobs
+                )
                 if not x.is_terminated()
             ]
 
@@ -238,7 +270,7 @@ class BruteforceSegmentGenerator:
             self.__results.append((new_schedule, njobs))
 
     def __schedule_step(self, current_mappings):
-        """ Perform a single step of the bruteforce algorithm.
+        """Perform a single step of the bruteforce algorithm.
 
         Args:
             current_mappings (list): list of the chosen mappings for jobs.
@@ -266,9 +298,14 @@ class BruteforceSegmentGenerator:
             self.__schedule_step(current_mappings + [mapping])
 
     # TODO: Remove prev_schedule
-    def generate_segments(self, jobs, segment_start_time=0.0,
-                          accumulated_energy=0.0, prev_schedule=None):
-        """ Schedule the jobs.
+    def generate_segments(
+        self,
+        jobs,
+        segment_start_time=0.0,
+        accumulated_energy=0.0,
+        prev_schedule=None,
+    ):
+        """Schedule the jobs.
 
         Args:
             jobs (list of JobState): a list of jobs
@@ -286,7 +323,9 @@ class BruteforceSegmentGenerator:
                 continue
             log.warning(
                 "Removing job with a state {} from a job list: {}".format(
-                    j.state, j.to_str()))
+                    j.state, j.to_str()
+                )
+            )
 
         if len(_jobs) == 0:
             log.warning("No job to schedule")
@@ -324,8 +363,7 @@ class ScheduleHeap:
 
     @staticmethod
     def _key(schedule, jobs):
-        """ Returns a tuple: (-#finished_jobs, bc_energy, -end_time).
-        """
+        """Returns a tuple: (-#finished_jobs, bc_energy, -end_time)."""
         f = schedule.count_finished_jobs()
         full_bc_energy = schedule.energy + get_jobs_bc_energy(jobs)
         end_time = schedule.end_time
@@ -358,10 +396,12 @@ class ScheduleHeap:
         return res
 
     def _get_min_bc_energy(self):
-        return min([
-            schedule.energy + get_jobs_bc_energy(jobs)
-            for _, _, (schedule, jobs) in self._data
-        ])
+        return min(
+            [
+                schedule.energy + get_jobs_bc_energy(jobs)
+                for _, _, (schedule, jobs) in self._data
+            ]
+        )
 
 
 class BruteforceScheduler(SchedulerBase):
@@ -384,9 +424,10 @@ class BruteforceScheduler(SchedulerBase):
     def __register_best_schedule(self, m):
         self.__best_schedule = m
         self.__best_energy = m.energy
-        log.debug("Found new best schedule: energy = {}".format(
-            self.__best_energy))
-        log.debug("New schedule: \n" + self.__best_schedule.to_str() + '\n')
+        log.debug(
+            "Found new best schedule: energy = {}".format(self.__best_energy)
+        )
+        log.debug("New schedule: \n" + self.__best_schedule.to_str() + "\n")
         pass
 
     def _energy_limit(self):
@@ -424,8 +465,13 @@ class BruteforceScheduler(SchedulerBase):
                     "step_cnt = {}, heap_size = {}, "
                     "found_best_energy = {:.3f}, heap_bc_energy = {:.3f}, "
                     "distr_by_finished = {}".format(
-                        step_counter, len(schedule_heap), self.__best_energy,
-                        schedule_heap._get_min_bc_energy(), finished_distr))
+                        step_counter,
+                        len(schedule_heap),
+                        self.__best_energy,
+                        schedule_heap._get_min_bc_energy(),
+                        finished_distr,
+                    )
+                )
             step_counter += 1
 
             cschedule, cjobs = schedule_heap.pop()
@@ -439,15 +485,19 @@ class BruteforceScheduler(SchedulerBase):
 
             # print("current_jobs", [j.to_str() for j in current_jobs])
             results = self.__segment_generator.generate_segments(
-                cjobs, segment_start_time=cstart_time,
-                accumulated_energy=cschedule.energy, prev_schedule=cschedule)
+                cjobs,
+                segment_start_time=cstart_time,
+                accumulated_energy=cschedule.energy,
+                prev_schedule=cschedule,
+            )
             # print("#segments:", len(segments))
 
             for nsegment, njobs in results:
                 # Check whether all jobs are finished
                 all_jobs_finished = all(
                     nsegment.is_request_completed(j.request)
-                    for j in self.__jobs)
+                    for j in self.__jobs
+                )
                 if all_jobs_finished:
                     if _is_better_eu(nsegment, self.__best_schedule):
                         self.__register_best_schedule(nsegment)

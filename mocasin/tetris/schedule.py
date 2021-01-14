@@ -22,7 +22,6 @@ from collections import Counter
 from functools import reduce
 import itertools
 import logging
-import math
 
 ENERGY_EPS = 0.00001
 TIME_EPS = 0.00001
@@ -54,13 +53,24 @@ class SingleJobSegmentMapping:
         finished (bool): Whether application finished its execution during this
             segment.
     """
-    def __init__(self, job_request, mapping, start_time=0.0, start_cratio=0.0,
-                 end_time=None, end_cratio=None, finished=False):
+
+    def __init__(
+        self,
+        job_request,
+        mapping,
+        start_time=0.0,
+        start_cratio=0.0,
+        end_time=None,
+        end_cratio=None,
+        finished=False,
+    ):
         assert isinstance(job_request, JobRequestInfo)
         assert isinstance(mapping, Mapping)
-        assert isinstance(start_time, (int, float)), (
-            "Start_time is of type {}, but must be float or int".format(
-                type(start_time)))
+        assert isinstance(
+            start_time, (int, float)
+        ), "Start_time is of type {}, but must be float or int".format(
+            type(start_time)
+        )
         assert isinstance(start_cratio, float)
 
         self.__request = job_request
@@ -75,27 +85,30 @@ class SingleJobSegmentMapping:
         self.__energy = None
 
         if end_time is not None:
-            assert end_cratio is None and not finished, (
-                "Only one argument must be set: end_time, end_cratio, finished"
-            )
+            assert (
+                end_cratio is None and not finished
+            ), "Only one argument must be set: end_time, end_cratio, finished"
             self.__init_by_end_time(end_time)
         elif end_cratio is not None:
-            assert end_time is None and not finished, (
-                "Only one argument must be set: end_time, end_cratio, finished"
-            )
+            assert (
+                end_time is None and not finished
+            ), "Only one argument must be set: end_time, end_cratio, finished"
             self.__init_by_end_cratio(end_cratio)
         elif finished:
-            assert end_cratio is None and end_time is None, (
-                "Only one argument must be set: end_time, end_cratio, finished"
-            )
+            assert (
+                end_cratio is None and end_time is None
+            ), "Only one argument must be set: end_time, end_cratio, finished"
             self.__init_finished()
 
     def __init_by_end_time(self, end_time):
-        assert end_time >= self.__start_time, (
-            "end_time ({}) must be greater or equal then start_time ({})"
-            .format(end_time, self.__start_time))
-        full_rem_time = self.mapping.metadata.exec_time * (1. -
-                                                           self.__start_cratio)
+        assert (
+            end_time >= self.__start_time
+        ), "end_time ({}) must be greater or equal then start_time ({})".format(
+            end_time, self.__start_time
+        )
+        full_rem_time = self.mapping.metadata.exec_time * (
+            1.0 - self.__start_cratio
+        )
         segment_time = end_time - self.__start_time
         if full_rem_time <= segment_time + TIME_EPS:
             self.__end_time = self.__start_time + full_rem_time
@@ -104,8 +117,9 @@ class SingleJobSegmentMapping:
         else:
             self.__end_time = end_time
             self.__end_cratio = (
-                self.__start_cratio +
-                segment_time / self.mapping.metadata.exec_time)
+                self.__start_cratio
+                + segment_time / self.mapping.metadata.exec_time
+            )
             self.__finished = False
         cratio = self.__end_cratio - self.__start_cratio
         self.__energy = self.mapping.metadata.energy * cratio
@@ -116,7 +130,7 @@ class SingleJobSegmentMapping:
         rem_time = self.mapping.exec_time * cratio
         self.__end_time = self.__start_time + rem_time
         self.__end_cratio = end_cratio
-        self.__finished = (end_cratio == 1.0)
+        self.__finished = end_cratio == 1.0
         self.__energy = self.mapping.energy * cratio
 
     def __init_finished(self):
@@ -192,37 +206,47 @@ class SingleJobSegmentMapping:
         if self.finished and self.end_cratio < 1.0:
             log.critical(
                 "Inconsistent finished ({}) and end_cratio values ({})".format(
-                    self.finished, self.end_cratio))
+                    self.finished, self.end_cratio
+                )
+            )
             assert False
 
     def to_str(self):
         cores = self.mapping.get_used_processors()
         cores_str = "{{{}}}".format(", ".join(sorted([x.name for x in cores])))
         core_types = self.mapping.get_used_processor_types()
-        core_types_str = ", ".join([
-            "{}: {}".format(ty, count)
-            for ty, count in sorted(core_types.items())
-        ])
+        core_types_str = ", ".join(
+            [
+                "{}: {}".format(ty, count)
+                for ty, count in sorted(core_types.items())
+            ]
+        )
         job_str = "Job: {} ".format(self.app.name)
         mapping_str = "mapping: {} [{} | t={:.3f} e={:.3f}]".format(
-            cores_str, core_types_str, self.mapping.metadata.exec_time,
-            self.mapping.metadata.energy)
-        start_str = "start = {0:.3f} [{1:.2f}]".format(self.start_time,
-                                                       self.start_cratio)
+            cores_str,
+            core_types_str,
+            self.mapping.metadata.exec_time,
+            self.mapping.metadata.energy,
+        )
+        start_str = "start = {0:.3f} [{1:.2f}]".format(
+            self.start_time, self.start_cratio
+        )
         if self.finished:
             f_str = "F"
         else:
             f_str = ""
-        end_str = "end = {:.3f} [{:.2f}{}]".format(self.end_time,
-                                                   self.end_cratio, f_str)
+        end_str = "end = {:.3f} [{:.2f}{}]".format(
+            self.end_time, self.end_cratio, f_str
+        )
         energy_str = "energy = {:.3f}".format(self.energy)
-        res_str = "{}, {}, {}, {}, {}".format(job_str, start_str, end_str,
-                                              energy_str, mapping_str)
+        res_str = "{}, {}, {}, {}, {}".format(
+            job_str, start_str, end_str, energy_str, mapping_str
+        )
         return res_str
 
 
 class MultiJobSegmentMapping:
-    """ Multiple Job Segment Mapping.
+    """Multiple Job Segment Mapping.
 
     This class contains the job's mappings active in a schedule segment.
 
@@ -231,6 +255,7 @@ class MultiJobSegmentMapping:
         jobs (:obj:`list` of :obj:`SingleJobSegmentMapping`): A list of
             SingleJobSegmentMapping objects
     """
+
     def __init__(self, platform, jobs=[]):
         self.platform = platform
         self.__time_range = (None, None)
@@ -276,22 +301,27 @@ class MultiJobSegmentMapping:
         return res
 
     def verify(self, only_counters=False):
-        """ Verify that MultiJobSegmentMapping in a consistent stay.
-        """
+        """Verify that MultiJobSegmentMapping in a consistent stay."""
         failed = False
         # All JobSegmentMappings should have the same time range
         for j in self.__jobs:
             j.verify()
             if abs(self.start_time - j.start_time) > TIME_EPS:
                 log.error(
-                    "Job start_time does not equal segment start_time: {}"
-                    .format(j.to_str()))
+                    "Job start_time does not equal segment start_time: {}".format(
+                        j.to_str()
+                    )
+                )
                 failed = True
-            if (self.end_time - j.end_time > MAX_END_GAP
-                    or j.end_time - self.end_time > TIME_EPS):
+            if (
+                self.end_time - j.end_time > MAX_END_GAP
+                or j.end_time - self.end_time > TIME_EPS
+            ):
                 log.error(
-                    "Job start_time does not equal segment start_time: {}"
-                    .format(j.to_str()))
+                    "Job start_time does not equal segment start_time: {}".format(
+                        j.to_str()
+                    )
+                )
                 failed = True
 
         # Check that there are enough processors
@@ -300,7 +330,8 @@ class MultiJobSegmentMapping:
             cores_total = self.platform.get_processor_types()
             if (cores_used | cores_total) != cores_total:
                 log.error(
-                    "Not enough available processors for a schedule segment")
+                    "Not enough available processors for a schedule segment"
+                )
                 failed = True
         else:
             for j1, j2 in itertools.combinations(self.jobs(), r=2):
@@ -308,12 +339,16 @@ class MultiJobSegmentMapping:
                 j2_cores = j2.mapping.get_used_processors()
                 if j1_cores.intersection(j2_cores):
                     log.error(
-                        f"Some jobs share the jobs: {j1_cores}, {j2_cores}")
+                        f"Some jobs share the jobs: {j1_cores}, {j2_cores}"
+                    )
                     failed = True
 
         if failed:
-            log.error("Some errors found in a segment schedule: {}".format(
-                self.to_str()))
+            log.error(
+                "Some errors found in a segment schedule: {}".format(
+                    self.to_str()
+                )
+            )
             assert False
 
     def __iter__(self):
@@ -338,15 +373,17 @@ class MultiJobSegmentMapping:
 
     def get_used_processors(self):
         """ Returns the set of used processors. """
-        return reduce(set.union,
-                      [x.mapping.get_used_processors() for x in self.jobs()])
+        return reduce(
+            set.union, [x.mapping.get_used_processors() for x in self.jobs()]
+        )
 
     def get_used_processor_types(self):
         """Counter: Number of used cores per type."""
         used_procs = reduce(
             (lambda x, y: x + y),
             [x.mapping.get_used_processor_types() for x in self.jobs()],
-            Counter())
+            Counter(),
+        )
         return used_procs
 
     def split(self, time):
@@ -360,29 +397,41 @@ class MultiJobSegmentMapping:
         """
         assert time < self.end_time and self.start_time < time, (
             "Trying to split a segment at time {}, which is outside of"
-            " the segment time range [{}, {})".format(time, self.start_time,
-                                                      self.end_time))
+            " the segment time range [{}, {})".format(
+                time, self.start_time, self.end_time
+            )
+        )
 
         m1 = MultiJobSegmentMapping(self.platform)
         m2 = MultiJobSegmentMapping(self.platform)
         for jm in self:
-            jm1 = SingleJobSegmentMapping(jm.request, jm.mapping,
-                                          start_time=jm.start_time,
-                                          start_cratio=jm.start_cratio,
-                                          end_time=time)
+            jm1 = SingleJobSegmentMapping(
+                jm.request,
+                jm.mapping,
+                start_time=jm.start_time,
+                start_cratio=jm.start_cratio,
+                end_time=time,
+            )
             m1.append_job(jm1)
             if jm1.finished:
                 continue
-            jm2 = SingleJobSegmentMapping(jm.request, jm.mapping,
-                                          start_time=time,
-                                          start_cratio=jm1.end_cratio,
-                                          end_time=jm.end_time)
+            jm2 = SingleJobSegmentMapping(
+                jm.request,
+                jm.mapping,
+                start_time=time,
+                start_cratio=jm1.end_cratio,
+                end_time=jm.end_time,
+            )
             m2.append_job(jm2)
         return m1, m2
 
     def to_str(self):
-        res = ("Schedule segment: [{:.3f}, {:.3f}), energy: {:.3f}".format(
-            self.start_time, self.end_time, self.energy) + "\n")
+        res = (
+            "Schedule segment: [{:.3f}, {:.3f}), energy: {:.3f}".format(
+                self.start_time, self.end_time, self.energy
+            )
+            + "\n"
+        )
         for sm in self:
             res += "  " + sm.to_str() + "\n"
         return res
@@ -394,6 +443,7 @@ class Schedule:
     The schedule is represented as a list of schedule segments, which in turn
     are represented as the list of individual job mappings.
     """
+
     def __init__(self, platform, segments=[]):
         assert isinstance(platform, Platform)
         self.platform = platform
@@ -455,7 +505,8 @@ class Schedule:
         copy_segments = []
         for segment in self.__segments:
             copy_segments.append(
-                MultiJobSegmentMapping(segment.platform, segment.jobs()))
+                MultiJobSegmentMapping(segment.platform, segment.jobs())
+            )
 
         return Schedule(self.platform, copy_segments)
 
@@ -498,13 +549,19 @@ class Schedule:
         for left, right in zip(s0, s1):
             if abs(left.end_time - right.start_time) > TIME_EPS:
                 failed = True
-                log.error("The segment is not aligned with the end of "
-                          "the previous segment:\n{}\n{}".format(
-                              left.to_str(), right.to_str()))
+                log.error(
+                    "The segment is not aligned with the end of "
+                    "the previous segment:\n{}\n{}".format(
+                        left.to_str(), right.to_str()
+                    )
+                )
 
         if failed:
-            log.error("Some errors found in a segment schedule: {}".format(
-                self.to_str()))
+            log.error(
+                "Some errors found in a segment schedule: {}".format(
+                    self.to_str()
+                )
+            )
             assert False
 
     def to_str(self, verbose=False):
@@ -517,17 +574,23 @@ class Schedule:
 
         If verbose is True, it also returns the information of job segment mappings.
         """
-        res = (f"Schedule t:({self.start_time:.3f}, {self.end_time:.3f}), "
-               f"e:{self.energy:.3f}\n")
+        res = (
+            f"Schedule t:({self.start_time:.3f}, {self.end_time:.3f}), "
+            f"e:{self.energy:.3f}\n"
+        )
         for segment in self:
             res += f"    [t:({segment.start_time:.3f}, {segment.end_time:.3f}),"
             res += f" {len(segment)} job"
             if len(segment) > 1:
                 res += "s"
-            core_types_str = ", ".join([
-                f"{ty}: {count}" for ty, count in sorted(
-                    segment.get_used_processor_types().items())
-            ])
+            core_types_str = ", ".join(
+                [
+                    f"{ty}: {count}"
+                    for ty, count in sorted(
+                        segment.get_used_processor_types().items()
+                    )
+                ]
+            )
             res += f", PEs: [{core_types_str}], e:{segment.energy:.3f}]\n"
             if verbose:
                 for job in segment:
@@ -538,7 +601,7 @@ class Schedule:
         return sum([ms[-1].finished for _, ms in self.per_requests().items()])
 
     def per_requests(self, none_as_idle=False):
-        """ Returns a dict of 'JobRequestInfo' objects involved in the schedule
+        """Returns a dict of 'JobRequestInfo' objects involved in the schedule
         with the list of 'SingleJobSegmentMapping' objects. If 'none_as_idle' is
         true, add None values for the segment where the job was idle or finished.
         """
@@ -559,8 +622,7 @@ class Schedule:
         return res
 
     def find_request_segments(self, request):
-        """Returns a list of job segment mappings for of specific job request.
-        """
+        """Returns a list of job segment mappings for of specific job request."""
         res = []
         for segment in self:
             for j in segment:
@@ -592,7 +654,7 @@ class Schedule:
         return False
 
     def get_job_mappings(self):
-        """ Returns the pairs of jobs and used mappings during the schedule.
+        """Returns the pairs of jobs and used mappings during the schedule.
 
         The mappings are given without time ranges, and duplications. The order
         of the mappings is undefined, though implemented in the order appeared
@@ -610,7 +672,8 @@ class Schedule:
                 # Check that it is not already included:
                 already_included = any(
                     rep.toRepresentation(m) == mapping_vect
-                    for m in job_mapping_list)
+                    for m in job_mapping_list
+                )
                 if already_included:
                     continue
                 job_mapping_list.append(segment.mapping)

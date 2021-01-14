@@ -135,8 +135,9 @@ class RuntimeProcess(object):
 
         # record the process creation int the simulation trace
         if self.app.system.app_trace_enabled:
-            self.trace_writer.begin_duration(self.app.name, self.name,
-                                             'CREATED', category="Process")
+            self.trace_writer.begin_duration(
+                self.app.name, self.name, "CREATED", category="Process"
+            )
 
     @property
     def env(self):
@@ -164,19 +165,22 @@ class RuntimeProcess(object):
         """
         if not hasattr(ProcessState, state_name):
             raise RuntimeError(
-                'Tried to transition to an invalid state (%s)' % (state_name))
+                "Tried to transition to an invalid state (%s)" % (state_name)
+            )
 
         event_name = state_name.lower()
-        cb_name = '_cb_' + state_name.lower()
+        cb_name = "_cb_" + state_name.lower()
         assert hasattr(self, event_name)
         assert hasattr(self, cb_name)
 
         # record the transition in the simulation trace
         if self.app.system.app_trace_enabled:
-            self.trace_writer.end_duration(self.app.name, self.name,
-                                           self._state.name, category="Process")
-            self.trace_writer.begin_duration(self.app.name, self.name,
-                                             state_name, category="Process")
+            self.trace_writer.end_duration(
+                self.app.name, self.name, self._state.name, category="Process"
+            )
+            self.trace_writer.begin_duration(
+                self.app.name, self.name, state_name, category="Process"
+            )
 
         # update the state
         self._state = getattr(ProcessState, state_name)
@@ -185,7 +189,7 @@ class RuntimeProcess(object):
         old_event.succeed(self)
 
         new_event = self.env.event()
-        new_event.callbacks.append(getattr(self, '_cb_' + event_name))
+        new_event.callbacks.append(getattr(self, "_cb_" + event_name))
         setattr(self, event_name, new_event)
 
     def check_state(self, state):
@@ -211,10 +215,10 @@ class RuntimeProcess(object):
         Raises:
             AssertionError: if not in :const:`ProcessState.CREATED` state
         """
-        assert(self._state == ProcessState.CREATED)
-        self._log.debug('Process starts.')
+        assert self._state == ProcessState.CREATED
+        self._log.debug("Process starts.")
         self.processor = None
-        self._transition('READY')
+        self._transition("READY")
 
     def activate(self, processor):
         """Start the process execution.
@@ -227,11 +231,12 @@ class RuntimeProcess(object):
         Raises:
             AssertionError: if not in :const:`ProcessState.READY` state
         """
-        assert(self._state == ProcessState.READY)
-        self._log.debug('Start workload execution on processor %s',
-                        processor.name)
+        assert self._state == ProcessState.READY
+        self._log.debug(
+            "Start workload execution on processor %s", processor.name
+        )
         self.processor = processor
-        self._transition('RUNNING')
+        self._transition("RUNNING")
 
     def _deactivate(self):
         """Halt the process execution.
@@ -242,11 +247,12 @@ class RuntimeProcess(object):
         Raises:
             AssertionError: if not in :const:`ProcessState.RUNNING` state
         """
-        assert(self._state == ProcessState.RUNNING)
-        self._log.debug('Stop workload execution on processor %s',
-                        self.processor.name)
+        assert self._state == ProcessState.RUNNING
+        self._log.debug(
+            "Stop workload execution on processor %s", self.processor.name
+        )
         self.processor = None
-        self._transition('READY')
+        self._transition("READY")
 
     def preempt(self):
         """Request deactivation of a running process
@@ -254,9 +260,10 @@ class RuntimeProcess(object):
         Raises:
             AssertionError: if not in :const:`ProcessState.RUNNING` state
         """
-        assert(self._state == ProcessState.RUNNING)
-        self._log.debug('Preempt workload execution on processor %s',
-                        self.processor.name)
+        assert self._state == ProcessState.RUNNING
+        self._log.debug(
+            "Preempt workload execution on processor %s", self.processor.name
+        )
         old_event = self._preempt
         self._preempt = self.env.event()
         old_event.succeed()
@@ -269,13 +276,13 @@ class RuntimeProcess(object):
         Raises:
             AssertionError: if not in :const:`ProcessState.RUNNING` state
         """
-        self._log.debug('Workload execution finished.')
+        self._log.debug("Workload execution finished.")
         self.processor = None
-        self._transition('FINISHED')
+        self._transition("FINISHED")
 
     def kill(self):
         """Request termination of a running process"""
-        self._log.debug('Kill request')
+        self._log.debug("Kill request")
         if self._state == ProcessState.RUNNING:
             old_event = self._kill
             self._kill = self.env.event()
@@ -289,10 +296,10 @@ class RuntimeProcess(object):
         Interrupt the process execution by transitioning to the
         :const:`~ProcessState.BLOCKED` state.
         """
-        assert(self._state == ProcessState.RUNNING)
-        self._log.debug('Process blocks')
+        assert self._state == ProcessState.RUNNING
+        self._log.debug("Process blocks")
         self.processor = None
-        self._transition('BLOCKED')
+        self._transition("BLOCKED")
 
     def unblock(self):
         """Unblock the process.
@@ -308,10 +315,10 @@ class RuntimeProcess(object):
         if self._state == ProcessState.FINISHED:
             return
 
-        assert(self._state == ProcessState.BLOCKED)
-        self._log.debug('Process unblocks')
+        assert self._state == ProcessState.BLOCKED
+        self._log.debug("Process unblocks")
         self.processor = None
-        self._transition('READY')
+        self._transition("READY")
 
     def _cb_ready(self, event):
         """Callback invoked upon entering the :const:`~ProcessState.READY`
@@ -321,8 +328,8 @@ class RuntimeProcess(object):
             event (~simpy.events.Event): unused (only required to provide the
                 callback interface)
         """
-        assert(self._state == ProcessState.READY)
-        self._log.debug('Entered READY state')
+        assert self._state == ProcessState.READY
+        self._log.debug("Entered READY state")
 
     def _cb_running(self, event):
         """Callback invoked upon entering the :const:`~ProcessState.RUNNING`
@@ -332,8 +339,8 @@ class RuntimeProcess(object):
             event (~simpy.events.event): unused (only required to provide the
                 callback interface)
         """
-        assert(self._state == ProcessState.RUNNING)
-        self._log.debug('Entered RUNNING state')
+        assert self._state == ProcessState.RUNNING
+        self._log.debug("Entered RUNNING state")
 
     def _cb_finished(self, event):
         """Callback invoked upon entering the :const:`~ProcessState.FINISHED`
@@ -343,8 +350,8 @@ class RuntimeProcess(object):
             event (~simpy.events.event): unused (only required to provide the
                 callback interface)
         """
-        assert(self._state == ProcessState.FINISHED)
-        self._log.debug('Entered FINISHED state')
+        assert self._state == ProcessState.FINISHED
+        self._log.debug("Entered FINISHED state")
 
     def _cb_blocked(self, event):
         """Callback invoked upon entering the :const:`~ProcessState.BLOCKED`
@@ -354,8 +361,8 @@ class RuntimeProcess(object):
             event (~simpy.events.event): unused (only required to provide the
                 callback interface)
         """
-        assert(self._state == ProcessState.BLOCKED)
-        self._log.debug('Entered BLOCKED state')
+        assert self._state == ProcessState.BLOCKED
+        self._log.debug("Entered BLOCKED state")
 
     def _cb_created(self, event):
         """Callback invoked upon entering the :const:`~ProcessState.CREATED`
@@ -365,8 +372,8 @@ class RuntimeProcess(object):
             event (~simpy.events.event): unused (only required to provide the
                 callback interface)
         """
-        assert(self._state == ProcessState.CREATED)
-        self._log.debug('Entered CREATED state')
+        assert self._state == ProcessState.CREATED
+        self._log.debug("Entered CREATED state")
 
     def workload(self):
         """Implements the process functionality.
@@ -378,8 +385,9 @@ class RuntimeProcess(object):
             NotImplementedError
         """
         raise NotImplementedError(
-            'This function does not provide any functionality and should '
-            'never be called. Override it in a subclass!')
+            "This function does not provide any functionality and should "
+            "never be called. Override it in a subclass!"
+        )
 
 
 class RuntimeKpnProcess(RuntimeProcess):
@@ -401,7 +409,7 @@ class RuntimeKpnProcess(RuntimeProcess):
 
     def __init__(self, name, trace_generator, app):
         super().__init__(name, app)
-        log.debug('initialize new KPN runtime process (%s)', self.full_name)
+        log.debug("initialize new KPN runtime process (%s)", self.full_name)
 
         self._channels = {}
         self._trace_generator = trace_generator
@@ -443,9 +451,9 @@ class RuntimeKpnProcess(RuntimeProcess):
         assert self.check_state(ProcessState.RUNNING)
 
         if self._current_segment is None:
-            self._log.debug('start workload execution')
+            self._log.debug("start workload execution")
         else:
-            self._log.debug('resume workload execution')
+            self._log.debug("resume workload execution")
 
         while True:
             # The preempt and kill events will be overridden once
@@ -455,12 +463,13 @@ class RuntimeKpnProcess(RuntimeProcess):
 
             if self._current_segment is None:
                 self._current_segment = self._trace_generator.next_segment(
-                    self.name, self.processor.type)
+                    self.name, self.processor.type
+                )
             s = self._current_segment
             s.sanity_check()
             if s.processing_cycles is not None:
                 cycles = s.processing_cycles
-                self._log.debug('process for %d cycles', cycles)
+                self._log.debug("process for %d cycles", cycles)
                 ticks = self.processor.ticks(cycles)
 
                 timeout = self.env.timeout(ticks)
@@ -487,8 +496,10 @@ class RuntimeKpnProcess(RuntimeProcess):
 
                     s.processing_cycles = cycles - cycles_processed
                     assert s.processing_cycles >= 0
-                    self._log.debug("process was deactivated after "
-                                    f"{cycles_processed} cycles")
+                    self._log.debug(
+                        "process was deactivated after "
+                        f"{cycles_processed} cycles"
+                    )
 
                 # Stop processing the workload even if preempt (or kill) and
                 # timeout occur simultaneously
@@ -513,10 +524,11 @@ class RuntimeKpnProcess(RuntimeProcess):
                 # Therefore, both consume and produce ignore any preemption
                 # requests and process it only after the operation completes.
                 c = self._channels[s.read_from_channel]
-                self._log.debug('read %d tokens from channel %s', s.n_tokens,
-                                c.full_name)
+                self._log.debug(
+                    "read %d tokens from channel %s", s.n_tokens, c.full_name
+                )
                 if not c.can_consume(self, s.n_tokens):
-                    self._log.debug('not enough tokens available -> block')
+                    self._log.debug("not enough tokens available -> block")
                     self._block()
                     self.env.process(c.wait_for_tokens(self, s.n_tokens))
                     return
@@ -536,10 +548,11 @@ class RuntimeKpnProcess(RuntimeProcess):
                 # is considered as an atomic operation and an preemption
                 # request is only processed after this operation completes.
                 c = self._channels[s.write_to_channel]
-                self._log.debug('write %d tokens to channel %s', s.n_tokens,
-                                c.full_name)
+                self._log.debug(
+                    "write %d tokens to channel %s", s.n_tokens, c.full_name
+                )
                 if not c.can_produce(self, s.n_tokens):
-                    self._log.debug('not enough slots available -> block')
+                    self._log.debug("not enough slots available -> block")
                     self._block()
                     self.env.process(c.wait_for_slots(self, s.n_tokens))
                     return
@@ -555,7 +568,7 @@ class RuntimeKpnProcess(RuntimeProcess):
                     self._deactivate()
                     return
             if s.terminate:
-                self._log.debug('process terminates')
+                self._log.debug("process terminates")
                 break
 
             self._current_segment = None

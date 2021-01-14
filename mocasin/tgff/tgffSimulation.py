@@ -5,37 +5,38 @@
 
 from mocasin.tgff.trace import TgffTraceGenerator
 from mocasin.tgff.tgffParser.parser import Parser
-from mocasin.platforms.exynos990 import DesignerPlatformExynos990
-from mocasin.platforms.generic_bus import DesignerPlatformBus
-from mocasin.platforms.generic_mesh import DesignerPlatformMesh
-from mocasin.platforms.odroid import DesignerPlatformOdroid
-from mocasin.platforms.mppa_coolidge import DesignerPlatformCoolidge
-from mocasin.platforms.multi_cluster import DesignerPlatformMultiCluster
 
 
 import logging
+
 log = logging.getLogger(__name__)
 
 _parsed_tgff_files = {}
 
+
 class TgffReferenceError(Exception):
     """Referenced a non existent tgff component"""
+
     pass
 
 
 class KpnGraphFromTgff:
-    """New, since we want to return a common.kpn instance instead of am TgffToKpnGraph instance
-    """
+    """New, since we want to return a common.kpn instance instead of am TgffToKpnGraph instance"""
+
     def __new__(cls, tgff_file, name):
         if tgff_file not in _parsed_tgff_files:
-            _parsed_tgff_files.update( {tgff_file : Parser().parse_file(tgff_file,[])} )
-            log.warning("TGFF traces should to be initialized first before the application, otherwise processor types might be inconsistent.")
-        
+            _parsed_tgff_files.update(
+                {tgff_file: Parser().parse_file(tgff_file, [])}
+            )
+            log.warning(
+                "TGFF traces should to be initialized first before the application, otherwise processor types might be inconsistent."
+            )
+
         tgff_graphs = _parsed_tgff_files[tgff_file][0]
-        
+
         if name not in tgff_graphs:
             raise TgffReferenceError()
-        
+
         return tgff_graphs[name].to_kpn_graph()
 
 
@@ -46,7 +47,9 @@ class TraceGeneratorWrapper:
                 proc_type_list = []
             else:
                 proc_type_list = processor_types
-            _parsed_tgff_files.update( {tgff_file : Parser().parse_file(tgff_file,proc_type_list)} )
+            _parsed_tgff_files.update(
+                {tgff_file: Parser().parse_file(tgff_file, proc_type_list)}
+            )
 
         tgff_components = _parsed_tgff_files[tgff_file]
         if graph_name not in tgff_components[0]:
@@ -55,12 +58,13 @@ class TraceGeneratorWrapper:
         processor_dict = {}
 
         for processor in tgff_components[1]:
-            processor_dict.update({processor.type : processor})
+            processor_dict.update({processor.type: processor})
 
-        trace_generator = TgffTraceGenerator(processor_dict, tgff_components[0][graph_name], repetition)
-        
+        trace_generator = TgffTraceGenerator(
+            processor_dict, tgff_components[0][graph_name], repetition
+        )
+
         return trace_generator
 
-    def __init__(self,*args,**kwargs):
+    def __init__(self, *args, **kwargs):
         pass
-

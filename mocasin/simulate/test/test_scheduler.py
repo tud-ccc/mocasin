@@ -21,8 +21,9 @@ workload_ticks = 10
 def runtime_scheduler(system, processor):
     processor.context_load_ticks = lambda: context_load_ticks
     processor.context_store_ticks = lambda: context_store_ticks
-    return RuntimeScheduler('sched', processor,
-                            ContextSwitchMode.NEVER, 0, None, system)
+    return RuntimeScheduler(
+        "sched", processor, ContextSwitchMode.NEVER, 0, None, system
+    )
 
 
 def mock_process_workload(env, process, ticks):
@@ -40,15 +41,16 @@ def processes(app, env, mocker):
     processes = [RuntimeProcess(f"test_proc{i}", app) for i in range(0, 5)]
     for i in range(0, len(processes)):
         processes[i].workload = mocker.Mock(
-            side_effect=lambda i=i:
-                mock_process_workload(env, processes[i], workload_ticks*(i+1)))
+            side_effect=lambda i=i: mock_process_workload(
+                env, processes[i], workload_ticks * (i + 1)
+            )
+        )
     return processes
 
 
 class TestRuntimeScheduler:
-
     def test_init(self, runtime_scheduler):
-        assert runtime_scheduler.name == 'sched'
+        assert runtime_scheduler.name == "sched"
         assert runtime_scheduler.current_process is None
         assert len(runtime_scheduler._processes) == 0
         assert len(runtime_scheduler._ready_queue) == 0
@@ -59,7 +61,7 @@ class TestRuntimeScheduler:
         env.run(1)  # start simulation to initialize the process
         process._transition(state)
         env.run(2)
-        if state == 'CREATED':
+        if state == "CREATED":
             runtime_scheduler.add_process(process)
             env.run(3)
             assert runtime_scheduler.current_process is None
@@ -111,37 +113,45 @@ class TestRuntimeScheduler:
         # initialize the ready queue
         self.test_processes_become_ready(runtime_scheduler, processes, env)
         runtime_scheduler.schedule = mocker.Mock(
-            side_effect=lambda: runtime_scheduler._ready_queue[0] if len(runtime_scheduler._ready_queue) > 0 else None)
+            side_effect=lambda: runtime_scheduler._ready_queue[0]
+            if len(runtime_scheduler._ready_queue) > 0
+            else None
+        )
         env.process(runtime_scheduler.run())
         env.run()
         runtime_scheduler.schedule.assert_called()
-        assert runtime_scheduler.schedule.call_count == len(processes)+1
+        assert runtime_scheduler.schedule.call_count == len(processes) + 1
 
     def test_run(self, runtime_scheduler, processes, env, mocker):
         self.call_run(runtime_scheduler, processes, env, mocker)
-        assert env.now == sum(range(1, len(processes)+1)) * workload_ticks
+        assert env.now == sum(range(1, len(processes) + 1)) * workload_ticks
 
     def test_scheduling_delay(self, runtime_scheduler, processes, env, mocker):
         runtime_scheduler._scheduling_cycles = scheduling_delay
         self.call_run(runtime_scheduler, processes, env, mocker)
-        assert env.now == (sum(range(1, len(processes)+1)) * workload_ticks +
-                           len(processes) * scheduling_delay)
+        assert env.now == (
+            sum(range(1, len(processes) + 1)) * workload_ticks
+            + len(processes) * scheduling_delay
+        )
 
     def test_average_load_idle(self, runtime_scheduler, env, mocker):
         runtime_scheduler.schedule = mocker.Mock(side_effect=lambda: None)
         env.process(runtime_scheduler.run())
-        env.run(1000000000000) # simulate 1 second
+        env.run(1000000000000)  # simulate 1 second
         assert runtime_scheduler.current_process is None
         assert runtime_scheduler.average_load(1) == 0.0
         assert runtime_scheduler.average_load(1000) == 0.0
         assert runtime_scheduler.average_load(1000000000000) == 0.0
 
-    def test_average_load_active(self, runtime_scheduler, env, mocker,
-                                 processes):
+    def test_average_load_active(
+        self, runtime_scheduler, env, mocker, processes
+    ):
         process = processes[0]
         process.workload = mocker.Mock(
-            side_effect=lambda:
-                mock_process_workload(env, process, 2000000000000))
+            side_effect=lambda: mock_process_workload(
+                env, process, 2000000000000
+            )
+        )
         # start the process
         self.test_processes_become_ready(runtime_scheduler, [process], env)
 
@@ -149,7 +159,7 @@ class TestRuntimeScheduler:
         runtime_scheduler.schedule = mocker.Mock(side_effect=lambda: process)
         env.process(runtime_scheduler.run())
 
-        env.run(1000000000000) # simulate 1 second
+        env.run(1000000000000)  # simulate 1 second
 
         assert runtime_scheduler.current_process is process
         assert runtime_scheduler.average_load(1) == 1.0

@@ -48,14 +48,14 @@ class TraceWriter:
         assert name not in self._processes
         pid = self._pid_counter
         self._pid_counter += 1
-        self._trace.append({
-            "name": "process_name",
-            "ph": "M",
-            "pid": pid,
-            "args": {
-                "name": name
+        self._trace.append(
+            {
+                "name": "process_name",
+                "ph": "M",
+                "pid": pid,
+                "args": {"name": name},
             }
-        })
+        )
         self._processes[name] = ProcessInfo(pid, {}, 0)
 
     def _add_new_thread(self, process_info, name):
@@ -69,15 +69,15 @@ class TraceWriter:
         pid = process_info.pid
         tid = process_info.tid_counter
         process_info.tid_counter += 1
-        self._trace.append({
-            "name": "thread_name",
-            "ph": "M",
-            "pid": pid,
-            "tid": tid,
-            "args": {
-                "name": name
+        self._trace.append(
+            {
+                "name": "thread_name",
+                "ph": "M",
+                "pid": pid,
+                "tid": tid,
+                "args": {"name": name},
             }
-        })
+        )
         process_info.tids[name] = tid
 
     def _get_pid(self, process):
@@ -198,7 +198,7 @@ class TraceWriter:
             "ph": "C",
             "ts": self._env.now / 1000000.0,
             "pid": pid,
-            "args": data
+            "args": data,
         }
         if category is not None:
             event["cat"] = category
@@ -211,5 +211,5 @@ class TraceWriter:
         Args:
             path (str): path to the output file
         """
-        with open(path, 'w') as f:
+        with open(path, "w") as f:
             json.dump(self._trace, f)

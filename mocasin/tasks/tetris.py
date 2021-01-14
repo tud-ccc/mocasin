@@ -7,7 +7,7 @@ import timeit
 import logging
 import hydra
 
-from mocasin.tetris import (TetrisScheduling, TetrisManagement)
+from mocasin.tetris import TetrisScheduling, TetrisManagement
 
 log = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ def init_logging():
     logging.getLogger("mocasin.common.mapping").setLevel(logging.WARNING)
 
 
-@hydra.main(config_path='../conf', config_name='tetris_scheduler')
+@hydra.main(config_path="../conf", config_name="tetris_scheduler")
 def tetris_scheduler(cfg):
     """Tetris scheduler
 
@@ -43,14 +43,14 @@ def tetris_scheduler(cfg):
 
     scheduling = TetrisScheduling.from_hydra(cfg)
 
-    log.info('Start the scheduling')
+    log.info("Start the scheduling")
     start = timeit.default_timer()
     scheduling.run()
     stop = timeit.default_timer()
-    log.info('Scheduling done')
+    log.info("Scheduling done")
     scheduling_time = stop - start
 
-    print("Job table file: " + str(cfg['job_table']))
+    print("Job table file: " + str(cfg["job_table"]))
     print("Scheduler: " + str(scheduling.scheduler.name))
     print("Scheduling time: {:.5f} s".format(scheduling_time))
     print("Found schedule: {}".format(scheduling.found_schedule))
@@ -63,7 +63,7 @@ def tetris_scheduler(cfg):
                 print(scheduling.schedule.to_str(verbose=True), file=f)
 
 
-@hydra.main(config_path='../conf', config_name='tetris_manager')
+@hydra.main(config_path="../conf", config_name="tetris_manager")
 def tetris_manager(cfg):
     """Tetris manager
 
@@ -76,15 +76,15 @@ def tetris_manager(cfg):
         * **platform:** the input platform. The task expects a configuration
           dict that can be instantiated to a
           :class:`~mocasin.common.platform.Platform` object.
-        TODO: Write down 
+        TODO: Write down
     """
     # Suppress logs from mocasin module
     init_logging()
 
     management = TetrisManagement.from_hydra(cfg)
 
-    log.info('Start the tetris management')
+    log.info("Start the tetris management")
     start = timeit.default_timer()
     management.run()
     stop = timeit.default_timer()
-    log.info('Tetris management done')
+    log.info("Tetris management done")

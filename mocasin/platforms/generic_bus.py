@@ -4,8 +4,14 @@
 # Authors: Christian Menard, Felix Teweleit, Andres Goens
 
 
-from mocasin.common.platform import (FrequencyDomain, Platform, Processor,
-    Scheduler, SchedulingPolicy, Storage)
+from mocasin.common.platform import (
+    FrequencyDomain,
+    Platform,
+    Processor,
+    Scheduler,
+    SchedulingPolicy,
+    Storage,
+)
 from mocasin.common.platform.bus import Bus, primitives_from_buses
 from mocasin.platforms.platformDesigner import PlatformDesigner
 from hydra.utils import instantiate
@@ -14,7 +20,9 @@ from hydra.utils import instantiate
 class GenericBusPlatform(Platform):
     """Represents a flat bus-based platform"""
 
-    def __init__(self, name, num_processors, symmetries_json=None,embedding_json=None):
+    def __init__(
+        self, name, num_processors, symmetries_json=None, embedding_json=None
+    ):
         """Initialize the platform
 
         Generate `num_processors` processors and schedulers and connect
@@ -22,26 +30,26 @@ class GenericBusPlatform(Platform):
         connects it to the bus. Based on this bus setup, the primitive for
         communication via shared RAM is generated.
         """
-        super().__init__(name,symmetries_json,embedding_json)
+        super().__init__(name, symmetries_json, embedding_json)
 
-        fd_pes = FrequencyDomain('fd_pes', 500000000)
-        fd_ram = FrequencyDomain('fd_ram', 100000000)
+        fd_pes = FrequencyDomain("fd_pes", 500000000)
+        fd_ram = FrequencyDomain("fd_ram", 100000000)
 
-        ram = Storage('RAM', fd_ram, 5, 7, 16, 12)
+        ram = Storage("RAM", fd_ram, 5, 7, 16, 12)
         self.add_communication_resource(ram)
 
-        bus = Bus('bus', fd_pes, 1, 8)
+        bus = Bus("bus", fd_pes, 1, 8)
         self.add_communication_resource(bus)
         bus.connect_storage(ram)
 
-        policy = SchedulingPolicy('FIFO', 100)
+        policy = SchedulingPolicy("FIFO", 100)
 
         for i in range(0, num_processors):
-            name = 'PE%02d' % (i)
-            processor = Processor(name, 'RISC', fd_pes, 100, 100)
+            name = "PE%02d" % (i)
+            processor = Processor(name, "RISC", fd_pes, 100, 100)
             bus.connect_processor(processor)
             self.add_processor(processor)
-            self.add_scheduler(Scheduler('sp_' + name, [processor], policy))
+            self.add_scheduler(Scheduler("sp_" + name, [processor], policy))
 
         primitives = primitives_from_buses([bus])
         for p in primitives:
@@ -74,33 +82,33 @@ class GenericClusteredPlatform(Platform):
         super().__init__(name)
 
         if hierarchy_levels < 2:
-            raise ValueError('Number of hierarchies needs to be at least 2')
+            raise ValueError("Number of hierarchies needs to be at least 2")
 
         level = 0  # current level in the hierarchy
         pe_id = 0  # current pe id
         buses = {}  # all buses
 
-        policy = SchedulingPolicy('FIFO', 100)
+        policy = SchedulingPolicy("FIFO", 100)
 
         # start from the lowest level and generate all PEs
         buses[level] = []
-        num_l0_clusters = (
-            num_clusters * cluster_size ** (hierarchy_levels - 2))
+        num_l0_clusters = num_clusters * cluster_size ** (hierarchy_levels - 2)
         for cluster_id in range(0, num_l0_clusters):
-            cluster_name = 'l%d_c%d' % (level, cluster_id)
-            fd_pes = FrequencyDomain('fd_' + cluster_name, 500000000)
-            bus = Bus('bus_' + cluster_name, fd_pes, 1, 8)
+            cluster_name = "l%d_c%d" % (level, cluster_id)
+            fd_pes = FrequencyDomain("fd_" + cluster_name, 500000000)
+            bus = Bus("bus_" + cluster_name, fd_pes, 1, 8)
             buses[level].append(bus)
             self.add_communication_resource(bus)
             for j in range(0, cluster_size):
-                name = 'PE%02d' % (pe_id)
+                name = "PE%02d" % (pe_id)
                 pe_id += 1
-                processor = Processor(name, 'RISC', fd_pes, 100, 100)
+                processor = Processor(name, "RISC", fd_pes, 100, 100)
                 bus.connect_processor(processor)
                 self.add_processor(processor)
-                self.add_scheduler(Scheduler(
-                    'shared_' + name, [processor], policy))
-            mem = Storage('shared_' + cluster_name, fd_pes, 1, 1, 8, 8)
+                self.add_scheduler(
+                    Scheduler("shared_" + name, [processor], policy)
+                )
+            mem = Storage("shared_" + cluster_name, fd_pes, 1, 1, 8, 8)
             self.add_communication_resource(mem)
             bus.connect_storage(mem)
         level += 1
@@ -109,32 +117,33 @@ class GenericClusteredPlatform(Platform):
         while level < hierarchy_levels - 1:
             buses[level] = []
             bus_id = 0
-            num_lx_clusters = (
-                num_clusters * cluster_size ** (hierarchy_levels - level - 2))
+            num_lx_clusters = num_clusters * cluster_size ** (
+                hierarchy_levels - level - 2
+            )
             for cluster_id in range(0, num_lx_clusters):
-                cluster_name = 'l%d_c%d' % (level, cluster_id)
-                fd = FrequencyDomain('fd_' + cluster_name, 500000000)
-                mem = Storage('shared_' + cluster_name, fd, 3, 4, 8, 8)
+                cluster_name = "l%d_c%d" % (level, cluster_id)
+                fd = FrequencyDomain("fd_" + cluster_name, 500000000)
+                mem = Storage("shared_" + cluster_name, fd, 3, 4, 8, 8)
                 self.add_communication_resource(mem)
-                bus = Bus('bus_' + cluster_name, fd, 2, 8)
+                bus = Bus("bus_" + cluster_name, fd, 2, 8)
                 self.add_communication_resource(bus)
                 bus.connect_storage(mem)
                 buses[level].append(bus)
                 for i in range(0, cluster_size):
-                    bus.connect_master_bus(buses[level-1][bus_id])
+                    bus.connect_master_bus(buses[level - 1][bus_id])
                     bus_id += 1
             level += 1
 
         # top level
-        fd_top = FrequencyDomain('fd_l%d' % level, 250000000)
-        bus_top = Bus('bus_l%d' % level, fd_top, 3, 8)
+        fd_top = FrequencyDomain("fd_l%d" % level, 250000000)
+        bus_top = Bus("bus_l%d" % level, fd_top, 3, 8)
         buses[level] = [bus_top]
         self.add_communication_resource(bus_top)
-        for b in buses[level-1]:
+        for b in buses[level - 1]:
             bus_top.connect_master_bus(b)
 
-        fd_ram = FrequencyDomain('fd_ram', 100000000)
-        ram = Storage('RAM', fd_ram, 5, 7, 16, 12)
+        fd_ram = FrequencyDomain("fd_ram", 100000000)
+        ram = Storage("RAM", fd_ram, 5, 7, 16, 12)
         self.add_communication_resource(ram)
         bus_top.connect_storage(ram)
 
@@ -145,8 +154,11 @@ class GenericClusteredPlatform(Platform):
         for p in primitives:
             self.add_primitive(p)
 
+
 class DesignerPlatformBus(Platform):
-    def __init__(self, processor_0, name="bus", symmetries_json=None,embedding_json=None):
+    def __init__(
+        self, processor_0, name="bus", symmetries_json=None, embedding_json=None
+    ):
         """Initializes an example platform with four processing
         elements connected via an shared memory.
         :param processor_0: the processing element for the platform
@@ -154,13 +166,23 @@ class DesignerPlatformBus(Platform):
         :param name: The name for the returned platform
         :type name: String
         """
-        super(DesignerPlatformBus, self).__init__(name,symmetries_json=symmetries_json,embedding_json=embedding_json)
-        #This is a workaround until Hydra 1.1 (with recursive instantiaton!)
-        if not isinstance(processor_0,Processor):
+        super(DesignerPlatformBus, self).__init__(
+            name, symmetries_json=symmetries_json, embedding_json=embedding_json
+        )
+        # This is a workaround until Hydra 1.1 (with recursive instantiaton!)
+        if not isinstance(processor_0, Processor):
             processor_0 = instantiate(processor_0)
         designer = PlatformDesigner(self)
-        designer.setSchedulingPolicy('FIFO', 1000)
+        designer.setSchedulingPolicy("FIFO", 1000)
         designer.newElement("test_chip")
         designer.addPeClusterForProcessor("cluster_0", processor_0, 4)
-        designer.addCommunicationResource("shared_memory", ["cluster_0"], 100, 100, 1000, 1000, frequencyDomain=2000)
+        designer.addCommunicationResource(
+            "shared_memory",
+            ["cluster_0"],
+            100,
+            100,
+            1000,
+            1000,
+            frequencyDomain=2000,
+        )
         designer.finishElement()

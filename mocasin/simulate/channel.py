@@ -47,6 +47,7 @@ class RuntimeChannel(object):
         token_size(int): size of one data token in bytes
         app (RuntimeApplication): the application this process is part of
     """
+
     def __init__(self, name, mapping_info, token_size, app):
         self.name = name
         self.app = app
@@ -103,10 +104,12 @@ class RuntimeChannel(object):
 
         # record the channel creation in the simulation trace
         if self.app.system.app_trace_enabled:
-            self.trace_writer.update_counter(self.app.name,
-                                             self.name,
-                                             self._fifo_state.copy(),
-                                             category="Channel")
+            self.trace_writer.update_counter(
+                self.app.name,
+                self.name,
+                self._fifo_state.copy(),
+                category="Channel",
+            )
 
     def can_consume(self, process, num):
         """Check if a process can consume a number of tokens.
@@ -122,11 +125,11 @@ class RuntimeChannel(object):
             RuntimeError: if no source is registered to the channel
         """
         if process not in self._sinks:
-            raise ValueError('Process %s is not a sink' % process.full_name)
+            raise ValueError("Process %s is not a sink" % process.full_name)
         if (not isinstance(num, int)) or num < 1:
-            raise ValueError('num must be an integer greater than 0')
+            raise ValueError("num must be an integer greater than 0")
         if self._src is None:
-            raise RuntimeError('No source registered to the channel')
+            raise RuntimeError("No source registered to the channel")
         return bool(self._fifo_state[process.name] >= num)
 
     def can_produce(self, process, num):
@@ -145,11 +148,15 @@ class RuntimeChannel(object):
         if process is not self._src:
             raise ValueError(f"Process {process.full_name} is not the source")
         if (not isinstance(num, int)) or num < 1:
-            raise ValueError('num must be an integer greater than 0')
+            raise ValueError("num must be an integer greater than 0")
         if len(self._sinks) == 0:
-            raise RuntimeError('No sinks registered to the channel')
-        return all([(self._fifo_state[p.name] + num) <= self._capacity
-                    for p in self._sinks])
+            raise RuntimeError("No sinks registered to the channel")
+        return all(
+            [
+                (self._fifo_state[p.name] + num) <= self._capacity
+                for p in self._sinks
+            ]
+        )
 
     def wait_for_tokens(self, process, num):
         """An event generator that waits for tokens.
@@ -171,16 +178,18 @@ class RuntimeChannel(object):
         """
         assert process.check_state(ProcessState.BLOCKED)
 
-        self._log.debug('wait until %s can consume %d tokens',
-                        process.full_name, num)
+        self._log.debug(
+            "wait until %s can consume %d tokens", process.full_name, num
+        )
 
         while True:
             yield self.tokens_produced
             if self.can_consume(process, num):
                 break
 
-        self._log.debug('enough tokens available -> unblock %s',
-                        process.full_name)
+        self._log.debug(
+            "enough tokens available -> unblock %s", process.full_name
+        )
         process.unblock()
 
     def wait_for_slots(self, process, num):
@@ -203,16 +212,18 @@ class RuntimeChannel(object):
         """
         assert process.check_state(ProcessState.BLOCKED)
 
-        self._log.debug('wait until %s can produce %d tokens',
-                        process.full_name, num)
+        self._log.debug(
+            "wait until %s can produce %d tokens", process.full_name, num
+        )
 
         while True:
             yield self.tokens_consumed
             if self.can_produce(process, num):
                 break
 
-        self._log.debug('enough slots available -> unblock %s',
-                        process.full_name)
+        self._log.debug(
+            "enough slots available -> unblock %s", process.full_name
+        )
         process.unblock()
 
     def consume(self, process, num):
@@ -248,13 +259,17 @@ class RuntimeChannel(object):
         prim = self._primitive
         log = self._log
 
-        log.debug('start a consume operation reading %d tokens using %s',
-                  num, prim.name)
+        log.debug(
+            "start a consume operation reading %d tokens using %s",
+            num,
+            prim.name,
+        )
 
         if sink not in prim.consumers:
             raise RuntimeError(
-                'processor %s cannot consume tokens using the primitive %s' %
-                (sink.name, prim.name))
+                "processor %s cannot consume tokens using the primitive %s"
+                % (sink.name, prim.name)
+            )
 
         # update the state
         new_state = self._fifo_state[process.name] - num
@@ -262,10 +277,12 @@ class RuntimeChannel(object):
 
         # record the consume operation in the simulation trace
         if self.app.system.app_trace_enabled:
-            self.trace_writer.update_counter(self.app.name,
-                                             self.name,
-                                             self._fifo_state.copy(),
-                                             category="Channel")
+            self.trace_writer.update_counter(
+                self.app.name,
+                self.name,
+                self._fifo_state.copy(),
+                category="Channel",
+            )
 
         for phase in prim.consume_phases[sink.name]:
             log.debug('start communication phase "%s"', phase.name)
@@ -273,11 +290,11 @@ class RuntimeChannel(object):
             # 1. request all resouces
             requests = []
             for r in phase.resources:
-                log.debug('via resource: %s', r.name)
-                if hasattr(r, 'simpy_resource'):
+                log.debug("via resource: %s", r.name)
+                if hasattr(r, "simpy_resource"):
                     req = r.simpy_resource.request()
                     requests.append(req)
-                    log.debug('request resource %s', r.name)
+                    log.debug("request resource %s", r.name)
                     yield req
                 else:
                     requests.append(None)
@@ -290,12 +307,12 @@ class RuntimeChannel(object):
             # release all resources that we requested before
             for (res, req) in zip(phase.resources, requests):
                 if req is not None:
-                    log.debug('release resource %s', r.name)
+                    log.debug("release resource %s", r.name)
                     res.simpy_resource.release(req)
 
-            log.debug('communication phase completed')
+            log.debug("communication phase completed")
 
-        log.debug('consume operation completed')
+        log.debug("consume operation completed")
 
         # notify waiting processes
         self.tokens_consumed.succeed()
@@ -334,13 +351,17 @@ class RuntimeChannel(object):
         prim = self._primitive
         log = self._log
 
-        log.debug('start a produce operation writing %d tokens using %s',
-                  num, prim.name)
+        log.debug(
+            "start a produce operation writing %d tokens using %s",
+            num,
+            prim.name,
+        )
 
         if src not in prim.producers:
             raise RuntimeError(
-                'processor %s cannot produce tokens using the primitive %s' %
-                (src.name, prim.name))
+                "processor %s cannot produce tokens using the primitive %s"
+                % (src.name, prim.name)
+            )
 
         # update the state
         for p in self._fifo_state:
@@ -348,10 +369,12 @@ class RuntimeChannel(object):
 
         # record the produce operation in the simulation trace
         if self.app.system.app_trace_enabled:
-            self.trace_writer.update_counter(self.app.name,
-                                             self.name,
-                                             self._fifo_state.copy(),
-                                             category="Channel")
+            self.trace_writer.update_counter(
+                self.app.name,
+                self.name,
+                self._fifo_state.copy(),
+                category="Channel",
+            )
 
         for phase in prim.produce_phases[src.name]:
             log.debug('start communication phase "%s"', phase.name)
@@ -359,11 +382,11 @@ class RuntimeChannel(object):
             # 1. request all resouces
             requests = []
             for r in phase.resources:
-                log.debug('via resource: %s', r.name)
-                if hasattr(r, 'simpy_resource'):
+                log.debug("via resource: %s", r.name)
+                if hasattr(r, "simpy_resource"):
                     req = r.simpy_resource.request()
                     requests.append(req)
-                    log.debug('request resource %s', r.name)
+                    log.debug("request resource %s", r.name)
                     yield req
                 else:
                     requests.append(None)
@@ -376,12 +399,12 @@ class RuntimeChannel(object):
             # release all resources that we requested before
             for (res, req) in zip(phase.resources, requests):
                 if req is not None:
-                    log.debug('release resource %s', r.name)
+                    log.debug("release resource %s", r.name)
                     res.simpy_resource.release(req)
 
-            log.debug('communication phase completed')
+            log.debug("communication phase completed")
 
-        log.debug('produce operation completed')
+        log.debug("produce operation completed")
 
         # notify waiting processes
         self.tokens_produced.succeed()

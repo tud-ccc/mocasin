@@ -46,8 +46,14 @@ class LRSolver:
     distributed run-time resource management for many-cores. In Proceedings of
     the conference on Design, Automation & Test in Europe (DATE '14).
     """
-    def __init__(self, platform, constraints=LRConstraint.RESOURCE,
-                 rounds=1000, params=None):
+
+    def __init__(
+        self,
+        platform,
+        constraints=LRConstraint.RESOURCE,
+        rounds=1000,
+        params=None,
+    ):
         assert isinstance(constraints, LRConstraint)
         self.platform = platform
 
@@ -61,9 +67,9 @@ class LRSolver:
 
         # Extract value from params
         self.__max_rounds = rounds
-        self.__step_size_resource = params['step_size_resource']
-        self.__step_size_delay = params['step_size_delay']
-        self.__step_size_rdp = params['step_size_rdp']
+        self.__step_size_resource = params["step_size_resource"]
+        self.__step_size_delay = params["step_size_delay"]
+        self.__step_size_rdp = params["step_size_rdp"]
 
         self.__verbose = True
 
@@ -71,9 +77,9 @@ class LRSolver:
     def default_params():
         """Generate default solver parameters."""
         res = {}
-        res['step_size_resource'] = lambda x: 0.1 / math.sqrt(x)
-        res['step_size_delay'] = lambda x: 0.001 / math.sqrt(x)
-        res['step_size_rdp'] = lambda x: 0.001 / math.sqrt(x)
+        res["step_size_resource"] = lambda x: 0.1 / math.sqrt(x)
+        res["step_size_delay"] = lambda x: 0.001 / math.sqrt(x)
+        res["step_size_rdp"] = lambda x: 0.001 / math.sqrt(x)
         return res
 
     @staticmethod
@@ -90,10 +96,12 @@ class LRSolver:
 
     @staticmethod
     def _job_config_rdp(job, mapping):
-        return Counter({
-            k: v * mapping.metadata.exec_time * (1.0 - job.cratio)
-            for k, v in mapping.get_used_processor_types().items()
-        })
+        return Counter(
+            {
+                k: v * mapping.metadata.exec_time * (1.0 - job.cratio)
+                for k, v in mapping.get_used_processor_types().items()
+            }
+        )
 
     @staticmethod
     def job_config_cost(job, mapping, l):
@@ -123,13 +131,15 @@ class LRSolver:
         if l_r is not None:
             m_r = LRSolver._job_config_resource(job, mapping)
             res += sum(
-                Counter({k: l_r[k] * m_r[k]
-                         for k in l_r.keys() & m_r}).values())
+                Counter({k: l_r[k] * m_r[k] for k in l_r.keys() & m_r}).values()
+            )
         if l_rdp is not None:
             m_rdp = LRSolver._job_config_rdp(job, mapping)
             res += sum(
-                Counter({k: l_rdp[k] * m_rdp[k]
-                         for k in l_rdp.keys() & m_rdp}).values())
+                Counter(
+                    {k: l_rdp[k] * m_rdp[k] for k in l_rdp.keys() & m_rdp}
+                ).values()
+            )
         return res
 
     @staticmethod
@@ -141,8 +151,10 @@ class LRSolver:
         assert isinstance(l, tuple)
         cratio = job.cratio
 
-        configs = [(LRSolver.job_config_cost(job, mapping, l), mapping)
-                   for mapping in job.request.mappings]
+        configs = [
+            (LRSolver.job_config_cost(job, mapping, l), mapping)
+            for mapping in job.request.mappings
+        ]
         min_cost, min_mapping = min(configs, key=lambda x: x[0])
         return min_mapping, min_cost
 
@@ -177,10 +189,14 @@ class LRSolver:
         l = self.__initial_lambda(jobs)
 
         if self.__relax_rdp:
-            window = max([
-                job.deadline - segment_start_time
-                for job in jobs if job.deadline != math.inf
-            ], default=math.inf)
+            window = max(
+                [
+                    job.deadline - segment_start_time
+                    for job in jobs
+                    if job.deadline != math.inf
+                ],
+                default=math.inf,
+            )
             # assert window != math.inf, "NYI"
 
         for t in range(1, self.__max_rounds + 1):
@@ -202,67 +218,97 @@ class LRSolver:
                 job_mapping, job_cost = LRSolver._job_min_cost(job, l)
                 min_configs.append(tuple((job, job_mapping)))
                 if self.__verbose:
-                    log.debug("Job {}, mapping = {}, time = {}, energy = {}"
-                              " deadline = {}, f = {}".format(
-                                  job.to_str(),
-                                  job_mapping.get_used_processor_types(),
-                                  job_mapping.metadata.exec_time *
-                                  (1.0 - job.cratio),
-                                  job_mapping.metadata.energy *
-                                  (1.0 - job.cratio), job.deadline, job_cost))
+                    log.debug(
+                        "Job {}, mapping = {}, time = {}, energy = {}"
+                        " deadline = {}, f = {}".format(
+                            job.to_str(),
+                            job_mapping.get_used_processor_types(),
+                            job_mapping.metadata.exec_time * (1.0 - job.cratio),
+                            job_mapping.metadata.energy * (1.0 - job.cratio),
+                            job.deadline,
+                            job_cost,
+                        )
+                    )
                 # Calculate subgradient of delay coefficients
                 if self.__relax_d:
                     if job.deadline == math.inf:
                         assert False, "NYI"
                         new_l_d[job.rid] = 0.0
                     else:
-                        delta = LRSolver._job_config_delay(
-                            job, job_mapping) - job.deadline
+                        delta = (
+                            LRSolver._job_config_delay(job, job_mapping)
+                            - job.deadline
+                        )
                         new_l_d[job.request] = max(
-                            0.0, (l[0][job.request] +
-                                  delta * self.__step_size_delay(t)))
+                            0.0,
+                            (
+                                l[0][job.request]
+                                + delta * self.__step_size_delay(t)
+                            ),
+                        )
                     if new_l_d[job.request] != l[0][job.request]:
                         changed = True
 
             # Calculate subgradient of resource coefficients
             if self.__relax_r:
-                delta = sum([
-                    LRSolver._job_config_resource(job, mapping)
-                    for job, mapping in min_configs
-                ], Counter())
+                delta = sum(
+                    [
+                        LRSolver._job_config_resource(job, mapping)
+                        for job, mapping in min_configs
+                    ],
+                    Counter(),
+                )
                 delta.subtract(self.platform.get_processor_types())
-                #print(l[1])
-                new_l_r = (Counter({
-                    k: l[1][k] + delta[k] * self.__step_size_resource(t)
-                    for k in self.platform.get_processor_types()
-                }) | Counter())
-                #print(new_l_r)
+                # print(l[1])
+                new_l_r = (
+                    Counter(
+                        {
+                            k: l[1][k] + delta[k] * self.__step_size_resource(t)
+                            for k in self.platform.get_processor_types()
+                        }
+                    )
+                    | Counter()
+                )
+                # print(new_l_r)
                 if l[1] != new_l_r:
                     changed = True
 
             # Calculate subgradient of rdp coefficients
             if self.__relax_rdp:
-                delta = sum([
-                    LRSolver._job_config_rdp(job, mapping)
-                    for job, mapping in min_configs if job.deadline != math.inf
-                ], Counter())
+                delta = sum(
+                    [
+                        LRSolver._job_config_rdp(job, mapping)
+                        for job, mapping in min_configs
+                        if job.deadline != math.inf
+                    ],
+                    Counter(),
+                )
                 delta.subtract(
-                    Counter({
-                        k: v * window
-                        for k, v in
-                        self.platform.get_processor_types().items()
-                    }))
-                new_l_rdp = (Counter({
-                    k: l[2][k] + delta[k] * self.__step_size_rdp(t)
-                    for k in self.platform.get_processor_types()
-                }) | Counter())
+                    Counter(
+                        {
+                            k: v * window
+                            for k, v in self.platform.get_processor_types().items()
+                        }
+                    )
+                )
+                new_l_rdp = (
+                    Counter(
+                        {
+                            k: l[2][k] + delta[k] * self.__step_size_rdp(t)
+                            for k in self.platform.get_processor_types()
+                        }
+                    )
+                    | Counter()
+                )
                 if l[2] != new_l_rdp:
                     changed = True
 
             if not changed:
                 if self.__verbose:
-                    log.debug("New lambda value is the same as previous."
-                              " Stopping iterating.")
+                    log.debug(
+                        "New lambda value is the same as previous."
+                        " Stopping iterating."
+                    )
                 break
             l = tuple((new_l_d, new_l_r, new_l_rdp))
 

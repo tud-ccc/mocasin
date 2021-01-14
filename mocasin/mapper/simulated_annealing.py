@@ -25,9 +25,24 @@ class SimulatedAnnealingMapper(object):
     Journal of Systems Architecture, 53(11), 795-815.e.
     """
 
-    def __init__(self, kpn, platform, trace, representation, random_seed=42, record_statistics=False,
-                 initial_temperature=1.0, final_temperature=0.1, temperature_proportionality_constant=.5,
-                 radius=3.0, dump_cache=False, chunk_size=10, progress=False, parallel=False, jobs=1):
+    def __init__(
+        self,
+        kpn,
+        platform,
+        trace,
+        representation,
+        random_seed=42,
+        record_statistics=False,
+        initial_temperature=1.0,
+        final_temperature=0.1,
+        temperature_proportionality_constant=0.5,
+        radius=3.0,
+        dump_cache=False,
+        chunk_size=10,
+        progress=False,
+        parallel=False,
+        jobs=1,
+    ):
         """Generates a full mapping for a given platform and KPN application.
 
         :param kpn: a KPN graph
@@ -63,38 +78,57 @@ class SimulatedAnnealingMapper(object):
         """
         random.seed(random_seed)
         np.random.seed(random_seed)
-        self.full_mapper = True # flag indicating the mapper type
+        self.full_mapper = True  # flag indicating the mapper type
         self.kpn = kpn
         self.platform = platform
-        self.random_mapper = RandomPartialMapper(self.kpn, self.platform, seed=None)
-        self.statistics = Statistics(log, len(self.kpn.processes()), record_statistics)
+        self.random_mapper = RandomPartialMapper(
+            self.kpn, self.platform, seed=None
+        )
+        self.statistics = Statistics(
+            log, len(self.kpn.processes()), record_statistics
+        )
         self.initial_temperature = initial_temperature
         self.final_temperature = final_temperature
-        self.max_rejections = len(self.kpn.processes()) * (len(self.platform.processors()) - 1) #R_max = L
+        self.max_rejections = len(self.kpn.processes()) * (
+            len(self.platform.processors()) - 1
+        )  # R_max = L
         self.p = temperature_proportionality_constant
         self.radius = radius
         self.progress = progress
         self.dump_cache = dump_cache
 
         if not (1 > self.p > 0):
-            log.error(f"Temperature proportionality constant {self.p} not suitable, "
-                      f"it should be close to, but smaller than 1 (algorithm probably won't terminate).")
+            log.error(
+                f"Temperature proportionality constant {self.p} not suitable, "
+                f"it should be close to, but smaller than 1 (algorithm probably won't terminate)."
+            )
 
         # This is a workaround until Hydra 1.1 (with recursive instantiaton!)
         if not issubclass(type(type(representation)), MappingRepresentation):
-            representation = instantiate(representation,kpn,platform)
+            representation = instantiate(representation, kpn, platform)
         self.representation = representation
 
-        self.simulation_manager = SimulationManager(self.representation, trace,jobs, parallel,
-                                                    progress,chunk_size,record_statistics)
+        self.simulation_manager = SimulationManager(
+            self.representation,
+            trace,
+            jobs,
+            parallel,
+            progress,
+            chunk_size,
+            record_statistics,
+        )
 
     def temperature_cooling(self, temperature, iter):
-        return self.initial_temperature*self.p**np.floor(iter/self.max_rejections)
+        return self.initial_temperature * self.p ** np.floor(
+            iter / self.max_rejections
+        )
 
-    def query_accept(self,time,temperature):
-        with np.errstate(over='raise'):
+    def query_accept(self, time, temperature):
+        with np.errstate(over="raise"):
             try:
-                normalized_probability = 1 / (np.exp(time/(0.5*temperature*self.initial_cost)))
+                normalized_probability = 1 / (
+                    np.exp(time / (0.5 * temperature * self.initial_cost))
+                )
             except FloatingPointError:
                 normalized_probability = 0
 
@@ -102,8 +136,10 @@ class SimulatedAnnealingMapper(object):
 
     def move(self, mapping, temperature):
         radius = self.radius
-        while(1):
-            new_mappings = self.representation._uniformFromBall(mapping,radius,20)
+        while 1:
+            new_mappings = self.representation._uniformFromBall(
+                mapping, radius, 20
+            )
             for m in new_mappings:
                 if list(m) != list(mapping):
                     return m
@@ -112,13 +148,16 @@ class SimulatedAnnealingMapper(object):
                 log.error("Could not mutate mapping")
                 raise RuntimeError("Could not mutate mapping")
 
-
     def generate_mapping(self):
-        """ Generates a full mapping using simulated anealing
-        """
+        """Generates a full mapping using simulated anealing"""
         mapping_obj = self.random_mapper.generate_mapping()
-        if hasattr(self.representation,'canonical_operations') and not self.representation.canonical_operations:
-            mapping = self.representation.toRepresentationNoncanonical(mapping_obj)
+        if (
+            hasattr(self.representation, "canonical_operations")
+            and not self.representation.canonical_operations
+        ):
+            mapping = self.representation.toRepresentationNoncanonical(
+                mapping_obj
+            )
         else:
             mapping = self.representation.toRepresentation(mapping_obj)
 
@@ -132,22 +171,24 @@ class SimulatedAnnealingMapper(object):
         iter = 0
         temperature = self.initial_temperature
         if self.progress:
-            pbar = tqdm.tqdm(total=self.max_rejections*20)
+            pbar = tqdm.tqdm(total=self.max_rejections * 20)
 
         while rejections < self.max_rejections:
-            temperature = self.temperature_cooling(temperature,iter)
+            temperature = self.temperature_cooling(temperature, iter)
             log.info(f"Current temperature {temperature}")
-            mapping = self.move(last_mapping,temperature)
+            mapping = self.move(last_mapping, temperature)
             cur_exec_time = self.simulation_manager.simulate([mapping])[0]
             faster = cur_exec_time < last_exec_time
             if not faster and cur_exec_time != last_exec_time:
-                prob = self.query_accept(cur_exec_time - last_exec_time, temperature)
+                prob = self.query_accept(
+                    cur_exec_time - last_exec_time, temperature
+                )
                 rand = random.random()
                 accept_randomly = prob > rand
             else:
-                accept_randomly = False #don't accept if no movement.
+                accept_randomly = False  # don't accept if no movement.
             if faster or accept_randomly:
-                #accept
+                # accept
                 if cur_exec_time < best_exec_time:
                     best_exec_time = cur_exec_time
                     best_mapping = mapping
@@ -156,19 +197,19 @@ class SimulatedAnnealingMapper(object):
                 log.info(f"Rejected ({rejections})")
                 rejections = 0
             else:
-                #reject
+                # reject
                 if temperature <= self.final_temperature:
                     rejections += 1
             iter += 1
             if self.progress:
                 pbar.update(1)
         if self.progress:
-            pbar.update(self.max_rejections*20-iter)
+            pbar.update(self.max_rejections * 20 - iter)
             pbar.close()
 
         self.simulation_manager.statistics.log_statistics()
         self.simulation_manager.statistics.to_file()
         if self.dump_cache:
-            self.simulation_manager.dump('mapping_cache.csv')
+            self.simulation_manager.dump("mapping_cache.csv")
 
         return self.representation.fromRepresentation(best_mapping)

@@ -15,36 +15,36 @@ project_name = "mocasin"
 version = "0.1.0"
 
 install_requirements = [
-    'argparse',
-    'arpeggio',
-    'cvxpy<1.2' if sys.version_info < (3, 7) else 'cvxpy',
-    'cvxopt',
-    'deap',
-    'h5py',
-    'hydra-core>=1.0.3,<1.1.0',
-    'scipy',
-    'scipy<1.6.0' if sys.version_info < (3, 7) else 'scipy',
-    'lxml',
-    'matplotlib',
-    'networkx',
-    'numba',
-    'numpy',
-    'pint',
-    'pydot',
-    'pympsym>=0.5',
-    'pyyaml',
-    'pyxb',
-    'recordclass',
-    'simpy',
-    'sortedcontainers',
-    'termcolor',
-    'tqdm',
+    "argparse",
+    "arpeggio",
+    "cvxpy<1.2" if sys.version_info < (3, 7) else "cvxpy",
+    "cvxopt",
+    "deap",
+    "h5py",
+    "hydra-core>=1.0.3,<1.1.0",
+    "scipy",
+    "scipy<1.6.0" if sys.version_info < (3, 7) else "scipy",
+    "lxml",
+    "matplotlib",
+    "networkx",
+    "numba",
+    "numpy",
+    "pint",
+    "pydot",
+    "pympsym>=0.5",
+    "pyyaml",
+    "pyxb",
+    "recordclass",
+    "simpy",
+    "sortedcontainers",
+    "termcolor",
+    "tqdm",
 ]
-setup_requirements = ['pytest-runner', 'sphinx', 'numpy']
+setup_requirements = ["pytest-runner", "sphinx", "numpy"]
 
 
 if sys.version_info < (3, 7):
-    install_requirements.append('dataclasses')
+    install_requirements.append("dataclasses")
 
 
 class InstallPynautyCommand(distutils.cmd.Command):
@@ -71,11 +71,13 @@ class InstallPynautyCommand(distutils.cmd.Command):
             print("Downloading nauty")
             urllib.request.urlretrieve(
                 "http://users.cecs.anu.edu.au/~bdm/nauty/nauty27r1.tar.gz",
-                "nauty27r1.tar.gz")
+                "nauty27r1.tar.gz",
+            )
             print("Downloading pynauty")
             urllib.request.urlretrieve(
                 "https://web.cs.dal.ca/~peter/software/pynauty/pynauty-0.6.0.tar.gz",
-                "pynauty-0.6.0.tar.gz")
+                "pynauty-0.6.0.tar.gz",
+            )
             print("Extracting pynauty")
             with tarfile.open("pynauty-0.6.0.tar.gz") as tar:
                 tar.extractall(".")
@@ -84,18 +86,19 @@ class InstallPynautyCommand(distutils.cmd.Command):
                 tar.extractall("pynauty-0.6.0/")
             os.rename("pynauty-0.6.0/nauty27r1", "pynauty-0.6.0/nauty")
             print("Build pynauty")
-            subprocess.check_call(["make", "pynauty"],
-                                  cwd=f"{tmpdir}/pynauty-0.6.0")
+            subprocess.check_call(
+                ["make", "pynauty"], cwd=f"{tmpdir}/pynauty-0.6.0"
+            )
             print("Install pynauty")
-            subprocess.check_call(["python", "setup.py", "install"],
-                                  cwd=f"{tmpdir}/pynauty-0.6.0")
+            subprocess.check_call(
+                ["python", "setup.py", "install"], cwd=f"{tmpdir}/pynauty-0.6.0"
+            )
         os.chdir(cwd)
 
 
 class InstallCommand(install):
-
     def run(self):
-        self.run_command('pynauty')
+        self.run_command("pynauty")
         # XXX Actually install.run(self) should be used here. But there seems
         # to be a bug in setuptools that skips installing the required
         # packages... The line below seems to fix this.
@@ -104,10 +107,10 @@ class InstallCommand(install):
 
 
 class DevelopCommand(develop):
-
     def run(self):
         develop.run(self)
-        self.run_command('pynauty')
+        self.run_command("pynauty")
+
 
 setup(
     name=project_name,
@@ -115,23 +118,27 @@ setup(
     packages=find_packages(),
     install_requires=install_requirements,
     setup_requires=setup_requirements,
-    tests_require=['pytest', 'pytest_mock'],
+    tests_require=["pytest", "pytest_mock"],
     command_options={
-        'build_sphinx': {
-            'project': ('setup.py', project_name),
-            'version': ('setup.py', version),
-            'release': ('setup.py', version),
-            'source_dir': ('setup.py', 'doc'),
-            'build_dir': ('setup.py', 'doc/build'),
+        "build_sphinx": {
+            "project": ("setup.py", project_name),
+            "version": ("setup.py", version),
+            "release": ("setup.py", version),
+            "source_dir": ("setup.py", "doc"),
+            "build_dir": ("setup.py", "doc/build"),
         }
     },
     cmdclass={
-        'doc': BuildDocCommand,
-        'pynauty': InstallPynautyCommand,
-        'install': InstallCommand,
-        'develop': DevelopCommand,
+        "doc": BuildDocCommand,
+        "pynauty": InstallPynautyCommand,
+        "install": InstallCommand,
+        "develop": DevelopCommand,
     },
-    entry_points={'console_scripts': ['mocasin=mocasin.__main__:main',
-                                      'mocasin_profile=mocasin.__main__:profile' ]},
+    entry_points={
+        "console_scripts": [
+            "mocasin=mocasin.__main__:main",
+            "mocasin_profile=mocasin.__main__:profile",
+        ]
+    },
     include_package_data=True,
 )

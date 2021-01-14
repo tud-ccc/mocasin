@@ -96,8 +96,10 @@ class BaseSimulation:
         Raises:
             RuntimeError
         """
-        raise RuntimeError("run() may only be called on a simulation object "
-                           "that is used in a with statement")
+        raise RuntimeError(
+            "run() may only be called on a simulation object "
+            "that is used in a with statement"
+        )
 
 
 class KpnSimulation(BaseSimulation):
@@ -130,11 +132,13 @@ class KpnSimulation(BaseSimulation):
         ``app``
         """
         super().__enter__()
-        self.app = RuntimeKpnApplication(name=self.kpn.name,
-                                         kpn_graph=self.kpn,
-                                         mapping=self.mapping,
-                                         trace_generator=self.trace,
-                                         system=self.system)
+        self.app = RuntimeKpnApplication(
+            name=self.kpn.name,
+            kpn_graph=self.kpn,
+            mapping=self.mapping,
+            trace_generator=self.trace,
+            system=self.system,
+        )
         return self
 
     def __exit__(self, type, value, traceback):
@@ -173,13 +177,14 @@ class KpnSimulation(BaseSimulation):
         Args:
             cfg: a hydra configuration object
         """
-        platform = hydra.utils.instantiate(cfg['platform'])
-        trace = hydra.utils.instantiate(cfg['trace'])
-        kpn = hydra.utils.instantiate(cfg['kpn'])
-        rep = hydra.utils.instantiate(cfg['representation'],kpn,platform)
-        mapper = hydra.utils.instantiate(cfg['mapper'], kpn, platform, trace, rep)
+        platform = hydra.utils.instantiate(cfg["platform"])
+        trace = hydra.utils.instantiate(cfg["trace"])
+        kpn = hydra.utils.instantiate(cfg["kpn"])
+        rep = hydra.utils.instantiate(cfg["representation"], kpn, platform)
+        mapper = hydra.utils.instantiate(
+            cfg["mapper"], kpn, platform, trace, rep
+        )
         mapping = mapper.generate_mapping()
         simulation = KpnSimulation(platform, kpn, mapping, trace)
 
         return simulation
-

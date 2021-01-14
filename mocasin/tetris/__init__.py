@@ -22,6 +22,7 @@ class TetrisScheduling:
     platform. While this class is called from hydra tasks, we dedicate a static
     method to handle hydra configuration object.
     """
+
     def __init__(self, scheduler, reqs):
         self.scheduler = scheduler
         self.requests = reqs
@@ -30,7 +31,8 @@ class TetrisScheduling:
         # TODO: no need in a method which generates the whole list, switch to
         # a single object constructor
         self.jobs = list(
-            map(lambda x: x.dispatch(), Job.from_requests(self.requests)))
+            map(lambda x: x.dispatch(), Job.from_requests(self.requests))
+        )
         log.info("Jobs: {}".format(",".join(x.to_str() for x in self.jobs)))
 
         # Scheduling results
@@ -53,15 +55,20 @@ class TetrisScheduling:
                 continue
             log.error(
                 "Job {} is not completed at the end of the schedule: ".format(
-                    sj.to_str(), fj.to_str()))
+                    sj.to_str(), fj.to_str()
+                )
+            )
             failed = True
 
         # Check all jobs meet deadlines
         for j, js in self.schedule.per_requests().items():
             if j.deadline >= js[-1].end_time:
                 continue
-            log.error("Job {} does not meet deadline, finished={:.3f}".format(
-                j.to_str(), js[-1].end_time))
+            log.error(
+                "Job {} does not meet deadline, finished={:.3f}".format(
+                    j.to_str(), js[-1].end_time
+                )
+            )
             failed = True
 
         if failed:
@@ -71,10 +78,11 @@ class TetrisScheduling:
             sys.exit(1)
 
     def run(self):
-        self.schedule = self.scheduler.schedule(self.jobs,
-                                                scheduling_start_time=0.0)
+        self.schedule = self.scheduler.schedule(
+            self.jobs, scheduling_start_time=0.0
+        )
         self.check_solution()
-        self.found_schedule = (self.schedule is not None)
+        self.found_schedule = self.schedule is not None
 
     @staticmethod
     def from_hydra(cfg):
@@ -86,17 +94,17 @@ class TetrisScheduling:
             cfg: a hydra configuration object
         """
         # Set the platform
-        platform = hydra.utils.instantiate(cfg['platform'])
+        platform = hydra.utils.instantiate(cfg["platform"])
 
         # Read applications and mappings
-        base_apps_dir = cfg['tetris_apps_dir']
+        base_apps_dir = cfg["tetris_apps_dir"]
         apps = read_applications(base_apps_dir, platform)
 
         # Read jobs file
-        reqs = read_requests(cfg['job_table'], apps)
+        reqs = read_requests(cfg["job_table"], apps)
 
         # Initialize tetris scheduler
-        scheduler = hydra.utils.instantiate(cfg['resource_manager'], platform)
+        scheduler = hydra.utils.instantiate(cfg["resource_manager"], platform)
 
         scheduling = TetrisScheduling(scheduler, reqs)
         return scheduling
@@ -109,6 +117,7 @@ class TetrisManagement:
     input job request trace and platform. While this class is called from hydra
     tasks, we dedicate a static method to handle hydra configuration object.
     """
+
     def __init__(self, manager, tracer, reqs):
         self.manager = manager
         self.tracer = tracer
@@ -127,19 +136,19 @@ class TetrisManagement:
             cfg: a hydra configuration object
         """
         # Set the platform
-        platform = hydra.utils.instantiate(cfg['platform'])
+        platform = hydra.utils.instantiate(cfg["platform"])
 
         # Read applications and mappings
-        base_apps_dir = cfg['tetris_apps_dir']
+        base_apps_dir = cfg["tetris_apps_dir"]
         apps = read_applications(base_apps_dir, platform)
 
         # Read jobs file
-        reqs = read_requests(cfg['input_jobs'], apps)
+        reqs = read_requests(cfg["input_jobs"], apps)
 
         # Initialize tetris scheduler
-        scheduler = hydra.utils.instantiate(cfg['resource_manager'], platform)
+        scheduler = hydra.utils.instantiate(cfg["resource_manager"], platform)
 
-        manager = ResourceManager(platform, scheduler, cfg['allow_migration'])
+        manager = ResourceManager(platform, scheduler, cfg["allow_migration"])
 
         tracer = TracePlayer(manager, reqs)
 

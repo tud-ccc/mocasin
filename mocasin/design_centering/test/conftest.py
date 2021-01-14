@@ -8,18 +8,22 @@ from scipy.linalg import sqrtm
 from mocasin.design_centering.volume import *
 import mocasin.design_centering.sample as sample
 
+
 @pytest.fixture
 def Q_not_rotated():
-    return np.array(sqrtm(np.array([[3., 0.], [0., 1 / 3.]])))
+    return np.array(sqrtm(np.array([[3.0, 0.0], [0.0, 1 / 3.0]])))
+
 
 @pytest.fixture
 def radius():
     return 7.0
 
+
 @pytest.fixture
 def Q():
     return np.array(
-        sqrtm(np.array([[1.66666667, 1.33333333], [1.33333333, 1.66666667]])))  # same as above, rotated 45^\circ
+        sqrtm(np.array([[1.66666667, 1.33333333], [1.33333333, 1.66666667]]))
+    )  # same as above, rotated 45^\circ
 
 
 @pytest.fixture
@@ -69,29 +73,31 @@ def r_small():
 
 @pytest.fixture
 def kpn():
-    k = KpnGraph('a')
-    k.add_process(KpnProcess('a'))
-    k.add_process(KpnProcess('b'))
+    k = KpnGraph("a")
+    k.add_process(KpnProcess("a"))
+    k.add_process(KpnProcess("b"))
     return k
 
 
 @pytest.fixture
 def platform(num_procs, mocker):
-    p = Platform('platform')
+    p = Platform("platform")
     procs = []
     for i in range(num_procs):
-        proc = Processor(('processor' + str(i)), 'proctype', mocker.Mock())
+        proc = Processor(("processor" + str(i)), "proctype", mocker.Mock())
         procs.append(proc)
         p.add_processor(proc)
     policy = mocker.Mock()
-    sched = Scheduler('name', procs, policy)
+    sched = Scheduler("name", procs, policy)
     p.add_scheduler(sched)
     return p
 
+
 @pytest.fixture
-def representation(kpn,platform):
-    rep = SimpleVectorRepresentation(kpn,platform)
+def representation(kpn, platform):
+    rep = SimpleVectorRepresentation(kpn, platform)
     return rep
+
 
 @pytest.fixture
 def point():
@@ -118,14 +124,14 @@ def dim():
 
 
 @pytest.fixture
-def lp_vol(center, point, kpn, platform, representation,radius):
-    vol = LPVolume(kpn, platform, representation, center,radius=radius)
+def lp_vol(center, point, kpn, platform, representation, radius):
+    vol = LPVolume(kpn, platform, representation, center, radius=radius)
     return vol
 
 
 @pytest.fixture
-def vol_mu(center_mu, kpn, platform, representation,radius,num_samples):
-    vol = LPVolume(kpn, platform, representation, center_mu,radius=radius)
+def vol_mu(center_mu, kpn, platform, representation, radius, num_samples):
+    vol = LPVolume(kpn, platform, representation, center_mu, radius=radius)
     vol.adapt_samples = num_samples
     return vol
 
@@ -144,9 +150,11 @@ def s_set():
         result.add_sample(s)
     return result
 
+
 @pytest.fixture
 def oracle():
     return MockOracle
+
 
 # custom class to be the mock for the oracle and simulation environment for DC
 class MockOracle(object):
@@ -156,7 +164,8 @@ class MockOracle(object):
             s.setFeasibility(True)
         return samples
 
-#https://stackoverflow.com/questions/4984647/accessing-dict-keys-like-an-attribute
+
+# https://stackoverflow.com/questions/4984647/accessing-dict-keys-like-an-attribute
 class AttrDict(dict):
     def __init__(self, *args, **kwargs):
         super(AttrDict, self).__init__(*args, **kwargs)
@@ -165,25 +174,28 @@ class AttrDict(dict):
 
 @pytest.fixture
 def conf(num_samples):
-    #center movement should probably work without aggressive movement (fix this in dc branch)
-    return AttrDict({'adapt_samples' : num_samples,
-                     'max_step': 10,
-                     'max_samples' : 50,
-                     'adaptable_center_weights' : False ,
-                     'radius' : 7,
-                     'representation' : 'SimpleVector',
-                     'channels' : False,
-                     'norm_p' : 2,
-                     'aggressive_center_movement' : True,
-                     'periodic_boundary_conditions' : False ,
-                     'distr' : 'uniform',
-                     'record_samples' : False,
-                     'show_polynomials' : False,
-                     'deg_p_polynomial' : 2,
-                     'deg_s_polynomial' : 2,
-                     'step_width' : [0.9, 0.7, 0.6, 0.5, 0.1],
-                     'hitting_probability' : [0.4, 0.5, 0.5, 0.7, 0.9],
-                     'hitting_probability_threshold' : 0.7,
-                     'keep_metrics' : True,
-                     'max_pe' : 16})
-
+    # center movement should probably work without aggressive movement (fix this in dc branch)
+    return AttrDict(
+        {
+            "adapt_samples": num_samples,
+            "max_step": 10,
+            "max_samples": 50,
+            "adaptable_center_weights": False,
+            "radius": 7,
+            "representation": "SimpleVector",
+            "channels": False,
+            "norm_p": 2,
+            "aggressive_center_movement": True,
+            "periodic_boundary_conditions": False,
+            "distr": "uniform",
+            "record_samples": False,
+            "show_polynomials": False,
+            "deg_p_polynomial": 2,
+            "deg_s_polynomial": 2,
+            "step_width": [0.9, 0.7, 0.6, 0.5, 0.1],
+            "hitting_probability": [0.4, 0.5, 0.5, 0.7, 0.9],
+            "hitting_probability_threshold": 0.7,
+            "keep_metrics": True,
+            "max_pe": 16,
+        }
+    )

@@ -9,6 +9,7 @@ from glob import glob
 from mocasin.util import logging
 from mocasin.common.mapping import Mapping
 from mocasin.representations import MappingRepresentation
+
 log = logging.getLogger(__name__)
 
 
@@ -38,23 +39,23 @@ class FromFileMapper:
         self.mappings = []
         for file_path in glob(files_pattern):
             try:
-                with open(file_path,'rb') as f:
+                with open(file_path, "rb") as f:
                     p = pickle.Unpickler(f)
                     mapping = p.load()
-                    assert isinstance(mapping,Mapping)
+                    assert isinstance(mapping, Mapping)
                     self.mappings.append(mapping)
             except IOError as e:
                 log.error("Unable to read file.")
                 raise e
 
         if len(self.mappings) == 0:
-            log.error(f"Could not find any mappings matching pattern: '{files_pattern}'.")
+            log.error(
+                f"Could not find any mappings matching pattern: '{files_pattern}'."
+            )
             raise RuntimeError
 
-
     def generate_multiple_mappings(self):
-        """ Generates a list of mappings from the read files.
-        """
+        """Generates a list of mappings from the read files."""
 
         n = len(self.mappings)
         mappings = []
@@ -63,18 +64,21 @@ class FromFileMapper:
         return mappings
 
     def generate_mapping(self):
-        """ Generates a single mapping from the list of read files.
-        """
+        """Generates a single mapping from the list of read files."""
 
-        #get next mapping
+        # get next mapping
         try:
             mapping = self.mappings.pop()
         except IndexError:
             log.error("Trying to generate more mappings than files read.")
             raise RuntimeError
-        #check that mapping is valid
-        kpn_names, platform_names = MappingRepresentation.gen_hash(self.kpn,self.platform)
-        read_kpn_names, read_platform_names = MappingRepresentation.gen_hash(mapping.kpn, mapping.platform)
+        # check that mapping is valid
+        kpn_names, platform_names = MappingRepresentation.gen_hash(
+            self.kpn, self.platform
+        )
+        read_kpn_names, read_platform_names = MappingRepresentation.gen_hash(
+            mapping.kpn, mapping.platform
+        )
         if kpn_names != read_kpn_names:
             log.error("Mapping application does not match application")
             raise RuntimeError
@@ -82,7 +86,7 @@ class FromFileMapper:
             log.error("Mapping platform does not match platform")
             raise RuntimeError
 
-        #if mapping is valid, update objects in representation
+        # if mapping is valid, update objects in representation
         mapping.platform = self.platform
         mapping.update_kpn_object(self.kpn)
         self.representation.platform = self.platform
