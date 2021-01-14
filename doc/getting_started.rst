@@ -1,12 +1,12 @@
 Getting Started
 ===============
 
-Pykpn sources are available from https://cc.inf.tu-dresden.de/gitlab/pykpn/pykpn
+Mocasin sources are available from https://cc.inf.tu-dresden.de/gitlab/mocasin/mocasin
 
 Dependencies
 ------------
 
-The pykpn package depends on python and virtualenv. We support python 3.6 and python 3.7. To use some of the numerical libraries included you also need BLAS+LAPACK.
+The mocasin package depends on python and virtualenv. We support python 3.6 and python 3.7. To use some of the numerical libraries included you also need BLAS+LAPACK.
 
 In a Debian-based system (e.g. Ubuntu), you can install these as follows:
 
@@ -17,25 +17,25 @@ In a Debian-based system (e.g. Ubuntu), you can install these as follows:
 Installation
 ------------
 
-To use pykpn activate a virtual environment or create a new one as follows:
+To use mocasin activate a virtual environment or create a new one as follows:
 
 .. code-block:: sh
 
-   virtualenv -p python3 ~/virtualenvs/pykpn
-   source ~/virtualenvs/pykpn/bin/activate
+   virtualenv -p python3 ~/virtualenvs/mocasin
+   source ~/virtualenvs/mocasin/bin/activate
 
-Then we can either install pykpn or make it available for development:
+Then we can either install mocasin or make it available for development:
 
 .. code-block:: sh
 
-   cd <path/to/pykpn>
+   cd <path/to/mocasin>
    python setup.py install
 
 or
 
 .. code-block:: sh
 
-   cd <path/to/pykpn>
+   cd <path/to/mocasin>
    python setup.py develop
 
 Please note that this also installs pynauty from the
@@ -50,7 +50,7 @@ The following command runs all tests:
 
 .. code-block:: sh
 
-   cd <path/to/pykpn>
+   cd <path/to/mocasin>
    python setup.py pytest
 
 Pytest can be configured by creating a file ``pytest.ini``. A list of available
@@ -67,7 +67,7 @@ The documentation is build by the following command:
 
 .. code-block:: sh
 
-   cd <path/to/pykpn>
+   cd <path/to/mocasin>
    python setup.py doc
 
 The resulting html files are located in ``doc/build/html``.
@@ -75,24 +75,24 @@ The resulting html files are located in ``doc/build/html``.
 An Example
 ----------
 
-Pykpn can be used for a multitude of tasks. One of the core functionalities is
+Mocasin can be used for a multitude of tasks. One of the core functionalities is
 the simulation of KPN applications running an a virtual platform. A simple
  can be started by the following command:
 
 .. code-block:: sh
 
-  cd <path/to/pykpn>
-  scripts/pykpn_manager.py task=simulate app_name=audio_filter platform_name=exynos
+  cd <path/to/mocasin>
+  scripts/mocasin_manager.py task=simulate app_name=audio_filter platform_name=exynos
 
 This simulates the execution of the *Audio Filter* application executing on a
-model of the *Exynos* platform. Here we are using the pykpn_manager, which is
+model of the *Exynos* platform. Here we are using the mocasin_manager, which is
 a general manager script that has all tasks available. In fact, since the default
 application and platform are *Audio Filter* and *Exynos*, we could run the command as:
 
 .. code-block:: sh
 
-  cd <path/to/pykpn>
-  scripts/pykpn_manager.py task=simulate
+  cd <path/to/mocasin>
+  scripts/mocasin_manager.py task=simulate
 
 You can make the output more verbose by changing the log level, e.g. ``log_level=INFO``
 or ``log_level=DEBUG``. The default is ``log_level=WARNING``, by setting it to ``log_level=ERROR`` you can also
@@ -103,8 +103,8 @@ packages or modules. For instance:
 
 .. code-block:: sh
 
-  cd <path/to/pykpn>
-  scripts/pykpn_manager.py task=simulate log_level=INFO hydra.verbose=pykpn.simulate.channel
+  cd <path/to/mocasin>
+  scripts/mocasin_manager.py task=simulate log_level=INFO hydra.verbose=mocasin.simulate.channel
 
 
 
@@ -112,5 +112,5 @@ To see the available options, like tasks, applications or architectures, use
 
 .. code-block:: sh
 
-  cd <path/to/pykpn>
-  scripts/pykpn_manager.py --help
+  cd <path/to/mocasin>
+  scripts/mocasin_manager.py --help

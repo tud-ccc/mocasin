@@ -1,4 +1,4 @@
-Welcome to pykpn's documentation!
+Welcome to mocasin's documentation!
 =================================
 
 .. toctree::

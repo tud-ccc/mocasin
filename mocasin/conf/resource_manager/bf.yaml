@@ -1,0 +1,7 @@
+# @package _group_
+
+_target_: mocasin.tetris.scheduler.bruteforce.BruteforceScheduler
+
+# Dump the status of the queue every N steps
+bf_dump_steps: 1000
+

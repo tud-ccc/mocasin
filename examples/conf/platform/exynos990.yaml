@@ -1,23 +1,23 @@
 # @package _group_
-_target_: pykpn.platforms.exynos990.DesignerPlatformExynos990
+_target_: mocasin.platforms.exynos990.DesignerPlatformExynos990
 # Once hydra 1.1 rolls out with recursive instantiation,
 # we should replace this and recursively instantiate
 # the processors. See:
 # https://github.com/facebookresearch/hydra/issues/566
 processor_0:
-  _target_: pykpn.platforms.platformDesigner.genericProcessor
+  _target_: mocasin.platforms.platformDesigner.genericProcessor
   type : 'proc_type_0'
   frequency : 2000000000
 processor_1:
-  _target_: pykpn.platforms.platformDesigner.genericProcessor
+  _target_: mocasin.platforms.platformDesigner.genericProcessor
   type : 'proc_type_1'
   frequency : 2000000000
 processor_2:
-  _target_: pykpn.platforms.platformDesigner.genericProcessor
+  _target_: mocasin.platforms.platformDesigner.genericProcessor
   type : 'proc_type_2'
   frequency : 2000000000
 processor_3:
-  _target_: pykpn.platforms.platformDesigner.genericProcessor
+  _target_: mocasin.platforms.platformDesigner.genericProcessor
   type : 'proc_type_3'
   frequency : 2000000000
 symmetries_json: "../../../platform/symmetries/exynos990.json"

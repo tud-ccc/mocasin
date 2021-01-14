@@ -1,5 +1,0 @@
-# @package _group_
-_target_: pykpn.representations.SimpleVectorRepresentation
-channels : false
-norm_p : 2
-periodic_boundary_conditions: false

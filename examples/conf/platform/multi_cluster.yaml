@@ -1,15 +1,15 @@
 # @package _group_
-_target_: pykpn.platforms.multi_cluster.DesignerPlatformMultiCluster
+_target_: mocasin.platforms.multi_cluster.DesignerPlatformMultiCluster
 # Once hydra 1.1 rolls out with recursive instantiation,
 # we should replace this and recursively instantiate
 # the processors. See:
 # https://github.com/facebookresearch/hydra/issues/566
 processor_0:
-  _target_: pykpn.platforms.platformDesigner.genericProcessor
+  _target_: mocasin.platforms.platformDesigner.genericProcessor
   type : 'proc_type_0'
   frequency : 2000000000
 processor_1:
-  _target_: pykpn.platforms.platformDesigner.genericProcessor
+  _target_: mocasin.platforms.platformDesigner.genericProcessor
   type : 'proc_type_1'
   frequency : 2000000000
 symmetries_json: "../../../platform/symmetries/multi_cluster.json"

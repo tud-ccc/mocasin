@@ -10,7 +10,7 @@ import pytest
 
 @pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_symmetries_slx(datadir,slx_platform):
-    subprocess.check_call(["pykpn", "generate_mapping",
+    subprocess.check_call(["mocasin", "generate_mapping",
                            "kpn=audio_filter",
                            f"platform={slx_platform}",
                            "representation=Symmetries",
@@ -20,7 +20,7 @@ def test_symmetries_slx(datadir,slx_platform):
                            "trace=slx_default"],
                           cwd=datadir)
 
-    subprocess.check_call(["pykpn", "generate_mapping",
+    subprocess.check_call(["mocasin", "generate_mapping",
                            "kpn=audio_filter",
                            f"platform={slx_platform}",
                            "representation=Symmetries",
@@ -30,7 +30,7 @@ def test_symmetries_slx(datadir,slx_platform):
                            "trace=slx_default"],
                           cwd=datadir)
 
-    subprocess.check_call(["pykpn", "generate_mapping",
+    subprocess.check_call(["mocasin", "generate_mapping",
                            "kpn=audio_filter",
                            f"platform={slx_platform}",
                            "representation=Symmetries",
@@ -65,7 +65,7 @@ def test_symmetries_slx(datadir,slx_platform):
 @pytest.mark.skip(reason="Test just takes too long.")
 def test_symmetries_tgff_large(datadir,designer_platform_large):
     tgff_dir = os.path.join(datadir, 'tgff/e3s-0.9')
-    subprocess.check_call(["pykpn", "generate_mapping",
+    subprocess.check_call(["mocasin", "generate_mapping",
                            "kpn=tgff_reader",
                            "tgff.directory=%s" % tgff_dir,
                            "tgff.file=auto-indust-cords.tgff",
@@ -77,7 +77,7 @@ def test_symmetries_tgff_large(datadir,designer_platform_large):
                            "trace=tgff_reader"],
                           cwd=datadir)
 
-    subprocess.check_call(["pykpn", "generate_mapping",
+    subprocess.check_call(["mocasin", "generate_mapping",
                            "kpn=tgff_reader",
                            "tgff.directory=%s" % tgff_dir,
                            "tgff.file=auto-indust-cords.tgff",
@@ -107,7 +107,7 @@ def test_symmetries_tgff_large(datadir,designer_platform_large):
 
 def test_symmetries_tgff_small(datadir,designer_platform_small):
     tgff_dir = os.path.join(datadir, 'tgff/e3s-0.9')
-    subprocess.check_call(["pykpn", "generate_mapping",
+    subprocess.check_call(["mocasin", "generate_mapping",
                            "kpn=tgff_reader",
                            "tgff.directory=%s" % tgff_dir,
                            "tgff.file=auto-indust-cords.tgff",
@@ -119,7 +119,7 @@ def test_symmetries_tgff_small(datadir,designer_platform_small):
                            "trace=tgff_reader"],
                           cwd=datadir)
 
-    subprocess.check_call(["pykpn", "generate_mapping",
+    subprocess.check_call(["mocasin", "generate_mapping",
                            "kpn=tgff_reader",
                            "tgff.directory=%s" % tgff_dir,
                            "tgff.file=auto-indust-cords.tgff",

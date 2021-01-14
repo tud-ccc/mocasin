@@ -1,0 +1,9 @@
+# @package _group_
+_target_ : mocasin.design_centering.perturbation.PerturbationManager
+threads : 4
+max_iters : 1000
+ball_num : 20
+radius : 2.0
+num_mappings : 10
+num_tests : 10
+perturbation_type : classic

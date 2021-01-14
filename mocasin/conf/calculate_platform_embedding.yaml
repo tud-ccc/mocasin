@@ -1,0 +1,7 @@
+# @package _global_
+defaults:
+  - common
+  - hydra/job_logging: mocasin
+  - tgff: default
+  - platform: ???
+  - representation: MetricSpaceEmbedding

@@ -1,0 +1,10 @@
+# @package _global_
+defaults:
+  - common
+  - hydra/job_logging: mocasin
+  - tgff: default
+  - kpn: default
+  - trace: default
+  - sdf3: default
+
+output_file: "${kpn.name}.dot"

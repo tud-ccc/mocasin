@@ -1,5 +1,0 @@
-# @package _group_
-_target_ : pykpn.common.trace.RandomTraceGenerator
-min_cycles : 100
-max_cycles : 10000
-expected_num_executions : 100

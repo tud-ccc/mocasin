@@ -1,0 +1,5 @@
+# @package _group_
+_target_: mocasin.representations.SimpleVectorRepresentation
+channels : false
+norm_p : 2
+periodic_boundary_conditions: false

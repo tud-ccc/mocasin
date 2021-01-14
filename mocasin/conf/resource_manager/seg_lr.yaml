@@ -1,0 +1,21 @@
+# @package _group_
+
+_target_: mocasin.tetris.scheduler.seg_lr.SegLRScheduler
+# A high-level mapper algorithm: segmentized (SEG), joint-fixed (JF),
+# joint-dynamic (JD)
+# seg_lr_type: SEG
+
+# Determines an order, in which applications are mapped.
+# Options: COST, DEADLINE, CDP.
+seg_lr_sorting: COST
+
+# In segmentizes version, which points might form the segment: all points (ALL),
+# or only best (if possible, not to violate deadlines) (BEST)
+seg_lr_explore: ALL
+
+# Enable constraints in Lagrangian relaxation solver:
+# constaint on resources (R), on delay (D), on resource-delay-product (RDP).
+seg_lr_constraints: []
+
+# Number of iterations (rounds) in Lagrangian relaxation
+seg_lr_iters: 1000

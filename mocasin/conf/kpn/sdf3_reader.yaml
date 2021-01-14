@@ -1,0 +1,4 @@
+# @package _group_
+_target_: mocasin.sdf3.app.Sdf3Graph
+name: null
+xml_file: "${sdf3.file}"

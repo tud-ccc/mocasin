@@ -19,7 +19,7 @@ slx_expected_sim_time = {
 @pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_slx_simulate(datadir, slx_kpn_platform_pair):
     kpn, platform = slx_kpn_platform_pair
-    res = subprocess.run(["pykpn", "simulate",
+    res = subprocess.run(["mocasin", "simulate",
                           f"kpn={kpn}",
                           f"platform={platform}",
                           "mapper=slx_default",
@@ -51,7 +51,7 @@ tgff_expected_sim_time = {
 
 
 def test_tgff_simulate(datadir, tgff):
-    res = subprocess.run(["pykpn", "simulate",
+    res = subprocess.run(["mocasin", "simulate",
                           "platform=designer_bus",
                           "kpn=tgff_reader",
                           "trace=tgff_reader",
@@ -73,7 +73,7 @@ def test_tgff_simulate(datadir, tgff):
 
 @pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_sdf3_simulate(datadir):
-    res = subprocess.run(["pykpn", "simulate",
+    res = subprocess.run(["mocasin", "simulate",
                           "platform=exynos",
                           "kpn=sdf3_reader",
                           "trace=sdf3_reader",

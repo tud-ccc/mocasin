@@ -1,0 +1,3 @@
+# @package _group_
+_target_: mocasin.mapper.partial.InputTupleFullMapper
+input_tuple : ???

@@ -17,7 +17,7 @@ def test_calculate_platform_symmetries_slx(datadir, expected_dir, slx_platform, 
         file_name += ".json"
         out_file += ".json"
 
-    subprocess.check_call(["pykpn", "calculate_platform_symmetries",
+    subprocess.check_call(["mocasin", "calculate_platform_symmetries",
                            "platform=%s" % slx_platform,
                            "out_file=%s" % out_file,
                            "mpsym=%s" % str(mpsym)],
@@ -36,7 +36,7 @@ def test_calculate_platform_symmetries_designer(datadir, expected_dir, designer_
         file_name += ".json"
         out_file += ".json"
 
-    subprocess.check_call(["pykpn", "calculate_platform_symmetries",
+    subprocess.check_call(["mocasin", "calculate_platform_symmetries",
                            "platform=%s" % designer_platform_small,
                            "out_file=%s" % out_file,
                            "mpsym=%s" % str(mpsym)],

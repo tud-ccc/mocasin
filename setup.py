@@ -11,8 +11,8 @@ from setuptools.command.develop import develop
 from doc.build_doc import BuildDocCommand
 import subprocess
 
-project_name = "pykpn"
-version = "0.1"
+project_name = "mocasin"
+version = "0.1.0"
 
 install_requirements = [
     'argparse',
@@ -131,7 +131,7 @@ setup(
         'install': InstallCommand,
         'develop': DevelopCommand,
     },
-    entry_points={'console_scripts': ['pykpn=pykpn.__main__:main',
-                                      'pykpn_profile=pykpn.__main__:profile' ]},
+    entry_points={'console_scripts': ['mocasin=pykpn.__main__:main',
+                                      'mocasin_profile=mocasin.__main__:profile' ]},
     include_package_data=True,
 )

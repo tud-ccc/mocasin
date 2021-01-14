@@ -1,0 +1,15 @@
+# @package _global_
+defaults:
+    - common
+    - hydra/job_logging: mocasin
+    - tgff: default
+    - platform: default
+    - kpn: default
+    - trace: default
+    - representation: SimpleVector
+    - sdf3: default
+query: ???
+output_file: "None"
+vector: "None"
+
+

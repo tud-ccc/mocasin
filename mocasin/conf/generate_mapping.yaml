@@ -1,0 +1,16 @@
+# @package _global_
+defaults:
+  - common
+  - hydra/job_logging: mocasin
+  - tgff: default
+  - kpn: default
+  - platform: default
+  - trace: default
+  - representation: SimpleVector
+  - mapper: default
+  - sdf3: default
+
+simulate_best : true
+objective : runtime
+outdir : ./
+progress :  true

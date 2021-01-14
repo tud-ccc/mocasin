@@ -1,0 +1,26 @@
+# @package _group_
+_target_: mocasin.tgff.tgffSimulation.TraceGeneratorWrapper
+tgff_file: ${tgff.directory}/${tgff.file}
+graph_name: ${tgff.graph_name}
+repetition : 1
+processor_types :
+  - ${platform.processor_0.type}
+    #Hydra resolves this lazily,
+    #so all these will raise an exception
+    #if they are not in the platform,
+    #but only when being accessed.
+  - ${platform.processor_1.type}
+  - ${platform.processor_2.type}
+  - ${platform.processor_3.type}
+  - ${platform.processor_4.type}
+  - ${platform.processor_5.type}
+  - ${platform.processor_6.type}
+  - ${platform.processor_7.type}
+  - ${platform.processor_8.type}
+  - ${platform.processor_9.type}
+  - ${platform.processor_10.type}
+  - ${platform.processor_11.type}
+  - ${platform.processor_12.type}
+  - ${platform.processor_13.type}
+  - ${platform.processor_14.type}
+  - ${platform.processor_15.type}

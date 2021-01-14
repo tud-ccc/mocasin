@@ -1,9 +1,0 @@
-# @package _global_
-defaults:
-  - common
-  - hydra/job_logging: pykpn
-  - tgff: default
-  - platform: default
-  - sdf3: default
-
-output_file: "${platform.name}.dot"

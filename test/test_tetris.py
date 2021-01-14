@@ -17,7 +17,7 @@ def test_tetris_schedule(datadir, expected_dir):
     out_name = "3337_medf_mapping.out"
     out_path = os.path.join(datadir, out_name)
     tetris_base = os.path.join(datadir, "tetris", "apps")
-    cmd = ("pykpn " + "tetris_scheduler " +
+    cmd = ("mocasin " + "tetris_scheduler " +
            "tetris_apps_dir={} ".format(tetris_base) +
            "job_table={} ".format(input_scn) +
            "resource_manager=medf platform=exynos " +
@@ -43,7 +43,7 @@ def run_tetris_scheduler(datadir, scheduler, test_schedule_tuple, options="",
     out_name = "{}_{}.out".format(scheduler, testname)
     out_path = os.path.join(datadir, out_name)
     tetris_base = os.path.join(datadir, "tetris", "apps")
-    cmd = ("pykpn " + "tetris_scheduler " +
+    cmd = ("mocasin " + "tetris_scheduler " +
            "tetris_apps_dir={} ".format(tetris_base) +
            "job_table={} ".format(input_scn) +
            "resource_manager={} ".format(scheduler) + "platform=exynos " +
@@ -225,7 +225,7 @@ def test_tetris_manager(datadir, expected_dir, tetris_manager_test):
     out_name = "{}_{}.out".format("manager", testname)
     out_path = os.path.join(datadir, out_name)
     tetris_base = os.path.join(datadir, "tetris", "apps")
-    cmd = ("pykpn " + "tetris_manager " +
+    cmd = ("mocasin " + "tetris_manager " +
            "tetris_apps_dir={} ".format(tetris_base) +
            "input_jobs={} ".format(input_scn) +
            "resource_manager={} ".format("medf") + "platform=exynos " +

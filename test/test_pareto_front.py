@@ -9,7 +9,7 @@ import pytest
 
 @pytest.mark.xfail(reason="Required files are not in the repository anymore")
 def test_pareto_front_slx(datadir, slx_kpn,representation):
-    subprocess.check_call(["pykpn", "pareto_front",
+    subprocess.check_call(["mocasin", "pareto_front",
                            "kpn=%s" % slx_kpn,
                            "platform=exynos",
                            "platform.embedding_json=None",
@@ -27,7 +27,7 @@ def test_pareto_front_slx(datadir, slx_kpn,representation):
 
 def test_pareto_front_tgff(datadir, tgff):
     tgff_dir = os.path.join(datadir, 'tgff/e3s-0.9')
-    subprocess.check_call(["pykpn", "pareto_front",
+    subprocess.check_call(["mocasin", "pareto_front",
                            "kpn=tgff_reader",
                            "platform=exynos990",
                            "tgff.directory=%s" % tgff_dir,

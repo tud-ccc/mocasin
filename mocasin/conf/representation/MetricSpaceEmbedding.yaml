@@ -1,0 +1,9 @@
+# @package _group_
+_target_: mocasin.representations.MetricEmbeddingRepresentation
+norm_p : 2
+extra_dimensions : true
+extra_dimensions_factor : 3
+ignore_channels : true
+jlt_tries : 30
+target_distortion : 1.2
+verbose : false

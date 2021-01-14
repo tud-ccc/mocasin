@@ -1,0 +1,27 @@
+# @package hydra.job_logging
+# python logging configuration for tasks
+version: 1
+formatters:
+  mocasin_cli_log:
+    '()': 'mocasin.util.logging.MocasinFormatter'
+    fmt: '%(levelname)s %(message)s (%(name)s)'
+    use_color: true
+  mocasin_file_log:
+    '()': 'mocasin.util.logging.MocasinFormatter'
+    fmt: '%(levelname)s %(message)s (%(name)s)'
+    use_color: false
+handlers:
+  console:
+    class: logging.StreamHandler
+    formatter: mocasin_cli_log
+    stream: ext://sys.stdout
+  file:
+    class: logging.FileHandler
+    formatter: mocasin_file_log
+    # relative to the job log directory
+    filename: ${hydra.job.name}.log
+root:
+  level: ${log_level}
+  handlers: [file]
+
+disable_existing_loggers: false

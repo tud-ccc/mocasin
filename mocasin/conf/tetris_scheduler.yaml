@@ -1,0 +1,19 @@
+# @package _global_
+defaults:
+  - common
+  - hydra/job_logging: mocasin
+    # Set the platform
+  - platform: default
+  - resource_manager: default
+
+# Base directory with applications and mappings info
+tetris_apps_dir: ???
+
+# Scenario to schedule
+job_table: ???
+
+# Output file for scheduling
+output_schedule:
+
+# Output file for summary (to be supported)
+summary_csv:

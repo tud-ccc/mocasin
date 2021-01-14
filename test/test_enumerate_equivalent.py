@@ -14,7 +14,7 @@ def test_enumerate_equivalent_exynos(datadir, expected_dir, platform):
     file_name = "equivalent_mappings_audio_filter_%s.txt" % platform
     out_file = os.path.join(datadir, file_name)
 
-    subprocess.check_call(["pykpn", "enumerate_equivalent",
+    subprocess.check_call(["mocasin", "enumerate_equivalent",
                            "kpn=audio_filter",
                            "platform=%s" % platform,
                            "mapper=default",
@@ -35,7 +35,7 @@ def test_enumerate_equivalent_tgff(datadir, tgff):
     out_file = os.path.join(datadir, file_name)
     tgff_directory = os.path.join(datadir, 'tgff/e3s-0.9')
 
-    subprocess.check_call(["pykpn", "enumerate_equivalent",
+    subprocess.check_call(["mocasin", "enumerate_equivalent",
                            "kpn=tgff_reader",
                            "platform=exynos990",
                            "tgff.directory=%s" % tgff_directory,

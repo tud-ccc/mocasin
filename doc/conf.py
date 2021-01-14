@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# pykpn documentation build configuration file, created by
+# mocasin documentation build configuration file, created by
 # sphinx-quickstart on Tue Oct 17 15:50:55 2017.
 #
 # This file is execfile()d with the current directory set to its
@@ -56,7 +56,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-#project = 'pykpn'
+#project = 'mocasin'
 copyright = '2017, TU Dresden'
 author = 'Chaif for Compiler Construction'
 
@@ -125,7 +125,7 @@ html_static_path = ['.static']
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'pykpndoc'
+htmlhelp_basename = 'mocasindoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -152,7 +152,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'pykpn.tex', 'pykpn Documentation',
+    (master_doc, 'mocasin.tex', 'mocasin Documentation',
      'Christian Menard', 'manual'),
 ]
 
@@ -162,7 +162,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'pykpn', 'pykpn Documentation',
+    (master_doc, 'mocasin', 'mocasin Documentation',
      [author], 1)
 ]
 
@@ -173,8 +173,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'pykpn', 'pykpn Documentation',
-     author, 'pykpn', 'One line description of project.',
+    (master_doc, 'mocasin', 'mocasin Documentation',
+     author, 'mocasin', 'One line description of project.',
      'Miscellaneous'),
 ]
 

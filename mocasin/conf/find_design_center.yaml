@@ -1,0 +1,26 @@
+# @package _global_
+defaults:
+  - common
+  - hydra/job_logging: mocasin
+  - tgff: default
+  - kpn: default
+  - platform: default
+  - trace: default
+  - representation: SimpleVector
+  - design_centering/algorithm: default
+  - design_centering/oracle: simulation
+  - design_centering/perturbation: classic
+  - design_centering/sample_generator: metric
+  - design_centering/volume: lpvolume
+  - sdf3: default
+
+
+record_samples : false
+adapt_samples : 10
+run_perturbation : true
+plot_perturbations : false
+out_dir : ./
+perturbations_out : perturbation_plot.pdf
+random_seed : 42
+threshold : ???
+

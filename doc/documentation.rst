@@ -6,9 +6,9 @@ Documenting Code
 
 Code should always be documented in place using pythons doc strings. Please use
 the `Google Style`_ as it works well with sphinx and produces readable doc
-strings. A good example of a well documented class within pykpn is
+strings. A good example of a well documented class within mocasin is
 :class:`RuntimeChannel`. Note how it is possible to reference other methods or
-classes within pykpn and even within other projects (as it is done for the
+classes within mocasin and even within other projects (as it is done for the
 Environment class).
 
 .. _Google Style: https://www.sphinx-doc.org/en/1.5/ext/example_google.html
@@ -38,4 +38,4 @@ following command:
 
 .. code-block:: sh
 
-   scp -r <path/to/pykpn>/doc/build/html/* root@factor:/var/www/pykpn
+   scp -r <path/to/mocasin>/doc/build/html/* root@factor:/var/www/mocasin

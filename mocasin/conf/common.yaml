@@ -1,0 +1,10 @@
+# @package _global_
+hydra:
+  sweep:
+    dir: multirun/${now:%Y-%m-%d-%H-%M-%S}
+    subdir: ${hydra.job.num}
+
+log_level : WARNING
+
+cleanup:
+  _target_ : mocasin.util.cleaner._cleanup

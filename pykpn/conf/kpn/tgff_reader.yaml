@@ -1,4 +1,0 @@
-# @package _group_
-_target_: pykpn.tgff.tgffSimulation.KpnGraphFromTgff
-name: ${tgff.graph_name}
-tgff_file: ${tgff.directory}/${tgff.file}

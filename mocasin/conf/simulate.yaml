@@ -1,0 +1,20 @@
+# @package _global_
+defaults:
+  - common
+  - hydra/job_logging: mocasin
+  - tgff: default
+  - kpn: default
+  - platform: default
+  - mapper: default
+  - trace: default
+  - representation: SimpleVector
+  - simulation_type: single_kpn
+  - sdf3: default
+
+simtrace:
+  file: "trace.json"
+  app: True
+  platform: True
+  load:
+    granularity: 100000000  # every 100us
+    time_frame: 1000000000  # consider the load of the last 1ms

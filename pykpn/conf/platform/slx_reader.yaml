@@ -1,5 +1,0 @@
-# @package _group_
-_target_: pykpn.slx.platform.SlxPlatform
-name: ???
-xml_file: ???
-scheduler_cycles: null

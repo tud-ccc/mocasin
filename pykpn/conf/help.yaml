@@ -1,4 +1,0 @@
-# @package _global_
-defaults:
-  - common
-  - hydra/job_logging: pykpn
