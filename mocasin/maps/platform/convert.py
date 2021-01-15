@@ -176,7 +176,7 @@ def convert(platform, xml_platform, scheduler_cycles=None):
 
     for xc in xml_platform.get_Cache():
         name = xc.get_id()
-        # XXX we assume 100% cache hit rate (This is also what Silexica does)
+        # XXX we assume 100% cache hit rate
         read_latency = get_value_in_cycles(xc, "readHitLatency", 0)
         write_latency = get_value_in_cycles(xc, "writeHitLatency", 0)
         read_throughput = get_value_in_byte_per_cycle(
