@@ -20,7 +20,9 @@ def datadir(tmpdir):
     os.symlink(
         os.path.join(examples_path, "conf"), os.path.join(tmpdir, "conf")
     )
-    os.symlink(os.path.join(examples_path, "slx"), os.path.join(tmpdir, "slx"))
+    os.symlink(
+        os.path.join(examples_path, "maps"), os.path.join(tmpdir, "maps")
+    )
     os.symlink(
         os.path.join(examples_path, "tgff"), os.path.join(tmpdir, "tgff")
     )
@@ -52,7 +54,7 @@ def mpsym(request):
 
 
 @pytest.fixture(params=["exynos", "multidsp", "parallella"])
-def slx_platform(request):
+def maps_platform(request):
     return request.param
 
 
@@ -85,7 +87,7 @@ def designer_platform_large(request):
 
 @pytest.fixture(
     params=[
-        "slx_default",
+        "maps_default",
         "random",
         "static_cfs",
         "random_walk",
@@ -95,7 +97,7 @@ def designer_platform_large(request):
         "simulated_annealing",
     ]
 )
-def slx_mapper(request):
+def maps_mapper(request):
     return request.param
 
 
@@ -110,7 +112,7 @@ def representation(request):
 
 
 @pytest.fixture(params=["audio_filter"])
-def slx_kpn(request):
+def maps_kpn(request):
     return request.param
 
 
@@ -121,7 +123,7 @@ def slx_kpn(request):
         ("audio_filter", "parallella"),
     ]
 )
-def slx_kpn_platform_pair(request):
+def maps_kpn_platform_pair(request):
     return request.param
 
 

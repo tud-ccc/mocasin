@@ -13,8 +13,8 @@ from mocasin.common.trace import TraceGenerator, TraceSegment
 log = logging.getLogger(__name__)
 
 
-class SlxTraceReader(TraceGenerator):
-    """A TraceGenerator that reads SLX trace files"""
+class MapsTraceReader(TraceGenerator):
+    """A TraceGenerator that reads MAPS trace files"""
 
     def __init__(self, trace_dir):
         """Initialize the trace reader
@@ -71,7 +71,7 @@ class SlxTraceReader(TraceGenerator):
 
         if self._processor_types[process_name] != processor_type:
             raise RuntimeError(
-                "The SlxTraceReader does not support migration "
+                "The MapsTraceReader does not support migration "
                 "of processes from one type of processor to "
                 "another!"
             )

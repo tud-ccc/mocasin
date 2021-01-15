@@ -13,9 +13,9 @@ from mocasin.common.kpn import KpnChannel, KpnGraph, KpnProcess
 log = logging.getLogger(__name__)
 
 
-class SlxKpnGraph(KpnGraph):
+class MapsKpnGraph(KpnGraph):
     def __init__(self, name, xml_file):
-        super(SlxKpnGraph, self).__init__(name)
+        super().__init__(name)
 
         log.info("Start parsing the PnGraph")
 

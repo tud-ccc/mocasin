@@ -3,16 +3,15 @@
 #
 # Authors: Christian Menard
 
-
+import logging
 import pint
 
-from mocasin.util import logging
 from mocasin.common.mapping import (
     ChannelMappingInfo,
     Mapping,
     ProcessMappingInfo,
 )
-from mocasin.slx.mapping import slxmapping
+from mocasin.maps.mapping import mapsmapping
 
 
 log = logging.getLogger(__name__)
@@ -21,29 +20,29 @@ log = logging.getLogger(__name__)
 _ur = pint.UnitRegistry()
 
 
-class SlxMapper:
+class MapsMapper:
     """
-    Reads a SLX mapping from a file. The actual mapping is returned when
+    Reads a MAPS mapping from a file. The actual mapping is returned when
     calling the generate_mapping method.  This implements the common mapper
     interface.
     """
 
     def __init__(self, kpn, platform, trace, representation, xml_file=None):
-        self.mapping = SlxMapping(kpn, platform, xml_file)
+        self.mapping = MapsMapping(kpn, platform, xml_file)
 
     def generate_mapping(self):
         return self.mapping
 
 
-class SlxMapping(Mapping):
+class MapsMapping(Mapping):
     def __init__(self, kpn, platform, xml_file):
         super().__init__(kpn, platform)
 
-        log.info("Start parsing the SLX mapping " + xml_file)
+        log.info("Start parsing the MAPS mapping " + xml_file)
 
         # load the xml
         with open(xml_file) as f:
-            xml_mapping = slxmapping.CreateFromDocument(f.read())
+            xml_mapping = mapsmapping.CreateFromDocument(f.read())
 
         # keep track of the mapping process->scheduler
         process_scheduler = {}
@@ -81,14 +80,14 @@ class SlxMapping(Mapping):
                 % (xc.id, prim.name, capacity)
             )
 
-        log.info("Done parsing the SLX mapping")
+        log.info("Done parsing the MAPS mapping")
 
     def export(self, file_name):
-        export_slx_mapping(self, file_name)
+        export_maps_mapping(self, file_name)
 
 
-def export_slx_mapping(mapping, file_name):
-    xml_mapping = slxmapping.MappingType()
+def export_maps_mapping(mapping, file_name):
+    xml_mapping = mapsmapping.MappingType()
     xml_mapping.version = "1.0"
     xml_mapping.platformName = mapping.kpn.name
     xml_mapping.applicationName = mapping.platform.name
@@ -98,11 +97,11 @@ def export_slx_mapping(mapping, file_name):
 
     # export processes
     for name, info in mapping._process_info.items():
-        xml_process = slxmapping.ProcessType()
+        xml_process = mapsmapping.ProcessType()
         xml_process.id = name
         xml_process.priority = info.priority
 
-        xml_affinity = slxmapping.ProcessorRefType()
+        xml_affinity = mapsmapping.ProcessorRefType()
         xml_affinity.processor = info.affinity.name
         xml_process.ProcessorAffinityRef.append(xml_affinity)
         used_processors.append(info.affinity)
@@ -111,7 +110,7 @@ def export_slx_mapping(mapping, file_name):
 
     # export channels
     for name, info in mapping._channel_info.items():
-        xml_channel = slxmapping.ChannelType()
+        xml_channel = mapsmapping.ChannelType()
         xml_channel.id = name
         xml_channel.bound = info.capacity
         xml_channel.commPrimitive = info.primitive.name
@@ -120,7 +119,7 @@ def export_slx_mapping(mapping, file_name):
         used_primitives.append(info.primitive)
 
         for sink in channel.sinks:
-            xml_reader = slxmapping.ProcessRefType()
+            xml_reader = mapsmapping.ProcessRefType()
             xml_reader.process = sink.name
             xml_channel.ProcessReaderRef.append(xml_reader)
 
@@ -128,7 +127,7 @@ def export_slx_mapping(mapping, file_name):
 
     # export processors
     for p in used_processors:
-        xml_processor = slxmapping.ProcessorType()
+        xml_processor = mapsmapping.ProcessorType()
         xml_processor.id = p.name
         xml_processor.type = p.type
 
@@ -136,29 +135,29 @@ def export_slx_mapping(mapping, file_name):
 
     # export primitives
     for p in used_primitives:
-        xml_primitive = slxmapping.CommPrimitiveType()
+        xml_primitive = mapsmapping.CommPrimitiveType()
         xml_primitive.id = p.name
 
         xml_mapping.CommPrimitive.append(xml_primitive)
 
     # export schedulers
     for scheduler in mapping.platform.schedulers():
-        xml_scheduler = slxmapping.SchedulerType()
+        xml_scheduler = mapsmapping.SchedulerType()
         xml_scheduler.id = scheduler.name
 
         for p in scheduler.processors:
-            xml_processor_ref = slxmapping.ProcessorRefType()
+            xml_processor_ref = mapsmapping.ProcessorRefType()
             xml_processor_ref.processor = p.name
             xml_scheduler.ProcessorRef.append(xml_processor_ref)
 
         for p in mapping.scheduler_processes(scheduler):
-            xml_process_ref = slxmapping.ProcessRefType()
+            xml_process_ref = mapsmapping.ProcessRefType()
             xml_process_ref.process = p.name
             xml_scheduler.ProcessRef.append(xml_process_ref)
 
         xml_mapping.Scheduler.append(xml_scheduler)
 
     with open(file_name, "w+") as f:
-        dom = xml_mapping.toDOM(element_name="slxmapping:Mapping")
+        dom = xml_mapping.toDOM(element_name="mapsmapping:Mapping")
         f.write(dom.toprettyxml())
         log.info("wrote %s", file_name)

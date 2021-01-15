@@ -1,5 +1,5 @@
 # @package _group_
-_target_: mocasin.slx.platform.SlxPlatform
+_target_: mocasin.maps.platform.MapsPlatform
 name: ???
 xml_file: ???
 scheduler_cycles: null

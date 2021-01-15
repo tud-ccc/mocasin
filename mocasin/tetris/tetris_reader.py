@@ -5,7 +5,7 @@
 
 from mocasin.tetris.job_request import JobRequestInfo
 
-from mocasin.slx.kpn import SlxKpnGraph
+from mocasin.maps.kpn import MapsKpnGraph
 from mocasin.util.csv_reader import DataReader
 
 import csv
@@ -43,7 +43,7 @@ def read_applications(base_dir, platform):
         if not os.path.isdir(app_folder):
             continue
         app_file = os.path.join(app_folder, CPN_FILENAME)
-        kpn = SlxKpnGraph(name, app_file)
+        kpn = MapsKpnGraph(name, app_file)
         mapping_file = os.path.join(app_folder, platform.name + MAPPINGS_SUFFIX)
         reader_kwargs = {
             "attribute": [],

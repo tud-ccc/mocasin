@@ -31,19 +31,6 @@ def dc_task(cfg):
     )
     json_dc_dump = {}
 
-    # if config.platform_class is not None:
-    #     platform = config.platform_class()
-    #     platform_name = platform.name
-    # else:
-    #     platform_name = os.path.splitext(
-    #         os.path.basename(config.platform_xml))[0]
-    #     platform = SlxPlatform(platform_name, config.platform_xml, slx_version)
-    # create all graphs
-    kpns = {}
-    # if len(config.applications) > 1:
-    #     log.warn("DC Flow just supports one appilcation. The rest will be ignored")
-    # app_config = (gconf.system[app_pl]['sconf'], setting) #TODO: where is this being read?
-
     threshold = cfg["threshold"]
     kpn = hydra.utils.instantiate(cfg["kpn"])
     platform = hydra.utils.instantiate(cfg["platform"])

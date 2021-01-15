@@ -5,8 +5,8 @@
 
 import pytest
 from arpeggio import ParserPython
-from mocasin.slx.kpn import SlxKpnGraph
-from mocasin.slx.platform import SlxPlatform
+from mocasin.maps.kpn import MapsKpnGraph
+from mocasin.maps.platform import MapsPlatform
 from mocasin.ontologies.solver import Solver
 from mocasin.ontologies.logicLanguage import Grammar
 from mocasin.ontologies.simvec_mapper import MappingCompletionWrapper
@@ -19,23 +19,25 @@ def parser():
 
 @pytest.fixture
 def kpnGraph():
-    return SlxKpnGraph(
-        "SlxKpnGraph", "examples/slx/app/audio_filter/audio_filter.cpn.xml"
+    return MapsKpnGraph(
+        "MapsKpnGraph", "examples/maps/app/audio_filter/audio_filter.cpn.xml"
     )
 
 
 @pytest.fixture
 def platform():
-    return SlxPlatform("SlxPlatform", "examples/slx/platforms/exynos.platform")
+    return MapsPlatform(
+        "MapsPlatform", "examples/maps/platforms/exynos.platform"
+    )
 
 
 @pytest.fixture
 def solver():
-    kpn = SlxKpnGraph(
-        "SlxKpnGraph", "examples/slx/app/audio_filter/audio_filter.cpn.xml"
+    kpn = MapsKpnGraph(
+        "MapsKpnGraph", "examples/maps/app/audio_filter/audio_filter.cpn.xml"
     )
-    platform = SlxPlatform(
-        "SlxPlatform", "examples/slx/platforms/exynos.platform"
+    platform = MapsPlatform(
+        "MapsPlatform", "examples/maps/platforms/exynos.platform"
     )
     cfg = {}
     return Solver(kpn, platform, cfg)
@@ -43,11 +45,11 @@ def solver():
 
 @pytest.fixture
 def map_dict_solver():
-    kpn = SlxKpnGraph(
-        "SlxKpnGraph", "examples/slx/app/audio_filter/audio_filter.cpn.xml"
+    kpn = MapsKpnGraph(
+        "MapsKpnGraph", "examples/maps/app/audio_filter/audio_filter.cpn.xml"
     )
-    platform = SlxPlatform(
-        "SlxPlatform", "examples/slx/platforms/exynos.platform"
+    platform = MapsPlatform(
+        "MapsPlatform", "examples/maps/platforms/exynos.platform"
     )
     fullMapper = MappingCompletionWrapper(kpn, platform)
 

@@ -259,9 +259,6 @@ class ProcPartialMapper(object):
 
         # TODO: raise not implemented exception for input of part_mapping
 
-        # raise NotImplementedError(
-        #       'The slx trace reader does not support version %s' % version)
-
         # generate new mapping
         mapping = ProcPartialMapper.generate_pe_mapping_from_simple_vector(
             vec,

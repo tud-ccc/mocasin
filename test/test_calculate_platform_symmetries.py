@@ -10,10 +10,10 @@ import pytest
 
 
 @pytest.mark.xfail(reason="Required files are not in the repository anymore")
-def test_calculate_platform_symmetries_slx(
-    datadir, expected_dir, slx_platform, mpsym
+def test_calculate_platform_symmetries_maps(
+    datadir, expected_dir, maps_platform, mpsym
 ):
-    file_name = "%s.autgrp" % slx_platform
+    file_name = "%s.autgrp" % maps_platform
     out_file = os.path.join(datadir, file_name)
 
     if mpsym:
@@ -24,7 +24,7 @@ def test_calculate_platform_symmetries_slx(
         [
             "mocasin",
             "calculate_platform_symmetries",
-            "platform=%s" % slx_platform,
+            "platform=%s" % maps_platform,
             "out_file=%s" % out_file,
             "mpsym=%s" % str(mpsym),
         ],

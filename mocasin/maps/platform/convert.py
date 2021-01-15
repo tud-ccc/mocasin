@@ -28,7 +28,7 @@ log = logging.getLogger(__name__)
 def create_policy(xml_platform, list_ref, scheduler_cycles):
     if scheduler_cycles is None:
         log.warning(
-            "SLX platforms do not define scheduling delays. "
+            "MAPS platforms do not define scheduling delays. "
             "-> default to 0. You can override this defult by setting "
             "'platform.scheduler_cycles'"
         )
@@ -38,7 +38,7 @@ def create_policy(xml_platform, list_ref, scheduler_cycles):
         if pl.get_id() == list_ref:
             for p in pl.get_SchedulingPolicy():
                 name = p.get_schedulingAlgorithm()
-                # there is no scheduling delay in slx
+                # there is no scheduling delay in maps
                 time_slice = get_value_in_unit(p, "timeSlice", "ps", None)
                 policies.append(
                     SchedulingPolicy(

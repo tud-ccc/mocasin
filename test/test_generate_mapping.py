@@ -9,17 +9,17 @@ import os
 
 
 @pytest.mark.xfail(reason="Required files are not in the repository anymore")
-def test_generate_mapping_slx(datadir, slx_mapper, slx_kpn, representation):
+def test_generate_mapping_maps(datadir, maps_mapper, maps_kpn, representation):
     subprocess.check_call(
         [
             "mocasin",
             "generate_mapping",
-            "kpn=%s" % slx_kpn,
+            "kpn=%s" % maps_kpn,
             "platform=exynos",
             "representation=%s" % representation,
-            "mapper=%s" % slx_mapper,
+            "mapper=%s" % maps_mapper,
             "outdir=../../../",
-            "trace=slx_default",
+            "trace=maps_default",
         ],
         cwd=datadir,
     )

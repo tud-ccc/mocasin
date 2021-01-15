@@ -19,8 +19,8 @@ thresholds = {
 
 
 @pytest.mark.xfail(reason="Required files are not in the repository anymore")
-def test_dc_slx(datadir, slx_kpn_platform_pair):
-    kpn, platform = slx_kpn_platform_pair
+def test_dc_maps(datadir, maps_kpn_platform_pair):
+    kpn, platform = maps_kpn_platform_pair
 
     subprocess.check_call(
         [
@@ -28,7 +28,7 @@ def test_dc_slx(datadir, slx_kpn_platform_pair):
             "find_design_center",
             "kpn=%s" % kpn,
             "platform=%s" % platform,
-            "trace=slx_default",
+            "trace=maps_default",
             "out_dir=%s" % datadir,
             "threshold=%s" % thresholds[kpn][platform],
         ],

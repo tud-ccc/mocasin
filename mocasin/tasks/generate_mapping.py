@@ -10,9 +10,8 @@ import hydra
 import os
 import pickle
 
-from mocasin.slx.mapping import export_slx_mapping
+from mocasin.maps.mapping import export_maps_mapping
 from mocasin.simulate import KpnSimulation
-from mocasin.tgff.tgffSimulation import TgffReferenceError
 
 log = logging.getLogger(__name__)
 
@@ -80,9 +79,8 @@ def generate_mapping(cfg):
         with open(outdir + "best_time.txt", "w") as f:
             f.write(str(exec_time))
 
-    # NOTE: we might want to remove this when removing all SLX dependencies!
-    if cfg["kpn"]["_target_"] == "mocasin.slx.kpn.SlxKpnGraph":
-        export_slx_mapping(
+    if cfg["kpn"]["_target_"] == "mocasin.maps.kpn.MapsKpnGraph":
+        export_maps_mapping(
             result, os.path.join(outdir, "generated_mapping.mapping")
         )
 

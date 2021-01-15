@@ -11,9 +11,9 @@ from mocasin.platforms.mppa_coolidge import DesignerPlatformCoolidge
 from mocasin.platforms.multi_cluster import DesignerPlatformMultiCluster
 from mocasin.representations import SimpleVectorRepresentation
 from mocasin.common.trace import EmptyTraceGenerator
-from mocasin.slx.platform import SlxPlatform
-from mocasin.slx.kpn import SlxKpnGraph
-from mocasin.slx.trace import SlxTraceReader
+from mocasin.maps.platform import MapsPlatform
+from mocasin.maps.kpn import MapsKpnGraph
+from mocasin.maps.trace import MapsTraceReader
 
 
 @pytest.fixture
@@ -129,54 +129,54 @@ def tgff_multi_cluster_setup():
 
 
 @pytest.fixture
-def slx_speaker_recognition_setup():
+def maps_speaker_recognition_setup():
     kpn_file = (
-        "examples/slx/app/speaker_recognition/speaker_recognition.cpn.xml"
+        "examples/maps/app/speaker_recognition/speaker_recognition.cpn.xml"
     )
-    platform_file = "examples/slx/platforms/exynos.platform"
-    trace_dir = "examples/slx/app/speaker_recognition/exynos/traces"
+    platform_file = "examples/maps/platforms/exynos.platform"
+    trace_dir = "examples/maps/app/speaker_recognition/exynos/traces"
 
-    kpn = SlxKpnGraph("SlxKpnGraph", kpn_file)
-    platform = SlxPlatform("SlxPlatform", platform_file)
-    trace_generator = SlxTraceReader(trace_dir)
-
-    return [kpn, platform, trace_generator]
-
-
-@pytest.fixture
-def slx_hog_setup():
-    kpn_file = "examples/slx/app/hog/hog.cpn.xml"
-    platform_file = "examples/slx/platforms/exynos.platform"
-    trace_dir = "examples/slx/app/hog/exynos/traces"
-
-    kpn = SlxKpnGraph("SlxKpnGraph", kpn_file)
-    platform = SlxPlatform("SlxPlatform", platform_file)
-    trace_generator = SlxTraceReader(trace_dir)
+    kpn = MapsKpnGraph("MapsKpnGraph", kpn_file)
+    platform = MapsPlatform("MapsPlatform", platform_file)
+    trace_generator = MapsTraceReader(trace_dir)
 
     return [kpn, platform, trace_generator]
 
 
 @pytest.fixture
-def slx_parallella_setup():
-    kpn_file = "examples/slx/app/audio_filter/audio_filter.cpn.xml"
-    platform_file = "examples/slx/platforms/parallella.platform"
-    trace_dir = "examples/slx/app/audio_filter/parallella/traces"
+def maps_hog_setup():
+    kpn_file = "examples/maps/app/hog/hog.cpn.xml"
+    platform_file = "examples/maps/platforms/exynos.platform"
+    trace_dir = "examples/maps/app/hog/exynos/traces"
 
-    kpn = SlxKpnGraph("SlxKpnGraph", kpn_file)
-    platform = SlxPlatform("SlxPlatform", platform_file)
-    trace_generator = SlxTraceReader(trace_dir)
+    kpn = MapsKpnGraph("MapsKpnGraph", kpn_file)
+    platform = MapsPlatform("MapsPlatform", platform_file)
+    trace_generator = MapsTraceReader(trace_dir)
 
     return [kpn, platform, trace_generator]
 
 
 @pytest.fixture
-def slx_multidsp_setup():
-    kpn_file = "examples/slx/app/audio_filter/audio_filter.cpn.xml"
-    platform_file = "examples/slx/platforms/multidsp.platform"
-    trace_dir = "examples/slx/app/audio_filter/multidsp/traces"
+def maps_parallella_setup():
+    kpn_file = "examples/maps/app/audio_filter/audio_filter.cpn.xml"
+    platform_file = "examples/maps/platforms/parallella.platform"
+    trace_dir = "examples/maps/app/audio_filter/parallella/traces"
 
-    kpn = SlxKpnGraph("SlxKpnGraph", kpn_file)
-    platform = SlxPlatform("SlxPlatform", platform_file)
-    trace_generator = SlxTraceReader(trace_dir)
+    kpn = MapsKpnGraph("MapsKpnGraph", kpn_file)
+    platform = MapsPlatform("MapsPlatform", platform_file)
+    trace_generator = MapsTraceReader(trace_dir)
+
+    return [kpn, platform, trace_generator]
+
+
+@pytest.fixture
+def maps_multidsp_setup():
+    kpn_file = "examples/maps/app/audio_filter/audio_filter.cpn.xml"
+    platform_file = "examples/maps/platforms/multidsp.platform"
+    trace_dir = "examples/maps/app/audio_filter/multidsp/traces"
+
+    kpn = MapsKpnGraph("MapsKpnGraph", kpn_file)
+    platform = MapsPlatform("MapsPlatform", platform_file)
+    trace_generator = MapsTraceReader(trace_dir)
 
     return [kpn, platform, trace_generator]

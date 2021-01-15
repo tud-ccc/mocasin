@@ -11,14 +11,14 @@ import os
 
 
 @pytest.mark.xfail(reason="Required files are not in the repository anymore")
-def test_slx_kpn_to_dot(datadir, expected_dir, slx_kpn):
-    dot_file = "%s.dot" % slx_kpn
+def test_maps_kpn_to_dot(datadir, expected_dir, maps_kpn):
+    dot_file = "%s.dot" % maps_kpn
     out_file = os.path.join(datadir, dot_file)
     subprocess.check_call(
         [
             "mocasin",
             "kpn_to_dot",
-            "kpn=%s" % slx_kpn,
+            "kpn=%s" % maps_kpn,
             "output_file=%s" % out_file,
         ],
         cwd=datadir,
@@ -29,14 +29,14 @@ def test_slx_kpn_to_dot(datadir, expected_dir, slx_kpn):
 
 
 @pytest.mark.xfail(reason="Required files are not in the repository anymore")
-def test_slx_platform_to_dot(datadir, expected_dir, slx_platform):
-    dot_file = "%s.dot" % slx_platform
+def test_maps_platform_to_dot(datadir, expected_dir, maps_platform):
+    dot_file = "%s.dot" % maps_platform
     out_file = os.path.join(datadir, dot_file)
     subprocess.check_call(
         [
             "mocasin",
             "platform_to_dot",
-            "platform=%s" % slx_platform,
+            "platform=%s" % maps_platform,
             "output_file=%s" % out_file,
         ],
         cwd=datadir,
@@ -47,8 +47,8 @@ def test_slx_platform_to_dot(datadir, expected_dir, slx_platform):
 
 
 @pytest.mark.xfail(reason="Required files are not in the repository anymore")
-def test_slx_mapping_to_dot(datadir, expected_dir, slx_kpn_platform_pair):
-    kpn, platform = slx_kpn_platform_pair
+def test_maps_mapping_to_dot(datadir, expected_dir, maps_kpn_platform_pair):
+    kpn, platform = maps_kpn_platform_pair
     dot_file = "%s_on_%s.dot" % (kpn, platform)
     out_file = os.path.join(datadir, dot_file)
     subprocess.check_call(
@@ -57,7 +57,7 @@ def test_slx_mapping_to_dot(datadir, expected_dir, slx_kpn_platform_pair):
             "mapping_to_dot",
             "kpn=%s" % kpn,
             "platform=%s" % platform,
-            "mapper=slx_default",
+            "mapper=maps_default",
             "output_file=%s" % out_file,
         ],
         cwd=datadir,

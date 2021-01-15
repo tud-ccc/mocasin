@@ -4,8 +4,6 @@
 # Authors: Felix Teweleit
 
 
-from mocasin.slx.platform import SlxPlatform
-from mocasin.slx.kpn import SlxKpnGraph
 from random import randrange
 
 

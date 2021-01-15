@@ -44,7 +44,7 @@ class drawAPI:
 
     def setPlatform(self, platform):
         """Analyzes and draws the given platform.
-        :param SlxPlatform platform: The mocasin platform object.
+        :param Platform platform: The mocasin platform object.
         :param bool drawOnlyPEs: Defines if the drawManager should only draw the PEs of the platform
         """
         if self.__mPlatform == None:

@@ -6,8 +6,8 @@
 import sys
 import tkinter as tk
 
-from mocasin.slx.platform import SlxPlatform
-from mocasin.slx.kpn import SlxKpnGraph
+from mocasin.maps.platform import MapsPlatform
+from mocasin.maps.kpn import MapsKpnGraph
 from mocasin.mapper.random import RandomMapper
 
 
@@ -31,8 +31,8 @@ class controlPanel(tk.Frame):
             self.__path = sys.path[2] + "/apps"
         else:
             self.__path = sys.path[1] + "/apps"
-        self.__kpnInstance = SlxKpnGraph(
-            "SlxKpnGraph", "apps/audio_filter/audio_filter.cpn.xml"
+        self.__kpnInstance = MapsKpnGraph(
+            "MapsKpnGraph", "apps/audio_filter/audio_filter.cpn.xml"
         )
         self.__platform = None
         self.__mappingIDs = []
@@ -77,7 +77,7 @@ class controlPanel(tk.Frame):
         self.exitButton.grid(sticky="EW", row=8)
 
     def __loadExynos(self):
-        # platform =  SlxPlatform('SlxPlatform', 'apps/audio_filter/exynos/exynos.platform')
+        # platform =  MapsPlatform('MapsPlatform', 'apps/audio_filter/exynos/exynos.platform')
         platform = TestPlatform()
         self.__platform = platform
         self.parent.drawPanel.drawDevice.setPlatform(platform)
@@ -86,8 +86,8 @@ class controlPanel(tk.Frame):
         self.addMappingButton["state"] = "normal"
 
     def __loadParallella(self):
-        platform = SlxPlatform(
-            "SlxPlatform", "apps/audio_filter/parallella/parallella.platform"
+        platform = MapsPlatform(
+            "MapsPlatform", "apps/audio_filter/parallella/parallella.platform"
         )
         self.__platform = platform
         self.parent.drawPanel.drawDevice.setPlatform(platform)
@@ -96,8 +96,8 @@ class controlPanel(tk.Frame):
         self.addMappingButton["state"] = "normal"
 
     def __loadMultiDSP(self):
-        platform = SlxPlatform(
-            "SlxPlatform", "apps/audio_filter/multidsp/multidsp.platform"
+        platform = MapsPlatform(
+            "MapsPlatform", "apps/audio_filter/multidsp/multidsp.platform"
         )
         self.__platform = platform
         self.parent.drawPanel.drawDevice.setPlatform(platform)

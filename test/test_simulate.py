@@ -7,7 +7,7 @@ import pytest
 import subprocess
 
 
-slx_expected_sim_time = {
+maps_expected_sim_time = {
     "audio_filter": {
         "exynos": "19.844971309 ms",
         "multidsp": "95.812062675 ms",
@@ -19,16 +19,16 @@ slx_expected_sim_time = {
 
 
 @pytest.mark.xfail(reason="Required files are not in the repository anymore")
-def test_slx_simulate(datadir, slx_kpn_platform_pair):
-    kpn, platform = slx_kpn_platform_pair
+def test_maps_simulate(datadir, maps_kpn_platform_pair):
+    kpn, platform = maps_kpn_platform_pair
     res = subprocess.run(
         [
             "mocasin",
             "simulate",
             f"kpn={kpn}",
             f"platform={platform}",
-            "mapper=slx_default",
-            "trace=slx_default",
+            "mapper=maps_default",
+            "trace=maps_default",
         ],
         cwd=datadir,
         check=True,
@@ -40,7 +40,7 @@ def test_slx_simulate(datadir, slx_kpn_platform_pair):
     for line in stdout.split("\n"):
         if line.startswith("Total simulated time: "):
             time = line[22:]
-            assert time == slx_expected_sim_time[kpn][platform]
+            assert time == maps_expected_sim_time[kpn][platform]
             found_line = True
 
     assert found_line

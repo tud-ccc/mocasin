@@ -9,17 +9,17 @@ import pytest
 
 
 @pytest.mark.xfail(reason="Required files are not in the repository anymore")
-def test_pareto_front_slx(datadir, slx_kpn, representation):
+def test_pareto_front_maps(datadir, maps_kpn, representation):
     subprocess.check_call(
         [
             "mocasin",
             "pareto_front",
-            "kpn=%s" % slx_kpn,
+            "kpn=%s" % maps_kpn,
             "platform=exynos",
             "platform.embedding_json=None",
             "representation=%s" % representation,
             "outdir=../../../",
-            "trace=slx_default",
+            "trace=maps_default",
         ],
         cwd=datadir,
     )

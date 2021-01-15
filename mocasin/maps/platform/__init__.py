@@ -3,17 +3,17 @@
 #
 # Authors: Christian Menard
 
+import logging
 
 from .convert import convert
 from .parse import parse
-from mocasin.util import logging
 from mocasin.common.platform import Platform
 
 
 log = logging.getLogger(__name__)
 
 
-class SlxPlatform(Platform):
+class MapsPlatform(Platform):
     def __init__(self, name, xml_file, **kwargs):
         super().__init__(
             name,

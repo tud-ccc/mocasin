@@ -9,18 +9,18 @@ import pytest
 
 
 @pytest.mark.xfail(reason="Required files are not in the repository anymore")
-def test_symmetries_slx(datadir, slx_platform):
+def test_symmetries_maps(datadir, maps_platform):
     subprocess.check_call(
         [
             "mocasin",
             "generate_mapping",
             "kpn=audio_filter",
-            f"platform={slx_platform}",
+            f"platform={maps_platform}",
             "representation=Symmetries",
             "mapper=genetic",
             "outdir=../../../mpsym_json/",
-            f"platform.symmetries_json=../../../platform/symmetries/{slx_platform}.json",
-            "trace=slx_default",
+            f"platform.symmetries_json=../../../platform/symmetries/{maps_platform}.json",
+            "trace=maps_default",
         ],
         cwd=datadir,
     )
@@ -30,12 +30,12 @@ def test_symmetries_slx(datadir, slx_platform):
             "mocasin",
             "generate_mapping",
             "kpn=audio_filter",
-            f"platform={slx_platform}",
+            f"platform={maps_platform}",
             "representation=Symmetries",
             "mapper=genetic",
             "outdir=../../../mpsym_nauty/",
             "platform.symmetries_json=null",
-            "trace=slx_default",
+            "trace=maps_default",
         ],
         cwd=datadir,
     )
@@ -45,12 +45,12 @@ def test_symmetries_slx(datadir, slx_platform):
             "mocasin",
             "generate_mapping",
             "kpn=audio_filter",
-            f"platform={slx_platform}",
+            f"platform={maps_platform}",
             "representation=Symmetries",
             "representation.disable_mpsym=true",
             "mapper=genetic",
             "outdir=../../../python/",
-            "trace=slx_default",
+            "trace=maps_default",
         ],
         cwd=datadir,
     )

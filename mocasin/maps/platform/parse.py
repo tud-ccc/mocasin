@@ -8,13 +8,13 @@
 #   ('-o', 'platform.py')
 #
 # Command line arguments:
-#   SlxPlatformDescriptor.xsd
+#   MapsPlatformDescriptor.xsd
 #
 # Command line:
-#   /net/home/cmenard/.local/bin/generateDS -o "platform.py" SlxPlatformDescriptor.xsd
+#  generateDS -o "platform.py" MapsPlatformDescriptor.xsd
 #
 # Current working directory (os.getcwd()):
-#   slx_platform_descriptor
+#   maps_platform_descriptor
 #
 
 import sys
@@ -731,7 +731,7 @@ class VoltageDomainType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='VoltageDomainType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='VoltageDomainType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -744,12 +744,12 @@ class VoltageDomainType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='VoltageDomainType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='VoltageDomainType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='VoltageDomainType', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='VoltageDomainType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='VoltageDomainType'):
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
@@ -759,7 +759,7 @@ class VoltageDomainType(GeneratedsSuper):
         if self.switchTimeUnit != "us" and 'switchTimeUnit' not in already_processed:
             already_processed.add('switchTimeUnit')
             outfile.write(' switchTimeUnit=%s' % (quote_attrib(self.switchTimeUnit), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='VoltageDomainType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='VoltageDomainType', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -880,7 +880,7 @@ class FrequencyDomainType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='FrequencyDomainType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='FrequencyDomainType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -893,12 +893,12 @@ class FrequencyDomainType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='FrequencyDomainType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='FrequencyDomainType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='FrequencyDomainType', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='FrequencyDomainType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='FrequencyDomainType'):
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
@@ -908,7 +908,7 @@ class FrequencyDomainType(GeneratedsSuper):
         if self.switchTimeUnit != "us" and 'switchTimeUnit' not in already_processed:
             already_processed.add('switchTimeUnit')
             outfile.write(' switchTimeUnit=%s' % (quote_attrib(self.switchTimeUnit), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='FrequencyDomainType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='FrequencyDomainType', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -1025,7 +1025,7 @@ class VoltageDomainConditionType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='VoltageDomainConditionType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='VoltageDomainConditionType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -1038,11 +1038,11 @@ class VoltageDomainConditionType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='VoltageDomainConditionType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='VoltageDomainConditionType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='VoltageDomainConditionType', pretty_print=pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='VoltageDomainConditionType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='VoltageDomainConditionType'):
         if self.voltageDomain is not None and 'voltageDomain' not in already_processed:
             already_processed.add('voltageDomain')
             outfile.write(' voltageDomain=%s' % (quote_attrib(self.voltageDomain), ))
@@ -1055,7 +1055,7 @@ class VoltageDomainConditionType(GeneratedsSuper):
         if self.unit is not None and 'unit' not in already_processed:
             already_processed.add('unit')
             outfile.write(' unit=%s' % (quote_attrib(self.unit), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='VoltageDomainConditionType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='VoltageDomainConditionType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
         already_processed = set()
@@ -1161,7 +1161,7 @@ class FrequencyDomainConditionType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='FrequencyDomainConditionType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='FrequencyDomainConditionType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -1174,11 +1174,11 @@ class FrequencyDomainConditionType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='FrequencyDomainConditionType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='FrequencyDomainConditionType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='FrequencyDomainConditionType', pretty_print=pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='FrequencyDomainConditionType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='FrequencyDomainConditionType'):
         if self.frequencyDomain is not None and 'frequencyDomain' not in already_processed:
             already_processed.add('frequencyDomain')
             outfile.write(' frequencyDomain=%s' % (quote_attrib(self.frequencyDomain), ))
@@ -1191,7 +1191,7 @@ class FrequencyDomainConditionType(GeneratedsSuper):
         if self.unit is not None and 'unit' not in already_processed:
             already_processed.add('unit')
             outfile.write(' unit=%s' % (quote_attrib(self.unit), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='FrequencyDomainConditionType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='FrequencyDomainConditionType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
         already_processed = set()
@@ -1271,7 +1271,7 @@ class VoltageFrequencyDomainConditionListType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='VoltageFrequencyDomainConditionListType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='VoltageFrequencyDomainConditionListType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -1284,18 +1284,18 @@ class VoltageFrequencyDomainConditionListType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='VoltageFrequencyDomainConditionListType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='VoltageFrequencyDomainConditionListType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='VoltageFrequencyDomainConditionListType', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='VoltageFrequencyDomainConditionListType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='VoltageFrequencyDomainConditionListType'):
         if self.extensiontype_ is not None and 'xsi:type' not in already_processed:
             already_processed.add('xsi:type')
             outfile.write(' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"')
             outfile.write(' xsi:type="%s"' % self.extensiontype_)
         pass
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='VoltageFrequencyDomainConditionListType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='VoltageFrequencyDomainConditionListType', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -1391,7 +1391,7 @@ class VoltageConditionType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='VoltageConditionType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='VoltageConditionType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -1404,11 +1404,11 @@ class VoltageConditionType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='VoltageConditionType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='VoltageConditionType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='VoltageConditionType', pretty_print=pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='VoltageConditionType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='VoltageConditionType'):
         if self.condition is not None and 'condition' not in already_processed:
             already_processed.add('condition')
             outfile.write(' condition=%s' % (quote_attrib(self.condition), ))
@@ -1418,7 +1418,7 @@ class VoltageConditionType(GeneratedsSuper):
         if self.unit is not None and 'unit' not in already_processed:
             already_processed.add('unit')
             outfile.write(' unit=%s' % (quote_attrib(self.unit), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='VoltageConditionType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='VoltageConditionType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
         already_processed = set()
@@ -1509,7 +1509,7 @@ class FrequencyConditionType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='FrequencyConditionType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='FrequencyConditionType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -1522,11 +1522,11 @@ class FrequencyConditionType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='FrequencyConditionType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='FrequencyConditionType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='FrequencyConditionType', pretty_print=pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='FrequencyConditionType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='FrequencyConditionType'):
         if self.condition is not None and 'condition' not in already_processed:
             already_processed.add('condition')
             outfile.write(' condition=%s' % (quote_attrib(self.condition), ))
@@ -1536,7 +1536,7 @@ class FrequencyConditionType(GeneratedsSuper):
         if self.unit is not None and 'unit' not in already_processed:
             already_processed.add('unit')
             outfile.write(' unit=%s' % (quote_attrib(self.unit), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='FrequencyConditionType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='FrequencyConditionType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
         already_processed = set()
@@ -1635,7 +1635,7 @@ class FrequencyVoltageConditionType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='FrequencyVoltageConditionType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='FrequencyVoltageConditionType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -1648,11 +1648,11 @@ class FrequencyVoltageConditionType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='FrequencyVoltageConditionType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='FrequencyVoltageConditionType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='FrequencyVoltageConditionType', pretty_print=pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='FrequencyVoltageConditionType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='FrequencyVoltageConditionType'):
         if self.frequencyValue is not None and 'frequencyValue' not in already_processed:
             already_processed.add('frequencyValue')
             outfile.write(' frequencyValue=%s' % (quote_attrib(self.frequencyValue), ))
@@ -1665,7 +1665,7 @@ class FrequencyVoltageConditionType(GeneratedsSuper):
         if self.voltageUnit is not None and 'voltageUnit' not in already_processed:
             already_processed.add('voltageUnit')
             outfile.write(' voltageUnit=%s' % (quote_attrib(self.voltageUnit), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='FrequencyVoltageConditionType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='FrequencyVoltageConditionType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
         already_processed = set()
@@ -1755,7 +1755,7 @@ class VoltageFrequencyConditionListType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='VoltageFrequencyConditionListType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='VoltageFrequencyConditionListType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -1768,18 +1768,18 @@ class VoltageFrequencyConditionListType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='VoltageFrequencyConditionListType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='VoltageFrequencyConditionListType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='VoltageFrequencyConditionListType', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='VoltageFrequencyConditionListType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='VoltageFrequencyConditionListType'):
         if self.extensiontype_ is not None and 'xsi:type' not in already_processed:
             already_processed.add('xsi:type')
             outfile.write(' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"')
             outfile.write(' xsi:type="%s"' % self.extensiontype_)
         pass
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='VoltageFrequencyConditionListType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='VoltageFrequencyConditionListType', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -1877,7 +1877,7 @@ class SchedulingPolicyType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='SchedulingPolicyType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='SchedulingPolicyType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -1890,11 +1890,11 @@ class SchedulingPolicyType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='SchedulingPolicyType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='SchedulingPolicyType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='SchedulingPolicyType', pretty_print=pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='SchedulingPolicyType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='SchedulingPolicyType'):
         if self.schedulingAlgorithm is not None and 'schedulingAlgorithm' not in already_processed:
             already_processed.add('schedulingAlgorithm')
             outfile.write(' schedulingAlgorithm=%s' % (quote_attrib(self.schedulingAlgorithm), ))
@@ -1904,7 +1904,7 @@ class SchedulingPolicyType(GeneratedsSuper):
         if self.timeSliceUnit != "s" and 'timeSliceUnit' not in already_processed:
             already_processed.add('timeSliceUnit')
             outfile.write(' timeSliceUnit=%s' % (quote_attrib(self.timeSliceUnit), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='SchedulingPolicyType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='SchedulingPolicyType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
         already_processed = set()
@@ -1976,7 +1976,7 @@ class SchedulingPolicyListType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='SchedulingPolicyListType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='SchedulingPolicyListType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -1989,16 +1989,16 @@ class SchedulingPolicyListType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='SchedulingPolicyListType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='SchedulingPolicyListType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='SchedulingPolicyListType', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='SchedulingPolicyListType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='SchedulingPolicyListType'):
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='SchedulingPolicyListType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='SchedulingPolicyListType', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -2077,7 +2077,7 @@ class SchedulerType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='SchedulerType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='SchedulerType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -2090,11 +2090,11 @@ class SchedulerType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='SchedulerType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='SchedulerType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='SchedulerType', pretty_print=pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='SchedulerType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='SchedulerType'):
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
@@ -2104,7 +2104,7 @@ class SchedulerType(GeneratedsSuper):
         if self.maxTasks is not None and 'maxTasks' not in already_processed:
             already_processed.add('maxTasks')
             outfile.write(' maxTasks=%s' % (quote_attrib(self.maxTasks), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='SchedulerType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='SchedulerType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
         already_processed = set()
@@ -2196,7 +2196,7 @@ class ProcessorPowerStateType(VoltageFrequencyConditionListType):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='ProcessorPowerStateType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='ProcessorPowerStateType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -2209,12 +2209,12 @@ class ProcessorPowerStateType(VoltageFrequencyConditionListType):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='ProcessorPowerStateType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='ProcessorPowerStateType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='ProcessorPowerStateType', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='ProcessorPowerStateType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='ProcessorPowerStateType'):
         super(ProcessorPowerStateType, self).exportAttributes(outfile, level, already_processed, namespace_, name_='ProcessorPowerStateType')
         if self.name is not None and 'name' not in already_processed:
             already_processed.add('name')
@@ -2225,7 +2225,7 @@ class ProcessorPowerStateType(VoltageFrequencyConditionListType):
         if self.powerUnit != "pW" and 'powerUnit' not in already_processed:
             already_processed.add('powerUnit')
             outfile.write(' powerUnit=%s' % (quote_attrib(self.powerUnit), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='ProcessorPowerStateType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='ProcessorPowerStateType', fromsubclass_=False, pretty_print=True):
         super(ProcessorPowerStateType, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
     def build(self, node):
         already_processed = set()
@@ -2411,7 +2411,7 @@ class ProcessorPowerModelType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='ProcessorPowerModelType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='ProcessorPowerModelType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -2424,12 +2424,12 @@ class ProcessorPowerModelType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='ProcessorPowerModelType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='ProcessorPowerModelType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='ProcessorPowerModelType', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='ProcessorPowerModelType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='ProcessorPowerModelType'):
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
@@ -2511,7 +2511,7 @@ class ProcessorPowerModelType(GeneratedsSuper):
         if self.switchedCapacitanceOtherUnit != "pF" and 'switchedCapacitanceOtherUnit' not in already_processed:
             already_processed.add('switchedCapacitanceOtherUnit')
             outfile.write(' switchedCapacitanceOtherUnit=%s' % (quote_attrib(self.switchedCapacitanceOtherUnit), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='ProcessorPowerModelType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='ProcessorPowerModelType', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -2781,7 +2781,7 @@ class ProcessorType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='ProcessorType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='ProcessorType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -2794,12 +2794,12 @@ class ProcessorType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='ProcessorType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='ProcessorType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='ProcessorType', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='ProcessorType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='ProcessorType'):
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
@@ -2839,7 +2839,7 @@ class ProcessorType(GeneratedsSuper):
         if self.contextStoreUnit != "cycles" and 'contextStoreUnit' not in already_processed:
             already_processed.add('contextStoreUnit')
             outfile.write(' contextStoreUnit=%s' % (quote_attrib(self.contextStoreUnit), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='ProcessorType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='ProcessorType', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -2985,7 +2985,7 @@ class ProcessorRefType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='ProcessorRefType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='ProcessorRefType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -2998,15 +2998,15 @@ class ProcessorRefType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='ProcessorRefType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='ProcessorRefType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='ProcessorRefType', pretty_print=pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='ProcessorRefType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='ProcessorRefType'):
         if self.processor is not None and 'processor' not in already_processed:
             already_processed.add('processor')
             outfile.write(' processor=%s' % (quote_attrib(self.processor), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='ProcessorRefType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='ProcessorRefType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
         already_processed = set()
@@ -3083,7 +3083,7 @@ class MemoryPowerStateType(VoltageFrequencyConditionListType):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='MemoryPowerStateType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='MemoryPowerStateType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -3096,12 +3096,12 @@ class MemoryPowerStateType(VoltageFrequencyConditionListType):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='MemoryPowerStateType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='MemoryPowerStateType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='MemoryPowerStateType', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='MemoryPowerStateType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='MemoryPowerStateType'):
         super(MemoryPowerStateType, self).exportAttributes(outfile, level, already_processed, namespace_, name_='MemoryPowerStateType')
         if self.name is not None and 'name' not in already_processed:
             already_processed.add('name')
@@ -3112,7 +3112,7 @@ class MemoryPowerStateType(VoltageFrequencyConditionListType):
         if self.powerUnit != "pW" and 'powerUnit' not in already_processed:
             already_processed.add('powerUnit')
             outfile.write(' powerUnit=%s' % (quote_attrib(self.powerUnit), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='MemoryPowerStateType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='MemoryPowerStateType', fromsubclass_=False, pretty_print=True):
         super(MemoryPowerStateType, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
     def build(self, node):
         already_processed = set()
@@ -3256,7 +3256,7 @@ class MemoryPowerModelType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='MemoryPowerModelType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='MemoryPowerModelType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -3269,12 +3269,12 @@ class MemoryPowerModelType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='MemoryPowerModelType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='MemoryPowerModelType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='MemoryPowerModelType', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='MemoryPowerModelType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='MemoryPowerModelType'):
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
@@ -3314,7 +3314,7 @@ class MemoryPowerModelType(GeneratedsSuper):
         if self.writeCapacitanceUnit != "pF" and 'writeCapacitanceUnit' not in already_processed:
             already_processed.add('writeCapacitanceUnit')
             outfile.write(' writeCapacitanceUnit=%s' % (quote_attrib(self.writeCapacitanceUnit), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='MemoryPowerModelType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='MemoryPowerModelType', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -3533,7 +3533,7 @@ class MemoryType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='MemoryType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='MemoryType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -3546,11 +3546,11 @@ class MemoryType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='MemoryType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='MemoryType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='MemoryType', pretty_print=pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='MemoryType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='MemoryType'):
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
@@ -3593,7 +3593,7 @@ class MemoryType(GeneratedsSuper):
         if self.memoryPowerModel is not None and 'memoryPowerModel' not in already_processed:
             already_processed.add('memoryPowerModel')
             outfile.write(' memoryPowerModel=%s' % (quote_attrib(self.memoryPowerModel), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='MemoryType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='MemoryType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
         already_processed = set()
@@ -3714,7 +3714,7 @@ class MemoryRefType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='MemoryRefType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='MemoryRefType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -3727,11 +3727,11 @@ class MemoryRefType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='MemoryRefType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='MemoryRefType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='MemoryRefType', pretty_print=pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='MemoryRefType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='MemoryRefType'):
         if self.memory is not None and 'memory' not in already_processed:
             already_processed.add('memory')
             outfile.write(' memory=%s' % (quote_attrib(self.memory), ))
@@ -3739,7 +3739,7 @@ class MemoryRefType(GeneratedsSuper):
             already_processed.add('xsi:type')
             outfile.write(' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"')
             outfile.write(' xsi:type="%s"' % self.extensiontype_)
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='MemoryRefType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='MemoryRefType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
         already_processed = set()
@@ -3802,7 +3802,7 @@ class MemoryAccessType(MemoryRefType):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='MemoryAccessType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='MemoryAccessType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -3815,16 +3815,16 @@ class MemoryAccessType(MemoryRefType):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='MemoryAccessType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='MemoryAccessType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='MemoryAccessType', pretty_print=pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='MemoryAccessType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='MemoryAccessType'):
         super(MemoryAccessType, self).exportAttributes(outfile, level, already_processed, namespace_, name_='MemoryAccessType')
         if self.access is not None and 'access' not in already_processed:
             already_processed.add('access')
             outfile.write(' access=%s' % (quote_attrib(self.access), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='MemoryAccessType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='MemoryAccessType', fromsubclass_=False, pretty_print=True):
         super(MemoryAccessType, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
         pass
     def build(self, node):
@@ -3904,7 +3904,7 @@ class CachePowerStateType(VoltageFrequencyConditionListType):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='CachePowerStateType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='CachePowerStateType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -3917,12 +3917,12 @@ class CachePowerStateType(VoltageFrequencyConditionListType):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='CachePowerStateType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='CachePowerStateType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='CachePowerStateType', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='CachePowerStateType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='CachePowerStateType'):
         super(CachePowerStateType, self).exportAttributes(outfile, level, already_processed, namespace_, name_='CachePowerStateType')
         if self.name is not None and 'name' not in already_processed:
             already_processed.add('name')
@@ -3933,7 +3933,7 @@ class CachePowerStateType(VoltageFrequencyConditionListType):
         if self.powerUnit != "pW" and 'powerUnit' not in already_processed:
             already_processed.add('powerUnit')
             outfile.write(' powerUnit=%s' % (quote_attrib(self.powerUnit), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='CachePowerStateType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='CachePowerStateType', fromsubclass_=False, pretty_print=True):
         super(CachePowerStateType, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
     def build(self, node):
         already_processed = set()
@@ -4089,7 +4089,7 @@ class CachePowerModelType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='CachePowerModelType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='CachePowerModelType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -4102,12 +4102,12 @@ class CachePowerModelType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='CachePowerModelType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='CachePowerModelType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='CachePowerModelType', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='CachePowerModelType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='CachePowerModelType'):
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
@@ -4159,7 +4159,7 @@ class CachePowerModelType(GeneratedsSuper):
         if self.writeMissCapacitanceUnit != "pF" and 'writeMissCapacitanceUnit' not in already_processed:
             already_processed.add('writeMissCapacitanceUnit')
             outfile.write(' writeMissCapacitanceUnit=%s' % (quote_attrib(self.writeMissCapacitanceUnit), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='CachePowerModelType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='CachePowerModelType', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -4520,7 +4520,7 @@ class CacheType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='CacheType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='CacheType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -4533,12 +4533,12 @@ class CacheType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='CacheType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='CacheType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='CacheType', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='CacheType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='CacheType'):
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
@@ -4632,7 +4632,7 @@ class CacheType(GeneratedsSuper):
         if self.cachePowerModel is not None and 'cachePowerModel' not in already_processed:
             already_processed.add('cachePowerModel')
             outfile.write(' cachePowerModel=%s' % (quote_attrib(self.cachePowerModel), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='CacheType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='CacheType', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -4865,7 +4865,7 @@ class CacheRefType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='CacheRefType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='CacheRefType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -4878,11 +4878,11 @@ class CacheRefType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='CacheRefType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='CacheRefType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='CacheRefType', pretty_print=pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='CacheRefType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='CacheRefType'):
         if self.cache is not None and 'cache' not in already_processed:
             already_processed.add('cache')
             outfile.write(' cache=%s' % (quote_attrib(self.cache), ))
@@ -4890,7 +4890,7 @@ class CacheRefType(GeneratedsSuper):
             already_processed.add('xsi:type')
             outfile.write(' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"')
             outfile.write(' xsi:type="%s"' % self.extensiontype_)
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='CacheRefType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='CacheRefType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
         already_processed = set()
@@ -4953,7 +4953,7 @@ class CacheAccessType(CacheRefType):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='CacheAccessType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='CacheAccessType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -4966,16 +4966,16 @@ class CacheAccessType(CacheRefType):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='CacheAccessType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='CacheAccessType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='CacheAccessType', pretty_print=pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='CacheAccessType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='CacheAccessType'):
         super(CacheAccessType, self).exportAttributes(outfile, level, already_processed, namespace_, name_='CacheAccessType')
         if self.access is not None and 'access' not in already_processed:
             already_processed.add('access')
             outfile.write(' access=%s' % (quote_attrib(self.access), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='CacheAccessType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='CacheAccessType', fromsubclass_=False, pretty_print=True):
         super(CacheAccessType, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
         pass
     def build(self, node):
@@ -5055,7 +5055,7 @@ class FifoPowerStateType(VoltageFrequencyConditionListType):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='FifoPowerStateType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='FifoPowerStateType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -5068,12 +5068,12 @@ class FifoPowerStateType(VoltageFrequencyConditionListType):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='FifoPowerStateType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='FifoPowerStateType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='FifoPowerStateType', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='FifoPowerStateType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='FifoPowerStateType'):
         super(FifoPowerStateType, self).exportAttributes(outfile, level, already_processed, namespace_, name_='FifoPowerStateType')
         if self.name is not None and 'name' not in already_processed:
             already_processed.add('name')
@@ -5084,7 +5084,7 @@ class FifoPowerStateType(VoltageFrequencyConditionListType):
         if self.powerUnit != "pW" and 'powerUnit' not in already_processed:
             already_processed.add('powerUnit')
             outfile.write(' powerUnit=%s' % (quote_attrib(self.powerUnit), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='FifoPowerStateType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='FifoPowerStateType', fromsubclass_=False, pretty_print=True):
         super(FifoPowerStateType, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
     def build(self, node):
         already_processed = set()
@@ -5228,7 +5228,7 @@ class FifoPowerModelType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='FifoPowerModelType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='FifoPowerModelType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -5241,12 +5241,12 @@ class FifoPowerModelType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='FifoPowerModelType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='FifoPowerModelType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='FifoPowerModelType', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='FifoPowerModelType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='FifoPowerModelType'):
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
@@ -5286,7 +5286,7 @@ class FifoPowerModelType(GeneratedsSuper):
         if self.writeCapacitanceUnit != "pF" and 'writeCapacitanceUnit' not in already_processed:
             already_processed.add('writeCapacitanceUnit')
             outfile.write(' writeCapacitanceUnit=%s' % (quote_attrib(self.writeCapacitanceUnit), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='FifoPowerModelType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='FifoPowerModelType', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -5512,7 +5512,7 @@ class FifoType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='FifoType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='FifoType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -5525,11 +5525,11 @@ class FifoType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='FifoType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='FifoType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='FifoType', pretty_print=pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='FifoType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='FifoType'):
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
@@ -5575,7 +5575,7 @@ class FifoType(GeneratedsSuper):
         if self.fifoPowerModel is not None and 'fifoPowerModel' not in already_processed:
             already_processed.add('fifoPowerModel')
             outfile.write(' fifoPowerModel=%s' % (quote_attrib(self.fifoPowerModel), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='FifoType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='FifoType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
         already_processed = set()
@@ -5706,7 +5706,7 @@ class FifoRefType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='FifoRefType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='FifoRefType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -5719,11 +5719,11 @@ class FifoRefType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='FifoRefType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='FifoRefType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='FifoRefType', pretty_print=pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='FifoRefType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='FifoRefType'):
         if self.fifo is not None and 'fifo' not in already_processed:
             already_processed.add('fifo')
             outfile.write(' fifo=%s' % (quote_attrib(self.fifo), ))
@@ -5731,7 +5731,7 @@ class FifoRefType(GeneratedsSuper):
             already_processed.add('xsi:type')
             outfile.write(' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"')
             outfile.write(' xsi:type="%s"' % self.extensiontype_)
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='FifoRefType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='FifoRefType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
         already_processed = set()
@@ -5794,7 +5794,7 @@ class FifoAccessType(FifoRefType):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='FifoAccessType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='FifoAccessType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -5807,16 +5807,16 @@ class FifoAccessType(FifoRefType):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='FifoAccessType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='FifoAccessType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='FifoAccessType', pretty_print=pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='FifoAccessType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='FifoAccessType'):
         super(FifoAccessType, self).exportAttributes(outfile, level, already_processed, namespace_, name_='FifoAccessType')
         if self.access is not None and 'access' not in already_processed:
             already_processed.add('access')
             outfile.write(' access=%s' % (quote_attrib(self.access), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='FifoAccessType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='FifoAccessType', fromsubclass_=False, pretty_print=True):
         super(FifoAccessType, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
         pass
     def build(self, node):
@@ -5896,7 +5896,7 @@ class PhysicalLinkPowerStateType(VoltageFrequencyConditionListType):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='PhysicalLinkPowerStateType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='PhysicalLinkPowerStateType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -5909,12 +5909,12 @@ class PhysicalLinkPowerStateType(VoltageFrequencyConditionListType):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='PhysicalLinkPowerStateType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='PhysicalLinkPowerStateType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='PhysicalLinkPowerStateType', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='PhysicalLinkPowerStateType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='PhysicalLinkPowerStateType'):
         super(PhysicalLinkPowerStateType, self).exportAttributes(outfile, level, already_processed, namespace_, name_='PhysicalLinkPowerStateType')
         if self.name is not None and 'name' not in already_processed:
             already_processed.add('name')
@@ -5925,7 +5925,7 @@ class PhysicalLinkPowerStateType(VoltageFrequencyConditionListType):
         if self.powerUnit != "pW" and 'powerUnit' not in already_processed:
             already_processed.add('powerUnit')
             outfile.write(' powerUnit=%s' % (quote_attrib(self.powerUnit), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='PhysicalLinkPowerStateType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='PhysicalLinkPowerStateType', fromsubclass_=False, pretty_print=True):
         super(PhysicalLinkPowerStateType, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
     def build(self, node):
         already_processed = set()
@@ -6051,7 +6051,7 @@ class PhysicalLinkPowerModelType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='PhysicalLinkPowerModelType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='PhysicalLinkPowerModelType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -6064,12 +6064,12 @@ class PhysicalLinkPowerModelType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='PhysicalLinkPowerModelType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='PhysicalLinkPowerModelType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='PhysicalLinkPowerModelType', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='PhysicalLinkPowerModelType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='PhysicalLinkPowerModelType'):
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
@@ -6091,7 +6091,7 @@ class PhysicalLinkPowerModelType(GeneratedsSuper):
         if self.transferCapacitanceUnit != "pF" and 'transferCapacitanceUnit' not in already_processed:
             already_processed.add('transferCapacitanceUnit')
             outfile.write(' transferCapacitanceUnit=%s' % (quote_attrib(self.transferCapacitanceUnit), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='PhysicalLinkPowerModelType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='PhysicalLinkPowerModelType', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -6245,7 +6245,7 @@ class PhysicalLinkType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='PhysicalLinkType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='PhysicalLinkType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -6258,11 +6258,11 @@ class PhysicalLinkType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='PhysicalLinkType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='PhysicalLinkType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='PhysicalLinkType', pretty_print=pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='PhysicalLinkType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='PhysicalLinkType'):
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
@@ -6287,7 +6287,7 @@ class PhysicalLinkType(GeneratedsSuper):
         if self.physicalLinkPowerModel is not None and 'physicalLinkPowerModel' not in already_processed:
             already_processed.add('physicalLinkPowerModel')
             outfile.write(' physicalLinkPowerModel=%s' % (quote_attrib(self.physicalLinkPowerModel), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='PhysicalLinkType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='PhysicalLinkType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
         already_processed = set()
@@ -6375,7 +6375,7 @@ class PhysicalLinkRefType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='PhysicalLinkRefType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='PhysicalLinkRefType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -6388,15 +6388,15 @@ class PhysicalLinkRefType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='PhysicalLinkRefType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='PhysicalLinkRefType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='PhysicalLinkRefType', pretty_print=pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='PhysicalLinkRefType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='PhysicalLinkRefType'):
         if self.physicalLink is not None and 'physicalLink' not in already_processed:
             already_processed.add('physicalLink')
             outfile.write(' physicalLink=%s' % (quote_attrib(self.physicalLink), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='PhysicalLinkRefType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='PhysicalLinkRefType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
         already_processed = set()
@@ -6473,7 +6473,7 @@ class DMAControllerPowerStateType(VoltageFrequencyConditionListType):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='DMAControllerPowerStateType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='DMAControllerPowerStateType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -6486,12 +6486,12 @@ class DMAControllerPowerStateType(VoltageFrequencyConditionListType):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='DMAControllerPowerStateType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='DMAControllerPowerStateType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='DMAControllerPowerStateType', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='DMAControllerPowerStateType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='DMAControllerPowerStateType'):
         super(DMAControllerPowerStateType, self).exportAttributes(outfile, level, already_processed, namespace_, name_='DMAControllerPowerStateType')
         if self.name is not None and 'name' not in already_processed:
             already_processed.add('name')
@@ -6502,7 +6502,7 @@ class DMAControllerPowerStateType(VoltageFrequencyConditionListType):
         if self.powerUnit != "pW" and 'powerUnit' not in already_processed:
             already_processed.add('powerUnit')
             outfile.write(' powerUnit=%s' % (quote_attrib(self.powerUnit), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='DMAControllerPowerStateType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='DMAControllerPowerStateType', fromsubclass_=False, pretty_print=True):
         super(DMAControllerPowerStateType, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
     def build(self, node):
         already_processed = set()
@@ -6628,7 +6628,7 @@ class DMAControllerPowerModelType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='DMAControllerPowerModelType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='DMAControllerPowerModelType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -6641,12 +6641,12 @@ class DMAControllerPowerModelType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='DMAControllerPowerModelType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='DMAControllerPowerModelType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='DMAControllerPowerModelType', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='DMAControllerPowerModelType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='DMAControllerPowerModelType'):
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
@@ -6668,7 +6668,7 @@ class DMAControllerPowerModelType(GeneratedsSuper):
         if self.transferCapacitanceUnit != "pF" and 'transferCapacitanceUnit' not in already_processed:
             already_processed.add('transferCapacitanceUnit')
             outfile.write(' transferCapacitanceUnit=%s' % (quote_attrib(self.transferCapacitanceUnit), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='DMAControllerPowerModelType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='DMAControllerPowerModelType', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -6829,7 +6829,7 @@ class DMAControllerType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='DMAControllerType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='DMAControllerType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -6842,11 +6842,11 @@ class DMAControllerType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='DMAControllerType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='DMAControllerType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='DMAControllerType', pretty_print=pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='DMAControllerType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='DMAControllerType'):
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
@@ -6874,7 +6874,7 @@ class DMAControllerType(GeneratedsSuper):
         if self.dmaControllerPowerModel is not None and 'dmaControllerPowerModel' not in already_processed:
             already_processed.add('dmaControllerPowerModel')
             outfile.write(' dmaControllerPowerModel=%s' % (quote_attrib(self.dmaControllerPowerModel), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='DMAControllerType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='DMAControllerType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
         already_processed = set()
@@ -6972,7 +6972,7 @@ class DMAControllerRefType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='DMAControllerRefType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='DMAControllerRefType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -6985,15 +6985,15 @@ class DMAControllerRefType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='DMAControllerRefType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='DMAControllerRefType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='DMAControllerRefType', pretty_print=pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='DMAControllerRefType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='DMAControllerRefType'):
         if self.dmaController is not None and 'dmaController' not in already_processed:
             already_processed.add('dmaController')
             outfile.write(' dmaController=%s' % (quote_attrib(self.dmaController), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='DMAControllerRefType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='DMAControllerRefType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
         already_processed = set()
@@ -7102,7 +7102,7 @@ class LogicalLinkType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='LogicalLinkType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='LogicalLinkType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -7115,11 +7115,11 @@ class LogicalLinkType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='LogicalLinkType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='LogicalLinkType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='LogicalLinkType', pretty_print=pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='LogicalLinkType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='LogicalLinkType'):
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
@@ -7138,7 +7138,7 @@ class LogicalLinkType(GeneratedsSuper):
         if self.frequencyDomain is not None and 'frequencyDomain' not in already_processed:
             already_processed.add('frequencyDomain')
             outfile.write(' frequencyDomain=%s' % (quote_attrib(self.frequencyDomain), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='LogicalLinkType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='LogicalLinkType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
         already_processed = set()
@@ -7216,7 +7216,7 @@ class LogicalLinkRefType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='LogicalLinkRefType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='LogicalLinkRefType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -7229,15 +7229,15 @@ class LogicalLinkRefType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='LogicalLinkRefType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='LogicalLinkRefType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='LogicalLinkRefType', pretty_print=pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='LogicalLinkRefType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='LogicalLinkRefType'):
         if self.logicalLink is not None and 'logicalLink' not in already_processed:
             already_processed.add('logicalLink')
             outfile.write(' logicalLink=%s' % (quote_attrib(self.logicalLink), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='LogicalLinkRefType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='LogicalLinkRefType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
         already_processed = set()
@@ -7309,7 +7309,7 @@ class CommunicationBufferType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='CommunicationBufferType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='CommunicationBufferType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -7322,14 +7322,14 @@ class CommunicationBufferType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='CommunicationBufferType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='CommunicationBufferType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='CommunicationBufferType', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='CommunicationBufferType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='CommunicationBufferType'):
         pass
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='CommunicationBufferType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='CommunicationBufferType', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -7453,7 +7453,7 @@ class CommunicationPhaseType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='CommunicationPhaseType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='CommunicationPhaseType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -7466,14 +7466,14 @@ class CommunicationPhaseType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='CommunicationPhaseType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='CommunicationPhaseType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='CommunicationPhaseType', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='CommunicationPhaseType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='CommunicationPhaseType'):
         pass
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='CommunicationPhaseType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='CommunicationPhaseType', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -7577,7 +7577,7 @@ class CommunicationProducerType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='CommunicationProducerType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='CommunicationProducerType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -7590,16 +7590,16 @@ class CommunicationProducerType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='CommunicationProducerType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='CommunicationProducerType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='CommunicationProducerType', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='CommunicationProducerType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='CommunicationProducerType'):
         if self.processor is not None and 'processor' not in already_processed:
             already_processed.add('processor')
             outfile.write(' processor=%s' % (quote_attrib(self.processor), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='CommunicationProducerType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='CommunicationProducerType', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -7686,7 +7686,7 @@ class CommunicationConsumerType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='CommunicationConsumerType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='CommunicationConsumerType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -7699,16 +7699,16 @@ class CommunicationConsumerType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='CommunicationConsumerType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='CommunicationConsumerType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='CommunicationConsumerType', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='CommunicationConsumerType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='CommunicationConsumerType'):
         if self.processor is not None and 'processor' not in already_processed:
             already_processed.add('processor')
             outfile.write(' processor=%s' % (quote_attrib(self.processor), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='CommunicationConsumerType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='CommunicationConsumerType', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -7824,7 +7824,7 @@ class CommunicationType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='CommunicationType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='CommunicationType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -7837,12 +7837,12 @@ class CommunicationType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='CommunicationType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='CommunicationType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='CommunicationType', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='CommunicationType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='CommunicationType'):
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
@@ -7852,7 +7852,7 @@ class CommunicationType(GeneratedsSuper):
         if self.flags is not None and 'flags' not in already_processed:
             already_processed.add('flags')
             outfile.write(' flags=%s' % (quote_attrib(self.flags), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='CommunicationType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='CommunicationType', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -7959,7 +7959,7 @@ class PeripheralEmulatorLibraryType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='PeripheralEmulatorLibraryType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='PeripheralEmulatorLibraryType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -7972,11 +7972,11 @@ class PeripheralEmulatorLibraryType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='PeripheralEmulatorLibraryType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='PeripheralEmulatorLibraryType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='PeripheralEmulatorLibraryType', pretty_print=pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='PeripheralEmulatorLibraryType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='PeripheralEmulatorLibraryType'):
         if self.library is not None and 'library' not in already_processed:
             already_processed.add('library')
             outfile.write(' library=%s' % (quote_attrib(self.library), ))
@@ -7992,7 +7992,7 @@ class PeripheralEmulatorLibraryType(GeneratedsSuper):
         if self.write is not None and 'write' not in already_processed:
             already_processed.add('write')
             outfile.write(' write=%s' % (quote_attrib(self.write), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='PeripheralEmulatorLibraryType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='PeripheralEmulatorLibraryType', fromsubclass_=False, pretty_print=True):
         pass
     def build(self, node):
         already_processed = set()
@@ -8078,7 +8078,7 @@ class PeripheralType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='PeripheralType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='PeripheralType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -8091,12 +8091,12 @@ class PeripheralType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='PeripheralType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='PeripheralType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='PeripheralType', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='PeripheralType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='PeripheralType'):
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
@@ -8106,7 +8106,7 @@ class PeripheralType(GeneratedsSuper):
         if self.endAddress is not None and 'endAddress' not in already_processed:
             already_processed.add('endAddress')
             outfile.write(' endAddress=%s' % (quote_attrib(self.endAddress), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='PeripheralType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='PeripheralType', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -8370,7 +8370,7 @@ class SubsystemPlatformType(GeneratedsSuper):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='SubsystemPlatformType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='SubsystemPlatformType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -8383,18 +8383,18 @@ class SubsystemPlatformType(GeneratedsSuper):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='SubsystemPlatformType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='SubsystemPlatformType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='SubsystemPlatformType', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='SubsystemPlatformType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='SubsystemPlatformType'):
         if self.extensiontype_ is not None and 'xsi:type' not in already_processed:
             already_processed.add('xsi:type')
             outfile.write(' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"')
             outfile.write(' xsi:type="%s"' % self.extensiontype_)
         pass
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='SubsystemPlatformType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='SubsystemPlatformType', fromsubclass_=False, pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -8589,7 +8589,7 @@ class SubsystemType(SubsystemPlatformType):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='SubsystemType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='SubsystemType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -8602,17 +8602,17 @@ class SubsystemType(SubsystemPlatformType):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='SubsystemType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='SubsystemType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='SubsystemType', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='SubsystemType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='SubsystemType'):
         super(SubsystemType, self).exportAttributes(outfile, level, already_processed, namespace_, name_='SubsystemType')
         if self.id is not None and 'id' not in already_processed:
             already_processed.add('id')
             outfile.write(' id=%s' % (quote_attrib(self.id), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='SubsystemType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='SubsystemType', fromsubclass_=False, pretty_print=True):
         super(SubsystemType, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
     def build(self, node):
         already_processed = set()
@@ -8678,7 +8678,7 @@ class PlatformType(SubsystemPlatformType):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='PlatformType', namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='PlatformType', namespacedef_='xmlns:mapsplatform="mapsplatform"', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -8691,12 +8691,12 @@ class PlatformType(SubsystemPlatformType):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='PlatformType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='PlatformType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='PlatformType', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='PlatformType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='PlatformType'):
         super(PlatformType, self).exportAttributes(outfile, level, already_processed, namespace_, name_='PlatformType')
         if self.version is not None and 'version' not in already_processed:
             already_processed.add('version')
@@ -8704,7 +8704,7 @@ class PlatformType(SubsystemPlatformType):
         if self.generatorTarget is not None and 'generatorTarget' not in already_processed:
             already_processed.add('generatorTarget')
             outfile.write(' generatorTarget=%s' % (quote_attrib(self.generatorTarget), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='PlatformType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='PlatformType', fromsubclass_=False, pretty_print=True):
         super(PlatformType, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
     def build(self, node):
         already_processed = set()
@@ -8773,7 +8773,7 @@ class FrequencyInputType(VoltageFrequencyDomainConditionListType):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='FrequencyInputType', namespacedef_='', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='FrequencyInputType', namespacedef_='', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -8786,12 +8786,12 @@ class FrequencyInputType(VoltageFrequencyDomainConditionListType):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='FrequencyInputType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='FrequencyInputType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='FrequencyInputType', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='FrequencyInputType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='FrequencyInputType'):
         super(FrequencyInputType, self).exportAttributes(outfile, level, already_processed, namespace_, name_='FrequencyInputType')
         if self.frequencyDomain is not None and 'frequencyDomain' not in already_processed:
             already_processed.add('frequencyDomain')
@@ -8799,7 +8799,7 @@ class FrequencyInputType(VoltageFrequencyDomainConditionListType):
         if self.factor != 1 and 'factor' not in already_processed:
             already_processed.add('factor')
             outfile.write(' factor=%s' % (quote_attrib(self.factor), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='FrequencyInputType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='FrequencyInputType', fromsubclass_=False, pretty_print=True):
         super(FrequencyInputType, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
     def build(self, node):
         already_processed = set()
@@ -8876,7 +8876,7 @@ class FrequencyType(VoltageFrequencyDomainConditionListType):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='FrequencyType', namespacedef_='', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='FrequencyType', namespacedef_='', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -8889,12 +8889,12 @@ class FrequencyType(VoltageFrequencyDomainConditionListType):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='FrequencyType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='FrequencyType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='FrequencyType', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='FrequencyType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='FrequencyType'):
         super(FrequencyType, self).exportAttributes(outfile, level, already_processed, namespace_, name_='FrequencyType')
         if self.value is not None and 'value' not in already_processed:
             already_processed.add('value')
@@ -8902,7 +8902,7 @@ class FrequencyType(VoltageFrequencyDomainConditionListType):
         if self.unit is not None and 'unit' not in already_processed:
             already_processed.add('unit')
             outfile.write(' unit=%s' % (quote_attrib(self.unit), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='FrequencyType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='FrequencyType', fromsubclass_=False, pretty_print=True):
         super(FrequencyType, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
     def build(self, node):
         already_processed = set()
@@ -8963,7 +8963,7 @@ class VoltageInputType(VoltageFrequencyDomainConditionListType):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='VoltageInputType', namespacedef_='', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='VoltageInputType', namespacedef_='', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -8976,17 +8976,17 @@ class VoltageInputType(VoltageFrequencyDomainConditionListType):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='VoltageInputType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='VoltageInputType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='VoltageInputType', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='VoltageInputType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='VoltageInputType'):
         super(VoltageInputType, self).exportAttributes(outfile, level, already_processed, namespace_, name_='VoltageInputType')
         if self.voltageDomain is not None and 'voltageDomain' not in already_processed:
             already_processed.add('voltageDomain')
             outfile.write(' voltageDomain=%s' % (quote_attrib(self.voltageDomain), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='VoltageInputType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='VoltageInputType', fromsubclass_=False, pretty_print=True):
         super(VoltageInputType, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
     def build(self, node):
         already_processed = set()
@@ -9055,7 +9055,7 @@ class VoltageType(VoltageFrequencyDomainConditionListType):
             return True
         else:
             return False
-    def export(self, outfile, level, namespace_='slxplatform:', name_='VoltageType', namespacedef_='', pretty_print=True):
+    def export(self, outfile, level, namespace_='mapsplatform:', name_='VoltageType', namespacedef_='', pretty_print=True):
         if pretty_print:
             eol_ = '\n'
         else:
@@ -9068,12 +9068,12 @@ class VoltageType(VoltageFrequencyDomainConditionListType):
         self.exportAttributes(outfile, level, already_processed, namespace_, name_='VoltageType')
         if self.hasContent_():
             outfile.write('>%s' % (eol_, ))
-            self.exportChildren(outfile, level + 1, namespace_='slxplatform:', name_='VoltageType', pretty_print=pretty_print)
+            self.exportChildren(outfile, level + 1, namespace_='mapsplatform:', name_='VoltageType', pretty_print=pretty_print)
             showIndent(outfile, level, pretty_print)
             outfile.write('</%s%s>%s' % (namespace_, name_, eol_))
         else:
             outfile.write('/>%s' % (eol_, ))
-    def exportAttributes(self, outfile, level, already_processed, namespace_='slxplatform:', name_='VoltageType'):
+    def exportAttributes(self, outfile, level, already_processed, namespace_='mapsplatform:', name_='VoltageType'):
         super(VoltageType, self).exportAttributes(outfile, level, already_processed, namespace_, name_='VoltageType')
         if self.value is not None and 'value' not in already_processed:
             already_processed.add('value')
@@ -9081,7 +9081,7 @@ class VoltageType(VoltageFrequencyDomainConditionListType):
         if self.unit is not None and 'unit' not in already_processed:
             already_processed.add('unit')
             outfile.write(' unit=%s' % (quote_attrib(self.unit), ))
-    def exportChildren(self, outfile, level, namespace_='slxplatform:', name_='VoltageType', fromsubclass_=False, pretty_print=True):
+    def exportChildren(self, outfile, level, namespace_='mapsplatform:', name_='VoltageType', fromsubclass_=False, pretty_print=True):
         super(VoltageType, self).exportChildren(outfile, level, namespace_, name_, True, pretty_print=pretty_print)
     def build(self, node):
         already_processed = set()
@@ -9202,7 +9202,7 @@ def parse(inFileName, silence=False):
         sys.stdout.write('<?xml version="1.0" ?>\n')
         rootObj.export(
             sys.stdout, 0, name_=rootTag,
-            namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"',
+            namespacedef_='xmlns:mapsplatform="mapsplatform"',
             pretty_print=True)
     return rootObj
 
@@ -9251,7 +9251,7 @@ def parseString(inString, silence=False):
         sys.stdout.write('<?xml version="1.0" ?>\n')
         rootObj.export(
             sys.stdout, 0, name_=rootTag,
-            namespacedef_='xmlns:slxplatform="http://xsd.silexica.com/slxPlatform"')
+            namespacedef_='xmlns:mapsplatform="mapsplatform"')
     return rootObj
 
 

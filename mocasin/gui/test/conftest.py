@@ -5,21 +5,21 @@
 
 import pytest
 
-from mocasin.slx.platform import SlxPlatform
+from mocasin.maps.platform import MapsPlatform
 
 
 @pytest.fixture
 def exynos():
-    return SlxPlatform("exynos", "examples/slx/platforms/exynos.platform")
+    return MapsPlatform("exynos", "examples/maps/platforms/exynos.platform")
 
 
 @pytest.fixture
 def parallella():
-    return SlxPlatform(
-        "parallella", "examples/slx/platforms/parallella.platform"
+    return MapsPlatform(
+        "parallella", "examples/maps/platforms/parallella.platform"
     )
 
 
 @pytest.fixture
 def multiDSP():
-    return SlxPlatform("multiDSP", "examples/slx/platforms/multidsp.platform")
+    return MapsPlatform("multiDSP", "examples/maps/platforms/multidsp.platform")
