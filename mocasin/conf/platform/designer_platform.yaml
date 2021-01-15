@@ -1,6 +1,0 @@
-# @package _group_
-_target_: ??? #mocasin.platforms.
-processor_1: 'processor_0'
-processor_2: 'processor_1'
-processor_3: 'processor_2'
-processor_4: 'processor_3'
