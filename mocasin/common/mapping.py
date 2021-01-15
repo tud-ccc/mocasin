@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 
 
 class ChannelMappingInfo:
-    """Simple record to store mapping infos associated with a KpnChannel.
+    """Simple record to store mapping infos associated with a DataflowChannel.
 
     :ivar primitive: the communication primitive that the channel is mapped to
     :type primitive: Primitive
@@ -25,7 +25,7 @@ class ChannelMappingInfo:
 
 
 class ProcessMappingInfo:
-    """Simple record to store mapping infos associated with a KpnProcess.
+    """Simple record to store mapping infos associated with a DataflowProcess.
 
     :ivar Scheduler scheduler: the scheduler that the process is mapped to
     :ivar Processor affinity: the processor that the process should run on
@@ -51,9 +51,9 @@ class MappingMetadata:
 
 
 class Mapping:
-    """Describes the mapping of a KpnGraph to a Platform.
+    """Describes the mapping of a DataflowGraph to a Platform.
 
-    :ivar KpnGraph kpn: the kpn graph
+    :ivar DataflowGraph graph: the dataflow graph
     :ivar Platform platform: the platform
     :ivar dict[str, ChannelMappingInfo] _channel_info:
         dict of channel mapping infos
@@ -61,38 +61,38 @@ class Mapping:
         dict of process mapping infos
     """
 
-    def __init__(self, kpn, platform):
+    def __init__(self, graph, platform):
         """Initialize a Mapping
 
-        :param KpnGraph kpn: the kpn graph
+        :param DataflowGraph graph: the dataflow graph
         :param Platform platform: the platform
         """
 
-        self.kpn = kpn
+        self.graph = graph
         self.platform = platform
 
         self._channel_info = {}
         self._process_info = {}
 
         # initialize all valid dictionary entries to None
-        for p in kpn.processes():
+        for p in graph.processes():
             self._process_info[p.name] = None
-        for c in kpn.channels():
+        for c in graph.channels():
             self._channel_info[c.name] = None
 
         # initialize metadata
         self.metadata = MappingMetadata()
 
-    def update_kpn_object(self, kpn):
+    def update_graph_object(self, graph):
         """
-        This function updates the kpn object in the mapping. Assumes both kpns describe the same application (just different python objects).
+        This function updates the graph object in the mapping. Assumes both graphs describe the same application (just different python objects).
         It propagates all the references in the process/channel info dictionaries to the new object.
-        :param kpn:  The new kpn object
+        :param graph:  The new graph object
         """
-        self.kpn = kpn
+        self.graph = graph
         processors = self.platform.processors()
         schedulers = self.platform.schedulers()
-        for p in kpn.processes():
+        for p in graph.processes():
             proc_info = self._process_info[p.name]
             affinity = [
                 proc
@@ -108,7 +108,7 @@ class Mapping:
             proc_info.scheduler = scheduler
 
         primitives = self.platform.primitives()
-        for c in kpn.channels():
+        for c in graph.channels():
             chan_info = self._channel_info[c.name]
             primitive = [
                 prim
@@ -120,7 +120,7 @@ class Mapping:
     def channel_info(self, channel):
         """Look up the mapping info of a channel.
 
-        :param KpnChannel channel: channel to look up
+        :param DataflowChannel channel: channel to look up
         :returns: the mapping info if the channel is mapped
         :rtype: ChannelMappingInfo or None
         """
@@ -129,7 +129,7 @@ class Mapping:
     def process_info(self, process):
         """Look up the mapping info of a process.
 
-        :param KpnProcess process: process to look up
+        :param DataflowProcess process: process to look up
         :returns: the mapping info if the process is mapped
         :rtype: ProcessMappingInfo or None
         """
@@ -153,13 +153,13 @@ class Mapping:
             filter(lambda c: c[1] is None, self._channel_info.items())
         ).keys()
         return list(
-            filter(lambda c: c.name in unmapped_channels, self.kpn.channels())
+            filter(lambda c: c.name in unmapped_channels, self.graph.channels())
         )
 
     def get_unmapped_processes(self):
         """Returns a list of unmapped processes
         :returns: List of unmapped processes
-        :rtype: List[KpnProcess]
+        :rtype: List[DataflowProcess]
         """
         log.debug(
             "mapping remaining processes: {}".format(
@@ -172,7 +172,9 @@ class Mapping:
             filter(lambda p: p[1] is None, self._process_info.items())
         ).keys()
         return list(
-            filter(lambda p: p.name in unmapped_processes, self.kpn.processes())
+            filter(
+                lambda p: p.name in unmapped_processes, self.graph.processes()
+            )
         )
 
     def scheduler_processes(self, scheduler):
@@ -180,10 +182,10 @@ class Mapping:
 
         :param Scheduler scheduler: scheduler to look up
         :returns: a list of processes
-        :rtype: list[KpnProcess]
+        :rtype: list[DataflowProcess]
         """
         processes = []
-        for p in self.kpn.processes():
+        for p in self.graph.processes():
             info = self.process_info(p)
             if scheduler is info.scheduler:
                 processes.append(p)
@@ -202,9 +204,9 @@ class Mapping:
         self._process_info[process.name] = info
 
     def affinity(self, process):
-        """Returns the affinity of a KPN process
+        """Returns the affinity of a dataflow process
 
-        :param KpnProcess process: the KPN process
+        :param DataflowProcess process: the dataflow process
         :rtype: Processor
         """
         if self._process_info[process.name] is None:
@@ -212,37 +214,37 @@ class Mapping:
         return self._process_info[process.name].affinity
 
     def primitive(self, channel):
-        """Returns the primitive that a KPN channel is mapped to
+        """Returns the primitive that a dataflow channel is mapped to
 
-        :param KpnChannel channel: the KPN channel
+        :param DataflowChannel channel: the dataflow channel
         :rtype: Primitive
         """
         return self._channel_info[channel.name].primitive
 
     def capacity(self, channel):
-        """Returns the capacity (number of tokens) of a KPN channel
+        """Returns the capacity (number of tokens) of a dataflow channel
 
-        :param KpnChannel channel: the KPN channel
+        :param DataflowChannel channel: the dataflow channel
         :rtype: int
         """
         return self._channel_info[channel.name].capacity
 
     def channel_source(self, channel):
-        """Returns the source processor of a KPN channel
+        """Returns the source processor of a dataflow channel
 
-        :param KpnChannel channel: the KPN channel
+        :param DataflowChannel channel: the dataflow channel
         :rtype: Processor
         """
-        source = self.kpn.find_channel(channel.name).source
+        source = self.graph.find_channel(channel.name).source
         return self.affinity(source)
 
     def channel_sinks(self, channel):
-        """Returns the list of sink processors for a KPN channel
+        """Returns the list of sink processors for a dataflow channel
 
-        :param KpnChannel channel: the KPN channel
+        :param DataflowChannel channel: the dataflow channel
         :rtype: list[Processor]
         """
-        sinks = self.kpn.find_channel(channel.name).sinks
+        sinks = self.graph.find_channel(channel.name).sinks
         return [self.affinity(s) for s in sinks]
 
     def get_numPEs(self):
@@ -254,7 +256,7 @@ class Mapping:
 
     def get_numProcs(self):
         """Returns the number of processes in the mapping"""
-        return len(self.kpn.processes())
+        return len(self.graph.processes())
 
     def change_affinity(self, process_name, processor_name):
         """Changes the affinity of a process to a processing element
@@ -273,7 +275,7 @@ class Mapping:
 
     def get_used_processors(self):
         """ Returns a set of used processors. """
-        return {self.affinity(p) for p in self.kpn.processes()}
+        return {self.affinity(p) for p in self.graph.processes()}
 
     def get_used_processor_types(self):
         """Returns the counter of processors of each type used by the mapping."""
@@ -287,8 +289,8 @@ class Mapping:
         """Convert mapping to a simple readable string
         :rtype: string
         """
-        procs_list = self.kpn.processes()
-        chans_list = self.kpn.channels()
+        procs_list = self.graph.processes()
+        chans_list = self.graph.channels()
         pes_list = self.platform.processors()
 
         # return processor - process mapping
@@ -324,7 +326,7 @@ class Mapping:
             mapped processes are the values
         :rtype dict[string, string]:
         """
-        procs_list = self.kpn.processes()
+        procs_list = self.graph.processes()
         pes_list = self.platform.processors()
         pes2procs = {}
         for pe in pes_list:
@@ -345,7 +347,7 @@ class Mapping:
         for core in self.platform.processors():
             if core.type not in resource_dict:
                 resource_dict[core.type] = 0
-        for proc in self.kpn.processes():
+        for proc in self.graph.processes():
             core = self.affinity(proc)
             if core.name in counted_cores:
                 continue
@@ -360,8 +362,8 @@ class Mapping:
         from 0 to NUM_PES"""
 
         # initialize lists for numbers
-        procs_list = self.kpn.processes()
-        chans_list = self.kpn.channels()
+        procs_list = self.graph.processes()
+        chans_list = self.graph.channels()
         pes_list = self.platform.processors()
         prim_list = self.platform.primitives()
 
@@ -377,7 +379,7 @@ class Mapping:
             res.append(pes[self.affinity(proc).name])
 
         # if flag set,
-        # add one result entry for each KPN channel (multiple in case of
+        # add one result entry for each dataflow channel (multiple in case of
         # multiple reader channels)
         if channels:
             # map chans to an integer
@@ -436,7 +438,7 @@ class Mapping:
 
         # map processes
         for i, p in enumerate(
-            sorted(self.kpn.processes(), key=(lambda p: p.name))
+            sorted(self.graph.processes(), key=(lambda p: p.name))
         ):
             idx = list_from[i]
             schedulers = [
@@ -460,7 +462,7 @@ class Mapping:
             )
 
         # map channels
-        for i, c in enumerate(self.kpn.channels(), start=i + 1):
+        for i, c in enumerate(self.graph.channels(), start=i + 1):
             capacity = 16  # fixed channel bound this may cause problems
             suitable_primitives = []
             for p in all_primitives:
@@ -474,7 +476,7 @@ class Mapping:
                     "communication from %s to %s found!"
                     % (src.name, str(sinks))
                 )
-            if len(list_from) == len(self.kpn.processes()):
+            if len(list_from) == len(self.graph.processes()):
                 if len(suitable_primitives) == 1:
                     primitive = suitable_primitives[0]
                 else:
@@ -505,7 +507,7 @@ class Mapping:
     def to_pydot(self, channels=True):
         """Convert the mapping to a dot graph
 
-        The generated graph visualizes how a KPN application is mapped
+        The generated graph visualizes how a dataflow application is mapped
         to a platform.
 
         :returns: pydot object
@@ -531,7 +533,7 @@ class Mapping:
                     primitive_nodes[p.name] = node
 
         process_nodes = {}
-        for p in self.kpn.processes():
+        for p in self.graph.processes():
             info = self._process_info[p.name]
             p_cluster = processor_clusters[info.affinity.name]
             node = pydot.Node("process_" + p.name, label=p.name)
@@ -540,7 +542,7 @@ class Mapping:
 
         channel_nodes = {}
         if channels:
-            for c in self.kpn.channels():
+            for c in self.graph.channels():
                 node = pydot.Node(
                     "channel_" + c.name, label=c.name, shape="diamond"
                 )

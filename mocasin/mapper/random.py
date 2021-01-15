@@ -19,14 +19,14 @@ class RandomPartialMapper(object):
     """Generates a random mapping
 
     This class is used to generate a random mapping for a given
-    platform and KPN application.
+    platform and dataflow graph
     """
 
-    def __init__(self, kpn, platform, seed=None, support_first=False):
-        """Generates a random mapping for a given platform and KPN application.
+    def __init__(self, graph, platform, seed=None, support_first=False):
+        """Generates a random mapping for a given platform and dataflow application.
 
-        :param kpn: a KPN graph
-        :type kpn: KpnGraph
+        :param graph: a dataflow graph
+        :type graph: DataflowGraph
         :param platform: a platform
         :type platform: Platform
         :param seed: a random seed for the RNG
@@ -41,7 +41,7 @@ class RandomPartialMapper(object):
         self.support_first = support_first
         self.full_mapper = True
         self.platform = platform
-        self.kpn = kpn
+        self.graph = graph
 
     def generate_mapping(self, part_mapping=None):
         """Generates a random mapping
@@ -58,19 +58,19 @@ class RandomPartialMapper(object):
 
         # generate new mapping if no partial mapping is given
         if not part_mapping:
-            part_mapping = Mapping(self.kpn, self.platform)
+            part_mapping = Mapping(self.graph, self.platform)
 
-        # check if the platform/kpn is equivalent
+        # check if the platform/graph is equivalent
         if (
             not part_mapping.platform is self.platform
-            or not part_mapping.kpn is self.kpn
+            or not part_mapping.graph is self.graph
         ):
             raise RuntimeError(
-                "rand_map: Try to map partial mapping of platform,KPN %s,%s to %s,%s",
+                "rand_map: Try to map partial mapping of platform,dataflow %s,%s to %s,%s",
                 part_mapping.platform.name,
-                part_mapping.kpn.name,
+                part_mapping.graph.name,
                 self.platform.name,
-                self.kpn.name,
+                self.graph.name,
             )
 
         available_processors = list(self.platform.processors())
@@ -151,10 +151,10 @@ class RandomPartialMapperHydra(RandomPartialMapper):
     TODO: do we need this??
     """
 
-    def __init__(self, kpn, platform, config):
+    def __init__(self, graph, platform, config):
         random_seed = config["mapper"]["random_seed"]
         super(RandomPartialMapperHydra, self).__init__(
-            kpn, platform, seed=random_seed
+            graph, platform, seed=random_seed
         )
 
 
@@ -164,5 +164,5 @@ class RandomMapper(RandomPartialMapper):
     for RandomPartialMapper.
     """
 
-    def __init__(self, kpn, platform, trace, representation, random_seed=None):
-        super().__init__(kpn, platform, seed=random_seed)
+    def __init__(self, graph, platform, trace, representation, random_seed=None):
+        super().__init__(graph, platform, seed=random_seed)

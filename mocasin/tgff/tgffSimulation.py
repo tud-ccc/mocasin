@@ -20,8 +20,8 @@ class TgffReferenceError(Exception):
     pass
 
 
-class KpnGraphFromTgff:
-    """New, since we want to return a common.kpn instance instead of am TgffToKpnGraph instance"""
+class DataflowGraphFromTgff:
+    """New, since we want to return a common.graph instance instead of am TgffToDataflowGraph instance"""
 
     def __new__(cls, tgff_file, name):
         if tgff_file not in _parsed_tgff_files:
@@ -37,7 +37,7 @@ class KpnGraphFromTgff:
         if name not in tgff_graphs:
             raise TgffReferenceError()
 
-        return tgff_graphs[name].to_kpn_graph()
+        return tgff_graphs[name].to_dataflow_graph()
 
 
 class TraceGeneratorWrapper:

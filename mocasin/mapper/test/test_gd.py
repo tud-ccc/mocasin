@@ -20,10 +20,10 @@ def evaluation_function_gradient():
 
 @pytest.fixture
 def mapper(
-    kpn, platform, trace, representation_pbc, evaluation_function, mocker
+    graph, platform, trace, representation_pbc, evaluation_function, mocker
 ):
     m = GradientDescentMapper(
-        kpn,
+        graph,
         platform,
         trace,
         representation_pbc,

@@ -6,18 +6,18 @@
 import pydot
 
 
-class KpnProcess(object):
-    """Represents a KPN process
+class DataflowProcess(object):
+    """Represents a dataflow process
 
     :ivar str name: name of the process
-    :ivar outgoing_channels: list of KPN channel the process writes to
-    :type outgoing_channels: list[KpnChannel]
-    :ivar incoming_channels: list of KPN channel the process reads from
-    :type incoming_channels: list[KpnChannel]
+    :ivar outgoing_channels: list of dataflow channel the process writes to
+    :type outgoing_channels: list[DataflowChannel]
+    :ivar incoming_channels: list of dataflow channel the process reads from
+    :type incoming_channels: list[DataflowChannel]
     """
 
     def __init__(self, name):
-        """Initialize the KPN process
+        """Initialize the dataflow process
 
         Sets the name and leaves the process unconnected
         """
@@ -30,7 +30,7 @@ class KpnProcess(object):
 
         This makes this process the source of the channel.
 
-        :param KpnChannel channel: the channel to connect to
+        :param DataflowChannel channel: the channel to connect to
         :raises RuntimeError: if the channel already has a source process
             assigned
         """
@@ -47,22 +47,22 @@ class KpnProcess(object):
 
         This makes this process a sink of the channel.
 
-        :param KpnChannel channel: the channel to connect to
+        :param DataflowChannel channel: the channel to connect to
         """
         channel.sinks.append(self)
         self.incoming_channels.append(channel)
 
 
-class KpnChannel(object):
-    """Represents a KPN channel
+class DataflowChannel(object):
+    """Represents a dataflow channel
 
     Each channel may have multiple sinks but only one source.
 
     :ivar str name: name of the channel
     :ivar source: the channel's source process
-    :type source: KpnProcess
+    :type source: DataflowProcess
     :ivar sinks: the channel's sink processes
-    :type sinks: list[KpnProcess]
+    :type sinks: list[DataflowProcess]
     :ivar int token_size: size of one data token in byte
     """
 
@@ -80,13 +80,13 @@ class KpnChannel(object):
         self.token_size = token_size
 
 
-class KpnGraph(object):
-    """Represents the DAG of a KPN application.
+class DataflowGraph(object):
+    """Represents the DAG of a dataflow application.
 
-    :ivar _processes: a dict of KPN _processes representing the graph's nodes
-    :type _processes: dict[str, KpnProcess]
-    :ivar _channels: a dict of KPN _channels representing the graph's edges
-    :type _channels: dict[str, KpnChannel]
+    :ivar _processes: a dict of dataflow processes representing the graph's nodes
+    :type _processes: dict[str, DataflowProcess]
+    :ivar _channels: a dict of dataflow channels representing the graph's edges
+    :type _channels: dict[str, DataflowChannel]
     """
 
     def __init__(self, name):
@@ -96,11 +96,11 @@ class KpnGraph(object):
         self._channels = {}
 
     def find_process(self, name):
-        """Search for a KPN process by its name."""
+        """Search for a dataflow process by its name."""
         return self._processes[name]
 
     def find_channel(self, name, throw=False):
-        """Search for a KPN channel by its name."""
+        """Search for a dataflow channel by its name."""
         return self._channels[name]
 
     def processes(self):
@@ -131,7 +131,7 @@ class KpnGraph(object):
         pass
 
     def to_pydot(self, channels=True):
-        """Convert the KPN graph to a dot graph."""
+        """Convert the dataflow graph to a dot graph."""
         dot = pydot.Dot(graph_type="digraph")
 
         process_nodes = {}

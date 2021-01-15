@@ -143,7 +143,7 @@ def empty_channel(env, mocker):
     return channel
 
 
-class TestRuntimeKpnProcess:
+class TestRuntimeDataflowProcess:
     class TerminateTraceGenerator(TraceGenerator):
         def next_segment(self, process_name, processor_type):
             t = TraceSegment()
@@ -201,121 +201,140 @@ class TestRuntimeKpnProcess:
             return t
 
     def _run(
-        self, env, kpn_process, processor, trace_generator=None, channel=None
+        self,
+        env,
+        dataflow_process,
+        processor,
+        trace_generator=None,
+        channel=None,
     ):
-        kpn_process._trace_generator = trace_generator
+        dataflow_process._trace_generator = trace_generator
         env.run()
-        kpn_process._channels["chan"] = channel
-        kpn_process.start()
+        dataflow_process._channels["chan"] = channel
+        dataflow_process.start()
         env.run()
-        kpn_process.activate(processor)
+        dataflow_process.activate(processor)
         env.run()
-        finished = env.process(kpn_process.workload())
+        finished = env.process(dataflow_process.workload())
         env.run(finished)
 
-    def test_workload_terminate(self, env, kpn_process, processor):
-        self._run(env, kpn_process, processor, self.TerminateTraceGenerator())
-        assert kpn_process._state == ProcessState.FINISHED
+    def test_workload_terminate(self, env, dataflow_process, processor):
+        self._run(
+            env, dataflow_process, processor, self.TerminateTraceGenerator()
+        )
+        assert dataflow_process._state == ProcessState.FINISHED
         assert env.now == 0
 
-    def test_workload_processing(self, env, kpn_process, processor):
-        self._run(env, kpn_process, processor, self.ProcessingTraceGenerator())
-        assert kpn_process._state == ProcessState.FINISHED
+    def test_workload_processing(self, env, dataflow_process, processor):
+        self._run(
+            env, dataflow_process, processor, self.ProcessingTraceGenerator()
+        )
+        assert dataflow_process._state == ProcessState.FINISHED
         assert env.now == 15
 
-    def test_workload_read(self, env, kpn_process, processor, full_channel):
-        self._run(
-            env, kpn_process, processor, self.ReadTraceGenerator(), full_channel
-        )
-        assert kpn_process._state == ProcessState.FINISHED
-        assert env.now == 515
-
-    def test_workload_write(self, env, kpn_process, processor, empty_channel):
+    def test_workload_read(
+        self, env, dataflow_process, processor, full_channel
+    ):
         self._run(
             env,
-            kpn_process,
+            dataflow_process,
+            processor,
+            self.ReadTraceGenerator(),
+            full_channel,
+        )
+        assert dataflow_process._state == ProcessState.FINISHED
+        assert env.now == 515
+
+    def test_workload_write(
+        self, env, dataflow_process, processor, empty_channel
+    ):
+        self._run(
+            env,
+            dataflow_process,
             processor,
             self.WriteTraceGenerator(),
             empty_channel,
         )
-        assert kpn_process._state == ProcessState.FINISHED
+        assert dataflow_process._state == ProcessState.FINISHED
         assert env.now == 5015
 
     def test_workload_read_block(
-        self, env, kpn_process, processor, empty_channel
+        self, env, dataflow_process, processor, empty_channel
     ):
-        kpn_process._trace_generator = self.ReadTraceGenerator()
+        dataflow_process._trace_generator = self.ReadTraceGenerator()
         env.run()
-        kpn_process._channels["chan"] = empty_channel
-        kpn_process.start()
+        dataflow_process._channels["chan"] = empty_channel
+        dataflow_process.start()
         env.run()
-        kpn_process.activate(processor)
+        dataflow_process.activate(processor)
         env.run()
-        finished = env.process(kpn_process.workload())
+        finished = env.process(dataflow_process.workload())
         env.run(finished)
-        assert kpn_process._state == ProcessState.BLOCKED
+        assert dataflow_process._state == ProcessState.BLOCKED
         assert env.now == 1
 
     def test_workload_write_block(
-        self, env, kpn_process, processor, full_channel
+        self, env, dataflow_process, processor, full_channel
     ):
         self._run(
             env,
-            kpn_process,
+            dataflow_process,
             processor,
             self.WriteTraceGenerator(),
             full_channel,
         )
-        assert kpn_process._state == ProcessState.BLOCKED
+        assert dataflow_process._state == ProcessState.BLOCKED
         assert env.now == 1
 
-    def _run_after_block(self, env, kpn_process, processor):
-        kpn_process.unblock()
+    def _run_after_block(self, env, dataflow_process, processor):
+        dataflow_process.unblock()
         env.run()
-        kpn_process.activate(processor)
+        dataflow_process.activate(processor)
         env.run()
-        finished = env.process(kpn_process.workload())
+        finished = env.process(dataflow_process.workload())
         env.run(finished)
 
     def test_workload_read_resume(
-        self, env, kpn_process, processor, empty_channel, full_channel
+        self, env, dataflow_process, processor, empty_channel, full_channel
     ):
         self.test_workload_read_block(
-            env, kpn_process, processor, empty_channel
+            env, dataflow_process, processor, empty_channel
         )
-        kpn_process._channels["chan"] = full_channel
-        self._run_after_block(env, kpn_process, processor)
-        assert kpn_process._state == ProcessState.FINISHED
+        dataflow_process._channels["chan"] = full_channel
+        self._run_after_block(env, dataflow_process, processor)
+        assert dataflow_process._state == ProcessState.FINISHED
         assert env.now == 515
 
     def test_workload_write_resume(
-        self, env, kpn_process, processor, empty_channel, full_channel
+        self, env, dataflow_process, processor, empty_channel, full_channel
     ):
         self.test_workload_write_block(
-            env, kpn_process, processor, full_channel
+            env, dataflow_process, processor, full_channel
         )
-        kpn_process._channels["chan"] = empty_channel
-        self._run_after_block(env, kpn_process, processor)
-        assert kpn_process._state == ProcessState.FINISHED
+        dataflow_process._channels["chan"] = empty_channel
+        self._run_after_block(env, dataflow_process, processor)
+        assert dataflow_process._state == ProcessState.FINISHED
         assert env.now == 5015
 
-    def test_workload_invalid(self, env, kpn_process, processor):
+    def test_workload_invalid(self, env, dataflow_process, processor):
         with pytest.raises(RuntimeError):
-            self._run(env, kpn_process, processor, self.InvalidTraceGenerator())
+            self._run(
+                env, dataflow_process, processor, self.InvalidTraceGenerator()
+            )
 
-    def test_connect_to_incomming_channel(self, kpn_process, mocker):
+    def test_connect_to_incomming_channel(self, dataflow_process, mocker):
         channel = mocker.Mock()
         channel.name = "test"
-        kpn_process.connect_to_incomming_channel(channel)
-        assert kpn_process._channels["test"] is channel
-        channel.add_sink.assert_called_once_with(kpn_process)
+        dataflow_process.connect_to_incomming_channel(channel)
+        assert dataflow_process._channels["test"] is channel
+        channel.add_sink.assert_called_once_with(dataflow_process)
 
-    def test_connect_to_outgoing_channel(self, kpn_process, mocker):
+    def test_connect_to_outgoing_channel(self, dataflow_process, mocker):
         channel = mocker.Mock()
         channel.name = "test"
-        kpn_process.connect_to_outgoing_channel(channel)
-        assert kpn_process._channels["test"] is channel
-        channel.set_src.assert_called_once_with(kpn_process)
+        dataflow_process.connect_to_outgoing_channel(channel)
+        assert dataflow_process._channels["test"] is channel
+        channel.set_src.assert_called_once_with(dataflow_process)
 
 
 def test_default_workload(app, mocker):

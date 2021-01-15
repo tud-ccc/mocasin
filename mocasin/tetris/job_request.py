@@ -3,7 +3,7 @@
 #
 # Authors: Robert Khasanov
 
-from mocasin.common.kpn import KpnGraph
+from mocasin.common.graph import DataflowGraph
 
 from enum import Enum
 import logging
@@ -29,7 +29,7 @@ class JobRequestInfo:
         status=JobRequestStatus.ARRIVED,
         start_cratio=0.0,
     ):
-        assert isinstance(app, KpnGraph)
+        assert isinstance(app, DataflowGraph)
         assert isinstance(mappings, list)
         assert isinstance(arrival, float)
         assert isinstance(deadline, float)

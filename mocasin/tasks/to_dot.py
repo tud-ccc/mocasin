@@ -5,24 +5,24 @@
 import hydra
 
 
-@hydra.main(config_path="../conf", config_name="kpn_to_dot")
-def kpn_to_dot(cfg):
-    """Generate a dot graph from a KPN
+@hydra.main(config_path="../conf", config_name="graph_to_dot")
+def graph_to_dot(cfg):
+    """Generate a dot graph from dataflow graph
 
-    This simple task produces a dot graph that visualizes a given KPN. It
-    expects two hydra parameters to be available.
+    This simple task produces a dot graph that visualizes a given dataflow
+    graph. It expects two hydra parameters to be available.
 
     Args:
         cfg(~omegaconf.dictconfig.DictConfig): the hydra configuration object
 
     **Hydra Parameters**:
-        * **kpn:** the input kpn graph. The task expects a configuration dict
-          that can be instantiated to a :class:`~mocasin.common.kpn.KpnGraph`
+        * **graph:** the input dataflow graph. The task expects a configuration dict
+          that can be instantiated to a :class:`~mocasin.common.graph.DataflowGraph`
           object.
         * **dot:** the output file
     """
-    kpn = hydra.utils.instantiate(cfg["kpn"])
-    kpn.to_pydot().write_raw(cfg["output_file"])
+    graph = hydra.utils.instantiate(cfg["graph"])
+    graph.to_pydot().write_raw(cfg["output_file"])
 
 
 @hydra.main(config_path="../conf", config_name="platform_to_dot.yaml")
@@ -47,13 +47,14 @@ def platform_to_dot(cfg):
 
 @hydra.main(config_path="../conf", config_name="mapping_to_dot.yaml")
 def mapping_to_dot(cfg):
-    """Generate a dot graph representing the mapping of a KPN application to a
-    platform
+    """Generate a dot graph representing the mapping of a dataflow application to a
+    platform.
+
     This task expects four hydra parameters to be available.
 
     **Hydra Parameters**:
-        * **kpn:** the input kpn graph. The task expects a configuration dict
-          that can be instantiated to a :class:`~mocasin.common.kpn.KpnGraph`
+        * **graph:** the input dataflow graph. The task expects a configuration dict
+          that can be instantiated to a :class:`~mocasin.common.graph.DataflowGraph`
           object.
         * **platform:** the input platform. The task expects a configuration
           dict that can be instantiated to a
@@ -63,14 +64,14 @@ def mapping_to_dot(cfg):
           object.
         * **dot:** the output file
     """
-    kpn = hydra.utils.instantiate(cfg["kpn"])
+    graph = hydra.utils.instantiate(cfg["graph"])
     platform = hydra.utils.instantiate(cfg["platform"])
     trace = hydra.utils.instantiate(cfg["trace"])
     representation = hydra.utils.instantiate(
-        cfg["representation"], kpn, platform
+        cfg["representation"], graph, platform
     )
     mapping = hydra.utils.instantiate(
-        cfg["mapper"], kpn, platform, trace, representation
+        cfg["mapper"], graph, platform, trace, representation
     ).generate_mapping()
 
     mapping.to_pydot().write_raw(cfg["output_file"])

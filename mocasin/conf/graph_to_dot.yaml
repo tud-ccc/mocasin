@@ -3,8 +3,8 @@ defaults:
   - common
   - hydra/job_logging: mocasin
   - tgff: default
-  - kpn: default
+  - graph: default
   - trace: default
   - sdf3: default
 
-output_file: "${kpn.name}.dot"
+output_file: "${graph.name}.dot"

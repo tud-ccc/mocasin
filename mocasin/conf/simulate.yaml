@@ -3,12 +3,12 @@ defaults:
   - common
   - hydra/job_logging: mocasin
   - tgff: default
-  - kpn: default
+  - graph: default
   - platform: default
   - mapper: default
   - trace: default
   - representation: SimpleVector
-  - simulation_type: single_kpn
+  - simulation_type: dataflow
   - sdf3: default
 
 simtrace:

@@ -51,8 +51,8 @@ class MappingRepresentation(type):
     mappings of a single representation, so this metaclass essentially
     defines a Singleton for every representation type.
 
-    This applies on a per kpn/platform combination basis.
-    It means that if you have a different combination of kpn/platform,
+    This applies on a per graph/platform combination basis.
+    It means that if you have a different combination of graph/platform,
     a new representation object will be initialized even if
     a representation of that type already exists.
 
@@ -70,38 +70,38 @@ class MappingRepresentation(type):
     _instances = {}
 
     @staticmethod
-    def gen_hash(kpn, platform):
-        kpn_names = ";".join(map(lambda x: x.name, kpn.channels()))
+    def gen_hash(graph, platform):
+        graph_names = ";".join(map(lambda x: x.name, graph.channels()))
         platform_names = ";".join(map(lambda x: x.name, platform.processors()))
-        return kpn_names, platform_names
+        return graph_names, platform_names
 
     def __call__(cls, *args, **kwargs):
         time = timeit.default_timer()
-        kpn = args[0]
+        graph = args[0]
         platform = args[1]
-        kpn_names, platform_names = MappingRepresentation.gen_hash(
-            kpn, platform
+        graph_names, platform_names = MappingRepresentation.gen_hash(
+            graph, platform
         )
 
-        if (cls, kpn, platform) in cls._instances:
-            different = cls._instances[(cls, kpn, platform)].changed_parameters(
+        if (cls, graph, platform) in cls._instances:
+            different = cls._instances[(cls, graph, platform)].changed_parameters(
                 *args[2:]
             )
 
-        if (cls, kpn, platform) not in cls._instances or different:
+        if (cls, graph, platform) not in cls._instances or different:
             # make hashables of these two
-            cls._instances[(cls, kpn_names, platform_names)] = super(
+            cls._instances[(cls, graph_names, platform_names)] = super(
                 MappingRepresentation, cls
             ).__call__(*args, **kwargs)
             log.info(
-                f"Initializing representation {cls} of kpn with processes: {kpn_names} on platform with cores {platform_names}"
+                f"Initializing representation {cls} of graph with processes: {graph_names} on platform with cores {platform_names}"
             )
 
-        instance = copy(cls._instances[(cls, kpn_names, platform_names)])
-        instance.kpn = kpn
+        instance = copy(cls._instances[(cls, graph_names, platform_names)])
+        instance.graph = graph
         instance.platform = platform
-        com_mapper = ComFullMapper(kpn, platform)
-        instance.list_mapper = ProcPartialMapper(kpn, platform, com_mapper)
+        com_mapper = ComFullMapper(graph, platform)
+        instance.list_mapper = ProcPartialMapper(graph, platform, com_mapper)
         instance.init_time = timeit.default_timer() - time
         return instance
 
@@ -113,11 +113,11 @@ class MappingRepresentation(type):
         return None
 
 
-def init_app_ncs(self, kpn):
+def init_app_ncs(self, graph):
     n = 0
     self._app_nc = {}
     self._app_nc_inv = {}
-    for proc in self.kpn.processes():
+    for proc in self.graph.processes():
         self._app_nc[n] = proc
         self._app_nc_inv[proc] = n
 
@@ -149,20 +149,20 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
 
     def __init__(
         self,
-        kpn,
+        graph,
         platform,
         channels=False,
         periodic_boundary_conditions=False,
         norm_p=2,
     ):
-        self.kpn = kpn
+        self.graph = graph
         self.platform = platform
         self.channels = channels
         self.boundary_conditions = periodic_boundary_conditions
         self.p = norm_p
-        self.num_procs = len(list(self.kpn._processes.keys()))
-        com_mapper = ComFullMapper(kpn, platform)
-        self.list_mapper = ProcPartialMapper(kpn, platform, com_mapper)
+        self.num_procs = len(list(self.graph._processes.keys()))
+        com_mapper = ComFullMapper(graph, platform)
+        self.list_mapper = ProcPartialMapper(graph, platform, com_mapper)
 
     def changed_parameters(
         self, channels, periodic_boundary_conditions, norm_p
@@ -174,7 +174,7 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         )
 
     def _uniform(self):
-        Procs = sorted(list(self.kpn._processes.keys()))
+        Procs = sorted(list(self.graph._processes.keys()))
         PEs = sorted(list(self.platform._processors.keys()))
         pe_mapping = list(randint(0, len(PEs), size=len(Procs)))
         if self.channels:
@@ -183,11 +183,11 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
             return pe_mapping
 
     def randomPrimitives(self, pe_mapping):
-        Procs = sorted(list(self.kpn._processes.keys()))
+        Procs = sorted(list(self.graph._processes.keys()))
         PEs = sorted(list(self.platform._processors.keys()))
         CPs = sorted(list(self.platform._primitives.keys()))
         res = pe_mapping[: len(Procs)]
-        for c in self.kpn.channels():
+        for c in self.graph.channels():
             suitable_primitives = []
             for p in self.platform.primitives():
                 # assert: len([..]) list in next line == 1
@@ -245,7 +245,7 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
             return x[: self.num_procs]
 
     def _uniformFromBall(self, p, r, npoints=1, simple=False):
-        Procs = list(self.kpn._processes.keys())
+        Procs = list(self.graph._processes.keys())
         PEs = list(self.platform._processors.keys())
         P = len(PEs)
         res = []
@@ -335,7 +335,7 @@ class MetricSpaceRepresentation(
     (slightly better) tested and documented.
     """
 
-    def __init__(self, kpn, platform):
+    def __init__(self, graph, platform):
         raise RuntimeError("represetation not properly implemented")
         self._topologyGraph = platform.to_adjacency_dict()
         (
@@ -344,10 +344,10 @@ class MetricSpaceRepresentation(
             self._arch_nc_inv,
         ) = arch_graph_to_distance_metric(self._topologyGraph)
         M = FiniteMetricSpace(M_list)
-        self.kpn = kpn
+        self.graph = graph
         self.platform = platform
-        d = len(kpn.processes())
-        init_app_ncs(self, kpn)
+        d = len(graph.processes())
+        init_app_ncs(self, graph)
         super().__init__(M, d)
 
     def _simpleVec2Elem(self, x):
@@ -395,7 +395,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
 
     def __init__(
         self,
-        kpn,
+        graph,
         platform,
         channels=False,
         periodic_boundary_conditions=False,
@@ -404,16 +404,16 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         disable_mpsym=False,
     ):
         self._topologyGraph = platform.to_adjacency_dict()
-        self.kpn = kpn
+        self.graph = graph
         self.platform = platform
-        self._d = len(kpn.processes())
-        init_app_ncs(self, kpn)
+        self._d = len(graph.processes())
+        init_app_ncs(self, graph)
         self._arch_nc_inv = {}
         self.channels = channels
         self.boundary_conditions = periodic_boundary_conditions
         self.p = norm_p
-        com_mapper = ComFullMapper(kpn, platform)
-        self.list_mapper = ProcPartialMapper(kpn, platform, com_mapper)
+        com_mapper = ComFullMapper(graph, platform)
+        self.list_mapper = ProcPartialMapper(graph, platform, com_mapper)
         self.canonical_operations = canonical_operations
 
         n = len(self.platform.processors())
@@ -604,11 +604,11 @@ class MetricSymmetryRepresentation(
     It is recommended to use the Symmetry Embedding Representation instead, as it is more efficient.
     """
 
-    def __init__(self, kpn, platform):
+    def __init__(self, graph, platform):
         self._topologyGraph = platform.to_adjacency_dict()
-        self.kpn = kpn
+        self.graph = graph
         self.platform = platform
-        self._d = len(kpn.processes())
+        self._d = len(graph.processes())
         (
             M_matrix,
             self._arch_nc,
@@ -621,7 +621,7 @@ class MetricSymmetryRepresentation(
             coloring,
             self._arch_nc,
         ) = to_labeled_edge_graph(self._topologyGraph)
-        init_app_ncs(self, kpn)
+        init_app_ncs(self, graph)
         self._arch_nc_inv = {}
         for node in self._arch_nc:
             self._arch_nc_inv[self._arch_nc[node]] = node
@@ -670,7 +670,7 @@ class MetricEmbeddingRepresentation(
 
     def __init__(
         self,
-        kpn,
+        graph,
         platform,
         norm_p,
         extra_dimensions=True,
@@ -685,7 +685,7 @@ class MetricEmbeddingRepresentation(
             platform, heterogeneity=extra_dimensions
         )
         self._M = FiniteMetricSpace(M_matrix)
-        self.kpn = kpn
+        self.graph = graph
         self.platform = platform
         self.extra_dims = extra_dimensions
         self.jlt_tries = jlt_tries
@@ -703,15 +703,15 @@ class MetricEmbeddingRepresentation(
                 " to invalid mappings when approximating."
             )
         self.extra_dims_factor = extra_dimensions_factor
-        self._d = len(kpn.processes())
+        self._d = len(graph.processes())
         if self.extra_dims:
             self._split_d = self._d
             self._split_k = len(platform.processors())
-            self._d += len(kpn.channels())
+            self._d += len(graph.channels())
         self.p = norm_p
-        com_mapper = ComFullMapper(kpn, platform)
-        self.list_mapper = ProcPartialMapper(kpn, platform, com_mapper)
-        init_app_ncs(self, kpn)
+        com_mapper = ComFullMapper(graph, platform)
+        self.list_mapper = ProcPartialMapper(graph, platform, com_mapper)
+        init_app_ncs(self, graph)
         if self.p != 2:
             log.error(
                 f"Metric space embeddings only supports p = 2."
@@ -832,7 +832,7 @@ class SymmetryEmbeddingRepresentation(
 
     def __init__(
         self,
-        kpn,
+        graph,
         platform,
         norm_p,
         verbose=False,
@@ -847,7 +847,7 @@ class SymmetryEmbeddingRepresentation(
     ):
 
         self.sym = SymmetryRepresentation(
-            kpn,
+            graph,
             platform,
             channels=extra_dimensions,
             norm_p=norm_p,
@@ -856,7 +856,7 @@ class SymmetryEmbeddingRepresentation(
             canonical_operations=canonical_operations,
         )
         self.emb = MetricEmbeddingRepresentation(
-            kpn,
+            graph,
             platform,
             norm_p,
             verbose=verbose,

@@ -27,16 +27,16 @@ class MapsMapper:
     interface.
     """
 
-    def __init__(self, kpn, platform, trace, representation, xml_file=None):
-        self.mapping = MapsMapping(kpn, platform, xml_file)
+    def __init__(self, graph, platform, trace, representation, xml_file=None):
+        self.mapping = MapsMapping(graph, platform, xml_file)
 
     def generate_mapping(self):
         return self.mapping
 
 
 class MapsMapping(Mapping):
-    def __init__(self, kpn, platform, xml_file):
-        super().__init__(kpn, platform)
+    def __init__(self, graph, platform, xml_file):
+        super().__init__(graph, platform)
 
         log.info("Start parsing the MAPS mapping " + xml_file)
 
@@ -89,7 +89,7 @@ class MapsMapping(Mapping):
 def export_maps_mapping(mapping, file_name):
     xml_mapping = mapsmapping.MappingType()
     xml_mapping.version = "1.0"
-    xml_mapping.platformName = mapping.kpn.name
+    xml_mapping.platformName = mapping.graph.name
     xml_mapping.applicationName = mapping.platform.name
 
     used_processors = []
@@ -114,7 +114,7 @@ def export_maps_mapping(mapping, file_name):
         xml_channel.id = name
         xml_channel.bound = info.capacity
         xml_channel.commPrimitive = info.primitive.name
-        channel = mapping.kpn.find_channel(name)
+        channel = mapping.graph.find_channel(name)
         xml_channel.processWriter = channel.source.name
         used_primitives.append(info.primitive)
 

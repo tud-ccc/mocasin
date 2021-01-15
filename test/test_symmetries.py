@@ -14,7 +14,7 @@ def test_symmetries_maps(datadir, maps_platform):
         [
             "mocasin",
             "generate_mapping",
-            "kpn=audio_filter",
+            "graph=audio_filter",
             f"platform={maps_platform}",
             "representation=Symmetries",
             "mapper=genetic",
@@ -29,7 +29,7 @@ def test_symmetries_maps(datadir, maps_platform):
         [
             "mocasin",
             "generate_mapping",
-            "kpn=audio_filter",
+            "graph=audio_filter",
             f"platform={maps_platform}",
             "representation=Symmetries",
             "mapper=genetic",
@@ -44,7 +44,7 @@ def test_symmetries_maps(datadir, maps_platform):
         [
             "mocasin",
             "generate_mapping",
-            "kpn=audio_filter",
+            "graph=audio_filter",
             f"platform={maps_platform}",
             "representation=Symmetries",
             "representation.disable_mpsym=true",
@@ -93,7 +93,7 @@ def test_symmetries_tgff_large(datadir, designer_platform_large):
         [
             "mocasin",
             "generate_mapping",
-            "kpn=tgff_reader",
+            "graph=tgff_reader",
             "tgff.directory=%s" % tgff_dir,
             "tgff.file=auto-indust-cords.tgff",
             f"platform={designer_platform_large}",
@@ -110,7 +110,7 @@ def test_symmetries_tgff_large(datadir, designer_platform_large):
         [
             "mocasin",
             "generate_mapping",
-            "kpn=tgff_reader",
+            "graph=tgff_reader",
             "tgff.directory=%s" % tgff_dir,
             "tgff.file=auto-indust-cords.tgff",
             f"platform={designer_platform_large}",
@@ -146,7 +146,7 @@ def test_symmetries_tgff_small(datadir, designer_platform_small):
         [
             "mocasin",
             "generate_mapping",
-            "kpn=tgff_reader",
+            "graph=tgff_reader",
             "tgff.directory=%s" % tgff_dir,
             "tgff.file=auto-indust-cords.tgff",
             f"platform={designer_platform_small}",
@@ -163,7 +163,7 @@ def test_symmetries_tgff_small(datadir, designer_platform_small):
         [
             "mocasin",
             "generate_mapping",
-            "kpn=tgff_reader",
+            "graph=tgff_reader",
             "tgff.directory=%s" % tgff_dir,
             "tgff.file=auto-indust-cords.tgff",
             f"platform={designer_platform_small}",

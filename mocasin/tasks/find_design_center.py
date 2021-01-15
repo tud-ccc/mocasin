@@ -32,14 +32,14 @@ def dc_task(cfg):
     json_dc_dump = {}
 
     threshold = cfg["threshold"]
-    kpn = hydra.utils.instantiate(cfg["kpn"])
+    graph = hydra.utils.instantiate(cfg["graph"])
     platform = hydra.utils.instantiate(cfg["platform"])
     trace = hydra.utils.instantiate(cfg["trace"])
     representation = hydra.utils.instantiate(
-        cfg["representation"], kpn, platform
+        cfg["representation"], graph, platform
     )
     oracle = hydra.utils.instantiate(
-        cfg["design_centering"]["oracle"], kpn, platform, trace, threshold
+        cfg["design_centering"]["oracle"], graph, platform, trace, threshold
     )
 
     # starting volume (init):
@@ -72,7 +72,7 @@ def dc_task(cfg):
 
     v = hydra.utils.instantiate(
         cfg["design_centering"]["volume"],
-        kpn,
+        graph,
         platform,
         representation,
         starting_center,
@@ -141,7 +141,7 @@ def dc_task(cfg):
 
         pm = hydra.utils.instantiate(
             cfg["design_centering"]["perturbation"],
-            kpn,
+            graph,
             platform,
             trace,
             representation,

@@ -7,7 +7,7 @@ import sys
 import tkinter as tk
 
 from mocasin.maps.platform import MapsPlatform
-from mocasin.maps.kpn import MapsKpnGraph
+from mocasin.maps.graph import MapsDataflowGraph
 from mocasin.mapper.random import RandomMapper
 
 
@@ -31,8 +31,8 @@ class controlPanel(tk.Frame):
             self.__path = sys.path[2] + "/apps"
         else:
             self.__path = sys.path[1] + "/apps"
-        self.__kpnInstance = MapsKpnGraph(
-            "MapsKpnGraph", "apps/audio_filter/audio_filter.cpn.xml"
+        self.__graphInstance = MapsDataflowGraph(
+            "MapsDataflowGraph", "apps/audio_filter/audio_filter.cpn.xml"
         )
         self.__platform = None
         self.__mappingIDs = []
@@ -106,7 +106,7 @@ class controlPanel(tk.Frame):
         self.addMappingButton["state"] = "normal"
 
     def __addRandomMapping(self):
-        mapper = RandomMapper(self.__kpnInstance, self.__platform)
+        mapper = RandomMapper(self.__graphInstance, self.__platform)
         mapping = mapper.generate_mapping()
         mappingID = self.parent.drawPanel.drawDevice.addMapping(mapping)
         self.__mappingIDs.append(mappingID)

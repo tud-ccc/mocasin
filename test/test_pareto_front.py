@@ -9,12 +9,12 @@ import pytest
 
 
 @pytest.mark.xfail(reason="Required files are not in the repository anymore")
-def test_pareto_front_maps(datadir, maps_kpn, representation):
+def test_pareto_front_maps(datadir, maps_graph, representation):
     subprocess.check_call(
         [
             "mocasin",
             "pareto_front",
-            "kpn=%s" % maps_kpn,
+            "graph=%s" % maps_graph,
             "platform=exynos",
             "platform.embedding_json=None",
             "representation=%s" % representation,
@@ -38,7 +38,7 @@ def test_pareto_front_tgff(datadir, tgff):
         [
             "mocasin",
             "pareto_front",
-            "kpn=tgff_reader",
+            "graph=tgff_reader",
             "platform=exynos990",
             "tgff.directory=%s" % tgff_dir,
             "tgff.file=%s.tgff" % tgff,

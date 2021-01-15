@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 @hydra.main(config_path="../conf", config_name="enumerate_equivalent")
 def enumerate_equivalent(cfg):
-    kpn = hydra.utils.instantiate(cfg["kpn"])
+    graph = hydra.utils.instantiate(cfg["graph"])
     platform = hydra.utils.instantiate(cfg["platform"])
     trace = hydra.utils.instantiate(cfg["trace"])
     if (
@@ -24,10 +24,10 @@ def enumerate_equivalent(cfg):
             f"The enumerate equvialent task needs to be called with the Symmetry representation. Called with {cfg['representation']._target_}"
         )
     representation = hydra.utils.instantiate(
-        cfg["representation"], kpn, platform
+        cfg["representation"], graph, platform
     )
     mapping = hydra.utils.instantiate(
-        cfg["mapper"], kpn, platform, trace, representation
+        cfg["mapper"], graph, platform, trace, representation
     ).generate_mapping()
 
     log.info(("calculating orbit for mapping:" + str(mapping.to_list())))

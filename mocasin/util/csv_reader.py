@@ -5,7 +5,7 @@ import os
 from _collections import OrderedDict
 from mocasin.common.mapping import Mapping
 from mocasin.common.platform import Platform
-from mocasin.common.kpn import KpnGraph
+from mocasin.common.graph import DataflowGraph
 from mocasin.mapper.partial import ComFullMapper, ProcPartialMapper
 
 # TODO(RK): Make a unit test which checks a case with multiple objectives
@@ -15,7 +15,7 @@ class DataReader:
     def __init__(
         self,
         platform,
-        kpn,
+        graph,
         file_path,
         attribute="default",
         process_prefix="default",
@@ -26,19 +26,19 @@ class DataReader:
         if not isinstance(platform, Platform):
             raise RuntimeError("Platform object is not valid")
 
-        if not isinstance(kpn, KpnGraph):
-            raise RuntimeError("KpnGraph object is not valid")
+        if not isinstance(graph, DataflowGraph):
+            raise RuntimeError("DataflowGraph object is not valid")
 
         self._mProcessNames = []
         self._mProcessorNumbers = {}
         self._mDataDict = {}
         self._mMappingDict = OrderedDict()
         self._mPlatform = platform
-        self._mKpnInstance = kpn
-        self._mComMapper = ComFullMapper(kpn, platform)
-        self._mMapper = ProcPartialMapper(kpn, platform, self._mComMapper)
+        self._mGraphInstance = graph
+        self._mComMapper = ComFullMapper(graph, platform)
+        self._mMapper = ProcPartialMapper(graph, platform, self._mComMapper)
 
-        for process in sorted([x.name for x in self._mKpnInstance.processes()]):
+        for process in sorted([x.name for x in self._mGraphInstance.processes()]):
             self._mProcessNames.append(process)
         for i, pe in enumerate(
             sorted([x.name for x in self._mPlatform.processors()])
@@ -159,7 +159,7 @@ class DataReader:
                         self._mDataDict[entry][self._energy_col]
                     )
             else:
-                mapping = Mapping(self._mKpnInstance, self._mPlatform)
+                mapping = Mapping(self._mGraphInstance, self._mPlatform)
 
             self._mMappingDict.update(
                 {
@@ -173,11 +173,11 @@ class DataReader:
 
 
 class DataReaderFromHydra(DataReader):
-    def __init__(self, platform, kpn, cfg):
+    def __init__(self, platform, graph, cfg):
         file_path = cfg["csv_file"]
         attribute = cfg["property"]
         process_prefix = cfg["prefix"]
         process_suffix = cfg["suffix"]
         super(DataReaderFromHydra, self).__init__(
-            platform, kpn, file_path, attribute, process_prefix, process_suffix
+            platform, graph, file_path, attribute, process_prefix, process_suffix
         )

@@ -19,26 +19,26 @@ class OrbitLookupManager:
         self._orbits = {}
         pass
 
-    def _calculate_orbit(self, kpn, mapping):
+    def _calculate_orbit(self, graph, mapping):
         """Calcualtes the orbit for the mapping.
 
         Args:
-            kpn (KpnGraph): a kpn application
+            graph (DataflowGraph): a dataflow application
             mappings (Mapping): a mapping
 
         Returns: list of mappings, forming the orbit.
         """
-        if kpn not in self._representations:
-            self._representations[kpn] = SymmetryRepresentation(
-                kpn, self.platform
+        if graph not in self._representations:
+            self._representations[graph] = SymmetryRepresentation(
+                graph, self.platform
             )
-        equivalent_mappings = self._representations[kpn].allEquivalent(mapping)
+        equivalent_mappings = self._representations[graph].allEquivalent(mapping)
         return equivalent_mappings
 
-    def get_orbit(self, kpn, mapping):
+    def get_orbit(self, graph, mapping):
         """ Lookups the orbits, if not existed, calculates the orbit. """
-        if kpn not in self._orbits:
-            self._orbits[kpn] = {}
-        if mapping not in self._orbits[kpn]:
-            self._orbits[kpn][mapping] = self._calculate_orbit(kpn, mapping)
-        return self._orbits[kpn][mapping]
+        if graph not in self._orbits:
+            self._orbits[graph] = {}
+        if mapping not in self._orbits[graph]:
+            self._orbits[graph][mapping] = self._calculate_orbit(graph, mapping)
+        return self._orbits[graph][mapping]

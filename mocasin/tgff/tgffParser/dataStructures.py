@@ -4,7 +4,7 @@
 # Authors: Felix Teweleit
 
 import math
-from mocasin.common.kpn import KpnProcess, KpnChannel, KpnGraph
+from mocasin.common.graph import DataflowProcess, DataflowChannel, DataflowGraph
 from mocasin.common.platform import (
     Processor,
     FrequencyDomain,
@@ -76,7 +76,7 @@ class TgffProcessor:
 
 class TgffGraph:
     """Represents the relevant information about a task graph, parsed from
-    a .tgff file. The tgff graph can be transfered into a kpn graph.
+    a .tgff file. The tgff graph can be transfered into a dataflow graph.
     """
 
     def __init__(self, identifier, task_set, channel_set, quantities):
@@ -120,25 +120,25 @@ class TgffGraph:
 
         return execution_order
 
-    def to_kpn_graph(self):
-        """Transfers the the tgff graph into a kpn graph
-        :returns: the equivalent kpn graph representation
-        :rtype: KpnGraph
+    def to_dataflow_graph(self):
+        """Transfers the the tgff graph into a dataflow graph
+        :returns: the equivalent dataflow graph representation
+        :rtype: DataflowGraph
         """
-        kpn_graph = KpnGraph(self.identifier)
+        graph = DataflowGraph(self.identifier)
         tasks = []
         channels = []
 
         # Create process for each node in
         for task in self.tasks:
-            task = KpnProcess(task)
+            task = DataflowProcess(task)
             tasks.append(task)
 
         # Create channel for each edge in
         for key, properties in self.channels.items():
             name = key
             token_size = int(self._quantities[0][int(properties[2])])
-            channel = KpnChannel(name, token_size)
+            channel = DataflowChannel(name, token_size)
 
             for task in tasks:
                 if task.name == properties[0]:
@@ -150,12 +150,12 @@ class TgffGraph:
 
         # Add channels and processes to empty
         for task in tasks:
-            kpn_graph.add_process(task)
+            graph.add_process(task)
 
         for channel in channels:
-            kpn_graph.add_channel(channel)
+            graph.add_channel(channel)
 
-        return kpn_graph
+        return graph
 
 
 class TgffLink:

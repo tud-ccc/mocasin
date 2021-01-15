@@ -11,7 +11,7 @@ import os
 import pickle
 
 from mocasin.maps.mapping import export_maps_mapping
-from mocasin.simulate import KpnSimulation
+from mocasin.simulate import DataflowSimulation
 
 log = logging.getLogger(__name__)
 
@@ -30,8 +30,8 @@ def generate_mapping(cfg):
         * **mapper:** the mapper (mapping algorithm) to be used.
         * **export_all:** a flag indicating whether all mappings should be
           exported. If ``false`` only the best mapping will be exported.
-        * **kpn:** the input kpn graph. The task expects a configuration dict
-          that can be instantiated to a :class:`~mocasin.common.kpn.KpnGraph`
+        * **graph:** the input dataflow graph. The task expects a configuration dict
+          that can be instantiated to a :class:`~mocasin.common.graph.DataflowGraph`
           object.
         * **outdir:** the output directory
         * **progress:** a flag indicating whether to show a progress bar with
@@ -49,12 +49,12 @@ def generate_mapping(cfg):
     output from the individual simulations."""
     platform = hydra.utils.instantiate(cfg["platform"])
     trace = hydra.utils.instantiate(cfg["trace"])
-    kpn = hydra.utils.instantiate(cfg["kpn"])
+    graph = hydra.utils.instantiate(cfg["graph"])
     representation = hydra.utils.instantiate(
-        cfg["representation"], kpn, platform
+        cfg["representation"], graph, platform
     )
     mapper = hydra.utils.instantiate(
-        cfg["mapper"], kpn, platform, trace, representation
+        cfg["mapper"], graph, platform, trace, representation
     )
 
     # Run mapper
@@ -70,7 +70,7 @@ def generate_mapping(cfg):
 
     if cfg["simulate_best"]:
         trace = hydra.utils.instantiate(cfg["trace"])
-        simulation = KpnSimulation(result.platform, result.kpn, result, trace)
+        simulation = DataflowSimulation(result.platform, result.graph, result, trace)
         with simulation as s:
             s.run()
 
@@ -79,7 +79,7 @@ def generate_mapping(cfg):
         with open(outdir + "best_time.txt", "w") as f:
             f.write(str(exec_time))
 
-    if cfg["kpn"]["_target_"] == "mocasin.maps.kpn.MapsKpnGraph":
+    if cfg["graph"]["_target_"] == "mocasin.maps.graph.MapsDataflowGraph":
         export_maps_mapping(
             result, os.path.join(outdir, "generated_mapping.mapping")
         )

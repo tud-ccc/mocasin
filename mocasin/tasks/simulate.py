@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 @hydra.main(config_path="../conf", config_name="simulate")
 def simulate(cfg):
-    """Simulate the execution of a KPN application mapped to a platform.
+    """Simulate the execution of a dataflow application mapped to a platform.
 
     This script expects a configuration file as the first positional argument.
     It constructs a system according to this configuration and simulates
@@ -25,8 +25,8 @@ def simulate(cfg):
         cfg(~omegaconf.dictconfig.DictConfig): the hydra configuration object
 
     **Hydra Parameters**:
-        * **kpn:** the input kpn graph. The task expects a configuration dict
-          that can be instantiated to a :class:`~mocasin.common.kpn.KpnGraph`
+        * **graph:** the input dataflow graph. The task expects a configuration dict
+          that can be instantiated to a :class:`~mocasin.common.graph.DataflowGraph`
           object.
         * **platform:** the input platform. The task expects a configuration
           dict that can be instantiated to a

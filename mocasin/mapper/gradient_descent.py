@@ -59,7 +59,7 @@ class GradientDescentMapper(object):
 
     def __init__(
         self,
-        kpn,
+        graph,
         platform,
         trace,
         representation,
@@ -75,10 +75,10 @@ class GradientDescentMapper(object):
         momentum_decay=0.5,
         parallel_points=5,
     ):
-        """Generates a full mapping for a given platform and KPN application.
+        """Generates a full mapping for a given platform and dataflow application.
 
-        :param kpn: a KPN graph
-        :type kpn: KpnGraph
+        :param graph: a dataflow graph
+        :type graph: DataflowGraph
         :param platform: a platform
         :type platform: Platform
         :param trace: a trace generator
@@ -107,11 +107,11 @@ class GradientDescentMapper(object):
         random.seed(random_seed)
         np.random.seed(random_seed)
         self.full_mapper = True  # flag indicating the mapper type
-        self.kpn = kpn
+        self.graph = graph
         self.platform = platform
         self.num_PEs = len(platform.processors())
         self.random_mapper = RandomPartialMapper(
-            self.kpn, self.platform, seed=None
+            self.graph, self.platform, seed=None
         )
         self.gd_iterations = gd_iterations
         self.stepsize = stepsize
@@ -120,12 +120,12 @@ class GradientDescentMapper(object):
         self.dump_cache = dump_cache
         self.progress = progress
         self.statistics = Statistics(
-            log, len(self.kpn.processes()), record_statistics
+            log, len(self.graph.processes()), record_statistics
         )
 
         # This is a workaround until Hydra 1.1 (with recursive instantiaton!)
         if not issubclass(type(type(representation)), MappingRepresentation):
-            representation = instantiate(representation, kpn, platform)
+            representation = instantiate(representation, graph, platform)
         self.representation = representation
         self.simulation_manager = SimulationManager(
             self.representation,

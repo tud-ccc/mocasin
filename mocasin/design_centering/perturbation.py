@@ -21,7 +21,7 @@ log = logging.getLogger(__name__)
 class PerturbationManager(object):
     def __init__(
         self,
-        kpn,
+        graph,
         platform,
         trace,
         representation,
@@ -36,10 +36,10 @@ class PerturbationManager(object):
     ):
 
         self.platform = platform
-        self.kpn = kpn
+        self.graph = graph
         self.threshold = threshold
         self.perturbation_type = perturbation_type
-        self.sim = oracle.Simulation(kpn, platform, trace, threshold, threads)
+        self.sim = oracle.Simulation(graph, platform, trace, threshold, threads)
         self.num_mappings = num_mappings
         self.num_perturbations = num_tests
         self.perturbation_ball_num = ball_num
@@ -50,13 +50,13 @@ class PerturbationManager(object):
         self.representation = representation
 
         # TODO: (FIXME) Perturbation manager only works in simple vector representation (for now)
-        # self.representation = (reps.RepresentationType['SimpleVector'].getClassType())(self.kpn, self.platform)
+        # self.representation = (reps.RepresentationType['SimpleVector'].getClassType())(self.graph, self.platform)
 
     def create_randomMappings(self):
         """ Creates a defined number of unique random mappings """
         mapping_set = set([])
         while len(mapping_set) < self.num_mappings:
-            mg = RandomPartialMapper(self.kpn, self.platform)
+            mg = RandomPartialMapper(self.graph, self.platform)
             mapping_set.add(mg.generate_mapping())
         return mapping_set
 
@@ -74,20 +74,20 @@ class PerturbationManager(object):
         Therefore, the mapping is interpreted as vector with the
         processor cores assigned to the vector elements.
         """
-        rand_part_mapper = RandomPartialMapper(self.kpn, self.platform)
+        rand_part_mapper = RandomPartialMapper(self.graph, self.platform)
         proc_part_mapper = ProcPartialMapper(
-            self.kpn, self.platform, rand_part_mapper
+            self.graph, self.platform, rand_part_mapper
         )
         iteration_max = self.iteration_max
 
         pe = rand.randint(0, len(list(self.platform.processors())) - 1)
-        process = rand.randint(0, len(list(self.kpn.processes())) - 1)
+        process = rand.randint(0, len(list(self.graph.processes())) - 1)
 
         vec = []
         # assign cores to vector
         pe_mapping = proc_part_mapper.get_pe_name_mapping()
         log.debug(str(pe_mapping))
-        for p in self.kpn.processes():
+        for p in self.graph.processes():
             log.debug(mapping.affinity(p).name)
             vec.append(pe_mapping[mapping.affinity(p).name])
 
@@ -106,7 +106,7 @@ class PerturbationManager(object):
                 break
             else:
                 pe = rand.randint(0, len(list(self.platform.processors())) - 1)
-                process = rand.randint(0, len(list(self.kpn.processes())) - 1)
+                process = rand.randint(0, len(list(self.graph.processes())) - 1)
                 vec[process] = pe  # apply a new perturbation to mapping
             timeout += 1
 

@@ -31,8 +31,8 @@ RUN_THREADS = True
 
 
 class Solver:
-    def __init__(self, kpnGraph, platform, cfg, mappingDict={}, debug=False):
-        self.__kpn = kpnGraph
+    def __init__(self, graph, platform, cfg, mappingDict={}, debug=False):
+        self.__graph = graph
         self.__platform = platform
         self.__mappingDict = mappingDict
         self.__parser = ParserPython(
@@ -44,7 +44,7 @@ class Solver:
     def request(self, queryString, vec=None):
         parse_tree = self.__parser.parse(queryString)
         sema = SemanticAnalysis(
-            self.__kpn,
+            self.__graph,
             self.__platform,
             self.__cfg,
             self.__mappingDict,
@@ -89,7 +89,7 @@ class Solver:
     def parseString(self, queryString):
         parse_tree = self.__parser.parse(queryString)
         sema = SemanticAnalysis(
-            self.__kpn,
+            self.__graph,
             self.__platform,
             self.__cfg,
             self.__mappingDict,
@@ -204,12 +204,12 @@ class Solver:
                     remaining + mappingConstraints + sharedCoreConstraints
                 )
                 symmetryLense = SymmetryRepresentation(
-                    self.__kpn, self.__platform
+                    self.__graph, self.__platform
                 )
                 generator = MappingGeneratorOrbit(symmetryLense, genMapping)
             else:
                 generator = MappingGeneratorSimvec(
-                    self.__kpn,
+                    self.__graph,
                     self.__platform,
                     mappingConstraints,
                     sharedCoreConstraints,

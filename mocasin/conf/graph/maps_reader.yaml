@@ -1,0 +1,4 @@
+# @package _group_
+_target_: mocasin.maps.graph.MapsDataflowGraph
+name: ???
+xml_file: ???

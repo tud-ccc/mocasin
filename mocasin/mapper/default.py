@@ -16,17 +16,17 @@ log = logging.getLogger(__name__)
 class DefaultFullMapper:
     """Generates a default mapping by selecting the first available option everywhere"""
 
-    def __init__(self, kpn, platform, trace, representation):
-        """Generates a default mapping for a given platform and KPN application.
+    def __init__(self, graph, platform, trace, representation):
+        """Generates a default mapping for a given platform and dataflow application.
 
-        :param kpn: a KPN graph
-        :type kpn: KpnGraph
+        :param graph: a dataflow graph
+        :type graph: DataflowGraph
         :param platform: a platform
         :type platform: Platform
         """
         self.full_mapper = True
         self.platform = platform
-        self.kpn = kpn
+        self.graph = graph
 
     def generate_mapping(self, part_mapping=None):
         """Generates a random mapping
@@ -43,19 +43,19 @@ class DefaultFullMapper:
 
         # generate new mapping if no partial mapping is given
         if not part_mapping:
-            part_mapping = Mapping(self.kpn, self.platform)
+            part_mapping = Mapping(self.graph, self.platform)
 
-        # check if the platform/kpn is equivalent
+        # check if the platform/graph is equivalent
         if (
             not part_mapping.platform is self.platform
-            or not part_mapping.kpn is self.kpn
+            or not part_mapping.graph is self.graph
         ):
             raise RuntimeError(
-                "rand_map: Try to map partial mapping of platform,KPN %s,%s to %s,%s",
+                "rand_map: Try to map partial mapping of platform,dataflow %s,%s to %s,%s",
                 part_mapping.platform.name,
-                part_mapping.kpn.name,
+                part_mapping.graph.name,
                 self.platform.name,
-                self.kpn.name,
+                self.graph.name,
             )
 
         # map processes

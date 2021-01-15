@@ -218,7 +218,7 @@ class RuntimeScheduler(object):
         reach the decision.
 
         :raises: NotImplementedError
-        :rtype: (RuntimeKpnProcess, int)
+        :rtype: (RuntimeDataflowProcess, int)
         """
         raise NotImplementedError(
             "This method needs to be overridden by a subclass"

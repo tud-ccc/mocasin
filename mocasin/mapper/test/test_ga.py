@@ -10,8 +10,8 @@ def evaluation_function():
 
 
 @pytest.fixture
-def mapper(kpn, platform, trace, representation, evaluation_function, mocker):
-    m = GeneticMapper(kpn, platform, trace, representation)
+def mapper(graph, platform, trace, representation, evaluation_function, mocker):
+    m = GeneticMapper(graph, platform, trace, representation)
     m.simulation_manager = MockMappingCache(evaluation_function, mocker)
     return m
 

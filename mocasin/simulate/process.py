@@ -4,12 +4,12 @@
 # Authors: Christian Menard
 
 
-"""Contains classes that manage simulation of (KPN) processes.
+"""Contains classes that manage simulation of (dataflow) processes.
 
 **Classes:**
     * :class:`ProcessState`: an enumeration of process states
     * :class:`RuntimeProcess`: base process model
-    * :class:`RuntimeKpnProcess`: KPN process model
+    * :class:`RuntimeDataflowProcess`: dataflow process model
 """
 
 
@@ -390,8 +390,8 @@ class RuntimeProcess(object):
         )
 
 
-class RuntimeKpnProcess(RuntimeProcess):
-    """Runtime instance of a KPN process.
+class RuntimeDataflowProcess(RuntimeProcess):
+    """Runtime instance of a dataflow process.
 
     Attributes:
         _channels(dict[str, RuntimeChannel]): Dictionary of channel names and
@@ -409,7 +409,7 @@ class RuntimeKpnProcess(RuntimeProcess):
 
     def __init__(self, name, trace_generator, app):
         super().__init__(name, app)
-        log.debug("initialize new KPN runtime process (%s)", self.full_name)
+        log.debug("initialize new dataflow runtime process (%s)", self.full_name)
 
         self._channels = {}
         self._trace_generator = trace_generator
@@ -439,7 +439,7 @@ class RuntimeKpnProcess(RuntimeProcess):
         channel.set_src(self)
 
     def workload(self):
-        """Replay a KPN execution trace
+        """Replay a dataflow execution trace
 
         Iterates over all segments in the execution trace and performs actions
         as specified by the segments. By returning, the execution

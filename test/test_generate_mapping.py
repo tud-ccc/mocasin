@@ -9,12 +9,12 @@ import os
 
 
 @pytest.mark.xfail(reason="Required files are not in the repository anymore")
-def test_generate_mapping_maps(datadir, maps_mapper, maps_kpn, representation):
+def test_generate_mapping_maps(datadir, maps_mapper, maps_graph, representation):
     subprocess.check_call(
         [
             "mocasin",
             "generate_mapping",
-            "kpn=%s" % maps_kpn,
+            "graph=%s" % maps_graph,
             "platform=exynos",
             "representation=%s" % representation,
             "mapper=%s" % maps_mapper,
@@ -40,7 +40,7 @@ def test_generate_mapping_tgff(
         [
             "mocasin",
             "generate_mapping",
-            "kpn=tgff_reader",
+            "graph=tgff_reader",
             "platform=%s" % designer_platform,
             "mapper=%s" % tgff_mapper,
             "tgff.directory=%s" % tgff_dir,

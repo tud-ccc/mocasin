@@ -11,15 +11,15 @@ from mocasin.simulate.process import ProcessState
 
 
 @pytest.fixture
-def running_process(env, kpn_process, processor, mocker):
-    kpn_process.workload = mocker.Mock()  # disable the normal workload
-    kpn_process.start()
+def running_process(env, dataflow_process, processor, mocker):
+    dataflow_process.workload = mocker.Mock()  # disable the normal workload
+    dataflow_process.start()
     env.run()
-    kpn_process.activate(processor)
+    dataflow_process.activate(processor)
     env.run()
-    env.process(kpn_process.workload())
+    env.process(dataflow_process.workload())
     env.run()
-    return kpn_process
+    return dataflow_process
 
 
 @pytest.fixture

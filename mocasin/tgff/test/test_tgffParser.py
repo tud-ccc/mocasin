@@ -3,7 +3,7 @@
 #
 # Authors: Felix Teweleit
 
-from mocasin.common.kpn import KpnGraph
+from mocasin.common.graph import DataflowGraph
 from mocasin.common.platform import Processor, CommunicationResource
 from mocasin.tgff.tgffParser.dataStructures import (
     TgffProcessor,
@@ -19,8 +19,8 @@ def test_graph_dict(graph_dict):
     """
     for tgff_graph in graph_dict.values():
         assert isinstance(tgff_graph, TgffGraph)
-        kpn_graph = tgff_graph.to_kpn_graph()
-        assert isinstance(kpn_graph, KpnGraph)
+        graph = tgff_graph.to_dataflow_graph()
+        assert isinstance(graph, DataflowGraph)
 
     """Test some specific properties for some selected graphs
     """

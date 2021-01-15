@@ -19,11 +19,11 @@ class FromFileMapper:
     some mapping format of our own.]
     """
 
-    def __init__(self, kpn, platform, trace, representation, files_pattern):
-        """Generates multiple mappings for a given platform and KPN application, reading from files.
+    def __init__(self, graph, platform, trace, representation, files_pattern):
+        """Generates multiple mappings for a given platform and dataflow application, reading from files.
 
-        :param kpn: a KPN graph
-        :type kpn: KpnGraph
+        :param graph: a dataflow graph
+        :type graph: DataflowGraph
         :param platform: a platform
         :type platform: Platform
         :param trace: a trace generator
@@ -33,7 +33,7 @@ class FromFileMapper:
         :param files_pattern: pattern for finding files
         :type files_pattern: string
         """
-        self.kpn = kpn
+        self.graph = graph
         self.platform = platform
         self.representation = representation
         self.mappings = []
@@ -73,13 +73,13 @@ class FromFileMapper:
             log.error("Trying to generate more mappings than files read.")
             raise RuntimeError
         # check that mapping is valid
-        kpn_names, platform_names = MappingRepresentation.gen_hash(
-            self.kpn, self.platform
+        graph_names, platform_names = MappingRepresentation.gen_hash(
+            self.graph, self.platform
         )
-        read_kpn_names, read_platform_names = MappingRepresentation.gen_hash(
-            mapping.kpn, mapping.platform
+        read_graph_names, read_platform_names = MappingRepresentation.gen_hash(
+            mapping.graph, mapping.platform
         )
-        if kpn_names != read_kpn_names:
+        if graph_names != read_graph_names:
             log.error("Mapping application does not match application")
             raise RuntimeError
         if platform_names != read_platform_names:
@@ -88,7 +88,7 @@ class FromFileMapper:
 
         # if mapping is valid, update objects in representation
         mapping.platform = self.platform
-        mapping.update_kpn_object(self.kpn)
+        mapping.update_graph_object(self.graph)
         self.representation.platform = self.platform
-        self.representation.kpn = self.kpn
+        self.representation.graph = self.graph
         return mapping

@@ -5,13 +5,13 @@
 
 import logging
 
-from mocasin.common.kpn import KpnChannel, KpnGraph, KpnProcess
+from mocasin.common.graph import DataflowChannel, DataflowGraph, DataflowProcess
 from mocasin.sdf3 import _sdf_parser
 
 log = logging.getLogger(__name__)
 
 
-class Sdf3Graph(KpnGraph):
+class Sdf3Graph(DataflowGraph):
     """Graph representation of a SDF3 application
 
     Args:
@@ -41,7 +41,7 @@ class Sdf3Graph(KpnGraph):
         # add all processes
         for actor in graph.sdf.actor:
             log.debug(f"Add process {name}.{actor.name}")
-            self.add_process(KpnProcess(actor.name))
+            self.add_process(DataflowProcess(actor.name))
 
         # add all channels
         for sdf_channel in graph.sdf.channel:
@@ -66,7 +66,7 @@ class Sdf3Graph(KpnGraph):
                 "{c_props.token_size} bytes"
             )
             token_size = next(iter(c_props.tokenSize))
-            channel = KpnChannel(sdf_channel.name, int(token_size.sz))
+            channel = DataflowChannel(sdf_channel.name, int(token_size.sz))
             self.add_channel(channel)
 
             src_process = self.find_process(sdf_channel.srcActor)

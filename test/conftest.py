@@ -112,7 +112,7 @@ def representation(request):
 
 
 @pytest.fixture(params=["audio_filter"])
-def maps_kpn(request):
+def maps_graph(request):
     return request.param
 
 
@@ -123,7 +123,7 @@ def maps_kpn(request):
         ("audio_filter", "parallella"),
     ]
 )
-def maps_kpn_platform_pair(request):
+def maps_graph_platform_pair(request):
     return request.param
 
 

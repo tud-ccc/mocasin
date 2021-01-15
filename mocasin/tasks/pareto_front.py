@@ -29,8 +29,8 @@ def pareto_front(cfg):
     **Hydra Parameters**:
         * **export_all:** a flag indicating whether all mappings should be
           exported. If ``false`` only the best mapping will be exported.
-        * **kpn:** the input kpn graph. The task expects a configuration dict
-          that can be instantiated to a :class:`~mocasin.common.kpn.KpnGraph`
+        * **graph:** the input datafloe graph. The task expects a configuration dict
+          that can be instantiated to a :class:`~mocasin.common.graph.DataflowGraph`
           object.
         * **outdir:** the output directory
         * **progress:** a flag indicating whether to show a progress bar with
@@ -42,11 +42,11 @@ def pareto_front(cfg):
           that can be instantiated to a
           :class:`~mocasin.common.trace.TraceGenerator` object."""
     try:
-        kpn = hydra.utils.instantiate(cfg["kpn"])
+        graph = hydra.utils.instantiate(cfg["graph"])
         platform = hydra.utils.instantiate(cfg["platform"])
         trace = hydra.utils.instantiate(cfg["trace"])
         representation = hydra.utils.instantiate(
-            cfg["representation"], kpn, platform
+            cfg["representation"], graph, platform
         )
         if (
             cfg["mapper"]._target_ != "mocasin.mapper.genetic.GeneticMapper"
@@ -56,7 +56,7 @@ def pareto_front(cfg):
                 f"The pareto front task needs to be called with the genetic mapper or the static cfs mapper. Called with {cfg['mapper']._target_}"
             )
         mapper = hydra.utils.instantiate(
-            cfg["mapper"], kpn, platform, trace, representation
+            cfg["mapper"], graph, platform, trace, representation
         )
     except TgffReferenceError:
         # Special exception indicates a bad combination of tgff components
@@ -80,7 +80,7 @@ def pareto_front(cfg):
     for i, result in enumerate(results):
         if not hasattr(mapper, "evaluate_mapping"):
             mapper = GeneticMapper(
-                kpn,
+                graph,
                 platform,
                 trace,
                 representation,

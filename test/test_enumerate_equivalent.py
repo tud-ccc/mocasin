@@ -18,7 +18,7 @@ def test_enumerate_equivalent_exynos(datadir, expected_dir, platform):
         [
             "mocasin",
             "enumerate_equivalent",
-            "kpn=audio_filter",
+            "graph=audio_filter",
             "platform=%s" % platform,
             "mapper=default",
             "output_file=%s" % out_file,
@@ -47,7 +47,7 @@ def test_enumerate_equivalent_tgff(datadir, tgff):
         [
             "mocasin",
             "enumerate_equivalent",
-            "kpn=tgff_reader",
+            "graph=tgff_reader",
             "platform=exynos990",
             "tgff.directory=%s" % tgff_directory,
             "tgff.file=%s.tgff" % tgff,

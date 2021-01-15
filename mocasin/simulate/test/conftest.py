@@ -11,7 +11,7 @@ from mocasin.common.mapping import ChannelMappingInfo
 from mocasin.simulate.application import RuntimeApplication
 from mocasin.simulate.channel import RuntimeChannel
 from mocasin.simulate.process import (
-    RuntimeKpnProcess,
+    RuntimeDataflowProcess,
     RuntimeProcess,
     ProcessState,
 )
@@ -45,8 +45,8 @@ def base_process(app):
 
 
 @pytest.fixture
-def kpn_process(app, mocker):
-    return RuntimeKpnProcess("test_proc", mocker.Mock(), app)
+def dataflow_process(app, mocker):
+    return RuntimeDataflowProcess("test_proc", mocker.Mock(), app)
 
 
 @pytest.fixture
@@ -63,12 +63,12 @@ def processor(mocker):
     return processor
 
 
-@pytest.fixture(params=["base", "kpn"])
-def process(request, base_process, kpn_process, mocker):
+@pytest.fixture(params=["base", "dataflow"])
+def process(request, base_process, dataflow_process, mocker):
     if request.param == "base":
         proc = base_process
-    elif request.param == "kpn":
-        proc = kpn_process
+    elif request.param == "dataflow":
+        proc = dataflow_process
     else:
         raise ValueError("Unexpected fixture parameter")
 

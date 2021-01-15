@@ -27,7 +27,7 @@ class SimulatedAnnealingMapper(object):
 
     def __init__(
         self,
-        kpn,
+        graph,
         platform,
         trace,
         representation,
@@ -43,10 +43,10 @@ class SimulatedAnnealingMapper(object):
         parallel=False,
         jobs=1,
     ):
-        """Generates a full mapping for a given platform and KPN application.
+        """Generates a full mapping for a given platform and dataflow application.
 
-        :param kpn: a KPN graph
-        :type kpn: KpnGraph
+        :param graph: a dataflow graph
+        :type graph: DataflowGraph
         :param platform: a platform
         :type platform: Platform
         :param trace: a trace generator
@@ -79,17 +79,17 @@ class SimulatedAnnealingMapper(object):
         random.seed(random_seed)
         np.random.seed(random_seed)
         self.full_mapper = True  # flag indicating the mapper type
-        self.kpn = kpn
+        self.graph = graph
         self.platform = platform
         self.random_mapper = RandomPartialMapper(
-            self.kpn, self.platform, seed=None
+            self.graph, self.platform, seed=None
         )
         self.statistics = Statistics(
-            log, len(self.kpn.processes()), record_statistics
+            log, len(self.graph.processes()), record_statistics
         )
         self.initial_temperature = initial_temperature
         self.final_temperature = final_temperature
-        self.max_rejections = len(self.kpn.processes()) * (
+        self.max_rejections = len(self.graph.processes()) * (
             len(self.platform.processors()) - 1
         )  # R_max = L
         self.p = temperature_proportionality_constant
@@ -105,7 +105,7 @@ class SimulatedAnnealingMapper(object):
 
         # This is a workaround until Hydra 1.1 (with recursive instantiaton!)
         if not issubclass(type(type(representation)), MappingRepresentation):
-            representation = instantiate(representation, kpn, platform)
+            representation = instantiate(representation, graph, platform)
         self.representation = representation
 
         self.simulation_manager = SimulationManager(

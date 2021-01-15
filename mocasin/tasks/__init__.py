@@ -57,10 +57,10 @@ _tasks = {
         "Generates a bunch of yaml files",
     ),
     "help": (None, None, "Print a help message"),
-    "kpn_to_dot": (
+    "graph_to_dot": (
         "to_dot",
-        "kpn_to_dot",
-        "Visualize a KPN application as a dot graph",
+        "graph_to_dot",
+        "Visualize a dataflow application as a dot graph",
     ),
     "mapping_to_dot": (
         "to_dot",
@@ -85,7 +85,7 @@ _tasks = {
     "simulate": (
         "simulate",
         "simulate",
-        "Replay traces to simulate the execution of a KPN application on a "
+        "Replay traces to simulate the execution of a dataflow application on a "
         "given platform",
     ),
     "solve_query": (
@@ -110,7 +110,7 @@ _tasks = {
 
 
 def _print_help_impl():
-    print("mocasin is a framework for modeling KPN applications and their")
+    print("mocasin is a framework for modeling dataflow applications and their")
     print("execution on MPSoC platforms.")
     print("")
     print("Usage: mocasin TASK [MOCASIN OPTIONS] [HYDRA OPTIONS]")

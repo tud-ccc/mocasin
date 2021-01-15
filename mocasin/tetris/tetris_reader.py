@@ -5,7 +5,7 @@
 
 from mocasin.tetris.job_request import JobRequestInfo
 
-from mocasin.maps.kpn import MapsKpnGraph
+from mocasin.maps.graph import MapsDataflowGraph
 from mocasin.util.csv_reader import DataReader
 
 import csv
@@ -23,7 +23,7 @@ def read_applications(base_dir, platform):
     """Read application and mappings from base directory.
 
     The base directory includes the subdirectories with the name of application,
-    each subdirectory consists of cpn.xml describing the KPN application, and
+    each subdirectory consists of cpn.xml describing the application, and
     <platform>.mappings.csv describing canonical mappings.
 
     Args:
@@ -31,7 +31,7 @@ def read_applications(base_dir, platform):
         platform (Platform): a platform
 
     Returns:
-        a dict {app_name: (kpn, [mapping, ..])}
+        a dict {app_name: (graph, [mapping, ..])}
     """
     assert os.path.isdir(base_dir), "The folder '{}' does not exist".format(
         base_dir
@@ -43,7 +43,7 @@ def read_applications(base_dir, platform):
         if not os.path.isdir(app_folder):
             continue
         app_file = os.path.join(app_folder, CPN_FILENAME)
-        kpn = MapsKpnGraph(name, app_file)
+        graph = MapsDataflowGraph(name, app_file)
         mapping_file = os.path.join(app_folder, platform.name + MAPPINGS_SUFFIX)
         reader_kwargs = {
             "attribute": [],
@@ -51,10 +51,10 @@ def read_applications(base_dir, platform):
             "energy_col": "totalEnergy",
         }
         mappings_reader = DataReader(
-            platform, kpn, mapping_file, **reader_kwargs
+            platform, graph, mapping_file, **reader_kwargs
         )
         mappings = [m[0] for m in mappings_reader.formMappings().values()]
-        apps.update({name: (kpn, mappings)})
+        apps.update({name: (graph, mappings)})
         log.info("   * {}".format(name))
     return apps
 

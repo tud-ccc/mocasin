@@ -11,7 +11,7 @@ from copy import deepcopy
 from mocasin.mapper.partial import ProcPartialMapper, ComPartialMapper
 from mocasin.mapper.random import RandomPartialMapper
 from mocasin.mapper import utils
-from mocasin.simulate import KpnSimulation
+from mocasin.simulate import DataflowSimulation
 
 
 from mocasin.util import logging
@@ -23,7 +23,7 @@ class Oracle(object):
     def __init__(
         self,
         oracle_type,
-        kpn,
+        graph,
         platform,
         trace_generator,
         threshold,
@@ -34,11 +34,11 @@ class Oracle(object):
 
         if oracle_type == "TestSet":
             self.oracle = TestSet()
-        elif oracle_type == "TestTwoPrKPN":
-            self.oracle = TestTwoPrKPN()
+        elif oracle_type == "TestTwoPrGraph":
+            self.oracle = TestTwoPrGraph()
         elif oracle_type == "simulation":
             self.oracle = Simulation(
-                kpn, platform, trace_generator, threshold, threads=1
+                graph, platform, trace_generator, threshold, threads=1
             )
         else:
             log.error("Error, unknown oracle:" + oracle_type)
@@ -73,16 +73,16 @@ class Oracle(object):
 class Simulation(Oracle):
     """ simulation code """
 
-    def __init__(self, kpn, platform, trace_generator, threshold, threads=1):
-        self.kpn = kpn
+    def __init__(self, graph, platform, trace_generator, threshold, threads=1):
+        self.graph = graph
         self.platform = platform
         self.trace_generator = trace_generator
-        self.randMapGen = RandomPartialMapper(self.kpn, self.platform)
+        self.randMapGen = RandomPartialMapper(self.graph, self.platform)
         self.comMapGen = ComPartialMapper(
-            self.kpn, self.platform, self.randMapGen
+            self.graph, self.platform, self.randMapGen
         )
         self.dcMapGen = ProcPartialMapper(
-            self.kpn, self.platform, self.comMapGen
+            self.graph, self.platform, self.comMapGen
         )
         self.threads = threads
         self.threshold = threshold
@@ -110,7 +110,9 @@ class Simulation(Oracle):
         sim_mapping = self.dcMapGen.generate_mapping(mapping.to_list())
         self.trace_generator.reset()
         trace = deepcopy(self.trace_generator)
-        sim_context = KpnSimulation(self.platform, self.kpn, sim_mapping, trace)
+        sim_context = DataflowSimulation(
+            self.platform, self.graph, sim_mapping, trace
+        )
         log.debug("Mapping toList: {}".format(sim_mapping.to_list()))
         return sim_context
 
@@ -206,7 +208,7 @@ class TestSet(Oracle):
             return False
 
 
-class TestTwoPrKPN(Oracle):
+class TestTwoPrGraph(Oracle):
     def is_feasible(self, s):
         """ test oracle function (2-dim) """
         if len(s) != 2:

@@ -8,14 +8,14 @@ from random import randrange
 
 
 class generator:
-    def __init__(self, kpnGraph, platform, mappingIdentifier=[]):
+    def __init__(self, graph, platform, mappingIdentifier=[]):
         self._peIdentfier = []
         self._taskIdentfier = []
         self._mappingIdentifier = mappingIdentifier
 
         for pe in platform.processors():
             self._peIdentfier.append(pe.name)
-        for task in kpnGraph.processes():
+        for task in graph.processes():
             self._taskIdentfier.append(task.name)
 
     def generateQuery(self, length, depth=0):

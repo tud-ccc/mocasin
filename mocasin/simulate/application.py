@@ -6,7 +6,7 @@
 
 from mocasin.util import logging
 from mocasin.simulate.channel import RuntimeChannel
-from mocasin.simulate.process import RuntimeKpnProcess
+from mocasin.simulate.process import RuntimeDataflowProcess
 from mocasin.simulate.adapter import SimulateLoggerAdapter
 
 
@@ -39,8 +39,8 @@ class RuntimeApplication(object):
         return self.system.env
 
 
-class RuntimeKpnApplication(RuntimeApplication):
-    """Represents the runtime instance of a kpn application.
+class RuntimeDataflowApplication(RuntimeApplication):
+    """Represents the runtime instance of a dataflow application.
 
     :ivar Mapping mapping:
         mapping object for this application
@@ -50,22 +50,22 @@ class RuntimeKpnApplication(RuntimeApplication):
         a list of runtime channels that belong to this application
     """
 
-    def __init__(self, name, kpn_graph, mapping, trace_generator, system):
-        """Initialize a RuntimeKpnApplication.
+    def __init__(self, name, graph, mapping, trace_generator, system):
+        """Initialize a RuntimeDataflowApplication.
 
         Args:
             name (str): the application name
-            kpn_graph (KpnGraph): the graph denoting the KPN application
+            graph (DataflowGraph): the graph denoting the dataflow application
             mapping (Mapping): a mapping to the platform implemented by system
             trace_generator (TraceGenerator): the trace generator that
                 represents the execution trace of the application trace
             system (System): the system the application is supposed to be
                 executed on
         """
-        super(RuntimeKpnApplication, self).__init__(name, system)
+        super(RuntimeDataflowApplication, self).__init__(name, system)
         self.mapping = mapping
-        if mapping.kpn != kpn_graph:
-            raise RuntimeError("KPN and mapping incompatible")
+        if mapping.graph != graph:
+            raise RuntimeError("dataflow graph and mapping incompatible")
         if mapping.platform != system.platform:
             raise RuntimeError(f"Mapping {name} to an incompatible platform")
 
@@ -74,7 +74,7 @@ class RuntimeKpnApplication(RuntimeApplication):
 
         # Instantiate all channels
         self._channels = {}
-        for c in kpn_graph.channels():
+        for c in graph.channels():
             mapping_info = mapping.channel_info(c)
             self._channels[c.name] = RuntimeChannel(
                 c.name, mapping_info, c.token_size, self
@@ -83,9 +83,9 @@ class RuntimeKpnApplication(RuntimeApplication):
         # Instantiate all processes
         self._processes = {}
         self._mapping_infos = {}
-        for p in kpn_graph.processes():
+        for p in graph.processes():
             mapping_info = mapping.process_info(p)
-            proc = RuntimeKpnProcess(p.name, trace_generator, self)
+            proc = RuntimeDataflowProcess(p.name, trace_generator, self)
             self._processes[p.name] = proc
             self._mapping_infos[proc] = mapping_info
             logging.inc_indent()

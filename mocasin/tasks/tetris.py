@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 def init_logging():
     logging.getLogger("mocasin.maps.platform.convert").setLevel(logging.ERROR)
     logging.getLogger("mocasin.maps.platform").setLevel(logging.WARNING)
-    logging.getLogger("mocasin.maps.kpn").setLevel(logging.WARNING)
+    logging.getLogger("mocasin.maps.graph").setLevel(logging.WARNING)
     logging.getLogger("mocasin.mapper.partial").setLevel(logging.WARNING)
     logging.getLogger("mocasin.common.mapping").setLevel(logging.WARNING)
 

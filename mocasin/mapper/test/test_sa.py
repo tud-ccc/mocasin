@@ -34,9 +34,9 @@ def evaluation_function():
 
 
 @pytest.fixture
-def mapper(kpn, platform, trace, representation, evaluation_function, mocker):
+def mapper(graph, platform, trace, representation, evaluation_function, mocker):
     m = SimulatedAnnealingMapper(
-        kpn,
+        graph,
         platform,
         trace,
         representation,

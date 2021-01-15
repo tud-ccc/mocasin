@@ -4,7 +4,7 @@ defaults:
     - hydra/job_logging: mocasin
     - tgff: default
     - platform: default
-    - kpn: default
+    - graph: default
     - trace: default
     - representation: SimpleVector
     - sdf3: default

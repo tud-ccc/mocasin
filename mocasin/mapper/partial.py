@@ -21,14 +21,14 @@ class ComPartialMapper(object):
     placement of communication primitives.
 
     This class is used to generate a partial mapping for a given
-    platform and KPN application.
+    platform and dataflow application.
     """
 
-    def __init__(self, kpn, platform, full_generator):
-        """Generates a partial mapping for a given platform and KPN application.
+    def __init__(self, graph, platform, full_generator):
+        """Generates a partial mapping for a given platform and dataflow application.
 
-        :param kpn: a KPN graph
-        :type kpn: KpnGraph
+        :param graph: a dataflow graph
+        :type graph: DataflowGraph
         :param platform: a platform
         :type platform: Platform
         :param fullGenerator: the associated full mapping generator
@@ -36,17 +36,17 @@ class ComPartialMapper(object):
         """
         self.full_mapper = False  # flag indicating the mapper type
         self.platform = platform
-        self.kpn = kpn
+        self.graph = graph
         self.full_generator = full_generator
 
     def generate_mapping(self, part_mapping=None):
         res = ComPartialMapper.generate_mapping_static(
-            self.kpn, self.platform, part_mapping=part_mapping
+            self.graph, self.platform, part_mapping=part_mapping
         )
         return self.full_generator.generate_mapping(res)
 
     @staticmethod
-    def generate_mapping_static(kpn, platform, part_mapping=None):
+    def generate_mapping_static(graph, platform, part_mapping=None):
         """Generates an partial mapping from a given partial mapping
 
         The generated mapping provides a best effort placement of
@@ -62,7 +62,7 @@ class ComPartialMapper(object):
 
         # generate new mapping if no partial mapping is given
         if not part_mapping:
-            part_mapping = Mapping(kpn, platform)
+            part_mapping = Mapping(graph, platform)
 
         # map processes to scheduler and processor if not already done
         processes = part_mapping.get_unmapped_processes()
@@ -138,7 +138,7 @@ class CommListFullMapper(object):
     and channels to communication primitives from a list.
 
     This class is used to generate a full mapping for a given
-    platform and KPN application.
+    platform and dataflow application.
     """
 
 
@@ -148,14 +148,14 @@ class ProcPartialMapper(object):
     the rest to be channels.
 
     This class is used to generate a partial mapping for a given
-    platform and KPN application.
+    platform and dataflow application.
     """
 
-    def __init__(self, kpn, platform, full_generator):
-        """Generates a partial mapping for a given platform and KPN application.
+    def __init__(self, graph, platform, full_generator):
+        """Generates a partial mapping for a given platform and dataflow application.
 
-        :param kpn: a KPN graph
-        :type kpn: KpnGraph
+        :param graph: a dataflow graph
+        :type graph: DataflowGraph
         :param platform: a platform
         :type platform: Platform
         :param fullGenerator: the associated full mapping generator
@@ -163,7 +163,7 @@ class ProcPartialMapper(object):
         """
         self.full_mapper = False  # flag indicating the mapper type
         self.platform = platform
-        self.kpn = kpn
+        self.graph = graph
         self.full_generator = full_generator
         pes = sorted(list(self.platform.processors()), key=(lambda p: p.name))
         cps = sorted(list(self.platform.primitives()), key=(lambda p: p.name))
@@ -196,13 +196,13 @@ class ProcPartialMapper(object):
 
     @staticmethod
     def generate_pe_mapping_from_simple_vector(
-        vec, kpn, platform, vec_pe_mapping, vec_cp_mapping
+        vec, graph, platform, vec_pe_mapping, vec_cp_mapping
     ):
-        mapping = Mapping(kpn, platform)
+        mapping = Mapping(graph, platform)
 
         # map processes to scheduler and processor
         for i, p in enumerate(
-            sorted(kpn.processes(), key=(lambda pr: pr.name))
+            sorted(graph.processes(), key=(lambda pr: pr.name))
         ):
             # choose the desired processor from list
             pe = vec_pe_mapping[vec[i]]
@@ -215,10 +215,10 @@ class ProcPartialMapper(object):
             info = ProcessMappingInfo(scheduler, affinity, priority)
             # configure mapping
             mapping.add_process_info(p, info)
-        if len(vec) > len(kpn.processes()):
-            n = len(kpn.processes())
+        if len(vec) > len(graph.processes()):
+            n = len(graph.processes())
             for j, c in enumerate(
-                sorted(kpn.channels(), key=(lambda ch: ch.name))
+                sorted(graph.channels(), key=(lambda ch: ch.name))
             ):
                 i = j + n
                 primitive = vec_cp_mapping[vec[i]]
@@ -250,7 +250,7 @@ class ProcPartialMapper(object):
 
         log.debug(
             "ProcPartialMapper: start mapping generation for {} on {} with simpleVec: {}".format(
-                self.kpn.name, self.platform.name, vec
+                self.graph.name, self.platform.name, vec
             )
         )
 
@@ -262,7 +262,7 @@ class ProcPartialMapper(object):
         # generate new mapping
         mapping = ProcPartialMapper.generate_pe_mapping_from_simple_vector(
             vec,
-            self.kpn,
+            self.graph,
             self.platform,
             self.vec_pe_mapping,
             self.vec_cp_mapping,
@@ -283,14 +283,14 @@ class ComFullMapper(object):
         deterministically map the missing ones.
 
     This class is used to generate a full mapping for a given
-    platform and KPN application.
+    platform and dataflow application.
     """
 
-    def __init__(self, kpn, platform):
-        """Generates a partial mapping for a given platform and KPN application.
+    def __init__(self, graph, platform):
+        """Generates a partial mapping for a given platform and dataflow application.
 
-        :param kpn: a KPN graph
-        :type kpn: KpnGraph
+        :param graph: a dataflow graph
+        :type graph: DataflowGraph
         :param platform: a platform
         :type platform: Platform
         :param fullGenerator: the associated full mapping generator
@@ -298,47 +298,47 @@ class ComFullMapper(object):
         """
         self.full_mapper = True  # flag indicating the mapper type
         self.platform = platform
-        self.kpn = kpn
+        self.graph = graph
 
     def generate_mapping(self, part_mapping=None):
         # configure policy of schedulers
         if part_mapping is None:
-            part_mapping = Mapping(self.kpn, self.platform)
+            part_mapping = Mapping(self.graph, self.platform)
 
         return ComPartialMapper.generate_mapping_static(
-            self.kpn, self.platform, part_mapping=part_mapping
+            self.graph, self.platform, part_mapping=part_mapping
         )
 
 
 class InputTupleFullMapper:
     """Generates a mapping from a list given as input"""
 
-    def __init__(self, kpn, platform, trace, representation, input_tuple):
-        """Generates a default mapping for a given platform and KPN application.
+    def __init__(self, graph, platform, trace, representation, input_tuple):
+        """Generates a default mapping for a given platform and dataflow application.
            If (some) channels are missing, they are mapped in a best-effort
             fashion.
 
-        :param kpn: a KPN graph
-        :type kpn: KpnGraph
+        :param graph: a dataflow graph
+        :type graph: DataflowGraph
         :param platform: a platform
         :type platform: Platform
         """
         self.full_mapper = True
         self.platform = platform
-        self.kpn = kpn
+        self.graph = graph
         if (
-            len(kpn.processes())
+            len(graph.processes())
             <= len(input_tuple)
-            < len(kpn.processes()) + len(kpn.channels())
+            < len(graph.processes()) + len(graph.channels())
         ):
             self.mapping_list = input_tuple
-            com_mapper = ComFullMapper(kpn, platform)
-            self.proc_mapper = ProcPartialMapper(kpn, platform, com_mapper)
+            com_mapper = ComFullMapper(graph, platform)
+            self.proc_mapper = ProcPartialMapper(graph, platform, com_mapper)
         else:
             log.error(
                 f"Invalid mapping list size: {len(input_tuple)} "
-                f"(expected between {len(kpn.processes())} and"
-                f"{len(kpn.processes())+len(kpn.channels())} )"
+                f"(expected between {len(graph.processes())} and"
+                f"{len(graph.processes())+len(graph.channels())} )"
             )
             raise RuntimeError
 

@@ -12,7 +12,7 @@ from builtins import StopIteration
 class SimpleVectorMapper:
     def __init__(
         self,
-        kpn,
+        graph,
         platform,
         mappingConstraints,
         sharedCoreConstraints,
@@ -20,9 +20,9 @@ class SimpleVectorMapper:
         vec,
         debug=False,
     ):
-        self.__fullMapper = MappingCompletionWrapper(kpn, platform)
+        self.__fullMapper = MappingCompletionWrapper(graph, platform)
         self.__processors = len(platform.processors())
-        self.__processes = len(kpn.processes())
+        self.__processes = len(graph.processes())
         self.__debug = debug
 
         self.__stateVector = []
@@ -147,18 +147,18 @@ class MappingCompletionWrapper:
     to create a complete mapping out of a process mapping vector.
     """
 
-    def __init__(self, kpn, platform):
-        self.__kpn = kpn
+    def __init__(self, graph, platform):
+        self.__graph = graph
         self.__platform = platform
 
-        self.__fullMapper = RandomPartialMapper(kpn, platform, None)
-        self.__communicationMapper = ComPartialMapper(kpn, platform, self)
-        self.__processMapper = ProcPartialMapper(kpn, platform, self)
+        self.__fullMapper = RandomPartialMapper(graph, platform, None)
+        self.__communicationMapper = ComPartialMapper(graph, platform, self)
+        self.__processMapper = ProcPartialMapper(graph, platform, self)
 
     def completeMappingAtRandom(self, processMappingVector):
         # create empty mapping, complete it with generated process mapping
         # and random channel mapping
-        mapping = Mapping(self.__kpn, self.__platform)
+        mapping = Mapping(self.__graph, self.__platform)
         mapping.from_list(processMappingVector)
 
         assert mapping.get_unmapped_channels() == []

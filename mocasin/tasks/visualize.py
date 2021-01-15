@@ -11,14 +11,14 @@ from mocasin.gui.drawAPI import drawAPI
 
 @hydra.main(config_path="../conf", config_name="visualize")
 def visualize(cfg):
-    kpn = hydra.utils.instantiate(cfg["kpn"])
+    graph = hydra.utils.instantiate(cfg["graph"])
     platform = hydra.utils.instantiate(cfg["platform"])
     trace = hydra.utils.instantiate(cfg["trace"])
     representation = hydra.utils.instantiate(
-        cfg["representation"], kpn, platform
+        cfg["representation"], graph, platform
     )
     mapping = hydra.utils.instantiate(
-        cfg["mapper"], kpn, platform, trace, representation
+        cfg["mapper"], graph, platform, trace, representation
     ).generate_mapping()
     task_names = cfg["task_names"]
     width = cfg["width"]

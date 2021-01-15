@@ -5,7 +5,7 @@
 
 import pytest
 from arpeggio import ParserPython
-from mocasin.maps.kpn import MapsKpnGraph
+from mocasin.maps.graph import MapsDataflowGraph
 from mocasin.maps.platform import MapsPlatform
 from mocasin.ontologies.solver import Solver
 from mocasin.ontologies.logicLanguage import Grammar
@@ -18,9 +18,9 @@ def parser():
 
 
 @pytest.fixture
-def kpnGraph():
-    return MapsKpnGraph(
-        "MapsKpnGraph", "examples/maps/app/audio_filter/audio_filter.cpn.xml"
+def graph():
+    return MapsDataflowGraph(
+        "MapsDataflowGraph", "examples/maps/app/audio_filter/audio_filter.cpn.xml"
     )
 
 
@@ -33,25 +33,25 @@ def platform():
 
 @pytest.fixture
 def solver():
-    kpn = MapsKpnGraph(
-        "MapsKpnGraph", "examples/maps/app/audio_filter/audio_filter.cpn.xml"
+    graph = MapsDataflowGraph(
+        "MapsDataflowGraph", "examples/maps/app/audio_filter/audio_filter.cpn.xml"
     )
     platform = MapsPlatform(
         "MapsPlatform", "examples/maps/platforms/exynos.platform"
     )
     cfg = {}
-    return Solver(kpn, platform, cfg)
+    return Solver(graph, platform, cfg)
 
 
 @pytest.fixture
 def map_dict_solver():
-    kpn = MapsKpnGraph(
-        "MapsKpnGraph", "examples/maps/app/audio_filter/audio_filter.cpn.xml"
+    graph = MapsDataflowGraph(
+        "MapsDataflowGraph", "examples/maps/app/audio_filter/audio_filter.cpn.xml"
     )
     platform = MapsPlatform(
         "MapsPlatform", "examples/maps/platforms/exynos.platform"
     )
-    fullMapper = MappingCompletionWrapper(kpn, platform)
+    fullMapper = MappingCompletionWrapper(graph, platform)
 
     processMappingVec = [7, 6, 5, 4, 3, 2, 1, 0]
     firstMapping = fullMapper.completeMappingBestEffort(processMappingVec)
@@ -61,7 +61,7 @@ def map_dict_solver():
     cfg = {}
 
     mapDict = {"map_one": firstMapping, "map_two": secondMapping}
-    return Solver(kpn, platform, cfg, mappingDict=mapDict)
+    return Solver(graph, platform, cfg, mappingDict=mapDict)
 
 
 @pytest.fixture

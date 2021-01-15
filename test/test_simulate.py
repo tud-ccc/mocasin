@@ -19,13 +19,13 @@ maps_expected_sim_time = {
 
 
 @pytest.mark.xfail(reason="Required files are not in the repository anymore")
-def test_maps_simulate(datadir, maps_kpn_platform_pair):
-    kpn, platform = maps_kpn_platform_pair
+def test_maps_simulate(datadir, maps_graph_platform_pair):
+    graph, platform = maps_graph_platform_pair
     res = subprocess.run(
         [
             "mocasin",
             "simulate",
-            f"kpn={kpn}",
+            f"graph={graph}",
             f"platform={platform}",
             "mapper=maps_default",
             "trace=maps_default",
@@ -40,7 +40,7 @@ def test_maps_simulate(datadir, maps_kpn_platform_pair):
     for line in stdout.split("\n"):
         if line.startswith("Total simulated time: "):
             time = line[22:]
-            assert time == maps_expected_sim_time[kpn][platform]
+            assert time == maps_expected_sim_time[graph][platform]
             found_line = True
 
     assert found_line
@@ -64,7 +64,7 @@ def test_tgff_simulate(datadir, tgff):
             "mocasin",
             "simulate",
             "platform=designer_bus",
-            "kpn=tgff_reader",
+            "graph=tgff_reader",
             "trace=tgff_reader",
             "mapper=default",
             f"tgff.file={tgff}.tgff",
@@ -91,7 +91,7 @@ def test_sdf3_simulate(datadir):
             "mocasin",
             "simulate",
             "platform=exynos",
-            "kpn=sdf3_reader",
+            "graph=sdf3_reader",
             "trace=sdf3_reader",
             "mapper=static_cfs",
             "sdf3.file=../../../sdf3/medium_cyclic.xml",

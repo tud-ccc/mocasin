@@ -24,7 +24,7 @@ class GeneticMapper(object):
 
     def __init__(
         self,
-        kpn,
+        graph,
         platform,
         trace,
         representation,
@@ -47,10 +47,10 @@ class GeneticMapper(object):
         parallel=True,
         jobs=4,
     ):
-        """Generates a partial mapping for a given platform and KPN application.
+        """Generates a partial mapping for a given platform and dataflow application.
 
-        :param kpn: a KPN graph
-        :type kpn: KpnGraph
+        :param graph: a dataflow graph
+        :type graph: DataflowGraph
         :param platform: a platform
         :type platform: Platform
         :param trace: a trace generator
@@ -97,10 +97,10 @@ class GeneticMapper(object):
         random.seed(random_seed)
         np.random.seed(random_seed)
         self.full_mapper = True  # flag indicating the mapper type
-        self.kpn = kpn
+        self.graph = graph
         self.platform = platform
         self.random_mapper = RandomPartialMapper(
-            self.kpn, self.platform, support_first=objective_num_resources
+            self.graph, self.platform, support_first=objective_num_resources
         )
         self.crossover_rate = crossover_rate
         self.exec_time = objective_exec_time
@@ -118,7 +118,7 @@ class GeneticMapper(object):
                 "Trying to initalize genetic algorithm without objectives"
             )
 
-        if self.crossover_rate > len(self.kpn.processes()):
+        if self.crossover_rate > len(self.graph.processes()):
             log.error(
                 "Crossover rate cannot be higher than number of processes in application"
             )
@@ -126,7 +126,7 @@ class GeneticMapper(object):
 
         # This is a workaround until Hydra 1.1 (with recursive instantiaton!)
         if not issubclass(type(type(representation)), MappingRepresentation):
-            representation = instantiate(representation, kpn, platform)
+            representation = instantiate(representation, graph, platform)
         self.representation = representation
         self.simulation_manager = SimulationManager(
             self.representation,

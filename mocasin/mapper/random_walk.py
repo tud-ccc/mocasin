@@ -24,7 +24,7 @@ class RandomWalkMapper(object):
     """Generates a full mapping via a random walk
 
     This class is used to generate a mapping for a given
-    platform and KPN application, via a random walk through
+    platform and dataflow application, via a random walk through
     the mapping space.
     It produces multiple random mappings and simulates each mapping in
     order to find the 'best' mapping. As outlined below, the script expects
@@ -36,7 +36,7 @@ class RandomWalkMapper(object):
 
     def __init__(
         self,
-        kpn,
+        graph,
         platform,
         trace,
         representation,
@@ -50,10 +50,10 @@ class RandomWalkMapper(object):
         chunk_size=10,
         jobs=1,
     ):
-        """Generates a random mapping for a given platform and KPN application.
+        """Generates a random mapping for a given platform and dataflow application.
         Args:
-        :param kpn: a KPN graph
-        :type kpn: KpnGraph
+        :param graph: a dataflow graph
+        :type graph: DataflowGraph
         :param platform: a platform
         :type platform: Platform
         :param trace: a trace generator
@@ -80,10 +80,10 @@ class RandomWalkMapper(object):
         :type jobs: int
         """
         self.full_mapper = True
-        self.kpn = kpn
+        self.graph = graph
         self.platform = platform
         self.random_mapper = RandomMapper(
-            self.kpn, self.platform, trace, representation, random_seed=None
+            self.graph, self.platform, trace, representation, random_seed=None
         )
         self.num_iterations = num_iterations
         self.dump_cache = dump_cache
@@ -97,7 +97,7 @@ class RandomWalkMapper(object):
 
         # This is a workaround until Hydra 1.1 (with recursive instantiaton!)
         if not issubclass(type(type(representation)), MappingRepresentation):
-            representation = instantiate(representation, kpn, platform)
+            representation = instantiate(representation, graph, platform)
         self.representation = representation
 
         self.simulation_manager = SimulationManager(

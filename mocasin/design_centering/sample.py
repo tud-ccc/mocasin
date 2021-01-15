@@ -21,7 +21,7 @@ class Sample(list):
 
         :param sample: a vector describing the sample
         :type sample: Sample
-        :sim_context: the context (platform, kpn etc.) set after simulation of the sample
+        :sim_context: the context (platform, dataflow graph etc.) set after simulation of the sample
         :type: SimulationContext
         :param representation_type: a representation type
         :type platform: RepresentationType

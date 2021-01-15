@@ -7,13 +7,13 @@
 import xml.etree.ElementTree as ET
 
 from mocasin.util import logging
-from mocasin.common.kpn import KpnChannel, KpnGraph, KpnProcess
+from mocasin.common.graph import DataflowChannel, DataflowGraph, DataflowProcess
 
 
 log = logging.getLogger(__name__)
 
 
-class MapsKpnGraph(KpnGraph):
+class MapsDataflowGraph(DataflowGraph):
     def __init__(self, name, xml_file):
         super().__init__(name)
 
@@ -37,7 +37,7 @@ class MapsKpnGraph(KpnGraph):
                     ]
                 )
             )
-            self.add_channel(KpnChannel(name, token_size))
+            self.add_channel(DataflowChannel(name, token_size))
 
         for process in xmlroot.iter("PNprocess"):
             name = process.find("Name").text
@@ -53,8 +53,8 @@ class MapsKpnGraph(KpnGraph):
             log.debug("It reads from the channels " + str(incoming) + " ...")
             log.debug("and writes to the channels " + str(outgoing))
 
-            kpn_process = KpnProcess(name)
-            self.add_process(kpn_process)
+            process = DataflowProcess(name)
+            self.add_process(process)
 
             for cn in outgoing:
                 channel = None
@@ -63,7 +63,7 @@ class MapsKpnGraph(KpnGraph):
                         channel = c
                         break
                 assert channel is not None
-                kpn_process.connect_to_outgoing_channel(channel)
+                process.connect_to_outgoing_channel(channel)
 
             for cn in incoming:
                 channel = None
@@ -72,5 +72,5 @@ class MapsKpnGraph(KpnGraph):
                         channel = c
                         break
                 assert channel is not None
-                kpn_process.connect_to_incomming_channel(channel)
+                process.connect_to_incomming_channel(channel)
         log.info("Done parsing the PnGraph")

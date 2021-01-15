@@ -104,7 +104,7 @@ class Grammar:
 
 class SemanticAnalysis(PTNodeVisitor):
     def __init__(
-        self, kpnGraph, platform, cfg, mappingDict={}, defaults=True, **kwargs
+        self, graph, platform, cfg, mappingDict={}, defaults=True, **kwargs
     ):
         """Map processors and processes to integer values"""
         self.__processors = {}
@@ -113,12 +113,12 @@ class SemanticAnalysis(PTNodeVisitor):
         self.__processes = {}
 
         for i, process in enumerate(
-            sorted(kpnGraph.processes(), key=(lambda p: p.name))
+            sorted(graph.processes(), key=(lambda p: p.name))
         ):
             self.__processes[process.name] = i
 
         self.__mappingDict = mappingDict
-        self.__kpn = kpnGraph
+        self.__graph = graph
         self.__platform = platform
         self.__cfg = cfg
         super(SemanticAnalysis, self).__init__(defaults, **kwargs)
@@ -228,7 +228,7 @@ class SemanticAnalysis(PTNodeVisitor):
                 EqualsConstraint(
                     negate,
                     self.__mappingDict[mappingName],
-                    self.__kpn,
+                    self.__graph,
                     self.__platform,
                     self.__cfg,
                 )
@@ -357,10 +357,10 @@ class SharedCoreUsageConstraint(Constraint):
 
 
 class EqualsConstraint(Constraint):
-    def __init__(self, negate, mappingObject, kpn, platform, cfg):
+    def __init__(self, negate, mappingObject, graph, platform, cfg):
         self.negate = negate
         self.mapping = mappingObject
-        self.lens = SymmetryRepresentation(kpn, platform)
+        self.lens = SymmetryRepresentation(graph, platform)
 
     def isFulfilled(self, mapping):
         if isinstance(mapping, Mapping):

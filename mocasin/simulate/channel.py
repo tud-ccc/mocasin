@@ -5,7 +5,7 @@
 
 
 """Contains the :class:`RuntimeChannel` class which manages the simulation of
-KPN channels."""
+dataflow channels."""
 
 
 from mocasin.util import logging
@@ -17,14 +17,14 @@ log = logging.getLogger(__name__)
 
 
 class RuntimeChannel(object):
-    """Represents the runtime instance of a KPN channel.
+    """Represents the runtime instance of a dataflow channel.
 
     Implements the semantics of a multiple reader channel. This means that a
     channel may have multiple consumers. This is an optimization to the more
-    restrictive KPN channel that only allows one reader. The channel ensures
-    that each consumer receives a copy of each token written to the channel.
-    This implementation keeps a FIFO for each consumer and copies tokens when
-    produced. Initially all FIFOs are empty.
+    restrictive dataflow channel that only allows one reader. The channel
+    ensures that each consumer receives a copy of each token written to the
+    channel.  This implementation keeps a FIFO for each consumer and copies
+    tokens when produced. Initially all FIFOs are empty.
 
     Attributes:
         name (str): the channel name

@@ -51,7 +51,7 @@ class MappingGeneratorOrbit(MappingGenerator):
 class MappingGeneratorSimvec(MappingGenerator):
     def __init__(
         self,
-        kpn,
+        graph,
         platform,
         mappingConstraints,
         sharedCoreConstraints,
@@ -59,7 +59,7 @@ class MappingGeneratorSimvec(MappingGenerator):
         vec,
     ):
         self.mapper = SimpleVectorMapper(
-            kpn,
+            graph,
             platform,
             mappingConstraints,
             sharedCoreConstraints,

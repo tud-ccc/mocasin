@@ -16,7 +16,7 @@ def solve_query(cfg):
     # TODO:
     # find a way to hand in a set of mappings on which equal_operations can be applied
 
-    kpn = hydra.utils.instantiate(cfg["kpn"])
+    graph = hydra.utils.instantiate(cfg["graph"])
     platform = hydra.utils.instantiate(cfg["platform"])
     query = cfg["query"]
     vector = cfg["vector"]
@@ -28,10 +28,10 @@ def solve_query(cfg):
             f"The solve_query task needs to be called with the SimpleVector representation. Called with {cfg['representation']._target_}"
         )
     representation = hydra.utils.instantiate(
-        cfg["representation"], kpn, platform
+        cfg["representation"], graph, platform
     )
 
-    solver = Solver(kpn, platform, cfg)
+    solver = Solver(graph, platform, cfg)
 
     if not vector == "None":
         starting_vector = []

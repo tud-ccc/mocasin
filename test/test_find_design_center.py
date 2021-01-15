@@ -19,18 +19,18 @@ thresholds = {
 
 
 @pytest.mark.xfail(reason="Required files are not in the repository anymore")
-def test_dc_maps(datadir, maps_kpn_platform_pair):
-    kpn, platform = maps_kpn_platform_pair
+def test_dc_maps(datadir, maps_graph_platform_pair):
+    graph, platform = maps_graph_platform_pair
 
     subprocess.check_call(
         [
             "mocasin",
             "find_design_center",
-            "kpn=%s" % kpn,
+            "graph=%s" % graph,
             "platform=%s" % platform,
             "trace=maps_default",
             "out_dir=%s" % datadir,
-            "threshold=%s" % thresholds[kpn][platform],
+            "threshold=%s" % thresholds[graph][platform],
         ],
         cwd=datadir,
     )
@@ -47,7 +47,7 @@ def test_dc_tgff(datadir, tgff):
         [
             "mocasin",
             "find_design_center",
-            "kpn=tgff_reader",
+            "graph=tgff_reader",
             "platform=tgff_reader",
             "trace=tgff_reader",
             "tgff.directory=%s" % tgff_directory,

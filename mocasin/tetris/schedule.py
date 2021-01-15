@@ -148,7 +148,7 @@ class SingleJobSegmentMapping:
 
     @property
     def app(self):
-        """KpnGraph: The kpn graph."""
+        """DataflowGraph: The dataflow graph."""
         return self.__request.app
 
     @property

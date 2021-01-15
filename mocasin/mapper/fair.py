@@ -18,14 +18,14 @@ from mocasin.mapper.utils import Statistics
 log = logging.getLogger(__name__)
 
 
-def gen_trace_summary(kpn, platform, trace):
+def gen_trace_summary(graph, platform, trace):
     summary = {}
     p_types = set()
     for p in platform.processors():
         p_types = p_types.union(set([p.type]))
     for p_type in p_types:
         trace.reset()
-        for proc in kpn.processes():
+        for proc in graph.processes():
             tot = 0
             seg = trace.next_segment(proc.name, p_type)
             while not seg.terminate:
@@ -42,10 +42,10 @@ class StaticCFS(object):
     """
 
     def __init__(self, platform):
-        """Generates a full mapping for a given platform and KPN application.
+        """Generates a full mapping for a given platform and dataflow application.
 
-        :param kpn: a KPN graph
-        :type kpn: KpnGraph
+        :param graph: a dataflow graph
+        :type graph: DataflowGraph
         :param platform: a platform
         :type platform: Platform
         """
@@ -53,7 +53,7 @@ class StaticCFS(object):
         # self.statistics = Statistics()
 
     def generate_mapping_dict(
-        self, kpns, trace_summary, load=None, restricted=None
+        self, graphs, trace_summary, load=None, restricted=None
     ):
         """Generates a full mapping using a static algorithm
         inspired by Linux' GBM
@@ -69,10 +69,10 @@ class StaticCFS(object):
         for type in core_types:
             processes[type] = SortedList()
             # use best time at first and update depending on the proc. that is next
-            for kpn in kpns:
-                for p in kpn.processes():
+            for graph in graphs:
+                for p in graph.processes():
                     processes[type].add(
-                        (trace_summary[(p, type)], kpn.name + p.name)
+                        (trace_summary[(p, type)], graph.name + p.name)
                     )
 
         finished = False  # to avoid converting the lists every time
@@ -83,9 +83,9 @@ class StaticCFS(object):
                     continue
                 _, pr = processes[core.type].pop()
                 process = None
-                for kpn in kpns:
-                    for proc in kpn.processes():
-                        if kpn.name + proc.name == pr:
+                for graph in graphs:
+                    for proc in graph.processes():
+                        if graph.name + proc.name == pr:
                             process = proc
                             break
                     if process is not None:
@@ -124,27 +124,27 @@ class StaticCFSMapper(StaticCFS):
     Generates a full mapping by using the static CFS method.
     """
 
-    def __init__(self, kpn, platform, trace, representation):
+    def __init__(self, graph, platform, trace, representation):
         super().__init__(platform)
         self.full_mapper = True  # flag indicating the mapper type
-        self.kpn = kpn
+        self.graph = graph
         self.trace = trace
-        self.randMapGen = RandomPartialMapper(self.kpn, self.platform)
+        self.randMapGen = RandomPartialMapper(self.graph, self.platform)
         self.comMapGen = ComPartialMapper(
-            self.kpn, self.platform, self.randMapGen
+            self.graph, self.platform, self.randMapGen
         )
 
     def generate_mapping(self, load=None, restricted=None):
         trace_generator = self.trace
         trace_summary = gen_trace_summary(
-            self.kpn, self.platform, trace_generator
+            self.graph, self.platform, trace_generator
         )
         trace_generator.reset()
-        mapping = Mapping(self.kpn, self.platform)
+        mapping = Mapping(self.graph, self.platform)
         mapping_dict = self.generate_mapping_dict(
-            [self.kpn], trace_summary, load=load, restricted=restricted
+            [self.graph], trace_summary, load=load, restricted=restricted
         )
-        for proc in self.kpn.processes():
+        for proc in self.graph.processes():
             self.map_to_core(mapping, proc, mapping_dict[proc])
         return self.comMapGen.generate_mapping(mapping)
 
@@ -183,34 +183,34 @@ class StaticCFSMapperMultiApp(StaticCFS):
     def __init__(self, platform):
         super().__init__(platform)
 
-    def generate_mappings(self, kpns, traces, load=None, restricted=None):
-        if len(kpns) == 0:
+    def generate_mappings(self, graphs, traces, load=None, restricted=None):
+        if len(graphs) == 0:
             return []
         else:
-            log.info(f"generating fair mapping for {len(kpns)} apps")
+            log.info(f"generating fair mapping for {len(graphs)} apps")
         comMapGen = {}
-        if len(traces) != len(kpns):
+        if len(traces) != len(graphs):
             raise RuntimeError(
-                f"Mapper received unbalanced number of traces ({len(traces)}) and applications ({len(kpns)})"
+                f"Mapper received unbalanced number of traces ({len(traces)}) and applications ({len(graphs)})"
             )
-        for kpn in kpns:
-            randMapGen = RandomPartialMapper(kpn, self.platform)
-            comMapGen[kpn] = ComPartialMapper(kpn, self.platform, randMapGen)
+        for graph in graphs:
+            randMapGen = RandomPartialMapper(graph, self.platform)
+            comMapGen[graph] = ComPartialMapper(graph, self.platform, randMapGen)
 
         trace_summaries = {}
         mappings = {}
-        for kpn, trace in zip(kpns, traces):
-            trace_summaries.update(gen_trace_summary(kpn, self.platform, trace))
-            mappings[kpn] = Mapping(kpn, self.platform)
+        for graph, trace in zip(graphs, traces):
+            trace_summaries.update(gen_trace_summary(graph, self.platform, trace))
+            mappings[graph] = Mapping(graph, self.platform)
             trace.reset()
         mapping_dict = self.generate_mapping_dict(
-            kpns, trace_summaries, load=load, restricted=restricted
+            graphs, trace_summaries, load=load, restricted=restricted
         )
-        for kpn in kpns:
-            for proc in kpn.processes():
-                self.map_to_core(mappings[kpn], proc, mapping_dict[proc])
+        for graph in graphs:
+            for proc in graph.processes():
+                self.map_to_core(mappings[graph], proc, mapping_dict[proc])
 
         res = []
-        for kpn in mappings:
-            res.append(comMapGen[kpn].generate_mapping(mappings[kpn]))
+        for graph in mappings:
+            res.append(comMapGen[graph].generate_mapping(mappings[graph]))
         return res

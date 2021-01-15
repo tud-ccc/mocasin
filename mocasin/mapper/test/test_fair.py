@@ -27,32 +27,32 @@ class MockTraceGenerator(object):
             )
 
 
-def test_gen_trace_summary(kpn, platform):
+def test_gen_trace_summary(graph, platform):
     const_value = 3
     num_iter = 10
-    proc_names = [proc.name for proc in kpn.processes()]
+    proc_names = [proc.name for proc in graph.processes()]
     core_types = [core.type for core in platform.processors()]
     const_func = lambda _: const_value
     trace = MockTraceGenerator(
         proc_names, core_types, const_func, max_length=num_iter
     )
-    trace_summary = gen_trace_summary(kpn, platform, trace)
+    trace_summary = gen_trace_summary(graph, platform, trace)
     for core in core_types:
-        for proc in kpn.processes():
+        for proc in graph.processes():
             assert trace_summary[(proc, core)] == const_value * (num_iter - 1)
 
     for core in core_types:
-        for proc in kpn.processes():
+        for proc in graph.processes():
             single_comb = (
                 lambda x: (x[0] == core) * (x[1] == proc.name) * const_value
             )
             trace = MockTraceGenerator(
                 proc_names, core_types, single_comb, max_length=num_iter
             )
-            trace_summary = gen_trace_summary(kpn, platform, trace)
+            trace_summary = gen_trace_summary(graph, platform, trace)
 
             for other_core in core_types:
-                for other_proc in kpn.processes():
+                for other_proc in graph.processes():
                     val = trace_summary[(other_proc, other_core)]
                     assert (
                         other_core == core
@@ -61,10 +61,10 @@ def test_gen_trace_summary(kpn, platform):
                     ) or (val == 0)
 
 
-def test_map_to_core(kpn, platform):
+def test_map_to_core(graph, platform):
     cfs = StaticCFS(platform)
     for core in platform.processors():
-        for proc in kpn.processes():
-            mapping = Mapping(kpn, platform)
+        for proc in graph.processes():
+            mapping = Mapping(graph, platform)
             cfs.map_to_core(mapping, proc, core)
             assert mapping._process_info[proc.name].affinity == core

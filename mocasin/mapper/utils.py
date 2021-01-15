@@ -12,7 +12,7 @@ import csv
 import h5py
 
 from mocasin.common.mapping import Mapping
-from mocasin.simulate import KpnSimulation
+from mocasin.simulate import DataflowSimulation
 
 from mocasin.util.logging import getLogger
 
@@ -88,10 +88,10 @@ class SimulationManager(object):
     ):
         self._cache = {}
         self.representation = representation
-        self.kpn = representation.kpn
+        self.graph = representation.graph
         self.platform = representation.platform
         self.statistics = Statistics(
-            log, len(self.kpn.processes()), record_statistics
+            log, len(self.graph.processes()), record_statistics
         )
         self.statistics.set_rep_init_time(representation.init_time)
         self._last_added = None
@@ -165,7 +165,9 @@ class SimulationManager(object):
                 continue
 
             trace = deepcopy(self.trace)
-            simulation = KpnSimulation(self.platform, self.kpn, mapping, trace)
+            simulation = DataflowSimulation(
+                self.platform, self.graph, mapping, trace
+            )
 
             simulations.append(simulation)
 

@@ -11,14 +11,14 @@ import os
 
 
 @pytest.mark.xfail(reason="Required files are not in the repository anymore")
-def test_maps_kpn_to_dot(datadir, expected_dir, maps_kpn):
-    dot_file = "%s.dot" % maps_kpn
+def test_maps_graph_to_dot(datadir, expected_dir, maps_graph):
+    dot_file = "%s.dot" % maps_graph
     out_file = os.path.join(datadir, dot_file)
     subprocess.check_call(
         [
             "mocasin",
-            "kpn_to_dot",
-            "kpn=%s" % maps_kpn,
+            "graph_to_dot",
+            "graph=%s" % maps_graph,
             "output_file=%s" % out_file,
         ],
         cwd=datadir,
@@ -47,15 +47,15 @@ def test_maps_platform_to_dot(datadir, expected_dir, maps_platform):
 
 
 @pytest.mark.xfail(reason="Required files are not in the repository anymore")
-def test_maps_mapping_to_dot(datadir, expected_dir, maps_kpn_platform_pair):
-    kpn, platform = maps_kpn_platform_pair
-    dot_file = "%s_on_%s.dot" % (kpn, platform)
+def test_maps_mapping_to_dot(datadir, expected_dir, maps_graph_platform_pair):
+    graph, platform = maps_graph_platform_pair
+    dot_file = "%s_on_%s.dot" % (graph, platform)
     out_file = os.path.join(datadir, dot_file)
     subprocess.check_call(
         [
             "mocasin",
             "mapping_to_dot",
-            "kpn=%s" % kpn,
+            "graph=%s" % graph,
             "platform=%s" % platform,
             "mapper=maps_default",
             "output_file=%s" % out_file,
@@ -67,14 +67,14 @@ def test_maps_mapping_to_dot(datadir, expected_dir, maps_kpn_platform_pair):
     )
 
 
-def test_tgff_kpn_to_dot(datadir, expected_dir, tgff):
-    dot_file = "%s.kpn.dot" % tgff
+def test_tgff_graph_to_dot(datadir, expected_dir, tgff):
+    dot_file = "%s.graph.dot" % tgff
     out_file = os.path.join(datadir, dot_file)
     subprocess.check_call(
         [
             "mocasin",
-            "kpn_to_dot",
-            "kpn=tgff_reader",
+            "graph_to_dot",
+            "graph=tgff_reader",
             "tgff.file=%s.tgff" % tgff,
             "output_file=%s" % out_file,
         ],
@@ -111,7 +111,7 @@ def test_tgff_mapping_to_dot(datadir, expected_dir, tgff):
             "mocasin",
             "mapping_to_dot",
             "platform=designer_bus",
-            "kpn=tgff_reader",
+            "graph=tgff_reader",
             "mapper=random",
             "mapper.random_seed=42",
             "tgff.file=%s.tgff" % tgff,
@@ -124,14 +124,14 @@ def test_tgff_mapping_to_dot(datadir, expected_dir, tgff):
     )
 
 
-def test_sdf3_kpn_to_dot(datadir, expected_dir):
+def test_sdf3_graph_to_dot(datadir, expected_dir):
     dot_file = "sdf3_medium_cyclic.dot"
     out_file = os.path.join(datadir, dot_file)
     subprocess.check_call(
         [
             "mocasin",
-            "kpn_to_dot",
-            "kpn=sdf3_reader",
+            "graph_to_dot",
+            "graph=sdf3_reader",
             "sdf3.file=../../../sdf3/medium_cyclic.xml",
             f"output_file={out_file}",
         ],

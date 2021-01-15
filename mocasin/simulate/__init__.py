@@ -6,7 +6,7 @@
 import hydra
 import simpy
 
-from mocasin.simulate.application import RuntimeKpnApplication
+from mocasin.simulate.application import RuntimeDataflowApplication
 from mocasin.simulate.system import RuntimeSystem
 
 
@@ -102,8 +102,8 @@ class BaseSimulation:
         )
 
 
-class KpnSimulation(BaseSimulation):
-    """Handles the simulation of a single KPN application
+class DataflowSimulation(BaseSimulation):
+    """Handles the simulation of a single dataflow application
 
     Attributes:
         app (RuntimeApplication): Runtime instance of the application to be
@@ -112,15 +112,15 @@ class KpnSimulation(BaseSimulation):
 
     Args:
         platform (Platform): the platform that is simulated by this object
-        kpn (KpnGraph): the KPN application to be executed on the given
+        graph (DataflowGraph): the dataflow application to be executed on the given
             ``platform``
-        mapping (Mapping): a mapping of the ``kpn`` to the ``platform``
-        trace (TraceGenerator): a trace generator for the given ``kpn``
+        mapping (Mapping): a mapping of the ``graph`` to the ``platform``
+        trace (TraceGenerator): a trace generator for the given ``graph``
     """
 
-    def __init__(self, platform, kpn, mapping, trace):
+    def __init__(self, platform, graph, mapping, trace):
         super().__init__(platform)
-        self.kpn = kpn
+        self.graph = graph
         self.mapping = mapping
         self.trace = trace
         self.app = None
@@ -128,13 +128,13 @@ class KpnSimulation(BaseSimulation):
     def __enter__(self):
         """Setup the simulation
 
-        Calls `~BaseSimulation.__enter__()` and creates the kpn application
+        Calls `~BaseSimulation.__enter__()` and creates the graph application
         ``app``
         """
         super().__enter__()
-        self.app = RuntimeKpnApplication(
-            name=self.kpn.name,
-            kpn_graph=self.kpn,
+        self.app = RuntimeDataflowApplication(
+            name=self.graph.name,
+            graph=self.graph,
             mapping=self.mapping,
             trace_generator=self.trace,
             system=self.system,
@@ -155,7 +155,7 @@ class KpnSimulation(BaseSimulation):
         May only be called once. Updates the :attr:`exec_time` attribute.
         """
         if self.exec_time is not None:
-            raise RuntimeError("A KpnSimulation may only be run once!")
+            raise RuntimeError("A DataflowSimulation may only be run once!")
 
         # start all schedulers
         self.system.start_schedulers()
@@ -163,7 +163,7 @@ class KpnSimulation(BaseSimulation):
         finished = self.env.process(self.app.run())
         # run the actual simulation until the application finishes
         self.env.run(finished)
-        # check if all kpn processes finished execution
+        # check if all graph processes finished execution
         self.system.check_errors()
         # save the execution time
         self.exec_time = self.env.now
@@ -172,19 +172,19 @@ class KpnSimulation(BaseSimulation):
     def from_hydra(cfg):
         """Factory method.
 
-        Instantiates :class:`KpnSimulation` from a hydra configuration object.
+        Instantiates :class:`DataflowSimulation` from a hydra configuration object.
 
         Args:
             cfg: a hydra configuration object
         """
         platform = hydra.utils.instantiate(cfg["platform"])
         trace = hydra.utils.instantiate(cfg["trace"])
-        kpn = hydra.utils.instantiate(cfg["kpn"])
-        rep = hydra.utils.instantiate(cfg["representation"], kpn, platform)
+        graph = hydra.utils.instantiate(cfg["graph"])
+        rep = hydra.utils.instantiate(cfg["representation"], graph, platform)
         mapper = hydra.utils.instantiate(
-            cfg["mapper"], kpn, platform, trace, rep
+            cfg["mapper"], graph, platform, trace, rep
         )
         mapping = mapper.generate_mapping()
-        simulation = KpnSimulation(platform, kpn, mapping, trace)
+        simulation = DataflowSimulation(platform, graph, mapping, trace)
 
         return simulation

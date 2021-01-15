@@ -3,7 +3,7 @@ defaults:
   - common
   - hydra/job_logging: mocasin
   - tgff: default
-  - kpn: default
+  - graph: default
   - platform: default
   - trace: default
   - mapper: from_file

@@ -7,7 +7,7 @@
 
 import hydra
 import logging
-from mocasin.common.kpn import KpnGraph
+from mocasin.common.graph import DataflowGraph
 import os
 
 log = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ def calculate_platform_embedding(cfg):
             f"with the MetricSpaceEmbeddings representation."
             f" Called with {cfg['representation']._target_}"
         )
-    kpn = KpnGraph(name="EmptyGraph")
+    graph = DataflowGraph(name="EmptyGraph")
     representation = hydra.utils.instantiate(
-        cfg["representation"], kpn, platform
+        cfg["representation"], graph, platform
     )

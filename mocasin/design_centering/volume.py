@@ -31,7 +31,7 @@ class Volume(object):
 class Cube(Volume):
     def __init__(
         self,
-        kpn,
+        graph,
         platform,
         representation,
         center,
@@ -115,7 +115,7 @@ class Cube(Volume):
 class LPVolume(Volume):
     def __init__(
         self,
-        kpn,
+        graph,
         platform,
         representation,
         center,
@@ -126,9 +126,9 @@ class LPVolume(Volume):
     ):
         # This is a workaround until Hydra 1.1 (with recursive instantiaton!)
         if not issubclass(type(type(representation)), MappingRepresentation):
-            representation = instantiate(representation, kpn, platform)
+            representation = instantiate(representation, graph, platform)
         self.representation = representation
-        self.kpn = kpn
+        self.graph = graph
         self.platform = platform
         self.adaptable_center_weights = adaptable_center_weights
         self.adapt_samples = adapt_samples
@@ -138,7 +138,7 @@ class LPVolume(Volume):
         self.old_center = self.center
         self.radius = radius
         self.dim = len(self.center)
-        self.true_dim = len(kpn.processes())
+        self.true_dim = len(graph.processes())
         if not hasattr(self.representation, "p"):
             raise RuntimeError("Representation does not have a norm")
         self.norm_p = representation.p

@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from mocasin.common.kpn import KpnGraph, KpnProcess
+from mocasin.common.graph import DataflowGraph, DataflowProcess
 from mocasin.common.platform import Platform, Processor, Scheduler
 from mocasin.common.mapping import Mapping
 from mocasin.representations import SimpleVectorRepresentation
@@ -72,10 +72,10 @@ def r_small():
 
 
 @pytest.fixture
-def kpn():
-    k = KpnGraph("a")
-    k.add_process(KpnProcess("a"))
-    k.add_process(KpnProcess("b"))
+def graph():
+    k = DataflowGraph("a")
+    k.add_process(DataflowProcess("a"))
+    k.add_process(DataflowProcess("b"))
     return k
 
 
@@ -94,8 +94,8 @@ def platform(num_procs, mocker):
 
 
 @pytest.fixture
-def representation(kpn, platform):
-    rep = SimpleVectorRepresentation(kpn, platform)
+def representation(graph, platform):
+    rep = SimpleVectorRepresentation(graph, platform)
     return rep
 
 
@@ -105,15 +105,15 @@ def point():
 
 
 @pytest.fixture
-def center(kpn, platform, point):
-    m = Mapping(kpn, platform)
+def center(graph, platform, point):
+    m = Mapping(graph, platform)
     m.from_list_random(point)
     return m
 
 
 @pytest.fixture
-def center_mu(kpn, platform, mu):
-    m = Mapping(kpn, platform)
+def center_mu(graph, platform, mu):
+    m = Mapping(graph, platform)
     m.from_list_random(mu)
     return m
 
@@ -124,14 +124,14 @@ def dim():
 
 
 @pytest.fixture
-def lp_vol(center, point, kpn, platform, representation, radius):
-    vol = LPVolume(kpn, platform, representation, center, radius=radius)
+def lp_vol(center, point, graph, platform, representation, radius):
+    vol = LPVolume(graph, platform, representation, center, radius=radius)
     return vol
 
 
 @pytest.fixture
-def vol_mu(center_mu, kpn, platform, representation, radius, num_samples):
-    vol = LPVolume(kpn, platform, representation, center_mu, radius=radius)
+def vol_mu(center_mu, graph, platform, representation, radius, num_samples):
+    vol = LPVolume(graph, platform, representation, center_mu, radius=radius)
     vol.adapt_samples = num_samples
     return vol
 
