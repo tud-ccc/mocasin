@@ -164,5 +164,7 @@ class RandomMapper(RandomPartialMapper):
     for RandomPartialMapper.
     """
 
-    def __init__(self, graph, platform, trace, representation, random_seed=None):
+    def __init__(
+        self, graph, platform, trace, representation, random_seed=None
+    ):
         super().__init__(graph, platform, seed=random_seed)

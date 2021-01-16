@@ -38,7 +38,9 @@ class DataReader:
         self._mComMapper = ComFullMapper(graph, platform)
         self._mMapper = ProcPartialMapper(graph, platform, self._mComMapper)
 
-        for process in sorted([x.name for x in self._mGraphInstance.processes()]):
+        for process in sorted(
+            [x.name for x in self._mGraphInstance.processes()]
+        ):
             self._mProcessNames.append(process)
         for i, pe in enumerate(
             sorted([x.name for x in self._mPlatform.processors()])
@@ -179,5 +181,10 @@ class DataReaderFromHydra(DataReader):
         process_prefix = cfg["prefix"]
         process_suffix = cfg["suffix"]
         super(DataReaderFromHydra, self).__init__(
-            platform, graph, file_path, attribute, process_prefix, process_suffix
+            platform,
+            graph,
+            file_path,
+            attribute,
+            process_prefix,
+            process_suffix,
         )

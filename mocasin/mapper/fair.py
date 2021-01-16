@@ -195,12 +195,16 @@ class StaticCFSMapperMultiApp(StaticCFS):
             )
         for graph in graphs:
             randMapGen = RandomPartialMapper(graph, self.platform)
-            comMapGen[graph] = ComPartialMapper(graph, self.platform, randMapGen)
+            comMapGen[graph] = ComPartialMapper(
+                graph, self.platform, randMapGen
+            )
 
         trace_summaries = {}
         mappings = {}
         for graph, trace in zip(graphs, traces):
-            trace_summaries.update(gen_trace_summary(graph, self.platform, trace))
+            trace_summaries.update(
+                gen_trace_summary(graph, self.platform, trace)
+            )
             mappings[graph] = Mapping(graph, self.platform)
             trace.reset()
         mapping_dict = self.generate_mapping_dict(

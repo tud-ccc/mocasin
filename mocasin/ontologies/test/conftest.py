@@ -20,7 +20,8 @@ def parser():
 @pytest.fixture
 def graph():
     return MapsDataflowGraph(
-        "MapsDataflowGraph", "examples/maps/app/audio_filter/audio_filter.cpn.xml"
+        "MapsDataflowGraph",
+        "examples/maps/app/audio_filter/audio_filter.cpn.xml",
     )
 
 
@@ -34,7 +35,8 @@ def platform():
 @pytest.fixture
 def solver():
     graph = MapsDataflowGraph(
-        "MapsDataflowGraph", "examples/maps/app/audio_filter/audio_filter.cpn.xml"
+        "MapsDataflowGraph",
+        "examples/maps/app/audio_filter/audio_filter.cpn.xml",
     )
     platform = MapsPlatform(
         "MapsPlatform", "examples/maps/platforms/exynos.platform"
@@ -46,7 +48,8 @@ def solver():
 @pytest.fixture
 def map_dict_solver():
     graph = MapsDataflowGraph(
-        "MapsDataflowGraph", "examples/maps/app/audio_filter/audio_filter.cpn.xml"
+        "MapsDataflowGraph",
+        "examples/maps/app/audio_filter/audio_filter.cpn.xml",
     )
     platform = MapsPlatform(
         "MapsPlatform", "examples/maps/platforms/exynos.platform"

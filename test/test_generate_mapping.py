@@ -9,7 +9,9 @@ import os
 
 
 @pytest.mark.xfail(reason="Required files are not in the repository anymore")
-def test_generate_mapping_maps(datadir, maps_mapper, maps_graph, representation):
+def test_generate_mapping_maps(
+    datadir, maps_mapper, maps_graph, representation
+):
     subprocess.check_call(
         [
             "mocasin",

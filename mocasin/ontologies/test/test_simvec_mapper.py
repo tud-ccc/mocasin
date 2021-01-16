@@ -31,7 +31,9 @@ def testMappingGeneration3(solver):
     result = solver.request(input_query)
 
     assert result.affinity(result.graph.find_process("src")).name == "ARM03"
-    assert result.affinity(result.graph.find_process("filter_l")).name == "ARM03"
+    assert (
+        result.affinity(result.graph.find_process("filter_l")).name == "ARM03"
+    )
     assert result.affinity(result.graph.find_process("fft_l")).name == "ARM04"
 
 

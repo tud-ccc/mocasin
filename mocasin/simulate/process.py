@@ -409,7 +409,9 @@ class RuntimeDataflowProcess(RuntimeProcess):
 
     def __init__(self, name, trace_generator, app):
         super().__init__(name, app)
-        log.debug("initialize new dataflow runtime process (%s)", self.full_name)
+        log.debug(
+            "initialize new dataflow runtime process (%s)", self.full_name
+        )
 
         self._channels = {}
         self._trace_generator = trace_generator

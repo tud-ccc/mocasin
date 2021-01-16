@@ -32,7 +32,9 @@ class OrbitLookupManager:
             self._representations[graph] = SymmetryRepresentation(
                 graph, self.platform
             )
-        equivalent_mappings = self._representations[graph].allEquivalent(mapping)
+        equivalent_mappings = self._representations[graph].allEquivalent(
+            mapping
+        )
         return equivalent_mappings
 
     def get_orbit(self, graph, mapping):

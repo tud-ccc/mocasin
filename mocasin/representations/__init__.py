@@ -84,9 +84,9 @@ class MappingRepresentation(type):
         )
 
         if (cls, graph, platform) in cls._instances:
-            different = cls._instances[(cls, graph, platform)].changed_parameters(
-                *args[2:]
-            )
+            different = cls._instances[
+                (cls, graph, platform)
+            ].changed_parameters(*args[2:])
 
         if (cls, graph, platform) not in cls._instances or different:
             # make hashables of these two

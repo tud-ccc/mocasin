@@ -3,7 +3,10 @@ import pytest
 from mocasin.common.graph import DataflowProcess, DataflowGraph
 from mocasin.common.platform import Platform, Processor, Scheduler
 
-from mocasin.tgff.tgffSimulation import DataflowGraphFromTgff, TraceGeneratorWrapper
+from mocasin.tgff.tgffSimulation import (
+    DataflowGraphFromTgff,
+    TraceGeneratorWrapper,
+)
 from mocasin.platforms.platformDesigner import genericProcessor
 from mocasin.platforms.generic_mesh import DesignerPlatformMesh
 from mocasin.platforms.exynos990 import DesignerPlatformExynos990
@@ -121,7 +124,7 @@ def tgff_multi_cluster_setup():
     processor0 = genericProcessor("proc_type_0")
     processor1 = genericProcessor("proc_type_1")
 
-    graph = DataflowGraphFromTgff(file,tgff_graph)
+    graph = DataflowGraphFromTgff(file, tgff_graph)
     platform = DesignerPlatformMultiCluster(processor0, processor1)
     trace_generator = TraceGeneratorWrapper(file, tgff_graph)
 

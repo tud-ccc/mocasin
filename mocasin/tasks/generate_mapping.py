@@ -70,7 +70,9 @@ def generate_mapping(cfg):
 
     if cfg["simulate_best"]:
         trace = hydra.utils.instantiate(cfg["trace"])
-        simulation = DataflowSimulation(result.platform, result.graph, result, trace)
+        simulation = DataflowSimulation(
+            result.platform, result.graph, result, trace
+        )
         with simulation as s:
             s.run()
 
