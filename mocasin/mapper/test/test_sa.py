@@ -1,3 +1,8 @@
+# Copyright (C) 2020 TU Dresden
+# Licensed under the ISC license (see LICENSE.txt)
+#
+# Authors: Felix Teweleit, Andres Goens
+
 from mocasin.mapper.test.mock_cache import MockMappingCache
 from mocasin.mapper.simulated_annealing import SimulatedAnnealingMapper
 from itertools import product

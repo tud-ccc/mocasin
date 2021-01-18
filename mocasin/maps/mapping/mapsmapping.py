@@ -1,3 +1,6 @@
+# Copyright (C) 2017 TU Dresden
+# Licensed under the ISC license (see LICENSE.txt)
+#
 # ./mapsmapping.py
 # -*- coding: utf-8 -*-
 # PyXB bindings for NM:935dfabbddbb2f05981df2ac13478c8868ccc4c4

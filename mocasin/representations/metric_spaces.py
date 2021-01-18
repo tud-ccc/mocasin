@@ -1,3 +1,8 @@
+# Copyright (C) 2017 TU Dresden
+# Licensed under the ISC license (see LICENSE.txt)
+#
+# Author: Andres Goens
+
 from __future__ import print_function
 import logging
 import numpy as np

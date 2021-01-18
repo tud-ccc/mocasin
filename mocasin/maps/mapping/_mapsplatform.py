@@ -1,3 +1,6 @@
+# Copyright (C) 2017 TU Dresden
+# Licensed under the ISC license (see LICENSE.txt)
+#
 # ./_mapsplatform.py
 # -*- coding: utf-8 -*-
 # PyXB bindings for NM:9b7b05350f8acb999b73feb36b75095a07ddad48

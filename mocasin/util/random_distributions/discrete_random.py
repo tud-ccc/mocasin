@@ -1,4 +1,7 @@
-# Copyright: Andres Goens, 2017-2020
+# Copyright (C) 2017 TU Dresden
+# Licensed under the ISC license (see LICENSE.txt)
+#
+# Authors: Andres Goens
 
 import types
 from functools import reduce

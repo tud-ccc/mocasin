@@ -1,3 +1,8 @@
+# Copyright (C) 2017 TU Dresden
+# Licensed under the ISC license (see LICENSE.txt)
+#
+# Authors: Gerald Hempel
+
 import math
 import matplotlib.pyplot as plt
 

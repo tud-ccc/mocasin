@@ -1,3 +1,8 @@
+# Copyright (C) 2020 TU Dresden
+# Licensed under the ISC license (see LICENSE.txt)
+#
+# Authors: Andrés Goens
+#
 # ./_parser.py
 # -*- coding: utf-8 -*-
 # PyXB bindings for NM:e92452c8d3e28a9e27abfc9994d2007779e7f4c9

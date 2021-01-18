@@ -1,7 +1,5 @@
-#!/usr/bin/env python3
-
 # Copyright (C) 2020 TU Dresden
-# All Rights Reserved
+# Licensed under the ISC license (see LICENSE.txt)
 #
 # Authors: Andres Goens
 

@@ -1,4 +1,8 @@
-from functools import reduce
+# Copyright (C) 2020 TU Dresden
+# Licensed under the ISC license (see LICENSE.txt)
+#
+# Authors: Andres Goens
+
 from itertools import product
 
 import numpy as np

@@ -1,5 +1,6 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+# Copyright (C) 2017 TU Dresden
+# Licensed under the ISC license (see LICENSE.txt)
+#
 
 #
 # Generated Tue May 30 17:17:04 2017 by generateDS.py version 2.26a.

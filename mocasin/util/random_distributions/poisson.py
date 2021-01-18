@@ -1,4 +1,8 @@
-# Author: Andres Goens, 20.2.2017
+# Copyright (C) 2017 TU Dresden
+# Licensed under the ISC license (see LICENSE.txt)
+#
+# Authors: Andres Goens
+
 import types
 import numpy as np
 import matplotlib.pyplot as plt

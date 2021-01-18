@@ -1,3 +1,8 @@
+# Copyright (C) 2020 TU Dresden
+# Licensed under the ISC license (see LICENSE.txt)
+#
+# Authors: Felix Teweleit, Andres Goens
+
 from mocasin.mapper.fair import StaticCFS, gen_trace_summary
 from mocasin.common.mapping import Mapping
 from mocasin.common.trace import TraceSegment

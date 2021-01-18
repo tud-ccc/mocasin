@@ -1,5 +1,5 @@
 # Copyright (C) 2017-2020 TU Dresden
-# All Rights Reserved
+# Licensed under the ISC license (see LICENSE.txt)
 #
 # Authors: Christian Menard, Andres Goens
 

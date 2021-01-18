@@ -1,3 +1,8 @@
+# Copyright (C) 2020 TU Dresden
+# Licensed under the ISC license (see LICENSE.txt)
+#
+# Authors: Andres Goens
+
 import numpy as np
 import pytest
 from scipy.linalg import sqrtm

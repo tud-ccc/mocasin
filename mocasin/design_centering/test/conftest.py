@@ -1,3 +1,8 @@
+# Copyright (C) 2020 TU Dresden
+# Licensed under the ISC license (see LICENSE.txt)
+#
+# Authors: Andres Goens, Gerald Hempel
+
 import pytest
 import numpy as np
 from mocasin.common.graph import DataflowGraph, DataflowProcess

@@ -1,5 +1,5 @@
 # Copyright (C) 2019 TU Dresden
-# All Rights Reserved
+# Licensed under the ISC license (see LICENSE.txt)
 #
 # Authors: Andrés Goens
 
