@@ -1,0 +1,9 @@
+Copyright (C) Robert Dick
+All rights reserved
+
+The E3S benchmark suite was kindly provided by Robert Dick for redistribution
+in Mocasin. Original source: http://ziyang.eecs.umich.edu/~dickrp/e3s/
+
+The files in this directory are explicitly excluded from Mocasin's ISC license.
+Permission to use, copy, modify, and/or distribute the E3S benchmark suite needs
+to be provided by the original author.

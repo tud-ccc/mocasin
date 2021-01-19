@@ -1,3 +1,9 @@
+# Copyright (C) Robert Dick
+# All rights reserved
+#
+# This file was kindly provided by Robert Dick for redistribution in Mocasin.
+# Original source: http://ziyang.eecs.umich.edu/~dickrp/e3s/
+
 @HYPERPERIOD 0.0027
 
 @COMMUN_QUANT 0 {
