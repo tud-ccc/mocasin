@@ -63,7 +63,7 @@ def test_tgff_simulate(datadir, tgff):
         [
             "mocasin",
             "simulate",
-            "platform=designer_bus",
+            "platform=generic_bus",
             "graph=tgff_reader",
             "trace=tgff_reader",
             "mapper=default",

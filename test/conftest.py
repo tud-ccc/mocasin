@@ -61,11 +61,11 @@ def maps_platform(request):
 @pytest.fixture(
     params=[
         "exynos990",
-        "designer_bus",
+        "generic_bus",
         "generic_mesh",
         "mppa_coolidge",
         "multi_cluster",
-        "designer_odroid",
+        "odroid",
     ]
 )
 def designer_platform(request):
@@ -74,7 +74,7 @@ def designer_platform(request):
 
 # exclude coolidge, haec for time
 @pytest.fixture(
-    params=["exynos990", "designer_bus", "generic_mesh", "multi_cluster"]
+    params=["exynos990", "generic_bus", "generic_mesh", "multi_cluster"]
 )
 def designer_platform_small(request):
     return request.param

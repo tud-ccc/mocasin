@@ -92,7 +92,7 @@ def test_tgff_platform_to_dot(datadir, expected_dir, tgff):
         [
             "mocasin",
             "platform_to_dot",
-            "platform=designer_bus",
+            "platform=generic_bus",
             "tgff.file=%s.tgff" % tgff,
             "output_file=%s" % out_file,
         ],
@@ -110,7 +110,7 @@ def test_tgff_mapping_to_dot(datadir, expected_dir, tgff):
         [
             "mocasin",
             "mapping_to_dot",
-            "platform=designer_bus",
+            "platform=generic_bus",
             "graph=tgff_reader",
             "mapper=random",
             "mapper.random_seed=42",

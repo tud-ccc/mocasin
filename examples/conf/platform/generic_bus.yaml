@@ -8,6 +8,6 @@ processor_0:
   _target_: mocasin.platforms.platformDesigner.genericProcessor
   type : 'proc_type_0'
   frequency : 2000000000
-symmetries_json: "../../../platform/symmetries/designer_bus.json"
-embedding_json: "../../../platform/embeddings/designer_bus.json"
-name : "designer_bus"
+symmetries_json: "../../../platform/symmetries/generic_bus.json"
+embedding_json: "../../../platform/embeddings/generic_bus.json"
+name : "generic_bus"
