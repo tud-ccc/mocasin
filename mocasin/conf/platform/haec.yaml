@@ -1,0 +1,14 @@
+# @package _group_
+_target_: mocasin.platforms.haec.DesignerPlatformHAEC
+# Once hydra 1.1 rolls out with recursive instantiation,
+# we should replace this and recursively instantiate
+# the processors. See:
+# https://github.com/facebookresearch/hydra/issues/566
+processor_0:
+  _target_: mocasin.platforms.platformDesigner.genericProcessor
+  type : 'proc_type_0'
+  frequency : 2000000000
+symmetries_json: null
+embedding_json: null
+name: "HAEC"
+

@@ -1,5 +1,5 @@
 # @package _group_
-_target_: mocasin.platforms.generic_bus.DesignerPlatformBus
+_target_: mocasin.platforms.multi_cluster.DesignerPlatformMultiCluster
 # Once hydra 1.1 rolls out with recursive instantiation,
 # we should replace this and recursively instantiate
 # the processors. See:
@@ -8,6 +8,10 @@ processor_0:
   _target_: mocasin.platforms.platformDesigner.genericProcessor
   type : 'proc_type_0'
   frequency : 2000000000
-symmetries_json: "../../../platform/symmetries/generic_bus.json"
-embedding_json: "../../../platform/embeddings/generic_bus.json"
-name : "generic_bus"
+processor_1:
+  _target_: mocasin.platforms.platformDesigner.genericProcessor
+  type : 'proc_type_1'
+  frequency : 2000000000
+symmetries_json: null
+embedding_json: null
+name: "multi_cluster"

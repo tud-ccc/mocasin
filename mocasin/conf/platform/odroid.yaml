@@ -15,3 +15,5 @@ processor_1:
 num_big : 4
 num_little : 4
 name: 'exynos'
+symmetries_json: null
+embedding_json: null
