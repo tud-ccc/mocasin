@@ -1,13 +1,21 @@
 # @package _group_
 _target_: mocasin.sdf3.trace.Sdf3TraceGenerator
 xml_file: "${sdf3.file}"
-repetitions: 1
+repetitions: 20
 processor_types:
   ARM_CORTEX_A7:
     sdf3_type: "proc_0"
     frequency: "1400 MHz"
     scale: "2.0 us"
   ARM_CORTEX_A15:
+    sdf3_type: "proc_0"
+    frequency: "2000 MHz"
+    scale: "1.0 us"
+  proc_type_0:
+    sdf3_type: "proc_0"
+    frequency: "1400 MHz"
+    scale: "2.0 us"
+  proc_type_1:
     sdf3_type: "proc_0"
     frequency: "2000 MHz"
     scale: "1.0 us"
