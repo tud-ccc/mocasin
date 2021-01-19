@@ -68,6 +68,7 @@ def test_tgff_simulate(datadir, tgff):
             "trace=tgff_reader",
             "mapper=default",
             f"tgff.file={tgff}.tgff",
+            f"tgff.directory=../../../tgff/e3s-0.9",
         ],
         cwd=datadir,
         check=True,
