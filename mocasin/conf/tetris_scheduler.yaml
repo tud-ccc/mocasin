@@ -15,5 +15,8 @@ job_table: ???
 # Output file for scheduling
 output_schedule:
 
+# Pre-calcualte all orbits (excluded from scheduling time)
+precalc_orbits: False
+
 # Output file for summary (to be supported)
 summary_csv:
