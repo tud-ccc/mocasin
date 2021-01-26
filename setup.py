@@ -10,7 +10,7 @@ import sys
 import tarfile
 import tempfile
 
-from setuptools import setup, find_packages
+from setuptools import setup, find_namespace_packages
 from setuptools.command.install import install
 from setuptools.command.develop import develop
 from doc.build_doc import BuildDocCommand
@@ -116,7 +116,7 @@ class DevelopCommand(develop):
 setup(
     name=project_name,
     version=version,
-    packages=find_packages(),
+    packages=find_namespace_packages(),
     install_requires=install_requirements,
     setup_requires=setup_requirements,
     tests_require=["pytest", "pytest_mock"],
