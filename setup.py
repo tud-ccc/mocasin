@@ -31,7 +31,6 @@ install_requirements = [
     "scipy<1.6.0" if sys.version_info < (3, 7) else "scipy",
     "lxml",
     "matplotlib",
-    "networkx",
     "numba",
     "numpy",
     "pint",
