@@ -45,7 +45,7 @@ install_requirements = [
     "termcolor",
     "tqdm",
 ]
-setup_requirements = ["pytest-runner", "sphinx", "numpy"]
+setup_requirements = ["pip", "pytest-runner", "sphinx", "numpy"]
 
 
 if sys.version_info < (3, 7):
@@ -96,7 +96,7 @@ class InstallPynautyCommand(distutils.cmd.Command):
             )
             print("Install pynauty")
             subprocess.check_call(
-                ["python", "setup.py", "install"], cwd=f"{tmpdir}/pynauty-0.6.0"
+                ["pip", "install", "."], cwd=f"{tmpdir}/pynauty-0.6.0"
             )
         os.chdir(cwd)
 
@@ -104,11 +104,7 @@ class InstallPynautyCommand(distutils.cmd.Command):
 class InstallCommand(install):
     def run(self):
         self.run_command("pynauty")
-        # XXX Actually install.run(self) should be used here. But there seems
-        # to be a bug in setuptools that skips installing the required
-        # packages... The line below seems to fix this.
-        # See: https://cbuelter.wordpress.com/2015/10/25/extend-the-setuptools-install-command/comment-page-1/
-        self.do_egg_install()
+        install.run(self)
 
 
 class DevelopCommand(develop):
