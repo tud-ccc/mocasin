@@ -40,8 +40,8 @@ test-python3.8-install:
   tags:
     - python3.8
   script:
-  - python setup.py install
-  - python setup.py test
+  - pip install .
+  - pip install --install-option test .
 
 test-python3.7-install:
   stage: test
@@ -49,8 +49,8 @@ test-python3.7-install:
   tags:
     - python3.7
   script:
-  - python setup.py install
-  - python setup.py test
+  - pip install .
+  - pip install --install-option test .
 
 test-python3.6-install:
   stage: test
@@ -58,8 +58,8 @@ test-python3.6-install:
   tags:
     - python3.6
   script:
-  - python setup.py install
-  - python setup.py test
+  - pip install .
+  - pip install --install-option test .
 
 check-formatting:
   stage: test
