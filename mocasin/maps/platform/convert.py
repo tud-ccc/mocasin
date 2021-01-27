@@ -98,31 +98,52 @@ def find_elem(xml_platform, type_name, elem_name):
     raise RuntimeError("%s %s was not defined", type_name, elem_name)
 
 
-def convert(platform, xml_platform, scheduler_cycles=None):
+def convert(platform, xml_platform, scheduler_cycles=None, fd_frequencies=None):
     # keep a map of scheduler names to processors, this helps when creating
     # scheduler objects
     schedulers_to_processors = {}
     for s in xml_platform.get_Scheduler():
         schedulers_to_processors[s.get_id()] = []
 
+    # Check the fd_frequencies defined the frequencies of only known domains
+    if fd_frequencies is not None:
+        for fd in fd_frequencies:
+            fd_names = map(
+                lambda x: x.get_id(), xml_platform.get_FrequencyDomain()
+            )
+            if fd not in fd_names:
+                log.warning(
+                    f"The fd_frequencies defines the frequency of "
+                    f"an unknown domain {fd}"
+                )
+
     # Collect all frequency domains
     frequency_domains = {}
     for fd in xml_platform.get_FrequencyDomain():
         name = fd.get_id()
         max_frequency = 0
+        supported_frequencies = []
         for f in fd.get_Frequency():
             frequency = ur(f.get_value() + f.get_unit()).to("Hz").magnitude
+            supported_frequencies.append(frequency)
             max_frequency = max(frequency, max_frequency)
-        # we set the frequency to None. It will be set to the correct value
-        # when read the mapping is read.
-        frequency_domains[name] = FrequencyDomain(name, max_frequency)
+        frequency = max_frequency
+        if fd_frequencies is not None and name in fd_frequencies:
+            frequency = fd_frequencies[name]
+            if frequency not in supported_frequencies:
+                log.warning(
+                    f"The fd_frequencies sets the frequency of the domain {name} "
+                    f"to {frequency} Hz, which is not defined in the xml."
+                )
+        else:
+            if len(fd.get_Frequency()) > 1:
+                log.warning(
+                    "The xml defines multiple frequencies for the domain "
+                    "%s. -> Select Maximum",
+                    name,
+                )
+        frequency_domains[name] = FrequencyDomain(name, frequency)
         log.debug("Found frequency domain %s (%d Hz)", name, frequency)
-        if len(fd.get_Frequency()) > 1:
-            log.warning(
-                "The xml defines multiple frequencies for the domain "
-                "%s. -> Select Maximum",
-                name,
-            )
 
     # Initialize all Processors
     for xp in xml_platform.get_Processor():
