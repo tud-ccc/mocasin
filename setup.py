@@ -115,7 +115,9 @@ class DevelopCommand(develop):
 setup(
     name=project_name,
     version=version,
-    packages=find_namespace_packages(),
+    packages=find_namespace_packages(
+        include=["mocasin.*", "hydra_plugins.*"], exclude=["*.test"]
+    ),
     install_requires=install_requirements,
     setup_requires=setup_requirements,
     tests_require=["pytest", "pytest_mock"],
