@@ -12,6 +12,8 @@ import hydra
 import logging
 import sys
 
+from hydra.utils import to_absolute_path
+
 log = logging.getLogger(__name__)
 
 
@@ -97,11 +99,11 @@ class TetrisScheduling:
         platform = hydra.utils.instantiate(cfg["platform"])
 
         # Read applications and mappings
-        base_apps_dir = cfg["tetris_apps_dir"]
+        base_apps_dir = to_absolute_path(cfg["tetris_apps_dir"])
         apps = read_applications(base_apps_dir, platform)
 
         # Read jobs file
-        reqs = read_requests(cfg["job_table"], apps)
+        reqs = read_requests(to_absolute_path(cfg["job_table"]), apps)
 
         # Initialize tetris scheduler
         scheduler = hydra.utils.instantiate(cfg["resource_manager"], platform)

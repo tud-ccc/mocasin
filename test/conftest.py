@@ -18,21 +18,12 @@ def datadir(tmpdir):
     examples_path = os.path.join(module_path, "..", "examples")
 
     os.symlink(
-        os.path.join(examples_path, "conf"), os.path.join(tmpdir, "conf")
-    )
-    os.symlink(
-        os.path.join(examples_path, "maps"), os.path.join(tmpdir, "maps")
-    )
-    os.symlink(
         os.path.join(examples_path, "tgff"), os.path.join(tmpdir, "tgff")
     )
     os.symlink(
         os.path.join(examples_path, "sdf3"), os.path.join(tmpdir, "sdf3")
     )
     os.symlink(os.path.join(examples_path, "csv"), os.path.join(tmpdir, "csv"))
-    os.symlink(
-        os.path.join(examples_path, "tetris"), os.path.join(tmpdir, "tetris")
-    )
     os.symlink(
         os.path.join(examples_path, "platform"),
         os.path.join(tmpdir, "platform"),
