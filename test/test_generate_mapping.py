@@ -30,9 +30,7 @@ def test_generate_mapping_maps(
     assert os.path.isfile(file_path)
 
 
-def test_generate_mapping_tgff(
-    datadir, tgff_mapper, designer_platform, tgff, representation
-):
+def test_generate_mapping_tgff(datadir, tgff_mapper, designer_platform, tgff):
     tgff_dir = os.path.join(datadir, "tgff/e3s-0.9")
     subprocess.check_call(
         [
