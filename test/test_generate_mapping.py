@@ -26,12 +26,8 @@ def test_generate_mapping_maps(
         cwd=datadir,
     )
 
-    try:
-        file_path = os.path.join(datadir, "mapping.pickle")
-        file = open(file_path, "r")
-        file.close()
-    except FileNotFoundError:
-        assert False
+    file_path = os.path.join(datadir, "mapping.pickle")
+    assert os.path.isfile(file_path)
 
 
 def test_generate_mapping_tgff(
@@ -52,9 +48,6 @@ def test_generate_mapping_tgff(
         ],
         cwd=datadir,
     )
-    try:
-        file_path = os.path.join(datadir, "best_time.txt")
-        file = open(file_path, "r")
-        file.close()
-    except FileNotFoundError:
-        assert False
+
+    file_path = os.path.join(datadir, "best_time.txt")
+    assert os.path.isfile(file_path)
