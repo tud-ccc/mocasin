@@ -34,6 +34,12 @@ test-python3.6:
   - pip install .
   - python setup.py test
 
+test-gbm:
+  stage: test
+  trigger:
+    project: mocasin/mocasin-gbm
+    strategy: depend
+
 check-formatting:
   stage: test
   image: python:3.8
