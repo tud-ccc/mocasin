@@ -7,59 +7,32 @@ default:
 stages:
   - test
 
-test-python3.8-develop:
-  stage: test
-  image: python:3.8
-  tags:
-    - python3.8
-  script:
-  - python setup.py develop
-  - python setup.py test
-
-test-python3.7-develop:
-  stage: test
-  image: python:3.7
-  tags:
-    - python3.7
-  script:
-  - python setup.py develop
-  - python setup.py test
-
-test-python3.6-develop:
-  stage: test
-  image: python:3.6
-  tags:
-    - python3.6
-  script:
-  - python setup.py develop
-  - python setup.py test
-
-test-python3.8-install:
+test-python3.8:
   stage: test
   image: python:3.8
   tags:
     - python3.8
   script:
   - pip install .
-  - pip install --install-option test .
+  - python setup.py test
 
-test-python3.7-install:
+test-python3.7:
   stage: test
   image: python:3.7
   tags:
     - python3.7
   script:
   - pip install .
-  - pip install --install-option test .
+  - python setup.py test
 
-test-python3.6-install:
+test-python3.6:
   stage: test
   image: python:3.6
   tags:
     - python3.6
   script:
   - pip install .
-  - pip install --install-option test .
+  - python setup.py test
 
 check-formatting:
   stage: test
