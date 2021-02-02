@@ -49,30 +49,24 @@ def mpsym(request):
         "exynos990",
         "generic_bus",
         "generic_mesh",
-        "mppa_coolidge",
         "multi_cluster",
         "odroid",
     ]
 )
-def designer_platform(request):
+def small_platform(request):
     return request.param
 
 
 @pytest.fixture(params=["haec", "mppa_coolidge"])
-def designer_platform_large(request):
+def large_platform(request):
     return request.param
 
 
-@pytest.fixture(params=["random", "random_walk"])
-def tgff_mapper(request):
+@pytest.fixture(params=["random", "static_cfs"])
+def fast_mapper(request):
     return request.param
 
 
 @pytest.fixture(params=["SimpleVector", "MetricSpaceEmbedding", "Symmetries"])
 def representation(request):
-    return request.param
-
-
-@pytest.fixture(params=["auto-indust-cords"])
-def tgff(request):
     return request.param
