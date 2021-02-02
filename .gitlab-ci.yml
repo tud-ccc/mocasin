@@ -36,9 +36,12 @@ test-python3.6:
 
 test-gbm:
   stage: test
+  variables:
+    MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
   trigger:
     project: mocasin/mocasin-gbm
     strategy: depend
+    branch: plugins
 
 check-formatting:
   stage: test
