@@ -162,6 +162,7 @@ class PermutationGroup(list):
     def orbit(self, function, point):
         stack = [point]
         orbit = [point]
+        yield point
         while stack:
             p = stack.pop()
             for perm in self:
@@ -169,16 +170,14 @@ class PermutationGroup(list):
                 if im not in orbit:
                     stack.append(im)
                     orbit.append(im)
+                    yield im
 
-        return orbit
 
     def point_orbit(self, point):
-        return frozenset(self.orbit((lambda perm, p: perm[p]), point))
+        return self.orbit((lambda perm, p: perm[p]), point)
 
     def tuple_orbit(self, tup):
-        return frozenset(
-            [tuple(e) for e in self.orbit((lambda perm, p: perm.act(p)), tup)]
-        )
+        return [tuple(e) for e in self.orbit((lambda perm, p: perm.act(p)), tup)]
 
     def point_orbit_hash(self, point):
         return hash(self.point_orbit(point))
@@ -194,7 +193,7 @@ class PermutationGroup(list):
         points = set(range(self.n))
         while points:
             p = points.pop()
-            orb = self.point_orbit(p)
+            orb = frozenset(self.point_orbit(p))
             points = points.difference(set(orb))
             orbs.append(orb)
         return orbs
@@ -712,3 +711,21 @@ if __name__ == "__main__":
 
     # print("Hash of this tuple orbit: " + str(arch_group.tuple_orbit_hash([1, 10, 1, 9, 7, 1, 1, 1, 1, 24, 24, 25, 13, 24, 24, 1, 1, 22, 25, 24])))
     # TODO: fix Permutation([[3,4],[4,5]]) == [0, 1, 2, 4, 5, 4]
+
+
+class OrbitGenerator(object):
+
+    def __init__(self, iterable):
+        self.iterable = iterable
+        self.iter_obj = iter(iterable)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        while True:
+            try:
+                next_obj = next(self.iter_obj)
+                return next_obj
+            except StopIteration:
+                self.iter_obj = iter(self.iterable)

@@ -28,7 +28,7 @@ class TestPermutation(object):
     def test_point_orbit(self):
         permutation = Permutation([[0, 1, 2], [4, 5]])
         permutation_group = PermutationGroup([permutation])
-        assert permutation_group.point_orbit(5) == frozenset({4, 5})
+        assert frozenset(permutation_group.point_orbit(5)) == frozenset({4, 5})
 
     def test_enumerate_orbits(self):
         permutation = Permutation([[0, 1, 2], [4, 5]])
@@ -42,9 +42,11 @@ class TestPermutation(object):
     def test_tuple_orbit(self):
         permutation = Permutation([[0, 1, 2], [4, 5]])
         permutation_group = PermutationGroup([permutation])
-        assert permutation_group.tuple_orbit([0, 5]) == frozenset(
-            {(1, 4), (1, 5), (0, 5), (0, 4), (2, 5), (2, 4)}
-        )
+        expected = {(1, 4), (1, 5), (0, 5), (0, 4), (2, 5), (2, 4)}
+        for perm in permutation_group.tuple_orbit([0, 5]):
+            assert perm in expected
+            expected.remove(perm)
+        assert len(expected) == 0
 
     def test_generators(self):
         s4xs8 = ProductGroup(
