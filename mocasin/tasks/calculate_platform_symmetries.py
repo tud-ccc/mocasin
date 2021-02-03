@@ -86,7 +86,7 @@ def calculate_platform_symmetries(cfg):
         with open(out_filename, "w") as f:
             f.write(json_out)
     else:
-        out_filename = cfg["out_file"] + ".out"
+        out_filename = cfg["out_file"]
         with open(out_filename, "w") as f:
             f.write("Platform Graph:")
             f.write(str(plat_graph))
