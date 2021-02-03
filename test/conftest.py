@@ -62,8 +62,21 @@ def large_platform(request):
     return request.param
 
 
-@pytest.fixture(params=["random", "static_cfs"])
+@pytest.fixture(params=["default", "random", "static_cfs"])
 def fast_mapper(request):
+    return request.param
+
+
+@pytest.fixture(
+    params=[
+        "genetic",
+        "gradient_descent",
+        "random_walk",
+        "simulated_annealing",
+        "tabu_search",
+    ]
+)
+def slow_mapper(request):
     return request.param
 
 
