@@ -385,7 +385,7 @@ class Platform(object):
     def find_scheduler_for_processor(self, processor):
         """Find the scheduler for a given processor.
 
-        :param processor: a processer of the underlying platform
+        :param processor: a processor of the underlying platform
         :type processor: Processor
         :raises RuntimeError: if the processor or the scheduler was not found
         :returns: The scheduler object for the given processor

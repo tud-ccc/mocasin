@@ -9,6 +9,7 @@ from copy import copy
 import random
 import timeit
 from os.path import exists
+import json
 
 try:
     import pynauty as pynauty
@@ -466,6 +467,16 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
                     for node in self._arch_nc:
                         self._arch_nc_inv[self._arch_nc[node]] = node
                         # TODO: ensure that nodes_correspondence fits simpleVec
+
+                    # write symmetries calculated to json if exsits
+                    if not hasattr(platform, "ag_json"):
+                        log.warning(
+                            "No JSON file specified for symmetries."
+                            "Will not store them."
+                        )
+                    else:
+                        with open(platform.ag_json, "w") as f:
+                            f.write(self._ag.to_json())
 
         if not self.sym_library:
             log.info(
