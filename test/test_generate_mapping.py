@@ -24,7 +24,7 @@ def test_generate_mapping_tgff(datadir, slow_mapper, small_platform):
     )
 
     assert os.path.isfile(os.path.join(datadir, "best_time.txt"))
-    assert os.path.ifuke(os.path.join(datadir, "mapping.pickle"))
+    assert os.path.isfile(os.path.join(datadir, "mapping.pickle"))
 
 
 def test_generate_mapping_sdf3(datadir, fast_mapper, large_platform):
@@ -35,7 +35,7 @@ def test_generate_mapping_sdf3(datadir, fast_mapper, large_platform):
             "graph=sdf3_reader",
             f"platform={large_platform}",
             f"mapper={fast_mapper}",
-            "tsdf3.file=sdf3/medium_cyclic.xml",
+            "sdf3.file=sdf3/medium_acyclic.xml",
             f"outdir={datadir}",
             "trace=sdf3_reader",
         ],
@@ -43,4 +43,4 @@ def test_generate_mapping_sdf3(datadir, fast_mapper, large_platform):
     )
 
     assert os.path.isfile(os.path.join(datadir, "best_time.txt"))
-    assert os.path.ifuke(os.path.join(datadir, "mapping.pickle"))
+    assert os.path.isfile(os.path.join(datadir, "mapping.pickle"))
