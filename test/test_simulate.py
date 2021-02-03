@@ -6,7 +6,7 @@
 import subprocess
 
 
-def test_tgff_simulate(datadir, tgff):
+def test_tgff_simulate(datadir):
     res = subprocess.run(
         [
             "mocasin",

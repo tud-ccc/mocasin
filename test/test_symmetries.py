@@ -6,6 +6,7 @@
 import subprocess
 import pytest
 import filecmp
+import os
 
 
 @pytest.mark.skip(reason="Test just takes too long.")
@@ -45,7 +46,9 @@ def test_symmetries_tgff_large(datadir, large_platform):
     )
 
     assert filecmp.cmp(
-        "mpsym/best_time.txt", "python/best_time.txt", shallow=False
+        os.path.join(datadir, "mpsym/best_time.txt"),
+        os.path.join(datadir, "python/best_time.txt"),
+        shallow=False,
     )
 
 
@@ -85,5 +88,7 @@ def test_symmetries_tgff_small(datadir, small_platform):
     )
 
     assert filecmp.cmp(
-        "mpsym/best_time.txt", "python/best_time.txt", shallow=False
+        os.path.join(datadir, "mpsym/best_time.txt"),
+        os.path.join(datadir, "python/best_time.txt"),
+        shallow=False,
     )

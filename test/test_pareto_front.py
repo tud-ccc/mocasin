@@ -22,3 +22,4 @@ def test_pareto_front_tgff(datadir):
         cwd=datadir,
     )
     assert os.path.isfile(os.path.join(datadir, "results0.txt"))
+    assert os.path.isfile(os.path.join(datadir, "mapping0.pickle"))
