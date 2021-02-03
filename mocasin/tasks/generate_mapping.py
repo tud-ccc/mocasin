@@ -62,7 +62,7 @@ def generate_mapping(cfg):
     outdir = cfg["outdir"]
     if not os.path.exists(outdir):
         os.makedirs(outdir)
-    with open(outdir + "/mapping.pickle", "wb") as f:
+    with open(os.path.join(outdir, "mapping.pickle"), "wb") as f:
         p = pickle.Pickler(f)
         p.dump(result)
 
@@ -76,7 +76,7 @@ def generate_mapping(cfg):
 
         exec_time = float(simulation.exec_time) / 1000000000.0
         log.info("Best mapping simulated time: " + str(exec_time) + " ms")
-        with open(outdir + "best_time.txt", "w") as f:
+        with open(os.path.join(outdir, "best_time.txt"), "w") as f:
             f.write(str(exec_time))
 
     if cfg["graph"]["_target_"] == "mocasin.maps.graph.MapsDataflowGraph":
