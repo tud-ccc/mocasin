@@ -71,11 +71,13 @@ def pareto_front(cfg):
     if not os.path.exists(outdir):
         os.makedirs(outdir)
     for i, result in enumerate(results):
-        with open(outdir + f"/mapping{i}.pickle", "wb") as f:
+        with open(os.path.join(outdir, f"mapping{i}.pickle"), "wb") as f:
             p = pickle.Pickler(f)
             p.dump(result)
 
     for i, result in enumerate(results):
+        # FIXME: creating another mapper just to evaluate the mapping seems like
+        # a bad hack.
         if not hasattr(mapper, "evaluate_mapping"):
             mapper = GeneticMapper(
                 graph,
@@ -84,7 +86,7 @@ def pareto_front(cfg):
                 representation,
                 objective_num_resources=True,
             )
-        with open(outdir + f"results{i}.txt", "w") as f:
+        with open(os.path.join(outdir, f"results{i}.txt"), "w") as f:
             f.write(
                 str(
                     mapper.evaluate_mapping(
