@@ -39,11 +39,6 @@ def expected_dir(request):
     return os.path.join(module_path, "expected_%s" % module_name)
 
 
-@pytest.fixture(params=[True, False])
-def mpsym(request):
-    return request.param
-
-
 @pytest.fixture(
     params=[
         "exynos990",
