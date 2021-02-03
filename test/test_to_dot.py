@@ -35,7 +35,7 @@ def test_platform_to_dot(datadir, expected_dir, large_platform):
         [
             "mocasin",
             "platform_to_dot",
-            "platform=generic_bus",
+            f"platform={large_platform}",
             "tgff.file=auto-indust-cords",
             "tgff.directory=tgff/e3s-0.9",
             f"output_file={out_file}",
