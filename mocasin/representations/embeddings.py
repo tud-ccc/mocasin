@@ -139,6 +139,7 @@ class MetricSpaceEmbeddingBase:
         embedding_matrix_path=None,
         verbose=False,
         target_distortion=1.1,
+        disable_embedding_test=False,
         jlt_tries=30,
     ):
         assert isinstance(M, metric.FiniteMetricSpace)
@@ -157,11 +158,14 @@ class MetricSpaceEmbeddingBase:
                         read_distortion = contents["distortion"]
                         if read_distortion > self.target_distortion:
                             valid = False
-                        else:
+                        elif not disable_embedding_test:
                             dist = check_distortion(M.D, E)
                             valid = dist <= self.target_distortion
                             if valid:
                                 self.distortion = dist
+                        else:  # embedding test disabled
+                            log.warning("Using embedding without testing.")
+                            valid = True
                 except TypeError as e:
                     valid = False  # could not read json
                     log.warning(
