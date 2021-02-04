@@ -537,7 +537,6 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
             for x in self._G.tuple_orbit(x_):
                 yield x
 
-
     def allEquivalent(self, x):
         x_ = x.to_list(channels=False)
         for elem in self._allEquivalent(x_):

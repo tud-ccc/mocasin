@@ -217,11 +217,12 @@ class ProcPartialMapper(object):
             mapping.add_process_info(p, info)
         if len(vec) > len(graph.processes()):
             if len(vec) != (len(graph.processes()) + len(graph.channels())):
-                log.error(f"Invalid mapping vector size. "
-                          f"Should be {len(graph.processes())}"
-                          f" or {len(graph.processes()) + len(graph.channels())}")
+                log.error(
+                    f"Invalid mapping vector size. "
+                    f"Should be {len(graph.processes())}"
+                    f" or {len(graph.processes()) + len(graph.channels())}"
+                )
                 raise RuntimeError
-
 
             n = len(graph.processes())
             for j, c in enumerate(

@@ -172,12 +172,13 @@ class PermutationGroup(list):
                     orbit.append(im)
                     yield im
 
-
     def point_orbit(self, point):
         return self.orbit((lambda perm, p: perm[p]), point)
 
     def tuple_orbit(self, tup):
-        return [tuple(e) for e in self.orbit((lambda perm, p: perm.act(p)), tup)]
+        return [
+            tuple(e) for e in self.orbit((lambda perm, p: perm.act(p)), tup)
+        ]
 
     def point_orbit_hash(self, point):
         return hash(self.point_orbit(point))
@@ -714,7 +715,6 @@ if __name__ == "__main__":
 
 
 class OrbitGenerator(object):
-
     def __init__(self, iterable):
         self.iterable = iterable
         self.iter_obj = iter(iterable)
