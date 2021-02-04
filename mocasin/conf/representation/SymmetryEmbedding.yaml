@@ -4,6 +4,7 @@ norm_p: 2
 periodic_boundary_conditions: false
 canonical_operations: true
 disable_mpsym : false
+disable_symmetries_test : false
 extra_dimensions : true
 extra_dimensions_factor : 3
 ignore_channels : true

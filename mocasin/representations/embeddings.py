@@ -182,6 +182,7 @@ class MetricSpaceEmbeddingBase:
             else:  # path does not exist but is not None
                 log.warning(
                     "No embedding matrix stored. Calculating and storing."
+                    "(this might take some time)"
                 )
                 E, self.distortion = self.calculateEmbeddingMatrix(
                     np.array(M.D),

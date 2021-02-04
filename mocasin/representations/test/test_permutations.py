@@ -22,16 +22,16 @@ class TestPermutation(object):
         pass
 
     def test_get_cycles(self):
-        permutation = Permutation([[0, 1, 2], [4, 5]])
+        permutation = Permutation.fromLists([[0, 1, 2], [4, 5]])
         assert permutation.get_cycles() == [[4, 5], [0, 1, 2]]
 
     def test_point_orbit(self):
-        permutation = Permutation([[0, 1, 2], [4, 5]])
+        permutation = Permutation.fromLists([[0, 1, 2], [4, 5]])
         permutation_group = PermutationGroup([permutation])
         assert permutation_group.point_orbit(5) == frozenset({4, 5})
 
     def test_enumerate_orbits(self):
-        permutation = Permutation([[0, 1, 2], [4, 5]])
+        permutation = Permutation.fromLists([[0, 1, 2], [4, 5]])
         permutation_group = PermutationGroup([permutation])
         assert permutation_group.enumerate_orbits() == [
             frozenset({0, 1, 2}),
@@ -40,7 +40,7 @@ class TestPermutation(object):
         ]
 
     def test_tuple_orbit(self):
-        permutation = Permutation([[0, 1, 2], [4, 5]])
+        permutation = Permutation.fromLists([[0, 1, 2], [4, 5]])
         permutation_group = PermutationGroup([permutation])
         assert permutation_group.tuple_orbit([0, 5]) == frozenset(
             {(1, 4), (1, 5), (0, 5), (0, 4), (2, 5), (2, 4)}
@@ -501,7 +501,7 @@ class TestPermutation(object):
             mjpeg_group = PermutationGroupFromGens(
                 list(
                     map(
-                        lambda trans: Permutation(
+                        lambda trans: Permutation.fromLists(
                             [list(trans)], action=1, n=27
                         ),
                         (mjpeg_chans_gens + mjpeg_procs_gens),
@@ -659,7 +659,7 @@ class TestPermutation(object):
             mjpeg_group = PermutationGroupFromGens(
                 list(
                     map(
-                        lambda trans: Permutation(
+                        lambda trans: Permutation.fromLists(
                             [list(trans)], action=1, n=27
                         ),
                         (mjpeg_chans_gens + mjpeg_procs_gens),

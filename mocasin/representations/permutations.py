@@ -28,11 +28,12 @@ def timeit(func):
 
 # important! permutations start with 0
 class Permutation(list):
-    def __init__(self, ls, n=-1, action=0, *args):
+    @classmethod
+    def fromLists(cls, ls, n=-1, action=0, *args):
         assert type(ls) == list
         m = max([max(l) for l in ls])
         if n == -1:
-            self.n = m + 1
+            n = m + 1
         else:
             if not (n >= m):
                 log.error(
@@ -44,21 +45,25 @@ class Permutation(list):
                     + str(n)
                 )
                 return None
-            self.n = n
         if not (action == 0 or action == 1):
             log.error("Unrecognized action: " + str(action))
             return None
-        self.action = action
-        list.__init__(self, range(0, self.n), *args)
+        perm = list(range(0, n))
         for l in ls:
             if len(l) >= 2:
                 first = l.pop(0)
                 prev = first
                 while l:
                     cur = l.pop(0)
-                    self[prev] = cur
+                    perm[prev] = cur
                     prev = cur
-                self[prev] = first
+                perm[prev] = first
+        return cls(perm, action=action, *args)
+
+    def __init__(self, perm, action=0, *args):
+        list.__init__(self, list(perm), *args)
+        self.n = len(self)
+        self.action = action
 
     def act(self, obj):
         if self.action == 0:
@@ -270,7 +275,7 @@ class SymmetricGroupTranspositions(PermutationGroup):
         generators = []
         for i in range(0, n):
             for j in range(i + 1, n):
-                generators.append(Permutation([[i, j]], n, action))
+                generators.append(Permutation.fromLists([[i, j]], n, action))
         PermutationGroup.__init__(self, generators, n, action=action, *args)
 
 
@@ -302,7 +307,7 @@ class DuplicateGroup(PermutationGroup):
 
         generators = list(
             map(
-                lambda cycles: Permutation(
+                lambda cycles: Permutation.fromLists(
                     cycles, times * g.n + len(trivials), action=action
                 ),
                 generators_clist,
@@ -333,7 +338,7 @@ class ProductGroup(PermutationGroup):
                     new_gen.append(list(map(lambda x: x + current_n, cycle)))
                 # print("gen: " + str(new_gen) + " (" + str(sum_n) +")")
                 generators.append(
-                    Permutation(new_gen, sum_n, action=gen.action)
+                    Permutation.fromLists(new_gen, sum_n, action=gen.action)
                 )
             current_n += extra_n
 
@@ -367,7 +372,7 @@ class PartialPermutation(dict):
 # Test code:
 if __name__ == "__main__":
     separator = "------------------------------"
-    l = Permutation([[0, 1, 2], [4, 5]])
+    l = Permutation.fromLists([[0, 1, 2], [4, 5]])
     print("Cycles of Permutation([[0,1,2],[4,5]]): " + str(l.get_cycles()))
     print(separator)
     g = PermutationGroup([l])
@@ -578,7 +583,9 @@ if __name__ == "__main__":
     mjpeg_group = PermutationGroupFromGens(
         list(
             map(
-                lambda trans: Permutation([list(trans)], action=1, n=27),
+                lambda trans: Permutation.fromLists(
+                    [list(trans)], action=1, n=27
+                ),
                 (mjpeg_chans_gens + mjpeg_procs_gens),
             )
         )

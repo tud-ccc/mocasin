@@ -9,7 +9,6 @@ from copy import copy
 import random
 import timeit
 from os.path import exists
-import json
 
 try:
     import pynauty as pynauty
@@ -36,6 +35,7 @@ from .automorphisms import (
     to_labeled_edge_graph,
     edge_to_node_autgrp,
     list_to_tuple_permutation,
+    testSymmetries,
 )
 from .permutations import Permutation, PermutationGroup
 import mocasin.util.random_distributions.lp as lp
@@ -403,6 +403,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         norm_p=2,
         canonical_operations=True,
         disable_mpsym=False,
+        disable_symmetries_test=False,
     ):
         self._topologyGraph = platform.to_adjacency_dict()
         self.graph = graph
@@ -434,10 +435,20 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
                         "Symmetries initialized with mpsym: Platform Generator."
                     )
                 elif hasattr(platform, "ag_json") and exists(platform.ag_json):
-                    # todo: make sure the correspondence of cores is correct!
                     self._ag = pympsym.ArchGraphSystem.from_json_file(
                         platform.ag_json
                     )
+                    if disable_symmetries_test:
+                        log.warning("Using symmetries JSON without testing.")
+                        correct = True
+                    else:
+                        correct = testSymmetries(
+                            platform.to_adjacency_dict(),
+                            self._ag.automorphisms(),
+                        )
+                    if not correct:
+                        log.error("Symmetries json does not fit platform.")
+                        raise RuntimeError
                     log.info("Symmetries initialized with mpsym: JSON file.")
 
                 else:

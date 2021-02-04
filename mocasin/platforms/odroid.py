@@ -29,7 +29,9 @@ class DesignerPlatformOdroid(Platform):
         if not isinstance(processor_1, Processor):
             processor_1 = instantiate(processor_1)
         super(DesignerPlatformOdroid, self).__init__(
-            name, kwargs.get("symmetries_json", None)
+            name,
+            kwargs.get("symmetries_json", None),
+            kwargs.get("embedding_json", None),
         )
         if processor_0.frequency_domain.frequency != 1400000000.0:
             log.warning(
