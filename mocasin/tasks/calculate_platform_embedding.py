@@ -15,12 +15,12 @@ log = logging.getLogger(__name__)
 def calculate_platform_embedding(cfg):
     """Calculate the embedding for a Platform Graph
 
-    This task two hydra parameters to be available, for the platform and
+    This task expects two hydra parameters to be available, for the platform and
     for the representation. The representation has to be an embedding
     representation (MetricSpaceEmbedding or SymmetryEmbedding).
     The options are taken from the metric space embedding representation.
     The file is written to the path defined in the configuration under:
-     `platform.embedding_file`
+     `platform.embedding_json`
 
     **Hydra Parameters**:
         * **platform:** the input platform. The task expects a configuration
@@ -48,8 +48,8 @@ def calculate_platform_embedding(cfg):
         != "mocasin.representations.SymmetryEmbedding"
     ):
         raise RuntimeError(
-            f"The enumerate equvialent task needs to be called "
-            f"w/ the MetricSpaceEmbedding or SymmetryEmbedding representation."
+            "The calculate platform embedding task needs to be called "
+            "w/ the MetricSpaceEmbedding or SymmetryEmbedding representation."
             f" Called with {cfg['representation']._target_}"
         )
     graph = DataflowGraph(name="EmptyGraph")
