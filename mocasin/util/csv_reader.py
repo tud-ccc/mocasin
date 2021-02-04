@@ -13,6 +13,8 @@ from mocasin.common.platform import Platform
 from mocasin.common.graph import DataflowGraph
 from mocasin.mapper.partial import ComFullMapper, ProcPartialMapper
 
+from hydra.utils import to_absolute_path
+
 # TODO(RK): Make a unit test which checks a case with multiple objectives
 
 
@@ -181,7 +183,7 @@ class DataReader:
 
 class DataReaderFromHydra(DataReader):
     def __init__(self, platform, graph, cfg):
-        file_path = cfg["csv_file"]
+        file_path = to_absolute_path(cfg["csv_file"])
         attribute = cfg["property"]
         process_prefix = cfg["prefix"]
         process_suffix = cfg["suffix"]

@@ -9,6 +9,7 @@ import pint
 
 from dataclasses import dataclass, field
 from fractions import Fraction as frac
+from hydra.utils import to_absolute_path
 
 from mocasin.sdf3 import _sdf_parser
 from mocasin.common.trace import TraceGenerator, TraceSegment
@@ -81,7 +82,7 @@ class Sdf3TraceGenerator(TraceGenerator):
 
         log.info("Start parsing the SDF3 trace")
         # load the xml
-        with open(xml_file) as f:
+        with open(to_absolute_path(xml_file)) as f:
             sdf3 = _sdf_parser.CreateFromDocument(f.read())
             if sdf3.type != "sdf":
                 raise RuntimeError(
