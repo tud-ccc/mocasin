@@ -3,7 +3,7 @@
 export _HYDRA_OLD_COMP=$(complete -p mocasin 2> /dev/null)
 hydra_bash_completion()
 {
-    MOCASIN_HOME=$HOME/mocasin/mocasin
+    MOCASIN_HOME=<path-to-your-mocasin-installation>
     words=($COMP_LINE)
         if [ "${words[0]}" != "mocasin" ]; then
 	    #we don't support autocomplete outside the mocasin entry point

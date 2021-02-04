@@ -105,6 +105,24 @@ mocasin comes with a set of tests. You can run them as follows:
 python setup.py test
 ```
 
+Bash Autocompletion
+-------------
+mocasin supports bash autocompletion.  To activate you need to 
+modify the file `misc/bash-autocomplete.sh`. Change the line:
+```
+MOCASIN_HOME=<path-to-your-mocasin-installation>
+```
+to point to your `mocasin` installation. For example, if this repository is
+in `$HOME/mocasin-git/`, the script should point to:
+```
+MOCASIN_HOME=$HOME/mocasin-git/mocasin
+```
+Then, you can active bash autocompletion by running:
+
+```
+eval "$(cat misc/bash-autocomplete.sh)"
+```
+
 Publications
 ------------
 
