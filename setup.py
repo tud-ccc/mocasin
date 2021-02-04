@@ -22,7 +22,7 @@ version = "0.1.0"
 install_requirements = [
     "argparse",
     "arpeggio",
-    "cvxpy<1.2" if sys.version_info < (3, 7) else "cvxpy",
+    "cvxpy!=1.1.8,<1.2" if sys.version_info < (3, 7) else "cvxpy!=1.1.8",
     "cvxopt",
     "deap",
     "h5py",
