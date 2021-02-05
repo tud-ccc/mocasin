@@ -508,7 +508,9 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
             autgrp_edges = pynauty.autgrp(nautygraph)
             autgrp, _ = edge_to_node_autgrp(autgrp_edges[0], self._arch_nc)
             permutations_lists = map(list_to_tuple_permutation, autgrp)
-            permutations = [Permutation.fromLists(p, n=n) for p in permutations_lists]
+            permutations = [
+                Permutation.fromLists(p, n=n) for p in permutations_lists
+            ]
             self._G = PermutationGroup(permutations)
             log.info("Initialized automorphism group with internal symmetries")
 
