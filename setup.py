@@ -114,7 +114,10 @@ class InstallCommand(install):
 class DevelopCommand(develop):
     def run(self):
         develop.run(self)
-        self.run_command("pynauty")
+        try:
+            import pynauty
+        except ModuleNotFoundError:
+            self.run_command("pynauty")
 
 
 setup(
