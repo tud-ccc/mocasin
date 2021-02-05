@@ -42,7 +42,7 @@ def main():
 
     # This code is for bash/zsh autocompletion for the available mocasin tasks
     # and there is no reason this would otherwise be called.
-    if task == "-sc" and len(sys.argv) == 2 and sys.argv[1] == 'query=bash':
+    if task == "-sc" and len(sys.argv) == 2 and sys.argv[1] == "query=bash":
         print(" ".join(task_autocomplete()))
         return
 

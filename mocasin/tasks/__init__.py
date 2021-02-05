@@ -166,6 +166,7 @@ def execute_task(task):
         # execute the task
         function()
 
+
 def task_autocomplete():
     line = os.environ["COMP_LINE"]
     words = line.split(" ")
