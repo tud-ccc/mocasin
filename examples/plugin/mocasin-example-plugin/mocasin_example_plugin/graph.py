@@ -8,7 +8,6 @@ from mocasin.common.graph import DataflowGraph, DataflowProcess, DataflowChannel
 
 
 class ExampleGraph(DataflowGraph):
-
     def __init__(self):
         super().__init__("example")
 

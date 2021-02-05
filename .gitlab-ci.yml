@@ -43,6 +43,15 @@ test-gbm:
     strategy: depend
     branch: plugins
 
+test-maps-examples:
+  stage: test
+  variables:
+    MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
+  trigger:
+    project: mocasin/mocasin-maps-examples
+    strategy: depend
+    branch: plugins
+
 check-formatting:
   stage: test
   image: python:3.8
