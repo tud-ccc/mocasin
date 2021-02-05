@@ -10,7 +10,7 @@ import sys
 import traceback
 import cProfile
 
-from mocasin.tasks import execute_task
+from mocasin.tasks import execute_task, _tasks, task_autocomplete
 
 log = logging.getLogger(__name__)
 
@@ -39,6 +39,12 @@ def main():
     if len(sys.argv) > 1:
         task = sys.argv[1]
         del sys.argv[1]
+
+    # This code is for bash/zsh autocompletion for the available mocasin tasks
+    # and there is no reason this would otherwise be called.
+    if task == "-sc" and len(sys.argv) == 2 and sys.argv[1] == 'query=bash':
+        print(" ".join(task_autocomplete()))
+        return
 
     # Normally we want mocasin to fail and exit with an error code when an
     # exception occurs. However, in the case of hydra multirun, we might want

@@ -19,6 +19,7 @@ import hydra
 import logging
 import sys
 import textwrap
+import os
 
 from importlib import import_module
 
@@ -164,3 +165,16 @@ def execute_task(task):
         function = getattr(module, function_name)
         # execute the task
         function()
+
+def task_autocomplete():
+    line = os.environ["COMP_LINE"]
+    words = line.split(" ")
+    if len(words) < 2:
+        return [""]
+    else:
+        result = []
+        start = words[-1]
+        for task in _tasks:
+            if task.startswith(start):
+                result.append(task)
+        return result

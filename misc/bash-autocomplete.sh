@@ -8,18 +8,18 @@ hydra_bash_completion()
         if [ "${words[0]}" != "mocasin" ]; then
 	    #we don't support autocomplete outside the mocasin entry point
             return
-	fi
+        fi
         if (( ${#words[@]} < 3 )); then
-	    #here we should ask autocompletion for tasks
-            return
+            helper="mocasin"
+        else
+            task=${words[1]}
+            task_pyfile=$MOCASIN_HOME/tasks/${task}.py
+            if [ ! -f "$task_pyfile" ]; then
+                return
+            fi
+            grep "@hydra.main" $task_pyfile -q
+            helper="mocasin ${task}"
         fi
-        task=${words[1]}
-        task_pyfile=$MOCASIN_HOME/tasks/${task}.py
-        grep "@hydra.main" $task_pyfile -q
-        if [ ! -f "$task_pyfile" ]; then
-            return
-        fi
-        helper="mocasin ${task}"
     EXECUTABLE=($(command -v $helper))
     if [ "$HYDRA_COMP_DEBUG" == "1" ]; then
         printf "EXECUTABLE_FIRST='${EXECUTABLE[0]}'\n"
