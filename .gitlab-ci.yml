@@ -25,7 +25,7 @@ build-pynauty-python3.8:
     - pip wheel .
   artifacts:
     paths:
-      - pynauty-0.6.0/pynauty-0.6.0-cp38-cp38-linux_x86_64.whl
+      - pynauty-0.6.0/pynauty-0.6.0-cp38-cp38m-linux_x86_64.whl
 
 build-pynauty-python3.7:
   stage: build_pynauty
@@ -43,7 +43,7 @@ build-pynauty-python3.7:
     - pip wheel .
   artifacts:
     paths:
-      - pynauty-0.6.0/pynauty-0.6.0-cp37-cp37-linux_x86_64.whl
+      - pynauty-0.6.0/pynauty-0.6.0-cp37-cp37m-linux_x86_64.whl
 
 build-pynauty-python3.6:
   stage: build_pynauty
@@ -61,7 +61,49 @@ build-pynauty-python3.6:
     - pip wheel .
   artifacts:
     paths:
-      - pynauty-0.6.0/pynauty-0.6.0-cp36-cp36-linux_x86_64.whl
+      - pynauty-0.6.0/pynauty-0.6.0-cp36-cp36m-linux_x86_64.whl
+
+build-mocasin-python3.8:
+  stage: build_mocasin
+  image: python:3.8
+  tags:
+    - python3.8
+  dependencies:
+    - build-pynauty-python3.8
+  script:
+    - pip install pynauty-0.6.0/pynauty-0.6.0-cp38-cp38m-linux_x86_64.whl
+    - pip wheel . -w wheels
+  artifacts:
+    paths:
+      - wheels
+
+build-mocasin-python3.7:
+  stage: build_mocasin
+  image: python:3.7
+  tags:
+    - python3.7
+  dependencies:
+    - build-pynauty-python3.7
+  script:
+    - pip install pynauty-0.6.0/pynauty-0.6.0-cp37-cp37m-linux_x86_64.whl
+    - pip wheel . -w wheels
+  artifacts:
+    paths:
+      - wheels
+
+build-mocasin-python3.6:
+  stage: build_mocasin
+  image: python:3.6
+  tags:
+    - python3.6
+  dependencies:
+    - build-pynauty-python3.6
+  script:
+    - pip install pynauty-0.6.0/pynauty-0.6.0-cp36-cp36m-linux_x86_64.whl
+    - pip wheel . -w wheels
+  artifacts:
+    paths:
+      - wheels
 
 # test-python3.8:
 #   stage: test
