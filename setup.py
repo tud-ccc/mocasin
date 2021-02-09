@@ -100,21 +100,27 @@ class InstallPynautyCommand(distutils.cmd.Command):
         os.chdir(cwd)
 
 
-class InstallCommand(install):
-    def run(self):
+def install_pynauty(cmd):
+    # If the environment variable NO_PYNAUTY is set to any value, we skip
+    # pynauty installation
+    if "NO_PYNAUTY" not in os.environ:
+        # also skip installation if already installed
         try:
             import pynauty
         except ImportError:
-            self.run_command("pynauty")
+            raise RuntimeError("test")
+            cmd.run_command("pynauty")
+
+
+class InstallCommand(install):
+    def run(self):
+        install_pynauty(self)
         install.run(self)
 
 
 class DevelopCommand(develop):
     def run(self):
-        try:
-            import pynauty
-        except ImportError:
-            self.run_command("pynauty")
+        install_pynauty(self)
         develop.run(self)
 
 
