@@ -117,23 +117,31 @@ test-python3.6:
     - build-pynauty-python3.6
     - build-mocasin-python3.6
 
-# test-gbm:
-#   stage: test
-#   variables:
-#     MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
-#   trigger:
-#     project: mocasin/mocasin-gbm
-#     strategy: depend
-#     branch: plugins
+test-gbm:
+  stage: test
+  variables:
+    MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
+  needs:
+    - build-pynauty-python3.8
+    - build-pynauty-python3.7
+    - build-pynauty-python3.6
+  trigger:
+    project: mocasin/mocasin-gbm
+    strategy: depend
+    branch: plugins
 
-# test-maps-examples:
-#   stage: test
-#   variables:
-#     MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
-#   trigger:
-#     project: mocasin/mocasin-maps-examples
-#     strategy: depend
-#     branch: plugins
+test-maps-examples:
+  stage: test
+  variables:
+    MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
+  needs:
+    - build-pynauty-python3.8
+    - build-pynauty-python3.7
+    - build-pynauty-python3.6
+  trigger:
+    project: mocasin/mocasin-maps-examples
+    strategy: depend
+    branch: plugins
 
 check-formatting:
   stage: test
