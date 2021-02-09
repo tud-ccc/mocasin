@@ -1,62 +1,118 @@
-default:
-  before_script:
-  - apt-get update
-  - apt-get -y install libblas-dev liblapack-dev
-  - test/config_matplotlig_agg.sh
+# default:
+#   before_script:
+#   - apt-get update
+#   - apt-get -y install libblas-dev liblapack-dev
+#   - test/config_matplotlig_agg.sh
 
 stages:
-  - test
+  - build_pynauty
+  - build_mocasin
+  # - test
 
-test-python3.8:
-  stage: test
+build-pynauty-python3.8:
+  stage: build_pynauty
   image: python:3.8
   tags:
     - python3.8
   script:
-  - pip install .
-  - python setup.py test
+    - wget -N https://web.cs.dal.ca/~peter/software/pynauty/pynauty-0.6.0.tar.gz
+    - tar -xzf pynauty-0.6.0.tar.gz
+    - cd pynauty-0.6.0
+    - wget -N http://users.cecs.anu.edu.au/~bdm/nauty/nauty27r1.tar.gz
+    - tar -xzf nauty27r1.tar.gz
+    - mv nauty27r1 nauty
+    - make pynauty
+    - pip wheel .
+  artifacts:
+    paths:
+      - pynauty-0.6.0/pynauty-0.6.0-cp38-cp38-linux_x86_64.whl
 
-test-python3.7:
-  stage: test
+build-pynauty-python3.7:
+  stage: build_pynauty
   image: python:3.7
   tags:
     - python3.7
   script:
-  - pip install .
-  - python setup.py test
+    - wget -N https://web.cs.dal.ca/~peter/software/pynauty/pynauty-0.6.0.tar.gz
+    - tar -xzf pynauty-0.6.0.tar.gz
+    - cd pynauty-0.6.0
+    - wget -N http://users.cecs.anu.edu.au/~bdm/nauty/nauty27r1.tar.gz
+    - tar -xzf nauty27r1.tar.gz
+    - mv nauty27r1 nauty
+    - make pynauty
+    - pip wheel .
+  artifacts:
+    paths:
+      - pynauty-0.6.0/pynauty-0.6.0-cp37-cp37-linux_x86_64.whl
 
-test-python3.6:
-  stage: test
+build-pynauty-python3.6:
+  stage: build_pynauty
   image: python:3.6
   tags:
     - python3.6
   script:
-  - pip install .
-  - python setup.py test
+    - wget -N https://web.cs.dal.ca/~peter/software/pynauty/pynauty-0.6.0.tar.gz
+    - tar -xzf pynauty-0.6.0.tar.gz
+    - cd pynauty-0.6.0
+    - wget -N http://users.cecs.anu.edu.au/~bdm/nauty/nauty27r1.tar.gz
+    - tar -xzf nauty27r1.tar.gz
+    - mv nauty27r1 nauty
+    - make pynauty
+    - pip wheel .
+  artifacts:
+    paths:
+      - pynauty-0.6.0/pynauty-0.6.0-cp36-cp36-linux_x86_64.whl
 
-test-gbm:
-  stage: test
-  variables:
-    MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
-  trigger:
-    project: mocasin/mocasin-gbm
-    strategy: depend
-    branch: plugins
+# test-python3.8:
+#   stage: test
+#   image: python:3.8
+#   tags:
+#     - python3.8
+#   script:
+#   - pip install .
+#   - python setup.py test
 
-test-maps-examples:
-  stage: test
-  variables:
-    MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
-  trigger:
-    project: mocasin/mocasin-maps-examples
-    strategy: depend
-    branch: plugins
+# test-python3.7:
+#   stage: test
+#   image: python:3.7
+#   tags:
+#     - python3.7
+#   script:
+#   - pip install .
+#   - python setup.py test
 
-check-formatting:
-  stage: test
-  image: python:3.8
-  tags:
-    - python3.8
-  script:
-    - pip install black
-    - black --check .
+# test-python3.6:
+#   stage: test
+#   image: python:3.6
+#   tags:
+#     - python3.6
+#   script:
+#   - pip install .
+#   - python setup.py test
+
+# test-gbm:
+#   stage: test
+#   variables:
+#     MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
+#   trigger:
+#     project: mocasin/mocasin-gbm
+#     strategy: depend
+#     branch: plugins
+
+# test-maps-examples:
+#   stage: test
+#   variables:
+#     MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
+#   trigger:
+#     project: mocasin/mocasin-maps-examples
+#     strategy: depend
+#     branch: plugins
+
+# check-formatting:
+#   stage: test
+#   image: python:3.8
+#   tags:
+#     - python3.8
+#   script:
+#     - pip install black
+#     - black --check .
