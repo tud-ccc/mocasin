@@ -102,14 +102,20 @@ class InstallPynautyCommand(distutils.cmd.Command):
 
 class InstallCommand(install):
     def run(self):
-        self.run_command("pynauty")
+        try:
+            import pynauty
+        except ImportError:
+            self.run_command("pynauty")
         install.run(self)
 
 
 class DevelopCommand(develop):
     def run(self):
+        try:
+            import pynauty
+        except ImportError:
+            self.run_command("pynauty")
         develop.run(self)
-        self.run_command("pynauty")
 
 
 setup(
