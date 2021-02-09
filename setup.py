@@ -108,7 +108,6 @@ def install_pynauty(cmd):
         try:
             import pynauty
         except ImportError:
-            raise RuntimeError("test")
             cmd.run_command("pynauty")
 
 
