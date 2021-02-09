@@ -7,7 +7,7 @@
 stages:
   - build_pynauty
   - build_mocasin
-  # - test
+  - test
 
 build-pynauty-python3.8:
   stage: build_pynauty
@@ -117,32 +117,53 @@ build-mocasin-python3.6:
     paths:
       - mocasin*.whl
 
-# test-python3.8:
-#   stage: test
-#   image: python:3.8
-#   tags:
-#     - python3.8
-#   script:
-#   - pip install .
-#   - python setup.py test
+test-python3.8:
+  stage: test
+  image: python:3.8
+  tags:
+    - python3.8
+  dependencies:
+    - build-pynauty-python3.8
+    - build-mocasin-python3.8
+  needs:
+    - build-pynauty-python3.8
+    - build-mocasin-python3.8
+  script:
+    - pip install pynauty*.whl
+    - pip install mocasin*.whl
+    - python setup.py test
 
-# test-python3.7:
-#   stage: test
-#   image: python:3.7
-#   tags:
-#     - python3.7
-#   script:
-#   - pip install .
-#   - python setup.py test
+test-python3.7:
+  stage: test
+  image: python:3.7
+  tags:
+    - python3.7
+  dependencies:
+    - build-pynauty-python3.7
+    - build-mocasin-python3.7
+  needs:
+    - build-pynauty-python3.7
+    - build-mocasin-python3.7
+  script:
+    - pip install pynauty*.whl
+    - pip install mocasin*.whl
+    - python setup.py test
 
-# test-python3.6:
-#   stage: test
-#   image: python:3.6
-#   tags:
-#     - python3.6
-#   script:
-#   - pip install .
-#   - python setup.py test
+test-python3.6:
+  stage: test
+  image: python:3.6
+  tags:
+    - python3.6
+  dependencies:
+    - build-pynauty-python3.6
+    - build-mocasin-python3.6
+  needs:
+    - build-pynauty-python3.6
+    - build-mocasin-python3.6
+  script:
+    - pip install pynauty*.whl
+    - pip install mocasin*.whl
+    - python setup.py test
 
 # test-gbm:
 #   stage: test
@@ -162,11 +183,12 @@ build-mocasin-python3.6:
 #     strategy: depend
 #     branch: plugins
 
-# check-formatting:
-#   stage: test
-#   image: python:3.8
-#   tags:
-#     - python3.8
-#   script:
-#     - pip install black
-#     - black --check .
+check-formatting:
+  stage: test
+  image: python:3.8
+  tags:
+    - python3.8
+  needs:
+  script:
+    - pip install black
+    - black --check .
