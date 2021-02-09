@@ -68,8 +68,6 @@ build-mocasin-python3.8:
   image: python:3.8
   tags:
     - python3.8
-  dependencies:
-    - build-pynauty-python3.8
   needs:
     - build-pynauty-python3.8
   variables:
@@ -86,8 +84,6 @@ build-mocasin-python3.7:
   image: python:3.7
   tags:
     - python3.7
-  dependencies:
-    - build-pynauty-python3.7
   needs:
     - build-pynauty-python3.7
   variables:
@@ -104,8 +100,6 @@ build-mocasin-python3.6:
   image: python:3.6
   tags:
     - python3.6
-  dependencies:
-    - build-pynauty-python3.6
   needs:
     - build-pynauty-python3.6
   variables:
@@ -122,9 +116,6 @@ test-python3.8:
   image: python:3.8
   tags:
     - python3.8
-  dependencies:
-    - build-pynauty-python3.8
-    - build-mocasin-python3.8
   needs:
     - build-pynauty-python3.8
     - build-mocasin-python3.8
@@ -138,9 +129,6 @@ test-python3.7:
   image: python:3.7
   tags:
     - python3.7
-  dependencies:
-    - build-pynauty-python3.7
-    - build-mocasin-python3.7
   needs:
     - build-pynauty-python3.7
     - build-mocasin-python3.7
@@ -154,9 +142,6 @@ test-python3.6:
   image: python:3.6
   tags:
     - python3.6
-  dependencies:
-    - build-pynauty-python3.6
-    - build-mocasin-python3.6
   needs:
     - build-pynauty-python3.6
     - build-mocasin-python3.6
@@ -188,7 +173,7 @@ check-formatting:
   image: python:3.8
   tags:
     - python3.8
-  needs:
+  needs: []
   script:
     - pip install black
     - black --check .
