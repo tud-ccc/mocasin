@@ -9,109 +9,86 @@ stages:
   - build_mocasin
   - test
 
+.build-pynauty:
+  script:
+    - wget -N https://web.cs.dal.ca/~peter/software/pynauty/pynauty-0.6.0.tar.gz
+    - tar -xzf pynauty-0.6.0.tar.gz
+    - cd pynauty-0.6.0
+    - wget -N http://users.cecs.anu.edu.au/~bdm/nauty/nauty27r1.tar.gz
+    - tar -xzf nauty27r1.tar.gz
+    - mv nauty27r1 nauty
+    - make pynauty
+    - pip wheel . -w ..
+  artifacts:
+    paths:
+      - pynauty*.whl
+
 build-pynauty-python3.8:
+  extends: .build-pynauty
   stage: build_pynauty
   image: python:3.8
   tags:
     - python3.8
-  script:
-    - wget -N https://web.cs.dal.ca/~peter/software/pynauty/pynauty-0.6.0.tar.gz
-    - tar -xzf pynauty-0.6.0.tar.gz
-    - cd pynauty-0.6.0
-    - wget -N http://users.cecs.anu.edu.au/~bdm/nauty/nauty27r1.tar.gz
-    - tar -xzf nauty27r1.tar.gz
-    - mv nauty27r1 nauty
-    - make pynauty
-    - pip wheel . -w ..
-  artifacts:
-    paths:
-      - pynauty*.whl
 
 build-pynauty-python3.7:
+  extends: .build-pynauty
   stage: build_pynauty
   image: python:3.7
   tags:
     - python3.7
-  script:
-    - wget -N https://web.cs.dal.ca/~peter/software/pynauty/pynauty-0.6.0.tar.gz
-    - tar -xzf pynauty-0.6.0.tar.gz
-    - cd pynauty-0.6.0
-    - wget -N http://users.cecs.anu.edu.au/~bdm/nauty/nauty27r1.tar.gz
-    - tar -xzf nauty27r1.tar.gz
-    - mv nauty27r1 nauty
-    - make pynauty
-    - pip wheel . -w ..
-  artifacts:
-    paths:
-      - pynauty*.whl
 
 build-pynauty-python3.6:
+  extends: .build-pynauty
   stage: build_pynauty
   image: python:3.6
   tags:
     - python3.6
+
+.build-mocasin:
+  variables:
+    NO_PYNAUTY: 1
   script:
-    - wget -N https://web.cs.dal.ca/~peter/software/pynauty/pynauty-0.6.0.tar.gz
-    - tar -xzf pynauty-0.6.0.tar.gz
-    - cd pynauty-0.6.0
-    - wget -N http://users.cecs.anu.edu.au/~bdm/nauty/nauty27r1.tar.gz
-    - tar -xzf nauty27r1.tar.gz
-    - mv nauty27r1 nauty
-    - make pynauty
-    - pip wheel . -w ..
+    - pip install pynauty*.whl
+    - pip wheel --no-deps .
   artifacts:
     paths:
-      - pynauty*.whl
+      - mocasin*.whl
 
 build-mocasin-python3.8:
+  extends: .build-mocasin
   stage: build_mocasin
   image: python:3.8
   tags:
     - python3.8
   needs:
     - build-pynauty-python3.8
-  variables:
-    NO_PYNAUTY: 1
-  script:
-    - pip install pynauty*.whl
-    - pip wheel --no-deps .
-  artifacts:
-    paths:
-      - mocasin*.whl
 
 build-mocasin-python3.7:
+  extends: .build-mocasin
   stage: build_mocasin
   image: python:3.7
   tags:
     - python3.7
   needs:
     - build-pynauty-python3.7
-  variables:
-    NO_PYNAUTY: 1
-  script:
-    - pip install pynauty*.whl
-    - pip wheel --no-deps .
-  artifacts:
-    paths:
-      - mocasin*.whl
 
 build-mocasin-python3.6:
+  extends: .build-mocasin
   stage: build_mocasin
   image: python:3.6
   tags:
     - python3.6
   needs:
     - build-pynauty-python3.6
-  variables:
-    NO_PYNAUTY: 1
+
+.test:
   script:
     - pip install pynauty*.whl
-    - pip wheel --no-deps .
-  artifacts:
-    paths:
-      - mocasin*.whl
+    - pip install mocasin*.whl
+    - python setup.py test
 
 test-python3.8:
+  extends: .test
   stage: test
   image: python:3.8
   tags:
@@ -119,12 +96,9 @@ test-python3.8:
   needs:
     - build-pynauty-python3.8
     - build-mocasin-python3.8
-  script:
-    - pip install pynauty*.whl
-    - pip install mocasin*.whl
-    - python setup.py test
 
 test-python3.7:
+  extends: .test
   stage: test
   image: python:3.7
   tags:
@@ -132,12 +106,9 @@ test-python3.7:
   needs:
     - build-pynauty-python3.7
     - build-mocasin-python3.7
-  script:
-    - pip install pynauty*.whl
-    - pip install mocasin*.whl
-    - python setup.py test
 
 test-python3.6:
+  extends: .test
   stage: test
   image: python:3.6
   tags:
@@ -145,10 +116,6 @@ test-python3.6:
   needs:
     - build-pynauty-python3.6
     - build-mocasin-python3.6
-  script:
-    - pip install pynauty*.whl
-    - pip install mocasin*.whl
-    - python setup.py test
 
 # test-gbm:
 #   stage: test
