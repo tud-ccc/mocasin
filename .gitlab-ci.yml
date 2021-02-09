@@ -22,10 +22,10 @@ build-pynauty-python3.8:
     - tar -xzf nauty27r1.tar.gz
     - mv nauty27r1 nauty
     - make pynauty
-    - pip wheel .
+    - pip wheel . -w ..
   artifacts:
     paths:
-      - pynauty-0.6.0/pynauty-0.6.0-cp38-cp38m-linux_x86_64.whl
+      - pynauty*.whl
 
 build-pynauty-python3.7:
   stage: build_pynauty
@@ -40,10 +40,10 @@ build-pynauty-python3.7:
     - tar -xzf nauty27r1.tar.gz
     - mv nauty27r1 nauty
     - make pynauty
-    - pip wheel .
+    - pip wheel . -w ..
   artifacts:
     paths:
-      - pynauty-0.6.0/pynauty-0.6.0-cp37-cp37m-linux_x86_64.whl
+      - pynauty*.whl
 
 build-pynauty-python3.6:
   stage: build_pynauty
@@ -58,10 +58,10 @@ build-pynauty-python3.6:
     - tar -xzf nauty27r1.tar.gz
     - mv nauty27r1 nauty
     - make pynauty
-    - pip wheel .
+    - pip wheel . -w ..
   artifacts:
     paths:
-      - pynauty-0.6.0/pynauty-0.6.0-cp36-cp36m-linux_x86_64.whl
+      - pynauty*.whl
 
 build-mocasin-python3.8:
   stage: build_mocasin
@@ -70,14 +70,16 @@ build-mocasin-python3.8:
     - python3.8
   dependencies:
     - build-pynauty-python3.8
+  needs:
+    - build-pynauty-python3.8
   variables:
     NO_PYNAUTY: 1
   script:
-    - pip install pynauty-0.6.0/pynauty-0.6.0-cp38-cp38m-linux_x86_64.whl
-    - pip wheel . -w wheels
+    - pip install pynauty*.whl
+    - pip wheel --no-deps .
   artifacts:
     paths:
-      - wheels
+      - mocasin*.whl
 
 build-mocasin-python3.7:
   stage: build_mocasin
@@ -86,14 +88,16 @@ build-mocasin-python3.7:
     - python3.7
   dependencies:
     - build-pynauty-python3.7
+  needs:
+    - build-pynauty-python3.7
   variables:
     NO_PYNAUTY: 1
   script:
-    - pip install pynauty-0.6.0/pynauty-0.6.0-cp37-cp37m-linux_x86_64.whl
-    - pip wheel . -w wheels
+    - pip install pynauty*.whl
+    - pip wheel --no-deps .
   artifacts:
     paths:
-      - wheels
+      - mocasin*.whl
 
 build-mocasin-python3.6:
   stage: build_mocasin
@@ -102,14 +106,16 @@ build-mocasin-python3.6:
     - python3.6
   dependencies:
     - build-pynauty-python3.6
+  needs:
+    - build-pynauty-python3.6
   variables:
     NO_PYNAUTY: 1
   script:
-    - pip install pynauty-0.6.0/pynauty-0.6.0-cp36-cp36m-linux_x86_64.whl
-    - pip wheel . -w wheels
+    - pip install pynauty*.whl
+    - pip wheel --no-deps .
   artifacts:
     paths:
-      - wheels
+      - mocasin*.whl
 
 # test-python3.8:
 #   stage: test
