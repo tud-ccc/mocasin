@@ -128,7 +128,6 @@ test-gbm:
   trigger:
     project: mocasin/mocasin-gbm
     strategy: depend
-    branch: plugins
 
 test-maps-examples:
   stage: test
@@ -141,7 +140,6 @@ test-maps-examples:
   trigger:
     project: mocasin/mocasin-maps-examples
     strategy: depend
-    branch: plugins
 
 check-formatting:
   stage: test
