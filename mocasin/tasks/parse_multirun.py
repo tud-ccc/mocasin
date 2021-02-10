@@ -5,6 +5,8 @@
 
 import logging
 import hydra
+
+from hydra.utils import to_absolute_path
 from os import scandir
 from mocasin.util.multirun_reader import read_multirun
 from importlib import import_module
@@ -107,9 +109,16 @@ def parse_multirun(cfg):
             parsers.append(load_parser(parser))
         path = cfg["path"]
         if path == "":
-            path = sorted([x.path for x in scandir("multirun/") if x.is_dir()])[
-                -1
-            ]
+            multirun_dirs = sorted(
+                [
+                    to_absolute_path(x.path)
+                    for x in scandir(to_absolute_path("multirun/"))
+                    if x.is_dir()
+                ]
+            )
+            path = multirun_dirs[-1]
+        else:
+            path = to_absolute_path(path)
         read_multirun(
             path,
             parsers,

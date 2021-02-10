@@ -9,6 +9,7 @@ import math
 
 from collections import Counter
 from enum import Enum
+from hydra.utils import to_absolute_path
 
 
 class CommunicationResourceType(Enum):
@@ -366,9 +367,9 @@ class Platform(object):
         self._primitives = {}  #: dict of communication primitives
         self._schedulers = {}  #: dict of schedulers
         if symmetries_json is not None:
-            self.ag_json = symmetries_json
+            self.ag_json = to_absolute_path(symmetries_json)
         if embedding_json is not None:
-            self.embedding_json = embedding_json
+            self.embedding_json = to_absolute_path(embedding_json)
 
     def processors(self):
         return self._processors.values()

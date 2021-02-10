@@ -5,6 +5,8 @@
 
 import logging
 
+from hydra.utils import to_absolute_path
+
 from mocasin.common.graph import DataflowChannel, DataflowGraph, DataflowProcess
 from mocasin.sdf3 import _sdf_parser
 
@@ -24,7 +26,7 @@ class Sdf3Graph(DataflowGraph):
         log.info("Start parsing the SDF3 graph")
 
         # load the xml
-        with open(xml_file) as f:
+        with open(to_absolute_path(xml_file)) as f:
             sdf3 = _sdf_parser.CreateFromDocument(f.read())
             if sdf3.type != "sdf":
                 raise RuntimeError(

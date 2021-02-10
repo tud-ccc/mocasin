@@ -3,58 +3,44 @@
 #
 # Authors: Felix Teweleit, Andres Goens
 
-import pytest
 import subprocess
 import os
 
 
-@pytest.mark.xfail(reason="Required files are not in the repository anymore")
-def test_generate_mapping_maps(
-    datadir, maps_mapper, maps_graph, representation
-):
-    subprocess.check_call(
-        [
-            "mocasin",
-            "generate_mapping",
-            "graph=%s" % maps_graph,
-            "platform=exynos",
-            "representation=%s" % representation,
-            "mapper=%s" % maps_mapper,
-            "outdir=../../../",
-            "trace=maps_default",
-        ],
-        cwd=datadir,
-    )
-
-    try:
-        file_path = os.path.join(datadir, "mapping.pickle")
-        file = open(file_path, "r")
-        file.close()
-    except FileNotFoundError:
-        assert False
-
-
-def test_generate_mapping_tgff(
-    datadir, tgff_mapper, designer_platform, tgff, representation
-):
-    tgff_dir = os.path.join(datadir, "tgff/e3s-0.9")
+def test_generate_mapping_tgff(datadir, slow_mapper, small_platform):
     subprocess.check_call(
         [
             "mocasin",
             "generate_mapping",
             "graph=tgff_reader",
-            "platform=%s" % designer_platform,
-            "mapper=%s" % tgff_mapper,
-            "tgff.directory=%s" % tgff_dir,
-            "tgff.file=%s.tgff" % tgff,
-            "outdir=../../../",
+            f"platform={small_platform}",
+            f"mapper={slow_mapper}",
+            "tgff.directory=tgff/e3s-0.9",
+            "tgff.file=auto-indust-cords.tgff",
+            f"outdir={datadir}",
             "trace=tgff_reader",
         ],
         cwd=datadir,
     )
-    try:
-        file_path = os.path.join(datadir, "best_time.txt")
-        file = open(file_path, "r")
-        file.close()
-    except FileNotFoundError:
-        assert False
+
+    assert os.path.isfile(os.path.join(datadir, "best_time.txt"))
+    assert os.path.isfile(os.path.join(datadir, "mapping.pickle"))
+
+
+def test_generate_mapping_sdf3(datadir, fast_mapper, large_platform):
+    subprocess.check_call(
+        [
+            "mocasin",
+            "generate_mapping",
+            "graph=sdf3_reader",
+            f"platform={large_platform}",
+            f"mapper={fast_mapper}",
+            "sdf3.file=sdf3/medium_acyclic.xml",
+            f"outdir={datadir}",
+            "trace=sdf3_reader",
+        ],
+        cwd=datadir,
+    )
+
+    assert os.path.isfile(os.path.join(datadir, "best_time.txt"))
+    assert os.path.isfile(os.path.join(datadir, "mapping.pickle"))

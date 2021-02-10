@@ -6,6 +6,8 @@
 
 import xml.etree.ElementTree as ET
 
+from hydra.utils import to_absolute_path
+
 from mocasin.util import logging
 from mocasin.common.graph import DataflowChannel, DataflowGraph, DataflowProcess
 
@@ -20,7 +22,7 @@ class MapsDataflowGraph(DataflowGraph):
         log.info("Start parsing the PnGraph")
 
         log.debug("Reading from file: %s" % xml_file)
-        tree = ET.parse(xml_file)
+        tree = ET.parse(to_absolute_path(xml_file))
         xmlroot = tree.getroot()
 
         for channel in xmlroot.iter("PNchannel"):
