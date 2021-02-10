@@ -17,15 +17,15 @@ Note that you can adjust the path to your needs. You can activate the previously
 source ~/source ~/virtualenvs/mocasin/bin/activate
 ```
 
-Then you can install mocasin and all its dependencies:
+Then you can install mocasin and all its dependencies from inside the mocasin root directory:
 ```
-python setup.py install
+pip install .
 ```
 
 If you plan to modify the mocasin code base, you should install the package in
 development mode:
 ```
-python setup.py develop
+pip install -e .
 ```
 
 This ensures that any modifications you make, will have an immediate effect to

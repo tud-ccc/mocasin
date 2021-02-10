@@ -10,7 +10,7 @@ import sys
 import tarfile
 import tempfile
 
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, find_namespace_packages
 from setuptools.command.install import install
 from setuptools.command.develop import develop
 from doc.build_doc import BuildDocCommand
@@ -31,7 +31,6 @@ install_requirements = [
     "scipy<1.6.0" if sys.version_info < (3, 7) else "scipy",
     "lxml",
     "matplotlib",
-    "networkx",
     "numba",
     "numpy",
     "pint",
@@ -45,7 +44,7 @@ install_requirements = [
     "termcolor",
     "tqdm",
 ]
-setup_requirements = ["pytest-runner", "sphinx", "numpy"]
+setup_requirements = ["pip", "pytest-runner", "sphinx", "numpy"]
 
 
 if sys.version_info < (3, 7):
@@ -96,31 +95,39 @@ class InstallPynautyCommand(distutils.cmd.Command):
             )
             print("Install pynauty")
             subprocess.check_call(
-                ["python", "setup.py", "install"], cwd=f"{tmpdir}/pynauty-0.6.0"
+                ["pip", "install", "."], cwd=f"{tmpdir}/pynauty-0.6.0"
             )
         os.chdir(cwd)
 
 
+def install_pynauty(cmd):
+    # If the environment variable NO_PYNAUTY is set to any value, we skip
+    # pynauty installation
+    if "NO_PYNAUTY" not in os.environ:
+        # also skip installation if already installed
+        try:
+            import pynauty
+        except ImportError:
+            cmd.run_command("pynauty")
+
+
 class InstallCommand(install):
     def run(self):
-        self.run_command("pynauty")
-        # XXX Actually install.run(self) should be used here. But there seems
-        # to be a bug in setuptools that skips installing the required
-        # packages... The line below seems to fix this.
-        # See: https://cbuelter.wordpress.com/2015/10/25/extend-the-setuptools-install-command/comment-page-1/
-        self.do_egg_install()
+        install_pynauty(self)
+        install.run(self)
 
 
 class DevelopCommand(develop):
     def run(self):
+        install_pynauty(self)
         develop.run(self)
-        self.run_command("pynauty")
 
 
 setup(
     name=project_name,
     version=version,
-    packages=find_packages(),
+    packages=find_packages(exclude=["test", "*.test"])
+    + find_namespace_packages(include=["hydra_plugins.*"]),
     install_requires=install_requirements,
     setup_requires=setup_requirements,
     tests_require=["pytest", "pytest_mock"],

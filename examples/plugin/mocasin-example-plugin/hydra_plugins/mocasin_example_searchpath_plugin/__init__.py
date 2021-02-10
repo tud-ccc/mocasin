@@ -1,4 +1,4 @@
 # Copyright (C) 2021 TU Dresden
-# Licensed under the ISC license (see LICENSE.txt)
+# All Rights Reserved
 #
 # Authors: Christian Menard
