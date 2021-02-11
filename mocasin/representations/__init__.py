@@ -326,38 +326,6 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         return m1, m2
 
 
-# FIXME: UNTESTED!!
-class MetricSpaceRepresentation(
-    FiniteMetricSpaceLP, metaclass=MappingRepresentation
-):
-    """Metric Space Representation
-    A representation for a generic metric space. Currently still untested and undocumented.
-    It is recommended to use the Metri Space Embedding Representation instead, as it is more efficient,
-    (slightly better) tested and documented.
-    """
-
-    def __init__(self, graph, platform):
-        raise RuntimeError("represetation not properly implemented")
-        self._topologyGraph = platform.to_adjacency_dict()
-        (
-            M_list,
-            self._arch_nc,
-            self._arch_nc_inv,
-        ) = arch_graph_to_distance_metric(self._topologyGraph)
-        M = FiniteMetricSpace(M_list)
-        self.graph = graph
-        self.platform = platform
-        d = len(graph.processes())
-        init_app_ncs(self, graph)
-        super().__init__(M, d)
-
-    def _simpleVec2Elem(self, x):
-        return x
-
-    def _elem2SimpleVec(self, x):
-        return x
-
-
 class SymmetryRepresentation(metaclass=MappingRepresentation):
     """Symmetry Representation
     This representation considers the *archtiecture* symmetries for mappings.
@@ -619,57 +587,6 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         return self._simpleVec2Elem(approx)
 
 
-# FIXME: UNTESTED!!
-class MetricSymmetryRepresentation(
-    FiniteMetricSpaceLPSym, metaclass=MappingRepresentation
-):
-    """Metric Symmetry Representation
-    A representation combining symmetries and a metric space. Currently still untested and undocumented.
-    It is recommended to use the Symmetry Embedding Representation instead, as it is more efficient.
-    """
-
-    def __init__(self, graph, platform):
-        self._topologyGraph = platform.to_adjacency_dict()
-        self.graph = graph
-        self.platform = platform
-        self._d = len(graph.processes())
-        (
-            M_matrix,
-            self._arch_nc,
-            self._arch_nc_inv,
-        ) = arch_graph_to_distance_metric(self._topologyGraph)
-        M = FiniteMetricSpace(M_matrix)
-        (
-            adjacency_dict,
-            num_vertices,
-            coloring,
-            self._arch_nc,
-        ) = to_labeled_edge_graph(self._topologyGraph)
-        init_app_ncs(self, graph)
-        self._arch_nc_inv = {}
-        for node in self._arch_nc:
-            self._arch_nc_inv[self._arch_nc[node]] = node
-        # TODO: ensure that nodes_correspondence fits simpleVec
-
-        n = len(self.platform.processors())
-        nautygraph = pynauty.Graph(num_vertices, True, adjacency_dict, coloring)
-        autgrp_edges = pynauty.autgrp(nautygraph)
-        autgrp, new_nodes_correspondence = edge_to_node_autgrp(
-            autgrp_edges[0], self._arch_nc
-        )
-        permutations_lists = map(list_to_tuple_permutation, autgrp)
-        permutations = [Permutation(p, n=n) for p in permutations_lists]
-        self._G = PermutationGroup(permutations)
-        FiniteMetricSpaceLPSym.__init__(self, M, self._G, self._d)
-        self.p = 1
-
-    def _simpleVec2Elem(self, x):
-        return x
-
-    def _elem2SimpleVec(self, x):
-        return x
-
-
 class MetricEmbeddingRepresentation(
     MetricSpaceEmbedding, metaclass=MappingRepresentation
 ):
@@ -703,6 +620,7 @@ class MetricEmbeddingRepresentation(
         target_distortion=1.1,
         jlt_tries=10,
         verbose=False,
+        disable_embedding_test=False,
     ):
         # todo: make sure the correspondence of cores is correct!
         M_matrix, self._arch_nc, self._arch_nc_inv = arch_to_distance_metric(
@@ -751,6 +669,7 @@ class MetricEmbeddingRepresentation(
             embedding_matrix_path=self.embedding_matrix_path,
             target_distortion=self.target_distortion,
             verbose=verbose,
+            disable_embedding_test=disable_embedding_test,
         )
         log.info(f"Found embedding with distortion: {self.distortion}")
 
@@ -868,6 +787,8 @@ class SymmetryEmbeddingRepresentation(
         target_distortion=1.1,
         canonical_operations=True,
         disable_mpsym=False,
+        disable_symmetries_test=False,
+        disable_embedding_test=False,
     ):
 
         self.sym = SymmetryRepresentation(
@@ -878,6 +799,7 @@ class SymmetryEmbeddingRepresentation(
             disable_mpsym=disable_mpsym,
             periodic_boundary_conditions=periodic_boundary_conditions,
             canonical_operations=canonical_operations,
+            disable_symmetries_test=disable_symmetries_test,
         )
         self.emb = MetricEmbeddingRepresentation(
             graph,
@@ -889,6 +811,7 @@ class SymmetryEmbeddingRepresentation(
             target_distortion=target_distortion,
             jlt_tries=jlt_tries,
             ignore_channels=ignore_channels,
+            disable_embedding_test=disable_embedding_test,
         )
         self.canonical_operations = canonical_operations
         log.warning(

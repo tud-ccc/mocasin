@@ -349,6 +349,7 @@ class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
         verbose=False,
         jlt_tries=30,
         target_distortion=1.1,
+        disable_embedding_test=False,
     ):
         MetricSpaceEmbeddingBase.__init__(
             self,
@@ -357,6 +358,7 @@ class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
             target_distortion=target_distortion,
             jlt_tries=jlt_tries,
             verbose=verbose,
+            disable_embedding_test=disable_embedding_test,
         )
         self._d = d
         if not hasattr(self, "_split_d"):
