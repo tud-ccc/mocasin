@@ -28,5 +28,6 @@ class MapsPlatform(Platform):
             self,
             xml_platform,
             scheduler_cycles=kwargs.get("scheduler_cycles", None),
+            fd_frequencies=kwargs.get("fd_frequencies", None),
         )
         log.info("done parsing the platform description")
