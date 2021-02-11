@@ -56,3 +56,5 @@ def calculate_platform_embedding(cfg):
     representation = hydra.utils.instantiate(
         cfg["representation"], graph, platform
     )
+    out_filename = str(cfg["out_file"])
+    representation.dump_json(out_filename)

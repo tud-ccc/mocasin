@@ -146,6 +146,7 @@ class MetricSpaceEmbeddingBase:
         self.M = M
         self.target_distortion = target_distortion
         self.jlt_tries = jlt_tries
+        write_to_file = False
 
         # First: calculate a good embedding by solving an optimization problem
         if embedding_matrix_path is not None:
@@ -194,13 +195,7 @@ class MetricSpaceEmbeddingBase:
                     target_dist=self.target_distortion,
                     jlt_tries=self.jlt_tries,
                 )
-                with open(embedding_matrix_path, "w") as f:
-                    contents = {
-                        "matrix": E.tolist(),
-                        "shape": E.shape,
-                        "distortion": self.distortion,
-                    }
-                    f.write(json.dumps(contents))
+                write_to_file = True
 
         else:  # path is None
             E, self.distortion = self.calculateEmbeddingMatrix(
@@ -222,6 +217,9 @@ class MetricSpaceEmbeddingBase:
         self._f_iota = np.array(
             list([self.iota[i] for i in range(M.n)])
         ).reshape([M.n, self._k])
+
+        if write_to_file:
+            self.dump_json(embedding_matrix_path)
 
     def i(self, i):
         assert 0 <= i and i <= self.M.n
@@ -327,6 +325,15 @@ class MetricSpaceEmbeddingBase:
     def invapprox(self, vec):
         approx = self.approx(vec)
         return self.inv(approx)
+
+    def dump_json(self, filename):
+        with open(filename, "w") as f:
+            contents = {
+                "matrix": self._f_iota.tolist(),
+                "shape": self._f_iota.shape,
+                "distortion": self.distortion,
+            }
+            f.write(json.dumps(contents))
 
 
 @nb.njit(fastmath=True, parallel=True, cache=True)
