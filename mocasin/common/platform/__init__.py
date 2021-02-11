@@ -30,18 +30,28 @@ class FrequencyDomain:
         return int(round(tmp))
 
 
+class ProcessorPowerModel:
+    def __init__(self, name, static_power, dynamic_power):
+        self.name = name
+        self.static_power = static_power
+        self.dynamic_power = dynamic_power
+
+
 class Processor:
     def __init__(
         self,
         name,
-        type,
+        type_,
         frequency_domain,
+        power_model,
         context_load_cycles=0,
         context_store_cycles=0,
     ):
         self.name = name
-        self.type = type
+        self.type = type_
         self.frequency_domain = frequency_domain
+        assert isinstance(power_model, (ProcessorPowerModel, type(None)))
+        self.power_model = power_model
         self.context_load_cycles = context_load_cycles
         self.context_store_cycles = context_store_cycles
 
@@ -53,6 +63,16 @@ class Processor:
 
     def context_store_ticks(self):
         return self.ticks(self.context_store_cycles)
+
+    def static_power(self):
+        return (
+            None if self.power_model is None else self.power_model.static_power
+        )
+
+    def dynamic_power(self):
+        return (
+            None if self.power_model is None else self.power_model.dynamic_power
+        )
 
     def __str__(self):
         return self.name
