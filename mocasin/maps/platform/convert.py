@@ -99,7 +99,13 @@ def find_elem(xml_platform, type_name, elem_name):
     raise RuntimeError("%s %s was not defined", type_name, elem_name)
 
 
-def convert(platform, xml_platform, scheduler_cycles=None, fd_frequencies=None):
+def convert(
+    platform,
+    xml_platform,
+    scheduler_cycles=None,
+    fd_frequencies=None,
+    ppm_power=None,
+):
     # keep a map of scheduler names to processors, this helps when creating
     # scheduler objects
     schedulers_to_processors = {}
@@ -108,10 +114,8 @@ def convert(platform, xml_platform, scheduler_cycles=None, fd_frequencies=None):
 
     # Check the fd_frequencies defined the frequencies of only known domains
     if fd_frequencies is not None:
+        fd_names = map(lambda x: x.get_id(), xml_platform.get_FrequencyDomain())
         for fd in fd_frequencies:
-            fd_names = map(
-                lambda x: x.get_id(), xml_platform.get_FrequencyDomain()
-            )
             if fd not in fd_names:
                 log.warning(
                     f"The fd_frequencies defines the frequency of "
@@ -195,6 +199,22 @@ def convert(platform, xml_platform, scheduler_cycles=None, fd_frequencies=None):
             "switched_capacitance": switched_capacitance,
         }
 
+    # Check custom power
+    if ppm_power is not None:
+        for ppm, powers in ppm_power.items():
+            if ppm not in processor_power_params:
+                log.warning(
+                    f"The ppm_power defines the power of "
+                    f"an unknown processor power model {ppm}"
+                )
+                continue
+            for power_mode in ["static", "dynamic"]:
+                if power_mode not in powers:
+                    log.warning(
+                        f"The ppm_power does not define the {power_mode} power of "
+                        f"a processor power model {ppm}"
+                    )
+
     processor_power_models = {}
 
     # Initialize all Processors
@@ -207,16 +227,21 @@ def convert(platform, xml_platform, scheduler_cycles=None, fd_frequencies=None):
         # Initialize a processor power model
         ppm_name = xp.get_processorPowerModel()
         if ppm_name not in processor_power_models:
-            voltage = fd_voltage[fd_name]
-            static_power = (
-                processor_power_params[ppm_name]["leakage_current"] * voltage
-            )
-            dynamic_power = (
-                processor_power_params[ppm_name]["switched_capacitance"]
-                * voltage
-                * voltage
-                * fd.frequency
-            )
+            if ppm_power is not None and ppm_name in ppm_power:
+                static_power = ppm_power[ppm_name]["static"]
+                dynamic_power = ppm_power[ppm_name]["dynamic"]
+            else:
+                voltage = fd_voltage[fd_name]
+                static_power = (
+                    processor_power_params[ppm_name]["leakage_current"]
+                    * voltage
+                )
+                dynamic_power = (
+                    processor_power_params[ppm_name]["switched_capacitance"]
+                    * voltage
+                    * voltage
+                    * fd.frequency
+                )
             ppm = ProcessorPowerModel(ppm_name, static_power, dynamic_power)
             processor_power_models[ppm_name] = ppm
         ppm = processor_power_models[ppm_name]
