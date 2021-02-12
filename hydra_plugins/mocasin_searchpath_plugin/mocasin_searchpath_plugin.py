@@ -29,3 +29,11 @@ class MocasinSearchPathPlugin(SearchPathPlugin):
                     path=path,
                     anchor="main",
                 )
+
+        # also append mocasins own config to make it available for plugins that
+        # provide their own entry points
+        search_path.append(
+            provider="mocasin",
+            path="pkg://mocasin.conf",
+            anchor="main",
+        )
