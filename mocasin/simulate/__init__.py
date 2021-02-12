@@ -53,7 +53,13 @@ class BaseSimulation:
         self.env = None
         self.platform = platform
         self.system = None
+
         self.exec_time = None
+
+        self.static_energy = None
+        self.dynamic_energy = None
+        self.total_energy = None
+
         self.run = self._default_run
 
     def __enter__(self):
@@ -167,6 +173,10 @@ class DataflowSimulation(BaseSimulation):
         self.system.check_errors()
         # save the execution time
         self.exec_time = self.env.now
+        # save the energy consumption
+        energy_results = self.system.calculate_energy()
+        (self.static_energy, self.dynamic_energy) = energy_results
+        self.total_energy = self.static_energy + self.dynamic_energy
 
     @staticmethod
     def from_hydra(cfg):
