@@ -10,4 +10,4 @@ defaults:
   - mapper: default
   - sdf3: default
 
-output_file: "${graph.name}_on_${platform.name}.dot"
+output_file: "mapping.dot"
