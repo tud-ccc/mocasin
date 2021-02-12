@@ -141,6 +141,18 @@ test-maps-examples:
     project: mocasin/mocasin-maps-examples
     strategy: depend
 
+test-fivegsim:
+  stage: test
+  variables:
+    MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
+  needs:
+    - build-pynauty-python3.8
+    - build-pynauty-python3.7
+    - build-pynauty-python3.6
+  trigger:
+    project: mocasin/fivegsim
+    strategy: depend
+
 check-formatting:
   stage: test
   image: python:3.8
