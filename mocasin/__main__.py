@@ -50,13 +50,23 @@ def main():
         sys.argv.remove("--no-fail-on-exception")
         fail_on_exception = False
 
+    profiler = None
+    if "--profile" in sys.argv:
+        sys.argv.remove("--profile")
+        profiler = cProfile.Profile()
+        profiler.enable()
+
+    exception = False
     try:
         execute_task(task)
-
     except Exception:
         log.error(traceback.format_exc())
-        if fail_on_exception:
-            sys.exit(1)
+        exception = True
+
+    if profiler is not None:
+        profiler.dump_stats("mocasin_profile")
+    if exception and fail_on_exception:
+        sys.exit(1)
 
 
 def profile():

@@ -148,7 +148,6 @@ setup(
     entry_points={
         "console_scripts": [
             "mocasin=mocasin.__main__:main",
-            "mocasin_profile=mocasin.__main__:profile",
         ]
     },
     include_package_data=True,
