@@ -174,9 +174,10 @@ class DataflowSimulation(BaseSimulation):
         # save the execution time
         self.exec_time = self.env.now
         # save the energy consumption
-        energy_results = self.system.calculate_energy()
-        (self.static_energy, self.dynamic_energy) = energy_results
-        self.total_energy = self.static_energy + self.dynamic_energy
+        if self.system.power_enabled:
+            energy_results = self.system.calculate_energy()
+            (self.static_energy, self.dynamic_energy) = energy_results
+            self.total_energy = self.static_energy + self.dynamic_energy
 
     @staticmethod
     def from_hydra(cfg):

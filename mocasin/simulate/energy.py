@@ -62,8 +62,10 @@ class EnergyEstimator:
                 last_event_ts[tid] = 0
                 continue
             # Skip other metadata entries
-            if ph == "M":
+            if ph == "M" or ph == "C":
                 continue
+            if "tid" not in elem:
+                raise RuntimeError(f"Unknown event type: {elem}")
             # main calculation
             tid = elem["tid"]
             event_ts = elem["ts"]  # timestamp in us
@@ -85,7 +87,7 @@ class EnergyEstimator:
                 raise RuntimeError(f"Unknown event type: {elem}")
 
         # Calculate the idle power till the end
-        end_ts = max(last_event_ts.values())
+        end_ts = max(last_event_ts.values(), default=None)
         for tid, ts in last_event_ts.items():
             static_energy += self._energy_static_segment(tid, ts, end_ts)
             last_event_ts[tid] = end_ts
