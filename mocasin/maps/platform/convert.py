@@ -208,17 +208,16 @@ def convert(platform, xml_platform, scheduler_cycles=None, fd_frequencies=None):
         ppm_name = xp.get_processorPowerModel()
         if ppm_name not in processor_power_models:
             voltage = fd_voltage[fd_name]
-            power_idle = (
+            static_power = (
                 processor_power_params[ppm_name]["leakage_current"] * voltage
             )
-            power_active = (
-                power_idle
-                + processor_power_params[ppm_name]["switched_capacitance"]
+            dynamic_power = (
+                processor_power_params[ppm_name]["switched_capacitance"]
                 * voltage
                 * voltage
                 * fd.frequency
             )
-            ppm = ProcessorPowerModel(ppm_name, power_active, power_idle)
+            ppm = ProcessorPowerModel(ppm_name, static_power, dynamic_power)
             processor_power_models[ppm_name] = ppm
         ppm = processor_power_models[ppm_name]
 
