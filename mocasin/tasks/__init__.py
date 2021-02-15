@@ -127,14 +127,16 @@ def _print_help_impl():
         for line in desc_lines[1:]:
             print("%s%s" % ("{:<24}".format(""), line))
     print("")
-    print("Optional arguments:")
-    print(
-        " --no-fail-on-exception If this flag is given, mocasin does not exit"
-    )
+    print("mocasin options:")
+    print(" --no-fail-on-exception If this flag is set, mocasin does not exit")
     print("                        with an error code in case of an internal")
     print("                        exception. This is useful in combination")
     print("                        with hydra mutlirun if execution should")
     print("                        continue even when one job failed.")
+    print(" --profile              If this flag is set, the specified task")
+    print("                        is executed with a profiler (cProfile). The")
+    print("                        profiling stats are dumped to file")
+    print("                        mocasin_profile.")
 
 
 def execute_task(task):
