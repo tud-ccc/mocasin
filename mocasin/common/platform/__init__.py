@@ -50,7 +50,6 @@ class Processor:
         self.name = name
         self.type = type_
         self.frequency_domain = frequency_domain
-        assert isinstance(power_model, (ProcessorPowerModel, type(None)))
         self.power_model = power_model
         self.context_load_cycles = context_load_cycles
         self.context_store_cycles = context_store_cycles

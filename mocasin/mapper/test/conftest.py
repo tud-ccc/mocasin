@@ -30,7 +30,9 @@ def platform(num_procs, mocker):
     p = Platform("platform")
     procs = []
     for i in range(num_procs):
-        proc = Processor(("processor" + str(i)), "proctype", mocker.Mock())
+        proc = Processor(
+            ("processor" + str(i)), "proctype", mocker.Mock(), mocker.Mock()
+        )
         procs.append(proc)
         p.add_processor(proc)
     policies = [mocker.Mock()]
