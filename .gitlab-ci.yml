@@ -26,9 +26,9 @@ stages:
 build-pynauty-python3.9:
   extends: .build-pynauty
   stage: build_pynauty
-  image: python:3.8
+  image: python:3.9
   tags:
-    - python3.8
+    - python3.9
 
 build-pynauty-python3.8:
   extends: .build-pynauty
