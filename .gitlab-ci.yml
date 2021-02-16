@@ -154,7 +154,7 @@ test-gbm:
     - build-pynauty-python3.6
   trigger:
     project: mocasin/mocasin-gbm
-    strategy: depend
+#    strategy: depend
 
 test-maps-examples:
   stage: test
@@ -167,7 +167,7 @@ test-maps-examples:
     - build-pynauty-python3.6
   trigger:
     project: mocasin/mocasin-maps-examples
-    strategy: depend
+#    strategy: depend
 
 test-fivegsim:
   stage: test
@@ -180,7 +180,7 @@ test-fivegsim:
     - build-pynauty-python3.6
   trigger:
     project: mocasin/fivegsim
-    strategy: depend
+#    strategy: depend
 
 check-formatting:
   stage: test
