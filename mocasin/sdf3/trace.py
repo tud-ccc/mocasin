@@ -12,7 +12,12 @@ from fractions import Fraction as frac
 from hydra.utils import to_absolute_path
 
 from mocasin.sdf3 import _sdf_parser
-from mocasin.common.trace import TraceGenerator, TraceSegment
+from mocasin.common.trace import (
+    DataflowTrace,
+    ComputeSegment,
+    ReadTokenSegment,
+    WriteTokenSegment,
+)
 
 log = logging.getLogger(__name__)
 ureg = pint.UnitRegistry()
@@ -52,25 +57,17 @@ class _ProcessorType:
             )
 
 
-class Sdf3TraceGenerator(TraceGenerator):
-    """Trace generator for SDF3 files
+class Sdf3Trace(DataflowTrace):
+    """Represents the  behavior of an SDF3 application
 
-    Generates traces for applications defined in SDF3 format.
+    See `~DataflowTrace`.
 
     Args:
-        xml_file (str): the SDF3 file to read from
+        xml_file (str): a SDF3 file to read from
         procesor_types (dict(str, dict(str, str))): a dictionary defining a
-            mapping from mocasin processor eTraceGenerator types to SDF3
-            processor types
+            mapping from mocasin processor types to SDF3 processor types
         repetitions (int): a number indicating how many times the execution of
             the entire SDF graph should repeat
-
-    Attributes:
-        _firing_rules (dict(str, _SdfFiringRule))
-        self._repetition_vector = {}
-        self._trace_segments = {}
-        self._trace_iterators = {}
-        self._actor_processor_cylces = {}
     """
 
     def __init__(self, xml_file, processor_types, repetitions=1):
@@ -79,6 +76,7 @@ class Sdf3TraceGenerator(TraceGenerator):
         self._trace_segments = {}
         self._trace_iterators = {}
         self._actor_processor_cylces = {}
+        self._repetitions = repetitions
 
         log.info("Start parsing the SDF3 trace")
         # load the xml
@@ -230,44 +228,6 @@ class Sdf3TraceGenerator(TraceGenerator):
             f"{self._repetition_vector}"
         )
 
-    def __init_trace_segments(self, graph, repetitions):
-        """Generate and store the actual trace segments
-
-        Generates trace segments for all nodes in the graph and stores them in
-        the attribute _trace_segments
-        """
-        for actor in graph.sdf.actor:
-            segments = []
-            firings = self._firing_rules[actor.name]
-
-            # place all initial tokens (also called delays)
-            for channel, count in firings.initial_writes.items():
-                s = TraceSegment(write_to_channel=channel, n_tokens=count)
-                segments.append(s)
-
-            total_reps = self._repetition_vector[actor.name] * repetitions
-            for _ in range(0, total_reps):
-                # read tokens
-                for channel, count in firings.reads.items():
-                    s = TraceSegment(read_from_channel=channel, n_tokens=count)
-                    segments.append(s)
-
-                # process
-                segments.append(TraceSegment(process_cycles=0))
-                # Note that we set process_cycles to 0. The correct value will
-                # be set when retrieving the segment via next_segment()
-
-                # write tokens
-                for channel, count in firings.writes.items():
-                    s = TraceSegment(write_to_channel=channel, n_tokens=count)
-                    segments.append(s)
-
-            # terminate
-            segments.append(TraceSegment(terminate=True))
-
-            # store the trace
-            self._trace_segments[actor.name] = segments
-
     def __init_cycle_counts(self, graph, processor_types):
         """Collects cycle counts for all actors and defined processor types.
 
@@ -316,27 +276,33 @@ class Sdf3TraceGenerator(TraceGenerator):
                 proc_cycles[proc_name] = cycles.magnitude
             self._actor_processor_cylces[actor.name] = proc_cycles
 
-    def reset(self):
-        """Resets the generator.
+    def get_trace(self, process):
+        """Get the trace for a specific actor in the SDF3 application
 
-        See :meth:`~TraceGenerator.reset`.
+        Args:
+            process (str): Name of the actor to get a trace for
+
+        Yields:
+            ComputeSegment, ReadTokenSegment, or WriteTokenSegment: The next
+                segement in the process trace
         """
-        for name, segments in self._trace_segments.items():
-            self._trace_iterators[name] = iter(segments)
+        firings = self._firing_rules[process]
 
-    def next_segment(self, process_name, processor_type):
-        """Return the next trace segment.
+        # place all initial tokens (also called delays)
+        for channel, count in firings.initial_writes.items():
+            yield WriteTokenSegment(channel=channel, num_tokens=count)
 
-        See :meth:`~TraceGenerator.next_segment`.
-        """
-        segment = next(self._trace_iterators[process_name])
-        if segment.processing_cycles is not None:
-            processor_cycles = self._actor_processor_cylces[process_name]
-            try:
-                segment.processing_cycles = processor_cycles[processor_type]
-            except KeyError:
-                raise RuntimeError(
-                    f"Processor type {processor_type} is not defined in SDF3 "
-                    "trace"
-                )
-        return segment
+        total_reps = self._repetition_vector[process] * self._repetitions
+        for _ in range(0, total_reps):
+            # read tokens
+            for channel, count in firings.reads.items():
+                yield ReadTokenSegment(channel=channel, num_tokens=count)
+
+            # compute
+            yield ComputeSegment(
+                processor_cycles=self._actor_processor_cycles[process]
+            )
+
+            # write tokens
+            for channel, count in firings.writes.items():
+                yield WriteTokenSegment(channel=channel, num_tokens=count)
