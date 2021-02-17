@@ -12,6 +12,6 @@ processor_1:
   _target_: mocasin.platforms.platformDesigner.genericProcessor
   type : 'proc_type_1'
   frequency : 2000000000
-symmetries_json: null
-embedding_json: null
+symmetries_json: "${mocasin_path:platforms/symmetries/multi_cluster.json}"
+embedding_json: "${mocasin_path:platforms/embeddings/multi_cluster.json}"
 name: "multi_cluster"
