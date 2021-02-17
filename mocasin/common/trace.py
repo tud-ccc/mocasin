@@ -157,13 +157,56 @@ class DataflowTrace:
         )
         yield
 
+    def accumulate_processor_cycles(self, process):
+        """Calculate the total (accumulated) cycles of all compute segments
 
-# class EmptyTraceGenerator(TraceGenerator):
-#     def next_segment(self, process_name, processor_type):
-#         log.warning(
-#             "Generating traces from empty trace. Did you forget to specify a trace configuration?"
-#         )
-#         return TraceSegment(terminate=True)
+        Args:
+            process (str): Name of the process to get accumulated cycles for
+
+        Return
+           (dict of str: int): A dict mapping processor types to the respective
+                number of total computation cycles for the given process.
+           None: If the trace for process does not contain any compute segments
+        """
+        trace = self.get_trace(process)
+
+        # find all compute segments
+        compute_segments = filter(
+            lambda x: x.segment_type == SegmentType.COMPUTE, trace
+        )
+
+        # initialize acc_cycles with the cycles from the first compute segment
+        try:
+            acc_cycles = next(compute_segments).processor_cycles
+        except StopIteration:
+            return None
+
+        # iterate over the remaining compute segments while adding their
+        # processor cycles to acc_cycles
+        for s in compute_segments:
+            for k, v in s.processor_cycles.items():
+                acc_cycles[k] += v
+
+        return acc_cycles
+
+
+class EmptyTrace(DataflowTrace):
+    """An empty application trace"""
+
+    def get_trace(self, process):
+        """Get an empty trace
+
+        Args:
+            process (str): Name of the process to get a trace for
+
+        Yields: Nothing
+        """
+        log.warning(
+            "Using empty trace. "
+            "Did you forget to specify a trace configuration?"
+        )
+        return
+        yield
 
 
 # class RandomTraceGenerator(TraceGenerator):
