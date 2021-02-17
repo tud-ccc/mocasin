@@ -75,7 +75,7 @@ class Sdf3Trace(DataflowTrace):
         self._repetition_vector = {}
         self._trace_segments = {}
         self._trace_iterators = {}
-        self._actor_processor_cylces = {}
+        self._actor_processor_cycles = {}
         self._repetitions = repetitions
 
         log.info("Start parsing the SDF3 trace")
@@ -272,7 +272,7 @@ class Sdf3Trace(DataflowTrace):
                     )
                 assert cycles.check("[]")
                 proc_cycles[proc_name] = cycles.magnitude
-            self._actor_processor_cylces[actor.name] = proc_cycles
+            self._actor_processor_cycles[actor.name] = proc_cycles
 
     def get_trace(self, process):
         """Get the trace for a specific actor in the SDF3 application
