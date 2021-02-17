@@ -3,16 +3,12 @@
 #
 # Authors: Andrés Goens
 
-import random
-import numpy as np
 from sortedcontainers import SortedList
-import hydra
 
 from mocasin.common.mapping import Mapping, ProcessMappingInfo
 from mocasin.util import logging
 from mocasin.mapper.random import RandomPartialMapper
 from mocasin.mapper.partial import ComPartialMapper
-from mocasin.mapper.utils import Statistics
 
 
 log = logging.getLogger(__name__)
@@ -22,17 +18,11 @@ def gen_trace_summary(graph, platform, trace):
     summary = {}
     p_types = set()
     for p in platform.processors():
-        p_types = p_types.union(set([p.type]))
-    for p_type in p_types:
-        trace.reset()
-        for proc in graph.processes():
-            tot = 0
-            seg = trace.next_segment(proc.name, p_type)
-            while not seg.terminate:
-                if seg.processing_cycles is not None:
-                    tot += seg.processing_cycles
-                seg = trace.next_segment(proc.name, p_type)
-            summary[(proc, p_type)] = tot
+        p_types.add(p.type)
+    for proc in graph.processes():
+        acc_cycles = trace.accumulate_processor_cycles(proc.name)
+        for p_type in p_types:
+            summary[(proc, p_type)] = acc_cycles[p_type]
     return summary
 
 
@@ -135,11 +125,7 @@ class StaticCFSMapper(StaticCFS):
         )
 
     def generate_mapping(self, load=None, restricted=None):
-        trace_generator = self.trace
-        trace_summary = gen_trace_summary(
-            self.graph, self.platform, trace_generator
-        )
-        trace_generator.reset()
+        trace_summary = gen_trace_summary(self.graph, self.platform, self.trace)
         mapping = Mapping(self.graph, self.platform)
         mapping_dict = self.generate_mapping_dict(
             [self.graph], trace_summary, load=load, restricted=restricted
