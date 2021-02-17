@@ -9,10 +9,7 @@ from mocasin.common.graph import DataflowProcess, DataflowGraph
 from mocasin.common.platform import Platform, Processor, Scheduler
 
 from mocasin.representations import SimpleVectorRepresentation
-from mocasin.common.trace import EmptyTraceGenerator
-from mocasin.maps.platform import MapsPlatform
-from mocasin.maps.graph import MapsDataflowGraph
-from mocasin.maps.trace import MapsTraceReader
+from mocasin.common.trace import EmptyTrace
 
 
 @pytest.fixture
@@ -56,7 +53,6 @@ def representation_pbc(graph, platform):
 
 @pytest.fixture
 def trace():
-    return EmptyTraceGenerator()
 
 
 @pytest.fixture
