@@ -91,10 +91,8 @@ class Sdf3Trace(DataflowTrace):
 
         self.__init_firing_rules(graph)
         self.__init_repetition_vector(graph)
-        self.__init_trace_segments(graph, repetitions)
         self.__init_cycle_counts(graph, processor_types)
 
-        self.reset()
         log.info("Done parsing the SDF3 trace")
 
     def __init_firing_rules(self, graph):
