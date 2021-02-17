@@ -49,9 +49,10 @@ class ComputeSegment(_BaseSegment):
     """
 
     def __init__(self, processor_cycles):
-        super(SegmentType.COMPUTE)
-        self._processor_cycles
+        super().__init__(SegmentType.COMPUTE)
+        self._processor_cycles = processor_cycles
 
+    @property
     def processor_cycles(self):
         """Get expected computation cycles for all supported processor types
 
@@ -71,7 +72,7 @@ class ReadTokenSegment(_BaseSegment):
     """
 
     def __init__(self, channel, num_tokens):
-        super(SegmentType.READ_TOKEN)
+        super().__init__(SegmentType.READ_TOKEN)
         self._channel = channel
         self._num_tokens = num_tokens
 
@@ -103,7 +104,7 @@ class WriteTokenSegment(_BaseSegment):
     """
 
     def __init__(self, channel, num_tokens):
-        super(SegmentType.WRITE_TOKEN)
+        super().__init__(SegmentType.WRITE_TOKEN)
         self._channel = channel
         self._num_tokens = num_tokens
 
@@ -147,8 +148,9 @@ class DataflowTrace:
             process (str): Name of the process to get a trace for
 
         Yields:
-            ComputeSegment, ReadTokenSegment, or WriteTokenSegment: The next
-                segement in the process trace
+            ComputeSegment: if the next segment is a compute segment
+            ReadTokenSegment: if the next segment is a read segment
+            WriteTokenSegment: if the next segment is a write segment
         """
         raise NotImplementedError(
             "get_trace() needs to be implemented by a superclass"
