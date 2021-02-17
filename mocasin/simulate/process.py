@@ -397,25 +397,24 @@ class RuntimeDataflowProcess(RuntimeProcess):
         _channels(dict[str, RuntimeChannel]): Dictionary of channel names and
             there corresponding runtime object. This only includes channels
             that may be accessed by this process.
-        _trace_generator (TraceGenerator): a trace generator object
-        _current_segment (TraceSegment): The trace segment that is currently
+        _trace (generator): a generator of trace segments
+        _current_segment: The trace segment that is currently
             processed
     Args:
         name (str): The process name. This should be unique across applications
             within the same system.
-        trace_generator (TraceGenerator): a trace generator object
+        process_trace (generator): a generator of process trace segments
         app (RuntimeApplication): the application this process is part of
     """
 
-    def __init__(self, name, trace_generator, app):
+    def __init__(self, name, process_trace, app):
         super().__init__(name, app)
         log.debug(
             "initialize new dataflow runtime process (%s)", self.full_name
         )
 
         self._channels = {}
-        self._trace_generator = trace_generator
-
+        self._trace = process_trace
         self._current_segment = None
 
     def connect_to_incomming_channel(self, channel):
