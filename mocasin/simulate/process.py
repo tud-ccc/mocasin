@@ -12,17 +12,18 @@
     * :class:`RuntimeDataflowProcess`: dataflow process model
 """
 
+import enum
+import logging
 
-from enum import Enum
-
-from mocasin.util import logging
+from mocasin.common.trace import SegmentType
 from mocasin.simulate.adapter import SimulateLoggerAdapter
 
 
 log = logging.getLogger(__name__)
 
 
-class ProcessState(Enum):
+@enum.unique
+class ProcessState(enum.Enum):
     """Denotes the state of a runtime process."""
 
     CREATED = 0
@@ -417,6 +418,10 @@ class RuntimeDataflowProcess(RuntimeProcess):
         self._trace = process_trace
         self._current_segment = None
 
+        # lets the workload method know whether it is run for the first time
+        # or whether it is resumed
+        self._is_running = False
+
     def connect_to_incomming_channel(self, channel):
         """Connect the process to an incoming runtime channel
 
@@ -449,25 +454,15 @@ class RuntimeDataflowProcess(RuntimeProcess):
         execution is resumed on the next call of this method.
         """
 
-        assert self.check_state(ProcessState.RUNNING)
+        self._init_workload()
 
-        if self._current_segment is None:
-            self._log.debug("start workload execution")
-        else:
-            self._log.debug("resume workload execution")
-
-        while True:
+        while self._current_segment is not None:
             # The preempt and kill events will be overridden once
             # triggered. Thus we keep references to the original events here.
             preempt = self._preempt
             kill = self._kill
 
-            if self._current_segment is None:
-                self._current_segment = self._trace_generator.next_segment(
-                    self.name, self.processor.type
-                )
             s = self._current_segment
-            s.sanity_check()
             if s.processing_cycles is not None:
                 cycles = s.processing_cycles
                 self._log.debug("process for %d cycles", cycles)
@@ -572,6 +567,31 @@ class RuntimeDataflowProcess(RuntimeProcess):
                 self._log.debug("process terminates")
                 break
 
-            self._current_segment = None
+            # move on to the next segment
+            self._update_current_segment()
 
+        # reached the end of the trace
+        self._log.debug("process terminates")
         self._finish()
+
+    def _init_workload(self):
+        assert self.check_state(ProcessState.RUNNING)
+
+        if self._is_running:
+            # we are resuming from an earlier workload execution, nothing to do
+            self._log.debug("resume workload execution")
+        else:
+            # we start up workload execution for the first time and need
+            # to initialize the current trace segment
+            self._log.debug("start workload execution")
+            self._is_running = True
+            self._update_current_segment()
+
+    def _update_current_segment(self):
+        # updated the current segment to the next segment in the trace
+        # set to None if we reached the end of the trace
+        try:
+            self._current_segment = next(self._trace)
+        except StopIteration:
+            # reached the end of the trace
+            self._current_segment = None
