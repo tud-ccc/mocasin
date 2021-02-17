@@ -414,9 +414,13 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
                             platform.to_adjacency_dict(),
                             self._ag.automorphisms(),
                         )
-                    log.info("Symmetries initialized with mpsym: JSON file.")
                     if not correct:
                         log.warning("Symmetries json does not fit platform.")
+                        del self._ag
+                    else:
+                        log.info(
+                            "Symmetries initialized with mpsym: JSON file."
+                        )
 
                 if not hasattr(self, "_ag"):
                     # only calculate this if not already present
