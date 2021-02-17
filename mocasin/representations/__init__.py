@@ -387,6 +387,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         self.canonical_operations = canonical_operations
 
         n = len(self.platform.processors())
+        correct = None
 
         if disable_mpsym:
             self.sym_library = False
@@ -454,11 +455,14 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
                     if not hasattr(platform, "ag_json"):
                         log.warning(
                             "No JSON file specified for symmetries."
-                            "Will not store them."
+                            " Will not store them."
                         )
-                    else:
+                    elif not correct == False:
                         with open(platform.ag_json, "w") as f:
                             f.write(self._ag.to_json())
+                        log.info(
+                            f"Storing platform symmetries in file {platform.ag_json}."
+                        )
 
         if not self.sym_library:
             log.info(
