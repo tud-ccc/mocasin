@@ -82,7 +82,6 @@ class RuntimeScheduler(object):
             scheduling decision
         :param system:  the runtime system this scheduler belongs to
         """
-        log.debug("Initialize new scheduler (%s)", name)
 
         self.name = name
         self._processor = processor
@@ -505,6 +504,7 @@ def create_scheduler(name, processor, policy, env):
         RuntimeScheduler: a runtime scheduler object
     """
     if policy.name == "Dummy":
+        log.debug(f"Initialize new dummy scheduler ({name})")
         s = DummyScheduler(
             name,
             processor,
@@ -513,6 +513,7 @@ def create_scheduler(name, processor, policy, env):
             env,
         )
     if policy.name == "FIFO":
+        log.debug(f"Initialize new FIFO scheduler ({name})")
         s = FifoScheduler(
             name,
             processor,
@@ -521,6 +522,7 @@ def create_scheduler(name, processor, policy, env):
             env,
         )
     elif policy.name == "RoundRobin":
+        log.debug(f"Initialize new RoundRobin scheduler ({name})")
         s = RoundRobinScheduler(
             name,
             processor,
