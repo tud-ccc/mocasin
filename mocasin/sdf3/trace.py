@@ -272,6 +272,10 @@ class Sdf3Trace(DataflowTrace):
                     )
                 assert cycles.check("[]")
                 proc_cycles[proc_name] = cycles.magnitude
+                log.debug(
+                    f"{actor.name} runs for {cycles.magnitude} cycles on "
+                    f"{proc_name}"
+                )
             self._actor_processor_cycles[actor.name] = proc_cycles
 
     def get_trace(self, process):
@@ -282,7 +286,7 @@ class Sdf3Trace(DataflowTrace):
 
         Yields:
             ComputeSegment, ReadTokenSegment, or WriteTokenSegment: The next
-                segement in the process trace
+                segment in the process trace
         """
         firings = self._firing_rules[process]
 

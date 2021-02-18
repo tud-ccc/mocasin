@@ -3,6 +3,7 @@
 #
 # Authors: Christian Menard, Felix Teweleit, Andres Goens
 
+import copy
 import enum
 import logging
 
@@ -177,7 +178,9 @@ class DataflowTrace:
 
         # initialize acc_cycles with the cycles from the first compute segment
         try:
-            acc_cycles = next(compute_segments).processor_cycles
+            acc_cycles = {}
+            for k, v in next(compute_segments).processor_cycles.items():
+                acc_cycles[k] = v
         except StopIteration:
             return None
 
