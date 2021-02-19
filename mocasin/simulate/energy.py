@@ -31,14 +31,31 @@ class EnergyEstimator:
     def _energy_dynamic_segment(self, tid, start_ts, end_ts):
         pe = self._tid_pe_map[tid]
         power = pe.dynamic_power()
+        if power is None:
+            return 0
         td = end_ts - start_ts
         return power * td
 
     def _energy_static_segment(self, tid, start_ts, end_ts):
         pe = self._tid_pe_map[tid]
         power = pe.static_power()
+        if power is None:
+            return 0
         td = end_ts - start_ts
         return power * td
+
+    def check_power_model(self):
+        result = any(
+            pe.power_model is not None for pe in self.platform.processors()
+        )
+        if result:
+            for pe in self.platform.processors():
+                if pe.power_model is None:
+                    log.warning(
+                        f"No power model exists for {pe.name}. "
+                        "The energy consumption might be not complete."
+                    )
+        return result
 
     def calculate_energy(self):
         """Calculate the energy consumption of the simulation.
