@@ -467,8 +467,7 @@ class RuntimeDataflowProcess(RuntimeProcess):
             if s.segment_type == SegmentType.COMPUTE:
                 for compute_event in self._handle_compute():
                     yield compute_event
-
-            if s.segment_type == SegmentType.READ_TOKEN:
+            elif s.segment_type == SegmentType.READ_TOKEN:
                 consume_finished = self._handle_read_segment()
                 if consume_finished is None:
                     # if we get None this means the consume operation blocked
@@ -477,8 +476,7 @@ class RuntimeDataflowProcess(RuntimeProcess):
                 # Otherwise we got an event that indicates the end of the
                 # consume operation and we simply wait for it
                 yield consume_finished
-
-            if s.segment_type == SegmentType.WRITE_TOKEN:
+            elif s.segment_type == SegmentType.WRITE_TOKEN:
                 produce_finished = self._handle_write_segment()
                 if produce_finished is None:
                     # if we get None this means the consume operation blocked
@@ -487,6 +485,10 @@ class RuntimeDataflowProcess(RuntimeProcess):
                 # Otherwise we got an event that indicates the end of the
                 # produce operation and we simply wait for it
                 yield produce_finished
+            else:
+                raise RuntimeError(
+                    f"Encountered an unknown segment type! ({s.segment_type})"
+                )
 
             # Stop processing if we where preempted or killed
             if kill.triggered:
@@ -542,9 +544,7 @@ class RuntimeDataflowProcess(RuntimeProcess):
         # requests and process it only after the operation completes.
         s = self._current_segment
         c = self._channels[s.channel]
-        self._log.debug(
-            f"read {s.num_tokens} tokens from channel {s.channel}"
-        )
+        self._log.debug(f"read {s.num_tokens} tokens from channel {s.channel}")
         if c.can_consume(self, s.num_tokens):
             return self.env.process(c.consume(self, s.num_tokens))
         else:
@@ -559,9 +559,7 @@ class RuntimeDataflowProcess(RuntimeProcess):
         # processed after this operation completes.
         s = self._current_segment
         c = self._channels[s.channel]
-        self._log.debug(
-            f"write {s.num_tokens} tokens to channel {s.channel}"
-        )
+        self._log.debug(f"write {s.num_tokens} tokens to channel {s.channel}")
         if c.can_produce(self, s.num_tokens):
             return self.env.process(c.produce(self, s.num_tokens))
         else:
@@ -610,6 +608,5 @@ class RuntimeDataflowProcess(RuntimeProcess):
             self._remaining_compute_cycles = cycles - cycles_processed
             assert self._remaining_compute_cycles >= 0
             self._log.debug(
-                "process was deactivated after "
-                f"{cycles_processed} cycles"
+                f"process was deactivated after {cycles_processed} cycles"
             )
