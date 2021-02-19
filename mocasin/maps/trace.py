@@ -4,112 +4,117 @@
 # Authors: Christian Menard
 
 
+import contextlib
 import glob
+import logging
+import os
 
 from hydra.utils import to_absolute_path
 
-from mocasin.util import logging
-from mocasin.common.trace import TraceGenerator, TraceSegment
+from mocasin.common.trace import (
+    DataflowTrace,
+    ComputeSegment,
+    ReadTokenSegment,
+    WriteTokenSegment,
+)
 
 
 log = logging.getLogger(__name__)
 
 
-class MapsTraceReader(TraceGenerator):
-    """A TraceGenerator that reads MAPS trace files"""
+class MapsTrace(DataflowTrace):
+    """Represents the  behavior of a MAPS (KPN) application
+
+    See `~DataflowTrace`.
+
+    Args:
+        trace_dir (str): path to the directory containing all trace files
+    """
 
     def __init__(self, trace_dir):
-        """Initialize the trace reader
-
-        :param str trace_dir: path to the directory containing all trace files
-        """
         self._trace_dir = to_absolute_path(trace_dir)
 
-        self._trace_files = {}
-        self._processor_types = {}
+    def get_trace(self, process):
+        """Get the trace for a specific process/actor in the dataflow app
 
-    def _open_trace_file(self, process_name, processor_type):
-        trace_files = glob.glob(
-            "%s/%s.%s.*cpntrace"
-            % (self._trace_dir, process_name, processor_type)
+        Args:
+            process (str): Name of the process to get a trace for
+
+        Yields:
+            ComputeSegment: if the next segment is a compute segment
+            ReadTokenSegment: if the next segment is a read segment
+            WriteTokenSegment: if the next segment is a write segment
+        """
+
+        # use an exit stack to keep track of all files we open
+        with contextlib.ExitStack() as stack:
+            # open all matching trace files for the different processor types
+            processor_types, trace_files = self._open_trace_files(
+                stack, process
+            )
+
+            # iterate over all the lines in all the files simultaneously
+            for lines in zip(*trace_files):
+                log.debug(f"reading next trace lines for process {process}")
+                # check if we received enough lines
+                if len(lines) != len(trace_files):
+                    raise RuntimeError(
+                        f"The trace files for process {process} do not match!"
+                    )
+
+                marker = self._get_element(lines, 0)
+
+                if marker == "m":
+                    yield ComputeSegment(
+                        self._get_processor_cycles(processor_types, lines, 2)
+                    )
+                elif marker == "r":
+                    yield ComputeSegment(
+                        self._get_processor_cycles(processor_types, lines, 4)
+                    )
+                    yield ReadTokenSegment(
+                        channel=self._get_element(lines, 1),
+                        num_tokens=int(self._get_element(lines, 3)),
+                    )
+                elif marker == "w":
+                    yield ComputeSegment(
+                        self._get_processor_cycles(processor_types, lines, 3)
+                    )
+                    yield WriteTokenSegment(
+                        channel=self._get_element(lines, 1),
+                        num_tokens=int(self._get_element(lines, 2)),
+                    )
+                elif marker == "e":
+                    return
+                else:
+                    raise RuntimeError("Encountered an unknown line marker!")
+
+    def _open_trace_files(self, stack, process):
+        # find all trace files for the given process
+        trace_file_paths = glob.glob(
+            os.path.join(self._trace_dir, f"{process}.*.*.cpntrace")
         )
-
-        if len(trace_files) == 0:
+        if len(trace_file_paths) == 0:
             raise RuntimeError(
-                "No trace file for process %s on processor type %s found"
-                % (process_name, processor_type)
-            )
-        elif len(trace_files) > 1:
-            log.warning(
-                "More than one trace file found for process %s on "
-                "processor type %s. -> Choose %s"
-                % (process_name, processor_type, trace_files[0])
+                f"There is no trace file for the process {process}!"
             )
 
-        return open(trace_files[0])
+        # open all files
+        trace_files = []
+        processor_types = []
+        for path in trace_file_paths:
+            processor_types.append(os.path.basename(path).split(".")[1])
+            trace_files.append(stack.enter_context(open(path)))
 
-    def next_segment(self, process_name, processor_type):
-        """Return the next trace segment.
+        return processor_types, trace_files
 
-        Returns the next trace segment for a process running on a processor of
-        the specified type (the segments could differ for different processor
-        types). This should be overridden by a subclass. The default behavior
-        is to return None
+    def _get_processor_cycles(self, processor_types, lines, index):
+        cycles = (int(line.split()[index]) for line in lines)
+        processor_cycles = {t: c for t, c in zip(processor_types, cycles)}
+        return processor_cycles
 
-        :param str process_name:
-            name of the process that a segment is requested for
-        :param str processor_type:
-            the processor type that a segment is requested for
-        :returns: the next trace segment or None if there is none
-        :rtype: TraceSegment or None
-        """
-        if process_name not in self._trace_files:
-            fh = self._open_trace_file(process_name, processor_type)
-            assert fh is not None
-            self._trace_files[process_name] = fh
-            self._processor_types[process_name] = processor_type
-        else:
-            fh = self._trace_files[process_name]
-
-        if self._processor_types[process_name] != processor_type:
-            raise RuntimeError(
-                "The MapsTraceReader does not support migration "
-                "of processes from one type of processor to "
-                "another!"
-            )
-
-        traceline = fh.readline().split(" ")
-        segment = TraceSegment()
-
-        if traceline[0] == "m":
-            segment.processing_cycles = int(traceline[2])
-        elif traceline[0] == "r":
-            segment.processing_cycles = int(traceline[4])
-            segment.read_from_channel = traceline[1]
-            segment.n_tokens = int(traceline[3])
-        elif traceline[0] == "w":
-            segment.processing_cycles = int(traceline[3])
-            segment.write_to_channel = traceline[1]
-            segment.n_tokens = int(traceline[2])
-        elif traceline[0] == "e":
-            segment.terminate = True
-            # this was the last entry, thus we can and should close the file
-            fh.close()
-            self._trace_files[process_name] = None
-        else:
-            raise RuntimeError("Unexpected trace entry " + traceline[0])
-
-        return segment
-
-    def reset(self):
-        """Resets the generator.
-
-        This method resets the generator to its initial state.
-        Therefore it is not needed to instantiate a new generator
-        if a trace has to be calculated twice.
-        """
-        for fh in self._trace_files.values():
-            if fh:
-                fh.close()
-        self._trace_files = {}
-        self._processor_types = {}
+    def _get_element(self, lines, index):
+        elements = {line.split()[index] for line in lines}
+        if len(elements) != 1:
+            raise RuntimeError("The trace files do not match!")
+        return elements.pop()
