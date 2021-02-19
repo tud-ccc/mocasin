@@ -99,6 +99,43 @@ def find_elem(xml_platform, type_name, elem_name):
     raise RuntimeError("%s %s was not defined", type_name, elem_name)
 
 
+def create_processor_power_model(
+    fd_name,
+    vd_name,
+    ppm_name,
+    frequency_domains,
+    voltage_domains,
+    fd_voltage_cond,
+    processor_power_params,
+    ppm_power=None,
+):
+    if ppm_power is not None and ppm_name in ppm_power:
+        static_power = ppm_power[ppm_name]["static"]
+        dynamic_power = ppm_power[ppm_name]["dynamic"]
+    else:
+        voltage = fd_voltage_cond[fd_name]
+        frequency = frequency_domains[fd_name].frequency
+        if voltage is None:
+            if len(voltage_domains[vd_name]) > 1:
+                raise RuntimeError(
+                    f"Voltage domain {vd_name} defines multiple voltages, "
+                    f"but there is no voltage domain condition for "
+                    f"frequency domain {fd_name}"
+                )
+            voltage = voltage_domains[vd_name][0]
+        leakage_current = processor_power_params[ppm_name]["leakage_current"]
+        capacitance = processor_power_params[ppm_name]["switched_capacitance"]
+        static_power = leakage_current * voltage
+        dynamic_power = capacitance * voltage * voltage * frequency
+    ppm = ProcessorPowerModel(ppm_name, static_power, dynamic_power)
+    log.debug(
+        f"Found processor power model {ppm_name}, "
+        f"static power {static_power} W, "
+        f"dynamic power {dynamic_power} W."
+    )
+    return ppm
+
+
 def convert(
     platform,
     xml_platform,
@@ -234,40 +271,25 @@ def convert(
         fd = frequency_domains[fd_name]
 
         # Initialize a processor power model
+        vd_name = xp.get_voltageDomain()
         ppm_name = xp.get_processorPowerModel()
-        if ppm_name not in processor_power_models:
-            if ppm_power is not None and ppm_name in ppm_power:
-                static_power = ppm_power[ppm_name]["static"]
-                dynamic_power = ppm_power[ppm_name]["dynamic"]
+        if ppm_name is None:
+            ppm = None
+        else:
+            if ppm_name not in processor_power_models:
+                ppm = create_processor_power_model(
+                    fd_name,
+                    vd_name,
+                    ppm_name,
+                    frequency_domains,
+                    voltage_domains,
+                    fd_voltage_cond,
+                    processor_power_params,
+                    ppm_power,
+                )
+                processor_power_models[ppm_name] = ppm
             else:
-                voltage = fd_voltage_cond[fd_name]
-                if voltage is None:
-                    vd_name = xp.get_voltageDomain()
-                    if len(voltage_domains[vd_name]) > 1:
-                        raise RuntimeError(
-                            f"Voltage domain {vd_name} defines multiple voltages, "
-                            f"but there is no voltage domain condition for "
-                            f"frequency domain {fd_name}"
-                        )
-                    voltage = voltage_domains[vd_name][0]
-                static_power = (
-                    processor_power_params[ppm_name]["leakage_current"]
-                    * voltage
-                )
-                dynamic_power = (
-                    processor_power_params[ppm_name]["switched_capacitance"]
-                    * voltage
-                    * voltage
-                    * fd.frequency
-                )
-            ppm = ProcessorPowerModel(ppm_name, static_power, dynamic_power)
-            log.debug(
-                f"Found processor power model {name}, "
-                f"static power {static_power} W, "
-                f"dynamic power {dynamic_power} W."
-            )
-            processor_power_models[ppm_name] = ppm
-        ppm = processor_power_models[ppm_name]
+                ppm = processor_power_models[ppm_name]
 
         context_load = get_value_in_cycles(xp, "contextLoad", 0)
         context_store = get_value_in_cycles(xp, "contextStore", 0)
