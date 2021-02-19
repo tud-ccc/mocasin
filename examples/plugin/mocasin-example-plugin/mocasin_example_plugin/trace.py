@@ -3,27 +3,25 @@
 #
 # Authors: Christian Menard
 
-from mocasin.common.trace import TraceGenerator, TraceSegment
+from mocasin.common.trace import (
+    DataflowTrace,
+    ComputeSegment,
+    ReadTokenSegment,
+    WriteTokenSegment,
+)
 
 
-class ExampleTraceGenerator(TraceGenerator):
-    def __init__(self):
-        super().__init__()
-
-    def next_segment(self, process_name, processor_type):
-        if process_name == "a":
-            return TraceSegment(
-                process_cycles=1000,
-                write_to_channel="c",
-                n_tokens=2,
-                terminate=True,
+class ExampleTrace(DataflowTrace):
+    def get_trace(self, process):
+        if process == "a":
+            yield ComputeSegment(
+                processor_cycles={"proc_type_0": 1200, "proc_type_1": 1000}
             )
-        elif process_name == "b":
-            return TraceSegment(
-                process_cycles=1000,
-                read_from_channel="c",
-                n_tokens=2,
-                terminate=True,
+            yield WriteTokenSegment(channel="c", num_tokens=2)
+        elif process == "b":
+            yield ComputeSegment(
+                processor_cycles={"proc_type_0": 1200, "proc_type_1": 1000}
             )
+            yield ReadTokenSegment(channel="c", num_tokens=2)
         else:
-            raise RuntimeError(f"Unexpected process name ({process_name})")
+            raise RuntimeError(f"Unexpected process name ({process})")
