@@ -21,8 +21,13 @@ def gen_trace_summary(graph, platform, trace):
         p_types.add(p.type)
     for proc in graph.processes():
         acc_cycles = trace.accumulate_processor_cycles(proc.name)
-        for p_type in p_types:
-            summary[(proc, p_type)] = acc_cycles[p_type]
+        if acc_cycles is None:
+            # in this case there are no compute segments for the given process
+            for p_type in p_types:
+                summary[(proc, p_type)] = 0
+        else:
+            for p_type in p_types:
+                summary[(proc, p_type)] = acc_cycles[p_type]
     return summary
 
 
@@ -46,7 +51,7 @@ class StaticCFS(object):
         self, graphs, trace_summary, load=None, restricted=None
     ):
         """Generates a full mapping using a static algorithm
-        inspired by Linux' GBM
+        inspired by Linux'
         """
         core_types = dict(self.platform.get_processor_types())
         processes = {}
