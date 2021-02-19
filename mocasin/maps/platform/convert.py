@@ -123,10 +123,18 @@ def convert(
                 )
 
     # Collect all frequency and voltage domains
+    voltage_domains = {}
+    for vd in xml_platform.get_VoltageDomain():
+        name = vd.get_id()
+        voltage_domains[name] = []
+        for v in vd.get_Voltage():
+            voltage = ur(v.get_value() + v.get_unit()).to("V").magnitude
+            voltage_domains[name].append(voltage)
+
     frequency_domains = {}
     # We do not save voltage domains by their names defined in MAPS XML files,
     # instead we save under the same names as frequency domains
-    fd_voltage = {}
+    fd_voltage_cond = {}
     for fd in xml_platform.get_FrequencyDomain():
         name = fd.get_id()
         max_frequency = 0
@@ -138,29 +146,31 @@ def convert(
                     f"The xml defines multiple voltages for the frequency domain "
                     f"{name} at {f.get_value()}{f.get_unit()}."
                 )
+            voltage_cond = None
             for v in voltage_domain_conds:
-                voltage = ur(v.get_value() + v.get_unit()).to("V").magnitude
+                voltage_cond = (
+                    ur(v.get_value() + v.get_unit()).to("V").magnitude
+                )
             frequency = ur(f.get_value() + f.get_unit()).to("Hz").magnitude
             supported_frequency_voltage_pairs.append(
-                tuple((frequency, voltage))
+                tuple((frequency, voltage_cond))
             )
         if fd_frequencies is not None and name in fd_frequencies:
             frequency = fd_frequencies[name]
-            voltage = 0
+            voltage_cond = None
             found = False
             for f, v in supported_frequency_voltage_pairs:
                 if frequency != f:
                     continue
-                voltage = v
+                voltage_cond = v
                 found = True
             if not found:
                 log.warning(
                     f"The fd_frequencies sets the frequency of the domain {name} "
                     f"to {frequency} Hz, which is not defined in the xml. "
-                    f"Setting power to 0 V."
                 )
         else:
-            frequency, voltage = max(supported_frequency_voltage_pairs)
+            frequency, voltage_cond = max(supported_frequency_voltage_pairs)
             if len(fd.get_Frequency()) > 1:
                 log.warning(
                     "The xml defines multiple frequencies for the domain "
@@ -168,12 +178,11 @@ def convert(
                     name,
                 )
         frequency_domains[name] = FrequencyDomain(name, frequency)
-        fd_voltage[name] = voltage
+        fd_voltage_cond[name] = voltage_cond
         log.debug(
-            "Found frequency domain %s (%d Hz), voltage %f V.",
+            "Found frequency domain %s (%d Hz).",
             name,
             frequency,
-            voltage,
         )
 
     # Collect processor power model parameters
@@ -231,7 +240,16 @@ def convert(
                 static_power = ppm_power[ppm_name]["static"]
                 dynamic_power = ppm_power[ppm_name]["dynamic"]
             else:
-                voltage = fd_voltage[fd_name]
+                voltage = fd_voltage_cond[fd_name]
+                if voltage is None:
+                    vd_name = xp.get_voltageDomain()
+                    if len(voltage_domains[vd_name]) > 1:
+                        raise RuntimeError(
+                            f"Voltage domain {vd_name} defines multiple voltages, "
+                            f"but there is no voltage domain condition for "
+                            f"frequency domain {fd_name}"
+                        )
+                    voltage = voltage_domains[vd_name][0]
                 static_power = (
                     processor_power_params[ppm_name]["leakage_current"]
                     * voltage
@@ -243,6 +261,11 @@ def convert(
                     * fd.frequency
                 )
             ppm = ProcessorPowerModel(ppm_name, static_power, dynamic_power)
+            log.debug(
+                f"Found processor power model {name}, "
+                f"static power {static_power} W, "
+                f"dynamic power {dynamic_power} W."
+            )
             processor_power_models[ppm_name] = ppm
         ppm = processor_power_models[ppm_name]
 
