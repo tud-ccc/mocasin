@@ -95,6 +95,11 @@ class MapsTrace(DataflowTrace):
             os.path.join(self._trace_dir, f"{process}.*.*.cpntrace")
         )
         if len(trace_file_paths) == 0:
+            # try again with old naming scheme
+            trace_file_paths = glob.glob(
+                os.path.join(self._trace_dir, f"{process}.*.cpntrace")
+            )
+        if len(trace_file_paths) == 0:
             raise RuntimeError(
                 f"There is no trace file for the process {process}!"
             )
