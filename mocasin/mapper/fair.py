@@ -192,7 +192,6 @@ class StaticCFSMapperMultiApp(StaticCFS):
                 gen_trace_summary(graph, self.platform, trace)
             )
             mappings[graph] = Mapping(graph, self.platform)
-            trace.reset()
         mapping_dict = self.generate_mapping_dict(
             graphs, trace_summaries, load=load, restricted=restricted
         )
