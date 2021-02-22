@@ -3,9 +3,6 @@
 #
 # Authors: Felix Teweleit, Andres Goens
 
-import argparse
-import os
-
 from omegaconf.errors import ConfigKeyError
 
 from mocasin.util import logging

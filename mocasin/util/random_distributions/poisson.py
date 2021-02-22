@@ -3,12 +3,8 @@
 #
 # Authors: Andres Goens
 
-import types
 import numpy as np
 import matplotlib.pyplot as plt
-
-# from scipy.stats import multinomial
-from mpl_toolkits.mplot3d import Axes3D
 
 
 n = 16

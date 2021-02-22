@@ -3,13 +3,18 @@
 #
 # Authors: Christian Menard
 
-
+from dataclasses import dataclass, field
 import json
-from recordclass import recordclass
+import typing
 
 
-"""Helper record used to manage thread ids within processes"""
-ProcessInfo = recordclass("ProcessInfo", "pid tids tid_counter")
+@dataclass
+class ProcessInfo:
+    """Helper class used to manage thread ids within processes"""
+
+    pid: int = 0
+    tids: typing.Dict = field(default_factory=dict)
+    tid_counter: int = 0
 
 
 class TraceWriter:
