@@ -41,6 +41,12 @@ class BaseSimulation:
             otherwise.
         exec_time (int): total simulated time in ps. This is initial to
             ``None`` and only set after a call to :func:`run`.
+        static_energy (float): static energy consumption in pJ. This is initial to
+            ``None`` and only set after a call to :func:`run`.
+        dynamic_energy (float): dynamic energy consumption in pJ. This is initial to
+            ``None`` and only set after a call to :func:`run`.
+        total_energy (float): total energy consumption in pJ. This is initial to
+            ``None`` and only set after a call to :func:`run`.
         run: A callable object that triggers the actual simulation. If called
             outside of a with block, calling ``run()`` will raise a
             ``RuntimeError`` .

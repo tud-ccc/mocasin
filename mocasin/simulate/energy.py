@@ -34,7 +34,7 @@ class EnergyEstimator:
         if power is None:
             return 0
         td = end_ts - start_ts
-        return power * td
+        return power * td * 1000000
 
     def _energy_static_segment(self, tid, start_ts, end_ts):
         pe = self._tid_pe_map[tid]
@@ -42,7 +42,7 @@ class EnergyEstimator:
         if power is None:
             return 0
         td = end_ts - start_ts
-        return power * td
+        return power * td * 1000000
 
     def check_power_model(self):
         result = any(
@@ -62,8 +62,8 @@ class EnergyEstimator:
 
         Returns the tuple (static_energy, dynamic_energy)
         """
-        static_energy = 0  # in uJ
-        dynamic_energy = 0  # in uJ
+        static_energy = 0  # in pJ
+        dynamic_energy = 0  # in pJ
         trace = self._trace_writer._trace
         tids = set()
         platform_pid = None
