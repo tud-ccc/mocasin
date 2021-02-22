@@ -11,6 +11,7 @@ from mocasin.common.platform import (
     Storage,
     CommunicationPhase,
     Primitive,
+    ProcessorPowerModel,
     CommunicationResource,
     CommunicationResourceType,
 )

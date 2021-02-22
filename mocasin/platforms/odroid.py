@@ -31,21 +31,8 @@ class DesignerPlatformOdroid(Platform):
         super(DesignerPlatformOdroid, self).__init__(
             name, kwargs.get("symmetries_json", None)
         )
-        if processor_0.frequency_domain.frequency != 1400000000.0:
-            log.warning(
-                f"Rescaling processor {processor_0.name} to fit Odroid frequency"
-            )
-            fd_a7 = FrequencyDomain("fd_a7", 1400000000.0)
-            processor_0.frequency_domain = fd_a7
 
         designer = PlatformDesigner(self)
-        if processor_1.frequency_domain.frequency != 2000000000.0:
-            log.warning(
-                f"Rescaling processor {processor_1.name} to fit Odroid frequency"
-            )
-            fd_a15 = FrequencyDomain("fd_a15", 2000000000.0)
-            processor_1.frequency_domain = fd_a15
-
         designer.setSchedulingPolicy("FIFO", 1000)
         designer.newElement("exynos5422")
 
@@ -58,7 +45,7 @@ class DesignerPlatformOdroid(Platform):
             0,
             8.0,
             float("inf"),
-            frequencyDomain=1400000000.0,
+            frequencyDomain=processor_0.frequency_domain.frequency,
             name="L1_A7",
         )
         designer.addCommunicationResource(
@@ -68,7 +55,7 @@ class DesignerPlatformOdroid(Platform):
             250,
             float("inf"),
             float("inf"),
-            frequencyDomain=1400000000.0,
+            frequencyDomain=processor_0.frequency_domain.frequency,
         )
 
         # cluster 1, with l2 cache
@@ -80,7 +67,7 @@ class DesignerPlatformOdroid(Platform):
             4,
             8.0,
             8.0,
-            frequencyDomain=2000000000.0,
+            frequencyDomain=processor_1.frequency_domain.frequency,
             name="L1_A15",
         )
         designer.addCommunicationResource(
@@ -90,7 +77,7 @@ class DesignerPlatformOdroid(Platform):
             250,
             float("inf"),
             float("inf"),
-            frequencyDomain=2000000000.0,
+            frequencyDomain=processor_1.frequency_domain.frequency,
         )
 
         # RAM connecting all clusters
