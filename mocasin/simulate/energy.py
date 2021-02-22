@@ -66,23 +66,40 @@ class EnergyEstimator:
         dynamic_energy = 0  # in uJ
         trace = self._trace_writer._trace
         tids = set()
-
+        platform_pid = None
         last_event_ts = {}
+
         for elem in trace:
             # Collect TID <-> PE map
             ph = elem["ph"]
-            if ph == "M" and elem["name"] == "thread_name":
+            pid = elem["pid"]
+            name = elem["name"]
+
+            # Find a PID of the platform
+            if ph == "M" and name == "process_name":
+                args_name = elem["args"]["name"]
+                if args_name == self.platform.name:
+                    platform_pid = pid
+                    continue
+
+            # Register the processors
+            if ph == "M" and pid == platform_pid and name == "thread_name":
                 tid = elem["tid"]
                 pe_name = elem["args"]["name"]
                 pe = self.platform.find_processor(pe_name)
                 self._tid_pe_map[tid] = pe
                 last_event_ts[tid] = 0
                 continue
+
             # Skip other metadata entries
             if ph == "M" or ph == "C":
                 continue
             if "tid" not in elem:
                 raise RuntimeError(f"Unknown event type: {elem}")
+            # Skip non-processor's events
+            if pid != platform_pid:
+                continue
+
             # main calculation
             tid = elem["tid"]
             event_ts = elem["ts"]  # timestamp in us
