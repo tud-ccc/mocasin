@@ -42,27 +42,25 @@ class RuntimeApplication(object):
 class RuntimeDataflowApplication(RuntimeApplication):
     """Represents the runtime instance of a dataflow application.
 
-    :ivar Mapping mapping:
-        mapping object for this application
-    :ivar list[RuntimeProcess] _pocesses:
-        a list of runtime processes that belong to this application
-    :ivar list[RuntimeChannel] _channels:
-        a list of runtime channels that belong to this application
+    Attributes:
+        mapping (Mapping): a mapping object for this application
+        _pocesses (list of RuntimeProcess): a list of runtime processes that
+            belong to this application
+        _channeles (list of RuntimeChannel): a list of runtime channels that
+        belong to this application
+
+    Args:
+        name (str): the application name
+        graph (DataflowGraph): the graph denoting the dataflow application
+        mapping (Mapping): a mapping to the platform implemented by system
+        trace (DataflowTrace): the trace representing the execution
+            behavior of the application
+        system (System): the system the application is supposed to be
+            executed on
     """
 
-    def __init__(self, name, graph, mapping, trace_generator, system):
-        """Initialize a RuntimeDataflowApplication.
-
-        Args:
-            name (str): the application name
-            graph (DataflowGraph): the graph denoting the dataflow application
-            mapping (Mapping): a mapping to the platform implemented by system
-            trace_generator (TraceGenerator): the trace generator that
-                represents the execution trace of the application trace
-            system (System): the system the application is supposed to be
-                executed on
-        """
-        super(RuntimeDataflowApplication, self).__init__(name, system)
+    def __init__(self, name, graph, mapping, app_trace, system):
+        super().__init__(name, system)
         self.mapping = mapping
         if mapping.graph != graph:
             raise RuntimeError("dataflow graph and mapping incompatible")
@@ -85,7 +83,9 @@ class RuntimeDataflowApplication(RuntimeApplication):
         self._mapping_infos = {}
         for p in graph.processes():
             mapping_info = mapping.process_info(p)
-            proc = RuntimeDataflowProcess(p.name, trace_generator, self)
+            proc = RuntimeDataflowProcess(
+                p.name, app_trace.get_trace(p.name), self
+            )
             self._processes[p.name] = proc
             self._mapping_infos[proc] = mapping_info
             logging.inc_indent()

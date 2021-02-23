@@ -97,7 +97,6 @@ class SimulationManager(object):
         self._last_added = None
         self.jobs = jobs
         self.trace = trace
-        self.trace.reset()  # just make sure
         self.parallel = parallel
         self.progress = progress
         self.chunk_size = chunk_size
@@ -164,15 +163,15 @@ class SimulationManager(object):
             if lookups[i]:
                 continue
 
-            trace = deepcopy(self.trace)
             simulation = DataflowSimulation(
-                self.platform, self.graph, mapping, trace
+                self.platform, self.graph, mapping, self.trace
             )
 
             simulations.append(simulation)
 
         if self.parallel and len(simulations) > self.chunk_size:
-            # since mappings are simulated in parallel, whole simulation time is added later as offset
+            # since mappings are simulated in parallel, whole simulation time
+            # is added later as offset
             for _ in range(len(simulations)):
                 self.statistics.mapping_evaluated(0)
 

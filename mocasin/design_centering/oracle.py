@@ -73,10 +73,10 @@ class Oracle(object):
 class Simulation(Oracle):
     """ simulation code """
 
-    def __init__(self, graph, platform, trace_generator, threshold, threads=1):
+    def __init__(self, graph, platform, trace, threshold, threads=1):
         self.graph = graph
         self.platform = platform
-        self.trace_generator = trace_generator
+        self.trace = trace
         self.randMapGen = RandomPartialMapper(self.graph, self.platform)
         self.comMapGen = ComPartialMapper(
             self.graph, self.platform, self.randMapGen
@@ -108,10 +108,8 @@ class Simulation(Oracle):
 
     def prepare_sim_context(self, mapping):
         sim_mapping = self.dcMapGen.generate_mapping(mapping.to_list())
-        self.trace_generator.reset()
-        trace = deepcopy(self.trace_generator)
         sim_context = DataflowSimulation(
-            self.platform, self.graph, sim_mapping, trace
+            self.platform, self.graph, sim_mapping, self.trace
         )
         log.debug("Mapping toList: {}".format(sim_mapping.to_list()))
         return sim_context
