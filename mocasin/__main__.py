@@ -10,7 +10,7 @@ import sys
 import traceback
 import cProfile
 
-from mocasin.tasks import execute_task, _tasks, task_autocomplete
+from mocasin.tasks import execute_task, task_autocomplete
 
 log = logging.getLogger(__name__)
 

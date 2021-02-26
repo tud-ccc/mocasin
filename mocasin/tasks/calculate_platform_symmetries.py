@@ -15,7 +15,6 @@ except ModuleNotFoundError:
     log.warning("mpsym could not be loaded")
 
 
-@hydra.main(config_path="../conf", config_name="calculate_platform_symmetries")
 def calculate_platform_symmetries(cfg):
     """Calculate the Automorphism Group of a Platform Graph
 
