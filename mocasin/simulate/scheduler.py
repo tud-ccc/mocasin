@@ -279,7 +279,10 @@ class RuntimeScheduler(object):
                 # continuing
                 yield self.env.timeout(0)
                 # record the process activation in the simulation trace
-                if self._system.platform_trace_enabled:
+                if (
+                    self._system.platform_trace_enabled
+                    or self._system.power_enabled
+                ):
                     self.trace_writer.begin_duration(
                         self._system.platform.name,
                         self._processor.name,
@@ -307,7 +310,10 @@ class RuntimeScheduler(object):
                     yield workload
 
                 # record the process halting in the simulation trace
-                if self._system.platform_trace_enabled:
+                if (
+                    self._system.platform_trace_enabled
+                    or self._system.power_enabled
+                ):
                     self.trace_writer.end_duration(
                         self._system.platform.name,
                         self._processor.name,

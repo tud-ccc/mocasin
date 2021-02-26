@@ -129,7 +129,15 @@ class PlatformDesigner:
 
         self.__activeScope = nextScope
 
-    def addPeCluster(self, identifier, name, amount, frequency):
+    def addPeCluster(
+        self,
+        identifier,
+        name,
+        amount,
+        frequency,
+        static_power=None,
+        dynamic_power=None,
+    ):
         """Creates a new cluster of processing elements on the platform.
 
         :param identifier: The identifier the cluster can be addressed within the currently active scope.
@@ -140,17 +148,27 @@ class PlatformDesigner:
         :type amount: int
         :param frequency: The frequency of the processing elements.
         :type frequency: int
+        :param static_power: The static power of the processing elements.
+        :type static_power: float
+        :param dynamic_power: The dynamic power of the processing elements.
+        :type dynamic_power: float
         """
         log.warning(
             "Deprecationg warning: use addPEClusterForProcessor instead."
         )
         try:
             fd = FrequencyDomain("fd_" + name, frequency)
+            if static_power is not None and dynamic_power is not None:
+                ppm = ProcessorPowerModel(
+                    "ppm_" + name, static_power, dynamic_power
+                )
+            else:
+                ppm = None
             start = self.__peAmount
             end = self.__peAmount + amount
             processors = []
             for i in range(start, end):
-                processor = Processor("PE%02d" % i, name, fd)
+                processor = Processor("PE%02d" % i, name, fd, ppm)
                 self.__platform.add_processor(processor)
                 self.__platform.add_scheduler(
                     Scheduler(
@@ -191,6 +209,7 @@ class PlatformDesigner:
                     name,
                     processor.type,
                     processor.frequency_domain,
+                    processor.power_model,
                     processor.context_load_cycles,
                     processor.context_store_cycles,
                 )
@@ -957,11 +976,23 @@ class genericProcessor(Processor):
     :param frequency: The processor frequency
     :type type: int
     :returns: A processor object
+    :param static_power: The static power of the processing elements.
+    :type static_power: float
+    :param dynamic_power: The dynamic power of the processing elements.
+    :type dynamic_power: float
     :rtype mocasin.common.platform.Processor:
     """
 
-    def __init__(self, type, frequency=2000000000):
+    def __init__(
+        self, type, frequency=2000000000, static_power=None, dynamic_power=None
+    ):
         fd = FrequencyDomain("fd_" + type, frequency)
+        if static_power is not None and dynamic_power is not None:
+            ppm = ProcessorPowerModel(
+                "ppm_" + type, static_power, dynamic_power
+            )
+        else:
+            ppm = None
         super().__init__(
-            "DesignerGenericProc" + str(type) + str(frequency), type, fd
+            "DesignerGenericProc" + str(type) + str(frequency), type, fd, ppm
         )

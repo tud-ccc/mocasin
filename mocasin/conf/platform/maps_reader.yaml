@@ -4,3 +4,4 @@ name: ???
 xml_file: ???
 scheduler_cycles: null
 fd_frequencies: null
+ppm_power: null
