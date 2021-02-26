@@ -6,6 +6,8 @@
 
 import glob
 
+from hydra.utils import to_absolute_path
+
 from mocasin.util import logging
 from mocasin.common.trace import TraceGenerator, TraceSegment
 
@@ -21,7 +23,7 @@ class MapsTraceReader(TraceGenerator):
 
         :param str trace_dir: path to the directory containing all trace files
         """
-        self._trace_dir = trace_dir
+        self._trace_dir = to_absolute_path(trace_dir)
 
         self._trace_files = {}
         self._processor_types = {}

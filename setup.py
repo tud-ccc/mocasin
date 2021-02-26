@@ -10,7 +10,7 @@ import sys
 import tarfile
 import tempfile
 
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, find_namespace_packages
 from setuptools.command.install import install
 from setuptools.command.develop import develop
 from doc.build_doc import BuildDocCommand
@@ -20,32 +20,27 @@ project_name = "mocasin"
 version = "0.1.0"
 
 install_requirements = [
-    "argparse",
     "arpeggio",
-    "cvxpy!=1.1.8,<1.2" if sys.version_info < (3, 7) else "cvxpy!=1.1.8",
     "cvxopt",
+    "cvxpy!=1.1.8,<1.2" if sys.version_info < (3, 7) else "cvxpy!=1.1.8",
     "deap",
     "h5py",
     "hydra-core>=1.0.3,<1.1.0",
-    "scipy",
     "scipy<1.6.0" if sys.version_info < (3, 7) else "scipy",
     "lxml",
     "matplotlib",
-    "networkx",
-    "numba",
+    "numba>=0.53.0rc1",
     "numpy",
     "pint",
     "pydot",
     "pympsym>=0.5",
-    "pyyaml",
     "pyxb",
-    "recordclass",
     "simpy",
     "sortedcontainers",
     "termcolor",
     "tqdm",
 ]
-setup_requirements = ["pytest-runner", "sphinx", "numpy"]
+setup_requirements = ["pip", "pytest-runner", "sphinx"]
 
 
 if sys.version_info < (3, 7):
@@ -96,34 +91,39 @@ class InstallPynautyCommand(distutils.cmd.Command):
             )
             print("Install pynauty")
             subprocess.check_call(
-                ["python", "setup.py", "install"], cwd=f"{tmpdir}/pynauty-0.6.0"
+                ["pip", "install", "."], cwd=f"{tmpdir}/pynauty-0.6.0"
             )
         os.chdir(cwd)
 
 
+def install_pynauty(cmd):
+    # If the environment variable NO_PYNAUTY is set to any value, we skip
+    # pynauty installation
+    if "NO_PYNAUTY" not in os.environ:
+        # also skip installation if already installed
+        try:
+            import pynauty
+        except ImportError:
+            cmd.run_command("pynauty")
+
+
 class InstallCommand(install):
     def run(self):
-        self.run_command("pynauty")
-        # XXX Actually install.run(self) should be used here. But there seems
-        # to be a bug in setuptools that skips installing the required
-        # packages... The line below seems to fix this.
-        # See: https://cbuelter.wordpress.com/2015/10/25/extend-the-setuptools-install-command/comment-page-1/
-        self.do_egg_install()
+        install_pynauty(self)
+        install.run(self)
 
 
 class DevelopCommand(develop):
     def run(self):
+        install_pynauty(self)
         develop.run(self)
-        try:
-            import pynauty
-        except ModuleNotFoundError:
-            self.run_command("pynauty")
 
 
 setup(
     name=project_name,
     version=version,
-    packages=find_packages(),
+    packages=find_packages(exclude=["test", "*.test"])
+    + find_namespace_packages(include=["hydra_plugins.*"]),
     install_requires=install_requirements,
     setup_requires=setup_requirements,
     tests_require=["pytest", "pytest_mock"],
@@ -145,7 +145,6 @@ setup(
     entry_points={
         "console_scripts": [
             "mocasin=mocasin.__main__:main",
-            "mocasin_profile=mocasin.__main__:profile",
         ]
     },
     include_package_data=True,

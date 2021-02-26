@@ -3,3 +3,4 @@ _target_: mocasin.maps.platform.MapsPlatform
 name: ???
 xml_file: ???
 scheduler_cycles: null
+fd_frequencies: null

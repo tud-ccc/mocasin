@@ -6,4 +6,4 @@ defaults:
   - platform: default
   - sdf3: default
 
-output_file: "${platform.name}.dot"
+output_file: "platform.dot"

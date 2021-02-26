@@ -7,4 +7,4 @@ defaults:
   - trace: default
   - sdf3: default
 
-output_file: "${graph.name}.dot"
+output_file: "graph.dot"

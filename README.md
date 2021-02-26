@@ -7,25 +7,25 @@ platforms.
 Installation
 ------------
 
-It is recommended to install mocasin within a virtual environment. Currently we support Python versions 3.6, 3.7, and 3.8.
+It is recommended to install mocasin within a virtual environment. Currently we support Python versions 3.6, 3.7, 3.8 and 3.9.
 You can create a new environment with
 ```
-virtualenv -p python3.7 ~/virtualenvs/mocasin
+virtualenv -p python3 ~/virtualenvs/mocasin
 ```
 Note that you can adjust the path to your needs. You can activate the previously created environment as follows:
 ```
 source ~/source ~/virtualenvs/mocasin/bin/activate
 ```
 
-Then you can install mocasin and all its dependencies:
+Then you can install mocasin and all its dependencies from inside the mocasin root directory:
 ```
-python setup.py install
+pip install .
 ```
 
 If you plan to modify the mocasin code base, you should install the package in
 development mode:
 ```
-python setup.py develop
+pip install -e .
 ```
 
 This ensures that any modifications you make, will have an immediate effect to

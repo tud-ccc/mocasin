@@ -1,3 +1,0 @@
-digraph G {
-process_ospf [label=ospf];
-}

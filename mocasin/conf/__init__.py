@@ -1,3 +1,4 @@
-"""
-Init file for conf package is required since hydra 1.0
-"""
+# Copyright (C) 2021 TU Dresden
+# Licensed under the ISC license (see LICENSE.txt)
+#
+# Authors: Christian Menard

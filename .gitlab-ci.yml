@@ -1,71 +1,193 @@
-default:
-  before_script:
-  - apt-get update
-  - apt-get -y install libblas-dev liblapack-dev
-  - test/config_matplotlig_agg.sh
+# default:
+#   before_script:
+#   - apt-get update
+#   - apt-get -y install libblas-dev liblapack-dev
+#   - test/config_matplotlig_agg.sh
 
 stages:
+  - build_pynauty
+  - build_mocasin
   - test
 
-test-python3.8-develop:
+.build-pynauty:
+  script:
+    - wget -N https://web.cs.dal.ca/~peter/software/pynauty/pynauty-0.6.0.tar.gz
+    - tar -xzf pynauty-0.6.0.tar.gz
+    - cd pynauty-0.6.0
+    - wget -N http://users.cecs.anu.edu.au/~bdm/nauty/nauty27r1.tar.gz
+    - tar -xzf nauty27r1.tar.gz
+    - mv nauty27r1 nauty
+    - make pynauty
+    - pip wheel . -w ..
+  artifacts:
+    paths:
+      - pynauty*.whl
+
+build-pynauty-python3.9:
+  extends: .build-pynauty
+  stage: build_pynauty
+  image: python:3.9
+  tags:
+    - python3.9
+
+build-pynauty-python3.8:
+  extends: .build-pynauty
+  stage: build_pynauty
+  image: python:3.8
+  tags:
+    - python3.8
+
+build-pynauty-python3.7:
+  extends: .build-pynauty
+  stage: build_pynauty
+  image: python:3.7
+  tags:
+    - python3.7
+
+build-pynauty-python3.6:
+  extends: .build-pynauty
+  stage: build_pynauty
+  image: python:3.6
+  tags:
+    - python3.6
+
+.build-mocasin:
+  variables:
+    NO_PYNAUTY: 1
+  script:
+    - pip install pynauty*.whl
+    - pip wheel --no-deps .
+  artifacts:
+    paths:
+      - mocasin*.whl
+
+build-mocasin-python3.9:
+  extends: .build-mocasin
+  stage: build_mocasin
+  image: python:3.9
+  tags:
+    - python3.9
+  needs:
+    - build-pynauty-python3.9
+
+build-mocasin-python3.8:
+  extends: .build-mocasin
+  stage: build_mocasin
+  image: python:3.8
+  tags:
+    - python3.8
+  needs:
+    - build-pynauty-python3.8
+
+build-mocasin-python3.7:
+  extends: .build-mocasin
+  stage: build_mocasin
+  image: python:3.7
+  tags:
+    - python3.7
+  needs:
+    - build-pynauty-python3.7
+
+build-mocasin-python3.6:
+  extends: .build-mocasin
+  stage: build_mocasin
+  image: python:3.6
+  tags:
+    - python3.6
+  needs:
+    - build-pynauty-python3.6
+
+.test:
+  script:
+    - pip install pynauty*.whl
+    - pip install mocasin*.whl
+    - python setup.py test
+
+test-python3.9:
+  extends: .test
+  stage: test
+  image: python:3.9
+  tags:
+    - python3.9
+  needs:
+    - build-pynauty-python3.9
+    - build-mocasin-python3.9
+
+test-python3.8:
+  extends: .test
   stage: test
   image: python:3.8
   tags:
     - python3.8
-  script:
-  - python setup.py develop
-  - python setup.py test
+  needs:
+    - build-pynauty-python3.8
+    - build-mocasin-python3.8
 
-test-python3.7-develop:
+test-python3.7:
+  extends: .test
   stage: test
   image: python:3.7
   tags:
     - python3.7
-  script:
-  - python setup.py develop
-  - python setup.py test
+  needs:
+    - build-pynauty-python3.7
+    - build-mocasin-python3.7
 
-test-python3.6-develop:
+test-python3.6:
+  extends: .test
   stage: test
   image: python:3.6
   tags:
     - python3.6
-  script:
-  - python setup.py develop
-  - python setup.py test
+  needs:
+    - build-pynauty-python3.6
+    - build-mocasin-python3.6
 
-test-python3.8-install:
+test-gbm:
   stage: test
-  image: python:3.8
-  tags:
-    - python3.8
-  script:
-  - python setup.py install
-  - python setup.py test
+  variables:
+    MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
+  needs:
+    - build-pynauty-python3.9
+    - build-pynauty-python3.8
+    - build-pynauty-python3.7
+    - build-pynauty-python3.6
+  trigger:
+    project: mocasin/mocasin-gbm
+    strategy: depend
 
-test-python3.7-install:
+test-maps-examples:
   stage: test
-  image: python:3.7
-  tags:
-    - python3.7
-  script:
-  - python setup.py install
-  - python setup.py test
+  variables:
+    MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
+  needs:
+    - build-pynauty-python3.9
+    - build-pynauty-python3.8
+    - build-pynauty-python3.7
+    - build-pynauty-python3.6
+  trigger:
+    project: mocasin/mocasin-maps-examples
+    strategy: depend
 
-test-python3.6-install:
+test-fivegsim:
   stage: test
-  image: python:3.6
-  tags:
-    - python3.6
-  script:
-  - python setup.py install
-  - python setup.py test
+  variables:
+    MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
+  needs:
+    - build-pynauty-python3.9
+    - build-pynauty-python3.8
+    - build-pynauty-python3.7
+    - build-pynauty-python3.6
+  trigger:
+    project: mocasin/fivegsim
+    strategy: depend
 
 check-formatting:
   stage: test
   image: python:3.8
   tags:
     - python3.8
+  needs: []
   script:
     - pip install black
     - black --check .

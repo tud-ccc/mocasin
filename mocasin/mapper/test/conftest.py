@@ -8,15 +8,6 @@ import pytest
 from mocasin.common.graph import DataflowProcess, DataflowGraph
 from mocasin.common.platform import Platform, Processor, Scheduler
 
-from mocasin.tgff.tgffSimulation import (
-    DataflowGraphFromTgff,
-    TraceGeneratorWrapper,
-)
-from mocasin.platforms.platformDesigner import genericProcessor
-from mocasin.platforms.generic_mesh import DesignerPlatformMesh
-from mocasin.platforms.exynos990 import DesignerPlatformExynos990
-from mocasin.platforms.mppa_coolidge import DesignerPlatformCoolidge
-from mocasin.platforms.multi_cluster import DesignerPlatformMultiCluster
 from mocasin.representations import SimpleVectorRepresentation
 from mocasin.common.trace import EmptyTraceGenerator
 from mocasin.maps.platform import MapsPlatform
@@ -66,74 +57,6 @@ def representation_pbc(graph, platform):
 @pytest.fixture
 def trace():
     return EmptyTraceGenerator()
-
-
-@pytest.fixture
-def tgff_parallella_setup():
-    file = "examples/tgff/e3s-0.9/auto-indust-cords.tgff"
-
-    tgff_graph = "TASK_GRAPH_0"
-
-    processor0 = genericProcessor("proc_type_0")
-    processor1 = genericProcessor("proc_type_1")
-
-    graph = DataflowGraphFromTgff(file, tgff_graph)
-    platform = DesignerPlatformMesh(processor0, processor1)
-    trace_generator = TraceGeneratorWrapper(file, tgff_graph)
-
-    return [graph, platform, trace_generator]
-
-
-@pytest.fixture
-def tgff_exynos_setup():
-    file = "examples/tgff/e3s-0.9/auto-indust-cowls.tgff"
-
-    tgff_graph = "TASK_GRAPH_3"
-
-    processor0 = genericProcessor("proc_type_13")
-    processor1 = genericProcessor("proc_type_14")
-    processor2 = genericProcessor("proc_type_15")
-    processor3 = genericProcessor("proc_type_16")
-
-    graph = DataflowGraphFromTgff(file, tgff_graph)
-    platform = DesignerPlatformExynos990(
-        processor0, processor1, processor2, processor3
-    )
-    trace_generator = TraceGeneratorWrapper(file, tgff_graph)
-
-    return [graph, platform, trace_generator]
-
-
-@pytest.fixture
-def tgff_coolidge_setup():
-    file = "examples/tgff/e3s-0.9/office-automation-mocsyn.tgff"
-
-    tgff_graph = "TASK_GRAPH_0"
-
-    processor0 = genericProcessor("proc_type_20")
-    processor1 = genericProcessor("proc_type_21")
-
-    graph = DataflowGraphFromTgff(file, tgff_graph)
-    platform = DesignerPlatformCoolidge(processor0, processor1)
-    trace_generator = TraceGeneratorWrapper(file, tgff_graph)
-
-    return [graph, platform, trace_generator]
-
-
-@pytest.fixture
-def tgff_multi_cluster_setup():
-    file = "examples/tgff/e3s-0.9/auto-indust-cords.tgff"
-
-    tgff_graph = "TASK_GRAPH_1"
-
-    processor0 = genericProcessor("proc_type_0")
-    processor1 = genericProcessor("proc_type_1")
-
-    graph = DataflowGraphFromTgff(file, tgff_graph)
-    platform = DesignerPlatformMultiCluster(processor0, processor1)
-    trace_generator = TraceGeneratorWrapper(file, tgff_graph)
-
-    return [graph, platform, trace_generator]
 
 
 @pytest.fixture

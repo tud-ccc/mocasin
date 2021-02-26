@@ -6,6 +6,8 @@
 import pickle
 from glob import glob
 
+from hydra.utils import to_absolute_path
+
 from mocasin.util import logging
 from mocasin.common.mapping import Mapping
 from mocasin.representations import MappingRepresentation
@@ -39,7 +41,7 @@ class FromFileMapper:
         self.mappings = []
         for file_path in glob(files_pattern):
             try:
-                with open(file_path, "rb") as f:
+                with open(to_absolute_path(file_path), "rb") as f:
                     p = pickle.Unpickler(f)
                     mapping = p.load()
                     assert isinstance(mapping, Mapping)

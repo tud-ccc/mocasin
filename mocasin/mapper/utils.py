@@ -263,47 +263,6 @@ def run_simulation(simulation):
     return simulation, time
 
 
-class DerivedPrimitive:
-    """Representing communication from one single processor to another one.
-
-    This class represents a further abstraction from the common mocasin primitive and
-    only covers the communication between one specific source and one specific sink
-    processor.
-
-    Attributes:
-        name (string): Name of the primitive. A combination of source and target name.
-        source (mocasin.common.platform.Processor): The source processor, capable of sending data
-            via this primitive.
-        sink (mocasin.common.platform.Processor): The sink processor, which should receive the data
-            send via the primitive.
-        write_cost (int): The amount of ticks it costs to write via this primitive.
-        read_cost (int): The amount if ticks it costs to read from this primitive.
-        cost (int): Complete static cost for one token, send via this primitive.
-        ref_primitive (mocasin.common.platform.Primitive): The mocasin primitive, this primitive was
-            derived from.
-    """
-
-    def __init__(self, source, sink, ref_prim):
-        """Constructor of a derived primitive
-
-        Args:
-            source (mocasin.common.platform.Processor): The source processor.
-            target (mocasin.common.platform.Processor): The target processor.
-            ref_prim (mocasin.commom.platform.Primitive): The mocasin primitive this primitive was
-                derived from.
-        """
-        self.name = "prim_{}_{}".format(source.name, sink.name)
-
-        self.source = source
-        self.sink = sink
-
-        self.write_cost = ref_prim.static_produce_costs(source)
-        self.read_cost = ref_prim.static_consume_costs(sink)
-        self.cost = self.write_cost + self.read_cost
-
-        self.ref_primitive = ref_prim
-
-
 def statistics_parser(dir):
     results = {}
     with open(os.path.join(dir, "statistics.txt"), "r") as f:

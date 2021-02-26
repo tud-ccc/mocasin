@@ -3,11 +3,13 @@
 #
 # Authors: Felix Teweleit, Andres Goens
 
+import logging
+
+from hydra.utils import to_absolute_path
+
 from mocasin.tgff.trace import TgffTraceGenerator
 from mocasin.tgff.tgffParser.parser import Parser
 
-
-import logging
 
 log = logging.getLogger(__name__)
 
@@ -26,7 +28,11 @@ class DataflowGraphFromTgff:
     def __new__(cls, tgff_file, name):
         if tgff_file not in _parsed_tgff_files:
             _parsed_tgff_files.update(
-                {tgff_file: Parser().parse_file(tgff_file, [])}
+                {
+                    tgff_file: Parser().parse_file(
+                        to_absolute_path(tgff_file), []
+                    )
+                }
             )
             log.warning(
                 "TGFF traces should to be initialized first before the application, otherwise processor types might be inconsistent."
@@ -48,7 +54,11 @@ class TraceGeneratorWrapper:
             else:
                 proc_type_list = processor_types
             _parsed_tgff_files.update(
-                {tgff_file: Parser().parse_file(tgff_file, proc_type_list)}
+                {
+                    tgff_file: Parser().parse_file(
+                        to_absolute_path(tgff_file), proc_type_list
+                    )
+                }
             )
 
         tgff_components = _parsed_tgff_files[tgff_file]
