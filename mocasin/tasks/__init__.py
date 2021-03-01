@@ -21,14 +21,6 @@ as the shell auto completion.
 import hydra
 
 
-@hydra.main(config_path="conf", config_name="help")
-def help(cfg=None):
-    """Print a help message"""
-    from mocasin.tasks import print_help
-
-    print_help()
-
-
 @hydra.main(config_path="conf", config_name="find_design_center")
 def find_design_center(cfg):
     """generate a mapping using the design centering algorithm"""
