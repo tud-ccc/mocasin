@@ -75,17 +75,5 @@ def main():
         sys.exit(1)
 
 
-def profile():
-    """
-    This script is a wrapper around the mocasin launcher, which replaces
-    starts a profiling run.
-    """
-    profiler = cProfile.Profile()
-    profiler.enable()
-    main()
-    profiler.dump_stats("profile_dump")
-    profiler.print_stats()
-
-
 if __name__ == "__main__":
     main()
