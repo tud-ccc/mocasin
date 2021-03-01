@@ -1,107 +1,155 @@
-# Copyright (C) 2019 TU Dresden
+# Copyright (C) 2021 TU Dresden
 # Licensed under the ISC license (see LICENSE.txt)
 #
 # Authors: Christian Menard
 
 
-"""This subpackage manages the executable tasks that are available within
-mocasin
+"""This module describes all entrypoints (tasks) provided by mocasin.
 
-To add a new task, add an entrypoint to the `entrypoints` module.
+To add a new task, simply define a function within this module. Each function
+will automatically become available as a mocasin task. Each function should
+provide a docstring, as this is used for generating a help text for the command
+line interface.
+
+Note that each task function should be annotated with ``@hydra.main`` and
+expect precisely one parameter, the OmegaCconf object as created by hydra. Note
+that we import any necessary modules only within the functions and not
+globally. This significantly speeds up the runtime of individual tasks as well
+as the shell auto completion.
 """
 
-import inspect
-import logging
-import sys
-import textwrap
-import typing
-import os
-
-from dataclasses import dataclass
-
-from mocasin.tasks import entrypoints
-
-log = logging.getLogger(__name__)
+import hydra
 
 
-@dataclass
-class Task:
-    name: str = None
-    function: typing.Callable = None
-    docstring: str = None
+@hydra.main(config_path="conf", config_name="help")
+def help(cfg=None):
+    """Print a help message"""
+    from mocasin.tasks import print_help
+
+    print_help()
 
 
-def get_all_tasks():
-    tasks = inspect.getmembers(entrypoints, predicate=inspect.isfunction)
-    for name, func in tasks:
-        yield Task(name=name, function=func, docstring=inspect.getdoc(func))
+@hydra.main(config_path="conf", config_name="find_design_center")
+def find_design_center(cfg):
+    """generate a mapping using the design centering algorithm"""
+    from mocasin.tasks.find_design_center import dc_task
+
+    dc_task(cfg)
 
 
-def print_help():
-    print("mocasin is a framework for modeling dataflow applications and their")
-    print("execution on MPSoC platforms.")
-    print("")
-    print("Usage: mocasin TASK [MOCASIN OPTIONS] [HYDRA OPTIONS]")
-    print("")
-    print("mocasin can perform one of several tasks. It expects the first ")
-    print("argument to specify the task to be executed.")
-    print("")
-    print("Available mocasin tasks:")
-    for task in get_all_tasks():
-        desc = task.docstring
-        desc_lines = textwrap.wrap(desc, width=41)
-        task_name = f"  {task.name}: "
-        print("%s%s" % ("{:<24}".format(task_name), desc_lines[0]))
-        for line in desc_lines[1:]:
-            print("%s%s" % ("{:<24}".format(""), line))
-    print("")
-    print("mocasin options:")
-    print(" --no-fail-on-exception If this flag is set, mocasin does not exit")
-    print("                        with an error code in case of an internal")
-    print("                        exception. This is useful in combination")
-    print("                        with hydra mutlirun if execution should")
-    print("                        continue even when one job failed.")
-    print(" --profile              If this flag is set, the specified task")
-    print("                        is executed with a profiler (cProfile). The")
-    print("                        profiling stats are dumped to file")
-    print("                        mocasin_profile.")
+@hydra.main(config_path="conf", config_name="enumerate_equivalent")
+def enumerate_equivalent(cfg):
+    """ennumerate all mappings equivalent to the given mapping"""
+    from mocasin.tasks.enumerate_equivalent import enumerate_equivalent
+
+    enumerate_equivalent(cfg)
 
 
-def execute_task(task_name):
-    """Execute a mocasin task.
+@hydra.main(config_path="conf", config_name="generate_mapping")
+def generate_mapping(cfg):
+    """Generate a mapping"""
+    from mocasin.tasks.generate_mapping import generate_mapping
 
-    Args:
-        task (str): name of the task to be executed
+    generate_mapping(cfg)
+
+
+@hydra.main(config_path="conf/", config_name="pareto_front.yaml")
+def pareto_front(cfg):
+    """Generate a pareto front of mappings"""
+    from mocasin.tasks.pareto_front import pareto_front
+
+    pareto_front(cfg)
+
+
+@hydra.main(config_path="conf", config_name="graph_to_dot")
+def graph_to_dot(cfg):
+    """Visualize a dataflow application as a dot graph"""
+    from mocasin.tasks.to_dot import graph_to_dot
+
+    graph_to_dot(cfg)
+
+
+@hydra.main(config_path="conf", config_name="platform_to_dot.yaml")
+def platform_to_dot(cfg):
+    """Visualize a platform as a dot graph"""
+    from mocasin.tasks.to_dot import platform_to_dot
+
+    platform_to_dot(cfg)
+
+
+@hydra.main(config_path="conf", config_name="mapping_to_dot.yaml")
+def mapping_to_dot(cfg):
+    """Visualize a mapping as a dot graph"""
+    from mocasin.tasks.to_dot import mapping_to_dot
+
+    mapping_to_dot(cfg)
+
+
+@hydra.main(config_path="conf", config_name="calculate_platform_embedding")
+def calculate_platform_embedding(cfg):
+    """Calculate a low-distortion embedding for a platform"""
+    from mocasin.tasks.calculate_platform_embedding import (
+        calculate_platform_embedding,
+    )
+
+    calculate_platform_embedding(cfg)
+
+
+@hydra.main(config_path="conf", config_name="calculate_platform_symmetries")
+def calculate_platform_symmetries(cfg):
+    """Calculate the automorphism group of a platform graph"""
+    from mocasin.tasks.calculate_platform_symmetries import (
+        calculate_platform_symmetries,
+    )
+
+    calculate_platform_symmetries(cfg)
+
+
+@hydra.main(config_path="conf", config_name="simulate")
+def simulate(cfg):
+    """Replay traces to simulate the execution of a dataflow application on a
+    given platform
     """
+    from mocasin.tasks.simulate import simulate
 
-    if task_name is None:
-        log.error("ERROR: You need to specify a task!\n")
-        print_help()
-        sys.exit(-1)
-
-    # collect all defined tasks
-    tasks = {t.name: t.function for t in get_all_tasks()}
-
-    if task_name not in tasks:
-        log.error(
-            f"ERROR: Tried to run a task unknown to mocasin ({task_name})\n"
-        )
-        print_help()
-        sys.exit(-1)
-
-    # execute the task
-    tasks[task_name]()
+    simulate(cfg)
 
 
-def task_autocomplete():
-    line = os.environ["COMP_LINE"]
-    words = line.split(" ")
-    if len(words) < 2:
-        return [""]
-    else:
-        result = []
-        start = words[-1]
-        for task in _tasks:
-            if task.startswith(start):
-                result.append(task)
-        return result
+@hydra.main(config_path="conf", config_name="solve_query.yaml")
+def solve_query(cfg):
+    """Generates a mapping based on constraints expressed in a query language"""
+    from mocasin.tasks.solve_query import solve_query
+
+    solve_query(cfg)
+
+
+@hydra.main(config_path="conf", config_name="tetris_scheduler")
+def tetris_scheduler(cfg):
+    """Run the Tetris scheduler for a single input state"""
+    from mocasin.tasks.tetris import tetris_scheduler
+
+    tetris_scheduler(cfg)
+
+
+@hydra.main(config_path="conf", config_name="tetris_manager")
+def tetris_manager(cfg):
+    """Run the Tetris manager"""
+    from mocasin.tasks.tetris import tetris_manager
+
+    tetris_manager(cfg)
+
+
+@hydra.main(config_path="conf", config_name="visualize")
+def visualize(cfg):
+    """Visualize a mapping in the GUI"""
+    from mocasin.tasks.visualize import visualize
+
+    visualize(cfg)
+
+
+@hydra.main(config_path="conf", config_name="parse_multirun")
+def parse_multirun(cfg):
+    """Parse the directory structure after executing a multirun job"""
+    from mocasin.tasks.parse_multirun import parse_multirun
+
+    parse_multirun(cfg)

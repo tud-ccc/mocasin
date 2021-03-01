@@ -6,14 +6,38 @@
 # Authors: Andres Goens, Christian Menard
 
 import argparse
-import logging
-import sys
-import traceback
 import cProfile
+import logging
+import inspect
+import traceback
+import typing
+import sys
 
-from mocasin.tasks import execute_task, get_all_tasks
+from dataclasses import dataclass
+
+import mocasin.tasks
 
 log = logging.getLogger(__name__)
+
+
+@dataclass
+class Task:
+    name: str = None
+    function: typing.Callable = None
+    docstring: str = None
+
+
+def get_all_tasks():
+    """Find all tasks defined by mocasin
+
+    This extracts all tasks defined in tasks/__init__.py
+
+    Yields:
+        Task: an object describing a task
+    """
+    tasks = inspect.getmembers(mocasin.tasks, predicate=inspect.isfunction)
+    for name, func in tasks:
+        yield Task(name=name, function=func, docstring=inspect.getdoc(func))
 
 
 def main():
@@ -32,8 +56,9 @@ def main():
     See :module:`mocasin.tasks` for a description of how new tasks can be added.
     """
 
+    # create an epilog for our help message to list all avilable tasks
     epilog = "mocasin tasks:\n"
-    for task in get_all_tasks():
+    for task in sorted(get_all_tasks(), key=lambda x: x.name):
         if len(task.name) < 22:
             epilog += "  {:<21} {}\n".format(
                 task.name, task.docstring.replace("\n", "").replace("\r", "")
@@ -82,10 +107,20 @@ def main():
         profiler = cProfile.Profile()
         profiler.enable()
 
+    # lookup the given task
+    task = next((t for t in get_all_tasks() if t.name == args.task), None)
+
+    if task is None:
+        log.error(
+            f"ERROR: The task '{args.task}' is not known to mocasin\n"
+        )
+        parser.print_help()
+        sys.exit(-1)
+
     # run the actual task
     exception = False
     try:
-        execute_task(args.task)
+        task.function()
     except Exception:
         log.error(traceback.format_exc())
         exception = True
@@ -101,6 +136,20 @@ def main():
     # '--no-fail-on-exception' flag is given.
     if exception and not args.no_fail_on_exception:
         sys.exit(1)
+
+
+# def task_autocomplete():
+#     line = os.environ["COMP_LINE"]
+#     words = line.split(" ")
+#     if len(words) < 2:
+#         return [""]
+#     else:
+#         result = []
+#         start = words[-1]
+#         for task in _tasks:
+#             if task.startswith(start):
+#                 result.append(task)
+#         return result
 
 
 if __name__ == "__main__":
