@@ -34,7 +34,7 @@ class Task:
 def get_all_tasks():
     tasks = inspect.getmembers(entrypoints, predicate=inspect.isfunction)
     for name, func in tasks:
-        yield Task(name=name, function=func, docstring=func.__doc__)
+        yield Task(name=name, function=func, docstring=inspect.getdoc(func))
 
 
 def print_help():
