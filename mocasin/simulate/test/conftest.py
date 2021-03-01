@@ -59,6 +59,7 @@ def channel(app, mocker):
 def processor(mocker):
     processor = mocker.Mock()
     processor.name = "Test"
+    processor.type = "Test"
     processor.ticks = lambda x: x
     return processor
 

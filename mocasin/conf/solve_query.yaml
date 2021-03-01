@@ -5,7 +5,6 @@ defaults:
     - tgff: default
     - platform: default
     - graph: default
-    - trace: default
     - representation: SimpleVector
     - sdf3: default
 query: ???

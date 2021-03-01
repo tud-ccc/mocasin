@@ -1,5 +1,5 @@
 # @package _group_
-_target_: mocasin.sdf3.trace.Sdf3TraceGenerator
+_target_: mocasin.sdf3.trace.Sdf3Trace
 xml_file: "${sdf3.file}"
 repetitions: 20
 processor_types:
