@@ -8,10 +8,12 @@
 import argparse
 import cProfile
 import logging
+import os
+import shlex
+import sys
 import inspect
 import traceback
 import typing
-import sys
 
 from dataclasses import dataclass
 
@@ -107,13 +109,16 @@ def main():
         profiler = cProfile.Profile()
         profiler.enable()
 
+    # we use a hidden "autocomplete" task for bash auto completion
+    if args.task == "autocomplete":
+        autocomplete()
+        return
+
     # lookup the given task
     task = next((t for t in get_all_tasks() if t.name == args.task), None)
 
     if task is None:
-        log.error(
-            f"ERROR: The task '{args.task}' is not known to mocasin\n"
-        )
+        log.error(f"ERROR: The task '{args.task}' is not known to mocasin\n")
         parser.print_help()
         sys.exit(-1)
 
@@ -138,18 +143,48 @@ def main():
         sys.exit(1)
 
 
-# def task_autocomplete():
-#     line = os.environ["COMP_LINE"]
-#     words = line.split(" ")
-#     if len(words) < 2:
-#         return [""]
-#     else:
-#         result = []
-#         start = words[-1]
-#         for task in _tasks:
-#             if task.startswith(start):
-#                 result.append(task)
-#         return result
+def autocomplete():
+    # the command we are completing
+    cmd = shlex.split(os.environ["COMP_LINE"])
+    # index of the word we are completing
+    word_idx = int(os.environ["COMP_CWORD"])
+    # the word we are completing
+    try:
+        word = cmd[word_idx]
+    except IndexError:
+        word = None
+
+    # complete the command the mocasin options
+    args = ["-h", "--help", "--profile", "--no-fail-on-exception"]
+    for arg in args:
+        if word is None or arg.startswith(word):
+            print(arg)
+
+    # check if there is a task specified in cmd
+    task = None
+    for t in get_all_tasks():
+        if t.name in cmd:
+            task = t
+            break
+
+    if task is None:
+        # if no tasks was found, we complete the task
+        for t in get_all_tasks():
+            if word is None or t.name.startswith(word):
+                print(t.name)
+    else:
+        # if a task is given, we call hydra to do its completion
+        # First remove the task from the command, because it confuses hydra
+        cmd.remove(task.name)
+        os.environ["COMP_LINE"] = " ".join(cmd)
+        os.environ["COMP_POINT"] = str(
+            int(os.environ["COMP_POINT"]) - len(task.name)
+        )
+        # we also need to manipulate sys.argv to trick hydra into completion
+        # mode
+        sys.argv = ["mocasin", "-sc", "query=bash"]
+        # call the task to get completion options
+        task.function()
 
 
 if __name__ == "__main__":
