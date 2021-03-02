@@ -73,9 +73,11 @@ def main():
         ),
         epilog=epilog,
         formatter_class=argparse.RawDescriptionHelpFormatter,
+        usage="mocasin [mocasin option] TASK [hydra overrides]",
     )
     parser.add_argument(
         "task",
+        metavar="TASK",
         help="The mocasin task to run. See below for a list of available tasks",
     )
     parser.add_argument(
@@ -154,7 +156,7 @@ def autocomplete():
     except IndexError:
         word = None
 
-    # complete the command the mocasin options
+    # complete the command with the mocasin options
     args = ["-h", "--help", "--profile", "--no-fail-on-exception"]
     for arg in args:
         if word is None or arg.startswith(word):
