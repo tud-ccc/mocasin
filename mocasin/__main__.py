@@ -216,7 +216,7 @@ def autocomplete():
         # do we complete a word in style "lhs=rhs"?
         if word is not None and "=" in word:
             # did hydra not find any completion options?
-            if hydra_options == "" or hydra_options==word:
+            if hydra_options == "" or hydra_options == word:
                 # if hydra did not find anything, we assume rhs is a file path
                 # and attempt to complete it
                 lhs, rhs = word.split("=")
