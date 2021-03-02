@@ -16,6 +16,7 @@ import traceback
 import typing
 
 from dataclasses import dataclass
+from glob import glob
 
 import mocasin.tasks
 
@@ -182,11 +183,48 @@ def autocomplete():
         os.environ["COMP_POINT"] = str(
             int(os.environ["COMP_POINT"]) - len(task.name)
         )
+
         # we also need to manipulate sys.argv to trick hydra into completion
         # mode
         sys.argv = ["mocasin", "-sc", "query=bash"]
+
+        # finally we manipulate stdout to intercept any completions hydra finds
+        class Out(object):
+            def write(self, s):
+                self.s += s
+
+            def flush(self):
+                pass
+
+            def __init__(self):
+                self.s = ""
+
+        hydra_out = Out()
+        sys.stdout = hydra_out
+
         # call the task to get completion options
         task.function()
+
+        # revert to default stdout
+        sys.stdout = sys.__stdout__
+        # and print all the completion options found by hydra
+        for line in hydra_out.s.split("\n"):
+            print(line)
+
+        hydra_options = hydra_out.s.strip()
+
+        # do we complete a word in style "lhs=rhs"?
+        if word is not None and "=" in word:
+            # did hydra not find any completion options?
+            if hydra_options == "" or hydra_options==word:
+                # if hydra did not find anything, we assume rhs is a file path
+                # and attempt to complete it
+                lhs, rhs = word.split("=")
+                for f in glob("*") + glob(f"{rhs}*") + glob(f"{rhs}/*"):
+                    if os.path.isdir(f):
+                        print(f"{lhs}={f}/")
+                    else:
+                        print(f"{lhs}={f}")
 
 
 if __name__ == "__main__":
