@@ -105,6 +105,11 @@ mocasin comes with a set of tests. You can run them as follows:
 python setup.py test
 ```
 
+Style Guide
+-----------
+
+See [Style Guide](style-guide.md)
+
 Publications
 ------------
 
