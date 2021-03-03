@@ -187,14 +187,14 @@ class RuntimeScheduler(object):
             self._ready_queue.append(process)
         process.ready.callbacks.append(self._cb_process_ready)
 
-        # notify the process created event
+        # notify the process ready event
         self.process_ready.succeed()
         self.process_ready = self.env.event()
 
     def _cb_process_finished(self, event):
         """Callback for the finished event of runtime processes
 
-        Makes sure that the process is removed fromt the ready queue.
+        Makes sure that the process is removed from the ready queue.
 
         :param event: The event calling the callback. This function expects \
             ``event.value`` to be a valid RuntimeProcess object.
@@ -205,6 +205,8 @@ class RuntimeScheduler(object):
                 "of the triggering event!"
             )
         process = event.value
+        assert process.check_state(ProcessState.FINISHED)
+        # self._processes.remove(process)
         try:
             self._ready_queue.remove(process)
         except ValueError:
