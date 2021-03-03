@@ -28,9 +28,9 @@ def runtime_scheduler(system, processor):
 
 def mock_process_workload(env, process, ticks):
     assert process.check_state(ProcessState.RUNNING)
-    preempt = process._preempt
-    yield env.any_of([env.timeout(ticks), preempt])
-    if preempt.processed:
+    interrupt = process._interrupt
+    yield env.any_of([env.timeout(ticks), interrupt])
+    if interrupt.processed:
         process._deactivate()
     else:
         process._finish()
