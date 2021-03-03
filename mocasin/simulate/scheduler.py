@@ -154,15 +154,15 @@ class RuntimeScheduler(object):
         """Add a process to this scheduler.
 
         Append the process to the :attr:`_processes` list and register all
-        required event callbacks. This may not be called after the simulation
-        started.
-        :param process: the process to be added
-        :type process: RuntimeProcess
+        required event callbacks.
+
+        Args:
+            process (RuntimeDataflowProcess): the process to be added
         """
         self._log.debug("add process %s", process.full_name)
-        if not process.check_state(ProcessState.CREATED):
+        if process.check_state(ProcessState.FINISHED):
             raise RuntimeError(
-                "Processes that are already started cannot be "
+                "Processes that are already finished cannot be "
                 "added to a scheduler"
             )
         self._processes.append(process)
