@@ -37,13 +37,18 @@ class OrbitLookupEntry:
                     f"Trying to access mapping#{i} while only {cache_size} were"
                     " generated. Mapping must be accessed in-order."
                 )
-            m = next(self._orbit_generator)
-            self._cached_mappings.append(m)
+            try:
+                m = next(self._orbit_generator)
+                self._cached_mappings.append(m)
+            except StopIteration:
+                m = None
             return m
 
     def get_generator(self):
         for i in count():
             m = self._at(i)
+            if m is None:
+                break
             yield m
 
 
