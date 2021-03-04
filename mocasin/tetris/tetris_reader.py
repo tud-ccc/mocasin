@@ -6,7 +6,7 @@
 from mocasin.tetris.job_request import JobRequestInfo
 
 from mocasin.maps.graph import MapsDataflowGraph
-from mocasin.util.csv_reader import DataReader
+from mocasin.util.mapping_table_reader import MappingTableReader
 
 import csv
 import logging
@@ -50,7 +50,7 @@ def read_applications(base_dir, platform):
             "exec_time_col": "executionTime",
             "energy_col": "totalEnergy",
         }
-        mappings_reader = DataReader(
+        mappings_reader = MappingTableReader(
             platform, graph, mapping_file, **reader_kwargs
         )
         mappings = [m[0] for m in mappings_reader.formMappings().values()]

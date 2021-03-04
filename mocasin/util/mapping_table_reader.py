@@ -18,7 +18,7 @@ from hydra.utils import to_absolute_path
 # TODO(RK): Make a unit test which checks a case with multiple objectives
 
 
-class DataReader:
+class MappingTableReader:
     def __init__(
         self,
         platform,
@@ -181,7 +181,7 @@ class DataReader:
         return self._mMappingDict
 
 
-class DataReaderFromHydra(DataReader):
+class MappingTableReaderFromHydra(MappingTableReader):
     def __init__(self, platform, graph, cfg):
         file_path = to_absolute_path(cfg["csv_file"])
         attribute = cfg["property"]
