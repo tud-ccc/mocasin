@@ -33,7 +33,7 @@ def calculate_platform_symmetries(cfg):
     platform = hydra.utils.instantiate(cfg["platform"])
     log.info("start converting platform to edge graph for automorphisms.")
     plat_graph = platform.to_adjacency_dict()
-    mpsym = cfg["mpsym"]
+    use_mpsym = cfg["mpsym"]
 
     (
         adjacency_dict,
@@ -68,16 +68,16 @@ def calculate_platform_symmetries(cfg):
     log.info("done coverting automorhpism of edges to nodes.")
 
     log.info("start writing to file.")
-    if mpsym:
+    if use_mpsym:
         try:
             mpsym
         except NameError:
             log.error(
                 "Configured for mpsym output but could not load mpsym. Fallback to python implementation"
             )
-            mpsym = False
+            use_mpsym = False
 
-    if mpsym:
+    if use_mpsym:
         out_filename = str(cfg["out_file"])
         mpsym_autgrp = mpsym.ArchGraphAutomorphisms(
             [mpsym.Perm(g) for g in autgrp]
