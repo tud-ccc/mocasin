@@ -13,7 +13,6 @@ import tempfile
 from setuptools import setup, find_packages, find_namespace_packages
 from setuptools.command.install import install
 from setuptools.command.develop import develop
-from doc.build_doc import BuildDocCommand
 import subprocess
 
 project_name = "mocasin"
@@ -64,11 +63,6 @@ setup(
             "source_dir": ("setup.py", "doc"),
             "build_dir": ("setup.py", "doc/build"),
         }
-    },
-    cmdclass={
-        "doc": BuildDocCommand,
-        "install": InstallCommand,
-        "develop": DevelopCommand,
     },
     entry_points={
         "console_scripts": [
