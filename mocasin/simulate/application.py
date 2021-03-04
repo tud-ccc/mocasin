@@ -166,3 +166,12 @@ class RuntimeDataflowApplication(RuntimeApplication):
         """
         for p in self.processes():
             p.kill()
+
+    def update_mapping(self, mapping):
+        """Update the mapping used by this application, causing a migration of
+           processes.
+
+        Args:
+             Mapping: an updated mapping to be used by the application
+        """
+        log.warning("Updating a mapping at runtime is not yet supported")
