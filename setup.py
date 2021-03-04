@@ -34,6 +34,7 @@ install_requirements = [
     "pint",
     "pydot",
     "pympsym>=0.5",
+    "pynauty>=1.0rc5",
     "pyxb",
     "simpy",
     "sortedcontainers",
@@ -45,78 +46,6 @@ setup_requirements = ["pip", "pytest-runner", "sphinx"]
 
 if sys.version_info < (3, 7):
     install_requirements.append("dataclasses")
-
-
-class InstallPynautyCommand(distutils.cmd.Command):
-    """A custom command to install the pynauty dependency"""
-
-    description = "install the pynauty dependency"
-    user_options = []
-
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
-
-    def run(self):
-        """Run the command.
-
-        First, run ``make pynauty`` to build the c library. Then, run ``python
-        setup.py install`` to install pynauty.
-        """
-        cwd = os.getcwd()
-        with tempfile.TemporaryDirectory() as tmpdir:
-            os.chdir(tmpdir)
-            print("Downloading nauty")
-            urllib.request.urlretrieve(
-                "http://users.cecs.anu.edu.au/~bdm/nauty/nauty27r1.tar.gz",
-                "nauty27r1.tar.gz",
-            )
-            print("Downloading pynauty")
-            urllib.request.urlretrieve(
-                "https://web.cs.dal.ca/~peter/software/pynauty/pynauty-0.6.0.tar.gz",
-                "pynauty-0.6.0.tar.gz",
-            )
-            print("Extracting pynauty")
-            with tarfile.open("pynauty-0.6.0.tar.gz") as tar:
-                tar.extractall(".")
-            print("Extracting nauty")
-            with tarfile.open("nauty27r1.tar.gz") as tar:
-                tar.extractall("pynauty-0.6.0/")
-            os.rename("pynauty-0.6.0/nauty27r1", "pynauty-0.6.0/nauty")
-            print("Build pynauty")
-            subprocess.check_call(
-                ["make", "pynauty"], cwd=f"{tmpdir}/pynauty-0.6.0"
-            )
-            print("Install pynauty")
-            subprocess.check_call(
-                ["pip", "install", "."], cwd=f"{tmpdir}/pynauty-0.6.0"
-            )
-        os.chdir(cwd)
-
-
-def install_pynauty(cmd):
-    # If the environment variable NO_PYNAUTY is set to any value, we skip
-    # pynauty installation
-    if "NO_PYNAUTY" not in os.environ:
-        # also skip installation if already installed
-        try:
-            import pynauty
-        except ImportError:
-            cmd.run_command("pynauty")
-
-
-class InstallCommand(install):
-    def run(self):
-        install_pynauty(self)
-        install.run(self)
-
-
-class DevelopCommand(develop):
-    def run(self):
-        install_pynauty(self)
-        develop.run(self)
 
 
 setup(
@@ -138,7 +67,6 @@ setup(
     },
     cmdclass={
         "doc": BuildDocCommand,
-        "pynauty": InstallPynautyCommand,
         "install": InstallCommand,
         "develop": DevelopCommand,
     },
