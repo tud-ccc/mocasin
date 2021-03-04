@@ -10,7 +10,7 @@ import mocasin.representations.automorphisms as aut
 
 log = logging.getLogger(__name__)
 try:
-    import pympsym
+    import mpsym
 except ModuleNotFoundError:
     log.warning("mpsym could not be loaded")
 
@@ -70,17 +70,17 @@ def calculate_platform_symmetries(cfg):
     log.info("start writing to file.")
     if mpsym:
         try:
-            pympsym
+            mpsym
         except NameError:
             log.error(
-                "Configured for mpsym output but could not load pympsym. Fallback to python implementation"
+                "Configured for mpsym output but could not load mpsym. Fallback to python implementation"
             )
             mpsym = False
 
     if mpsym:
         out_filename = str(cfg["out_file"])
-        mpsym_autgrp = pympsym.ArchGraphAutomorphisms(
-            [pympsym.Perm(g) for g in autgrp]
+        mpsym_autgrp = mpsym.ArchGraphAutomorphisms(
+            [mpsym.Perm(g) for g in autgrp]
         )
         json_out = mpsym_autgrp.to_json()
         with open(out_filename, "w") as f:
