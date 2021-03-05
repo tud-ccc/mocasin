@@ -33,7 +33,7 @@ install_requirements = [
     "numpy",
     "pint",
     "pydot",
-    "pympsym>=0.5",
+    "mpsym",
     "pyxb",
     "simpy",
     "sortedcontainers",
