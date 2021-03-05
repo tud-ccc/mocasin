@@ -15,8 +15,6 @@ from mocasin.mapper.partial import ComFullMapper, ProcPartialMapper
 
 from hydra.utils import to_absolute_path
 
-# TODO(RK): Make a unit test which checks a case with multiple objectives
-
 
 class MappingTableReader:
     def __init__(
