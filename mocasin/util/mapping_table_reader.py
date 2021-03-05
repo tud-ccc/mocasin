@@ -3,193 +3,141 @@
 #
 # Authors: Felix Teweleit, Robert Khasanov
 
-import csv
-import zipfile
-import os
-
-from _collections import OrderedDict
 from mocasin.common.mapping import Mapping
-from mocasin.common.platform import Platform
-from mocasin.common.graph import DataflowGraph
 from mocasin.mapper.partial import ComFullMapper, ProcPartialMapper
 
-from hydra.utils import to_absolute_path
+import csv
+import logging
+
+log = logging.getLogger(__name__)
 
 
 class MappingTableReader:
+    """A CSV Mapping Table reader.
+
+    This class reads the content of the CSV file and returns an ordered dict of
+    mappings along with its attributes.
+
+    Rows of the CSV table describe different mappings of an application to a
+    platform. The columns starting with `process_prefix` and ending with
+    `process_suffix` describe the process allocation onto the platform.
+    The columns `metadata_exec_time` and `metadata_energy` describe the metadata
+    value. The collumns in the `attributes` list describe the additional mapping
+    attribute to extract.
+
+    :param platform: The platform.
+    :type platform: Platform
+    :param graph: The dataflow graph.
+    :type graph: DataflowGraph
+    :param path: The path to CSV file.
+    :type path: string
+    :param process_prefix: The prefix of processes in the CSV table.
+    :type process_prefix: string
+    :param process_suffix: The suffix of processes in the CSV table.
+    :type process_suffix: string
+    :param metadata_exec_time: The name of the execution time column.
+    :type metadata_exec_time: string or None
+    :param metadata_energy: The name of the energy column.
+    :type metadata_energy: string or None
+    :param attributes: The list of attributes to extract.
+    :type attributes: list of strings or None
+    """
+
     def __init__(
         self,
         platform,
         graph,
-        file_path,
-        attribute="default",
-        process_prefix="default",
-        process_suffix="default",
-        exec_time_col=None,
-        energy_col=None,
+        path,
+        process_prefix="t_",
+        process_suffix="",
+        metadata_exec_time="executionTime",
+        metadata_energy="totalEnergy",
+        attributes=None,
     ):
-        if not isinstance(platform, Platform):
-            raise RuntimeError("Platform object is not valid")
+        self.platform = platform
+        self.graph = graph
+        self.path = path
 
-        if not isinstance(graph, DataflowGraph):
-            raise RuntimeError("DataflowGraph object is not valid")
+        self._process_prefix = process_prefix
+        self._process_suffix = process_suffix
+        self._metadata_exec_time = metadata_exec_time
+        self._metadata_energy = metadata_energy
+        self._attributes = attributes
+        if self._attributes is None:
+            self._attributes = []
 
-        self._mProcessNames = []
-        self._mProcessorNumbers = {}
-        self._mDataDict = {}
-        self._mMappingDict = OrderedDict()
-        self._mPlatform = platform
-        self._mGraphInstance = graph
-        self._mComMapper = ComFullMapper(graph, platform)
-        self._mMapper = ProcPartialMapper(graph, platform, self._mComMapper)
+        # Parsed data
+        self._data = []
+        # Read and constructed mappings
+        self.mappings = None
 
-        for process in sorted(
-            [x.name for x in self._mGraphInstance.processes()]
-        ):
-            self._mProcessNames.append(process)
-        for i, pe in enumerate(
-            sorted([x.name for x in self._mPlatform.processors()])
-        ):
-            self._mProcessorNumbers[pe] = i
+        self.com_mapper = ComFullMapper(graph, platform)
+        self.mapper = ProcPartialMapper(graph, platform, self.com_mapper)
 
-        if attribute == "default":
-            self._desiredProperty = "wall_clock_time"
-        else:
-            self._desiredProperty = attribute
+        self._process_names = [p.name for p in self.graph.processes()]
 
-        if not isinstance(self._desiredProperty, list):
-            self._desiredProperty = [self._desiredProperty]
+        self._processor_numbers = {}
+        for i, pe in enumerate(self.platform.processors()):
+            self._processor_numbers[pe.name] = i
 
-        if process_prefix == "default":
-            self._prefix = "t_"
-        else:
-            self._prefix = process_prefix
+        self._read_csv()
 
-        if process_suffix == "default":
-            self._suffix = ""
-        else:
-            self._suffix = process_suffix
+    def _read_csv(self):
+        prefix = self._process_prefix
+        suffix = self._process_suffix
+        time_col = self._metadata_exec_time
+        energy_col = self._metadata_energy
 
-        self._exec_time_col = exec_time_col
-        self._energy_col = energy_col
+        with open(self.path) as csv_file:
+            reader = csv.DictReader(csv_file)
 
-        path_as_list = file_path.split("/")
-        last_element = path_as_list[len(path_as_list) - 1]
-        if last_element.split(".")[len(last_element.split(".")) - 1] == "zip":
+            for row in reader:
+                to_update = {}
 
-            with zipfile.ZipFile(file_path, "r") as zipFile:
-                i = 0
+                for name in self._process_names:
+                    to_update.update({name: row[prefix + name + suffix]})
+                # Save desired property to a dict
+                for p in self._attributes:
+                    to_update.update({p: row[p]})
+                # Save energy-utility metadata to a dict
+                if time_col is not None:
+                    to_update.update({time_col: row[time_col]})
+                if energy_col is not None:
+                    to_update.update({energy_col: row[energy_col]})
+                self._data.append(to_update)
 
-                for file in zipFile.namelist():
-                    extracted = zipFile.extract(file)
+    def form_mappings(self):
+        """Form mappings from the parsed data.
 
-                    with open(extracted) as csvFile:
-                        reader = csv.DictReader(csvFile)
+        Returns the list of tuples, the first element of the tuple is the
+        `Mapping` object, the next elements are the attribute values in the
+        order of `attributes` paramater.
+        """
+        if self.mappings is not None:
+            log.warning("Mappings were already generated, returning them.")
+            return self.mappings
 
-                        for row in reader:
-                            to_update = {i: {}}
+        time_col = self._metadata_exec_time
+        energy_col = self._metadata_energy
+        self.mappings = []
+        for entry in self._data:
+            from_list = []
 
-                            for name in self._mProcessNames:
-                                to_update[i].update(
-                                    {
-                                        name: row[
-                                            self._prefix + name + self._suffix
-                                        ]
-                                    }
-                                )
-                            # Save desired property to a dict
-                            for p in self._desiredProperty:
-                                to_update[i].update({p: row[p]})
-                            # Save energy-utility metadata to a dict
-                            if self._exec_time_col is not None:
-                                to_update[i].update(
-                                    {
-                                        self._exec_time_col: row[
-                                            self._exec_time_col
-                                        ]
-                                    }
-                                )
-                            if self._energy_col is not None:
-                                to_update[i].update(
-                                    {self._energy_col: row[self._energy_col]}
-                                )
-                            self._mDataDict.update(to_update)
-                            i += 1
+            for process in self._process_names:
+                pe = self._processor_numbers[entry[process]]
+                from_list.append(pe)
 
-                    os.remove(extracted)
-
-        else:
-
-            with open(file_path) as csvFile:
-                reader = csv.DictReader(csvFile)
-                i = 0
-
-                for row in reader:
-                    to_update = {i: {}}
-
-                    for name in self._mProcessNames:
-                        to_update[i].update(
-                            {name: row[self._prefix + name + self._suffix]}
-                        )
-                    # Save desired property to a dict
-                    for p in self._desiredProperty:
-                        to_update[i].update({p: row[p]})
-                    # Save energy-utility metadata to a dict
-                    if self._exec_time_col is not None:
-                        to_update[i].update(
-                            {self._exec_time_col: row[self._exec_time_col]}
-                        )
-                    if self._energy_col is not None:
-                        to_update[i].update(
-                            {self._energy_col: row[self._energy_col]}
-                        )
-                    self._mDataDict.update(to_update)
-                    i += 1
-
-    def formMappings(self):
-        for entry in self._mDataDict:
-            fromList = []
-
-            for key in self._mProcessNames:
-                pe = self._mProcessorNumbers[self._mDataDict[entry][key]]
-                fromList.append(pe)
-
-            if fromList != []:
-                mapping = self._mMapper.generate_mapping(fromList)
+            if from_list != []:
+                mapping = self.mapper.generate_mapping(from_list)
                 # Update energy-utility metadata
-                if self._exec_time_col is not None:
-                    mapping.metadata.exec_time = float(
-                        self._mDataDict[entry][self._exec_time_col]
-                    )
-                if self._energy_col is not None:
-                    mapping.metadata.energy = float(
-                        self._mDataDict[entry][self._energy_col]
-                    )
+                if time_col is not None:
+                    mapping.metadata.exec_time = float(entry[time_col])
+                if energy_col is not None:
+                    mapping.metadata.energy = float(entry[energy_col])
             else:
-                mapping = Mapping(self._mGraphInstance, self._mPlatform)
+                mapping = Mapping(self.graph, self.platform)
 
-            self._mMappingDict.update(
-                {
-                    entry: (mapping,)
-                    + tuple(
-                        self._mDataDict[entry][p] for p in self._desiredProperty
-                    )
-                }
+            self.mappings.append(
+                (mapping,) + tuple(entry[p] for p in self._attributes)
             )
-        return self._mMappingDict
-
-
-class MappingTableReaderFromHydra(MappingTableReader):
-    def __init__(self, platform, graph, cfg):
-        file_path = to_absolute_path(cfg["csv_file"])
-        attribute = cfg["property"]
-        process_prefix = cfg["prefix"]
-        process_suffix = cfg["suffix"]
-        super(DataReaderFromHydra, self).__init__(
-            platform,
-            graph,
-            file_path,
-            attribute,
-            process_prefix,
-            process_suffix,
-        )
+        return self.mappings
