@@ -19,8 +19,6 @@ build-python3.9:
   image: python:3.9
   tags:
     - python3.9
-  needs:
-    - build-pynauty-python3.9
 
 build-python3.8:
   extends: .build
@@ -28,8 +26,6 @@ build-python3.8:
   image: python:3.8
   tags:
     - python3.8
-  needs:
-    - build-pynauty-python3.8
 
 build-python3.7:
   extends: .build
@@ -37,8 +33,6 @@ build-python3.7:
   image: python:3.7
   tags:
     - python3.7
-  needs:
-    - build-pynauty-python3.7
 
 build-python3.6:
   extends: .build
@@ -46,8 +40,6 @@ build-python3.6:
   image: python:3.6
   tags:
     - python3.6
-  needs:
-    - build-pynauty-python3.6
 
 .test:
   script:
@@ -60,8 +52,7 @@ test-python3.9:
   tags:
     - python3.9
   needs:
-    - build-pynauty-python3.9
-    - build-mocasin-python3.9
+    - build-python3.9
 
 test-python3.8:
   extends: .test
@@ -70,8 +61,7 @@ test-python3.8:
   tags:
     - python3.8
   needs:
-    - build-pynauty-python3.8
-    - build-mocasin-python3.8
+    - build-python3.8
 
 test-python3.7:
   extends: .test
@@ -80,8 +70,7 @@ test-python3.7:
   tags:
     - python3.7
   needs:
-    - build-pynauty-python3.7
-    - build-mocasin-python3.7
+    - build-python3.7
 
 test-python3.6:
   extends: .test
@@ -90,8 +79,7 @@ test-python3.6:
   tags:
     - python3.6
   needs:
-    - build-pynauty-python3.6
-    - build-mocasin-python3.6
+    - build-python3.6
 
 test-gbm:
   stage: test
