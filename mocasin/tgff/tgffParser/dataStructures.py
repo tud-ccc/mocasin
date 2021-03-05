@@ -35,7 +35,7 @@ class TgffProcessor:
         frequency_domain = FrequencyDomain(
             "fd{0}".format(self.name), math.ceil(1 / self.cycle_time)
         )
-        return Processor(self.name, self.type, frequency_domain)
+        return Processor(self.name, self.type, frequency_domain, None)
 
     def _get_cycle_time(self, operations):
         """Calculates the time needed for a single processor cycle, in a way that the

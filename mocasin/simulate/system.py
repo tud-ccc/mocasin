@@ -7,6 +7,7 @@
 from simpy.resources.resource import Resource
 
 from mocasin.util import logging
+from mocasin.simulate.energy import EnergyEstimator
 from mocasin.simulate.process import ProcessState
 from mocasin.simulate.scheduler import create_scheduler
 from mocasin.simulate.trace_writer import TraceWriter
@@ -58,6 +59,9 @@ class RuntimeSystem:
         self.app_trace_enabled = False
         self.platform_trace_enabled = False
         self.load_trace_cfg = None
+
+        self.energy_estimator = EnergyEstimator(platform, self.trace_writer)
+        self.power_enabled = self.energy_estimator.check_power_model()
 
         # initialize all schedulers
 
@@ -190,3 +194,9 @@ class RuntimeSystem:
             path (str): path to the file that should be generated
         """
         self.trace_writer.write_trace(path)
+
+    def check_power_model(self):
+        return self.energy_estimator.check_power_model()
+
+    def calculate_energy(self):
+        return self.energy_estimator.calculate_energy()

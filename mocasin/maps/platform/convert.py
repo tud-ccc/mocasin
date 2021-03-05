@@ -15,6 +15,7 @@ from mocasin.common.platform import (
     FrequencyDomain,
     Primitive,
     Processor,
+    ProcessorPowerModel,
     Scheduler,
     SchedulingPolicy,
     Storage,
@@ -98,7 +99,50 @@ def find_elem(xml_platform, type_name, elem_name):
     raise RuntimeError("%s %s was not defined", type_name, elem_name)
 
 
-def convert(platform, xml_platform, scheduler_cycles=None, fd_frequencies=None):
+def create_processor_power_model(
+    fd_name,
+    vd_name,
+    ppm_name,
+    frequency_domains,
+    voltage_domains,
+    fd_voltage_cond,
+    processor_power_params,
+    ppm_power=None,
+):
+    if ppm_power is not None and ppm_name in ppm_power:
+        static_power = ppm_power[ppm_name]["static"]
+        dynamic_power = ppm_power[ppm_name]["dynamic"]
+    else:
+        voltage = fd_voltage_cond[fd_name]
+        frequency = frequency_domains[fd_name].frequency
+        if voltage is None:
+            if len(voltage_domains[vd_name]) > 1:
+                raise RuntimeError(
+                    f"Voltage domain {vd_name} defines multiple voltages, "
+                    f"but there is no voltage domain condition for "
+                    f"frequency domain {fd_name}"
+                )
+            voltage = voltage_domains[vd_name][0]
+        leakage_current = processor_power_params[ppm_name]["leakage_current"]
+        capacitance = processor_power_params[ppm_name]["switched_capacitance"]
+        static_power = leakage_current * voltage
+        dynamic_power = capacitance * voltage * voltage * frequency
+    ppm = ProcessorPowerModel(ppm_name, static_power, dynamic_power)
+    log.debug(
+        f"Found processor power model {ppm_name}, "
+        f"static power {static_power} W, "
+        f"dynamic power {dynamic_power} W."
+    )
+    return ppm
+
+
+def convert(
+    platform,
+    xml_platform,
+    scheduler_cycles=None,
+    fd_frequencies=None,
+    ppm_power=None,
+):
     # keep a map of scheduler names to processors, this helps when creating
     # scheduler objects
     schedulers_to_processors = {}
@@ -107,35 +151,63 @@ def convert(platform, xml_platform, scheduler_cycles=None, fd_frequencies=None):
 
     # Check the fd_frequencies defined the frequencies of only known domains
     if fd_frequencies is not None:
+        fd_names = map(lambda x: x.get_id(), xml_platform.get_FrequencyDomain())
         for fd in fd_frequencies:
-            fd_names = map(
-                lambda x: x.get_id(), xml_platform.get_FrequencyDomain()
-            )
             if fd not in fd_names:
                 log.warning(
                     f"The fd_frequencies defines the frequency of "
                     f"an unknown domain {fd}"
                 )
 
-    # Collect all frequency domains
+    # Collect all frequency and voltage domains
+    voltage_domains = {}
+    for vd in xml_platform.get_VoltageDomain():
+        name = vd.get_id()
+        voltage_domains[name] = []
+        for v in vd.get_Voltage():
+            voltage = ur(v.get_value() + v.get_unit()).to("V").magnitude
+            voltage_domains[name].append(voltage)
+
     frequency_domains = {}
+    # We do not save voltage domains by their names defined in MAPS XML files,
+    # instead we save under the same names as frequency domains
+    fd_voltage_cond = {}
     for fd in xml_platform.get_FrequencyDomain():
         name = fd.get_id()
         max_frequency = 0
-        supported_frequencies = []
+        supported_frequency_voltage_pairs = []
         for f in fd.get_Frequency():
+            voltage_domain_conds = f.get_VoltageDomainCondition()
+            if len(voltage_domain_conds) > 1:
+                raise RuntimeError(
+                    f"The xml defines multiple voltages for the frequency domain "
+                    f"{name} at {f.get_value()}{f.get_unit()}."
+                )
+            voltage_cond = None
+            for v in voltage_domain_conds:
+                voltage_cond = (
+                    ur(v.get_value() + v.get_unit()).to("V").magnitude
+                )
             frequency = ur(f.get_value() + f.get_unit()).to("Hz").magnitude
-            supported_frequencies.append(frequency)
-            max_frequency = max(frequency, max_frequency)
-        frequency = max_frequency
+            supported_frequency_voltage_pairs.append(
+                tuple((frequency, voltage_cond))
+            )
         if fd_frequencies is not None and name in fd_frequencies:
             frequency = fd_frequencies[name]
-            if frequency not in supported_frequencies:
+            voltage_cond = None
+            found = False
+            for f, v in supported_frequency_voltage_pairs:
+                if frequency != f:
+                    continue
+                voltage_cond = v
+                found = True
+            if not found:
                 log.warning(
                     f"The fd_frequencies sets the frequency of the domain {name} "
-                    f"to {frequency} Hz, which is not defined in the xml."
+                    f"to {frequency} Hz, which is not defined in the xml. "
                 )
         else:
+            frequency, voltage_cond = max(supported_frequency_voltage_pairs)
             if len(fd.get_Frequency()) > 1:
                 log.warning(
                     "The xml defines multiple frequencies for the domain "
@@ -143,16 +215,85 @@ def convert(platform, xml_platform, scheduler_cycles=None, fd_frequencies=None):
                     name,
                 )
         frequency_domains[name] = FrequencyDomain(name, frequency)
-        log.debug("Found frequency domain %s (%d Hz)", name, frequency)
+        fd_voltage_cond[name] = voltage_cond
+        log.debug(
+            "Found frequency domain %s (%d Hz).",
+            name,
+            frequency,
+        )
+
+    # Collect processor power model parameters
+    processor_power_params = {}
+
+    for ppm in xml_platform.get_ProcessorPowerModel():
+        name = ppm.get_id()
+        leakage_current = (
+            ur(ppm.get_leakageCurrentValue() + ppm.get_leakageCurrentUnit())
+            .to("A")
+            .magnitude
+        )
+        switched_capacitance = (
+            ur(
+                ppm.get_switchedCapacitanceValue()
+                + ppm.get_switchedCapacitanceUnit()
+            )
+            .to("F")
+            .magnitude
+        )
+        processor_power_params[name] = {
+            "leakage_current": leakage_current,
+            "switched_capacitance": switched_capacitance,
+        }
+
+    # Check custom power
+    if ppm_power is not None:
+        for ppm, powers in ppm_power.items():
+            if ppm not in processor_power_params:
+                log.warning(
+                    f"The ppm_power defines the power of "
+                    f"an unknown processor power model {ppm}"
+                )
+                continue
+            for power_mode in ["static", "dynamic"]:
+                if power_mode not in powers:
+                    log.warning(
+                        f"The ppm_power does not define the {power_mode} power of "
+                        f"a processor power model {ppm}"
+                    )
+
+    processor_power_models = {}
 
     # Initialize all Processors
     for xp in xml_platform.get_Processor():
         name = xp.get_id()
         type = xp.get_core()
-        fd = frequency_domains[xp.get_frequencyDomain()]
+        fd_name = xp.get_frequencyDomain()
+        fd = frequency_domains[fd_name]
+
+        # Initialize a processor power model
+        vd_name = xp.get_voltageDomain()
+        ppm_name = xp.get_processorPowerModel()
+        if ppm_name is None:
+            ppm = None
+        else:
+            if ppm_name not in processor_power_models:
+                ppm = create_processor_power_model(
+                    fd_name,
+                    vd_name,
+                    ppm_name,
+                    frequency_domains,
+                    voltage_domains,
+                    fd_voltage_cond,
+                    processor_power_params,
+                    ppm_power,
+                )
+                processor_power_models[ppm_name] = ppm
+            else:
+                ppm = processor_power_models[ppm_name]
+
         context_load = get_value_in_cycles(xp, "contextLoad", 0)
         context_store = get_value_in_cycles(xp, "contextStore", 0)
-        p = Processor(name, type, fd, context_load, context_store)
+        p = Processor(name, type, fd, ppm, context_load, context_store)
         schedulers_to_processors[xp.get_scheduler()].append(p)
         platform.add_processor(p)
         log.debug("Found processor %s of type %s", name, type)

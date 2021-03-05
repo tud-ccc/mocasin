@@ -41,6 +41,12 @@ class BaseSimulation:
             otherwise.
         exec_time (int): total simulated time in ps. This is initial to
             ``None`` and only set after a call to :func:`run`.
+        static_energy (float): static energy consumption in pJ. This is initial to
+            ``None`` and only set after a call to :func:`run`.
+        dynamic_energy (float): dynamic energy consumption in pJ. This is initial to
+            ``None`` and only set after a call to :func:`run`.
+        total_energy (float): total energy consumption in pJ. This is initial to
+            ``None`` and only set after a call to :func:`run`.
         run: A callable object that triggers the actual simulation. If called
             outside of a with block, calling ``run()`` will raise a
             ``RuntimeError`` .
@@ -53,7 +59,13 @@ class BaseSimulation:
         self.env = None
         self.platform = platform
         self.system = None
+
         self.exec_time = None
+
+        self.static_energy = None
+        self.dynamic_energy = None
+        self.total_energy = None
+
         self.run = self._default_run
 
     def __enter__(self):
@@ -167,6 +179,11 @@ class DataflowSimulation(BaseSimulation):
         self.system.check_errors()
         # save the execution time
         self.exec_time = self.env.now
+        # save the energy consumption
+        if self.system.power_enabled:
+            energy_results = self.system.calculate_energy()
+            (self.static_energy, self.dynamic_energy) = energy_results
+            self.total_energy = self.static_energy + self.dynamic_energy
 
     @staticmethod
     def from_hydra(cfg):
