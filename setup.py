@@ -3,17 +3,9 @@
 #
 # Authors: Christian Menard
 
-import distutils.cmd
-import os
-import urllib.request
 import sys
-import tarfile
-import tempfile
 
 from setuptools import setup, find_packages, find_namespace_packages
-from setuptools.command.install import install
-from setuptools.command.develop import develop
-import subprocess
 
 project_name = "mocasin"
 version = "0.1.0"
