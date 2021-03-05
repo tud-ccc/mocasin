@@ -9,7 +9,6 @@ import tkinter as tk
 from mocasin.gui.drawAPI import drawAPI
 
 
-@hydra.main(config_path="../conf", config_name="visualize")
 def visualize(cfg):
     graph = hydra.utils.instantiate(cfg["graph"])
     platform = hydra.utils.instantiate(cfg["platform"])

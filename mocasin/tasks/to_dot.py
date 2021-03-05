@@ -6,7 +6,6 @@
 import hydra
 
 
-@hydra.main(config_path="../conf", config_name="graph_to_dot")
 def graph_to_dot(cfg):
     """Generate a dot graph from dataflow graph
 
@@ -26,7 +25,6 @@ def graph_to_dot(cfg):
     graph.to_pydot().write_raw(cfg["output_file"])
 
 
-@hydra.main(config_path="../conf", config_name="platform_to_dot.yaml")
 def platform_to_dot(cfg):
     """Generate a dot graph from a Platform
 
@@ -46,7 +44,6 @@ def platform_to_dot(cfg):
     platform.to_pydot().write_raw(cfg["output_file"])
 
 
-@hydra.main(config_path="../conf", config_name="mapping_to_dot.yaml")
 def mapping_to_dot(cfg):
     """Generate a dot graph representing the mapping of a dataflow application to a
     platform.

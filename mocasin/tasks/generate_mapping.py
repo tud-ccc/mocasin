@@ -14,7 +14,6 @@ from mocasin.simulate import DataflowSimulation
 log = logging.getLogger(__name__)
 
 
-@hydra.main(config_path="../conf", config_name="generate_mapping")
 def generate_mapping(cfg):
     """Mapper Task
 
