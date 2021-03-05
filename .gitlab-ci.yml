@@ -5,6 +5,7 @@ default:
 stages:
   - build
   - test
+  - plugins
 
 .build:
   script:
@@ -82,7 +83,7 @@ test-python3.6:
     - build-python3.6
 
 test-gbm:
-  stage: test
+  stage: plugins
   variables:
     MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
   needs:
@@ -95,7 +96,7 @@ test-gbm:
     strategy: depend
 
 test-maps-examples:
-  stage: test
+  stage: plugins
   variables:
     MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
   needs:
@@ -108,7 +109,7 @@ test-maps-examples:
     strategy: depend
 
 test-fivegsim:
-  stage: test
+  stage: plugins
   variables:
     MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
   needs:
