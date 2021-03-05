@@ -67,6 +67,9 @@ class RuntimeDataflowApplication(RuntimeApplication):
         if mapping.platform != system.platform:
             raise RuntimeError(f"Mapping {name} to an incompatible platform")
 
+        self._is_running = False
+        self._is_finished = False
+
         log.debug("initialize new runtime application: %s", name)
         logging.inc_indent()
 
@@ -137,14 +140,21 @@ class RuntimeDataflowApplication(RuntimeApplication):
             ~simpy.events.Event: an event that is triggered when the
                 application finishes execution.
         """
+        assert not self._is_running
+        self._is_running = True
+
         self._log.info(f"Application {self.name} starts")
+
         for process, mapping_info in self._mapping_infos.items():
             self.system.start_process(process, mapping_info)
         finished = self.env.all_of([p.finished for p in self.processes()])
-        finished.callbacks.append(
-            lambda _: self._log.info(f"Application {self.name} terminates")
-        )
+        finished.callbacks.append(self._app_finished_callback)
         yield finished
+
+    def _app_finished_callback(self, event):
+        self._log.info(f"Application {self.name} terminates")
+        self._running = False
+        self._finished = True
 
     def kill(self):
         """Stop execution of this application
@@ -166,6 +176,16 @@ class RuntimeDataflowApplication(RuntimeApplication):
         """
         for p in self.processes():
             p.kill()
+
+    def is_running(self):
+        """Check if the application is running."""
+        assert not (self._is_running and self._is_finished)
+        return self._is_running
+
+    def is_finished(self):
+        """Check if the application is finished."""
+        assert not (self._is_running and self._is_finished)
+        return self._is_finished
 
     def update_mapping(self, mapping):
         """Update the mapping used by this application, causing a migration of
