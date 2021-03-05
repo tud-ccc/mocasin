@@ -4,7 +4,7 @@
 # Authors: Felix Teweleit, Andres Goens
 
 from mocasin.platforms.topologies import meshTopology
-from mocasin.platforms.utils import simpleDijkstra as sd
+from mocasin.platforms.utils import yxRouting as yx
 from mocasin.common.platform import Platform, Processor
 from mocasin.platforms.platformDesigner import PlatformDesigner
 from hydra.utils import instantiate
@@ -53,7 +53,7 @@ class DesignerPlatformMesh(Platform):
             ]
         )
         designer.createNetworkForCluster(
-            "cluster_0", "testNet", topology, sd, 6000000.0, 100, 150, 100, 60
+            "cluster_0", "testNet", topology, yx, 6000000.0, 100, 150, 100, 60
         )
 
         designer.addPeClusterForProcessor("cluster_1", processor_1, 2)
