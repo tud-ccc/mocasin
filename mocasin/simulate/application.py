@@ -62,6 +62,9 @@ class RuntimeDataflowApplication(RuntimeApplication):
     def __init__(self, name, graph, mapping, app_trace, system):
         super().__init__(name, system)
         self.mapping = mapping
+        self.graph = graph
+        self.trace = app_trace
+
         if mapping.graph != graph:
             raise RuntimeError("dataflow graph and mapping incompatible")
         if mapping.platform != system.platform:
