@@ -79,44 +79,44 @@ test-python3.6:
   needs:
     - build-python3.6
 
-test-gbm:
-  stage: plugins
-  variables:
-    MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
-  needs:
-    - build-python3.9
-    - build-python3.8
-    - build-python3.7
-    - build-python3.6
-  trigger:
-    project: mocasin/mocasin-gbm
-    strategy: depend
+# test-gbm:
+#   stage: plugins
+#   variables:
+#     MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
+#   needs:
+#     - build-python3.9
+#     - build-python3.8
+#     - build-python3.7
+#     - build-python3.6
+#   trigger:
+#     project: mocasin/mocasin-gbm
+#     strategy: depend
 
-test-maps-examples:
-  stage: plugins
-  variables:
-    MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
-  needs:
-    - build-python3.9
-    - build-python3.8
-    - build-python3.7
-    - build-python3.6
-  trigger:
-    project: mocasin/mocasin-maps-examples
-    strategy: depend
+# test-maps-examples:
+#   stage: plugins
+#   variables:
+#     MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
+#   needs:
+#     - build-python3.9
+#     - build-python3.8
+#     - build-python3.7
+#     - build-python3.6
+#   trigger:
+#     project: mocasin/mocasin-maps-examples
+#     strategy: depend
 
-test-fivegsim:
-  stage: plugins
-  variables:
-    MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
-  needs:
-    - build-python3.9
-    - build-python3.8
-    - build-python3.7
-    - build-python3.6
-  trigger:
-    project: mocasin/fivegsim
-    strategy: depend
+# test-fivegsim:
+#   stage: plugins
+#   variables:
+#     MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
+#   needs:
+#     - build-python3.9
+#     - build-python3.8
+#     - build-python3.7
+#     - build-python3.6
+#   trigger:
+#     project: mocasin/fivegsim
+#     strategy: depend
 
 check-formatting:
   stage: test
