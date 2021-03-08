@@ -40,6 +40,7 @@ build-python3.6:
 
 .test:
   script:
+    - pip install mocasin --no-index --find-links=./wheels
     - python setup.py test
 
 test-python3.9:
