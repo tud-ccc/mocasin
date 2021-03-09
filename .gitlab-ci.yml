@@ -55,6 +55,7 @@ build-pynauty-python3.6:
   variables:
     NO_PYNAUTY: 1
   script:
+    - python -m pip install --upgrade pip
     - pip install pynauty*.whl
     - pip wheel --no-deps .
   artifacts:

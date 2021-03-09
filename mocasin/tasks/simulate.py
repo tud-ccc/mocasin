@@ -11,7 +11,6 @@ import timeit
 log = logging.getLogger(__name__)
 
 
-@hydra.main(config_path="../conf", config_name="simulate")
 def simulate(cfg):
     """Simulate the execution of a dataflow application mapped to a platform.
 

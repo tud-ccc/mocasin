@@ -105,6 +105,19 @@ mocasin comes with a set of tests. You can run them as follows:
 python setup.py test
 ```
 
+Autocompletion for bash/zsh
+-------------
+mocasin supports bash autocompletion.  To activate bash completion, run:
+```
+eval "$(cat misc/bash-autocomplete.sh)"
+```
+
+For completion in zsh, you first need to add
+```
+autoload -Uz bashcompinit && bashcompinit
+```
+to your .zshrc configuration file.
+
 Publications
 ------------
 

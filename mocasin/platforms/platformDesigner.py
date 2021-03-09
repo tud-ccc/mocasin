@@ -20,7 +20,7 @@ from mocasin.util import logging
 import sys
 
 try:
-    import pympsym
+    import mpsym
 except:
     pass
 
@@ -70,7 +70,7 @@ class PlatformDesigner:
         self.__elementDict = {"base": {}}
 
         try:
-            pympsym
+            mpsym
             self.__symLibrary = False  # Disabled for now. Needn refactoring
             self.__agDict = {"base": {}}
         except NameError:
@@ -84,7 +84,7 @@ class PlatformDesigner:
         """
         if self.__symLibrary:
             if self._ag_hasSuperGraph():
-                raise ValueError("pympsym: extending super graph not supported")
+                raise ValueError("mpsym: extending super graph not supported")
 
         self.__scopeStack.append(self.__activeScope)
         self.__activeScope = identifier
@@ -416,7 +416,7 @@ class PlatformDesigner:
             if self._ag_hasChips():
                 if idType != "chips":
                     raise ValueError(
-                        "pympsym: cannot mix clusters/chips connections"
+                        "mpsym: cannot mix clusters/chips connections"
                     )
 
                 if self._ag_hasIdenticalChips():
@@ -430,7 +430,7 @@ class PlatformDesigner:
             else:
                 if idType != "clusters":
                     raise ValueError(
-                        "pympsym: cannot mix clusters/chips connections"
+                        "mpsym: cannot mix clusters/chips connections"
                     )
 
                 self._ag_fullyConnectClusters(clusterIds, name)
@@ -727,7 +727,7 @@ class PlatformDesigner:
 
                 if not self._ag_classifyIdentifiers(chipIds):
                     raise ValueError(
-                        "pympsym: chip network must consist of chips only"
+                        "mpsym: chip network must consist of chips only"
                     )
 
                 if self._ag_hasIdenticalChips():
@@ -811,10 +811,10 @@ class PlatformDesigner:
 
     def _ag_updateAgs(self, lastScope, nextScope):
         if self._ag_isBase(lastScope):
-            raise ValueError("pympsym: improperly nested elements")
+            raise ValueError("mpsym: improperly nested elements")
 
         if self._ag_hasAgs(lastScope):
-            raise ValueError("pympsym: improperly nested elements")
+            raise ValueError("mpsym: improperly nested elements")
 
         self._ag_setAgs(self._ag_makeAgs(lastScope), lastScope)
 
@@ -828,14 +828,14 @@ class PlatformDesigner:
 
     def _ag_addChip(self, chipName, chip, scope=None):
         if self._ag_hasClusters(scope):
-            raise ValueError("pympsym: mixing cannot mix chips/clusters")
+            raise ValueError("mpsym: mixing cannot mix chips/clusters")
 
         ag = self._ag(scope)
 
         ag["chips"] = ag.get("chips", []) + [(chipName, chip)]
 
     def _ag_makeChipAgs(self, scope=None):
-        agc = pympsym.ArchGraphCluster()
+        agc = mpsym.ArchGraphCluster()
         for _, chip in self._ag(scope)["chips"]:
             agc.add_subsystem(chip["system"])
 
@@ -852,7 +852,7 @@ class PlatformDesigner:
         protoChipName, protoChip = ag["chips"][0]
         proto = protoChip["system"]
 
-        superGraph = pympsym.ArchGraph()
+        superGraph = mpsym.ArchGraph()
         superGraphProcessors = {}
 
         for i, (chipName, chip) in enumerate(ag["chips"]):
@@ -895,14 +895,14 @@ class PlatformDesigner:
     def _ag_makeSuperGraphAgs(self, scope=None):
         ag = self._ag(scope)
 
-        return pympsym.ArchUniformSuperGraph(ag["super_graph"], ag["proto"])
+        return mpsym.ArchUniformSuperGraph(ag["super_graph"], ag["proto"])
 
     def _ag_hasClusters(self, scope=None):
         return "clusters" in self._ag(scope)
 
     def _ag_addCluster(self, clusterId, peName, peAmount, pes, scope=None):
         if self._ag_hasChips(scope):
-            raise ValueError("pympsym: mixing cannot mix chips/clusters")
+            raise ValueError("mpsym: mixing cannot mix chips/clusters")
 
         ag = self._ag(scope)
 
@@ -910,7 +910,7 @@ class PlatformDesigner:
             ag["clusters"] = {
                 "processors": {},
                 "groups": {},
-                "graph": pympsym.ArchGraph(),
+                "graph": mpsym.ArchGraph(),
             }
 
         pes = [p.name for p, _ in pes]
