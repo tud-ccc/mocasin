@@ -272,97 +272,95 @@ class RuntimeScheduler(object):
             self._log.debug("run scheduling algorithm")
             yield from self._schedule_next_process()
 
+    def _wait_for_ready_process(self):
+        """A simpy process for waiting until a new process becomes ready"""
+        self._log.debug("There is no ready process -> sleep")
+        # Record the idle event in our internal load trace
+        if len(self._load_trace) == 0 or self._load_trace[0][1] == 1:
+            self._load_trace.appendleft((self.env.now, 0))
+        # wait until a process becomes ready
+        yield self.process_ready
+
     def _schedule_next_process(self):
         cp = self.current_process
         np = self.schedule()
 
-        # Found a process to be scheduled?
-        if np is not None:
-            # record the activation event in our internal load trace
-            if len(self._load_trace) == 0 or self._load_trace[0][1] == 0:
-                self._load_trace.appendleft((self.env.now, 1))
-            # pay for the scheduling delay
-            ticks = self._processor.ticks(self._scheduling_cycles)
+        # Found no process to be scheduled? Then, wait for a process to become
+        # ready and then try again.
+        if np is None:
+            yield from self._wait_for_ready_process()
+            # by returning, we trigger the algorithm again
+            return
 
-            yield self.env.timeout(ticks)
+        # record the activation event in our internal load trace
+        if len(self._load_trace) == 0 or self._load_trace[0][1] == 0:
+            self._load_trace.appendleft((self.env.now, 1))
 
-            log.debug("schedule process %s next", np.full_name)
+        # pay for the scheduling delay
+        ticks = self._processor.ticks(self._scheduling_cycles)
+        yield self.env.timeout(ticks)
 
-            # pay for context switching
-            yield from self._load_context(cp, np)
+        log.debug("schedule process %s next", np.full_name)
 
-            # it could happen, that the process gets killed or removed
-            # before the context was loaded completely. In this case we
-            # just return and the algorithm will be run again
-            if np not in self._processes or np.check_state(
-                ProcessState.FINISHED
-            ):
-                log.debug(
-                    f"process {np.name} was migrated or killed before its "
-                    "context could be loaded"
-                )
-                return
+        # pay for context switching
+        yield from self._load_context(cp, np)
 
-            # activate the process and remove it from the ready queue
-            self.current_process = np
-            self._ready_queue.remove(np)
-            np.activate(self._processor)
-            # make sure the activation is processed completely before
-            # continuing
-            yield self.env.timeout(0)
-            # record the process activation in the simulation trace
-            if (
-                self._system.platform_trace_enabled
-                or self._system.power_enabled
-            ):
-                self.trace_writer.begin_duration(
-                    self._system.platform.name,
-                    self._processor.name,
-                    np.full_name,
-                    category="Schedule",
-                )
+        # it could happen, that the process gets killed or removed
+        # before the context was loaded completely. In this case we
+        # just return and the algorithm will be run again
+        if np not in self._processes or np.check_state(ProcessState.FINISHED):
+            log.debug(
+                f"process {np.name} was migrated or killed before its "
+                "context could be loaded"
+            )
+            return
 
-            # execute the process workload
-            workload = self.env.process(self.current_process.workload())
-            if self._time_slice is not None:
-                timeout = self.env.timeout(self._time_slice)
-                yield self.env.any_of([timeout, workload])
-                if timeout.processed:
-                    self.current_process.preempt()
-                    # Although we requested to preempt the process, it may
-                    # still continue running in order to finish any atomic
-                    # operations it might be processing at the moment. Thus
-                    # we wait for the workload process to terminate before
-                    # continuing
-                    yield workload
-                    assert not self.current_process.check_state(
-                        ProcessState.RUNNING
-                    )
-            else:
+        # activate the process and remove it from the ready queue
+        self.current_process = np
+        self._ready_queue.remove(np)
+        np.activate(self._processor)
+        # make sure the activation is processed completely before
+        # continuing
+        yield self.env.timeout(0)
+        # record the process activation in the simulation trace
+        if self._system.platform_trace_enabled or self._system.power_enabled:
+            self.trace_writer.begin_duration(
+                self._system.platform.name,
+                self._processor.name,
+                np.full_name,
+                category="Schedule",
+            )
+
+        # execute the process workload
+        workload = self.env.process(self.current_process.workload())
+        if self._time_slice is not None:
+            timeout = self.env.timeout(self._time_slice)
+            yield self.env.any_of([timeout, workload])
+            if timeout.processed:
+                self.current_process.preempt()
+                # Although we requested to preempt the process, it may
+                # still continue running in order to finish any atomic
+                # operations it might be processing at the moment. Thus
+                # we wait for the workload process to terminate before
+                # continuing
                 yield workload
-
-            # record the process halting in the simulation trace
-            if (
-                self._system.platform_trace_enabled
-                or self._system.power_enabled
-            ):
-                self.trace_writer.end_duration(
-                    self._system.platform.name,
-                    self._processor.name,
-                    np.full_name,
-                    category="Schedule",
+                assert not self.current_process.check_state(
+                    ProcessState.RUNNING
                 )
-
-            # pay for context switching
-            yield from self._store_context(cp)
         else:
-            # Wait for ready events if the scheduling algorithm did not
-            # find a process that is ready for execution
-            self._log.debug("There is no ready process -> sleep")
-            # Record the idle event in our internal load trace
-            if len(self._load_trace) == 0 or self._load_trace[0][1] == 1:
-                self._load_trace.appendleft((self.env.now, 0))
-            yield self.process_ready
+            yield workload
+
+        # record the process halting in the simulation trace
+        if self._system.platform_trace_enabled or self._system.power_enabled:
+            self.trace_writer.end_duration(
+                self._system.platform.name,
+                self._processor.name,
+                np.full_name,
+                category="Schedule",
+            )
+
+        # pay for context switching
+        yield from self._store_context(cp)
 
     def ready_queue_length(self):
         """Get the current length of the ready queue"""
