@@ -103,6 +103,10 @@ class RuntimeScheduler(object):
         # grow arbitrarily large
         self._load_trace = deque(maxlen=_MAX_DEQUE_LEN)
 
+        # An event that is only valid during removal of a process and that
+        # is triggered when the removal completed
+        self._process_removal_complete = None
+
     @property
     def env(self):
         """The simpy environment"""
@@ -168,6 +172,61 @@ class RuntimeScheduler(object):
         self._processes.append(process)
         process.ready.callbacks.append(self._cb_process_ready)
         process.finished.callbacks.append(self._cb_process_finished)
+
+    def remove_process(self, process):
+        """Remove a process from this scheduler.
+
+        This will usually be called in the context of a process migration,
+        where a process is moved from one scheduler to another.
+
+        Args:
+            process (RuntimeDataflowProcess): the process to be removed
+
+        Raises:
+            ValueError: if the process is not int the :attr:`_processes` list
+
+        Returns:
+            None: if the process was removed immediately
+            simpy.events.Event: An event indicating completion of the removal
+                if the process cannot be removed immediately (sine it is
+                currently running)
+        """
+        # there is nothing to do if the process already finished
+        if process.check_state(ProcessState.FINISHED):
+            return
+
+        if process not in self._processes:
+            raise ValueError("Attempted to remove an unknown process")
+
+        # remove any registered callbacks
+        process.ready.callbacks.remove(self._cb_process_ready)
+        process.finished.callbacks.remove(self._cb_process_finished)
+
+        # remove process from _processes list and ready queue
+        self._processes.remove(process)
+        if process in self._ready_queue:
+            self._ready_queue.remove(process)
+
+        # if the process is running, we need to preempt it and wait for its
+        # context to be stored
+        if process.check_state(ProcessState.RUNNING):
+            assert process is self.current_process
+
+            # prepare an event that will be notified once the process
+            # is preempted and completely removed
+            self._process_removal_complete = self.env.event()
+
+            # preempt the process
+            process.preempt()
+
+            # return the event so that a caller can wait for it
+            return self._process_removal_complete
+
+        # in some seldom cases it could happen that the removed process
+        # is still marked as the current process. In this case we reset
+        # the current process
+        if process is self.current_process:
+            self.current_process = None
 
     def _cb_process_ready(self, event):
         """Callback for the ready event of runtime processes
@@ -255,13 +314,16 @@ class RuntimeScheduler(object):
             ticks = self._processor.context_load_ticks()
             yield self.env.timeout(ticks)
 
-    def _store_context(self, process):
+    def _store_context(self, process, always=False):
         """A simpy process modeling the context storing for process
 
         Yields:
             ~simpy.events.Event: a series of events until the context is loaded
         """
-        if self._context_switch_mode == ContextSwitchMode.ALWAYS:
+        if self._context_switch_mode == ContextSwitchMode.NEVER:
+            return
+
+        if always or self._context_switch_mode == ContextSwitchMode.ALWAYS:
             self._log.debug(f"store the context of process {process.full_name}")
             yield self.env.timeout(self._processor.context_store_ticks())
 
@@ -327,8 +389,19 @@ class RuntimeScheduler(object):
         # model the actual workload execution of the process
         yield from self._execute_process_workload(self.current_process)
 
-        # pay for context switching
-        yield from self._store_context(self.current_process)
+        # check if the process is being removed
+        if self.current_process not in self._processes:
+            self._log.debug("Cleaning up after removing a running process")
+            # first store the context
+            yield from self._store_context(self.current_process, always=True)
+            # reset current process
+            self.current_process = None
+            # notify the event to indicate that migration completed
+            assert self._process_removal_complete is not None
+            self._process_removal_complete.succeed()
+        else:
+            # Otherwise, just pay for context switching
+            yield from self._store_context(self.current_process)
 
     def _execute_process_workload(self, process):
         # record the process activation in the simulation trace
