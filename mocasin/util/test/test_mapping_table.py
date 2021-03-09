@@ -4,10 +4,12 @@
 # Author: Robert Khasanov
 
 from mocasin.common.graph import DataflowChannel, DataflowProcess, DataflowGraph
-from mocasin.util.mapping_table import MappingTableReader
-from mocasin.platforms.platformDesigner import genericProcessor
+from mocasin.mapper.partial import ComFullMapper, ProcPartialMapper
 from mocasin.platforms.odroid import DesignerPlatformOdroid
+from mocasin.platforms.platformDesigner import genericProcessor
+from mocasin.util.mapping_table import MappingTableReader, MappingTableWriter
 
+import filecmp
 from pathlib import Path
 import pytest
 
@@ -15,6 +17,13 @@ import pytest
 @pytest.fixture
 def table_file():
     return Path(__file__).parent.absolute().joinpath("mapping_table.csv")
+
+
+@pytest.fixture
+def expected_csv():
+    return (
+        Path(__file__).parent.absolute().joinpath("expected_mapping_table.csv")
+    )
 
 
 @pytest.fixture
@@ -56,3 +65,46 @@ def test_mapping_table_reader(platform, graph, table_file):
     assert mappings[2][0].to_list() == [4, 0]
     assert mappings[2][1] == "c"
     assert mappings[3][0].to_list() == [4, 7]
+
+
+def test_mapping_table_writer(platform, graph, tmpdir, expected_csv):
+    output_file = Path(tmpdir).joinpath("output_table.csv")
+    com_mapper = ComFullMapper(graph, platform)
+    mapper = ProcPartialMapper(graph, platform, com_mapper)
+
+    mapping1 = mapper.generate_mapping([0, 0])
+    mapping1.metadata.exec_time = 10.2
+    mapping1.metadata.energy = 21.45
+
+    mapping2 = mapper.generate_mapping([0, 5])
+    mapping2.metadata.exec_time = 5.2
+    mapping2.metadata.energy = 31.15
+
+    writer = MappingTableWriter(platform, graph, output_file)
+    writer.open()
+    writer.write_header()
+    writer.write_mapping(mapping1)
+    writer.write_mapping(mapping2)
+    writer.close()
+    assert filecmp.cmp(output_file, expected_csv, shallow=False)
+
+
+def test_mapping_table_writer_with(platform, graph, tmpdir, expected_csv):
+    output_file = Path(tmpdir).joinpath("output_table.csv")
+    com_mapper = ComFullMapper(graph, platform)
+    mapper = ProcPartialMapper(graph, platform, com_mapper)
+
+    mapping1 = mapper.generate_mapping([0, 0])
+    mapping1.metadata.exec_time = 10.2
+    mapping1.metadata.energy = 21.45
+
+    mapping2 = mapper.generate_mapping([0, 5])
+    mapping2.metadata.exec_time = 5.2
+    mapping2.metadata.energy = 31.15
+
+    with MappingTableWriter(platform, graph, output_file) as writer:
+        writer.write_header()
+        writer.write_mapping(mapping1)
+        writer.write_mapping(mapping2)
+
+    assert filecmp.cmp(output_file, expected_csv, shallow=False)
