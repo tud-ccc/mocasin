@@ -12,17 +12,18 @@
     * :class:`RuntimeDataflowProcess`: dataflow process model
 """
 
+import enum
+import logging
 
-from enum import Enum
-
-from mocasin.util import logging
+from mocasin.common.trace import SegmentType
 from mocasin.simulate.adapter import SimulateLoggerAdapter
 
 
 log = logging.getLogger(__name__)
 
 
-class ProcessState(Enum):
+@enum.unique
+class ProcessState(enum.Enum):
     """Denotes the state of a runtime process."""
 
     CREATED = 0
@@ -397,26 +398,30 @@ class RuntimeDataflowProcess(RuntimeProcess):
         _channels(dict[str, RuntimeChannel]): Dictionary of channel names and
             there corresponding runtime object. This only includes channels
             that may be accessed by this process.
-        _trace_generator (TraceGenerator): a trace generator object
-        _current_segment (TraceSegment): The trace segment that is currently
+        _trace (generator): a generator of trace segments
+        _current_segment: The trace segment that is currently
             processed
     Args:
         name (str): The process name. This should be unique across applications
             within the same system.
-        trace_generator (TraceGenerator): a trace generator object
+        process_trace (generator): a generator of process trace segments
         app (RuntimeApplication): the application this process is part of
     """
 
-    def __init__(self, name, trace_generator, app):
+    def __init__(self, name, process_trace, app):
         super().__init__(name, app)
         log.debug(
             "initialize new dataflow runtime process (%s)", self.full_name
         )
 
         self._channels = {}
-        self._trace_generator = trace_generator
-
+        self._trace = process_trace
         self._current_segment = None
+        self._remaining_compute_cycles = None
+
+        # lets the workload method know whether it is run for the first time
+        # or whether it is resumed
+        self._is_running = False
 
     def connect_to_incomming_channel(self, channel):
         """Connect the process to an incoming runtime channel
@@ -450,129 +455,158 @@ class RuntimeDataflowProcess(RuntimeProcess):
         execution is resumed on the next call of this method.
         """
 
-        assert self.check_state(ProcessState.RUNNING)
+        self._init_workload()
 
-        if self._current_segment is None:
-            self._log.debug("start workload execution")
-        else:
-            self._log.debug("resume workload execution")
-
-        while True:
-            # The preempt and kill events will be overridden once
+        while self._current_segment is not None:
+            # The preempt and kill events will be overwritten once
             # triggered. Thus we keep references to the original events here.
             preempt = self._preempt
             kill = self._kill
 
-            if self._current_segment is None:
-                self._current_segment = self._trace_generator.next_segment(
-                    self.name, self.processor.type
-                )
             s = self._current_segment
-            s.sanity_check()
-            if s.processing_cycles is not None:
-                cycles = s.processing_cycles
-                self._log.debug("process for %d cycles", cycles)
-                ticks = self.processor.ticks(cycles)
-
-                timeout = self.env.timeout(ticks)
-                start = self.env.now
-
-                # process until computation completes (timeout) or until the
-                # process is preempted
-                yield self.env.any_of([timeout, preempt, kill])
-
-                # if the timeout was processed, the computation completed
-                if timeout.processed:
-                    s.processing_cycles = None
-                elif preempt.processed:
-                    # Calculate how many cycles where executed until the
-                    # process was preempted. Note that the preemption
-                    # can occur in between full cycles in our simulation. We
-                    # lose a bit of precision here, by allowing preemption in
-                    # between cycles and rounding the number of processed
-                    # cycles to an integer number. However, the introduced
-                    # error should be marginal.
-                    ticks_processed = self.env.now - start
-                    ratio = float(ticks_processed) / float(ticks)
-                    cycles_processed = int(round(float(cycles) * ratio))
-
-                    s.processing_cycles = cycles - cycles_processed
-                    assert s.processing_cycles >= 0
-                    self._log.debug(
-                        "process was deactivated after "
-                        f"{cycles_processed} cycles"
-                    )
-
-                # Stop processing the workload even if preempt (or kill) and
-                # timeout occur simultaneously
-                if kill.triggered:
-                    self._finish()
+            if s.segment_type == SegmentType.COMPUTE:
+                for compute_event in self._handle_compute():
+                    yield compute_event
+            elif s.segment_type == SegmentType.READ_TOKEN:
+                consume_finished = self._handle_read_segment()
+                if consume_finished is None:
+                    # if we get None this means the consume operation blocked
+                    # and we need to return from workload
                     return
-                if preempt.triggered:
-                    self._deactivate()
+                # Otherwise we got an event that indicates the end of the
+                # consume operation and we simply wait for it
+                yield consume_finished
+            elif s.segment_type == SegmentType.WRITE_TOKEN:
+                produce_finished = self._handle_write_segment()
+                if produce_finished is None:
+                    # if we get None this means the consume operation blocked
+                    # and we need to return from workload
                     return
-            if s.read_from_channel is not None:
-                # Consume tokens from a channel. Unlike the processing, this
-                # operation cannot easily be preempted. There are two
-                # problems here.  First, consume and produce are considered
-                # atomic operations by our algorithm. If they could be
-                # interrupted, both operations would need to implement a
-                # synchronization strategy.  Second, it is unclear what
-                # preempting a consume or produce operation means. The
-                # simulation does not know Which part of the consume/produce
-                # costs is actual processing by a CPU and which part is due to
-                # asynchronous operations (e.g., a DMA or the memory
-                # architecture) that would not be affected by an interrupt.
-                # Therefore, both consume and produce ignore any preemption
-                # requests and process it only after the operation completes.
-                c = self._channels[s.read_from_channel]
-                self._log.debug(
-                    "read %d tokens from channel %s", s.n_tokens, c.full_name
+                # Otherwise we got an event that indicates the end of the
+                # produce operation and we simply wait for it
+                yield produce_finished
+            else:
+                raise RuntimeError(
+                    f"Encountered an unknown segment type! ({s.segment_type})"
                 )
-                if not c.can_consume(self, s.n_tokens):
-                    self._log.debug("not enough tokens available -> block")
-                    self._block()
-                    self.env.process(c.wait_for_tokens(self, s.n_tokens))
-                    return
-                else:
-                    s.read_from_channel = None
-                    yield self.env.process(c.consume(self, s.n_tokens))
 
-                # Stop processing if preempted or killed
-                if kill.triggered:
-                    self._finish()
-                    return
-                if preempt.triggered:
-                    self._deactivate()
-                    return
-            if s.write_to_channel is not None:
-                # Produce tokens on a channel. Similar to consume above, this
-                # is considered as an atomic operation and an preemption
-                # request is only processed after this operation completes.
-                c = self._channels[s.write_to_channel]
-                self._log.debug(
-                    "write %d tokens to channel %s", s.n_tokens, c.full_name
-                )
-                if not c.can_produce(self, s.n_tokens):
-                    self._log.debug("not enough slots available -> block")
-                    self._block()
-                    self.env.process(c.wait_for_slots(self, s.n_tokens))
-                    return
-                else:
-                    s.write_to_channel = None
-                    yield self.env.process(c.produce(self, s.n_tokens))
+            # Stop processing if we where preempted or killed
+            if kill.triggered:
+                self._finish()
+                self._log.debug("process was killed")
+                return
+            if preempt.triggered:
+                self._deactivate()
+                self._log.debug("process was preempted")
+                return
 
-                # Stop processing if preempted or killed
-                if kill.triggered:
-                    self._finish()
-                    return
-                if preempt.triggered:
-                    self._deactivate()
-                    return
-            if s.terminate:
-                self._log.debug("process terminates")
-                break
+            # move on to the next segment
+            self._update_current_segment()
 
+        # reached the end of the trace
+        self._log.debug("process terminates")
+        self._finish()
+
+    def _init_workload(self):
+        assert self.check_state(ProcessState.RUNNING)
+
+        if self._is_running:
+            # we are resuming from an earlier workload execution, nothing to do
+            self._log.debug("resume workload execution")
+        else:
+            # we start up workload execution for the first time and need
+            # to initialize the current trace segment
+            self._log.debug("start workload execution")
+            self._is_running = True
+            self._update_current_segment()
+            self._remaining_compute_cycles = None
+
+    def _update_current_segment(self):
+        # updated the current segment to the next segment in the trace
+        # set to None if we reached the end of the trace
+        try:
+            self._current_segment = next(self._trace)
+        except StopIteration:
+            # reached the end of the trace
             self._current_segment = None
 
-        self._finish()
+    def _handle_read_segment(self):
+        # Consume tokens from a channel. Unlike the processing, this operation
+        # cannot easily be preempted. There are two problems here.  First,
+        # consume and produce are considered atomic operations by our
+        # algorithm. If they could be interrupted, both operations would need
+        # to implement a synchronization strategy.  Second, it is unclear what
+        # preempting a consume or produce operation means. The simulation does
+        # not know Which part of the consume/produce costs is actual processing
+        # by a CPU and which part is due to asynchronous operations (e.g., a
+        # DMA or the memory architecture) that would not be affected by an
+        # interrupt.  Therefore, both consume and produce ignore any preemption
+        # requests and process it only after the operation completes.
+        s = self._current_segment
+        c = self._channels[s.channel]
+        self._log.debug(f"read {s.num_tokens} tokens from channel {s.channel}")
+        if c.can_consume(self, s.num_tokens):
+            return self.env.process(c.consume(self, s.num_tokens))
+        else:
+            self._log.debug("not enough tokens available -> block")
+            self._block()
+            self.env.process(c.wait_for_tokens(self, s.num_tokens))
+            return None
+
+    def _handle_write_segment(self):
+        # Produce tokens on a channel. Similar to consume above, this is
+        # considered as an atomic operation and an preemption request is only
+        # processed after this operation completes.
+        s = self._current_segment
+        c = self._channels[s.channel]
+        self._log.debug(f"write {s.num_tokens} tokens to channel {s.channel}")
+        if c.can_produce(self, s.num_tokens):
+            return self.env.process(c.produce(self, s.num_tokens))
+        else:
+            self._log.debug("not enough slots available -> block")
+            self._block()
+            self.env.process(c.wait_for_slots(self, s.num_tokens))
+            return None
+
+    def _handle_compute(self):
+        # The preempt and kill events will be overwritten once triggered. Thus
+        # we keep references to the original events here.
+        preempt = self._preempt
+        kill = self._kill
+
+        s = self._current_segment
+
+        if self._remaining_compute_cycles is None:
+            cycles = s.processor_cycles[self.processor.type]
+        else:
+            cycles = self._remaining_compute_cycles
+
+        self._log.debug(f"process for {cycles} cycles")
+        ticks = self.processor.ticks(cycles)
+
+        timeout = self.env.timeout(ticks)
+        start = self.env.now
+
+        # process until computation completes (timeout) or until the
+        # process is preempted
+        yield self.env.any_of([timeout, preempt, kill])
+
+        # if the timeout was processed, the computation completed
+        if timeout.processed:
+            self._remaining_compute_cycles = None
+        elif preempt.processed:
+            # Calculate how many cycles where executed until the process was
+            # preempted. Note that the preemption can occur in between full
+            # cycles in our simulation. We lose a bit of precision here, by
+            # allowing preemption in between cycles and rounding the number of
+            # processed cycles to an integer number. However, the introduced
+            # error should be marginal.
+            ticks_processed = self.env.now - start
+            ratio = float(ticks_processed) / float(ticks)
+            cycles_processed = int(round(float(cycles) * ratio))
+
+            self._remaining_compute_cycles = cycles - cycles_processed
+            assert self._remaining_compute_cycles >= 0
+            self._log.debug(
+                f"process was deactivated after {cycles_processed} cycles"
+            )

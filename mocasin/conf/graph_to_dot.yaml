@@ -4,7 +4,6 @@ defaults:
   - hydra/job_logging: mocasin
   - tgff: default
   - graph: default
-  - trace: default
   - sdf3: default
 
-output_file: "${graph.name}.dot"
+output_file: "graph.dot"

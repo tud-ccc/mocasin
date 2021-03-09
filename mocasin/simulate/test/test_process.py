@@ -5,7 +5,11 @@
 
 
 import pytest
-from mocasin.common.trace import TraceGenerator, TraceSegment
+from mocasin.common.trace import (
+    ComputeSegment,
+    ReadTokenSegment,
+    WriteTokenSegment,
+)
 from mocasin.simulate.process import ProcessState, RuntimeProcess
 
 
@@ -144,71 +148,33 @@ def empty_channel(env, mocker):
 
 
 class TestRuntimeDataflowProcess:
-    class TerminateTraceGenerator(TraceGenerator):
-        def next_segment(self, process_name, processor_type):
-            t = TraceSegment()
-            t.terminate = True
-            return t
+    def empty_trace_generator(self):
+        return
+        yield
 
-    class ProcessingTraceGenerator(TraceGenerator):
-        def __init__(self):
-            self.i = 1
+    def processing_trace_generator(self):
+        for i in range(1, 6):
+            yield ComputeSegment({"Test": i})
 
-        def next_segment(self, process_name, processor_type):
-            t = TraceSegment()
-            t.processing_cycles = self.i
-            if self.i == 5:
-                t.terminate = True
-            self.i += 1
-            return t
+    def read_trace_generator(self):
+        for i in range(1, 6):
+            yield ComputeSegment(processor_cycles={"Test": i})
+            yield ReadTokenSegment(channel="chan", num_tokens=1)
 
-    class ReadTraceGenerator(TraceGenerator):
-        def __init__(self):
-            self.i = 1
-
-        def next_segment(self, process_name, processor_type):
-            t = TraceSegment()
-            t.processing_cycles = self.i
-            t.read_from_channel = "chan"
-            t.n_tokens = 1
-            if self.i == 5:
-                t.terminate = True
-            self.i += 1
-            return t
-
-    class WriteTraceGenerator(TraceGenerator):
-        def __init__(self):
-            self.i = 1
-
-        def next_segment(self, process_name, processor_type):
-            t = TraceSegment()
-            t.processing_cycles = self.i
-            t.write_to_channel = "chan"
-            t.n_tokens = 1
-            if self.i == 5:
-                t.terminate = True
-            self.i += 1
-            return t
-
-    class InvalidTraceGenerator(TraceGenerator):
-        def next_segment(self, process_name, processor_type):
-            t = TraceSegment()
-            t.processing_cycles = 10
-            t.write_to_channel = "chan1"
-            t.n_tokens = 1
-            t.read_from_channel = "chan2"
-            t.terminate = True
-            return t
+    def write_trace_generator(self):
+        for i in range(1, 6):
+            yield ComputeSegment(processor_cycles={"Test": i})
+            yield WriteTokenSegment(channel="chan", num_tokens=1)
 
     def _run(
         self,
         env,
         dataflow_process,
         processor,
-        trace_generator=None,
+        trace=None,
         channel=None,
     ):
-        dataflow_process._trace_generator = trace_generator
+        dataflow_process._trace = trace
         env.run()
         dataflow_process._channels["chan"] = channel
         dataflow_process.start()
@@ -220,14 +186,14 @@ class TestRuntimeDataflowProcess:
 
     def test_workload_terminate(self, env, dataflow_process, processor):
         self._run(
-            env, dataflow_process, processor, self.TerminateTraceGenerator()
+            env, dataflow_process, processor, self.empty_trace_generator()
         )
         assert dataflow_process._state == ProcessState.FINISHED
         assert env.now == 0
 
     def test_workload_processing(self, env, dataflow_process, processor):
         self._run(
-            env, dataflow_process, processor, self.ProcessingTraceGenerator()
+            env, dataflow_process, processor, self.processing_trace_generator()
         )
         assert dataflow_process._state == ProcessState.FINISHED
         assert env.now == 15
@@ -239,7 +205,7 @@ class TestRuntimeDataflowProcess:
             env,
             dataflow_process,
             processor,
-            self.ReadTraceGenerator(),
+            self.read_trace_generator(),
             full_channel,
         )
         assert dataflow_process._state == ProcessState.FINISHED
@@ -252,7 +218,7 @@ class TestRuntimeDataflowProcess:
             env,
             dataflow_process,
             processor,
-            self.WriteTraceGenerator(),
+            self.write_trace_generator(),
             empty_channel,
         )
         assert dataflow_process._state == ProcessState.FINISHED
@@ -261,7 +227,7 @@ class TestRuntimeDataflowProcess:
     def test_workload_read_block(
         self, env, dataflow_process, processor, empty_channel
     ):
-        dataflow_process._trace_generator = self.ReadTraceGenerator()
+        dataflow_process._trace = self.read_trace_generator()
         env.run()
         dataflow_process._channels["chan"] = empty_channel
         dataflow_process.start()
@@ -280,7 +246,7 @@ class TestRuntimeDataflowProcess:
             env,
             dataflow_process,
             processor,
-            self.WriteTraceGenerator(),
+            self.write_trace_generator(),
             full_channel,
         )
         assert dataflow_process._state == ProcessState.BLOCKED
@@ -315,12 +281,6 @@ class TestRuntimeDataflowProcess:
         self._run_after_block(env, dataflow_process, processor)
         assert dataflow_process._state == ProcessState.FINISHED
         assert env.now == 5015
-
-    def test_workload_invalid(self, env, dataflow_process, processor):
-        with pytest.raises(RuntimeError):
-            self._run(
-                env, dataflow_process, processor, self.InvalidTraceGenerator()
-            )
 
     def test_connect_to_incomming_channel(self, dataflow_process, mocker):
         channel = mocker.Mock()

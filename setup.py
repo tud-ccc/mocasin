@@ -20,31 +20,27 @@ project_name = "mocasin"
 version = "0.1.0"
 
 install_requirements = [
-    "argparse",
     "arpeggio",
-    "cvxpy!=1.1.8,<1.2" if sys.version_info < (3, 7) else "cvxpy!=1.1.8",
     "cvxopt",
+    "cvxpy!=1.1.8,<1.2" if sys.version_info < (3, 7) else "cvxpy!=1.1.8",
     "deap",
     "h5py",
     "hydra-core>=1.0.3,<1.1.0",
-    "scipy",
     "scipy<1.6.0" if sys.version_info < (3, 7) else "scipy",
     "lxml",
     "matplotlib",
-    "numba",
+    "numba>=0.53.0rc1",
     "numpy",
     "pint",
     "pydot",
-    "pympsym>=0.5",
-    "pyyaml",
+    "mpsym",
     "pyxb",
-    "recordclass",
     "simpy",
     "sortedcontainers",
     "termcolor",
     "tqdm",
 ]
-setup_requirements = ["pip", "pytest-runner", "sphinx", "numpy"]
+setup_requirements = ["pip", "pytest-runner", "sphinx"]
 
 
 if sys.version_info < (3, 7):
@@ -149,7 +145,6 @@ setup(
     entry_points={
         "console_scripts": [
             "mocasin=mocasin.__main__:main",
-            "mocasin_profile=mocasin.__main__:profile",
         ]
     },
     include_package_data=True,

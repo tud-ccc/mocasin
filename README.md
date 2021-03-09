@@ -7,10 +7,10 @@ platforms.
 Installation
 ------------
 
-It is recommended to install mocasin within a virtual environment. Currently we support Python versions 3.6, 3.7, and 3.8.
+It is recommended to install mocasin within a virtual environment. Currently we support Python versions 3.6, 3.7, 3.8 and 3.9.
 You can create a new environment with
 ```
-virtualenv -p python3.7 ~/virtualenvs/mocasin
+virtualenv -p python3 ~/virtualenvs/mocasin
 ```
 Note that you can adjust the path to your needs. You can activate the previously created environment as follows:
 ```
@@ -104,6 +104,19 @@ mocasin comes with a set of tests. You can run them as follows:
 ```
 python setup.py test
 ```
+
+Autocompletion for bash/zsh
+-------------
+mocasin supports bash autocompletion.  To activate bash completion, run:
+```
+eval "$(cat misc/bash-autocomplete.sh)"
+```
+
+For completion in zsh, you first need to add
+```
+autoload -Uz bashcompinit && bashcompinit
+```
+to your .zshrc configuration file.
 
 Publications
 ------------

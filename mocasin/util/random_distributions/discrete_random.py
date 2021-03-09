@@ -3,14 +3,8 @@
 #
 # Authors: Andres Goens
 
-import types
-from functools import reduce
 import numpy as np
 import matplotlib.pyplot as plt
-
-# from scipy.stats import multinomial
-from mpl_toolkits.mplot3d import Axes3D
-import itertools
 
 
 def _discrete_random(dims, mu, r, Q, func):

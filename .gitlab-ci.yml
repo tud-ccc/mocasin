@@ -23,6 +23,13 @@ stages:
     paths:
       - pynauty*.whl
 
+build-pynauty-python3.9:
+  extends: .build-pynauty
+  stage: build_pynauty
+  image: python:3.9
+  tags:
+    - python3.9
+
 build-pynauty-python3.8:
   extends: .build-pynauty
   stage: build_pynauty
@@ -48,11 +55,21 @@ build-pynauty-python3.6:
   variables:
     NO_PYNAUTY: 1
   script:
+    - python -m pip install --upgrade pip
     - pip install pynauty*.whl
     - pip wheel --no-deps .
   artifacts:
     paths:
       - mocasin*.whl
+
+build-mocasin-python3.9:
+  extends: .build-mocasin
+  stage: build_mocasin
+  image: python:3.9
+  tags:
+    - python3.9
+  needs:
+    - build-pynauty-python3.9
 
 build-mocasin-python3.8:
   extends: .build-mocasin
@@ -86,6 +103,16 @@ build-mocasin-python3.6:
     - pip install pynauty*.whl
     - pip install mocasin*.whl
     - python setup.py test
+
+test-python3.9:
+  extends: .test
+  stage: test
+  image: python:3.9
+  tags:
+    - python3.9
+  needs:
+    - build-pynauty-python3.9
+    - build-mocasin-python3.9
 
 test-python3.8:
   extends: .test
@@ -122,6 +149,7 @@ test-gbm:
   variables:
     MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
   needs:
+    - build-pynauty-python3.9
     - build-pynauty-python3.8
     - build-pynauty-python3.7
     - build-pynauty-python3.6
@@ -134,11 +162,25 @@ test-maps-examples:
   variables:
     MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
   needs:
+    - build-pynauty-python3.9
     - build-pynauty-python3.8
     - build-pynauty-python3.7
     - build-pynauty-python3.6
   trigger:
     project: mocasin/mocasin-maps-examples
+    strategy: depend
+
+test-fivegsim:
+  stage: test
+  variables:
+    MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
+  needs:
+    - build-pynauty-python3.9
+    - build-pynauty-python3.8
+    - build-pynauty-python3.7
+    - build-pynauty-python3.6
+  trigger:
+    project: mocasin/fivegsim
     strategy: depend
 
 check-formatting:

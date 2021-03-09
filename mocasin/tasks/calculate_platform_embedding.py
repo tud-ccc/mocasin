@@ -11,7 +11,6 @@ import os
 log = logging.getLogger(__name__)
 
 
-@hydra.main(config_path="../conf", config_name="calculate_platform_embedding")
 def calculate_platform_embedding(cfg):
     """Calculate the embedding for a Platform Graph
 
