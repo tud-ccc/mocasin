@@ -6,7 +6,7 @@
 from mocasin.tetris.job_request import JobRequestInfo
 
 from mocasin.maps.graph import MapsDataflowGraph
-from mocasin.util.mapping_table_reader import MappingTableReader
+from mocasin.util.mapping_table import MappingTableReader
 
 import csv
 import logging

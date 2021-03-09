@@ -4,7 +4,7 @@
 # Author: Robert Khasanov
 
 from mocasin.common.graph import DataflowChannel, DataflowProcess, DataflowGraph
-from mocasin.util.mapping_table_reader import MappingTableReader
+from mocasin.util.mapping_table import MappingTableReader
 from mocasin.platforms.platformDesigner import genericProcessor
 from mocasin.platforms.odroid import DesignerPlatformOdroid
 
