@@ -403,7 +403,9 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         canonical_operations=True,
         disable_mpsym=False,
     ):
-        self._topologyGraph = platform.to_adjacency_dict()
+        self._topologyGraph = platform.to_adjacency_dict(
+            include_proc_type_labels=True
+        )
         self.graph = graph
         self.platform = platform
         self._d = len(graph.processes())
