@@ -225,6 +225,46 @@ class RuntimeScheduler(object):
             "This method needs to be overridden by a subclass"
         )
 
+    def _load_context(self, last_process, next_process):
+        """A simpy process modeling the context loading for next_process
+
+        Yields:
+            ~simpy.events.Event: a series of events until the context is loaded
+        """
+
+        # In case of the AFTER_SCHEDULING context switch mode, the context
+        # switch is deferred until absolutely necessary. This means we first
+        # have to store the old context before we can load the new context
+        # here.
+        if self._context_switch_mode == ContextSwitchMode.AFTER_SCHEDULING:
+            # there is nothing to do if last and next process are identical
+            if last_process is next_process:
+                return
+            if last_process is not None:
+                self._log.debug(
+                    f"store the context of process {next_process.full_name}"
+                )
+                # wait until the store operation is complete
+                ticks = self._processor.context_store_ticks()
+                yield self.env.timeout(ticks)
+
+        # load context of the new process
+        if self._context_switch_mode != ContextSwitchMode.NEVER:
+            self._log.debug(f"load context of process {next_process.full_name}")
+            # wait until the load operation is complete
+            ticks = self._processor.context_load_ticks()
+            yield self.env.timeout(ticks)
+
+    def _store_context(self, process):
+        """A simpy process modeling the context storing for process
+
+        Yields:
+            ~simpy.events.Event: a series of events until the context is loaded
+        """
+        if self._context_switch_mode == ContextSwitchMode.ALWAYS:
+            self._log.debug(f"store the context of process {process.full_name}")
+            yield self.env.timeout(self._processor.context_store_ticks())
+
     def run(self):
         log = self._log
 
@@ -248,29 +288,18 @@ class RuntimeScheduler(object):
                 log.debug("schedule process %s next", np.full_name)
 
                 # pay for context switching
-                mode = self._context_switch_mode
-                if mode == ContextSwitchMode.ALWAYS:
-                    log.debug("load context of process %s", np.full_name)
-                    ticks = self._processor.context_load_ticks()
-                    yield self.env.timeout(ticks)
-                elif (
-                    mode == ContextSwitchMode.AFTER_SCHEDULING
-                    and np is not self.current_process
-                ):
-                    if cp is not None:
-                        log.debug(
-                            "store the context of process %s", cp.full_name
-                        )
-                        ticks = self._processor.context_store_ticks()
-                        yield self.env.timeout(ticks)
-                    log.debug("load context of process %s", np.full_name)
-                    ticks = self._processor.context_load_ticks()
-                    yield self.env.timeout(ticks)
+                yield from self._load_context(cp, np)
 
-                # it could happen, that the process gets killed before the
-                # context was loaded completely. In this case we just continue
-                # and run the scheduling algorithm again
-                if np.check_state(ProcessState.FINISHED):
+                # it could happen, that the process gets killed or removed
+                # before the context was loaded completely. In this case we
+                # just continue and run the scheduling algorithm again
+                if np not in self._processes or np.check_state(
+                    ProcessState.FINISHED
+                ):
+                    log.debug(
+                        f"process {np.name} was migrated or killed before its "
+                        "context could be loaded"
+                    )
                     continue
 
                 # activate the process and remove it from the ready queue
@@ -324,13 +353,7 @@ class RuntimeScheduler(object):
                     )
 
                 # pay for context switching
-                if self._context_switch_mode == ContextSwitchMode.ALWAYS:
-                    self._log.debug(
-                        "store the context of process %s", np.full_name
-                    )
-                    yield self.env.timeout(
-                        self._processor.context_store_ticks()
-                    )
+                yield from self._store_context(cp)
             else:
                 # Wait for ready events if the scheduling algorithm did not
                 # find a process that is ready for execution
