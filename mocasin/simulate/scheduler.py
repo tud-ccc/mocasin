@@ -451,7 +451,7 @@ class RoundRobinScheduler(RuntimeScheduler):
         """
         if time_slice is None:
             raise RuntimeError(
-                "time_slice must be defined for a RoundRobin " "scheduler"
+                "time_slice must be defined for a RoundRobin scheduler"
             )
         super(RoundRobinScheduler, self).__init__(
             name,
@@ -462,8 +462,14 @@ class RoundRobinScheduler(RuntimeScheduler):
             env,
         )
 
-        # status var, keeps track of position in process list
-        self._queue_position = 0
+        # Wee need to keep a copy of all processes to iterate over.  The
+        # self._processes list can change when new processes are created,
+        # removed due to migration, or finish. Thus an iterator on
+        # self._processes could break. Instead, we need to iterate over the
+        # copy and validate that any processes found is still in
+        # self._processes
+        self._copied_processes = self._processes.copy()
+        self._process_iterator = iter(self._copied_processes)
 
     def schedule(self):
         """Perform the scheduling."""
@@ -474,28 +480,31 @@ class RoundRobinScheduler(RuntimeScheduler):
             if cp not in self._ready_queue:
                 self._ready_queue.append(cp)
 
+        # Abort if there are no ready processes
         if len(self._ready_queue) == 0:
             return None
 
-        # start at the position of the last scheduled process in process list
-        check_next = self._queue_position
-        # increment by one
-        check_next = (check_next + 1) % len(self._processes)
-        stop_at = check_next
-
+        restarts = 0
         while True:
+            # get next process in list of all processes
+            try:
+                process = next(self._process_iterator)
+            except StopIteration:
+                # if we reach the end of the list, reinitialize and start over
+                # from the beginning
+                self._copied_processes = self._processes.copy()
+                self._process_iterator = iter(self._copied_processes)
+                restarts += 1
+                if restarts == 2:
+                    raise RuntimeError(
+                        "Mismatch between known processes and ready process "
+                        "list"
+                    )
+                continue
+
             # check if process is in ready queue and if so, return it
-            if self._processes[check_next] in self._ready_queue:
-                self._queue_position = check_next
-                return self._processes[check_next]
-
-            # increment
-            check_next = (check_next + 1) % len(self._processes)
-            if check_next == stop_at:
-                break
-
-        # if no process is ready, we sleep and start at same position next time
-        return None
+            if process in self._ready_queue:
+                return process
 
 
 def create_scheduler(name, processor, policy, env):
