@@ -12,6 +12,15 @@ workflow and, for instance, run black automatically on each
 save. Alternatively, [git hooks](https://git-scm.com/book/pl/v2/Customizing-Git-Git-Hooks)
 could be setup to automatically apply black before each commit.
 
+To setup the git hooks, please install `pre-commit`:
+```
+pip install pre-commit
+```
+Then run:
+```
+pre-commit install
+```
+
 Linting
 -------
 
