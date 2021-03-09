@@ -4,7 +4,10 @@
 # Authors: Felix Teweleit
 
 import pytest
-from mocasin.platforms.platformDesigner import PlatformDesigner, genericProcessor
+from mocasin.platforms.platformDesigner import (
+    PlatformDesigner,
+    genericProcessor,
+)
 from mocasin.common.platform import Platform
 from mocasin.platforms.odroid import DesignerPlatformOdroid
 from mocasin.platforms.haec import DesignerPlatformHAEC
@@ -33,19 +36,21 @@ def platform(request):
     processor3 = genericProcessor("proc_type_3")
 
     if request.param == "exynos990":
-        return DesignerPlatformExynos990(processor0,processor1,processor2,processor3)
+        return DesignerPlatformExynos990(
+            processor0, processor1, processor2, processor3
+        )
     elif request.param == "odroid":
-        return DesignerPlatformOdroid(processor0,processor1)
+        return DesignerPlatformOdroid(processor0, processor1)
     elif request.param == "generic_bus":
         return DesignerPlatformBus(processor0)
     elif request.param == "generic_mesh":
-        return DesignerPlatformMesh(processor0,processor1)
+        return DesignerPlatformMesh(processor0, processor1)
     elif request.param == "multi_cluster":
-        return DesignerPlatformMultiCluster(processor0,processor1)
+        return DesignerPlatformMultiCluster(processor0, processor1)
     elif request.param == "haec":
         return DesignerPlatformHAEC(processor0)
     elif request.param == "coolidge":
-        return DesignerPlatformCoolidge(processor0,processor1)
+        return DesignerPlatformCoolidge(processor0, processor1)
     else:
         assert False, "wrong parameter"
 
