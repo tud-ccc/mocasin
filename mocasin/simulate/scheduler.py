@@ -282,12 +282,11 @@ class RuntimeScheduler(object):
         yield self.process_ready
 
     def _schedule_next_process(self):
-        cp = self.current_process
-        np = self.schedule()
+        next_process = self.schedule()
 
         # Found no process to be scheduled? Then, wait for a process to become
         # ready and then try again.
-        if np is None:
+        if next_process is None:
             yield from self._wait_for_ready_process()
             # by returning, we trigger the algorithm again
             return
@@ -300,53 +299,61 @@ class RuntimeScheduler(object):
         ticks = self._processor.ticks(self._scheduling_cycles)
         yield self.env.timeout(ticks)
 
-        log.debug("schedule process %s next", np.full_name)
+        self._log.debug("schedule process %s next", next_process.full_name)
 
         # pay for context switching
-        yield from self._load_context(cp, np)
+        yield from self._load_context(self.current_process, next_process)
 
         # it could happen, that the process gets killed or removed
         # before the context was loaded completely. In this case we
         # just return and the algorithm will be run again
-        if np not in self._processes or np.check_state(ProcessState.FINISHED):
-            log.debug(
-                f"process {np.name} was migrated or killed before its "
-                "context could be loaded"
+        if next_process not in self._processes or next_process.check_state(
+            ProcessState.FINISHED
+        ):
+            self._log.debug(
+                f"process {next_process.name} was migrated or killed before its"
+                " context could be loaded"
             )
             return
 
         # activate the process and remove it from the ready queue
-        self.current_process = np
-        self._ready_queue.remove(np)
-        np.activate(self._processor)
+        self.current_process = next_process
+        self._ready_queue.remove(next_process)
+        next_process.activate(self._processor)
         # make sure the activation is processed completely before
         # continuing
         yield self.env.timeout(0)
+
+        # model the actual workload execution of the process
+        yield from self._execute_process_workload(self.current_process)
+
+        # pay for context switching
+        yield from self._store_context(self.current_process)
+
+    def _execute_process_workload(self, process):
         # record the process activation in the simulation trace
         if self._system.platform_trace_enabled or self._system.power_enabled:
             self.trace_writer.begin_duration(
                 self._system.platform.name,
                 self._processor.name,
-                np.full_name,
+                process.full_name,
                 category="Schedule",
             )
 
         # execute the process workload
-        workload = self.env.process(self.current_process.workload())
+        workload = self.env.process(process.workload())
         if self._time_slice is not None:
             timeout = self.env.timeout(self._time_slice)
             yield self.env.any_of([timeout, workload])
             if timeout.processed:
-                self.current_process.preempt()
+                process.preempt()
                 # Although we requested to preempt the process, it may
                 # still continue running in order to finish any atomic
                 # operations it might be processing at the moment. Thus
                 # we wait for the workload process to terminate before
                 # continuing
                 yield workload
-                assert not self.current_process.check_state(
-                    ProcessState.RUNNING
-                )
+                assert not self.process.check_state(ProcessState.RUNNING)
         else:
             yield workload
 
@@ -355,12 +362,9 @@ class RuntimeScheduler(object):
             self.trace_writer.end_duration(
                 self._system.platform.name,
                 self._processor.name,
-                np.full_name,
+                process.full_name,
                 category="Schedule",
             )
-
-        # pay for context switching
-        yield from self._store_context(cp)
 
     def ready_queue_length(self):
         """Get the current length of the ready queue"""
