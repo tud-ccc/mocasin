@@ -3,10 +3,10 @@
 #
 # Authors: Christian Menard
 
+import logging
 
 from simpy.resources.resource import Resource
 
-from mocasin.util import logging
 from mocasin.simulate.energy import EnergyEstimator
 from mocasin.simulate.process import ProcessState
 from mocasin.simulate.scheduler import create_scheduler
@@ -48,7 +48,6 @@ class RuntimeSystem:
             env: the simpy environment
         """
         log.info("Initialize the system")
-        logging.inc_indent()
 
         self._env = env
         self.platform = platform
@@ -109,7 +108,6 @@ class RuntimeSystem:
             if r.exclusive and not hasattr(r, "simpy_resource"):
                 r.simpy_resource = Resource(self.env, capacity=1)
 
-        logging.dec_indent()
         return
 
     def start_process(self, process, processor):
@@ -161,7 +159,12 @@ class RuntimeSystem:
             # if we got an event, add a callback that adds the process to the
             # new scheduler as soon as the event is triggered (i.e. as soon
             # as the process is removed completely)
-            event.callbacks.append(lambda _: to_scheduler.add_process(process))
+            def callback(_):
+                # make sure that the process was not killed in the meantime
+                if not process.check_state(ProcessState.FINISHED):
+                    # add process to the new scheduler
+                    to_scheduler.add_process(process)
+            event.callbacks.append(callback)
         else:
             # otherwise, add the process to the new scheduler immediately
             to_scheduler.add_process(process)

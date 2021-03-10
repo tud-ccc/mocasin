@@ -73,7 +73,6 @@ class RuntimeDataflowApplication(RuntimeApplication):
         self._is_finished = False
 
         log.debug("initialize new runtime application: %s", name)
-        logging.inc_indent()
 
         # Instantiate all channels
         self._channels = {}
@@ -93,15 +92,12 @@ class RuntimeDataflowApplication(RuntimeApplication):
             )
             self._processes[p.name] = proc
             self._process_mappings[proc] = mapping_info.affinity
-            logging.inc_indent()
             for c in p.incoming_channels:
                 rc = self._channels[c.name]
                 proc.connect_to_incomming_channel(rc)
             for c in p.outgoing_channels:
                 rc = self._channels[c.name]
                 proc.connect_to_outgoing_channel(rc)
-            logging.dec_indent()
-        logging.dec_indent()
 
         self._log = SimulateLoggerAdapter(log, self.name, self.env)
 
