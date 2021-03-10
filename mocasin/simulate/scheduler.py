@@ -444,51 +444,6 @@ class RuntimeScheduler(object):
         return len(self._ready_queue)
 
 
-class DummyScheduler(RuntimeScheduler):
-    """A Dummy Scheduler.
-
-    This scheduler does not implement any policy and is intended to be used
-    when there is no scheduler in the platform. This scheduler simply runs all
-    processes sequentially. It always waits until the current process finishes
-    before starting a new one.
-    """
-
-    def __init__(
-        self, name, processor, context_switch_mode, scheduling_cycles, env
-    ):
-        """Initialize a dummy scheduler
-
-        Calls :func:`RuntimeScheduler.__init__`.
-        """
-        super().__init__(
-            name, processor, context_switch_mode, scheduling_cycles, None, env
-        )
-
-    def schedule(self):
-        """Perform the scheduling.
-
-        Returns the next process from the ready queue if the current process is
-        finished or no process is currently being executed. Returns the
-        current_process if it is ready. Returns None in all other cases.
-        """
-        cp = self.current_process
-
-        if cp is None:
-            # Schedule next ready process if no process was loaded before
-            if len(self._ready_queue) > 0:
-                return self._ready_queue[0]
-        elif cp.check_state(ProcessState.FINISHED):
-            # Schedule next ready process if current process finished
-            if len(self._ready_queue) > 0:
-                return self._ready_queue[0]
-        elif cp.check_state(ProcessState.READY):
-            # Schedule the current process if it became ready again
-            return cp
-
-        # sleep otherwise
-        return None
-
-
 class FifoScheduler(RuntimeScheduler):
     """A FIFO Scheduler.
 
@@ -619,15 +574,6 @@ def create_scheduler(name, processor, policy, env):
     Returns:
         RuntimeScheduler: a runtime scheduler object
     """
-    if policy.name == "Dummy":
-        log.debug(f"Initialize new dummy scheduler ({name})")
-        s = DummyScheduler(
-            name,
-            processor,
-            ContextSwitchMode.NEVER,
-            policy.scheduling_cycles,
-            env,
-        )
     if policy.name == "FIFO":
         log.debug(f"Initialize new FIFO scheduler ({name})")
         s = FifoScheduler(
