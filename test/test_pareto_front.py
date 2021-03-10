@@ -3,11 +3,12 @@
 #
 # Authors: Felix Teweleit, Andres Goens
 
+from pathlib import Path
 import subprocess
-import os
 
 
 def test_pareto_front_tgff(datadir):
+    out_csv_file = Path(datadir).joinpath("mappings.csv")
     subprocess.check_call(
         [
             "mocasin",
@@ -16,10 +17,9 @@ def test_pareto_front_tgff(datadir):
             "platform=exynos990",
             "tgff.directory=tgff/e3s-0.9",
             "tgff.file=auto-indust-cords.tgff",
-            f"outdir={datadir}",
+            f"mapping_table={out_csv_file}",
             "trace=tgff_reader",
         ],
         cwd=datadir,
     )
-    assert os.path.isfile(os.path.join(datadir, "results0.txt"))
-    assert os.path.isfile(os.path.join(datadir, "mapping0.pickle"))
+    assert out_csv_file.is_file()

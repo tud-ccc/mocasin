@@ -11,3 +11,4 @@ defaults:
 
 outdir : ./
 progress :  false
+mapping_table : "mappings.csv"
