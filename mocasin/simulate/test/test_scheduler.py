@@ -62,14 +62,17 @@ class TestRuntimeScheduler:
         env.run(1)  # start simulation to initialize the process
         process._transition(state)
         env.run(2)
-        if state == "FINISHED":
+        if state == "FINISHED" or state == "RUNNING":
             with pytest.raises(RuntimeError):
                 runtime_scheduler.add_process(process)
         else:
             runtime_scheduler.add_process(process)
             env.run(3)
             assert runtime_scheduler.current_process is None
-            assert len(runtime_scheduler._ready_queue) == 0
+            if state == "READY":
+                assert len(runtime_scheduler._ready_queue) == 1
+            else:
+                assert len(runtime_scheduler._ready_queue) == 0
             assert len(runtime_scheduler._processes) == 1
             assert process in runtime_scheduler._processes
             assert process.processor is None

@@ -164,15 +164,20 @@ class RuntimeScheduler(object):
             process (RuntimeDataflowProcess): the process to be added
         """
         self._log.debug("add process %s", process.full_name)
-        if process.check_state(ProcessState.FINISHED):
+        if process.check_state(ProcessState.FINISHED) or process.check_state(
+            ProcessState.RUNNING
+        ):
             raise RuntimeError(
-                "Processes that are already finished cannot be "
+                "Processes that are running or finished cannot be "
                 "added to a scheduler"
             )
         assert process not in self._processes
         self._processes.append(process)
         process.ready.callbacks.append(self._cb_process_ready)
         process.finished.callbacks.append(self._cb_process_finished)
+        # if the process is ready, also add it to the ready queue
+        if process.check_state(ProcessState.READY):
+            self._ready_queue.append(process)
 
     def remove_process(self, process):
         """Remove a process from this scheduler.
