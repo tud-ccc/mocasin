@@ -92,8 +92,8 @@ class RuntimeScheduler(object):
 
         self._log = SimulateLoggerAdapter(log, self.name, self.env)
 
-        self._processes = []
-        self._ready_queue = []
+        self._processes = deque()
+        self._ready_queue = deque()
 
         self.current_process = None
 
@@ -169,6 +169,7 @@ class RuntimeScheduler(object):
                 "Processes that are already finished cannot be "
                 "added to a scheduler"
             )
+        assert process not in self._processes
         self._processes.append(process)
         process.ready.callbacks.append(self._cb_process_ready)
         process.finished.callbacks.append(self._cb_process_finished)
@@ -265,7 +266,6 @@ class RuntimeScheduler(object):
             )
         process = event.value
         assert process.check_state(ProcessState.FINISHED)
-        # self._processes.remove(process)
         try:
             self._ready_queue.remove(process)
         except ValueError:
@@ -380,7 +380,6 @@ class RuntimeScheduler(object):
 
         # activate the process and remove it from the ready queue
         self.current_process = next_process
-        self._ready_queue.remove(next_process)
         next_process.activate(self._processor)
         # make sure the activation is processed completely before
         # continuing
@@ -464,31 +463,22 @@ class FifoScheduler(RuntimeScheduler):
     def schedule(self):
         """Perform the scheduling.
 
-        Returns the next ready process or the current process if it is ready.
+        Returns the next ready process.
         """
-        cp = self.current_process
 
-        if cp is None:
-            # Schedule next ready process if no process was loaded before
-            if len(self._ready_queue) > 0:
-                return self._ready_queue[0]
-        elif cp.check_state(ProcessState.FINISHED) or cp.check_state(
-            ProcessState.BLOCKED
-        ):
-            # Schedule next ready process if current process finished or is
-            # blocked
-            if len(self._ready_queue) > 0:
-                return self._ready_queue[0]
-        elif cp.check_state(ProcessState.READY):
-            # Schedule the current process if it became ready again
-            return cp
+        # Schedule next ready process if there are any ready processes
+        if len(self._ready_queue) > 0:
+            return self._ready_queue.popleft()
 
         # sleep otherwise
         return None
 
 
 class RoundRobinScheduler(RuntimeScheduler):
-    """"""
+    """A RoundRobin Scheduler
+
+    Schedules ready processes in round robin manner.
+    """
 
     def __init__(
         self,
@@ -516,49 +506,39 @@ class RoundRobinScheduler(RuntimeScheduler):
             env,
         )
 
-        # Wee need to keep a copy of all processes to iterate over.  The
-        # self._processes list can change when new processes are created,
-        # removed due to migration, or finish. Thus an iterator on
-        # self._processes could break. Instead, we need to iterate over the
-        # copy and validate that any processes found is still in
-        # self._processes
-        self._copied_processes = self._processes.copy()
-        self._process_iterator = iter(self._copied_processes)
-
     def schedule(self):
-        """Perform the scheduling."""
-        cp = self.current_process
+        """Perform the scheduling.
 
-        # if current process is ready and not currently in ready queue append
-        if cp is not None and cp.check_state(ProcessState.READY):
-            if cp not in self._ready_queue:
-                self._ready_queue.append(cp)
+        Returns returns the first ready process found while iterating over
+        all processes in round robin manner.
+        """
 
         # Abort if there are no ready processes
         if len(self._ready_queue) == 0:
             return None
+        assert len(self._processes) > 0
 
-        restarts = 0
+        # keep track of the process where we start searching
+        stop_at = self._processes[-1]
+
         while True:
-            # get next process in list of all processes
-            try:
-                process = next(self._process_iterator)
-            except StopIteration:
-                # if we reach the end of the list, reinitialize and start over
-                # from the beginning
-                self._copied_processes = self._processes.copy()
-                self._process_iterator = iter(self._copied_processes)
-                restarts += 1
-                if restarts == 2:
-                    raise RuntimeError(
-                        "Mismatch between known processes and ready process "
-                        "list"
-                    )
-                continue
-
-            # check if process is in ready queue and if so, return it
+            # check if the first process in the deque is ready
+            process = self._processes[0]
             if process in self._ready_queue:
+                # if it is ready, then remove it from the ready queue and
+                # return it
+                self._ready_queue.remove(process)
                 return process
+
+            # check if we already iterated over the complete process queue
+            if stop_at is process:
+                raise RuntimeError(
+                    "Did not find a ready process although the ready queue is "
+                    "not empty"
+                )
+
+            # rotate the deque by one to the left and try again
+            self._processes.rotate(-1)
 
 
 def create_scheduler(name, processor, policy, env):
