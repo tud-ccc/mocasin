@@ -439,6 +439,7 @@ class RuntimeDataflowProcess(RuntimeProcess):
         Args:
             channel (RuntimeChannel): the channel to connect to
         """
+        log.debug(f"make process {self.name} a sink to {channel.name}")
         self._channels[channel.name] = channel
         channel.add_sink(self)
 
@@ -450,6 +451,7 @@ class RuntimeDataflowProcess(RuntimeProcess):
         Args:
             channel (RuntimeChannel): the channel to connect to
         """
+        log.debug(f"make process {self.name} a source to {channel.name}")
         self._channels[channel.name] = channel
         channel.set_src(self)
 

@@ -96,15 +96,9 @@ class RuntimeDataflowApplication(RuntimeApplication):
             logging.inc_indent()
             for c in p.incoming_channels:
                 rc = self._channels[c.name]
-                log.debug(
-                    "make process %s a sink to %s", proc.full_name, rc.name
-                )
                 proc.connect_to_incomming_channel(rc)
             for c in p.outgoing_channels:
                 rc = self._channels[c.name]
-                log.debug(
-                    "make process %s a source to %s", proc.full_name, rc.name
-                )
                 proc.connect_to_outgoing_channel(rc)
             logging.dec_indent()
         logging.dec_indent()
