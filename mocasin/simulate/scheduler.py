@@ -430,7 +430,7 @@ class RuntimeScheduler(object):
                 # we wait for the workload process to terminate before
                 # continuing
                 yield workload
-                assert not self.process.check_state(ProcessState.RUNNING)
+                assert not process.check_state(ProcessState.RUNNING)
         else:
             yield workload
 

@@ -164,6 +164,7 @@ class RuntimeSystem:
                 if not process.check_state(ProcessState.FINISHED):
                     # add process to the new scheduler
                     to_scheduler.add_process(process)
+
             event.callbacks.append(callback)
         else:
             # otherwise, add the process to the new scheduler immediately
