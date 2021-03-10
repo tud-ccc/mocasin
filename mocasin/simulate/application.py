@@ -216,3 +216,12 @@ class RuntimeDataflowApplication(RuntimeApplication):
                 self.system.move_process(
                     process, current_processor, new_processor
                 )
+
+        # iterate over all channels
+        for name, channel in self._channels.items():
+            dataflow_channel = self.graph.find_channel(name)
+            mapping_info = mapping.channel_info(dataflow_channel)
+            self._log.debug(
+                f"Update channel primitive to {mapping_info.primitive.name}"
+            )
+            channel.update_mapping_info(mapping_info)
