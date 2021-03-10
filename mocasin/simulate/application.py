@@ -61,7 +61,6 @@ class RuntimeDataflowApplication(RuntimeApplication):
 
     def __init__(self, name, graph, mapping, app_trace, system):
         super().__init__(name, system)
-        self.mapping = mapping
         self.graph = graph
         self.trace = app_trace
 
@@ -86,14 +85,14 @@ class RuntimeDataflowApplication(RuntimeApplication):
 
         # Instantiate all processes
         self._processes = {}
-        self._mapping_infos = {}
+        self._process_mappings = {}
         for p in graph.processes():
             mapping_info = mapping.process_info(p)
             proc = RuntimeDataflowProcess(
                 p.name, app_trace.get_trace(p.name), self
             )
             self._processes[p.name] = proc
-            self._mapping_infos[proc] = mapping_info
+            self._process_mappings[proc] = mapping_info.affinity
             logging.inc_indent()
             for c in p.incoming_channels:
                 rc = self._channels[c.name]
@@ -148,8 +147,8 @@ class RuntimeDataflowApplication(RuntimeApplication):
 
         self._log.info(f"Application {self.name} starts")
 
-        for process, mapping_info in self._mapping_infos.items():
-            self.system.start_process(process, mapping_info)
+        for process, processor in self._process_mappings.items():
+            self.system.start_process(process, processor)
         finished = self.env.all_of([p.finished for p in self.processes()])
         finished.callbacks.append(self._app_finished_callback)
         yield finished
@@ -197,4 +196,23 @@ class RuntimeDataflowApplication(RuntimeApplication):
         Args:
              Mapping: an updated mapping to be used by the application
         """
-        log.warning("Updating a mapping at runtime is not yet supported")
+        assert self.is_running()
+
+        self._log.debug(f"Update mapping of application {self.name}")
+
+        # iterate over all proceses
+        for process in self._process_mappings.keys():
+            current_processor = self._process_mappings[process]
+            dataflow_process = self.graph.find_process(process.name)
+            new_processor = mapping.process_info(dataflow_process).affinity
+
+            # move the process
+            if current_processor != new_processor:
+                self._log.debug(
+                    f"Move process {process.full_name} from {current_processor}"
+                    f" to {new_processor}"
+                )
+                self._process_mappings[process] = new_processor
+                self.system.move_process(
+                    process, current_processor, new_processor
+                )

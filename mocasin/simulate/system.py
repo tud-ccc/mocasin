@@ -112,13 +112,14 @@ class RuntimeSystem:
         logging.dec_indent()
         return
 
-    def start_process(self, process, mapping_info):
+    def start_process(self, process, processor):
         """Start execution of a process.
 
         This should only be called by a RuntimeApplication.
 
         Args:
             process (RuntimeProcess): the runtime process to be started
+            processor (str): name of the processor to run the process on
             mapping_info (ProcessMappingInfo): object that specifies where to
                 start the process
         """
@@ -127,10 +128,43 @@ class RuntimeSystem:
                 f"The process {process.name} was already started!"
             )
         self._processes.add(process)
-        processor = mapping_info.affinity
         scheduler = self._processors_to_schedulers[processor]
         scheduler.add_process(process)
         process.start()
+
+    def move_process(self, process, from_processor, to_processor):
+        """Move a running process from one processor to another
+
+        Args:
+            process (RuntimeProcess): the runtime process to be moved
+            from_processor (str): name of the processor the process is currently
+                running on
+            to_processor (str): name of the processor the process should be
+                moved to
+        """
+        # nothing to do if the process is already finished
+        if process.check_state(ProcessState.FINISHED):
+            return
+
+        assert process in self._processes
+
+        # get the schedulers
+        from_scheduler = self._processors_to_schedulers[from_processor]
+        to_scheduler = self._processors_to_schedulers[to_processor]
+
+        # remove the process from its current scheduler
+        event = from_scheduler.remove_process(process)
+        # The remove call above may return an event that indicates the
+        # completion of the process removal. This is necessary in cases where
+        # the process is currently running and first needs to be deactivated.
+        if event:
+            # if we got an event, add a callback that adds the process to the
+            # new scheduler as soon as the event is triggered (i.e. as soon
+            # as the process is removed completely)
+            event.callbacks.append(lambda _: to_scheduler.add_process(process))
+        else:
+            # otherwise, add the process to the new scheduler immediately
+            to_scheduler.add_process(process)
 
     def record_system_load(self):
         # create an init event in order to give the trace viewer a hint
