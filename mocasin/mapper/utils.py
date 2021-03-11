@@ -94,7 +94,6 @@ class SimulationManager(object):
             log, len(self.graph.processes()), record_statistics
         )
         self.statistics.set_rep_init_time(representation.init_time)
-        self._last_added = None
         self.jobs = jobs
         self.trace = trace
         self.parallel = parallel
@@ -104,21 +103,14 @@ class SimulationManager(object):
     def lookup(self, mapping):
         if mapping not in self._cache:
             self._cache.update({mapping: None})
-            self._last_added = mapping
             return False
 
         return self._cache[mapping]
 
-    def add_time(self, time):
-        if not self._last_added:
-            raise RuntimeError("Cache mapping before adding a simulation time!")
+    def add_mapping_result(self, mapping, sim_res):
+        self._cache[mapping] = sim_res
 
-        self._cache[self._last_added] = time
-        self._last_added = None
 
-    def add_time_mapping(self, mapping, time):
-        self._cache[mapping] = time
-        self._last_added = None
 
     def simulate(self, input_mappings):
         # check inputs
@@ -208,7 +200,7 @@ class SimulationManager(object):
                 r = next(res_iter)
                 exec_time = float(r.exec_time / 1000000000.0)
                 exec_times.append(exec_time)
-                self.add_time_mapping(tup[i], exec_time)
+                self.add_mapping_result(tup[i], exec_time)
         return exec_times
 
     def append_mapping_metadata(self, mapping):
