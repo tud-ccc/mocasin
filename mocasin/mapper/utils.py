@@ -3,13 +3,13 @@
 #
 # Authors: Andrés Goens, Felix Teweleit
 
-from time import process_time
-import os
-import multiprocessing as mp
-import numpy as np
 from copy import deepcopy
 import csv
 import h5py
+import multiprocessing as mp
+import numpy as np
+import os
+from time import process_time
 
 from mocasin.common.mapping import Mapping
 from mocasin.simulate import DataflowSimulation
@@ -125,26 +125,22 @@ class SimulationManager(object):
         if len(input_mappings) == 0:
             log.warning("Trying to simulate an empty mapping list")
             return []
-        else:
-            if isinstance(input_mappings[0], Mapping):
-                time = process_time()
-                tup = [
-                    tuple(self.representation.toRepresentation(m))
-                    for m in input_mappings
-                ]
-                self.statistics.add_rep_time(process_time() - time)
-                mappings = input_mappings
-            else:  # assume mappings are list type then
-                # transform into tuples
-                time = process_time()
-                tup = [
-                    tuple(self.representation.approximate(np.array(m)))
-                    for m in input_mappings
-                ]
-                mappings = [
-                    self.representation.fromRepresentation(m) for m in tup
-                ]
-                self.statistics.add_rep_time(process_time() - time)
+
+        time = process_time()
+        if isinstance(input_mappings[0], Mapping):
+            tup = [
+                tuple(self.representation.toRepresentation(m))
+                for m in input_mappings
+            ]
+            mappings = input_mappings
+        else:  # assume mappings are list type then
+            # transform into tuples
+            tup = [
+                tuple(self.representation.approximate(np.array(m)))
+                for m in input_mappings
+            ]
+            mappings = [self.representation.fromRepresentation(m) for m in tup]
+        self.statistics.add_rep_time(process_time() - time)
 
         # first look up as many as possible:
         lookups = [self.lookup(t) for t in tup]
@@ -172,36 +168,26 @@ class SimulationManager(object):
         if self.parallel and len(simulations) > self.chunk_size:
             # since mappings are simulated in parallel, whole simulation time
             # is added later as offset
-            for _ in range(len(simulations)):
+            for _ in simulations:
                 self.statistics.mapping_evaluated(0)
 
             # run the simulations in parallel
             with mp.Pool(processes=self.jobs) as pool:
+                to_simulate = pool.imap(
+                    run_simulation,
+                    simulations,
+                    chunksize=self.chunk_size,
+                )
                 if self.progress:
                     import tqdm
 
-                    results = list(
-                        tqdm.tqdm(
-                            pool.imap(
-                                run_simulation,
-                                simulations,
-                                chunksize=self.chunk_size,
-                            ),
-                            total=len(mappings),
-                        )
+                    to_simulate = tqdm.tqdm(
+                        to_simulate,
+                        total=len(mappings),
                     )
-                    time = sum([res[1] for res in results])
-                    results = [res[0] for res in results]
-                else:
-                    results = list(
-                        pool.map(
-                            run_simulation,
-                            simulations,
-                            chunksize=self.chunk_size,
-                        )
-                    )
-                    time = sum([res[1] for res in results])
-                    results = [res[0] for res in results]
+                results = list(to_simulate)
+                time = sum([res[1] for res in results])
+                results = [res[0] for res in results]
                 self.statistics.add_offset(time)
         else:
             results = []
