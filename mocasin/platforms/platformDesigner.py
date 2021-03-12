@@ -259,6 +259,7 @@ class PlatformDesigner:
         writeLatency,
         readThroughput,
         writeThroughput,
+        # FIXME, this is a strange default
         frequencyDomain=100000,  # TODO: this should be added to tests
         name="default",
     ):
@@ -277,6 +278,8 @@ class PlatformDesigner:
         :param name: The cache name, in case it differs from L1.
         :type name: String
         """
+        # FIXME: this should probably produce an error instead of returning
+        # silently
         if self.__schedulingPolicy == None:
             return
         if self.__activeScope == None:
@@ -316,7 +319,7 @@ class PlatformDesigner:
                 prim.add_consumer(pe[0], [consume])
                 self.__platform.add_primitive(prim)
 
-        except:
+        except:  # FIXME: This is fishy
             log.error("Exception caught: " + sys.exc_info()[0])
 
         if self.__symLibrary:
@@ -330,7 +333,10 @@ class PlatformDesigner:
         writeLatency,
         readThroughput,
         writeThroughput,
+        # FIXME: probably we should just rename the method to add_storage
         resourceType=CommunicationResourceType.Storage,
+        # FIXME: this argument should either be renamed to frequency or
+        # expect an actual FrequencyDomain object
         frequencyDomain=0,
     ):
         """Adds a communication resource to the platform. All cores of the given cluster identifiers can communicate
@@ -349,6 +355,8 @@ class PlatformDesigner:
         :param writeThroughput: The write throughput of the communication resource.
         :type writeThroughput: int
         """
+        # FIXME: shouldn't these checks produce an error instead of just
+        # silently aborting?
         if not self.__schedulingPolicy:
             return
         if not self.__activeScope:
@@ -369,6 +377,7 @@ class PlatformDesigner:
         fd = FrequencyDomain("fd_" + name, frequencyDomain)
 
         try:
+            # FIXME: why distinguish storage and other types here?
             if resourceType == CommunicationResourceType.Storage:
                 com_resource = Storage(
                     nameToGive,
@@ -406,7 +415,7 @@ class PlatformDesigner:
 
             self.__platform.add_primitive(prim)
 
-        except:
+        except:  # FIXME: this is fishy
             log.error("Exception caught: " + str(sys.exc_info()[0]))
             return
 
