@@ -228,12 +228,18 @@ class Primitive:
             raise RuntimeError(
                 "Primitive already has a consumer %s" % sink.name
             )
+        for phase in phases:
+            if phase.direction != "read":
+                raise RuntimeError("A consumer can only use read phases")
         self.consume_phases[sink.name] = phases
         self.consumers.append(sink)
 
     def add_producer(self, src, phases):
         if src.name in self.produce_phases:
             raise RuntimeError("Primitive already has a producer %s" % src.name)
+        for phase in phases:
+            if phase.direction != "write":
+                raise RuntimeError("A producer can only use produces phases")
         self.produce_phases[src.name] = phases
         self.producers.append(src)
 
