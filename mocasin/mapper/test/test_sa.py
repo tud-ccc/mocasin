@@ -34,12 +34,9 @@ def conf():
 
 
 @pytest.fixture
-def evaluation_function():
-    return lambda m: 1 + np.cos(m[0] - m[1]) * np.sin(m[1] * 2 - 1)
-
-
-@pytest.fixture
-def mapper(graph, platform, trace, representation, evaluation_function, mocker):
+def mapper(
+    graph, platform, trace, representation, simres_evaluation_function, mocker
+):
     m = SimulatedAnnealingMapper(
         graph,
         platform,
@@ -57,11 +54,11 @@ def mapper(graph, platform, trace, representation, evaluation_function, mocker):
         True,
         4,
     )
-    m.simulation_manager = MockMappingCache(evaluation_function, mocker)
+    m.simulation_manager = MockMappingCache(simres_evaluation_function, mocker)
     return m
 
 
-def test_ts(mapper, evaluation_function):
+def test_sa(mapper, evaluation_function):
     result_mapper = mapper.generate_mapping()
     results = [
         (evaluation_function([x, y]), x, y)

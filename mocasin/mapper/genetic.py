@@ -196,9 +196,9 @@ class GeneticMapper(object):
 
     def evaluate_mapping(self, mapping):
         result = []
+        simres = self.simulation_manager.simulate([list(mapping)])[0]
         if self.exec_time:
-            exec_time = self.simulation_manager.simulate([list(mapping)])[0]
-            result.append(exec_time)
+            result.append(simres.exec_time)
         if self.num_resources:
             mapping_obj = self.representation.fromRepresentation(list(mapping))
             resource_dict = mapping_obj.to_resourceDict()

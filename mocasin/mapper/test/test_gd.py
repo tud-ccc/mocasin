@@ -11,11 +11,6 @@ from itertools import product
 
 
 @pytest.fixture
-def evaluation_function():
-    return lambda m: 1 + np.cos(m[0] - m[1]) * np.sin(m[1] * 2 - 1)
-
-
-@pytest.fixture
 def evaluation_function_gradient():
     return lambda m: [
         np.sin(1 - 2 * m[1]) * np.sin(m[0] - m[1]),
@@ -25,7 +20,12 @@ def evaluation_function_gradient():
 
 @pytest.fixture
 def mapper(
-    graph, platform, trace, representation_pbc, evaluation_function, mocker
+    graph,
+    platform,
+    trace,
+    representation_pbc,
+    simres_evaluation_function,
+    mocker,
 ):
     m = GradientDescentMapper(
         graph,
@@ -42,7 +42,7 @@ def mapper(
         True,
         4,
     )
-    m.simulation_manager = MockMappingCache(evaluation_function, mocker)
+    m.simulation_manager = MockMappingCache(simres_evaluation_function, mocker)
     return m
 
 

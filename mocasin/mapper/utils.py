@@ -1,10 +1,11 @@
 # Copyright (C) 2019 TU Dresden
 # Licensed under the ISC license (see LICENSE.txt)
 #
-# Authors: Andrés Goens, Felix Teweleit
+# Authors: Andrés Goens, Felix Teweleit, Robert Khasanov
 
 from copy import deepcopy
 import csv
+from dataclasses import dataclass
 import h5py
 import multiprocessing as mp
 import numpy as np
@@ -75,6 +76,18 @@ class Statistics(object):
         file.close()
 
 
+@dataclass
+class SimulationResult:
+    """Class for keeping the simulation results."""
+
+    exec_time: float
+    static_energy: float
+    dynamic_energy: float
+
+    def total_energy(self) -> float:
+        return self.static_energy + self.dynamic_energy
+
+
 class SimulationManager(object):
     def __init__(
         self,
@@ -101,6 +114,7 @@ class SimulationManager(object):
         self.chunk_size = chunk_size
 
     def lookup(self, mapping):
+        """Look up the results from the cache."""
         if mapping not in self._cache:
             self._cache.update({mapping: None})
             return False
@@ -108,11 +122,19 @@ class SimulationManager(object):
         return self._cache[mapping]
 
     def add_mapping_result(self, mapping, sim_res):
+        """Save the simulation results in the cache."""
         self._cache[mapping] = sim_res
 
-
-
     def simulate(self, input_mappings):
+        """Simulate multiple mappings.
+
+        Args:
+            input_mappings: input mappings
+
+        Returns:
+            list of the objects of the class `SimulationResult`. The length of
+            the list is equal to the length of `input_mappings`.
+        """
         # check inputs
         if len(input_mappings) == 0:
             log.warning("Trying to simulate an empty mapping list")
@@ -177,40 +199,46 @@ class SimulationManager(object):
                         to_simulate,
                         total=len(mappings),
                     )
-                results = list(to_simulate)
-                time = sum([res[1] for res in results])
-                results = [res[0] for res in results]
+                simulated = list(to_simulate)
+                time = sum([s[1] for s in simulated])
+                simulated = [s[0] for s in simulated]
                 self.statistics.add_offset(time)
         else:
-            results = []
+            simulated = []
             # run the simulations sequentially
             for s in simulations:
-                r, time = run_simulation(s)
-                results.append(r)
+                s, time = run_simulation(s)
+                simulated.append(s)
                 self.statistics.mapping_evaluated(time)
 
-        # calculate the execution times in milliseconds and store them
-        exec_times = []  # keep a list of exec_times for later
-        res_iter = iter(results)
+        # Collect the simulation results and store them
+        sim_results = []
+        sim_iter = iter(simulated)
         for i, mapping in enumerate(mappings):
-            exec_time = lookups[i]
-            if exec_time:
-                exec_times.append(exec_time)
+            sim_res = lookups[i]
+            if sim_res:
+                sim_results.append(sim_res)
             else:
-                r = next(res_iter)
-                exec_time = float(r.exec_time / 1000000000.0)
-                exec_times.append(exec_time)
-                self.add_mapping_result(tup[i], exec_time)
-        return exec_times
+                s = next(sim_iter)
+                sim_res = SimulationResult(
+                    s.exec_time, s.static_energy, s.dynamic_energy
+                )
+                sim_results.append(sim_res)
+                self.add_mapping_result(tup[i], sim_res)
+        return sim_results
 
     def append_mapping_metadata(self, mapping):
-        """Append metadata to the mapping object such as execution_time.
+        """Append metadata to the mapping object such as execution_time, energy.
 
         Args:
             mapping (Mapping): a mapping object.
         """
-        exec_time = self.simulate([mapping])
-        mapping.metadata.exec_time = exec_time[0]
+        sim_res = self.simulate([mapping])[0]
+        # save execution time and energy in ms and mJ, respectively
+        mapping.metadata.exec_time = sim_res.exec_time / 1000000000.0
+        mapping.metadata.energy = None
+        if sim_res.dynamic_energy is not None:
+            mapping.metadata.energy = sim_res.dynamic_energy / 1000000000.0
 
     def dump(self, filename):
         log.info(f"dumping cache to {filename}")

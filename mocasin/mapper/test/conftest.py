@@ -3,13 +3,15 @@
 #
 # Authors: Felix Teweleit, Andres Goens
 
-import pytest
 
 from mocasin.common.graph import DataflowProcess, DataflowGraph
 from mocasin.common.platform import Platform, Processor, Scheduler
-
-from mocasin.representations import SimpleVectorRepresentation
 from mocasin.common.trace import EmptyTrace
+from mocasin.mapper.utils import SimulationResult
+from mocasin.representations import SimpleVectorRepresentation
+
+import numpy as np
+import pytest
 
 
 @pytest.fixture
@@ -56,3 +58,13 @@ def representation_pbc(graph, platform):
 @pytest.fixture
 def trace():
     return EmptyTrace()
+
+
+@pytest.fixture
+def evaluation_function():
+    return lambda m: 1 + np.cos(m[0] - m[1]) * np.sin(m[1] * 2 - 1)
+
+
+@pytest.fixture
+def simres_evaluation_function(evaluation_function):
+    return lambda m: SimulationResult(evaluation_function(m), None, None)

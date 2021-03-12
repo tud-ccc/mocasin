@@ -3,21 +3,18 @@
 #
 # Authors: Felix Teweleit, Andres Goens
 
-from mocasin.mapper.test.mock_cache import MockMappingCache
 from mocasin.mapper.genetic import GeneticMapper
+from mocasin.mapper.test.mock_cache import MockMappingCache
+
 import pytest
-import numpy as np
 
 
 @pytest.fixture
-def evaluation_function():
-    return lambda m: 1 + np.cos(m[0] - m[1]) * np.sin(m[1] * 2 - 1)
-
-
-@pytest.fixture
-def mapper(graph, platform, trace, representation, evaluation_function, mocker):
+def mapper(
+    graph, platform, trace, representation, simres_evaluation_function, mocker
+):
     m = GeneticMapper(graph, platform, trace, representation)
-    m.simulation_manager = MockMappingCache(evaluation_function, mocker)
+    m.simulation_manager = MockMappingCache(simres_evaluation_function, mocker)
     return m
 
 
