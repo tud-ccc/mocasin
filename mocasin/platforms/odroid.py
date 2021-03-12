@@ -41,20 +41,20 @@ class DesignerPlatformOdroid(Platform):
         # Add L1/L2 caches
         designer.addCacheForPEs(
             "cluster_a7",
-            1,
-            0,
-            8.0,
-            float("inf"),
+            readLatency=1,
+            writeLatency=1,
+            readThroughput=8,
+            writeThroughput=8,
             frequencyDomain=processor_0.frequency_domain.frequency,
             name="L1_A7",
         )
         designer.addCommunicationResource(
-            "L2_A7",
-            ["cluster_a7"],
-            250,
-            250,
-            float("inf"),
-            float("inf"),
+            name="L2_A7",
+            clusterIds=["cluster_a7"],
+            readLatency=21,
+            writeLatency=21,
+            readThroughput=8,
+            writeThroughput=8,
             frequencyDomain=processor_0.frequency_domain.frequency,
         )
 
@@ -63,31 +63,33 @@ class DesignerPlatformOdroid(Platform):
         # Add L1/L2 caches
         designer.addCacheForPEs(
             "cluster_a15",
-            1,
-            4,
-            8.0,
-            8.0,
+            readLatency=1,
+            writeLatency=1,
+            readThroughput=8,
+            writeThroughput=8,
             frequencyDomain=processor_1.frequency_domain.frequency,
             name="L1_A15",
         )
+        # L2 latency is L1 latency plus 21 cycles
         designer.addCommunicationResource(
             "L2_A15",
             ["cluster_a15"],
-            250,
-            250,
-            float("inf"),
-            float("inf"),
+            readLatency=22,
+            writeLatency=22,
+            readThroughput=8,
+            writeThroughput=8,
             frequencyDomain=processor_1.frequency_domain.frequency,
         )
 
         # RAM connecting all clusters
+        # RAM latency is L2 latency plus 120 cycles
         designer.addCommunicationResource(
             "DRAM",
             ["cluster_a7", "cluster_a15"],
-            120,
-            120,
-            8.0,
-            8.0,
+            readLatency=142,
+            writeLatency=142,
+            readThroughput=8,
+            writeThroughput=8,
             frequencyDomain=933000000.0,
         )
         designer.finishElement()
