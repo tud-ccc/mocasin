@@ -67,6 +67,10 @@ def test_mapping_table_reader(platform, graph, table_file):
     assert mappings[3][0].to_list() == [4, 7]
 
 
+def num_resources(mapping):
+    return len(mapping.get_used_processors())
+
+
 def test_mapping_table_writer(platform, graph, tmpdir, expected_csv):
     output_file = Path(tmpdir).joinpath("output_table.csv")
     com_mapper = ComFullMapper(graph, platform)
@@ -80,7 +84,10 @@ def test_mapping_table_writer(platform, graph, tmpdir, expected_csv):
     mapping2.metadata.exec_time = 5.2
     mapping2.metadata.energy = 31.15
 
-    writer = MappingTableWriter(platform, graph, output_file)
+    attributes = {"num_resources": num_resources}
+    writer = MappingTableWriter(
+        platform, graph, output_file, attributes=attributes
+    )
     writer.open()
     writer.write_header()
     writer.write_mapping(mapping1)
@@ -102,7 +109,10 @@ def test_mapping_table_writer_with(platform, graph, tmpdir, expected_csv):
     mapping2.metadata.exec_time = 5.2
     mapping2.metadata.energy = 31.15
 
-    with MappingTableWriter(platform, graph, output_file) as writer:
+    attributes = {"num_resources": num_resources}
+    with MappingTableWriter(
+        platform, graph, output_file, attributes=attributes
+    ) as writer:
         writer.write_header()
         writer.write_mapping(mapping1)
         writer.write_mapping(mapping2)

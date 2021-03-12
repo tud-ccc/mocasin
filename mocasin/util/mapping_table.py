@@ -1,7 +1,7 @@
 # Copyright (C) 2019 TU Dresden
 # Licensed under the ISC license (see LICENSE.txt)
 #
-# Authors: Felix Teweleit, Robert Khasanov
+# Authors: Robert Khasanov, Felix Teweleit
 
 from mocasin.common.mapping import Mapping
 from mocasin.mapper.partial import ComFullMapper, ProcPartialMapper
@@ -154,7 +154,10 @@ class MappingTableWriter:
     platform. The columns starting with `process_prefix` and ending with
     `process_suffix` describe the process allocation onto the platform.
     The columns `metadata_exec_time` and `metadata_energy` describe the metadata
-    value.
+    value. Additional attributes to export may be supplied via the dictionary
+    `attributes`. The keys of the dictionary specify the column name, the values
+    are the functions taking the `Mapping` object as an argument and returning
+    the value to be output in the CSV table.
 
     Usage:
     ```
@@ -188,6 +191,8 @@ class MappingTableWriter:
     :type metadata_exec_time: string or None
     :param metadata_energy: The name of the energy column.
     :type metadata_energy: string or None
+    :param attributes: Additional attributes to output
+    :type attributes: dict(string: function) or None
     """
 
     def __init__(
@@ -199,6 +204,7 @@ class MappingTableWriter:
         process_suffix="",
         metadata_exec_time="executionTime",
         metadata_energy="totalEnergy",
+        attributes=None,
     ):
         self.platform = platform
         self.graph = graph
@@ -206,10 +212,13 @@ class MappingTableWriter:
         self.file = None
         self.csv = None
 
-        self._process_prefix = process_prefix
-        self._process_suffix = process_suffix
-        self._metadata_exec_time = metadata_exec_time
-        self._metadata_energy = metadata_energy
+        self.process_prefix = process_prefix
+        self.process_suffix = process_suffix
+        self.metadata_exec_time = metadata_exec_time
+        self.metadata_energy = metadata_energy
+        self.attributes = {}
+        if attributes is not None:
+            self.attributes = attributes
 
         # Generate field names
         self.fieldnames = ["mapping"]  # mapping identifier
@@ -218,12 +227,13 @@ class MappingTableWriter:
         )
         self.fieldnames.append(metadata_exec_time)
         self.fieldnames.append(metadata_energy)
+        self.fieldnames.extend(self.attributes.keys())
 
         # Initialize counter
         self._cnt = 0
 
     def _process_fieldname(self, name):
-        return self._process_prefix + name + self._process_suffix
+        return self.process_prefix + name + self.process_suffix
 
     def open(self):
         """Open a file to write."""
@@ -277,8 +287,12 @@ class MappingTableWriter:
             )
 
         # Write metadata
-        d.update({self._metadata_exec_time: mapping.metadata.exec_time})
-        d.update({self._metadata_energy: mapping.metadata.energy})
+        d.update({self.metadata_exec_time: mapping.metadata.exec_time})
+        d.update({self.metadata_energy: mapping.metadata.energy})
+
+        # Write attributes
+        for k, foo in self.attributes.items():
+            d.update({k: foo(mapping)})
 
         self.csv.writerow(d)
         self._cnt += 1
