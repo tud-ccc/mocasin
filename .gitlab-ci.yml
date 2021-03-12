@@ -5,7 +5,7 @@ stages:
 
 .build:
   script:
-    - pip wheel -w wheels --no-binary pynauty .
+    - pip wheel -w wheels .
   artifacts:
     paths:
       - wheels
