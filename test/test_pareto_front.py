@@ -4,10 +4,18 @@
 # Authors: Felix Teweleit, Andres Goens
 
 from pathlib import Path
+import pytest
 import subprocess
 
 
-def test_pareto_front_tgff(datadir):
+@pytest.fixture(
+    params=['"exec_time;resources"', '"exec_time;resources;energy"']
+)
+def objectives(request):
+    return request.param
+
+
+def test_pareto_front_tgff(datadir, objectives):
     out_csv_file = Path(datadir).joinpath("mappings.csv")
     subprocess.check_call(
         [
@@ -18,6 +26,7 @@ def test_pareto_front_tgff(datadir):
             "tgff.directory=tgff/e3s-0.9",
             "tgff.file=auto-indust-cords.tgff",
             f"mapping_table={out_csv_file}",
+            f"mapper.objectives={objectives}",
             "trace=tgff_reader",
         ],
         cwd=datadir,

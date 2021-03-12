@@ -144,6 +144,14 @@ class GeneticMapper(object):
             self.graph, self.platform, resources_first=objective_resources
         )
 
+        if Objectives.ENERGY in self.objectives:
+            if not self.platform.has_power_model():
+                log.warning(
+                    "The platform does not have a power model, excluding "
+                    "energy consumption from the objectives."
+                )
+                self.objectives ^= Objectives.ENERGY
+
         if self.objectives == Objectives.NONE:
             raise RuntimeError(
                 "Trying to initalize genetic algorithm without objectives"
