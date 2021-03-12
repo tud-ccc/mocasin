@@ -5,7 +5,10 @@
 
 import pytest
 
-@pytest.xfail("There is a bug in NoCs produced by the platform designer")
+
+@pytest.mark.xfail(
+    reason="There is a bug in NoCs produced by the platform designer"
+)
 def test_static_costs(platform):
     sizes = [1, 8, 64, 1024]
     for prim in platform.primitives():
