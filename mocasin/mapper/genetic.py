@@ -3,20 +3,51 @@
 #
 # Authors: Andrés Goens
 
-import deap
-import random
-import numpy as np
-import pickle
-
 from mocasin.util import logging
 from mocasin.mapper.utils import SimulationManager
 from mocasin.mapper.random import RandomPartialMapper
 from mocasin.representations import MappingRepresentation
 
+import deap
 from deap import creator, tools, base, algorithms
+import enum
 from hydra.utils import instantiate
+import random
+import numpy as np
+import pickle
+
 
 log = logging.getLogger(__name__)
+
+
+class Objectives(enum.Flag):
+    """Objective flags for multi-objective design-space exploration."""
+    NONE = 0
+    EXEC_TIME = enum.auto()
+    RESOURCES = enum.auto()
+    ENERGY = enum.auto()
+
+    @classmethod
+    def from_string(cls, input_string):
+        """Initialize Objectives object from a string.
+
+        The input string format: "<objective1>;<objective2>...".
+        Supported objectives: execution time ("exec_time"), dynamic energy
+        ("energy"), number of resources per type ("resources").
+        """
+        flags = Objectives.NONE
+        for obj in input_string.split(";"):
+            if obj == "exec_time":
+                flags |= Objectives.EXEC_TIME
+                continue
+            if obj == "energy":
+                flags |= Objectives.ENERGY
+                continue
+            if obj == "resources":
+                flags |= Objectives.RESOURCES
+                continue
+            raise RuntimeError(f"Unexpected objective {obj}")
+        return flags
 
 
 class GeneticMapper(object):

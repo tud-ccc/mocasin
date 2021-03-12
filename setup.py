@@ -126,7 +126,7 @@ setup(
     + find_namespace_packages(include=["hydra_plugins.*"]),
     install_requires=install_requirements,
     setup_requires=setup_requirements,
-    tests_require=["pytest", "pytest_mock"],
+    tests_require=["pytest", "pytest_mock", "pytest_raises"],
     command_options={
         "build_sphinx": {
             "project": ("setup.py", project_name),
