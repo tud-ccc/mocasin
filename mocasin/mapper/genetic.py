@@ -22,6 +22,7 @@ log = logging.getLogger(__name__)
 
 class Objectives(enum.Flag):
     """Objective flags for multi-objective design-space exploration."""
+
     NONE = 0
     EXEC_TIME = enum.auto()
     RESOURCES = enum.auto()
@@ -131,7 +132,7 @@ class GeneticMapper(object):
         self.graph = graph
         self.platform = platform
         self.random_mapper = RandomPartialMapper(
-            self.graph, self.platform, support_first=objective_num_resources
+            self.graph, self.platform, resources_first=objective_num_resources
         )
         self.crossover_rate = crossover_rate
         self.exec_time = objective_exec_time
