@@ -381,8 +381,8 @@ class PlatformDesigner:
             else:
                 com_resource = CommunicationResource(
                     nameToGive,
-                    resourceType,
                     fd,
+                    resourceType,
                     readLatency,
                     writeLatency,
                     readThroughput,
