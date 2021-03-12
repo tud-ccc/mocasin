@@ -53,23 +53,23 @@ def test_sdf3_simulate(datadir):
     for line in stdout.split("\n"):
         if line.startswith("Total simulated time: "):
             value = line[22:]
-            assert value == "24.981646089 ms"
+            assert value == "24.900902367 ms"
             found_flags |= 0x1
         if line.startswith("Total energy consumption: "):
             value = line[26:]
-            assert value == "57.331255500 mJ"
+            assert value == "57.132324650 mJ"
             found_flags |= 0x2
         if line.startswith("      ---  static energy: "):
             value = line[26:]
-            assert value == "35.483930105 mJ"
+            assert value == "35.369241722 mJ"
             found_flags |= 0x4
         if line.startswith("      --- dynamic energy: "):
             value = line[26:]
-            assert value == "21.847325395 mJ"
+            assert value == "21.763082928 mJ"
             found_flags |= 0x8
         if line.startswith("Average power: "):
             value = line[15:]
-            assert value == "2.294935 W"
+            assert value == "2.294388 W"
             found_flags |= 0x10
 
     assert found_flags == 0x1F
