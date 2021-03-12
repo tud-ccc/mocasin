@@ -38,6 +38,16 @@ class ProcessState(enum.Enum):
     """The process completed its execution."""
 
 
+@enum.unique
+class InterruptSource(enum.Enum):
+    """Possible reasons for a process to be interrupted."""
+
+    PREEMPT = 0
+    """The scheduler requests preemption of the process"""
+    KILL = 1
+    """The process is killed and should terminate immediately"""
+
+
 class RuntimeProcess(object):
     """Runtime instance of a process.
 
@@ -129,12 +139,10 @@ class RuntimeProcess(object):
         self.blocked = self.env.event()
         self.blocked.callbacks.append(self._cb_blocked)
 
-        # internal event for requesting preemption
-        self._preempt = self.env.event()
-        # internal event for requesting termination
-        self._kill = self.env.event()
+        # internal event for interrupts
+        self._interrupt = self.env.event()
 
-        # record the process creation int the simulation trace
+        # record the process creation in the simulation trace
         if self.app.system.app_trace_enabled:
             self.trace_writer.begin_duration(
                 self.app.name, self.name, "CREATED", category="Process"
@@ -265,9 +273,9 @@ class RuntimeProcess(object):
         self._log.debug(
             "Preempt workload execution on processor %s", self.processor.name
         )
-        old_event = self._preempt
-        self._preempt = self.env.event()
-        old_event.succeed()
+        old_event = self._interrupt
+        self._interrupt = self.env.event()
+        old_event.succeed(InterruptSource.PREEMPT)
 
     def _finish(self):
         """Terminate the process.
@@ -285,9 +293,9 @@ class RuntimeProcess(object):
         """Request termination of a running process"""
         self._log.debug("Kill request")
         if self._state == ProcessState.RUNNING:
-            old_event = self._kill
-            self._kill = self.env.event()
-            old_event.succeed()
+            old_event = self._interrupt
+            self._interrupt = self.env.event()
+            old_event.succeed(InterruptSource.KILL)
         else:
             self._finish()
 
@@ -431,6 +439,7 @@ class RuntimeDataflowProcess(RuntimeProcess):
         Args:
             channel (RuntimeChannel): the channel to connect to
         """
+        log.debug(f"make process {self.name} a sink to {channel.name}")
         self._channels[channel.name] = channel
         channel.add_sink(self)
 
@@ -442,6 +451,7 @@ class RuntimeDataflowProcess(RuntimeProcess):
         Args:
             channel (RuntimeChannel): the channel to connect to
         """
+        log.debug(f"make process {self.name} a source to {channel.name}")
         self._channels[channel.name] = channel
         channel.set_src(self)
 
@@ -458,10 +468,9 @@ class RuntimeDataflowProcess(RuntimeProcess):
         self._init_workload()
 
         while self._current_segment is not None:
-            # The preempt and kill events will be overwritten once
-            # triggered. Thus we keep references to the original events here.
-            preempt = self._preempt
-            kill = self._kill
+            # The interrupt event will be overwritten once triggered. Thus we
+            # keep a reference to the original event here.
+            interrupt = self._interrupt
 
             s = self._current_segment
             if s.segment_type == SegmentType.COMPUTE:
@@ -490,14 +499,18 @@ class RuntimeDataflowProcess(RuntimeProcess):
                     f"Encountered an unknown segment type! ({s.segment_type})"
                 )
 
-            # Stop processing if we where preempted or killed
-            if kill.triggered:
-                self._finish()
-                self._log.debug("process was killed")
-                return
-            if preempt.triggered:
-                self._deactivate()
-                self._log.debug("process was preempted")
+            # Stop processing if we where interrupted
+            if interrupt.triggered:
+                if interrupt.value == InterruptSource.KILL:
+                    self._finish()
+                    self._log.debug("process was killed")
+                elif interrupt.value == InterruptSource.PREEMPT:
+                    self._deactivate()
+                    self._log.debug("process was preempted")
+                else:
+                    raise RuntimeError(
+                        f"Unexpected interrupt source {interrupt.value.name}"
+                    )
                 return
 
             # move on to the next segment
@@ -569,10 +582,9 @@ class RuntimeDataflowProcess(RuntimeProcess):
             return None
 
     def _handle_compute(self):
-        # The preempt and kill events will be overwritten once triggered. Thus
-        # we keep references to the original events here.
-        preempt = self._preempt
-        kill = self._kill
+        # The interrupt event will be overwritten once triggered. Thus we keep
+        # a reference to the original event here.
+        interrupt = self._interrupt
 
         s = self._current_segment
 
@@ -589,12 +601,12 @@ class RuntimeDataflowProcess(RuntimeProcess):
 
         # process until computation completes (timeout) or until the
         # process is preempted
-        yield self.env.any_of([timeout, preempt, kill])
+        yield self.env.any_of([timeout, interrupt])
 
         # if the timeout was processed, the computation completed
         if timeout.processed:
             self._remaining_compute_cycles = None
-        elif preempt.processed:
+        elif interrupt.processed and interrupt.value == InterruptSource.PREEMPT:
             # Calculate how many cycles where executed until the process was
             # preempted. Note that the preemption can occur in between full
             # cycles in our simulation. We lose a bit of precision here, by
