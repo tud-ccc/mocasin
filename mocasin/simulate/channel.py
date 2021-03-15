@@ -271,19 +271,6 @@ class RuntimeChannel(object):
                 % (sink.name, prim.name)
             )
 
-        # update the state
-        new_state = self._fifo_state[process.name] - num
-        self._fifo_state[process.name] = new_state
-
-        # record the consume operation in the simulation trace
-        if self.app.system.app_trace_enabled:
-            self.trace_writer.update_counter(
-                self.app.name,
-                self.name,
-                self._fifo_state.copy(),
-                category="Channel",
-            )
-
         for phase in prim.consume_phases[sink.name]:
             log.debug('start communication phase "%s"', phase.name)
 
@@ -311,6 +298,19 @@ class RuntimeChannel(object):
                     res.simpy_resource.release(req)
 
             log.debug("communication phase completed")
+
+        # update the state
+        new_state = self._fifo_state[process.name] - num
+        self._fifo_state[process.name] = new_state
+
+        # record the consume operation in the simulation trace
+        if self.app.system.app_trace_enabled:
+            self.trace_writer.update_counter(
+                self.app.name,
+                self.name,
+                self._fifo_state.copy(),
+                category="Channel",
+            )
 
         log.debug("consume operation completed")
 
@@ -363,19 +363,6 @@ class RuntimeChannel(object):
                 % (src.name, prim.name)
             )
 
-        # update the state
-        for p in self._fifo_state:
-            self._fifo_state[p] += num
-
-        # record the produce operation in the simulation trace
-        if self.app.system.app_trace_enabled:
-            self.trace_writer.update_counter(
-                self.app.name,
-                self.name,
-                self._fifo_state.copy(),
-                category="Channel",
-            )
-
         for phase in prim.produce_phases[src.name]:
             log.debug('start communication phase "%s"', phase.name)
 
@@ -404,8 +391,36 @@ class RuntimeChannel(object):
 
             log.debug("communication phase completed")
 
+        # update the state
+        for p in self._fifo_state:
+            self._fifo_state[p] += num
+
+        # record the produce operation in the simulation trace
+        if self.app.system.app_trace_enabled:
+            self.trace_writer.update_counter(
+                self.app.name,
+                self.name,
+                self._fifo_state.copy(),
+                category="Channel",
+            )
+
         log.debug("produce operation completed")
 
         # notify waiting processes
         self.tokens_produced.succeed()
         self.tokens_produced = self.env.event()
+
+    def update_mapping_info(self, mapping_info):
+        """Update the mapping information for this channel
+
+        This will usually be called in the context of a process migration, where
+        in consequence also the primitives need to be updated.
+
+        Args:
+            mapping_info (ChannelMappingInfo): the new mapping info object
+        """
+        if self._capacity != mapping_info.capacity:
+            raise RuntimeError(
+                "Channel capacity may not change during execution"
+            )
+        self._primitive = mapping_info.primitive
