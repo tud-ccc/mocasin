@@ -1,0 +1,3 @@
+mapping,t_src,t_can1,t_fp,t_can2,t_pulse,t_sink,executionTime,totalEnergy
+0,processor_0005,processor_0005,processor_0005,processor_0005,processor_0005,processor_0005,0.004251,
+1,processor_0000,processor_0000,processor_0000,processor_0001,processor_0001,processor_0000,0.006539285,
