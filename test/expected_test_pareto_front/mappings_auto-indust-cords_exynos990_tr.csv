@@ -1,4 +1,4 @@
-mapping,t_src,t_can1,t_fp,t_can2,t_pulse,t_sink,executionTime,totalEnergy
+mapping,t_src,t_can1,t_fp,t_can2,t_pulse,t_sink,executionTime,dynamicEnergy
 0,processor_0002,processor_0003,processor_0003,processor_0002,processor_0003,processor_0002,0.007486255,
 1,processor_0004,processor_0007,processor_0004,processor_0004,processor_0005,processor_0007,0.00826403,
 2,processor_0002,processor_0002,processor_0002,processor_0002,processor_0002,processor_0006,0.47331559,

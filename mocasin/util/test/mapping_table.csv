@@ -1,4 +1,4 @@
-mapping,t_a,t_b,executionTime,totalEnergy,attribute1
+mapping,t_a,t_b,executionTime,dynamicEnergy,attribute1
 0,processor_0000,processor_0001,10.23,24.43,a
 1,processor_0000,processor_0000,14.43,21.56,b
 2,processor_0004,processor_0000,7.3,34.5,c

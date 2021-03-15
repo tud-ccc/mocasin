@@ -51,7 +51,7 @@ class MappingTableReader:
         process_prefix="t_",
         process_suffix="",
         metadata_exec_time="executionTime",
-        metadata_energy="totalEnergy",
+        metadata_energy="dynamicEnergy",
         attributes=None,
     ):
         self.platform = platform
@@ -203,7 +203,7 @@ class MappingTableWriter:
         process_prefix="t_",
         process_suffix="",
         metadata_exec_time="executionTime",
-        metadata_energy="totalEnergy",
+        metadata_energy="dynamicEnergy",
         attributes=None,
     ):
         self.platform = platform
