@@ -4,6 +4,7 @@ variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
 
 stages:
+  - maintenance
   - build
   - test
   - plugins
@@ -89,44 +90,77 @@ test-python3.6:
   needs:
     - build-python3.6
 
-# test-gbm:
-#   stage: plugins
-#   variables:
-#     MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
-#   needs:
-#     - build-python3.9
-#     - build-python3.8
-#     - build-python3.7
-#     - build-python3.6
-#   trigger:
-#     project: mocasin/mocasin-gbm
-#     strategy: depend
+# Use API calls on downstream repositories to determine which branch to trigger
+# in plugin bridge jobs
+find-plugin-branches:
+  stage: maintenance
+  script:
+    # check branches in mocasin-gbm
+    - |
+      if [ "$CI_COMMIT_REF_NAME" != "master" ] && curl --fail --location --header "PRIVATE-TOKEN: $MOCASIN_GBM_TOKEN" "https://cc.inf.tu-dresden.de/gitlab/api/v4/projects/234/repository/branches/$CI_COMMIT_REF_NAME"; then
+          echo "Will trigger pipleline in mocasin-gbm using $CI_COMMIT_REF_NAME branch"
+          echo "MOCASIN_GBM_BRANCH=$CI_COMMIT_REF_NAME" >> plugins.env
+      else
+          echo "Will trigger pipeline in mocasin-gbm using mocasin-ci branch"
+          echo "MOCASIN_GBM_BRANCH=master-ci" >> plugins.env
+      fi
+    # check branches in mocasin-maps-examples
+    - |
+      if [ "$CI_COMMIT_REF_NAME" != "master" ] && curl --fail --location --header "PRIVATE-TOKEN: $MOCASIN_MAPS_EXAMPLES_TOKEN" "https://cc.inf.tu-dresden.de/gitlab/api/v4/projects/233/repository/branches/$CI_COMMIT_REF_NAME"; then
+          echo "Will trigger pipleline in mocasin-maps-examples using $CI_COMMIT_REF_NAME branch"
+          echo "MOCASIN_MAPS_EXAMPLES_BRANCH=$CI_COMMIT_REF_NAME" >> plugins.env
+      else
+          echo "Will trigger pipeline in mocasin-maps-examples using mocasin-ci branch"
+          echo "MOCASIN_MAPS_EXAMPLES_BRANCH=master-ci" >> plugins.env
+      fi
+    # check branches in fivegsim
+    - |
+      if [ "$CI_COMMIT_REF_NAME" != "master" ] && curl --fail --location --header "PRIVATE-TOKEN: $FIVEGSIM_TOKEN" "https://cc.inf.tu-dresden.de/gitlab/api/v4/projects/206/repository/branches/$CI_COMMIT_REF_NAME"; then
+          echo "Will trigger pipleline in fivegsim using $CI_COMMIT_REF_NAME branch"
+          echo "FIVEGSIM_BRANCH=$CI_COMMIT_REF_NAME" >> plugins.env
+      else
+          echo "Will trigger pipeline in fivegsim using mocasin-ci branch"
+          echo "FIVEGSIM_BRANCH=master-ci" >> plugins.env
+      fi
+  artifacts:
+    reports:
+      dotenv: plugins.env
+  tags:
+    - python3.9
 
-# test-maps-examples:
-#   stage: plugins
-#   variables:
-#     MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
-#   needs:
-#     - build-python3.9
-#     - build-python3.8
-#     - build-python3.7
-#     - build-python3.6
-#   trigger:
-#     project: mocasin/mocasin-maps-examples
-#     strategy: depend
 
-# test-fivegsim:
-#   stage: plugins
-#   variables:
-#     MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
-#   needs:
-#     - build-python3.9
-#     - build-python3.8
-#     - build-python3.7
-#     - build-python3.6
-#   trigger:
-#     project: mocasin/fivegsim
-#     strategy: depend
+test-gbm:
+  stage: plugins
+  variables:
+    MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
+  needs:
+    - find-plugin-branches
+  trigger:
+    project: mocasin/mocasin-gbm
+    strategy: depend
+    branch: $MOCASIN_GBM_BRANCH
+
+test-maps-examples:
+  stage: plugins
+  variables:
+    MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
+  needs:
+    - find-plugin-branches
+  trigger:
+    project: mocasin/mocasin-maps-examples
+    strategy: depend
+    branch: $MOCASIN_MAPS_EXAMPLES_BRANCH
+
+test-fivegsim:
+  stage: plugins
+  variables:
+    MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
+  needs:
+    - find-plugin-branches
+  trigger:
+    project: mocasin/fivegsim
+    strategy: depend
+    branch: $FIVEGSIM_BRANCH
 
 check-formatting:
   stage: test
