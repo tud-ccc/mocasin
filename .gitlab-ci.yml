@@ -1,107 +1,57 @@
-# default:
-#   before_script:
-#   - apt-get update
-#   - apt-get -y install libblas-dev liblapack-dev
-#   - test/config_matplotlig_agg.sh
+# Change pip's cache directory to be inside the project directory since we can
+# only cache local items.
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
 
 stages:
-  - build_pynauty
-  - build_mocasin
+  - maintenance
+  - build
   - test
+  - plugins
 
-.build-pynauty:
+.build:
   script:
-    - wget -N https://web.cs.dal.ca/~peter/software/pynauty/pynauty-0.6.0.tar.gz
-    - tar -xzf pynauty-0.6.0.tar.gz
-    - cd pynauty-0.6.0
-    - wget -N http://users.cecs.anu.edu.au/~bdm/nauty/nauty27r1.tar.gz
-    - tar -xzf nauty27r1.tar.gz
-    - mv nauty27r1 nauty
-    - make pynauty
-    - pip wheel . -w ..
+    - pip wheel -w wheels .
   artifacts:
     paths:
-      - pynauty*.whl
+      - wheels
+  # make pip's cache persistent across pipelines
+  cache:
+    key: "$CI_JOB_NAME"
+    paths:
+      - .cache/pip
 
-build-pynauty-python3.9:
-  extends: .build-pynauty
-  stage: build_pynauty
+build-python3.9:
+  extends: .build
+  stage: build
   image: python:3.9
   tags:
     - python3.9
 
-build-pynauty-python3.8:
-  extends: .build-pynauty
-  stage: build_pynauty
+build-python3.8:
+  extends: .build
+  stage: build
   image: python:3.8
   tags:
     - python3.8
 
-build-pynauty-python3.7:
-  extends: .build-pynauty
-  stage: build_pynauty
+build-python3.7:
+  extends: .build
+  stage: build
   image: python:3.7
   tags:
     - python3.7
 
-build-pynauty-python3.6:
-  extends: .build-pynauty
-  stage: build_pynauty
+build-python3.6:
+  extends: .build
+  stage: build
   image: python:3.6
   tags:
     - python3.6
-
-.build-mocasin:
-  variables:
-    NO_PYNAUTY: 1
-  script:
-    - python -m pip install --upgrade pip
-    - pip install pynauty*.whl
-    - pip wheel --no-deps .
-  artifacts:
-    paths:
-      - mocasin*.whl
-
-build-mocasin-python3.9:
-  extends: .build-mocasin
-  stage: build_mocasin
-  image: python:3.9
-  tags:
-    - python3.9
-  needs:
-    - build-pynauty-python3.9
-
-build-mocasin-python3.8:
-  extends: .build-mocasin
-  stage: build_mocasin
-  image: python:3.8
-  tags:
-    - python3.8
-  needs:
-    - build-pynauty-python3.8
-
-build-mocasin-python3.7:
-  extends: .build-mocasin
-  stage: build_mocasin
-  image: python:3.7
-  tags:
-    - python3.7
-  needs:
-    - build-pynauty-python3.7
-
-build-mocasin-python3.6:
-  extends: .build-mocasin
-  stage: build_mocasin
-  image: python:3.6
-  tags:
-    - python3.6
-  needs:
-    - build-pynauty-python3.6
 
 .test:
   script:
-    - pip install pynauty*.whl
-    - pip install mocasin*.whl
+    - pip install mocasin --no-index --find-links=./wheels
     - python setup.py test
 
 test-python3.9:
@@ -111,8 +61,7 @@ test-python3.9:
   tags:
     - python3.9
   needs:
-    - build-pynauty-python3.9
-    - build-mocasin-python3.9
+    - build-python3.9
 
 test-python3.8:
   extends: .test
@@ -121,8 +70,7 @@ test-python3.8:
   tags:
     - python3.8
   needs:
-    - build-pynauty-python3.8
-    - build-mocasin-python3.8
+    - build-python3.8
 
 test-python3.7:
   extends: .test
@@ -131,8 +79,7 @@ test-python3.7:
   tags:
     - python3.7
   needs:
-    - build-pynauty-python3.7
-    - build-mocasin-python3.7
+    - build-python3.7
 
 test-python3.6:
   extends: .test
@@ -141,47 +88,79 @@ test-python3.6:
   tags:
     - python3.6
   needs:
-    - build-pynauty-python3.6
-    - build-mocasin-python3.6
+    - build-python3.6
+
+# Use API calls on downstream repositories to determine which branch to trigger
+# in plugin bridge jobs
+find-plugin-branches:
+  stage: maintenance
+  script:
+    # check branches in mocasin-gbm
+    - |
+      if [ "$CI_COMMIT_REF_NAME" != "master" ] && curl --fail --location --header "PRIVATE-TOKEN: $MOCASIN_GBM_TOKEN" "https://cc.inf.tu-dresden.de/gitlab/api/v4/projects/234/repository/branches/$CI_COMMIT_REF_NAME"; then
+          echo "Will trigger pipleline in mocasin-gbm using $CI_COMMIT_REF_NAME branch"
+          echo "MOCASIN_GBM_BRANCH=$CI_COMMIT_REF_NAME" >> plugins.env
+      else
+          echo "Will trigger pipeline in mocasin-gbm using mocasin-ci branch"
+          echo "MOCASIN_GBM_BRANCH=master-ci" >> plugins.env
+      fi
+    # check branches in mocasin-maps-examples
+    - |
+      if [ "$CI_COMMIT_REF_NAME" != "master" ] && curl --fail --location --header "PRIVATE-TOKEN: $MOCASIN_MAPS_EXAMPLES_TOKEN" "https://cc.inf.tu-dresden.de/gitlab/api/v4/projects/233/repository/branches/$CI_COMMIT_REF_NAME"; then
+          echo "Will trigger pipleline in mocasin-maps-examples using $CI_COMMIT_REF_NAME branch"
+          echo "MOCASIN_MAPS_EXAMPLES_BRANCH=$CI_COMMIT_REF_NAME" >> plugins.env
+      else
+          echo "Will trigger pipeline in mocasin-maps-examples using mocasin-ci branch"
+          echo "MOCASIN_MAPS_EXAMPLES_BRANCH=master-ci" >> plugins.env
+      fi
+    # check branches in fivegsim
+    - |
+      if [ "$CI_COMMIT_REF_NAME" != "master" ] && curl --fail --location --header "PRIVATE-TOKEN: $FIVEGSIM_TOKEN" "https://cc.inf.tu-dresden.de/gitlab/api/v4/projects/206/repository/branches/$CI_COMMIT_REF_NAME"; then
+          echo "Will trigger pipleline in fivegsim using $CI_COMMIT_REF_NAME branch"
+          echo "FIVEGSIM_BRANCH=$CI_COMMIT_REF_NAME" >> plugins.env
+      else
+          echo "Will trigger pipeline in fivegsim using mocasin-ci branch"
+          echo "FIVEGSIM_BRANCH=master-ci" >> plugins.env
+      fi
+  artifacts:
+    reports:
+      dotenv: plugins.env
+  tags:
+    - python3.9
+
 
 test-gbm:
-  stage: test
+  stage: plugins
   variables:
     MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
   needs:
-    - build-pynauty-python3.9
-    - build-pynauty-python3.8
-    - build-pynauty-python3.7
-    - build-pynauty-python3.6
+    - find-plugin-branches
   trigger:
     project: mocasin/mocasin-gbm
     strategy: depend
+    branch: $MOCASIN_GBM_BRANCH
 
 test-maps-examples:
-  stage: test
+  stage: plugins
   variables:
     MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
   needs:
-    - build-pynauty-python3.9
-    - build-pynauty-python3.8
-    - build-pynauty-python3.7
-    - build-pynauty-python3.6
+    - find-plugin-branches
   trigger:
     project: mocasin/mocasin-maps-examples
     strategy: depend
+    branch: $MOCASIN_MAPS_EXAMPLES_BRANCH
 
 test-fivegsim:
-  stage: test
+  stage: plugins
   variables:
     MOCASIN_BRANCH: $CI_COMMIT_REF_NAME
   needs:
-    - build-pynauty-python3.9
-    - build-pynauty-python3.8
-    - build-pynauty-python3.7
-    - build-pynauty-python3.6
+    - find-plugin-branches
   trigger:
     project: mocasin/fivegsim
     strategy: depend
+    branch: $FIVEGSIM_BRANCH
 
 check-formatting:
   stage: test
