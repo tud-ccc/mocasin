@@ -6,9 +6,9 @@
 import pytest
 
 
-@pytest.mark.xfail(
-    reason="There is a bug in NoCs produced by the platform designer"
-)
+# @pytest.mark.xfail(
+#    reason="There is a bug in NoCs produced by the platform designer"
+# )
 def test_static_costs(platform):
     sizes = [1, 8, 64, 1024]
     for prim in platform.primitives():
@@ -20,4 +20,5 @@ def test_static_costs(platform):
                 ]
                 for i in range(len(sizes) - 1):
                     # costs don't decrease for larger tokens
-                    assert static_costs[i] <= static_costs[i + 1]
+                    if not static_costs[i] <= static_costs[i + 1]:
+                        assert False

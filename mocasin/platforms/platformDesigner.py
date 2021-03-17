@@ -535,6 +535,7 @@ class PlatformDesigner:
                     prim = Primitive(networkName + "_" + processor[0].name)
                     memoryName = (
                         str(clusterIdentifier)
+                        # FIXME: this will lead to issues if we have >=2 NoCs
                         + "_noc_mem_"
                         + str(processor[0].name)
                     )
@@ -575,7 +576,7 @@ class PlatformDesigner:
                                 "produce", resourceList, "write"
                             )
                             consume = CommunicationPhase(
-                                "consume", reversed(resourceList), "read"
+                                "consume", list(reversed(resourceList)), "read"
                             )
 
                             prim.add_producer(innerProcessor[0], [produce])
@@ -586,7 +587,7 @@ class PlatformDesigner:
                                 "produce", resourceList, "write"
                             )
                             consume = CommunicationPhase(
-                                "consume", reversed(resourceList), "read"
+                                "consume", list(reversed(resourceList)), "read"
                             )
 
                             prim.add_producer(innerProcessor[0], [produce])
