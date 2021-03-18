@@ -7,7 +7,7 @@
 from mocasin.common.graph import DataflowProcess, DataflowGraph
 from mocasin.common.platform import Platform, Processor, Scheduler
 from mocasin.common.trace import EmptyTrace
-from mocasin.mapper.utils import SimulationResult
+from mocasin.simulate import SimulationResult
 from mocasin.representations import SimpleVectorRepresentation
 
 import numpy as np

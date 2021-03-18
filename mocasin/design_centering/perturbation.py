@@ -184,7 +184,7 @@ class PerturbationManager(object):
 
         exec_times = []
         for r in results:
-            exec_times.append(float(r.sim_context.exec_time))
+            exec_times.append(float(r.sim_context.result.exec_time))
 
         feasible = []
         for e in exec_times:

@@ -3,9 +3,7 @@
 #
 # Authors: Andrés Goens, Felix Teweleit, Robert Khasanov
 
-from copy import deepcopy
 import csv
-from dataclasses import dataclass
 import h5py
 import multiprocessing as mp
 import numpy as np
@@ -74,18 +72,6 @@ class Statistics(object):
             + "\n"
         )
         file.close()
-
-
-@dataclass
-class SimulationResult:
-    """Class for keeping the simulation results."""
-
-    exec_time: float
-    static_energy: float
-    dynamic_energy: float
-
-    def total_energy(self) -> float:
-        return self.static_energy + self.dynamic_energy
 
 
 class SimulationManager(object):
@@ -220,10 +206,7 @@ class SimulationManager(object):
                 sim_results.append(sim_res)
             else:
                 s = next(sim_iter)
-                sim_res = SimulationResult(
-                    s.exec_time, s.static_energy, s.dynamic_energy
-                )
-                sim_results.append(sim_res)
+                sim_results.append(s.result)
                 self.add_mapping_result(tup[i], sim_res)
         return sim_results
 
