@@ -11,6 +11,7 @@ from mocasin.common.platform import (
     Storage,
     CommunicationPhase,
     Primitive,
+    ProcessorPowerModel,
     CommunicationResource,
     CommunicationResourceType,
 )
@@ -258,8 +259,9 @@ class PlatformDesigner:
         writeLatency,
         readThroughput,
         writeThroughput,
+        # FIXME, this is a strange default
         frequencyDomain=100000,  # TODO: this should be added to tests
-        name="default",
+        name="L1_",
     ):
         """Adds a level 1 cache to each PE of the given cluster.
 
@@ -276,26 +278,25 @@ class PlatformDesigner:
         :param name: The cache name, in case it differs from L1.
         :type name: String
         """
+        # FIXME: this should probably produce an error instead of returning
+        # silently
         if self.__schedulingPolicy == None:
             return
         if self.__activeScope == None:
             return
 
-        nameToGive = None
+        nameToGive = name
 
         if not identifier in self.__elementDict[self.__activeScope]:
             raise RuntimeWarning("Identifier does not exist in active scope.")
-        if name != "default":
-            nameToGive = name
-        else:
-            nameToGive = "L1_"
+
         peList = self.__elementDict[self.__activeScope][identifier]
 
         fd = FrequencyDomain("fd_" + name, frequencyDomain)
 
         try:
             for pe in peList:
-                communicationRessource = Storage(
+                l1 = Storage(
                     nameToGive + pe[0].name,
                     frequency_domain=fd,
                     read_latency=readLatency,
@@ -303,19 +304,20 @@ class PlatformDesigner:
                     read_throughput=readThroughput,
                     write_throughput=writeThroughput,
                 )
-                self.__platform.add_communication_resource(
-                    communicationRessource
-                )
-                pe[1].append(communicationRessource)
+                self.__platform.add_communication_resource(l1)
+
+                # FIXME: What is this doing??
+                pe[1].append(l1)
 
                 prim = Primitive("prim_" + nameToGive + pe[0].name)
-                produce = CommunicationPhase("produce", pe[1], "write")
-                consume = CommunicationPhase("consume", pe[1], "read")
+
+                produce = CommunicationPhase("produce", [l1], "write")
+                consume = CommunicationPhase("consume", [l1], "read")
                 prim.add_producer(pe[0], [produce])
                 prim.add_consumer(pe[0], [consume])
                 self.__platform.add_primitive(prim)
 
-        except:
+        except:  # FIXME: This is fishy
             log.error("Exception caught: " + sys.exc_info()[0])
 
         if self.__symLibrary:
@@ -329,7 +331,10 @@ class PlatformDesigner:
         writeLatency,
         readThroughput,
         writeThroughput,
+        # FIXME: probably we should just rename the method to add_storage
         resourceType=CommunicationResourceType.Storage,
+        # FIXME: this argument should either be renamed to frequency or
+        # expect an actual FrequencyDomain object
         frequencyDomain=0,
     ):
         """Adds a communication resource to the platform. All cores of the given cluster identifiers can communicate
@@ -348,6 +353,8 @@ class PlatformDesigner:
         :param writeThroughput: The write throughput of the communication resource.
         :type writeThroughput: int
         """
+        # FIXME: shouldn't these checks produce an error instead of just
+        # silently aborting?
         if not self.__schedulingPolicy:
             return
         if not self.__activeScope:
@@ -368,6 +375,7 @@ class PlatformDesigner:
         fd = FrequencyDomain("fd_" + name, frequencyDomain)
 
         try:
+            # FIXME: why distinguish storage and other types here?
             if resourceType == CommunicationResourceType.Storage:
                 com_resource = Storage(
                     nameToGive,
@@ -380,8 +388,8 @@ class PlatformDesigner:
             else:
                 com_resource = CommunicationResource(
                     nameToGive,
-                    resourceType,
                     fd,
+                    resourceType,
                     readLatency,
                     writeLatency,
                     readThroughput,
@@ -405,7 +413,7 @@ class PlatformDesigner:
 
             self.__platform.add_primitive(prim)
 
-        except:
+        except:  # FIXME: this is fishy
             log.error("Exception caught: " + str(sys.exc_info()[0]))
             return
 
@@ -527,6 +535,7 @@ class PlatformDesigner:
                     prim = Primitive(networkName + "_" + processor[0].name)
                     memoryName = (
                         str(clusterIdentifier)
+                        # FIXME: this will lead to issues if we have >=2 NoCs
                         + "_noc_mem_"
                         + str(processor[0].name)
                     )
@@ -567,7 +576,7 @@ class PlatformDesigner:
                                 "produce", resourceList, "write"
                             )
                             consume = CommunicationPhase(
-                                "consume", reversed(resourceList), "read"
+                                "consume", list(reversed(resourceList)), "read"
                             )
 
                             prim.add_producer(innerProcessor[0], [produce])
@@ -578,7 +587,7 @@ class PlatformDesigner:
                                 "produce", resourceList, "write"
                             )
                             consume = CommunicationPhase(
-                                "consume", reversed(resourceList), "read"
+                                "consume", list(reversed(resourceList)), "read"
                             )
 
                             prim.add_producer(innerProcessor[0], [produce])

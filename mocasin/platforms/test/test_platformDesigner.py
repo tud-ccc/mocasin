@@ -10,7 +10,9 @@ class TestPlatformDesigner(object):
     def test_singleCluster(self, designer):
         designer.newElement("chip")
         designer.addPeCluster(0, "TestCluster", 4, 1000)
-        designer.addCommunicationResource("RAM", [0], 1000, 1000, 1000, 1000)
+        designer.addCommunicationResource(
+            "RAM", [0], 100, 200, 16, 8, frequencyDomain=100000000  # 100 MHz
+        )
         designer.finishElement()
 
         platform = designer.getPlatform()
@@ -18,81 +20,146 @@ class TestPlatformDesigner(object):
         assert len(platform.processors()) == 4
         assert len(platform.primitives()) == 1
 
-        for primitive in platform.primitives():
-            assert len(primitive.consumers) == len(primitive.producers) == 4
+        assert len(platform.primitives()) == 1
+        ram_prim = platform.find_primitive("prim_chip_RAM_1")
+        assert len(ram_prim.consumers) == len(ram_prim.producers) == 4
+
+        for src, sink in zip(platform.processors(), platform.processors()):
+            assert ram_prim.static_consume_costs(sink, 0) == 1000000  # 1 us
+            assert ram_prim.static_produce_costs(src, 0) == 2000000  # 2 us
+
+            assert ram_prim.static_consume_costs(sink, 1024) == 1640000
+            assert ram_prim.static_produce_costs(src, 1024) == 3280000
+
+            assert ram_prim.static_costs(src, sink, 0) == 3000000
+            assert ram_prim.static_costs(src, sink, 8) == 3015000
+            assert ram_prim.static_costs(src, sink, 1024) == 4920000
 
     def test_doubleCluster(self, designer):
         designer.newElement("chip")
         designer.addPeCluster(0, "cluster_0", 4, 1000)
         designer.addPeCluster(1, "cluster_1", 4, 1000)
         designer.addCommunicationResource(
-            "L2Cache_0", [0], 1000, 1000, 1000, 1000
+            "L2Cache_0", [0], 8, 8, 32, 32, frequencyDomain=1000000000  # 1 GHz
         )
         designer.addCommunicationResource(
-            "L2Cache_1", [1], 1000, 1000, 1000, 1000
+            "L2Cache_1", [1], 8, 8, 32, 32, frequencyDomain=1000000000  # 1 GHz
         )
-        designer.addCommunicationResource("RAM", [0, 1], 1000, 1000, 1000, 1000)
+        designer.addCommunicationResource(
+            "RAM", [0, 1], 100, 200, 16, 8, frequencyDomain=100000000  # 100 MHz
+        )
         designer.finishElement()
 
         platform = designer.getPlatform()
 
         assert len(platform.processors()) == 8
-        i = 0
-        for element in platform.primitives():
-            i += 1
-        assert i == 3
+        assert len(platform.primitives()) == 3
 
-        l2caches = 0
-        RAM = 0
-        for primitive in platform.primitives():
-            if primitive.name == "prim_chip_RAM_1":
-                RAM += 1
-                assert len(primitive.consumers) == len(primitive.producers) == 8
-            else:
-                l2caches += 1
-                assert len(primitive.consumers) == len(primitive.producers) == 4
-        assert l2caches == 2
-        assert RAM == 1
+        prim_ram = platform.find_primitive("prim_chip_RAM_1")
+        prim_l2_0 = platform.find_primitive("prim_chip_L2Cache_0_1")
+        prim_l2_1 = platform.find_primitive("prim_chip_L2Cache_1_1")
+
+        assert len(prim_ram.consumers) == len(prim_ram.producers) == 8
+        assert len(prim_l2_0.consumers) == len(prim_l2_0.producers) == 4
+        assert len(prim_l2_1.consumers) == len(prim_l2_1.producers) == 4
+
+        for src in platform.processors():
+            for sink in platform.processors():
+                assert prim_ram.static_consume_costs(sink, 0) == 1000000  # 1 us
+                assert prim_ram.static_produce_costs(src, 0) == 2000000  # 2 us
+
+                assert prim_ram.static_consume_costs(sink, 1024) == 1640000
+                assert prim_ram.static_produce_costs(src, 1024) == 3280000
+
+                assert prim_ram.static_costs(src, sink, 0) == 3000000
+                assert prim_ram.static_costs(src, sink, 8) == 3015000
+                assert prim_ram.static_costs(src, sink, 1024) == 4920000
+
+        for prim in [prim_l2_0, prim_l2_1]:
+            for src in prim.producers:
+                for sink in prim.consumers:
+                    assert prim.static_consume_costs(sink, 0) == 8000  # 8 ns
+                    assert prim.static_produce_costs(src, 0) == 8000  # 8 ns
+
+                    assert prim.static_consume_costs(sink, 1024) == 40000
+                    assert prim.static_produce_costs(src, 1024) == 40000
+
+                    assert prim.static_costs(src, sink, 0) == 16000
+                    assert prim.static_costs(src, sink, 8) == 16500
+                    assert prim.static_costs(src, sink, 1024) == 80000
 
     def test_doubleClusterL1(self, designer):
         designer.newElement("chip")
         designer.addPeCluster(0, "cluster_0", 4, 1000)
         designer.addPeCluster(1, "cluster_1", 4, 1000)
-        designer.addCacheForPEs(0, 1000, 1000, 1000, 1000)
-        designer.addCacheForPEs(1, 1000, 1000, 1000, 1000)
-        designer.addCommunicationResource(
-            "L2Cache_0", [0], 1000, 1000, 1000, 1000
+        designer.addCacheForPEs(
+            0, 1, 1, 64, 64, frequencyDomain=1000000000  # 1 GHz
+        )
+        designer.addCacheForPEs(
+            1, 1, 1, 64, 64, frequencyDomain=1000000000  # 1 GHz
         )
         designer.addCommunicationResource(
-            "L2Cache_1", [1], 1000, 1000, 1000, 1000
+            "L2Cache_0", [0], 8, 8, 32, 32, frequencyDomain=1000000000  # 1 GHz
         )
-        designer.addCommunicationResource("RAM", [0, 1], 1000, 1000, 1000, 1000)
+        designer.addCommunicationResource(
+            "L2Cache_1", [1], 8, 8, 32, 32, frequencyDomain=1000000000  # 1 GHz
+        )
+        designer.addCommunicationResource(
+            "RAM", [0, 1], 100, 200, 16, 8, frequencyDomain=100000000  # 100 MHz
+        )
         designer.finishElement()
 
         platform = designer.getPlatform()
 
         assert len(platform.processors()) == 8
-        i = 0
-        for element in platform.primitives():
-            i += 1
-        assert i == 11
+        assert len(platform.primitives()) == 11
 
-        l1caches = 0
-        l2caches = 0
-        RAM = 0
-        for primitive in platform.primitives():
-            if primitive.name == "prim_chip_RAM_1":
-                RAM += 1
-                assert len(primitive.consumers) == len(primitive.producers) == 8
-            elif primitive.name.split("_")[1] == "L1":
-                l1caches += 1
-            else:
-                l2caches += 1
-                assert len(primitive.consumers) == len(primitive.producers) == 4
+        prim_ram = platform.find_primitive("prim_chip_RAM_1")
+        prim_l2_0 = platform.find_primitive("prim_chip_L2Cache_0_1")
+        prim_l2_1 = platform.find_primitive("prim_chip_L2Cache_1_1")
+        prim_l1 = [
+            platform.find_primitive(f"prim_L1_PE0{i}") for i in range(0, 8)
+        ]
 
-        assert l1caches == 8
-        assert l2caches == 2
-        assert RAM == 1
+        for src in platform.processors():
+            for sink in platform.processors():
+                assert prim_ram.static_consume_costs(sink, 0) == 1000000  # 1 us
+                assert prim_ram.static_produce_costs(src, 0) == 2000000  # 2 us
+
+                assert prim_ram.static_consume_costs(sink, 1024) == 1640000
+                assert prim_ram.static_produce_costs(src, 1024) == 3280000
+
+                assert prim_ram.static_costs(src, sink, 0) == 3000000
+                assert prim_ram.static_costs(src, sink, 8) == 3015000
+                assert prim_ram.static_costs(src, sink, 1024) == 4920000
+
+        for prim in [prim_l2_0, prim_l2_1]:
+            assert len(prim.consumers) == len(prim.producers) == 4
+            for src in prim.producers:
+                for sink in prim.consumers:
+                    assert prim.static_consume_costs(sink, 0) == 8000  # 8 ns
+                    assert prim.static_produce_costs(src, 0) == 8000  # 8 ns
+
+                    assert prim.static_consume_costs(sink, 1024) == 40000
+                    assert prim.static_produce_costs(src, 1024) == 40000
+
+                    assert prim.static_costs(src, sink, 0) == 16000
+                    assert prim.static_costs(src, sink, 8) == 16500
+                    assert prim.static_costs(src, sink, 1024) == 80000
+
+        for prim in prim_l1:
+            assert len(prim.consumers) == len(prim.producers) == 1
+            src = prim.producers[0]
+            sink = prim.consumers[0]
+            assert prim.static_consume_costs(sink, 0) == 1000  # 1 ns
+            assert prim.static_produce_costs(src, 0) == 1000  # 1 ns
+
+            assert prim.static_consume_costs(sink, 1024) == 17000  # 25 ns
+            assert prim.static_produce_costs(src, 1024) == 17000  # 25 ns
+
+            assert prim.static_costs(src, sink, 0) == 2000
+            assert prim.static_costs(src, sink, 8) == 2250
+            assert prim.static_costs(src, sink, 1024) == 34000
 
     def test_networkOnChip(self, designer):
         designer.newElement("chip")
