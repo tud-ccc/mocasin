@@ -8,7 +8,9 @@ import filecmp
 import os
 import pytest
 
-
+# this comparison test is broken, as it will reject correctly calculated symmetries e.g.
+# if a different but still valid BSGS is chosen. This should be fixed in !62
+@pytest.mark.xfail
 @pytest.mark.parametrize("mpsym", [True, False])
 def test_calculate_platform_symmetries(
     datadir, expected_dir, small_platform, mpsym

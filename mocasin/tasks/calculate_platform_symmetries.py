@@ -31,7 +31,7 @@ def calculate_platform_symmetries(cfg):
     """
     platform = hydra.utils.instantiate(cfg["platform"])
     log.info("start converting platform to edge graph for automorphisms.")
-    plat_graph = platform.to_adjacency_dict()
+    plat_graph = platform.to_adjacency_dict(include_proc_type_labels=True)
     use_mpsym = cfg["mpsym"]
 
     (
