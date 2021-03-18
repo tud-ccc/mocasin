@@ -29,23 +29,18 @@ class Objectives(enum.Flag):
     ENERGY = enum.auto()
 
     @classmethod
-    def from_string(cls, input_string):
-        """Initialize Objectives object from a string.
-
-        The input string format: "<objective1>;<objective2>...".
-        Supported objectives: execution time ("exec_time"), dynamic energy
-        ("energy"), number of resources per type ("resources").
-        """
+    def from_string_list(cls, objectives):
+        """Initialize Objectives object from a list of strings"""
         flags = Objectives.NONE
-        for obj in input_string.split(";"):
+        for obj in objectives:
             if obj == "exec_time":
-                flags |= Objectives.EXEC_TIME
+                flags |= cls.EXEC_TIME
                 continue
             if obj == "energy":
-                flags |= Objectives.ENERGY
+                flags |= cls.ENERGY
                 continue
             if obj == "resources":
-                flags |= Objectives.RESOURCES
+                flags |= cls.RESOURCES
                 continue
             raise RuntimeError(f"Unexpected objective {obj}")
         return flags
@@ -61,7 +56,7 @@ class GeneticMapper(object):
         trace,
         representation,
         initials="random",
-        objectives="exec_time",
+        objectives=["exec_time"],
         pop_size=10,
         num_gens=5,
         mutpb=0.5,
@@ -91,7 +86,7 @@ class GeneticMapper(object):
         :param initials: what initial population to use (e.g. random)
         :type initials: string
         :param objectives: Optimization objectives
-        :type objectives: string
+        :type objectives: list of strings
         :param pop_size: Population size
         :type pop_size: int
         :param num_gens: Number of generations
@@ -129,7 +124,7 @@ class GeneticMapper(object):
         self.graph = graph
         self.platform = platform
         self.crossover_rate = crossover_rate
-        self.objectives = Objectives.from_string(objectives)
+        self.objectives = Objectives.from_string_list(objectives)
         self.pop_size = pop_size
         self.num_gens = num_gens
         self.mutpb = mutpb

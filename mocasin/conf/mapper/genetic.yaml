@@ -17,4 +17,4 @@ progress : true
 parallel : true
 jobs : 4
 # Supported objectives: exec_time, resources, energy
-objectives : "exec_time;resources"
+objectives : ["exec_time", "resources"]
