@@ -164,7 +164,7 @@ class Simulation(Oracle):
 
     def run_simulation(self, sample):
         # do simulation requires sim_context
-        if sample.sim_context.result.exec_time is not None:
+        if sample.sim_context.result is not None:
             self.total_cached += 1
             return sample
         try:
