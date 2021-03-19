@@ -59,7 +59,7 @@ class Oracle(object):
             mapping = tuple(s.getMapping().to_list())
             if mapping in self.cache:
                 log.debug(f"skipping simulation for mapping {mapping}: cached.")
-                s.sim_context.exec_time = self.cache[mapping]
+                s.sim_context.result = self.cache[mapping]
 
         if self.oracle_type != "simulation":
             for s in samples:
@@ -143,15 +143,15 @@ class Simulation(Oracle):
         # find runtime from results
         exec_times = []  # in ps
         for r in results:
-            exec_times.append(float(r.sim_context.exec_time))
+            exec_times.append(float(r.sim_context.result.exec_time))
 
         feasible = []
         for r in results:
-            assert r.sim_context.exec_time is not None
+            assert r.sim_context.result and r.sim_context.result.exec_time
             ureg = pint.UnitRegistry()
             threshold = ureg(self.threshold).to(ureg.ps).magnitude
 
-            if r.sim_context.exec_time > threshold:
+            if r.sim_context.result.exec_time > threshold:
                 r.setFeasibility(False)
                 feasible.append(False)
             else:
@@ -164,7 +164,7 @@ class Simulation(Oracle):
 
     def run_simulation(self, sample):
         # do simulation requires sim_context
-        if sample.sim_context.exec_time is not None:
+        if sample.sim_context.result is not None:
             self.total_cached += 1
             return sample
         try:
@@ -172,7 +172,7 @@ class Simulation(Oracle):
 
             # add to cache
             mapping = tuple(sample.getMapping().to_list())
-            self.cache[mapping] = sample.sim_context.exec_time
+            self.cache[mapping] = sample.sim_context.result
 
         except Exception as e:
             log.debug("Exception in Simulation: {}".format(str(e)))

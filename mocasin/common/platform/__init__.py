@@ -490,6 +490,18 @@ class Platform(object):
             res[p.type] += 1
         return res
 
+    def has_power_model(self):
+        """Returns whether the platform has a power model."""
+        result = any(pe.power_model is not None for pe in self.processors())
+        if result:
+            for pe in self.processors():
+                if pe.power_model is None:
+                    log.warning(
+                        f"No power model exists for {pe.name}. "
+                        "The energy consumption might be not complete."
+                    )
+        return result
+
     def to_pydot(self):
         """
         Convert the platform to a dot graph.

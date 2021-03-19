@@ -60,7 +60,7 @@ class RuntimeSystem:
         self.load_trace_cfg = None
 
         self.energy_estimator = EnergyEstimator(platform, self.trace_writer)
-        self.power_enabled = self.energy_estimator.check_power_model()
+        self.power_enabled = platform.has_power_model()
 
         # initialize all schedulers
 

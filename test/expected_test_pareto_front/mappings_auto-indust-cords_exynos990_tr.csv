@@ -1,0 +1,9 @@
+mapping,t_src,t_can1,t_fp,t_can2,t_pulse,t_sink,executionTime,dynamicEnergy
+0,processor_0002,processor_0003,processor_0003,processor_0002,processor_0003,processor_0002,0.007486255,
+1,processor_0004,processor_0007,processor_0004,processor_0004,processor_0005,processor_0007,0.00826403,
+2,processor_0002,processor_0002,processor_0002,processor_0002,processor_0002,processor_0006,0.47331559,
+3,processor_0007,processor_0006,processor_0006,processor_0007,processor_0006,processor_0001,0.473743815,
+4,processor_0001,processor_0005,processor_0001,processor_0000,processor_0001,processor_0001,0.939315832,
+5,processor_0004,processor_0004,processor_0004,processor_0000,processor_0004,processor_0004,0.93999315,
+6,processor_0008,processor_0008,processor_0001,processor_0001,processor_0001,processor_0002,2.473958266,
+7,processor_0006,processor_0006,processor_0006,processor_0006,processor_0008,processor_0007,4.006679818,
