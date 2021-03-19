@@ -59,7 +59,7 @@ class Oracle(object):
             mapping = tuple(s.getMapping().to_list())
             if mapping in self.cache:
                 log.debug(f"skipping simulation for mapping {mapping}: cached.")
-                s.sim_context.result.exec_time = self.cache[mapping]
+                s.sim_context.result = self.cache[mapping]
 
         if self.oracle_type != "simulation":
             for s in samples:
@@ -147,7 +147,7 @@ class Simulation(Oracle):
 
         feasible = []
         for r in results:
-            assert r.sim_context.result.exec_time is not None
+            assert r.sim_context.result and r.sim_context.result.exec_time
             ureg = pint.UnitRegistry()
             threshold = ureg(self.threshold).to(ureg.ps).magnitude
 
@@ -172,7 +172,7 @@ class Simulation(Oracle):
 
             # add to cache
             mapping = tuple(sample.getMapping().to_list())
-            self.cache[mapping] = sample.sim_context.result.exec_time
+            self.cache[mapping] = sample.sim_context.result
 
         except Exception as e:
             log.debug("Exception in Simulation: {}".format(str(e)))
