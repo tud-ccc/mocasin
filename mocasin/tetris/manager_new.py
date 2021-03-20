@@ -35,30 +35,18 @@ class ResourceManager:
     def state_time(self):
         return self._state_time
 
-    def active_requests(self):
-        raise NotImplementedError()
-
-    def active_jobs(self):
-        """Returns the list of active jobs."""
-        jobs = []
+    def accepted_requests(self):
+        """Returns the list of tuples of active requests and job states."""
+        res = []
         for request, job in self.requests.items():
-            if (
-                request.status == JobRequestStatus.ARRIVED
-                or request.status == JobRequestStatus.ACCEPTED
-            ):
-                jobs.append(job)
-        return jobs
-
-    def updated_request_state(self, request, state):
-        raise NotImplementedError()
-
-    def update_states_to_time(self, new_time):
-        raise NotImplementedError()
+            if request.status == JobRequestStatus.ACCEPTED:
+                res.append((request, job))
+        return res
 
     def _schedule_new_request(self, request):
         # Create a copy of the current job list with the new request
         # Ensure that jobs are immutable
-        jobs = self.active_jobs()
+        jobs = [j for _, j in self.accepted_requests()]
         jobs.append(Job.from_request(request))
 
         # Generate scheduling with the new job
@@ -116,3 +104,102 @@ class ResourceManager:
         self.schedule = schedule
         request.status = JobRequestStatus.ACCEPTED
         return True
+
+    def update_request_state(self, request, state):
+        raise NotImplementedError()
+
+    def _advance_segment(self, segment, till_time=None):
+        """Advance an internal state by the schedule segment.
+
+        This method advances the internal state by a single segment. If
+        `till_time` is not None, then the segment is advanced till this
+        specified time within a segment.
+
+        If `till_time` is None, the function returns None, otherwise it returns
+        the remaining part of the segment
+        """
+        # the state time must equal to start time of the segment
+        if abs(self.state_time - segment.start_time) > 0.0001:
+            raise RuntimeError(
+                f"The current state time ({self.state_time}) does not equal "
+                f"the start time of the segment ({segment.start_time})"
+            )
+
+        rest = None
+        if till_time:
+            if not segment.start_time <= till_time <= segment.end_time:
+                raise RuntimeError(
+                    f"The end time ({till_time}) must be within the segment "
+                    f"({segment.start_time}..{segment.end_time})"
+                )
+            segment, rest = segment.split(till_time)
+
+        jobs = [j for _, j in self.accepted_requests()]
+        schedule = Schedule(self.platform, [segment])
+        # FIXME: Remove this constructor, create method in
+        # SingleJobMappingSegment class
+        end_jobs = Job.from_schedule(schedule, init_jobs=jobs)
+
+        for job in end_jobs:
+            request = job.request
+            if job.is_terminated():
+                # FIXME: application might have finished earlier,
+                # write a correct finish time
+                self._log_info(f"job {job.app.name} finished")
+                # update request
+                request.status = JobRequestStatus.FINISHED
+                self.requests.update({request: None})
+            else:
+                self.requests.update({request: job})
+
+        self._state_time = segment.end_time
+
+        return rest
+
+    def advance_segment(self):
+        """Advance an internal state by the schedule segment."""
+        if not self.schedule:
+            raise RuntimeError("No active schedule")
+        self._advance_segment(self.schedule.first)
+        self.schedule.remove_segment(0)
+        if len(self.schedule) == 0:
+            self.schedule = None
+
+    def advance_to_time(self, new_time):
+        """Advance an internal state till `new_time`."""
+        if new_time < self.state_time:
+            raise RuntimeError(
+                f"The resource manager cannot be moved backwards {self.state_time} -> {new_time}."
+            )
+
+        # No action if time is not changed
+        if new_time == self.state_time:
+            return
+
+        # Simply update state time if there are no currently running jobs
+        if not self.schedule:
+            if self.accepted_requests():
+                raise RuntimeError(
+                    "The resource manager must have an active schedule "
+                    "for still running requests"
+                )
+            self._state_time = new_time
+            return
+
+        new_schedule = Schedule(self.platform)
+        for segment in self.schedule.segments():
+            # advance by the whole segment
+            if new_time >= segment.end_time:
+                self._advance_segment(segment)
+            # tne new_time is in the middle of the segment
+            if segment.start_time <= new_time < segment.end_time:
+                rest = self._advance_segment(segment, new_time)
+                new_schedule.append_segment(rest)
+            # the segments after new_time
+            if new_time < segment.start_time:
+                new_schedule.append_segment(segment)
+
+        self.schedule = new_schedule
+        if len(self.schedule) == 0:
+            self.schedule = None
+            self._state_time = new_time
