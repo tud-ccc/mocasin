@@ -252,6 +252,8 @@ class RuntimeScheduler(object):
             self._ready_queue.append(process)
         process.ready.callbacks.append(self._cb_process_ready)
 
+        self._log.debug(f"process {process.name} became ready")
+
         # notify the process ready event
         self.process_ready.succeed()
         self.process_ready = self.env.event()
@@ -317,7 +319,9 @@ class RuntimeScheduler(object):
             self._log.debug(f"load context of process {next_process.full_name}")
             # wait until the load operation is complete
             ticks = self._processor.context_load_ticks()
+            self._log.debug(f"before timeout {(ticks)}")
             yield self.env.timeout(ticks)
+            self._log.debug(f"after timeout")
 
     def _store_context(self, process, always=False):
         """A simpy process modeling the context storing for process
@@ -383,6 +387,7 @@ class RuntimeScheduler(object):
             )
             return
 
+        self._log.debug("activate process %s", next_process.full_name)
         # activate the process and remove it from the ready queue
         self.current_process = next_process
         next_process.activate(self._processor)
@@ -390,8 +395,11 @@ class RuntimeScheduler(object):
         # continuing
         yield self.env.timeout(0)
 
+        self._log.debug("run workload of process %s", next_process.full_name)
         # model the actual workload execution of the process
         yield from self._execute_process_workload(self.current_process)
+
+        self._log.debug("after workload of process %s", next_process.full_name)
 
         # check if the process is being removed
         if self.current_process not in self._processes:
