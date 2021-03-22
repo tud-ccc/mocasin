@@ -249,7 +249,7 @@ class BruteforceSegmentGenerator:
                 continue
 
             # 4. Check that all jobs meet dealines
-            if any(js.end_time > js.request.deadline for js in segment):
+            if any(js.end_time > js.request.deadline for js in segment.jobs()):
                 continue
 
             # Generate the job states at the end of the segment

@@ -76,7 +76,7 @@ class SingleJobSegmentMapping:
         self.__request = job_request
         self.__mapping = mapping
 
-        self.__start_time = start_time
+        self.__start_time = start_time  # in ms
         self.__start_cratio = start_cratio
 
         self.__end_time = None
@@ -258,8 +258,9 @@ class MultiJobSegmentMapping:
 
     def __init__(self, platform, jobs=[]):
         self.platform = platform
-        self.__time_range = (None, None)
-        self.__jobs = []
+        self._start_time = None  # in ms
+        self._end_time = None  # in ms
+        self._jobs = []
 
         for j in jobs:
             self.append_job(j)
@@ -267,12 +268,12 @@ class MultiJobSegmentMapping:
     @property
     def start_time(self):
         """float: The start time of the segment"""
-        return self.__time_range[0]
+        return self._start_time
 
     @property
     def end_time(self):
         """float: The end time of the segment"""
-        return self.__time_range[1]
+        return self._end_time
 
     @property
     def duration(self):
@@ -282,35 +283,24 @@ class MultiJobSegmentMapping:
     @property
     def energy(self):
         """float: The consumed energy."""
-        return sum([x.energy for x in self.__jobs])
+        return sum([x.energy for x in self._jobs])
 
     def jobs(self):
         """list(SingleJobSegmentMapping): Returns a shallow copy of
         single job segment mappings.
         """
-        return self.__jobs.copy()
-
-    @property
-    def finished(self):
-        """bool: Whether all active jobs are finished during the current
-        segment.
-        """
-        res = True
-        for jm in self.__jobs:
-            res = res and jm.finished
-        return res
+        return self._jobs.copy()
 
     def verify(self, only_counters=False):
         """Verify that MultiJobSegmentMapping in a consistent stay."""
         failed = False
         # All JobSegmentMappings should have the same time range
-        for j in self.__jobs:
+        for j in self._jobs:
             j.verify()
             if abs(self.start_time - j.start_time) > TIME_EPS:
                 log.error(
-                    "Job start_time does not equal segment start_time: {}".format(
-                        j.to_str()
-                    )
+                    "Job start_time does not equal segment start_time: "
+                    f"{j.to_str()}"
                 )
                 failed = True
             if (
@@ -334,7 +324,7 @@ class MultiJobSegmentMapping:
                 )
                 failed = True
         else:
-            for j1, j2 in itertools.combinations(self.jobs(), r=2):
+            for j1, j2 in itertools.combinations(self._jobs, r=2):
                 j1_cores = j1.mapping.get_used_processors()
                 j2_cores = j2.mapping.get_used_processors()
                 if j1_cores.intersection(j2_cores):
@@ -351,37 +341,44 @@ class MultiJobSegmentMapping:
             )
             assert False
 
-    def __iter__(self):
-        yield from self.__jobs
-
-    def __len__(self):
-        return len(self.__jobs)
+    def find_job_segment(self, request):
+        """Find a job segment by the request."""
+        for job_segment in self._jobs:
+            if job_segment.request != request:
+                continue
+            return job_segment
+        return None
 
     def append_job(self, job):
         """Add a new job mapping to the current object."""
         assert job is not None
         assert isinstance(job, SingleJobSegmentMapping)
 
-        self.__jobs.append(job)
+        self._jobs.append(job)
 
         if self.start_time is None:
             new_start_time, new_end_time = job.start_time, job.end_time
         else:
             new_start_time = min(self.start_time, job.start_time)
             new_end_time = max(self.end_time, job.end_time)
-        self.__time_range = (new_start_time, new_end_time)
+        self._start_time, self._end_time = new_start_time, new_end_time
+
+    def remove_job(self, job):
+        """Remove a job from the MultiJobSegmentMapping."""
+        assert job in self._jobs
+        self._jobs.remove(job)
 
     def get_used_processors(self):
         """Returns the set of used processors."""
         return reduce(
-            set.union, [x.mapping.get_used_processors() for x in self.jobs()]
+            set.union, [x.mapping.get_used_processors() for x in self._jobs]
         )
 
     def get_used_processor_types(self):
         """Counter: Number of used cores per type."""
         used_procs = reduce(
             (lambda x, y: x + y),
-            [x.mapping.get_used_processor_types() for x in self.jobs()],
+            [x.mapping.get_used_processor_types() for x in self._jobs],
             Counter(),
         )
         return used_procs
@@ -404,7 +401,7 @@ class MultiJobSegmentMapping:
 
         m1 = MultiJobSegmentMapping(self.platform)
         m2 = MultiJobSegmentMapping(self.platform)
-        for jm in self:
+        for jm in self._jobs:
             jm1 = SingleJobSegmentMapping(
                 jm.request,
                 jm.mapping,
@@ -432,7 +429,7 @@ class MultiJobSegmentMapping:
             )
             + "\n"
         )
-        for sm in self:
+        for sm in self._jobs:
             res += "  " + sm.to_str() + "\n"
         return res
 
@@ -580,8 +577,8 @@ class Schedule:
         )
         for segment in self:
             res += f"    [t:({segment.start_time:.3f}, {segment.end_time:.3f}),"
-            res += f" {len(segment)} job"
-            if len(segment) > 1:
+            res += f" {len(segment.jobs())} job"
+            if len(segment.jobs()) > 1:
                 res += "s"
             core_types_str = ", ".join(
                 [
@@ -593,7 +590,7 @@ class Schedule:
             )
             res += f", PEs: [{core_types_str}], e:{segment.energy:.3f}]\n"
             if verbose:
-                for job in segment:
+                for job in segment.jobs():
                     res += f"        {job.to_str()}\n"
         return res
 
@@ -606,8 +603,8 @@ class Schedule:
         true, add None values for the segment where the job was idle or finished.
         """
         res = {}
-        for i, segment in enumerate(self):
-            for j in segment:
+        for i, segment in enumerate(self._segments):
+            for j in segment.jobs():
                 if j.request not in res:
                     if none_as_idle:
                         res[j.request] = [None] * i
@@ -632,8 +629,8 @@ class Schedule:
 
     def is_request_completed(self, request):
         """Returns whether the request comleted in the current schedule."""
-        for segment in self:
-            for j in segment:
+        for segment in self._segments:
+            for j in segment.jobs():
                 if j.request == request and j.finished:
                     return True
         return False

@@ -166,7 +166,7 @@ class SegMedfSegmentMapper(SegmentMapperBase):
             return None
 
         # Check that all jobs meet dealines
-        for js in segment:
+        for js in segment.jobs():
             if js.end_time > js.request.deadline:
                 return None
 
