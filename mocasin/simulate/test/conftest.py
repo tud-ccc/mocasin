@@ -66,6 +66,15 @@ def processor(mocker):
     return processor
 
 
+@pytest.fixture
+def processor2(mocker):
+    processor = mocker.Mock()
+    processor.name = "Test2"
+    processor.type = "Test2"
+    processor.ticks = lambda x: x * 2
+    return processor
+
+
 @pytest.fixture(params=["base", "dataflow"])
 def process(request, base_process, dataflow_process, mocker):
     if request.param == "base":

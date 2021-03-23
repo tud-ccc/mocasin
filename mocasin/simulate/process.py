@@ -589,10 +589,11 @@ class RuntimeDataflowProcess(RuntimeProcess):
         s = self._current_segment
 
         if self._remaining_compute_cycles is None:
-            cycles = s.processor_cycles[self.processor.type]
+            processor_cycles = s.processor_cycles
         else:
-            cycles = self._remaining_compute_cycles
+            processor_cycles = self._remaining_compute_cycles
 
+        cycles = processor_cycles[self.processor.type]
         self._log.debug(f"process for {cycles} cycles")
         ticks = self.processor.ticks(cycles)
 
@@ -615,10 +616,15 @@ class RuntimeDataflowProcess(RuntimeProcess):
             # error should be marginal.
             ticks_processed = self.env.now - start
             ratio = float(ticks_processed) / float(ticks)
-            cycles_processed = int(round(float(cycles) * ratio))
+            print(ratio)
 
-            self._remaining_compute_cycles = cycles - cycles_processed
-            assert self._remaining_compute_cycles >= 0
+            self._remaining_compute_cycles = {}
+            for processor, cycles in processor_cycles.items():
+                cycles_processed = int(round(float(cycles) * ratio))
+                cycles_remaining = cycles - cycles_processed
+                print(f"{processor}: {cycles_remaining}")
+                assert cycles_remaining >= 0
+                self._remaining_compute_cycles[processor] = cycles_remaining
             self._log.debug(
                 f"process was deactivated after {cycles_processed} cycles"
             )
