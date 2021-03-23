@@ -658,7 +658,15 @@ class RuntimeDataflowProcess(RuntimeProcess):
         ratio_sum = 0.0
         for processor, total_cycles in self._total_cycles.items():
             processed_cycles = self._total_cycles_processed[processor]
-            ratio = processed_cycles / total_cycles
+            if total_cycles == 0:
+                # if there are no compute segments in the trace, we cannot
+                # calculate the ratio and assume a fixed value
+                if self.check_state(ProcessState.FINISHED):
+                    ratio = 1.0
+                else:
+                    ratio = 0.0
+            else:
+                ratio = processed_cycles / total_cycles
             ratio_sum += ratio
         # we take the average because the ratios for individual processor types
         # might be slightly off due to rounding errors. Taking the average
