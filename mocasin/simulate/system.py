@@ -144,9 +144,6 @@ class RuntimeSystem:
         if process.check_state(ProcessState.FINISHED):
             return
 
-        # get the schedulers
-        to_scheduler = self._processors_to_schedulers[to_processor]
-
         # remove the process from its current scheduler
         event = self.pause_process(process, from_processor)
 
@@ -157,16 +154,12 @@ class RuntimeSystem:
             # if we got an event, add a callback that adds the process to the
             # new scheduler as soon as the event is triggered (i.e. as soon
             # as the process is removed completely)
-            def callback(_):
-                # make sure that the process was not killed in the meantime
-                if not process.check_state(ProcessState.FINISHED):
-                    # add process to the new scheduler
-                    to_scheduler.add_process(process)
-
-            event.callbacks.append(callback)
+            event.callbacks.append(
+                lambda _: self.resume_process(process, to_processor)
+            )
         else:
-            # otherwise, add the process to the new scheduler immediately
-            to_scheduler.add_process(process)
+            # otherwise, resume the process on the new scheduler immediately
+            self.resume_process(process, to_processor)
 
     def pause_process(self, process, current_processor):
         """Pause a running process
@@ -198,6 +191,24 @@ class RuntimeSystem:
         scheduler = self._processors_to_schedulers[current_processor]
         event = scheduler.remove_process(process)
         return event
+
+    def resume_process(self, process, processor):
+        """Resume a paused process on a given processor
+
+        Args:
+            process (RuntimeProcess): the runtime process to be moved
+            processor (str): name of the processor the process is
+                should resume its execution on
+        """
+        # nothing to do if the process is already finished
+        if process.check_state(ProcessState.FINISHED):
+            return
+
+        assert process in self._processes
+
+        scheduler = self._processors_to_schedulers[processor]
+        scheduler.add_process(process)
+
     def record_system_load(self):
         # create an init event in order to give the trace viewer a hint
         # on the maximum value
