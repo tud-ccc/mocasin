@@ -59,18 +59,17 @@ class RuntimeDataflowApplication(RuntimeApplication):
             executed on
     """
 
-    def __init__(self, name, graph, mapping, app_trace, system):
+    def __init__(self, name, graph, app_trace, system):
         super().__init__(name, system)
         self.graph = graph
         self.trace = app_trace
 
-        if mapping.graph != graph:
-            raise RuntimeError("dataflow graph and mapping incompatible")
-        if mapping.platform != system.platform:
-            raise RuntimeError(f"Mapping {name} to an incompatible platform")
-
         self._is_running = False
         self._is_finished = False
+
+        # a dict mapping each process to a processor/scheduler
+        # leave it uninitialized for now, it will set by calling run()
+        self._process_mappings = None
 
         log.debug("initialize new runtime application: %s", name)
 
@@ -80,18 +79,14 @@ class RuntimeDataflowApplication(RuntimeApplication):
             self._channels[c.name] = RuntimeChannel(
                 c.name, c.token_size, self
             )
-            self._channels[c.name].update_mapping_info(mapping.channel_info(c))
 
         # Instantiate all processes
         self._processes = {}
-        self._process_mappings = {}
         for p in graph.processes():
-            mapping_info = mapping.process_info(p)
             proc = RuntimeDataflowProcess(
                 p.name, app_trace.get_trace(p.name), self
             )
             self._processes[p.name] = proc
-            self._process_mappings[proc] = mapping_info.affinity
             for c in p.incoming_channels:
                 rc = self._channels[c.name]
                 proc.connect_to_incomming_channel(rc)
@@ -123,22 +118,46 @@ class RuntimeDataflowApplication(RuntimeApplication):
 
     def find_channel(self, channel_name):
         """Find a channel by name"""
-        return self._channeles[channel_name]
+        return self._channels[channel_name]
 
-    def run(self):
+    def run(self, mapping):
         """Start execution of this application
 
         Yields:
             ~simpy.events.Event: an event that is triggered when the
                 application finishes execution.
         """
-        assert not self._is_running
+        assert not (self._is_running or self._is_finished)
+        assert not self._process_mappings
         self._is_running = True
 
         self._log.info(f"Application {self.name} starts")
 
+        # map all processes and channels
+
+        # first some sanity checks
+        if mapping.graph != self.graph:
+            raise RuntimeError("dataflow graph and mapping incompatible")
+        if mapping.platform != self.system.platform:
+            raise RuntimeError(f"Mapping {self.name} to an incompatible platform")
+
+        # map all channels:
+        for channel in self.graph.channels():
+            info = mapping.channel_info(channel)
+            self.find_channel(channel.name).update_mapping_info(info)
+
+        # map all processes
+        self._process_mappings = {}
+        for process in self.graph.processes():
+            info = mapping.process_info(process)
+            runtime_process = self.find_process(process.name)
+            self._process_mappings[runtime_process] = info.affinity
+
+        # start all the processes
         for process, processor in self._process_mappings.items():
             self.system.start_process(process, processor)
+        # create an event that is triggered when all processes completed and
+        # wait for this event
         finished = self.env.all_of([p.finished for p in self.processes()])
         finished.callbacks.append(self._app_finished_callback)
         yield finished
