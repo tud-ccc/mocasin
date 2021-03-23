@@ -194,7 +194,7 @@ class RuntimeScheduler(object):
         Returns:
             None: if the process was removed immediately
             simpy.events.Event: An event indicating completion of the removal
-                if the process cannot be removed immediately (sine it is
+                if the process cannot be removed immediately (since it is
                 currently running)
         """
         # there is nothing to do if the process already finished
