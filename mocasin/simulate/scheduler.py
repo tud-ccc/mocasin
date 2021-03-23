@@ -178,6 +178,10 @@ class RuntimeScheduler(object):
         # if the process is ready, also add it to the ready queue
         if process.check_state(ProcessState.READY):
             self._ready_queue.append(process)
+            if len(self._ready_queue) == 1:
+                # notify the process ready event
+                self.process_ready.succeed()
+                self.process_ready = self.env.event()
 
     def remove_process(self, process):
         """Remove a process from this scheduler.
