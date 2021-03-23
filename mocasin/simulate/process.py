@@ -429,6 +429,11 @@ class RuntimeDataflowProcess(RuntimeProcess):
         self._current_segment = None
         self._remaining_compute_cycles = None
 
+        # keep track of the total cycles to process and the sum of cycles
+        # already processed
+        self._total_cycles = app_trace.accumulate_processor_cycles(name)
+        self._total_cycles_processed = {p: 0 for p in self._total_cycles.keys()}
+
         # lets the workload method know whether it is run for the first time
         # or whether it is resumed
         self._is_running = False
@@ -609,6 +614,9 @@ class RuntimeDataflowProcess(RuntimeProcess):
         # if the timeout was processed, the computation completed
         if timeout.processed:
             self._remaining_compute_cycles = None
+            # update total processed cycles
+            for processor, cycles in processor_cycles.items():
+                self._total_cycles_processed[processor] += cycles
         elif interrupt.processed and interrupt.value == InterruptSource.PREEMPT:
             # Calculate how many cycles where executed until the process was
             # preempted. Note that the preemption can occur in between full
@@ -627,6 +635,33 @@ class RuntimeDataflowProcess(RuntimeProcess):
                 print(f"{processor}: {cycles_remaining}")
                 assert cycles_remaining >= 0
                 self._remaining_compute_cycles[processor] = cycles_remaining
+
+                # update total processed cycles
+                self._total_cycles_processed[processor] += cycles_processed
             self._log.debug(
                 f"process was deactivated after {cycles_processed} cycles"
             )
+
+    def get_progress(self):
+        """Calculate how far the process has progressed its execution
+
+        Note that the calculation is not accurate if the processes is currently
+        running. The total amount of processed cycles is only updated after
+        finishing processing a compute segment or when the process is preempted.
+
+        Also note that the result is slightly inaccurate due to rounding errors
+        even if the process is not currently running.
+
+        Returns:
+            float: completion ratio of this process
+        """
+        ratio_sum = 0.0
+        for processor, total_cycles in self._total_cycles.items():
+            processed_cycles = self._total_cycles_processed[processor]
+            ratio = processed_cycles / total_cycles
+            ratio_sum += ratio
+        # we take the average because the ratios for individual processor types
+        # might be slightly off due to rounding errors. Taking the average
+        # should minimize the error.
+        average = ratio_sum / len(self._total_cycles)
+        return average

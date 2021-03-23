@@ -202,7 +202,11 @@ class TestRuntimeDataflowProcess:
         assert env.now == 15
 
     def test_preemption(self, env, dataflow_process, processor, processor2):
+        # monkey patch the process to add a trace
         dataflow_process._trace = self.preemption_trace_generator()
+        dataflow_process._total_cycles = {"Test": 10, "Test2": 20}
+        dataflow_process._remaining_compute_cycles = {"Test": 0, "Test2": 0}
+
         env.run()
         dataflow_process.start()
         env.run()
@@ -217,6 +221,7 @@ class TestRuntimeDataflowProcess:
         assert dataflow_process.processor is None
         assert dataflow_process._remaining_compute_cycles["Test"] == 5
         assert dataflow_process._remaining_compute_cycles["Test2"] == 10
+        assert dataflow_process.get_progress() == 0.5
 
         # continue execution on processor2 for 5 cycles (10 ticks)
         dataflow_process.activate(processor2)
@@ -230,7 +235,17 @@ class TestRuntimeDataflowProcess:
         assert dataflow_process.processor is None
         assert dataflow_process._remaining_compute_cycles["Test"] == 3
         assert dataflow_process._remaining_compute_cycles["Test2"] == 5
+        assert dataflow_process.get_progress() == 0.725
 
+        dataflow_process.activate(processor2)
+        env.run(30)
+        finished = env.process(dataflow_process.workload())
+        env.run(finished)
+
+        assert dataflow_process._remaining_compute_cycles is None
+        assert dataflow_process._remaining_compute_cycles is None
+
+        assert dataflow_process.get_progress() == 1.0
 
     def test_workload_read(
         self, env, dataflow_process, processor, full_channel
