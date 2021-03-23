@@ -288,3 +288,18 @@ class RuntimeDataflowApplication(RuntimeApplication):
             # to the old mapping
             for process, processor in self._process_mappings.items():
                 self.system.resume_process(process, processor)
+
+    def get_progress(self):
+        """Calculate how far this application has advanced its computation
+
+        The application progress is calculate as the average over the progress
+        of all processes. Note that the resulting progress can be lower than
+        expected, if some of the processes are currently running. This is
+        because processes only update there status at certain points
+        (preemption, segment completion) and not continuously.
+
+        Returns:
+            float: completion ratio
+        """
+        process_progress = [p.get_progress() for p in self._processes.values()]
+        return sum(process_progress) / len(process_progress)
