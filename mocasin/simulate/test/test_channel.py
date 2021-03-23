@@ -6,6 +6,7 @@
 import simpy
 
 import pytest
+from mocasin.common.mapping import ChannelMappingInfo
 from mocasin.common.platform import Primitive
 from mocasin.simulate.process import ProcessState
 
@@ -336,7 +337,8 @@ class TestRuntimeChannel:
 
         # setup the primitive
         prim = Primitive("test_prim")
-        channel._primitive = prim
+        info = ChannelMappingInfo(primitive=prim, capacity=4)
+        channel.update_mapping_info(info)
 
         # src processor not added yet -> should fail
         with pytest.raises(RuntimeError):

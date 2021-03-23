@@ -51,8 +51,10 @@ def dataflow_process(app, mocker):
 
 @pytest.fixture
 def channel(app, mocker):
-    info = ChannelMappingInfo(mocker.Mock(), 4)
-    return RuntimeChannel("test_chan", info, 8, app)
+    info = ChannelMappingInfo(primitive=mocker.Mock(), capacity=4)
+    channel = RuntimeChannel("test_chan", 8, app)
+    channel.update_mapping_info(info)
+    return channel
 
 
 @pytest.fixture

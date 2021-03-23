@@ -77,10 +77,10 @@ class RuntimeDataflowApplication(RuntimeApplication):
         # Instantiate all channels
         self._channels = {}
         for c in graph.channels():
-            mapping_info = mapping.channel_info(c)
             self._channels[c.name] = RuntimeChannel(
-                c.name, mapping_info, c.token_size, self
+                c.name, c.token_size, self
             )
+            self._channels[c.name].update_mapping_info(mapping.channel_info(c))
 
         # Instantiate all processes
         self._processes = {}
