@@ -65,6 +65,7 @@ class RuntimeDataflowApplication(RuntimeApplication):
         self.trace = app_trace
 
         self._is_running = False
+        self._is_paused = False
         self._is_finished = False
 
         # a dict mapping each process to a processor/scheduler
@@ -127,7 +128,7 @@ class RuntimeDataflowApplication(RuntimeApplication):
             ~simpy.events.Event: an event that is triggered when the
                 application finishes execution.
         """
-        assert not (self._is_running or self._is_finished)
+        assert not (self._is_running or self._is_paused or self._is_finished)
         assert not self._process_mappings
         self._is_running = True
 
@@ -190,12 +191,17 @@ class RuntimeDataflowApplication(RuntimeApplication):
 
     def is_running(self):
         """Check if the application is running."""
-        assert not (self._is_running and self._is_finished)
+        assert sum((self._is_running, self._is_paused, self._is_finished)) == 1
         return self._is_running
+
+    def is_paused(self):
+        """Check if the application is paused."""
+        assert sum((self._is_running, self._is_paused, self._is_finished)) == 1
+        return self._is_paused
 
     def is_finished(self):
         """Check if the application is finished."""
-        assert not (self._is_running and self._is_finished)
+        assert sum((self._is_running, self._is_paused, self._is_finished)) == 1
         return self._is_finished
 
     def update_mapping(self, mapping):
@@ -207,7 +213,7 @@ class RuntimeDataflowApplication(RuntimeApplication):
         """
         assert self.is_running()
 
-        self._log.debug(f"Update mapping of application {self.name}")
+        self._log.debug(f"Update mapping")
 
         # iterate over all proceses
         for process in self._process_mappings.keys():
@@ -215,7 +221,7 @@ class RuntimeDataflowApplication(RuntimeApplication):
             dataflow_process = self.graph.find_process(process.name)
             new_processor = mapping.process_info(dataflow_process).affinity
 
-            # move the process
+            # move the processes
             if current_processor != new_processor:
                 self._log.debug(
                     f"Move process {process.full_name} from {current_processor}"
@@ -226,11 +232,61 @@ class RuntimeDataflowApplication(RuntimeApplication):
                     process, current_processor, new_processor
                 )
 
+            # and also update the channel mappings
+            self._update_channel_mappings(mapping)
+
+    def _update_channel_mappings(self, mapping):
         # iterate over all channels
         for name, channel in self._channels.items():
             dataflow_channel = self.graph.find_channel(name)
             mapping_info = mapping.channel_info(dataflow_channel)
             self._log.debug(
-                f"Update channel primitive to {mapping_info.primitive.name}"
+                f"Update channel of {channel.name} primitive to "
+                f"{mapping_info.primitive.name}"
             )
             channel.update_mapping_info(mapping_info)
+
+    def pause(self):
+        """Pause the execution of this application
+
+        The application can be resumed later by calling resume()
+        """
+        assert self.is_running()
+
+        self._is_running = False
+        self._is_paused = True
+
+        self._log.debug("Pause")
+
+        # simply pause all processes
+        for process, current_processor in self._process_mappings.items():
+            self.system.pause_process(process, current_processor)
+
+    def resume(self, mapping=None):
+        """Resume the execution of a paused application
+
+        Args:
+            mapping (Mapping, optional): an optional updated application mapping
+                If None, the application is resumed with its old mapping.
+        """
+        assert self.is_paused()
+
+        self._is_paused = False
+        self._is_running = True
+
+        self._log.debug("Resume")
+
+        if mapping:
+            # if a mapping is provided, we first need to update all channels
+            self._update_channel_mappings(mapping)
+            # and then we resume all processes on their new processors
+            for process in self._process_mappings.keys():
+                dataflow_process = self.graph.find_process(process.name)
+                new_processor = mapping.process_info(dataflow_process).affinity
+                self._process_mappings[process] = new_processor
+                self.system.resume_process(process, new_processor)
+        else:
+            # if no mapping is provided, then we resume all processes according
+            # to the old mapping
+            for process, processor in self._process_mappings.items():
+                self.system.resume_process(process, processor)
