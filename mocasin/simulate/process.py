@@ -416,14 +416,16 @@ class RuntimeDataflowProcess(RuntimeProcess):
         app (RuntimeApplication): the application this process is part of
     """
 
-    def __init__(self, name, process_trace, app):
+    def __init__(self, name, app):
         super().__init__(name, app)
         log.debug(
             "initialize new dataflow runtime process (%s)", self.full_name
         )
 
+        app_trace = app.trace
+
         self._channels = {}
-        self._trace = process_trace
+        self._trace = app_trace.get_trace(name)
         self._current_segment = None
         self._remaining_compute_cycles = None
 

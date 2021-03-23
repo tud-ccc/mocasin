@@ -35,8 +35,10 @@ def state(request):
 
 
 @pytest.fixture
-def app(system):
-    return RuntimeApplication("test_app", system)
+def app(system, mocker):
+    app = RuntimeApplication("test_app", system)
+    app.trace = mocker.Mock()
+    return app
 
 
 @pytest.fixture
@@ -46,7 +48,7 @@ def base_process(app):
 
 @pytest.fixture
 def dataflow_process(app, mocker):
-    return RuntimeDataflowProcess("test_proc", mocker.Mock(), app)
+    return RuntimeDataflowProcess("test_proc", app)
 
 
 @pytest.fixture

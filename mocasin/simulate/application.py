@@ -77,16 +77,12 @@ class RuntimeDataflowApplication(RuntimeApplication):
         # Instantiate all channels
         self._channels = {}
         for c in graph.channels():
-            self._channels[c.name] = RuntimeChannel(
-                c.name, c.token_size, self
-            )
+            self._channels[c.name] = RuntimeChannel(c.name, c.token_size, self)
 
         # Instantiate all processes
         self._processes = {}
         for p in graph.processes():
-            proc = RuntimeDataflowProcess(
-                p.name, app_trace.get_trace(p.name), self
-            )
+            proc = RuntimeDataflowProcess(p.name, self)
             self._processes[p.name] = proc
             for c in p.incoming_channels:
                 rc = self._channels[c.name]
@@ -140,7 +136,9 @@ class RuntimeDataflowApplication(RuntimeApplication):
         if mapping.graph != self.graph:
             raise RuntimeError("dataflow graph and mapping incompatible")
         if mapping.platform != self.system.platform:
-            raise RuntimeError(f"Mapping {self.name} to an incompatible platform")
+            raise RuntimeError(
+                f"Mapping {self.name} to an incompatible platform"
+            )
 
         # map all channels:
         for channel in self.graph.channels():
