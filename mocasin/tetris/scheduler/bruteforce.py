@@ -169,9 +169,10 @@ class BruteforceSegmentGenerator:
         elif not self.scheduler.migrations and job.last_mapping is not None:
             variants = [mapping]
         else:
-            variants = self.scheduler.orbit_lookup_manager.get_orbit(
+            entry = self.scheduler.orbit_lookup_manager.get_orbit_entry(
                 job.app, mapping
             )
+            variants = entry.get_generator()
         used_cores = reduce(
             set.union,
             [
