@@ -2,3 +2,6 @@
 
 _target_: mocasin.tetris.scheduler.medf.MedfScheduler
 
+migrations: True
+preemptions: True
+rotations: False
