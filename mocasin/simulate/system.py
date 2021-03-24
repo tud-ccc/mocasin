@@ -144,14 +144,9 @@ class RuntimeSystem:
         if process.check_state(ProcessState.FINISHED):
             return
 
-        assert process in self._processes
-
-        # get the schedulers
-        from_scheduler = self._processors_to_schedulers[from_processor]
-        to_scheduler = self._processors_to_schedulers[to_processor]
-
         # remove the process from its current scheduler
-        event = from_scheduler.remove_process(process)
+        event = self.pause_process(process, from_processor)
+
         # The remove call above may return an event that indicates the
         # completion of the process removal. This is necessary in cases where
         # the process is currently running and first needs to be deactivated.
@@ -159,16 +154,60 @@ class RuntimeSystem:
             # if we got an event, add a callback that adds the process to the
             # new scheduler as soon as the event is triggered (i.e. as soon
             # as the process is removed completely)
-            def callback(_):
-                # make sure that the process was not killed in the meantime
-                if not process.check_state(ProcessState.FINISHED):
-                    # add process to the new scheduler
-                    to_scheduler.add_process(process)
-
-            event.callbacks.append(callback)
+            event.callbacks.append(
+                lambda _: self.resume_process(process, to_processor)
+            )
         else:
-            # otherwise, add the process to the new scheduler immediately
-            to_scheduler.add_process(process)
+            # otherwise, resume the process on the new scheduler immediately
+            self.resume_process(process, to_processor)
+
+    def pause_process(self, process, current_processor):
+        """Pause a running process
+
+        Removes the process from its current processor and pauses its execution
+        until it is resumed on the same or another processor.
+
+        Args:
+            process (RuntimeProcess): the runtime process to be moved
+            current_processor (str): name of the processor the process is
+                currently running on
+        Returns:
+            None: if the process was removed immediately
+            simpy.events.Event: An event indicating completion of the removal
+                if the process cannot be removed immediately (sine it is
+                currently running)
+        """
+        # nothing to do if the process is already finished
+        if process.check_state(ProcessState.FINISHED):
+            return
+
+        assert process in self._processes
+
+        # Remove the process from its scheduler. If the process is currently
+        # running, then it needs to be preempted. This might take a while, and
+        # in this case remove_process() returns an event indicating when
+        # preemption completed. We simply return this event here to indicate
+        # when the process has paused.
+        scheduler = self._processors_to_schedulers[current_processor]
+        event = scheduler.remove_process(process)
+        return event
+
+    def resume_process(self, process, processor):
+        """Resume a paused process on a given processor
+
+        Args:
+            process (RuntimeProcess): the runtime process to be moved
+            processor (str): name of the processor the process is
+                should resume its execution on
+        """
+        # nothing to do if the process is already finished
+        if process.check_state(ProcessState.FINISHED):
+            return
+
+        assert process in self._processes
+
+        scheduler = self._processors_to_schedulers[processor]
+        scheduler.add_process(process)
 
     def record_system_load(self):
         # create an init event in order to give the trace viewer a hint
