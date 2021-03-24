@@ -64,6 +64,7 @@ class RuntimeDataflowApplication(RuntimeApplication):
         self.graph = graph
         self.trace = app_trace
 
+        self._is_new = True
         self._is_running = False
         self._is_paused = False
         self._is_finished = False
@@ -124,8 +125,9 @@ class RuntimeDataflowApplication(RuntimeApplication):
             ~simpy.events.Event: an event that is triggered when the
                 application finishes execution.
         """
-        assert not (self._is_running or self._is_paused or self._is_finished)
+        assert self.is_new()
         assert not self._process_mappings
+        self._is_new = False
         self._is_running = True
 
         self._log.info(f"Application {self.name} starts")
@@ -181,25 +183,42 @@ class RuntimeDataflowApplication(RuntimeApplication):
                 app_finished = env.process(app.run())
                 yield env.timeout(1000000000)  # wait 1ms
                 app.kill()
-                yield app_finished  # wait until the application stopped completely
+
+                # wait until the application stopped completely
+                yield app_finished
 
         """
         for p in self.processes():
             p.kill()
 
+    def _is_state_valid(self):
+        """Check that the application is exactly in one state."""
+        tup = (
+            self._is_new,
+            self._is_running,
+            self._is_paused,
+            self._is_finished,
+        )
+        return sum(tup) == 1
+
+    def is_new(self):
+        """Check if the application has not yet started."""
+        assert self._is_state_valid()
+        return self._is_new
+
     def is_running(self):
         """Check if the application is running."""
-        assert sum((self._is_running, self._is_paused, self._is_finished)) == 1
+        assert self._is_state_valid()
         return self._is_running
 
     def is_paused(self):
         """Check if the application is paused."""
-        assert sum((self._is_running, self._is_paused, self._is_finished)) == 1
+        assert self._is_state_valid()
         return self._is_paused
 
     def is_finished(self):
         """Check if the application is finished."""
-        assert sum((self._is_running, self._is_paused, self._is_finished)) == 1
+        assert self._is_state_valid()
         return self._is_finished
 
     def update_mapping(self, mapping):
@@ -211,7 +230,7 @@ class RuntimeDataflowApplication(RuntimeApplication):
         """
         assert self.is_running()
 
-        self._log.debug(f"Update mapping")
+        self._log.debug("Update mapping")
 
         # iterate over all proceses
         for process in self._process_mappings.keys():
