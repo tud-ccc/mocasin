@@ -43,12 +43,11 @@ class RuntimeChannel(object):
 
     Args:
         name (str): the channel name
-        mapping_info (ChannelMappingInfo): a channel mapping info object
         token_size(int): size of one data token in bytes
         app (RuntimeApplication): the application this process is part of
     """
 
-    def __init__(self, name, mapping_info, token_size, app):
+    def __init__(self, name, token_size, app):
         self.name = name
         self.app = app
 
@@ -58,8 +57,8 @@ class RuntimeChannel(object):
         self._src = None
         self._sinks = []
         self._fifo_state = {}
-        self._capacity = mapping_info.capacity
-        self._primitive = mapping_info.primitive
+        self._capacity = None
+        self._primitive = None
         self._token_size = token_size
 
         self.tokens_produced = self.env.event()
@@ -413,14 +412,18 @@ class RuntimeChannel(object):
     def update_mapping_info(self, mapping_info):
         """Update the mapping information for this channel
 
-        This will usually be called in the context of a process migration, where
-        in consequence also the primitives need to be updated.
+        This needs to be called once before using the channel in an application.
+        It will also be called in the context of a process migration, where in
+        consequence also the primitives need to be updated.
 
         Args:
             mapping_info (ChannelMappingInfo): the new mapping info object
         """
-        if self._capacity != mapping_info.capacity:
+        if not self._capacity:
+            self._capacity = mapping_info.capacity
+        elif self._capacity != mapping_info.capacity:
             raise RuntimeError(
                 "Channel capacity may not change during execution"
             )
+
         self._primitive = mapping_info.primitive

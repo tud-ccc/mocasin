@@ -59,39 +59,31 @@ class RuntimeDataflowApplication(RuntimeApplication):
             executed on
     """
 
-    def __init__(self, name, graph, mapping, app_trace, system):
+    def __init__(self, name, graph, app_trace, system):
         super().__init__(name, system)
         self.graph = graph
         self.trace = app_trace
 
-        if mapping.graph != graph:
-            raise RuntimeError("dataflow graph and mapping incompatible")
-        if mapping.platform != system.platform:
-            raise RuntimeError(f"Mapping {name} to an incompatible platform")
-
         self._is_running = False
+        self._is_paused = False
         self._is_finished = False
+
+        # a dict mapping each process to a processor/scheduler
+        # leave it uninitialized for now, it will set by calling run()
+        self._process_mappings = None
 
         log.debug("initialize new runtime application: %s", name)
 
         # Instantiate all channels
         self._channels = {}
         for c in graph.channels():
-            mapping_info = mapping.channel_info(c)
-            self._channels[c.name] = RuntimeChannel(
-                c.name, mapping_info, c.token_size, self
-            )
+            self._channels[c.name] = RuntimeChannel(c.name, c.token_size, self)
 
         # Instantiate all processes
         self._processes = {}
-        self._process_mappings = {}
         for p in graph.processes():
-            mapping_info = mapping.process_info(p)
-            proc = RuntimeDataflowProcess(
-                p.name, app_trace.get_trace(p.name), self
-            )
+            proc = RuntimeDataflowProcess(p.name, self)
             self._processes[p.name] = proc
-            self._process_mappings[proc] = mapping_info.affinity
             for c in p.incoming_channels:
                 rc = self._channels[c.name]
                 proc.connect_to_incomming_channel(rc)
@@ -123,22 +115,48 @@ class RuntimeDataflowApplication(RuntimeApplication):
 
     def find_channel(self, channel_name):
         """Find a channel by name"""
-        return self._channeles[channel_name]
+        return self._channels[channel_name]
 
-    def run(self):
+    def run(self, mapping):
         """Start execution of this application
 
         Yields:
             ~simpy.events.Event: an event that is triggered when the
                 application finishes execution.
         """
-        assert not self._is_running
+        assert not (self._is_running or self._is_paused or self._is_finished)
+        assert not self._process_mappings
         self._is_running = True
 
         self._log.info(f"Application {self.name} starts")
 
+        # map all processes and channels
+
+        # first some sanity checks
+        if mapping.graph != self.graph:
+            raise RuntimeError("dataflow graph and mapping incompatible")
+        if mapping.platform != self.system.platform:
+            raise RuntimeError(
+                f"Mapping {self.name} to an incompatible platform"
+            )
+
+        # map all channels:
+        for channel in self.graph.channels():
+            info = mapping.channel_info(channel)
+            self.find_channel(channel.name).update_mapping_info(info)
+
+        # map all processes
+        self._process_mappings = {}
+        for process in self.graph.processes():
+            info = mapping.process_info(process)
+            runtime_process = self.find_process(process.name)
+            self._process_mappings[runtime_process] = info.affinity
+
+        # start all the processes
         for process, processor in self._process_mappings.items():
             self.system.start_process(process, processor)
+        # create an event that is triggered when all processes completed and
+        # wait for this event
         finished = self.env.all_of([p.finished for p in self.processes()])
         finished.callbacks.append(self._app_finished_callback)
         yield finished
@@ -171,12 +189,17 @@ class RuntimeDataflowApplication(RuntimeApplication):
 
     def is_running(self):
         """Check if the application is running."""
-        assert not (self._is_running and self._is_finished)
+        assert sum((self._is_running, self._is_paused, self._is_finished)) == 1
         return self._is_running
+
+    def is_paused(self):
+        """Check if the application is paused."""
+        assert sum((self._is_running, self._is_paused, self._is_finished)) == 1
+        return self._is_paused
 
     def is_finished(self):
         """Check if the application is finished."""
-        assert not (self._is_running and self._is_finished)
+        assert sum((self._is_running, self._is_paused, self._is_finished)) == 1
         return self._is_finished
 
     def update_mapping(self, mapping):
@@ -188,7 +211,7 @@ class RuntimeDataflowApplication(RuntimeApplication):
         """
         assert self.is_running()
 
-        self._log.debug(f"Update mapping of application {self.name}")
+        self._log.debug(f"Update mapping")
 
         # iterate over all proceses
         for process in self._process_mappings.keys():
@@ -196,7 +219,7 @@ class RuntimeDataflowApplication(RuntimeApplication):
             dataflow_process = self.graph.find_process(process.name)
             new_processor = mapping.process_info(dataflow_process).affinity
 
-            # move the process
+            # move the processes
             if current_processor != new_processor:
                 self._log.debug(
                     f"Move process {process.full_name} from {current_processor}"
@@ -207,11 +230,76 @@ class RuntimeDataflowApplication(RuntimeApplication):
                     process, current_processor, new_processor
                 )
 
+            # and also update the channel mappings
+            self._update_channel_mappings(mapping)
+
+    def _update_channel_mappings(self, mapping):
         # iterate over all channels
         for name, channel in self._channels.items():
             dataflow_channel = self.graph.find_channel(name)
             mapping_info = mapping.channel_info(dataflow_channel)
             self._log.debug(
-                f"Update channel primitive to {mapping_info.primitive.name}"
+                f"Update channel of {channel.name} primitive to "
+                f"{mapping_info.primitive.name}"
             )
             channel.update_mapping_info(mapping_info)
+
+    def pause(self):
+        """Pause the execution of this application
+
+        The application can be resumed later by calling resume()
+        """
+        assert self.is_running()
+
+        self._is_running = False
+        self._is_paused = True
+
+        self._log.debug("Pause")
+
+        # simply pause all processes
+        for process, current_processor in self._process_mappings.items():
+            self.system.pause_process(process, current_processor)
+
+    def resume(self, mapping=None):
+        """Resume the execution of a paused application
+
+        Args:
+            mapping (Mapping, optional): an optional updated application mapping
+                If None, the application is resumed with its old mapping.
+        """
+        assert self.is_paused()
+
+        self._is_paused = False
+        self._is_running = True
+
+        self._log.debug("Resume")
+
+        if mapping:
+            # if a mapping is provided, we first need to update all channels
+            self._update_channel_mappings(mapping)
+            # and then we resume all processes on their new processors
+            for process in self._process_mappings.keys():
+                dataflow_process = self.graph.find_process(process.name)
+                new_processor = mapping.process_info(dataflow_process).affinity
+                self._process_mappings[process] = new_processor
+                self.system.resume_process(process, new_processor)
+        else:
+            # if no mapping is provided, then we resume all processes according
+            # to the old mapping
+            for process, processor in self._process_mappings.items():
+                self.system.resume_process(process, processor)
+
+    def get_progress(self):
+        """Calculate how far this application has advanced its computation
+
+        The application progress is calculate as the average over the progress
+        of all processes. Note that the resulting progress can be lower than
+        expected, if some of the processes are currently running. This is
+        because processes only update there status at certain points
+        (preemption, segment completion) and not continuously.
+
+        Returns:
+            float: completion ratio
+        """
+        process_progress = [p.get_progress() for p in self._processes.values()]
+        return sum(process_progress) / len(process_progress)

@@ -160,7 +160,6 @@ class DataflowSimulation(BaseSimulation):
         self.app = RuntimeDataflowApplication(
             name=self.graph.name,
             graph=self.graph,
-            mapping=self.mapping,
             app_trace=self.app_trace,
             system=self.system,
         )
@@ -185,7 +184,7 @@ class DataflowSimulation(BaseSimulation):
         # start all schedulers
         self.system.start_schedulers()
         # start the application
-        finished = self.env.process(self.app.run())
+        finished = self.env.process(self.app.run(self.mapping))
         # run the actual simulation until the application finishes
         self.env.run(finished)
         # check if all graph processes finished execution

@@ -132,8 +132,8 @@ class TestRuntimeScheduler:
         assert env.now == sum(range(1, len(processes) + 1)) * workload_ticks
 
     def test_remove_process(self, runtime_scheduler, env, app, mocker):
-        proc_a = RuntimeDataflowProcess("test_proc_a", mocker.Mock(), app)
-        proc_b = RuntimeDataflowProcess("test_proc_b", mocker.Mock(), app)
+        proc_a = RuntimeDataflowProcess("test_proc_a", app)
+        proc_b = RuntimeDataflowProcess("test_proc_b", app)
         env.run(1)  # start simulation to initialize the processes
 
         # add the processes
@@ -169,8 +169,8 @@ class TestRuntimeScheduler:
         assert len(runtime_scheduler._processes) == 0
 
     def test_remove_running_process(self, runtime_scheduler, env, app, mocker):
-        proc_a = RuntimeDataflowProcess("test_proc_a", mocker.Mock(), app)
-        proc_b = RuntimeDataflowProcess("test_proc_b", mocker.Mock(), app)
+        proc_a = RuntimeDataflowProcess("test_proc_a", app)
+        proc_b = RuntimeDataflowProcess("test_proc_b", app)
 
         # give proc_b a workload
         proc_b.workload = mocker.Mock(
