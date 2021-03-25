@@ -256,7 +256,7 @@ class BruteforceSegmentGenerator:
             njobs = [
                 x
                 for x in Job.from_schedule(
-                    Schedule(self.platform, segment), self.__jobs
+                    Schedule(self.platform, [segment]), self.__jobs
                 )
                 if not x.is_terminated()
             ]

@@ -441,66 +441,47 @@ class Schedule:
     are represented as the list of individual job mappings.
     """
 
-    def __init__(self, platform, segments=[]):
+    def __init__(self, platform, segments=None):
         assert isinstance(platform, Platform)
         self.platform = platform
-        self.__segments = []
+        self._segments = []
 
-        # yapf: disable
-        assert isinstance(segments, (list, MultiJobSegmentMapping)), (
-                f"segments must be a list or a MultiJobSegmentMapping, "
-                f"but it is {type(segments)}")
-        # yapf: enable
-
-        if isinstance(segments, MultiJobSegmentMapping):
-            segments = [segments]
-
-        for s in segments:
-            self.append_segment(s)
+        if segments:
+            self._segments = segments.copy()
 
     @property
     def start_time(self):
         """float: The start time of the schedule."""
-        if self.first is None:
+        if self.is_empty():
             return None
-        return self.first.start_time
+        return self._segments[0].start_time
 
     @property
     def end_time(self):
         """float: The end time of the schedule."""
-        if self.last is None:
+        if self.is_empty():
             return None
-        return self.last.end_time
+        return self._segments[-1].end_time
 
     @property
     def energy(self):
         """float: The energy consumption of the schedule"""
-        return sum([x.energy for x in self.__segments], 0.0)
+        return sum([x.energy for x in self._segments], 0.0)
 
-    @property
-    def first(self):
-        """MultiJobSegmentMapping: the first schedule segment"""
-        if len(self.__segments) == 0:
-            return None
-        return self.__segments[0]
-
-    @property
-    def last(self):
-        """MultiJobSegmentMapping: the last schedule segment"""
-        if len(self.__segments) == 0:
-            return None
-        return self.__segments[-1]
+    def is_empty(self):
+        """Returns if the schedule is empty."""
+        return len(self._segments) == 0
 
     def segments(self):
         """list(MultiJobSegmentMapping): Returns a shallow copy of
         multi job segment mappings.
         """
-        return self.__segments.copy()
+        return self._segments.copy()
 
     def copy(self):
         """Schedule: Returns a copy of the schedule segments"""
         copy_segments = []
-        for segment in self.__segments:
+        for segment in self._segments:
             copy_segments.append(
                 MultiJobSegmentMapping(segment.platform, segment.jobs())
             )
@@ -508,7 +489,7 @@ class Schedule:
         return Schedule(self.platform, copy_segments)
 
     def append_segment(self, segment):
-        self.__segments.append(segment)
+        self._segments.append(segment)
 
     def insert_segment(self, index, segment):
         """Insert a segment into mapping.
@@ -517,7 +498,7 @@ class Schedule:
             index (int): The position where a segment needs to be inserted
             segment (MultiJobSegmentMapping): The segment to insert.
         """
-        self.__segments.insert(index, segment)
+        self._segments.insert(index, segment)
 
     def remove_segment(self, index):
         """Remove a segment by index.
@@ -525,23 +506,17 @@ class Schedule:
         Args:
             index (int): The position of a segment to remove.
         """
-        del self.__segments[index]
-
-    def __len__(self):
-        return len(self.__segments)
-
-    def __iter__(self):
-        yield from self.__segments
+        del self._segments[index]
 
     def verify(self, only_counters=False):
         # Verify segments
-        for segment in self:
+        for segment in self._segments:
             segment.verify(only_counters=only_counters)
 
         failed = False
 
         # Verify the segment borders
-        s0, s1 = itertools.tee(self.__segments)
+        s0, s1 = itertools.tee(self._segments)
         next(s1, None)
         for left, right in zip(s0, s1):
             if abs(left.end_time - right.start_time) > TIME_EPS:
@@ -575,7 +550,7 @@ class Schedule:
             f"Schedule t:({self.start_time:.3f}, {self.end_time:.3f}), "
             f"e:{self.energy:.3f}\n"
         )
-        for segment in self:
+        for segment in self._segments:
             res += f"    [t:({segment.start_time:.3f}, {segment.end_time:.3f}),"
             res += f" {len(segment.jobs())} job"
             if len(segment.jobs()) > 1:

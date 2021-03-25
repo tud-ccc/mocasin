@@ -13,8 +13,8 @@ def test_scheduler(platform, graph, pareto_mappings):
     job = Job.from_request(request)
     scheduler = MedfScheduler(platform)
     schedule = scheduler.schedule([job])
-    assert len(schedule) == 1
-    segment = schedule.first
+    assert len(schedule.segments()) == 1
+    segment = schedule.segments()[0]
     assert segment.start_time == 0.0
     assert segment.end_time == 9.7
     assert len(segment.jobs()) == 1

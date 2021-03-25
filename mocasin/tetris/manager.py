@@ -45,7 +45,7 @@ class ResourceManager:
 
     def __simulate_segment(self, segment):
         """Simulare the RM by a mapping segment."""
-        if len(self.__history_mapping) > 0:
+        if not self.__history_mapping.is_empty():
             # Assert no gaps in the actual scheduling
             assert (
                 abs(self.__history_mapping.end_time - segment.start_time)
@@ -80,7 +80,7 @@ class ResourceManager:
         new_active_scheduling = Schedule(self.platform)
 
         # If there is an active mapping, then update the states by segments
-        for segment in self.__active_mapping:
+        for segment in self.__active_mapping.segments():
             assert segment.start_time > self.ctime - TIME_EPS, (
                 "The start of the segment ({}) in the past"
                 " (current time is {})".format(segment.start_time, self.ctime)
@@ -105,7 +105,7 @@ class ResourceManager:
 
     def finish(self):
         """Finish the current scheduling."""
-        if len(self.__active_mapping) > 0:
+        if not self.__active_mapping.is_empty():
             finish_time = self.__active_mapping.end_time
             self.simulate_to(finish_time)
         return self.ctime

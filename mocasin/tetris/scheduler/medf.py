@@ -91,7 +91,7 @@ class MedfScheduler(SchedulerBase):
         mapping_proc_types = mapping.get_used_processor_types()
 
         # First try to put the job into segments
-        for index, segment in enumerate(schedule):
+        for index, segment in enumerate(schedule.segments()):
             if check_only_counters:
                 # Check only the counters
                 added_segment_proc_types = (
@@ -134,7 +134,7 @@ class MedfScheduler(SchedulerBase):
         if job_finish_time is None:
             # Create new segment with a job.
             segment_start_time = self.__scheduling_start_time
-            if len(schedule) != 0:
+            if not schedule.is_empty():
                 segment_start_time = schedule.end_time
 
             jm = SingleJobSegmentMapping(
