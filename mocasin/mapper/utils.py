@@ -3,12 +3,13 @@
 #
 # Authors: Andrés Goens, Felix Teweleit, Robert Khasanov
 
-import csv
-import h5py
 import multiprocessing as mp
-import numpy as np
 import os
 from time import process_time
+
+import csv
+import h5py
+import numpy as np
 
 from mocasin.common.mapping import Mapping
 from mocasin.simulate import DataflowSimulation
@@ -207,7 +208,7 @@ class SimulationManager(object):
             else:
                 s = next(sim_iter)
                 sim_results.append(s.result)
-                self.add_mapping_result(tup[i], sim_res)
+                self.add_mapping_result(tup[i], s.result)
         return sim_results
 
     def append_mapping_metadata(self, mapping):
