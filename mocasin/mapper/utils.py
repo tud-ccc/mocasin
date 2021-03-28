@@ -7,10 +7,12 @@ import multiprocessing as mp
 import os
 from time import process_time
 
+import cloudpickle
 import csv
 import h5py
 import hydra
 import numpy as np
+import pickle
 
 from hydra.core.hydra_config import HydraConfig
 
@@ -162,9 +164,10 @@ class SimulationManager(object):
         # As a workaround, suggested in
         # https://github.com/facebookresearch/hydra/issues/1005
         # we pass the hydra configuration to the child processes
-        config = None
+        cfg_pickled = None
         if HydraConfig.initialized():
             config = HydraConfig.get()
+            cfg_pickled = cloudpickle.dumps(config)
         for i, mapping in enumerate(mappings):
             # skip if this particular mapping is in the cache
             if lookups[i]:
@@ -174,7 +177,7 @@ class SimulationManager(object):
                 self.platform, self.graph, mapping, self.trace
             )
 
-            simulations.append((simulation, config))
+            simulations.append((simulation, cfg_pickled))
         if self.parallel and len(simulations) > self.chunk_size:
             # since mappings are simulated in parallel, whole simulation time
             # is added later as offset
@@ -258,8 +261,9 @@ def run_simulation(arguments):
     # As a workaround, suggested in
     # https://github.com/facebookresearch/hydra/issues/1005
     # we pass the hydra configuration from the main process
-    simulation, config = arguments
-    if config:
+    simulation, cfg_pickled = arguments
+    if cfg_pickled:
+        config = pickle.loads(cfg_pickled)
         hydra.core.utils.configure_log(config.job_logging, config.verbose)
     with simulation:
         start_time = process_time()
