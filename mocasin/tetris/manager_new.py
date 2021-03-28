@@ -88,6 +88,31 @@ class ResourceManager:
         self._new_requests.append(request)
         return request
 
+    def _finish_request(self, request):
+        """Mark request as completed.
+
+        Args:
+            request (JobRequestInfo): the request
+        """
+        assert request in self.requests
+        log.debug(f"Request {request.app.name} finished")
+        # update request
+        request.status = JobRequestStatus.FINISHED
+        self.requests.update({request: None})
+
+    def finish_request(self, request):
+        """Mark request as completed, and remove request from the schedule.
+
+        Args:
+            request (JobRequestInfo): the request
+        """
+        self._finish_request(request)
+        for segment in self.schedule.segments():
+            jobs = segment.jobs()
+            for job in jobs:
+                if job.request == request:
+                    segment.remove_job(job)
+
     def _generate_schedule(self, new_requests=None):
         """Generate a schedule with new requests.
 
@@ -194,10 +219,7 @@ class ResourceManager:
         for job in end_jobs:
             request = job.request
             if job.is_terminated():
-                log.debug(f"Request {job.app.name} finished")
-                # update request
-                request.status = JobRequestStatus.FINISHED
-                self.requests.update({request: None})
+                self._finish_request(request)
             else:
                 self.requests.update({request: job})
 
