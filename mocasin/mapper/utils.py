@@ -187,7 +187,7 @@ class SimulationManager(object):
             # run the simulations in parallel
             with mp.Pool(processes=self.jobs) as pool:
                 to_simulate = pool.imap(
-                    run_simulation,
+                    run_simulation_logger_wrapper,
                     simulations,
                     chunksize=self.chunk_size,
                 )
@@ -206,7 +206,7 @@ class SimulationManager(object):
             simulated = []
             # run the simulations sequentially
             for s in simulations:
-                s, time = run_simulation(s)
+                s, time = run_simulation(s[0])
                 simulated.append(s)
                 self.statistics.mapping_evaluated(time)
 
@@ -256,15 +256,22 @@ class SimulationManager(object):
         log.info("cache dumped.")
 
 
-def run_simulation(arguments):
-    # Logging are not configured in the spawned processes on mac OS.
-    # As a workaround, suggested in
-    # https://github.com/facebookresearch/hydra/issues/1005
-    # we pass the hydra configuration from the main process
+def run_simulation_logger_wrapper(arguments):
+    """Simulation wrapper with logger settings.
+
+    Logging are not configured in the spawned processes on mac OS.
+    As a workaround, suggested in
+    https://github.com/facebookresearch/hydra/issues/1005
+    we pass the hydra configuration from the main process.
+    """
     simulation, cfg_pickled = arguments
     if cfg_pickled:
         config = pickle.loads(cfg_pickled)
         hydra.core.utils.configure_log(config.job_logging, config.verbose)
+    return run_simulation(simulation)
+
+
+def run_simulation(simulation):
     with simulation:
         start_time = process_time()
         simulation.run()
