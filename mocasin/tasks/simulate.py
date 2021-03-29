@@ -63,6 +63,7 @@ def simulate(cfg):
         exec_time = float(result.exec_time) / 1000000000.0
         print("Total simulated time: " + str(exec_time) + " ms")
         print("Total simulation time: " + str(stop - start) + " s")
+        time_to_file(exec_time, stop - start)
 
         if result.total_energy is not None:
             total_energy = float(result.total_energy) / 1000000000.0
@@ -74,6 +75,31 @@ def simulate(cfg):
             print(f"      --- dynamic energy: {dynamic_energy:.9f} mJ")
             print(f"Average power: {avg_power:.6f} W")
 
+            energy_to_file(total_energy,
+                           static_energy,
+                           dynamic_energy,
+                           avg_power
+                           )
+
         if trace_cfg is not None and trace_cfg["file"] is not None:
             simulation.system.write_simulation_trace(trace_cfg["file"])
         hydra.utils.call(cfg["cleanup"])
+
+def time_to_file(simulated_time,
+            simulation_time,
+            ):
+    file = open("summary.txt", "x")
+    file.write("Total simulated time (ms): " + str(simulated_time) + "\n")
+    file.write("Total simulation time (s): " + str(simulation_time))
+    file.close()
+
+def energy_to_file(total_energy,
+                static_energy,
+                dynamic_energy,
+                avg_power):
+    file = open("summary.txt", "a")
+    file.write(f"\nTotal energy consumption (mJ): {total_energy:.9f}\n")
+    file.write(f"Static energy (mJ): {static_energy:.9f}\n")
+    file.write(f"Dynamic energy (mJ): {dynamic_energy:.9f}\n")
+    file.write(f"Average power (W): {avg_power:.6f}")
+    file.close()
