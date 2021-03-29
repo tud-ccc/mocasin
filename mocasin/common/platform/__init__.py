@@ -380,7 +380,13 @@ class Platform(object):
     platform by creating the corresponding objects.
     """
 
-    def __init__(self, name, symmetries_json=None, embedding_json=None):
+    def __init__(
+        self,
+        name,
+        symmetries_json=None,
+        embedding_json=None,
+        extra_static_power=None,
+    ):
         """Initialize the platform.
 
         This initializes all attributes to empty dicts. Derived classes should
@@ -395,6 +401,9 @@ class Platform(object):
             self.ag_json = to_absolute_path(symmetries_json)
         if embedding_json is not None:
             self.embedding_json = to_absolute_path(embedding_json)
+
+        # The static power not included to the processors' power
+        self.extra_static_power = extra_static_power
 
     def processors(self):
         return self._processors.values()

@@ -57,11 +57,11 @@ def test_sdf3_simulate(datadir):
             found_flags |= 0x1
         if line.startswith("Total energy consumption: "):
             value = line[26:]
-            assert value == "57.132324650 mJ"
+            assert value == "76.139183427 mJ"
             found_flags |= 0x2
         if line.startswith("      ---  static energy: "):
             value = line[26:]
-            assert value == "35.369241722 mJ"
+            assert value == "54.376100499 mJ"
             found_flags |= 0x4
         if line.startswith("      --- dynamic energy: "):
             value = line[26:]
@@ -69,7 +69,7 @@ def test_sdf3_simulate(datadir):
             found_flags |= 0x8
         if line.startswith("Average power: "):
             value = line[15:]
-            assert value == "2.294388 W"
+            assert value == "3.057688 W"
             found_flags |= 0x10
 
     assert found_flags == 0x1F

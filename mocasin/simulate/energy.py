@@ -65,4 +65,8 @@ class EnergyEstimator:
         for pe in self.platform.processors():
             static_energy += pe.static_power() * total_time
 
-        return (static_energy, self._accumulated_dynamic_energy)
+        # Add extra static power on the platform
+        if self.platform.extra_static_power:
+            static_energy += self.platform.extra_static_power * total_time
+
+    return (static_energy, self._accumulated_dynamic_energy)

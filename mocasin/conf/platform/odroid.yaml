@@ -18,6 +18,8 @@ processor_1:
   dynamic_power: 1.3196
 num_big : 4
 num_little : 4
+# The static power not included in the processors
+extra_static_power: 0.7633
 name: 'exynos'
 symmetries_json: null
 embedding_json: null

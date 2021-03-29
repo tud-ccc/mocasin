@@ -20,6 +20,7 @@ class DesignerPlatformOdroid(Platform):
         num_big=4,
         num_little=4,
         name="odroid",
+        extra_static_power=None,
         **kwargs,
     ):
 
@@ -92,4 +93,8 @@ class DesignerPlatformOdroid(Platform):
             writeThroughput=8,
             frequencyDomain=933000000.0,
         )
+
+        # Set extra static power of the platform.
+        designer.setExtraStaticPower(extra_static_power)
+
         designer.finishElement()
