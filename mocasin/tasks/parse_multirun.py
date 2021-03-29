@@ -49,6 +49,11 @@ _parsers = {
         "total_time_estimator",
         "Estimates the total execution time for each run using timestamps.",
     ),
+    "simulate_summary": (
+        "mocasin.simulate.utils",
+        "summary_parser",
+        "Parses the summary file from a simulation.",
+    ),
 }
 
 
