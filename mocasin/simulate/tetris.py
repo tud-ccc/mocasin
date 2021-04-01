@@ -22,6 +22,9 @@ class RuntimeResourceManager:
             log, "Runtime Resource Manager", self.env
         )
 
+        # New applications
+        self._new_applications = []
+
         # keep track of runtime applications
         # {(request: RuntimeDataflowApplication)}
         self._runtime_applications = {}
@@ -29,8 +32,8 @@ class RuntimeResourceManager:
         # {(request: event)}
         self._finished_events = {}
 
-        # an event indicating that there are new mapping segments
-        self._updated_segments = self.env.event()
+        # an event indicating that new schedule need to be generated
+        self._request_generate_schedule = self.env.event()
         # an event indicating that tetris should shut down
         self._request_shutdown = self.env.event()
 
@@ -41,17 +44,19 @@ class RuntimeResourceManager:
         while True:
             # wait until there are mapping segments or we should shut down
             yield self.env.any_of(
-                [self._updated_segments, self._request_shutdown]
+                [self._request_generate_schedule, self._request_shutdown]
             )
 
             # break out of the loop if we are supposed to shutdown
             if self._request_shutdown.triggered:
                 break
 
-            # otherwise, there are some new segments to run
-            assert self._updated_segments.triggered
+            # otherwise, new schedule is requested to generate
+            assert self._request_generate_schedule.triggered
             # reinitialize the event
-            self._updated_segments = self.env.event()
+            self._request_generate_schedule = self.env.event()
+
+            self._generate_schedule()
 
             # Note: We probably should also model delays here which Tetris
             # needs to actually find mappings.
@@ -66,14 +71,15 @@ class RuntimeResourceManager:
                 yield self.env.any_of(
                     [
                         self.env.timeout(segment.duration * 1000000000),
-                        self._updated_segments,
+                        self._request_generate_schedule,
                     ]
                 )
 
                 # break out of the for loop if new segments where provided and
                 # continue in the top of the while loop
-                if self._updated_segments.triggered:
+                if self._request_generate_schedule.triggered:
                     break
+
                 # Update the state of resource manager
                 self.resource_manager.advance_segment()
 
