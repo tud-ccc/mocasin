@@ -35,15 +35,19 @@ class EnergyEstimator:
         start_process, start_time = self._process_start_registry.pop(processor)
         assert start_process is process
 
-        td = self.env.now - start_time
-        power = processor.dynamic_power()
-        self._accumulated_dynamic_energy += power * td
+        if self.enabled:
+            td = self.env.now - start_time
+            power = processor.dynamic_power()
+            self._accumulated_dynamic_energy += power * td
 
     def calculate_energy(self):
         """Calculate the energy consumption of the simulation.
 
         Returns the tuple (static_energy, dynamic_energy)
         """
+        if not self.enabled:
+            return None
+
         static_energy = 0  # in pJ
         total_time = self._last_activity
         for pe in self.platform.processors():
