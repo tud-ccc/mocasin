@@ -21,23 +21,6 @@ COLORS = {"INFO": "green", "WARNING": "yellow", "ERROR": "red", "DEBUG": "blue"}
 """Maps logging levels to colors"""
 
 
-_indent_level = 0
-"""The current level of indentation"""
-
-
-def inc_indent():
-    """Increment the indentation level"""
-    global _indent_level
-    _indent_level += 1
-
-
-def dec_indent():
-    """Decrement the indentation level"""
-    global _indent_level
-    _indent_level -= 1
-    assert _indent_level >= 0
-
-
 class MocasinFormatter(l.Formatter):
     """A custom mocasin logging formatter
 
@@ -46,9 +29,7 @@ class MocasinFormatter(l.Formatter):
     in the format string is replaced by the name of the current logging level
     enclosed in brackets and printed in the color as defined in
     :data:`COLORS`. The string is further filled with spaces to ensure that the
-    actual logging message always start at the same position. If the
-    indentation level was increased using :func:`inc_indent`, the formatter add
-    additional white spaces to increment the output.
+    actual logging message always start at the same position.
 
     Attributes:
         _use_color (bool): Flag indicating whether colored output should be
@@ -83,16 +64,6 @@ class MocasinFormatter(l.Formatter):
             levelname = colored(levelname, color, attrs=["bold"])
             record.name = colored(record.name, "cyan")
         record.levelname = levelname
-
-        global _indent_level
-        if _indent_level > 0:
-            indent_string = "%s* " % (" " * _indent_level * 2)
-            record.msg = indent_string + record.msg
-
-        # ensure that multiline messages are properly indented
-        record.msg = record.msg.replace(
-            "\n", "\n%s" % (" " * (10 + _indent_level * 2))
-        )
 
         return super().format(record)
 

@@ -16,5 +16,5 @@ chunk_size : 10
 progress : true
 parallel : true
 jobs : 4
-objective_exec_time : true
-objective_num_resources : true
+# Supported objectives: exec_time, resources, energy
+objectives : ["exec_time", "resources"]

@@ -5,7 +5,7 @@ defaults:
   - tgff: default
   - graph: default
   - platform: default
-  - trace: default
+  - trace: empty
   - mapper: from_file
   - representation: Symmetries
   - sdf3: default

@@ -6,6 +6,8 @@
 import logging
 import pint
 
+from hydra.utils import to_absolute_path
+
 from mocasin.common.mapping import (
     ChannelMappingInfo,
     Mapping,
@@ -41,7 +43,7 @@ class MapsMapping(Mapping):
         log.info("Start parsing the MAPS mapping " + xml_file)
 
         # load the xml
-        with open(xml_file) as f:
+        with open(to_absolute_path(xml_file)) as f:
             xml_mapping = mapsmapping.CreateFromDocument(f.read())
 
         # keep track of the mapping process->scheduler

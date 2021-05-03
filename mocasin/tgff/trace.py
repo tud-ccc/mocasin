@@ -1,100 +1,75 @@
 # Copyright (C) 2019 TU Dresden
 # Licensed under the ISC license (see LICENSE.txt)
 #
-# Authors: Felix Teweleit
+# Authors: Felix Teweleit, Christian Menard
 
-from mocasin.common.trace import TraceGenerator, TraceSegment
+from mocasin.common.trace import (
+    DataflowTrace,
+    ComputeSegment,
+    ReadTokenSegment,
+    WriteTokenSegment,
+)
 
 
-class TgffTraceGenerator(TraceGenerator):
-    """A trace generator based on the tgff representation."""
+class TgffTrace(DataflowTrace):
+    """Represents the  behavior of an SDF3 application
 
-    def __init__(self, processor_list, tgff_graph, repetition):
-        """Initializes the generator
+    See `~DataflowTrace`.
 
-        :param processor_list: a list of all processors a
-                                trace is available for.
-        :type processor_list: list[TgffProcessor]
-        :param tgff_graph: A TgffGraph for which traces should be yielded.
-        :type tgff_graph: TgffGraph}
-        :param repetition: The amount of times the process is
-                            executed before it terminates.
-        """
+    Args:
+        processor_list (list of TgffProcessor): a list of all processors the
+            trace should be generated for
+        tgff_graph (TgffGraph): The tgff graph for which traces should be
+            generated
+        repetitions (int): number of iterations in which the complete graph is
+            executed
+    """
+
+    def __init__(self, processor_list, tgff_graph, repetitions):
         self._processor_list = processor_list
-        self._repetition = repetition
-        self._trace_dict = {}
+        self._repetitions = repetitions
         self._tgff_graph = tgff_graph
-        self._initialize_trace_dict(tgff_graph)
 
-    def next_segment(self, process_name, processor_type):
-        """Returns the next trace segment
+    def get_trace(self, process):
+        """Get the trace for a specific task in the TGFF graph
 
-        :param process_name: the name of the specific process
-        :type process_name: string
-        :param processor_type: the name of the executing processor
-        :type processor_type: string
+        Args:
+            process (str): Name of the task to get a trace for
+
+        Yields:
+            ComputeSegment, ReadTokenSegment, or WriteTokenSegment: The next
+                segment in the process trace
         """
+        task_name = process
 
-        if not process_name in self._trace_dict:
-            raise RuntimeError("Unknown specified process!")
+        if task_name not in self._tgff_graph.tasks:
+            raise RuntimeError(f"Unknown task! ({process})")
 
-        # if not processor_type < len(self._processor_list) and processor_type >= 0:
-        # raise RuntimeError("Unknown specified processor")
-        if not processor_type in self._processor_list:
-            raise RuntimeError(
-                f"Unknown processor type {processor_type}! Known are: {self._processor_list}"
+        # prepare a dict of computation cycles for all processor types
+        processor_cycles = {}
+        for processor in self._processor_list.values():
+            processor_cycles[processor.type] = processor.get_operation(
+                self._tgff_graph.tasks[task_name]
             )
 
-        processor = self._processor_list[processor_type]
-        process = self._trace_dict[process_name]
-        segment = TraceSegment()
+        # iterate over all repetitions
+        for _ in range(0, self._repetitions):
 
-        if process[0] == 0:
-            segment.terminate = True
-        else:
-            if process[1] == len(process[2]):
-                process[0] -= 1
-                process[1] = 0
-                return self.next_segment(process_name, processor_type)
-            else:
-                trace_parameter = process[2][process[1]]
+            # First, the task reads from all input channels
+            for channel_name, properties in self._tgff_graph.channels.items():
+                # properties[1] is the name of the channel's sink task
+                # FIXME: This mechanism should be simplified or the variable
+                # named property
+                if task_name == properties[1]:
+                    yield ReadTokenSegment(channel=channel_name, num_tokens=1)
 
-                if trace_parameter[0] == "r":
-                    segment.n_tokens = 1
-                    segment.read_from_channel = trace_parameter[1]
-                elif trace_parameter[0] == "e":
-                    segment.processing_cycles = processor.get_operation(
-                        trace_parameter[1]
-                    )
-                elif trace_parameter[0] == "w":
-                    segment.n_tokens = 1
-                    segment.write_to_channel = trace_parameter[1]
+            # Then, it computes
+            yield ComputeSegment(processor_cycles)
 
-                process[1] += 1
-
-        return segment
-
-    def reset(self):
-        """Resets the generator.
-
-        This method resets the generator to its initial state.
-        Therefore it is not needed to instantiate a new generator
-        if a trace has to be calculated twice.
-        """
-        self._trace_dict = {}
-        self._initialize_trace_dict(self._tgff_graph)
-
-    def _initialize_trace_dict(self, tgff_graph):
-        """Initializes an internal structure to keep track
-        of the current status for each trace.
-        """
-        for task in tgff_graph.tasks:
-            self._trace_dict.update(
-                {
-                    task: [
-                        self._repetition,
-                        0,
-                        tgff_graph.get_execution_order(task),
-                    ]
-                }
-            )
+            # Finally, it writes to all output channels
+            for channel_name, properties in self._tgff_graph.channels.items():
+                # properties[0] is the name of the channel's source task
+                # FIXME: This mechanism should be simplified or the variable
+                # named property
+                if task_name == properties[0]:
+                    yield WriteTokenSegment(channel=channel_name, num_tokens=1)

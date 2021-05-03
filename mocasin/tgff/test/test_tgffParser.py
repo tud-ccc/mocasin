@@ -27,18 +27,10 @@ def test_graph_dict(graph_dict):
     tgff_graph = graph_dict["TASK_GRAPH_0"]
     assert len(tgff_graph.tasks) == 6
     assert len(tgff_graph.channels) == 5
-    execution_order = tgff_graph.get_execution_order("src")
-    assert len(execution_order) == 2
-    # Todo: get the right execution time
-    assert execution_order == [("e", 45), ("w", "a0_0")]
 
     tgff_graph = graph_dict["TASK_GRAPH_3"]
     assert len(tgff_graph.tasks) == 5
     assert len(tgff_graph.channels) == 4
-    execution_order = tgff_graph.get_execution_order("cache")
-    assert len(execution_order) == 3
-    # Todo: get the right execution time
-    assert execution_order == [("r", "a3_1"), ("e", 3), ("w", "a3_2")]
 
 
 def test_processor_dict(processor_list):

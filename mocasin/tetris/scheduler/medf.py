@@ -28,7 +28,7 @@ def get_mapping_time_core_product(mapping, cratio=0.0):
 
 class MedfScheduler(SchedulerBase):
     def __init__(self, platform, **kwargs):
-        """ Maximum Energy Difference First Scheduler. """
+        """Maximum Energy Difference First Scheduler."""
         super().__init__(platform, **kwargs)
 
         if not self.preemptions:

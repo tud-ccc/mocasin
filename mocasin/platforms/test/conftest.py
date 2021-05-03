@@ -4,8 +4,55 @@
 # Authors: Felix Teweleit
 
 import pytest
-from mocasin.platforms.platformDesigner import PlatformDesigner
+from mocasin.platforms.platformDesigner import (
+    PlatformDesigner,
+    genericProcessor,
+)
 from mocasin.common.platform import Platform
+from mocasin.platforms.odroid import DesignerPlatformOdroid
+from mocasin.platforms.haec import DesignerPlatformHAEC
+from mocasin.platforms.exynos990 import DesignerPlatformExynos990
+from mocasin.platforms.generic_mesh import DesignerPlatformMesh
+from mocasin.platforms.mppa_coolidge import DesignerPlatformCoolidge
+from mocasin.platforms.multi_cluster import DesignerPlatformMultiCluster
+from mocasin.platforms.generic_bus import DesignerPlatformBus
+
+
+@pytest.fixture(
+    params=[
+        "exynos990",
+        "odroid",
+        "generic_bus",
+        "generic_mesh",
+        "multi_cluster",
+        "haec",
+        "coolidge",
+    ]
+)
+def platform(request):
+    processor0 = genericProcessor("proc_type_0")
+    processor1 = genericProcessor("proc_type_1")
+    processor2 = genericProcessor("proc_type_2")
+    processor3 = genericProcessor("proc_type_3")
+
+    if request.param == "exynos990":
+        return DesignerPlatformExynos990(
+            processor0, processor1, processor2, processor3
+        )
+    elif request.param == "odroid":
+        return DesignerPlatformOdroid(processor0, processor1)
+    elif request.param == "generic_bus":
+        return DesignerPlatformBus(processor0)
+    elif request.param == "generic_mesh":
+        return DesignerPlatformMesh(processor0, processor1)
+    elif request.param == "multi_cluster":
+        return DesignerPlatformMultiCluster(processor0, processor1)
+    elif request.param == "haec":
+        return DesignerPlatformHAEC(processor0)
+    elif request.param == "coolidge":
+        return DesignerPlatformCoolidge(processor0, processor1)
+    else:
+        assert False, "wrong parameter"
 
 
 @pytest.fixture

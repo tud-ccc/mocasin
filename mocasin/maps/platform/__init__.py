@@ -5,6 +5,8 @@
 
 import logging
 
+from hydra.utils import to_absolute_path
+
 from .convert import convert
 from .parse import parse
 from mocasin.common.platform import Platform
@@ -21,10 +23,12 @@ class MapsPlatform(Platform):
             embedding_json=kwargs.get("embedding_json", None),
         )
         log.info("start parsing the platform description")
-        xml_platform = parse(xml_file, True)
+        xml_platform = parse(to_absolute_path(xml_file), True)
         convert(
             self,
             xml_platform,
             scheduler_cycles=kwargs.get("scheduler_cycles", None),
+            fd_frequencies=kwargs.get("fd_frequencies", None),
+            ppm_power=kwargs.get("ppm_power", None),
         )
         log.info("done parsing the platform description")

@@ -1,25 +1,25 @@
 # Copyright (C) 2017 TU Dresden
 # Licensed under the ISC license (see LICENSE.txt)
 #
-# Authors: Andres Goens, Christian Menard
+# Authors: Andres Goens, Christian Menard, Robert Khasanov
 
 import logging
 import hydra
-import os
-import pickle
+from pathlib import Path
 
-from mocasin.tgff.tgffSimulation import TgffReferenceError
 from mocasin.mapper.genetic import GeneticMapper
+from mocasin.tgff.tgffSimulation import TgffReferenceError
+from mocasin.util.mapping_table import MappingTableWriter
 
 log = logging.getLogger(__name__)
 
 
 @hydra.main(config_path="../conf/", config_name="pareto_front.yaml")
 def pareto_front(cfg):
-    """Pareto Front Task
+    """Pareto Front Task.
 
-    This task produces a pareto front of mappings using the genetic algorithms task
-
+    This task produces a pareto front of mappings using the genetic algorithms
+    task.
 
     Args:
         cfg(~omegaconf.dictconfig.DictConfig): the hydra configuration object
@@ -27,9 +27,9 @@ def pareto_front(cfg):
     **Hydra Parameters**:
         * **export_all:** a flag indicating whether all mappings should be
           exported. If ``false`` only the best mapping will be exported.
-        * **graph:** the input datafloe graph. The task expects a configuration dict
-          that can be instantiated to a :class:`~mocasin.common.graph.DataflowGraph`
-          object.
+        * **graph:** the input datafloe graph. The task expects a configuration
+          dict that can be instantiated to a
+          :class:`~mocasin.common.graph.DataflowGraph` object.
         * **outdir:** the output directory
         * **progress:** a flag indicating whether to show a progress bar with
           ETA
@@ -38,7 +38,9 @@ def pareto_front(cfg):
           :class:`~mocasin.common.platform.Platform` object.
         * **trace:** the input trace. The task expects a configuration dict
           that can be instantiated to a
-          :class:`~mocasin.common.trace.TraceGenerator` object."""
+          :class:`~mocasin.common.trace.TraceGenerator` object.
+        * **mapping_table:** the ouput path for the mapping table.
+    """
     try:
         graph = hydra.utils.instantiate(cfg["graph"])
         platform = hydra.utils.instantiate(cfg["platform"])
@@ -51,7 +53,9 @@ def pareto_front(cfg):
             and cfg["mapper"]._target_ != "mocasin.mapper.fair.StaticCFSMapper"
         ):
             raise RuntimeError(
-                f"The pareto front task needs to be called with the genetic mapper or the static cfs mapper. Called with {cfg['mapper']._target_}"
+                "The pareto front task needs to be called with the genetic "
+                "mapper or the static cfs mapper. Called with "
+                f"{cfg['mapper']._target_}"
             )
         mapper = hydra.utils.instantiate(
             cfg["mapper"], graph, platform, trace, representation
@@ -66,31 +70,9 @@ def pareto_front(cfg):
     # Run genetic algorithm
     results = mapper.generate_pareto_front()
 
-    # export the best mapping
-    outdir = cfg["outdir"]
-    if not os.path.exists(outdir):
-        os.makedirs(outdir)
-    for i, result in enumerate(results):
-        with open(outdir + f"/mapping{i}.pickle", "wb") as f:
-            p = pickle.Pickler(f)
-            p.dump(result)
-
-    for i, result in enumerate(results):
-        if not hasattr(mapper, "evaluate_mapping"):
-            mapper = GeneticMapper(
-                graph,
-                platform,
-                trace,
-                representation,
-                objective_num_resources=True,
-            )
-        with open(outdir + f"results{i}.txt", "w") as f:
-            f.write(
-                str(
-                    mapper.evaluate_mapping(
-                        mapper.representation.toRepresentation(result)
-                    )
-                )
-            )
-
-    del mapper
+    # export the pareto front
+    mapping_table_path = Path(cfg["mapping_table"])
+    with MappingTableWriter(platform, graph, mapping_table_path) as writer:
+        writer.write_header()
+        for m in results:
+            writer.write_mapping(m)

@@ -35,8 +35,13 @@ def state(request):
 
 
 @pytest.fixture
-def app(system):
-    return RuntimeApplication("test_app", system)
+def app(system, mocker):
+    app = RuntimeApplication("test_app", system)
+    app.trace = mocker.Mock()
+    app.trace.accumulate_processor_cycles = mocker.MagicMock(
+        return_value={"Test": 0, "Test2": 0}
+    )
+    return app
 
 
 @pytest.fixture
@@ -46,20 +51,32 @@ def base_process(app):
 
 @pytest.fixture
 def dataflow_process(app, mocker):
-    return RuntimeDataflowProcess("test_proc", mocker.Mock(), app)
+    return RuntimeDataflowProcess("test_proc", app)
 
 
 @pytest.fixture
 def channel(app, mocker):
-    info = ChannelMappingInfo(mocker.Mock(), 4)
-    return RuntimeChannel("test_chan", info, 8, app)
+    info = ChannelMappingInfo(primitive=mocker.Mock(), capacity=4)
+    channel = RuntimeChannel("test_chan", 8, app)
+    channel.update_mapping_info(info)
+    return channel
 
 
 @pytest.fixture
 def processor(mocker):
     processor = mocker.Mock()
     processor.name = "Test"
+    processor.type = "Test"
     processor.ticks = lambda x: x
+    return processor
+
+
+@pytest.fixture
+def processor2(mocker):
+    processor = mocker.Mock()
+    processor.name = "Test2"
+    processor.type = "Test2"
+    processor.ticks = lambda x: x * 2
     return processor
 
 

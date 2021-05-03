@@ -8,60 +8,28 @@ import filecmp
 import os
 import pytest
 
-
-@pytest.mark.xfail(reason="Required files are not in the repository anymore")
-def test_calculate_platform_symmetries_maps(
-    datadir, expected_dir, maps_platform, mpsym
+# this comparison test is broken, as it will reject correctly calculated symmetries e.g.
+# if a different but still valid BSGS is chosen. This should be fixed in !62
+@pytest.mark.xfail
+@pytest.mark.parametrize("mpsym", [True, False])
+def test_calculate_platform_symmetries(
+    datadir, expected_dir, small_platform, mpsym
 ):
-    file_name = "%s.autgrp" % maps_platform
+    sfx = "json" if mpsym else "out"
+    file_name = f"{small_platform}.autgrp.{sfx}"
     out_file = os.path.join(datadir, file_name)
-
-    if mpsym:
-        file_name += ".json"
-        out_file += ".json"
 
     subprocess.check_call(
         [
             "mocasin",
             "calculate_platform_symmetries",
-            "platform=%s" % maps_platform,
-            "out_file=%s" % out_file,
-            "mpsym=%s" % str(mpsym),
-        ],
-        cwd=datadir,
-    )
-    if not mpsym:
-        file_name += ".out"
-        out_file += ".out"
-    assert filecmp.cmp(
-        os.path.join(expected_dir, file_name), out_file, shallow=False
-    )
-
-
-def test_calculate_platform_symmetries_designer(
-    datadir, expected_dir, designer_platform_small, mpsym
-):
-    file_name = "%s.autgrp" % designer_platform_small
-    out_file = os.path.join(datadir, file_name)
-
-    if mpsym:
-        file_name += ".json"
-        out_file += ".json"
-
-    subprocess.check_call(
-        [
-            "mocasin",
-            "calculate_platform_symmetries",
-            "platform=%s" % designer_platform_small,
-            "out_file=%s" % out_file,
-            "mpsym=%s" % str(mpsym),
+            f"platform={small_platform}",
+            f"out_file={out_file}",
+            f"mpsym={str(mpsym)}",
         ],
         cwd=datadir,
     )
 
-    if not mpsym:
-        file_name += ".out"
-        out_file += ".out"
     assert filecmp.cmp(
         os.path.join(expected_dir, file_name), out_file, shallow=False
     )

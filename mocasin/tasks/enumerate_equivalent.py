@@ -9,7 +9,6 @@ import hydra
 log = logging.getLogger(__name__)
 
 
-@hydra.main(config_path="../conf", config_name="enumerate_equivalent")
 def enumerate_equivalent(cfg):
     graph = hydra.utils.instantiate(cfg["graph"])
     platform = hydra.utils.instantiate(cfg["platform"])
