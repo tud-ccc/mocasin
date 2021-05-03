@@ -133,7 +133,8 @@ class RandomWalkMapper(object):
             )
         else:
             tup = list(map(self.representation.toRepresentation, mappings))
-        exec_times = self.simulation_manager.simulate(tup)
+        sim_results = self.simulation_manager.simulate(tup)
+        exec_times = [x.exec_time for x in sim_results]
         best_result_idx = exec_times.index(min(exec_times))
         best_result = mappings[best_result_idx]
         stop = timeit.default_timer()

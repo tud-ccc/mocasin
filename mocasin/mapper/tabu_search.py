@@ -112,13 +112,14 @@ class TabuSearchMapper(object):
         )
         new_mappings = list(map(np.array, new_mappings))
         sim_results = self.simulation_manager.simulate(new_mappings)
+        sim_exec_times = [x.exec_time for x in sim_results]
         moves = set(
             zip(
                 [
                     tuple(new_mapping - np.array(mapping))
                     for new_mapping in new_mappings
                 ],
-                sim_results,
+                sim_exec_times,
             )
         )
         missing = self.move_set_size - len(moves)
@@ -128,13 +129,14 @@ class TabuSearchMapper(object):
                 mapping, self.radius, missing
             )
             sim_results = self.simulation_manager.simulate(new_mappings)
+            sim_exec_times = [x.exec_time for x in sim_results]
             new_moves = set(
                 zip(
                     [
                         tuple(new_mapping - np.array(mapping))
                         for new_mapping in new_mappings
                     ],
-                    sim_results,
+                    sim_exec_times,
                 )
             )
             moves = moves.union(new_moves)
@@ -181,13 +183,14 @@ class TabuSearchMapper(object):
         )
         new_mappings = list(map(np.array, new_mappings))
         sim_results = self.simulation_manager.simulate(new_mappings)
+        sim_exec_times = [x.exec_time for x in sim_results]
         moves = set(
             zip(
                 [
                     tuple(new_mapping - np.array(mapping))
                     for new_mapping in new_mappings
                 ],
-                sim_results,
+                sim_exec_times,
             )
         )
         return sorted(moves, key=lambda x: x[1])[0]
@@ -206,7 +209,8 @@ class TabuSearchMapper(object):
             cur_mapping = self.representation.toRepresentation(mapping_obj)
 
         best_mapping = cur_mapping
-        best_exec_time = self.simulation_manager.simulate([cur_mapping])[0]
+        best_simres = self.simulation_manager.simulate([cur_mapping])[0]
+        best_exec_time = best_simres.exec_time
         since_last_improvement = 0
 
         if self.progress:

@@ -22,7 +22,7 @@ class SegmentMapperBase(ABC):
 
     @abstractmethod
     def generate_segment(self, jobs):
-        """ Generate a multi job segment mapping."""
+        """Generate a multi job segment mapping."""
         pass
 
 

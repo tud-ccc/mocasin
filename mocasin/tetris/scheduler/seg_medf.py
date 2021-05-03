@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 
 
 class SegMedfSegmentMapper(SegmentMapperBase):
-    """ TODO: Add a description"""
+    """TODO: Add a description"""
 
     def __init__(self, scheduler, platform):
 

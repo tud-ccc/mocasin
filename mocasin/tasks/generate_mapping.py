@@ -14,7 +14,6 @@ from mocasin.simulate import DataflowSimulation
 log = logging.getLogger(__name__)
 
 
-@hydra.main(config_path="../conf", config_name="generate_mapping")
 def generate_mapping(cfg):
     """Mapper Task
 
@@ -74,7 +73,7 @@ def generate_mapping(cfg):
         with simulation as s:
             s.run()
 
-        exec_time = float(simulation.exec_time) / 1000000000.0
+        exec_time = float(simulation.result.exec_time) / 1000000000.0
         log.info("Best mapping simulated time: " + str(exec_time) + " ms")
         with open(os.path.join(outdir, "best_time.txt"), "w") as f:
             f.write(str(exec_time))

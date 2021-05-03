@@ -110,6 +110,21 @@ Style Guide
 
 See [Style Guide](style-guide.md)
 
+
+Autocompletion for bash/zsh
+-------------
+mocasin supports bash autocompletion.  To activate bash completion, run:
+```
+eval "$(cat misc/bash-autocomplete.sh)"
+```
+
+For completion in zsh, you first need to add
+```
+autoload -Uz bashcompinit && bashcompinit
+```
+to your .zshrc configuration file.
+
+
 Publications
 ------------
 
@@ -119,7 +134,7 @@ Publications
   Approaches in Mapping Software to Heterogeneous Multi-cores. In *DroneSE
   and RAPIDO 2021, System Engineering for constrained embedded systems,
   January 18-20, 2021, Virtual event*. ACM, New York, NY, USA, 8 pages.
-  https://doi.org/10.1145/3444950.3447285
+  ([PDF](https://cfaed.tu-dresden.de/files/Images/people/chair-cc/publications/2101_Menard_RAPIDO.pdf), [Video Presentation](https://www.youtube.com/watch?v=JOrdIn_kWBs&t=8981s), [doi](https://doi.org/10.1145/3444950.3447285))
 
 
 

@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 class ThingPlotter(object):
     def plot_samples(self, samples, max_pe):
-        """ Plot sample points of the from [(x1,x2,...,xn), Boolean] """
+        """Plot sample points of the from [(x1,x2,...,xn), Boolean]"""
         for _sample in samples:
             if samples[_sample]:
                 plt.plot(_sample[0], _sample[1], "o", color="b")

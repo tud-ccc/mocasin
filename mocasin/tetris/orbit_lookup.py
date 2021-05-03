@@ -38,7 +38,7 @@ class OrbitLookupManager:
         return equivalent_mappings
 
     def get_orbit(self, graph, mapping):
-        """ Lookups the orbits, if not existed, calculates the orbit. """
+        """Lookups the orbits, if not existed, calculates the orbit."""
         if graph not in self._orbits:
             self._orbits[graph] = {}
         if mapping not in self._orbits[graph]:

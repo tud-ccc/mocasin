@@ -11,7 +11,6 @@ from mocasin.ontologies.solver import Solver
 logger = getLogger(__name__)
 
 
-@hydra.main(config_path="../conf", config_name="solve_query.yaml")
 def solve_query(cfg):
     # TODO:
     # find a way to hand in a set of mappings on which equal_operations can be applied

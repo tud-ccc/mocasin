@@ -16,7 +16,7 @@ except ModuleNotFoundError:
     pass
 
 try:
-    import pympsym
+    import mpsym
 except ModuleNotFoundError:
     pass
 
@@ -403,7 +403,9 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         canonical_operations=True,
         disable_mpsym=False,
     ):
-        self._topologyGraph = platform.to_adjacency_dict()
+        self._topologyGraph = platform.to_adjacency_dict(
+            include_proc_type_labels=True
+        )
         self.graph = graph
         self.platform = platform
         self._d = len(graph.processes())
@@ -422,7 +424,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
             self.sym_library = False
         else:
             try:
-                pympsym
+                mpsym
             except NameError:
                 self.sym_library = False
             else:
@@ -434,7 +436,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
                     )
                 elif hasattr(platform, "ag_json") and exists(platform.ag_json):
                     # todo: make sure the correspondence of cores is correct!
-                    self._ag = pympsym.ArchGraphSystem.from_json_file(
+                    self._ag = mpsym.ArchGraphSystem.from_json_file(
                         platform.ag_json
                     )
                     log.info("Symmetries initialized with mpsym: JSON file.")
@@ -460,8 +462,8 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
                     autgrp, _ = edge_to_node_autgrp(
                         autgrp_edges[0], self._arch_nc
                     )
-                    self._ag = pympsym.ArchGraphAutomorphisms(
-                        [pympsym.Perm(g) for g in autgrp]
+                    self._ag = mpsym.ArchGraphAutomorphisms(
+                        [mpsym.Perm(g) for g in autgrp]
                     )
                     for node in self._arch_nc:
                         self._arch_nc_inv[self._arch_nc[node]] = node

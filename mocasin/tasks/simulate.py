@@ -11,7 +11,6 @@ import timeit
 log = logging.getLogger(__name__)
 
 
-@hydra.main(config_path="../conf", config_name="simulate")
 def simulate(cfg):
     """Simulate the execution of a dataflow application mapped to a platform.
 
@@ -59,14 +58,16 @@ def simulate(cfg):
         stop = timeit.default_timer()
         log.info("Simulation done")
 
-        exec_time = float(simulation.exec_time) / 1000000000.0
+        result = simulation.result
+
+        exec_time = float(result.exec_time) / 1000000000.0
         print("Total simulated time: " + str(exec_time) + " ms")
         print("Total simulation time: " + str(stop - start) + " s")
 
-        if simulation.total_energy is not None:
-            total_energy = float(simulation.total_energy) / 1000000000.0
-            static_energy = float(simulation.static_energy) / 1000000000.0
-            dynamic_energy = float(simulation.dynamic_energy) / 1000000000.0
+        if result.total_energy is not None:
+            total_energy = float(result.total_energy) / 1000000000.0
+            static_energy = float(result.static_energy) / 1000000000.0
+            dynamic_energy = float(result.dynamic_energy) / 1000000000.0
             avg_power = total_energy / exec_time
             print(f"Total energy consumption: {total_energy:.9f} mJ")
             print(f"      ---  static energy: {static_energy:.9f} mJ")

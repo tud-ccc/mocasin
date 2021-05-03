@@ -45,12 +45,12 @@ class Oracle(object):
             exit(1)
 
     def validate(self, sample):
-        """ check whether a single sample is feasible """
+        """check whether a single sample is feasible"""
         res = self.oracle.is_feasible(sample.sample2simpleTuple)
         return res
 
     def validate_set(self, samples):
-        """ check whether a set of samples is feasible """
+        """check whether a set of samples is feasible"""
         # extra switch for evaluation of static sets vs. simulation
         res = []
         self.prepare_sim_contexts_for_samples(samples)
@@ -59,7 +59,7 @@ class Oracle(object):
             mapping = tuple(s.getMapping().to_list())
             if mapping in self.cache:
                 log.debug(f"skipping simulation for mapping {mapping}: cached.")
-                s.sim_context.exec_time = self.cache[mapping]
+                s.sim_context.result = self.cache[mapping]
 
         if self.oracle_type != "simulation":
             for s in samples:
@@ -71,7 +71,7 @@ class Oracle(object):
 
 
 class Simulation(Oracle):
-    """ simulation code """
+    """simulation code"""
 
     def __init__(self, graph, platform, trace, threshold, threads=1):
         self.graph = graph
@@ -91,7 +91,7 @@ class Simulation(Oracle):
         self.oracle_type = "simulation"
 
     def prepare_sim_contexts_for_samples(self, samples):
-        """ Prepare simualtion/application context and mapping for a each element in `samples`. """
+        """Prepare simualtion/application context and mapping for a each element in `samples`."""
 
         # Create a list of 'simulation contexts'.
         # These can be later executed by multiple worker processes.
@@ -143,15 +143,15 @@ class Simulation(Oracle):
         # find runtime from results
         exec_times = []  # in ps
         for r in results:
-            exec_times.append(float(r.sim_context.exec_time))
+            exec_times.append(float(r.sim_context.result.exec_time))
 
         feasible = []
         for r in results:
-            assert r.sim_context.exec_time is not None
+            assert r.sim_context.result and r.sim_context.result.exec_time
             ureg = pint.UnitRegistry()
             threshold = ureg(self.threshold).to(ureg.ps).magnitude
 
-            if r.sim_context.exec_time > threshold:
+            if r.sim_context.result.exec_time > threshold:
                 r.setFeasibility(False)
                 feasible.append(False)
             else:
@@ -164,7 +164,7 @@ class Simulation(Oracle):
 
     def run_simulation(self, sample):
         # do simulation requires sim_context
-        if sample.sim_context.exec_time is not None:
+        if sample.sim_context.result is not None:
             self.total_cached += 1
             return sample
         try:
@@ -172,7 +172,7 @@ class Simulation(Oracle):
 
             # add to cache
             mapping = tuple(sample.getMapping().to_list())
-            self.cache[mapping] = sample.sim_context.exec_time
+            self.cache[mapping] = sample.sim_context.result
 
         except Exception as e:
             log.debug("Exception in Simulation: {}".format(str(e)))
@@ -187,7 +187,7 @@ class Simulation(Oracle):
 class TestSet(Oracle):
     # specify a fesability test set
     def is_feasible(self, s):
-        """ test oracle function (2-dim) """
+        """test oracle function (2-dim)"""
         # print("oracle for: " + str(s))
         if len(s) != 2:
             log.error("test oracle requires a dimension of 2\n")
@@ -208,7 +208,7 @@ class TestSet(Oracle):
 
 class TestTwoPrGraph(Oracle):
     def is_feasible(self, s):
-        """ test oracle function (2-dim) """
+        """test oracle function (2-dim)"""
         if len(s) != 2:
             log.error("test oracle requires a dimension of 2\n")
             exit(1)
