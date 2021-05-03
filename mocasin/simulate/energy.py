@@ -23,7 +23,11 @@ class EnergyEstimator:
         account for its dynamic energy."""
         self._last_activity = self.env.now
 
-        assert processor not in self._process_start_registry
+        if processor in self._process_start_registry:
+            raise RuntimeError(
+                "Failed to register the start of the segment: "
+                f"the processor {processor} is busy."
+            )
         self._process_start_registry[processor] = (process, self.env.now)
 
     def register_process_end(self, processor, process):
@@ -31,9 +35,17 @@ class EnergyEstimator:
         account for its dynamic energy."""
         self._last_activity = self.env.now
 
-        assert processor in self._process_start_registry
+        if processor not in self._process_start_registry:
+            raise RuntimeError(
+                f"Failed to register the end of the segment: "
+                f"the processor {processor} executes no processes"
+            )
         start_process, start_time = self._process_start_registry.pop(processor)
-        assert start_process is process
+        if start_process is not process:
+            raise RuntimeError(
+                f"Failed to register the end of the segment: "
+                "the input process and the executing process mismatch."
+            )
 
         if self.enabled:
             td = self.env.now - start_time
