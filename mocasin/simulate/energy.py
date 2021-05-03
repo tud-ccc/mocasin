@@ -14,7 +14,7 @@ class EnergyEstimator:
         self.platform = platform
         self.env = env
         self.enabled = platform.has_power_model()
-        self._last_activty = 0
+        self._last_activity = 0
         self._accumulated_dynamic_energy = 0  # in pJ
         self._process_start_registry = {}
 
