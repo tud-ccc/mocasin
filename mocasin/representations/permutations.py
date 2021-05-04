@@ -159,26 +159,42 @@ class PermutationGroup(list):
     def generators(self):
         return [gen.get_cycles() for gen in self]
 
-    def orbit(self, function, point):
+    def orbit(self, function, point, only_support=False):
+        """Orbit algorithm, generates the elements in the orbits.
+
+        If `only_support` is true, then the algorithms generates only the points
+        with different support, the set of used elements. Otherwise, it
+        generates all points regardless the support.
+        """
         stack = [point]
-        orbit = [point]
+        if only_support:
+            spoint = frozenset(point)
+        else:
+            spoint = point
+        orbit = [spoint]
         yield point
         while stack:
             p = stack.pop()
             for perm in self:
                 im = function(perm, p)
-                if im not in orbit:
+                sim = im
+                if only_support:
+                    sim = frozenset(im)
+                if sim not in orbit:
                     stack.append(im)
-                    orbit.append(im)
+                    orbit.append(sim)
                     yield im
 
-    def point_orbit(self, point):
-        return self.orbit((lambda perm, p: perm[p]), point)
-
-    def tuple_orbit(self, tup):
-        return (
-            tuple(e) for e in self.orbit((lambda perm, p: perm.act(p)), tup)
+    def point_orbit(self, point, only_support=False):
+        return self.orbit(
+            (lambda perm, p: perm[p]), point, only_support=only_support
         )
+
+    def tuple_orbit(self, tup, only_support=False):
+        orbit_gen = self.orbit(
+            (lambda perm, p: perm.act(p)), tup, only_support=only_support
+        )
+        return (tuple(e) for e in orbit_gen)
 
     def point_orbit_hash(self, point):
         return hash(self.point_orbit(point))
