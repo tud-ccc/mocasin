@@ -545,7 +545,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
             mapping = self.list_mapper.generate_mapping(list(elem))
             if hasattr(x, "metadata"):
                 mapping.metadata = copy(x.metadata)
-                yield mapping
+            yield mapping
 
     def toRepresentation(self, mapping):
         return self._simpleVec2Elem(mapping.to_list(channels=self.channels))
