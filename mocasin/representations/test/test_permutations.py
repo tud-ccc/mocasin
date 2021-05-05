@@ -142,7 +142,13 @@ class TestPermutation(object):
         arch_group = ProductGroup([s4xs8_double, TrivialGroup(3)])
 
         assert (
-            len(arch_group.tuple_orbit([1, 10, 1, 9, 7, 1, 1, 1, 22, 25, 24]))
+            len(
+                list(
+                    arch_group.tuple_orbit(
+                        [1, 10, 1, 9, 7, 1, 1, 1, 22, 25, 24]
+                    )
+                )
+            )
             == 672
         )
 

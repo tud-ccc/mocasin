@@ -176,9 +176,9 @@ class PermutationGroup(list):
         return self.orbit((lambda perm, p: perm[p]), point)
 
     def tuple_orbit(self, tup):
-        return [
+        return (
             tuple(e) for e in self.orbit((lambda perm, p: perm.act(p)), tup)
-        ]
+        )
 
     def point_orbit_hash(self, point):
         return hash(self.point_orbit(point))
