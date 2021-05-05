@@ -76,7 +76,7 @@ class Solver:
             threadResult = threadQueue.get()
             threadCounter -= 1
             if isinstance(threadResult[1], Mapping):
-                print(threadResult[0])
+                # print(threadResult[0])
                 result = threadResult[1]
                 RUN_THREADS = False
                 break

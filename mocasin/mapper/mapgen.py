@@ -34,17 +34,11 @@ class MappingGeneratorPartial(MappingGenerator):
 
 class MappingGeneratorOrbit(MappingGenerator):
     def __init__(self, representation, mapping):
-        # this is not a true (lazy) generator... the next line already generates the whole orbit.
         self.orbit_gen = representation.allEquivalent(mapping)
         self.representation = representation
-        self.next_mapping_index = 0
 
     def __next__(self):
-        try:
-            next_mapping = self.orbit_gen[self.next_mapping_index]
-        except:
-            raise StopIteration()
-        self.next_mapping_index += 1
+        next_mapping = next(self.orbit_gen)
         return next_mapping
 
 
