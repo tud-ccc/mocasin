@@ -204,7 +204,7 @@ class PermutationGroup(list):
         points = set(product(range(self.n), repeat=d))
         while points:
             p = points.pop()
-            orb = self.tuple_orbit(p)
+            orb = list(self.tuple_orbit(p))
             points = points.difference(set(orb))
             orbs.append(orb)
         return orbs
