@@ -5,7 +5,7 @@
 
 import pytest
 
-from mocasin.tetris.job_request import JobRequestInfo, JobRequestStatus
+from mocasin.tetris.job_request import JobRequestStatus
 from mocasin.tetris.manager_new import ResourceManager
 from mocasin.tetris.scheduler.medf import MedfScheduler
 
@@ -18,10 +18,18 @@ def test_manager_new_request(platform, graph, mappings):
     assert manager.schedule is None
     assert not manager.requests
 
-    for i in range(1, 7):
-        request = JobRequestInfo(graph, mappings, arrival=0.0, deadline=10.0)
-        res = manager.new_request(request)
-        assert res
+    # schedule 0 jobs
+    schedule = manager.generate_schedule()
+    assert not schedule
+    schedule = manager.generate_schedule(force=True)
+    assert not schedule
+
+    # schedule three jobs one by one
+    for i in range(1, 4):
+        request = manager.new_request(graph, mappings, timeout=10.0)
+        assert request.status == JobRequestStatus.NEW
+        schedule = manager.generate_schedule()
+        assert schedule
         assert request.status == JobRequestStatus.ACCEPTED
         assert len(manager.requests) == i
         assert len(manager.accepted_requests()) == i
@@ -29,31 +37,25 @@ def test_manager_new_request(platform, graph, mappings):
         assert manager.schedule.start_time == 0.0
         assert manager.schedule.end_time <= 10.0
 
-    request = JobRequestInfo(graph, mappings, arrival=0.0, deadline=10.0)
-    res = manager.new_request(request)
-    assert not res
-    assert request.status == JobRequestStatus.REFUSED
+    # Schedule four jobs at the same time
+    requests = []
+    for i in range(4, 8):
+        request = manager.new_request(graph, mappings, timeout=10.0)
+        requests.append(request)
+        assert request.status == JobRequestStatus.NEW
+        assert len(manager.requests) == i
+        assert len(manager.accepted_requests()) == 3
+        assert len(manager.schedule.get_job_mappings()) == 3
+
+    schedule = manager.generate_schedule()
+    assert schedule
+    assert all(r.status == JobRequestStatus.ACCEPTED for r in requests[:3])
+    assert requests[3].status == JobRequestStatus.REFUSED
     assert len(manager.requests) == 7
     assert len(manager.accepted_requests()) == 6
     assert len(manager.schedule.get_job_mappings()) == 6
     assert manager.schedule.start_time == 0.0
     assert manager.schedule.end_time <= 10.0
-
-
-def test_manager_new_request_raise(mocker):
-    manager = ResourceManager(mocker.Mock(), mocker.Mock())
-
-    # Only "new" reqeusts are accepted
-    with pytest.raises(RuntimeError):
-        request = JobRequestInfo(mocker.Mock(), mocker.Mock(), mocker.Mock())
-        request.status = JobRequestStatus.ARRIVED
-        manager.new_request(request)
-
-    request = JobRequestInfo(mocker.Mock(), mocker.Mock(), mocker.Mock())
-    manager.new_request(request)
-    # Request cannot be added twice
-    with pytest.raises(RuntimeError):
-        manager.new_request(request)
 
 
 def test_manager_advance_to_time(platform, graph, mappings):
@@ -66,11 +68,11 @@ def test_manager_advance_to_time(platform, graph, mappings):
     assert manager.state_time == 5.0
 
     # Add a request, check that the schedule's start time is 5.0
-    request = JobRequestInfo(graph, mappings, arrival=5.0, deadline=10.0)
-    res = manager.new_request(request)
-    assert res
-    assert manager.schedule.start_time == 5.0
-    job_end_time = manager.schedule.end_time
+    request = manager.new_request(graph, mappings, timeout=5.0)
+    schedule = manager.generate_schedule()
+    assert schedule == manager.schedule
+    assert schedule.start_time == 5.0
+    job_end_time = schedule.end_time
     assert job_end_time <= 10.0
     # Check the job state at the beginning of execution
     job = manager.accepted_requests()[0][1]
@@ -92,20 +94,17 @@ def test_manager_advance_to_time(platform, graph, mappings):
     assert manager.schedule.start_time == 6.0
 
     # add two new requests
-    request = JobRequestInfo(graph, mappings, arrival=6.0, deadline=16.0)
-    res = manager.new_request(request)
-    assert res
-
-    request = JobRequestInfo(graph, mappings, arrival=6.0, deadline=14.0)
-    res = manager.new_request(request)
+    request = manager.new_request(graph, mappings, timeout=10.0)
+    request = manager.new_request(graph, mappings, timeout=8.0)
+    manager.generate_schedule()
 
     # Jump over one segment
     manager.advance_to_time(10.5)
-    assert len(manager.schedule) == 2
+    assert len(manager.schedule.segments()) == 2
     assert manager.schedule.start_time == 10.5
 
-    request = JobRequestInfo(graph, mappings, arrival=10.5, deadline=16.0)
-    res = manager.new_request(request)
+    request = manager.new_request(graph, mappings, timeout=5.5)
+    manager.generate_schedule()
     segment_end_time = manager.schedule.segments()[0].end_time
     assert len(manager.accepted_requests()) == 3
 
@@ -131,13 +130,17 @@ def test_manager_advance_to_time_raise(platform, graph, mappings):
     with pytest.raises(RuntimeError):
         manager.advance_to_time(-5.0)
 
-    request = JobRequestInfo(graph, mappings, arrival=0.0, deadline=10.0)
-    res = manager.new_request(request)
+    manager.new_request(graph, mappings, timeout=10.0)
 
-    # Manually remove schedule
-    schedule = manager.schedule
-    manager.schedule = None
+    # cannot advance with a new unscheduled request
     with pytest.raises(RuntimeError):
         manager.advance_to_time(1.0)
 
-    manager.schedule = schedule
+    schedule = manager.generate_schedule()
+
+    # Manually remove schedule
+    manager._schedule = None
+    with pytest.raises(RuntimeError):
+        manager.advance_to_time(1.0)
+
+    manager._schedule = schedule

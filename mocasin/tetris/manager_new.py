@@ -6,9 +6,9 @@
 import logging
 import time
 
-from mocasin.tetris.job_request import JobRequestStatus
+from mocasin.tetris.job_request import JobRequestInfo, JobRequestStatus
 from mocasin.tetris.job_state import Job
-from mocasin.tetris.schedule import Schedule, TIME_EPS
+from mocasin.tetris.schedule import Schedule
 
 log = logging.getLogger(__name__)
 
@@ -18,37 +18,88 @@ class ResourceManager:
         self.platform = platform
         self.scheduler = scheduler
 
-        # Dict: job requests -> job states
-        self.requests = {}
-        self.schedule = None
-
         # Time corresponding to the current internal state of resource manager
         self._state_time = 0.0
 
-    def _log_info(self, message):
-        log.info(f"t:{self.state_time:.2f}  {message}")
+        # Dict: job requests -> job states
+        self.requests = {}
+        self._schedule = None
 
-    def _log_debug(self, message):
-        log.debug(f"t:{self.state_time:.2f}  {message}")
+        # New request queue
+        self._new_requests = []
 
     @property
     def state_time(self):
         return self._state_time
 
+    @property
+    def schedule(self):
+        return self._schedule
+
+    def _set_schedule(self, new_schedule):
+        """Set the schedule.
+
+        If the schedule is empty, set None.
+        """
+        if new_schedule.is_empty():
+            self._schedule = None
+        else:
+            self._schedule = new_schedule
+            log.debug("Applied a new schedule:")
+            log.debug(new_schedule.to_str(verbose=True))
+
     def accepted_requests(self):
-        """Returns the list of tuples of active requests and job states."""
+        """Get the list of tuples of active requests and job states."""
         res = []
         for request, job in self.requests.items():
             if request.status == JobRequestStatus.ACCEPTED:
                 res.append((request, job))
         return res
 
-    def _schedule_new_request(self, request):
+    def new_request(self, graph, mappings, timeout=None):
+        """Handle new request.
+
+        Handle a new request to start application `graph` with a relative
+        deadline `timeout`. This method register a new request, and put it in
+        the queue of new applcations to handle.
+
+        Args:
+            graph (DataflowGraph): an input application
+            mappings (list of Mapping): operating points
+            timeout (float or None): timeout in ms
+
+        Returns: request
+        """
+        deadline = None
+        if timeout:
+            deadline = self.state_time + timeout
+        request = JobRequestInfo(
+            graph, mappings, arrival=self.state_time, deadline=deadline
+        )
+
+        # Add a new request into request list
+        self.requests.update({request: None})
+        log.debug(
+            f"New request {graph.name}, "
+            f"timeout [deadline] = {timeout} [{deadline}]"
+        )
+
+        # add the request to the queue
+        self._new_requests.append(request)
+        return request
+
+    def _generate_schedule(self, new_requests=None):
+        """Generate a schedule with new requests.
+
+        Internal method to generate a schedule. The schedule is not applied in
+        the resource manager.
+        """
         # Create a copy of the current job list with the new request
         # Ensure that jobs are immutable
         jobs = [j for _, j in self.accepted_requests()]
-        jobs.append(Job.from_request(request))
-
+        if new_requests:
+            for request in new_requests:
+                jobs.append(Job.from_request(request))
         # Generate scheduling with the new job
         st = time.time()
         schedule = self.scheduler.schedule(
@@ -58,52 +109,52 @@ class ResourceManager:
         log.debug("Time to find the schedule: {}".format(et - st))
         return schedule
 
-    def new_request(self, request):
-        """Handle new request."""
-        if request.status != JobRequestStatus.NEW:
-            raise RuntimeError(
-                f"A request must have the status NEW, but this request has "
-                f"the status {request.status.name}"
-            )
+    def generate_schedule(self, force=False):
+        """Generate a new schedule.
 
-        if request in self.requests:
-            raise RuntimeError(
-                f"Request {request.app.name} is already registered by "
-                "the resource manager"
-            )
+        If there are new requests in the queue, they are attempted to be
+        scheduled in the order the request were created. If the resource manager
+        can schedule the request, its status is changed to "accepted", otherwise
+        it is changed to "refused". If the request is accepted, it will be
+        included in the generated schedule.
 
-        # TODO: Consider assigning request.arrival in this function
-        if request.arrival is not None:
-            if request.arrival != self.state_time:
-                raise RuntimeError(
-                    f"The request's arrival ({request.arrival}) does not match "
-                    f"the current state time ({self.state_time})"
-                )
-        else:
-            request.arrival = self.state_time
+        The parameter `force` indicates whether the schedule should be
+        re-generated even if no new request is accepted. This is useful in case
+        if some jobs were manually marked as finished, we let the user decide if
+        new schedule should be generated at the expense of the runtime overhead.
 
-        app = request.app
-        deadline = request.deadline
+        Args:
+            force(bool): force re-generation of the schedule if no new request
+                is accepted.
 
-        # Add a new request into request list
-        self.requests.update({request: None})
-        self._log_info(f"New request {app.name}, deadline = {deadline}")
+        Returns: a new schedule if the new schedule was generated, otherwise
+            None
+        """
+        new_schedule = None
+        for request in self._new_requests:
+            schedule = self._generate_schedule([request])
+            if schedule:
+                log.debug(f"Request {request.app.name} is accepted")
+                request.status = JobRequestStatus.ACCEPTED
+                job = Job.from_request(request).dispatch()
+                self.requests.update({request: job})
+                new_schedule = schedule
+            else:
+                log.debug(f"Request {request.app.name} is rejected")
+                request.status = JobRequestStatus.REFUSED
 
-        schedule = self._schedule_new_request(request)
+        self._new_requests = []
 
-        if not schedule:
-            self._log_info(f"Request {app.name} is rejected")
-            request.status = JobRequestStatus.REFUSED
-            return False
+        if not new_schedule and force:
+            new_schedule = self._generate_schedule()
+            # FIXME: assert new_schedule should work also
+            assert new_schedule
 
-        self._log_info(f"Request {app.name} is accepted")
-        self._log_debug(schedule.to_str(verbose=True))
-        # Update job list and active scheduling
-        job = Job.from_request(request).dispatch()
-        self.requests.update({request: job})
-        self.schedule = schedule
-        request.status = JobRequestStatus.ACCEPTED
-        return True
+        if new_schedule:
+            self._set_schedule(new_schedule)
+            return self.schedule
+
+        return None
 
     def update_request_state(self, request, state):
         raise NotImplementedError()
@@ -143,9 +194,7 @@ class ResourceManager:
         for job in end_jobs:
             request = job.request
             if job.is_terminated():
-                # FIXME: application might have finished earlier,
-                # write a correct finish time
-                self._log_info(f"job {job.app.name} finished")
+                log.debug(f"Request {job.app.name} finished")
                 # update request
                 request.status = JobRequestStatus.FINISHED
                 self.requests.update({request: None})
@@ -158,15 +207,24 @@ class ResourceManager:
 
     def advance_segment(self):
         """Advance an internal state by the schedule segment."""
+        if self._new_requests:
+            raise RuntimeError(
+                "New requests must be scheduled when advancing "
+                "the resource manager"
+            )
         if not self.schedule:
             raise RuntimeError("No active schedule")
-        self._advance_segment(self.schedule.first)
+        self._advance_segment(self.schedule.segments()[0])
         self.schedule.remove_segment(0)
-        if len(self.schedule) == 0:
-            self.schedule = None
+        self._set_schedule(self.schedule)
 
     def advance_to_time(self, new_time):
         """Advance an internal state till `new_time`."""
+        if self._new_requests:
+            raise RuntimeError(
+                "New requests must be scheduled when advancing "
+                "the resource manager"
+            )
         if new_time < self.state_time:
             raise RuntimeError(
                 f"The resource manager cannot be moved backwards {self.state_time} -> {new_time}."
@@ -199,7 +257,6 @@ class ResourceManager:
             if new_time < segment.start_time:
                 new_schedule.append_segment(segment)
 
-        self.schedule = new_schedule
-        if len(self.schedule) == 0:
-            self.schedule = None
+        self._set_schedule(new_schedule)
+        if not self.schedule:
             self._state_time = new_time
