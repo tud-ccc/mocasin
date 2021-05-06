@@ -8,7 +8,11 @@ import time
 
 from mocasin.tetris.job_request import JobRequestInfo, JobRequestStatus
 from mocasin.tetris.job_state import Job
-from mocasin.tetris.schedule import Schedule
+from mocasin.tetris.schedule import (
+    Schedule,
+    MultiJobSegmentMapping,
+    SingleJobSegmentMapping,
+)
 
 log = logging.getLogger(__name__)
 
@@ -47,6 +51,36 @@ class ResourceManager:
             self._schedule = new_schedule
             log.debug("Applied a new schedule:")
             log.debug(new_schedule.to_str(verbose=True))
+
+    def _is_schedule_adjusted(self, schedule):
+        EPS = 1e-5
+        current_time = self.state_time
+        for segment in schedule.segments():
+            if abs(segment.start_time - current_time) > EPS:
+                return False
+            current_time = segment.end_time
+        return True
+
+    def _adjust_schedule_after_removal(self, schedule):
+        """If some segments were removed in the schedule, we need to adjust by
+        correcting the segment's start_time and end_time.
+        """
+        current_time = self.state_time
+        new_schedule = Schedule(self.platform)
+        for segment in schedule.segments():
+            new_segment = MultiJobSegmentMapping(self.platform)
+            for job in segment.jobs():
+                new_job = SingleJobSegmentMapping(
+                    job.request,
+                    job.mapping,
+                    start_time=current_time,
+                    start_cratio=job.start_cratio,
+                    end_time=current_time + job.duration,
+                )
+                new_segment.append_job(new_job)
+            new_schedule.append_segment(new_segment)
+            current_time = new_segment.end_time
+        return new_schedule
 
     def accepted_requests(self):
         """Get the list of tuples of active requests and job states."""
@@ -107,11 +141,19 @@ class ResourceManager:
             request (JobRequestInfo): the request
         """
         self._finish_request(request)
-        for segment in self.schedule.segments():
+        new_schedule = self.schedule.copy()
+        segments = new_schedule.segments()
+        for segment in segments:
             jobs = segment.jobs()
             for job in jobs:
                 if job.request == request:
                     segment.remove_job(job)
+            if len(segment.jobs()) == 0:
+                new_schedule.remove_segment_new(segment)
+        if not self._is_schedule_adjusted(new_schedule):
+            log.debug("Schedule is not adjusted. Adjusting..")
+            new_schedule = self._adjust_schedule_after_removal(new_schedule)
+        self._set_schedule(new_schedule)
 
     def _generate_schedule(self, new_requests=None):
         """Generate a schedule with new requests.
@@ -131,7 +173,10 @@ class ResourceManager:
             jobs, scheduling_start_time=self.state_time
         )
         et = time.time()
-        log.debug("Time to find the schedule: {}".format(et - st))
+        log.debug(
+            f"Schedule found = {schedule is not None}. "
+            f"Time to find the schedule: {et-st}"
+        )
         return schedule
 
     def generate_schedule(self, force=False):
@@ -172,7 +217,6 @@ class ResourceManager:
 
         if not new_schedule and force:
             new_schedule = self._generate_schedule()
-            # FIXME: assert new_schedule should work also
             assert new_schedule
 
         if new_schedule:
