@@ -127,7 +127,7 @@ class SingleJobSegmentMapping:
     def __init_by_end_cratio(self, end_cratio):
         assert end_cratio >= self.__start_cratio
         cratio = end_cratio - self.__start_cratio
-        rem_time = self.mapping.exec_time * cratio
+        rem_time = self.mapping.metadata.exec_time * cratio
         self.__end_time = self.__start_time + rem_time
         self.__end_cratio = end_cratio
         self.__finished = end_cratio == 1.0
@@ -183,6 +183,11 @@ class SingleJobSegmentMapping:
             * Consider changing to functions `end_state()`
         """
         return self.__end_cratio
+
+    @property
+    def duration(self):
+        """float: The duration of the job segment."""
+        return self.end_time - self.start_time
 
     @property
     def finished(self):
