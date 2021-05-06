@@ -8,7 +8,6 @@ from threading import Thread
 from mocasin.common.mapping import Mapping
 from arpeggio import ParserPython, visit_parse_tree
 from mocasin.representations import SymmetryRepresentation
-from mocasin.mapper.mapgen import MappingGeneratorOrbit, MappingGeneratorSimvec
 from mocasin.ontologies.logicLanguage import (
     Grammar,
     SemanticAnalysis,
@@ -17,6 +16,7 @@ from mocasin.ontologies.logicLanguage import (
     SharedCoreUsageConstraint,
     ProcessingConstraint,
 )
+from mocasin.ontologies.simvec_mapper import SimpleVectorMapper
 
 import sys
 import queue
@@ -206,9 +206,9 @@ class Solver:
                 symmetryLense = SymmetryRepresentation(
                     self.__graph, self.__platform
                 )
-                generator = MappingGeneratorOrbit(symmetryLense, genMapping)
+                generator = symmetryLense.allEquivalent(genMapping)
             else:
-                generator = MappingGeneratorSimvec(
+                generator = SimpleVectorMapper(
                     self.__graph,
                     self.__platform,
                     mappingConstraints,
