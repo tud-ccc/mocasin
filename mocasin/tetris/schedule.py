@@ -508,6 +508,16 @@ class Schedule:
         """
         del self._segments[index]
 
+    def remove_segment_new(self, segment):
+        """Remove the segment.
+
+        TODO: This function should replace `remove_segment()`.
+
+        Args:
+            segment (MultiJobSegmentMapping): The segment to remove.
+        """
+        self._segments.remove(segment)
+
     def verify(self, only_counters=False):
         # Verify segments
         for segment in self._segments:
