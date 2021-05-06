@@ -6,6 +6,7 @@
 import hydra
 import logging
 import timeit
+import os
 
 
 log = logging.getLogger(__name__)
@@ -101,3 +102,31 @@ def energy_to_file(total_energy, static_energy, dynamic_energy, avg_power):
     file.write(f"Dynamic energy (mJ): {dynamic_energy:.9f}\n")
     file.write(f"Average power (W): {avg_power:.6f}")
     file.close()
+
+def summary_parser(dir):
+    results = {}
+    try:
+        with open(os.path.join(dir, "summary.txt"), "r") as f:
+            results["simulated_time"] = float(
+                f.readline().replace("Total simulated time (ms): ", "")
+            )
+            results["simulation_time"] = float(
+                f.readline().replace("Total simulation time (s): ", "")
+            )
+            total_energy = f.readline()
+            if len(total_energy) > 0:
+                results["total_energy"] = float(
+                    total_energy.replace("Total energy consumption (mJ): ", "")
+                )
+                results["static_energy"] = float(
+                    f.readline().replace("Static energy (mJ): ", "")
+                )
+                results["dynamic_energy"] = float(
+                    f.readline().replace("Dynamic energy (mJ): ", "")
+                )
+                results["average_power"] = float(
+                    f.readline().replace("Average power (W): ", "")
+                )
+        return results, list(results.keys())
+    except FileNotFoundError:
+        return {}, []
