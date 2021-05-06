@@ -5,9 +5,11 @@
 
 
 import simpy
-
 import pytest
+
 from mocasin.common.mapping import ChannelMappingInfo
+from mocasin.platforms.odroid import DesignerPlatformOdroid
+from mocasin.platforms.platformDesigner import genericProcessor
 from mocasin.simulate.application import RuntimeApplication
 from mocasin.simulate.channel import RuntimeChannel
 from mocasin.simulate.process import (
@@ -91,3 +93,19 @@ def process(request, base_process, dataflow_process, mocker):
 
     proc.workload = mocker.Mock()
     return proc
+
+
+@pytest.fixture
+def platform():
+    pe_little = genericProcessor("proc_type_0")
+    pe_big = genericProcessor("proc_type_1")
+    p = DesignerPlatformOdroid(pe_little, pe_big)
+    return p
+
+
+@pytest.fixture
+def platform_power():
+    pe_little = genericProcessor("proc_type_0", static_power=1, dynamic_power=3)
+    pe_big = genericProcessor("proc_type_1", static_power=2, dynamic_power=7)
+    p = DesignerPlatformOdroid(pe_little, pe_big)
+    return p

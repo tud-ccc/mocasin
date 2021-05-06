@@ -193,9 +193,11 @@ class DataflowSimulation(BaseSimulation):
         self.result = SimulationResult(
             exec_time=self.env.now, static_energy=None, dynamic_energy=None
         )
+
+        energy = self.system.calculate_energy()
         # If the power model is enabled, also save the energy consumption
-        if self.system.power_enabled:
-            static_energy, dynamic_energy = self.system.calculate_energy()
+        if energy:
+            static_energy, dynamic_energy = energy
             self.result.static_energy = static_energy
             self.result.dynamic_energy = dynamic_energy
 
