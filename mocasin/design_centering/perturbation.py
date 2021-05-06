@@ -53,7 +53,7 @@ class PerturbationManager(object):
         # self.representation = (reps.RepresentationType['SimpleVector'].getClassType())(self.graph, self.platform)
 
     def create_randomMappings(self):
-        """ Creates a defined number of unique random mappings """
+        """Creates a defined number of unique random mappings"""
         mapping_set = set([])
         while len(mapping_set) < self.num_mappings:
             mg = RandomPartialMapper(self.graph, self.platform)

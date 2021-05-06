@@ -626,13 +626,11 @@ class RuntimeDataflowProcess(RuntimeProcess):
             # error should be marginal.
             ticks_processed = self.env.now - start
             ratio = float(ticks_processed) / float(ticks)
-            print(ratio)
 
             self._remaining_compute_cycles = {}
             for processor, cycles in processor_cycles.items():
                 cycles_processed = int(round(float(cycles) * ratio))
                 cycles_remaining = cycles - cycles_processed
-                print(f"{processor}: {cycles_remaining}")
                 assert cycles_remaining >= 0
                 self._remaining_compute_cycles[processor] = cycles_remaining
 

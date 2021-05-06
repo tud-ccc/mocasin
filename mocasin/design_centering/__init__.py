@@ -92,7 +92,7 @@ class DesignCentering(object):
         return len(uniq_samples)
 
     def ds_explore(self):
-        """ explore design space (main loop of the DC algorithm) """
+        """explore design space (main loop of the DC algorithm)"""
         history = {"samples": [], "centers": [], "radii": []}
 
         # check starting center
