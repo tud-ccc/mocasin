@@ -185,8 +185,7 @@ class TestMetricSpaces(object):
         assert result == 6.0
 
     def test_tuple_orbit(self, autExampleClusterArch):
-        result = autExampleClusterArch.tuple_orbit([3, 4, 3])
-        assert result == frozenset(
+        expected = set(
             {
                 (3, 4, 3),
                 (0, 7, 0),
@@ -206,6 +205,10 @@ class TestMetricSpaces(object):
                 (0, 6, 0),
             }
         )
+        for m in autExampleClusterArch.tuple_orbit([3, 4, 3]):
+            assert m in expected
+            expected.remove(m)
+        assert len(expected) == 0
 
 
 # TODO: add tests for the new metric
