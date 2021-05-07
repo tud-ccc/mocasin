@@ -9,6 +9,7 @@ from copy import copy
 import random
 import timeit
 from os.path import exists
+import json
 
 try:
     import pynauty as pynauty
@@ -469,6 +470,16 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
                         self._arch_nc_inv[self._arch_nc[node]] = node
                         # TODO: ensure that nodes_correspondence fits simpleVec
 
+                    # write symmetries calculated to json if exsits
+                    if not hasattr(platform, "ag_json"):
+                        log.warning(
+                            "No JSON file specified for symmetries."
+                            "Will not store them."
+                        )
+                    else:
+                        with open(platform.ag_json, "w") as f:
+                            f.write(self._ag.to_json())
+
         if not self.sym_library:
             log.info(
                 "Using python symmetries: Initalizing architecture graph..."
@@ -521,20 +532,20 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
     def _allEquivalent(self, x):
         x_ = x[: self._d]
         if self.sym_library:
-            return frozenset([tuple(p) for p in self._ag.orbit(x_)])
+            for p in self._ag.orbit(x_):
+                yield tuple(p)
+
         else:
-            return self._G.tuple_orbit(x_)
+            for x in self._G.tuple_orbit(x_):
+                yield x
 
     def allEquivalent(self, x):
         x_ = x.to_list(channels=False)
-        orbit = self._allEquivalent(x_)
-        res = []
-        for elem in orbit:
+        for elem in self._allEquivalent(x_):
             mapping = self.list_mapper.generate_mapping(list(elem))
             if hasattr(x, "metadata"):
                 mapping.metadata = copy(x.metadata)
-            res.append(mapping)
-        return res
+            yield mapping
 
     def toRepresentation(self, mapping):
         return self._simpleVec2Elem(mapping.to_list(channels=self.channels))
