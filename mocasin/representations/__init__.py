@@ -550,8 +550,8 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         """Generate all equivalent mappings to the given one.
 
         If `only_support` is true, the generator returns only the mappings, for
-        which occupied cores are different, otherwise it returns all equivalent
-        mappings.
+        which occupied cores (or a support) are different, otherwise, it returns
+        all equivalent mappings.
         """
         x_ = x.to_list(channels=False)
         for elem in self._allEquivalent(x_, only_support=only_support):
