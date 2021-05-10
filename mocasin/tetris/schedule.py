@@ -452,7 +452,8 @@ class Schedule:
         self._segments = []
 
         if segments:
-            self._segments = segments.copy()
+            for s in segments:
+                self.add_segment(s)
 
     @property
     def start_time(self):
@@ -493,35 +494,71 @@ class Schedule:
 
         return Schedule(self.platform, copy_segments)
 
-    def append_segment(self, segment):
-        self._segments.append(segment)
+    def _find_segment_overlap(self, new_segment):
+        """Returns a segment which overlaps with a new segment."""
+        start_time = new_segment.start_time
+        end_time = new_segment.end_time
+        assert start_time is not None and end_time is not None
 
-    def insert_segment(self, index, segment):
-        """Insert a segment into mapping.
+        for segment in self._segments:
+            if segment.start_time <= start_time < segment.end_time - TIME_EPS:
+                return segment
+            if segment.start_time + TIME_EPS < end_time <= segment.end_time:
+                return segment
+            if start_time <= segment.start_time < end_time - TIME_EPS:
+                return segment
+            if start_time + TIME_EPS < segment.end_time <= end_time:
+                return segment
+        return None
 
-        Args:
-            index (int): The position where a segment needs to be inserted
-            segment (MultiJobSegmentMapping): The segment to insert.
+    def add_segment(self, new_segment):
+        """Add segment to the schedule.
+
+        The segments could be added in any order to the schedule, however, it
+        must not overlap with any already added segments. The new segment is
+        inserted to the correct place, so all segments are chronologically
+        ordered.
         """
-        self._segments.insert(index, segment)
+        # Check that new segment does not overlap with any already added
+        overlap = self._find_segment_overlap(new_segment)
+        start_time = new_segment.start_time
+        end_time = new_segment.end_time
+        if overlap:
+            raise RuntimeError(
+                f"New segment ({start_time}, {end_time}) overlaps with another "
+                f"segment ({overlap.start_time}, {overlap.end_time})"
+            )
 
-    def remove_segment(self, index):
-        """Remove a segment by index.
+        if self.is_empty():
+            self._segments.append(new_segment)
+            return
 
-        Args:
-            index (int): The position of a segment to remove.
-        """
-        del self._segments[index]
+        # Find a right position to insert the segment
+        idx = None
+        for i, segment in enumerate(self._segments):
+            if segment.start_time >= new_segment.start_time:
+                idx = i
+                break
 
-    def remove_segment_new(self, segment):
+        if idx is None:
+            self._segments.append(new_segment)
+            return
+
+        self._segments.insert(idx, new_segment)
+
+    def remove_segment(self, segment):
         """Remove the segment.
-
-        TODO: This function should replace `remove_segment()`.
 
         Args:
             segment (MultiJobSegmentMapping): The segment to remove.
         """
+        if segment not in self._segments:
+            raise RuntimeError("Segment not found")
         self._segments.remove(segment)
+
+    def pop_front(self):
+        """Remove a first segment from the schedule."""
+        return self._segments.pop(0)
 
     def verify(self, only_counters=False):
         # Verify segments

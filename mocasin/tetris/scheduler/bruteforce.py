@@ -267,7 +267,7 @@ class BruteforceSegmentGenerator:
 
             # 6. Save segment
             new_schedule = self.__prev_schedule.copy()
-            new_schedule.append_segment(segment)
+            new_schedule.add_segment(segment)
             self.__results.append((new_schedule, njobs))
 
     def __schedule_step(self, current_mappings):

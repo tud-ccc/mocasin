@@ -52,7 +52,7 @@ class ResourceManager:
                 < TIME_EPS
             )
 
-        self.__history_mapping.append_segment(segment)
+        self.__history_mapping.add_segment(segment)
 
         new_jobs = Job.from_schedule(
             Schedule(self.platform, [segment]), init_jobs=self.__jobs
@@ -95,10 +95,10 @@ class ResourceManager:
                     # If the new time in the middle of the segment, then split
                     s1, s2 = segment.split(new_time)
                     self.__simulate_segment(s1)
-                    new_active_scheduling.append_segment(s2)
+                    new_active_scheduling.add_segment(s2)
             else:
                 # If the segment is in the future
-                new_active_scheduling.append_segment(segment)
+                new_active_scheduling.add_segment(segment)
 
         self.__active_mapping = new_active_scheduling
         self.__ctime = new_time

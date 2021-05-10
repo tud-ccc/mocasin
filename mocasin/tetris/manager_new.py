@@ -78,7 +78,7 @@ class ResourceManager:
                     end_time=current_time + job.duration,
                 )
                 new_segment.append_job(new_job)
-            new_schedule.append_segment(new_segment)
+            new_schedule.add_segment(new_segment)
             current_time = new_segment.end_time
         return new_schedule
 
@@ -149,7 +149,7 @@ class ResourceManager:
                 if job.request == request:
                     segment.remove_job(job)
             if len(segment.jobs()) == 0:
-                new_schedule.remove_segment_new(segment)
+                new_schedule.remove_segment(segment)
         if not self._is_schedule_adjusted(new_schedule):
             log.debug("Schedule is not adjusted. Adjusting..")
             new_schedule = self._adjust_schedule_after_removal(new_schedule)
@@ -280,8 +280,8 @@ class ResourceManager:
             )
         if not self.schedule:
             raise RuntimeError("No active schedule")
-        self._advance_segment(self.schedule.segments()[0])
-        self.schedule.remove_segment(0)
+        segment = self.schedule.pop_front()
+        self._advance_segment(segment)
         self._set_schedule(self.schedule)
 
     def advance_to_time(self, new_time):
@@ -318,10 +318,10 @@ class ResourceManager:
             # tne new_time is in the middle of the segment
             if segment.start_time <= new_time < segment.end_time:
                 rest = self._advance_segment(segment, new_time)
-                new_schedule.append_segment(rest)
+                new_schedule.add_segment(rest)
             # the segments after new_time
             if new_time < segment.start_time:
-                new_schedule.append_segment(segment)
+                new_schedule.add_segment(segment)
 
         self._set_schedule(new_schedule)
         if not self.schedule:

@@ -129,7 +129,7 @@ class SegmentedScheduler(SchedulerBase):
                 cjobs = None
                 break
             new_segment, cjobs = res_segment
-            schedule.append_segment(new_segment)
+            schedule.add_segment(new_segment)
             ctime = schedule.end_time
 
         if cjobs is not None:
