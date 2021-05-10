@@ -92,13 +92,12 @@ class TracePlayer:
         self._dump_stats()
 
     def _generate_stats(self):
-        # TODO: Calculate and return actual energy consumption
         self._stats = {
             "requests": len(self._requests),
             "accepted": sum(
                 r.status == JobRequestStatus.FINISHED for r in self._requests
             ),
-            "energy": 0.0,
+            "dynamic_energy": self.resource_manager.dynamic_energy,
             "scheduler": self.resource_manager.scheduler.name,
         }
 
@@ -112,7 +111,7 @@ class TracePlayer:
                 100 * self._stats["accepted"] / self._stats["requests"],
             )
         )
-        log.info("Energy consumption: {:.3f}J".format(self._stats["energy"]))
+        log.info(f"Dynamic energy: {self._stats['dynamic_energy']:.3f}J")
         log.info("Simulated time: {:.2f}s".format(self._time))
         log.info(
             "Simulation time: {:.2f}s".format(

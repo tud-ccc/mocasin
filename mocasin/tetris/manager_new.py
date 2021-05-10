@@ -24,6 +24,7 @@ class ResourceManager:
 
         # Time corresponding to the current internal state of resource manager
         self._state_time = 0.0
+        self._dynamic_energy = 0.0
 
         # Dict: job requests -> job states
         self.requests = {}
@@ -35,6 +36,10 @@ class ResourceManager:
     @property
     def state_time(self):
         return self._state_time
+
+    @property
+    def dynamic_energy(self):
+        return self._dynamic_energy
 
     @property
     def schedule(self):
@@ -268,7 +273,7 @@ class ResourceManager:
                 self.requests.update({request: job})
 
         self._state_time = segment.end_time
-
+        self._dynamic_energy += segment.energy
         return rest
 
     def advance_segment(self):
