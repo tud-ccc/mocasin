@@ -10,7 +10,7 @@ from mocasin.tetris.manager import ResourceManager
 from mocasin.tetris.scheduler.medf import MedfScheduler
 
 
-def test_manager_new_request(platform, graph, mappings):
+def test_manager_new_request(platform, graph, pareto_mappings):
     scheduler = MedfScheduler(platform)
     manager = ResourceManager(platform, scheduler)
 
@@ -26,7 +26,7 @@ def test_manager_new_request(platform, graph, mappings):
 
     # schedule three jobs one by one
     for i in range(1, 4):
-        request = manager.new_request(graph, mappings, timeout=10.0)
+        request = manager.new_request(graph, pareto_mappings, timeout=10.0)
         assert request.status == JobRequestStatus.NEW
         schedule = manager.generate_schedule()
         assert schedule
@@ -40,7 +40,7 @@ def test_manager_new_request(platform, graph, mappings):
     # Schedule four jobs at the same time
     requests = []
     for i in range(4, 8):
-        request = manager.new_request(graph, mappings, timeout=10.0)
+        request = manager.new_request(graph, pareto_mappings, timeout=10.0)
         requests.append(request)
         assert request.status == JobRequestStatus.NEW
         assert len(manager.requests) == i
@@ -58,7 +58,7 @@ def test_manager_new_request(platform, graph, mappings):
     assert manager.schedule.end_time <= 10.0
 
 
-def test_manager_advance_to_time(platform, graph, mappings):
+def test_manager_advance_to_time(platform, graph, pareto_mappings):
     scheduler = MedfScheduler(platform)
     manager = ResourceManager(platform, scheduler)
     assert manager.state_time == 0.0
@@ -68,7 +68,7 @@ def test_manager_advance_to_time(platform, graph, mappings):
     assert manager.state_time == 5.0
 
     # Add a request, check that the schedule's start time is 5.0
-    request = manager.new_request(graph, mappings, timeout=5.0)
+    request = manager.new_request(graph, pareto_mappings, timeout=5.0)
     schedule = manager.generate_schedule()
     assert schedule == manager.schedule
     assert schedule.start_time == 5.0
@@ -94,8 +94,8 @@ def test_manager_advance_to_time(platform, graph, mappings):
     assert manager.schedule.start_time == 6.0
 
     # add two new requests
-    request = manager.new_request(graph, mappings, timeout=10.0)
-    request = manager.new_request(graph, mappings, timeout=8.0)
+    request = manager.new_request(graph, pareto_mappings, timeout=10.0)
+    request = manager.new_request(graph, pareto_mappings, timeout=8.0)
     manager.generate_schedule()
 
     # Jump over one segment
@@ -103,7 +103,7 @@ def test_manager_advance_to_time(platform, graph, mappings):
     assert len(manager.schedule.segments()) == 2
     assert manager.schedule.start_time == 10.5
 
-    request = manager.new_request(graph, mappings, timeout=5.5)
+    request = manager.new_request(graph, pareto_mappings, timeout=5.5)
     manager.generate_schedule()
     segment_end_time = manager.schedule.segments()[0].end_time
     assert len(manager.accepted_requests()) == 3
@@ -121,7 +121,7 @@ def test_manager_advance_to_time(platform, graph, mappings):
     assert not manager.accepted_requests()
 
 
-def test_manager_advance_to_time_raise(platform, graph, mappings):
+def test_manager_advance_to_time_raise(platform, graph, pareto_mappings):
     scheduler = MedfScheduler(platform)
     manager = ResourceManager(platform, scheduler)
     assert manager.state_time == 0.0
@@ -130,7 +130,7 @@ def test_manager_advance_to_time_raise(platform, graph, mappings):
     with pytest.raises(RuntimeError):
         manager.advance_to_time(-5.0)
 
-    manager.new_request(graph, mappings, timeout=10.0)
+    manager.new_request(graph, pareto_mappings, timeout=10.0)
 
     # cannot advance with a new unscheduled request
     with pytest.raises(RuntimeError):
