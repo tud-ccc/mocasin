@@ -4,7 +4,7 @@
 # Authors: Robert Khasanov
 
 from mocasin.tetris.job_state import Job
-from mocasin.tetris.manager import ResourceManager
+from mocasin.tetris.manager_new import ResourceManager
 from mocasin.tetris.tracer import TracePlayer
 from mocasin.tetris.tetris_reader import read_applications, read_requests
 
@@ -150,7 +150,7 @@ class TetrisManagement:
         # Initialize tetris scheduler
         scheduler = hydra.utils.instantiate(cfg["resource_manager"], platform)
 
-        manager = ResourceManager(platform, scheduler, cfg["allow_migration"])
+        manager = ResourceManager(platform, scheduler)
 
         tracer = TracePlayer(manager, reqs)
 

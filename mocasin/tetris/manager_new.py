@@ -293,7 +293,8 @@ class ResourceManager:
             )
         if new_time < self.state_time:
             raise RuntimeError(
-                f"The resource manager cannot be moved backwards {self.state_time} -> {new_time}."
+                f"The resource manager cannot be moved backwards "
+                f"{self.state_time} -> {new_time}."
             )
 
         # No action if time is not changed
