@@ -6,7 +6,7 @@
 import pytest
 
 from mocasin.tetris.job_request import JobRequestStatus
-from mocasin.tetris.manager_new import ResourceManager
+from mocasin.tetris.manager import ResourceManager
 from mocasin.tetris.scheduler.medf import MedfScheduler
 
 
