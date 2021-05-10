@@ -385,7 +385,7 @@ class Platform(object):
         name,
         symmetries_json=None,
         embedding_json=None,
-        extra_static_power=None,
+        peripheral_static_power=None,
     ):
         """Initialize the platform.
 
@@ -403,7 +403,7 @@ class Platform(object):
             self.embedding_json = to_absolute_path(embedding_json)
 
         # The static power not included to the processors' power
-        self.extra_static_power = extra_static_power
+        self.peripheral_static_power = peripheral_static_power
 
     def processors(self):
         return self._processors.values()

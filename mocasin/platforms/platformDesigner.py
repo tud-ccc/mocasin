@@ -749,9 +749,9 @@ class PlatformDesigner:
         else:
             return
 
-    def setExtraStaticPower(self, static_power):
-        """Set extra static power of the platform."""
-        self.__platform.extra_static_power = static_power
+    def setPeripheralStaticPower(self, static_power):
+        """Set peripheral static power of the platform."""
+        self.__platform.peripheral_static_power = static_power
 
     def getClusterList(self, identifier):
         """Returns a list of all processing elements contained in specified cluster.
