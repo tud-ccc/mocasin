@@ -402,7 +402,7 @@ class RuntimeScheduler(object):
 
         # check if the process is being removed
         if (
-            self.current_process.check_state(ProcessState.RUNNING)
+            not self.current_process.check_state(ProcessState.FINISHED)
             and self.current_process not in self._processes
         ):
             self._log.debug("Cleaning up after removing a running process")
