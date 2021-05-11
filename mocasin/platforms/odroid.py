@@ -20,6 +20,7 @@ class DesignerPlatformOdroid(Platform):
         num_big=4,
         num_little=4,
         name="odroid",
+        peripheral_static_power=None,
         **kwargs,
     ):
 
@@ -92,4 +93,8 @@ class DesignerPlatformOdroid(Platform):
             writeThroughput=8,
             frequencyDomain=933000000.0,
         )
+
+        # Set peripheral static power of the platform.
+        designer.setPeripheralStaticPower(peripheral_static_power)
+
         designer.finishElement()
