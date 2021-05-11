@@ -275,10 +275,7 @@ class RuntimeScheduler(object):
             )
         process = event.value
         assert process.check_state(ProcessState.FINISHED)
-        try:
-            self._ready_queue.remove(process)
-        except ValueError:
-            pass
+        self.remove_process(process)
 
     def schedule(self):
         """Perform the scheduling.

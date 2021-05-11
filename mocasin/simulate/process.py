@@ -164,7 +164,6 @@ class RuntimeProcess(object):
         else:
             return f"None.{self.name}"
 
-
     @property
     def trace_writer(self):
         """The system's trace writer"""
