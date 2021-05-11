@@ -181,7 +181,9 @@ class TestRuntimeDataflowProcess:
     ):
         dataflow_process._trace = trace
         env.run()
-        dataflow_process._channels["chan"] = weakref.ref(channel)
+        dataflow_process._channels["chan"] = (
+            weakref.ref(channel) if channel else None
+        )
         dataflow_process.start()
         env.run()
         dataflow_process.activate(processor)
