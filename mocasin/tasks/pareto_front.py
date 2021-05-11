@@ -3,12 +3,11 @@
 #
 # Authors: Andres Goens, Christian Menard, Robert Khasanov
 
-import logging
 import hydra
+import logging
 from pathlib import Path
 
-from mocasin.mapper.genetic import GeneticMapper
-from mocasin.tgff.tgffSimulation import TgffReferenceError
+from mocasin.mapper.utils import SimulationManager
 from mocasin.util.mapping_table import MappingTableWriter
 
 log = logging.getLogger(__name__)
@@ -41,38 +40,29 @@ def pareto_front(cfg):
           :class:`~mocasin.common.trace.TraceGenerator` object.
         * **mapping_table:** the ouput path for the mapping table.
     """
-    try:
-        graph = hydra.utils.instantiate(cfg["graph"])
-        platform = hydra.utils.instantiate(cfg["platform"])
-        trace = hydra.utils.instantiate(cfg["trace"])
-        representation = hydra.utils.instantiate(
-            cfg["representation"], graph, platform
-        )
-        if (
-            cfg["mapper"]._target_ != "mocasin.mapper.genetic.GeneticMapper"
-            and cfg["mapper"]._target_ != "mocasin.mapper.fair.StaticCFSMapper"
-        ):
-            raise RuntimeError(
-                "The pareto front task needs to be called with the genetic "
-                "mapper or the static cfs mapper. Called with "
-                f"{cfg['mapper']._target_}"
-            )
-        mapper = hydra.utils.instantiate(
-            cfg["mapper"], graph, platform, trace, representation
-        )
-    except TgffReferenceError:
-        # Special exception indicates a bad combination of tgff components
-        # can be thrown during multiruns and should not stop the hydra
-        # execution
-        log.warning("Referenced non existing tgff component!")
-        return
+    graph = hydra.utils.instantiate(cfg["graph"])
+    platform = hydra.utils.instantiate(cfg["platform"])
+    trace = hydra.utils.instantiate(cfg["trace"])
+    representation = hydra.utils.instantiate(
+        cfg["representation"], graph, platform
+    )
+    mapper = hydra.utils.instantiate(
+        cfg["mapper"], graph, platform, trace, representation
+    )
 
     # Run genetic algorithm
-    results = mapper.generate_pareto_front()
+    pareto_front = mapper.generate_pareto_front()
+
+    # obtain simulation values
+    simulation_manager = SimulationManager(
+        representation, trace, jobs=None, parallel=True
+    )
+    simulation_manager.simulate(pareto_front)
 
     # export the pareto front
     mapping_table_path = Path(cfg["mapping_table"])
+
     with MappingTableWriter(platform, graph, mapping_table_path) as writer:
         writer.write_header()
-        for m in results:
+        for m in pareto_front:
             writer.write_mapping(m)
