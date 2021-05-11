@@ -14,6 +14,7 @@
 
 import enum
 import logging
+import weakref
 
 from mocasin.common.trace import SegmentType
 from mocasin.simulate.adapter import SimulateLoggerAdapter
@@ -122,7 +123,9 @@ class RuntimeProcess(object):
 
     def __init__(self, name, app):
         self.name = name
-        self.app = app
+        # a weakref ensures that there is no dependency cycle and the garbage
+        # collector knows what it can delete
+        self._app = weakref.ref(app)
         self._state = ProcessState.CREATED
         self.processor = None
         self._log = SimulateLoggerAdapter(log, self.full_name, self.env)
@@ -155,13 +158,22 @@ class RuntimeProcess(object):
 
     @property
     def full_name(self):
-        """Full name including the application name"""
-        return f"{self.app.name}.{self.name}"
+        """Return full name including the application name."""
+        if self.app:
+            return f"{self.app.name}.{self.name}"
+        else:
+            return f"None.{self.name}"
+
 
     @property
     def trace_writer(self):
         """The system's trace writer"""
         return self.app.system.trace_writer
+
+    @property
+    def app(self):
+        """Return the application this process belongs to."""
+        return self._app()
 
     def _transition(self, state_name):
         """Helper function for convenient state transitions.

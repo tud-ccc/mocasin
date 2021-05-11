@@ -7,6 +7,7 @@
 """Contains the :class:`RuntimeChannel` class which manages the simulation of
 dataflow channels."""
 
+import weakref
 
 from mocasin.util import logging
 from mocasin.simulate.adapter import SimulateLoggerAdapter
@@ -49,7 +50,9 @@ class RuntimeChannel(object):
 
     def __init__(self, name, token_size, app):
         self.name = name
-        self.app = app
+        # a weakref ensures that there is no dependency cycle and the garbage
+        # collector knows what it can delete
+        self._app = weakref.ref(app)
 
         log.debug(f"initialize new runtime channel: ({self.full_name})")
 
@@ -78,6 +81,11 @@ class RuntimeChannel(object):
     def trace_writer(self):
         """The system's trace writer"""
         return self.app.system.trace_writer
+
+    @property
+    def app(self):
+        """Return the application this process belongs to."""
+        return self._app()
 
     def set_src(self, process):
         """Set the source process.
