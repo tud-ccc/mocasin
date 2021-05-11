@@ -373,6 +373,12 @@ class RuntimeProcess(object):
         assert self._state == ProcessState.FINISHED
         self._log.debug("Entered FINISHED state")
 
+        self.created.callbacks.remove(self._cb_created)
+        self.ready.callbacks.remove(self._cb_ready)
+        self.running.callbacks.remove(self._cb_running)
+        self.finished.callbacks.remove(self._cb_finished)
+        self.blocked.callbacks.remove(self._cb_blocked)
+
     def _cb_blocked(self, event):
         """Callback invoked upon entering the :const:`~ProcessState.BLOCKED`
         state.
