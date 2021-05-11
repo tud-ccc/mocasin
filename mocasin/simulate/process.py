@@ -458,7 +458,7 @@ class RuntimeDataflowProcess(RuntimeProcess):
             channel (RuntimeChannel): the channel to connect to
         """
         log.debug(f"make process {self.name} a sink to {channel.name}")
-        self._channels[channel.name] = channel
+        self._channels[channel.name] = weakref.ref(channel)
         channel.add_sink(self)
 
     def connect_to_outgoing_channel(self, channel):
@@ -470,7 +470,7 @@ class RuntimeDataflowProcess(RuntimeProcess):
             channel (RuntimeChannel): the channel to connect to
         """
         log.debug(f"make process {self.name} a source to {channel.name}")
-        self._channels[channel.name] = channel
+        self._channels[channel.name] = weakref.ref(channel)
         channel.set_src(self)
 
     def workload(self):
@@ -574,7 +574,7 @@ class RuntimeDataflowProcess(RuntimeProcess):
         # interrupt.  Therefore, both consume and produce ignore any preemption
         # requests and process it only after the operation completes.
         s = self._current_segment
-        c = self._channels[s.channel]
+        c = self._channels[s.channel]()
         self._log.debug(f"read {s.num_tokens} tokens from channel {s.channel}")
         if c.can_consume(self, s.num_tokens):
             return self.env.process(c.consume(self, s.num_tokens))
@@ -589,7 +589,7 @@ class RuntimeDataflowProcess(RuntimeProcess):
         # considered as an atomic operation and an preemption request is only
         # processed after this operation completes.
         s = self._current_segment
-        c = self._channels[s.channel]
+        c = self._channels[s.channel]()
         self._log.debug(f"write {s.num_tokens} tokens to channel {s.channel}")
         if c.can_produce(self, s.num_tokens):
             return self.env.process(c.produce(self, s.num_tokens))
