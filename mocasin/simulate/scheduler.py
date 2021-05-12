@@ -82,7 +82,6 @@ class RuntimeScheduler(object):
             scheduling decision
         :param system:  the runtime system this scheduler belongs to
         """
-        log.debug("Initialize new scheduler (%s)", name)
 
         self.name = name
         self._processor = processor
@@ -93,8 +92,8 @@ class RuntimeScheduler(object):
 
         self._log = SimulateLoggerAdapter(log, self.name, self.env)
 
-        self._processes = []
-        self._ready_queue = []
+        self._processes = deque()
+        self._ready_queue = deque()
 
         self.current_process = None
 
@@ -103,6 +102,10 @@ class RuntimeScheduler(object):
         # keep track of processor load, maxlen ensures that memory does not
         # grow arbitrarily large
         self._load_trace = deque(maxlen=_MAX_DEQUE_LEN)
+
+        # An event that is only valid during removal of a process and that
+        # is triggered when the removal completed
+        self._process_removal_complete = None
 
     @property
     def env(self):
@@ -155,20 +158,85 @@ class RuntimeScheduler(object):
         """Add a process to this scheduler.
 
         Append the process to the :attr:`_processes` list and register all
-        required event callbacks. This may not be called after the simulation
-        started.
-        :param process: the process to be added
-        :type process: RuntimeProcess
+        required event callbacks.
+
+        Args:
+            process (RuntimeDataflowProcess): the process to be added
         """
         self._log.debug("add process %s", process.full_name)
-        if not process.check_state(ProcessState.CREATED):
+        if process.check_state(ProcessState.FINISHED) or process.check_state(
+            ProcessState.RUNNING
+        ):
             raise RuntimeError(
-                "Processes that are already started cannot be "
+                "Processes that are running or finished cannot be "
                 "added to a scheduler"
             )
+        assert process not in self._processes
         self._processes.append(process)
         process.ready.callbacks.append(self._cb_process_ready)
         process.finished.callbacks.append(self._cb_process_finished)
+        # if the process is ready, also add it to the ready queue
+        if process.check_state(ProcessState.READY):
+            self._ready_queue.append(process)
+            if len(self._ready_queue) == 1:
+                # notify the process ready event
+                self.process_ready.succeed()
+                self.process_ready = self.env.event()
+
+    def remove_process(self, process):
+        """Remove a process from this scheduler.
+
+        This will usually be called in the context of a process migration,
+        where a process is moved from one scheduler to another.
+
+        Args:
+            process (RuntimeDataflowProcess): the process to be removed
+
+        Raises:
+            ValueError: if the process is not int the :attr:`_processes` list
+
+        Returns:
+            None: if the process was removed immediately
+            simpy.events.Event: An event indicating completion of the removal
+                if the process cannot be removed immediately (since it is
+                currently running)
+        """
+        # there is nothing to do if the process already finished
+        if process.check_state(ProcessState.FINISHED):
+            return
+
+        if process not in self._processes:
+            raise ValueError("Attempted to remove an unknown process")
+
+        # remove any registered callbacks
+        process.ready.callbacks.remove(self._cb_process_ready)
+        process.finished.callbacks.remove(self._cb_process_finished)
+
+        # remove process from _processes list and ready queue
+        self._processes.remove(process)
+        if process in self._ready_queue:
+            self._ready_queue.remove(process)
+
+        # if the process is running, we need to preempt it and wait for its
+        # context to be stored
+        if process.check_state(ProcessState.RUNNING):
+            assert process is self.current_process
+
+            # prepare an event that will be notified once the process
+            # is preempted and completely removed
+            self._process_removal_complete = self.env.event()
+
+            # preempt the process
+            process.preempt()
+
+            # return the event so that a caller can wait for it
+            return self._process_removal_complete
+
+        # in some seldom cases it could happen that the removed process
+        # is still marked as the current process. In this case we reset
+        # the current process
+        if process is self.current_process:
+            self.current_process = None
 
     def _cb_process_ready(self, event):
         """Callback for the ready event of runtime processes
@@ -188,14 +256,14 @@ class RuntimeScheduler(object):
             self._ready_queue.append(process)
         process.ready.callbacks.append(self._cb_process_ready)
 
-        # notify the process created event
+        # notify the process ready event
         self.process_ready.succeed()
         self.process_ready = self.env.event()
 
     def _cb_process_finished(self, event):
         """Callback for the finished event of runtime processes
 
-        Makes sure that the process is removed fromt the ready queue.
+        Makes sure that the process is removed from the ready queue.
 
         :param event: The event calling the callback. This function expects \
             ``event.value`` to be a valid RuntimeProcess object.
@@ -206,6 +274,7 @@ class RuntimeScheduler(object):
                 "of the triggering event!"
             )
         process = event.value
+        assert process.check_state(ProcessState.FINISHED)
         try:
             self._ready_queue.remove(process)
         except ValueError:
@@ -224,163 +293,171 @@ class RuntimeScheduler(object):
             "This method needs to be overridden by a subclass"
         )
 
-    def run(self):
-        log = self._log
+    def _load_context(self, last_process, next_process):
+        """A simpy process modeling the context loading for next_process
 
-        log.debug("scheduler starts")
+        Yields:
+            ~simpy.events.Event: a series of events until the context is loaded
+        """
 
-        while True:
-            log.debug("run scheduling algorithm")
-
-            cp = self.current_process
-            np = self.schedule()
-
-            # Found a process to be scheduled?
-            if np is not None:
-                # record the activation event in our internal load trace
-                if len(self._load_trace) == 0 or self._load_trace[0][1] == 0:
-                    self._load_trace.appendleft((self.env.now, 1))
-                # pay for the scheduling delay
-                ticks = self._processor.ticks(self._scheduling_cycles)
+        # In case of the AFTER_SCHEDULING context switch mode, the context
+        # switch is deferred until absolutely necessary. This means we first
+        # have to store the old context before we can load the new context
+        # here.
+        if self._context_switch_mode == ContextSwitchMode.AFTER_SCHEDULING:
+            # there is nothing to do if last and next process are identical
+            if last_process is next_process:
+                return
+            if last_process is not None:
+                self._log.debug(
+                    f"store the context of process {next_process.full_name}"
+                )
+                # wait until the store operation is complete
+                ticks = self._processor.context_store_ticks()
                 yield self.env.timeout(ticks)
 
-                log.debug("schedule process %s next", np.full_name)
+        # load context of the new process
+        if self._context_switch_mode != ContextSwitchMode.NEVER:
+            self._log.debug(f"load context of process {next_process.full_name}")
+            # wait until the load operation is complete
+            ticks = self._processor.context_load_ticks()
+            yield self.env.timeout(ticks)
 
-                # pay for context switching
-                mode = self._context_switch_mode
-                if mode == ContextSwitchMode.ALWAYS:
-                    log.debug("load context of process %s", np.full_name)
-                    ticks = self._processor.context_load_ticks()
-                    yield self.env.timeout(ticks)
-                elif (
-                    mode == ContextSwitchMode.AFTER_SCHEDULING
-                    and np is not self.current_process
-                ):
-                    if cp is not None:
-                        log.debug(
-                            "store the context of process %s", cp.full_name
-                        )
-                        ticks = self._processor.context_store_ticks()
-                        yield self.env.timeout(ticks)
-                    log.debug("load context of process %s", np.full_name)
-                    ticks = self._processor.context_load_ticks()
-                    yield self.env.timeout(ticks)
+    def _store_context(self, process, always=False):
+        """A simpy process modeling the context storing for process
 
-                # it could happen, that the process gets killed before the
-                # context was loaded completely. In this case we just continue
-                # and run the scheduling algorithm again
-                if np.check_state(ProcessState.FINISHED):
-                    continue
+        Yields:
+            ~simpy.events.Event: a series of events until the context is loaded
+        """
+        if self._context_switch_mode == ContextSwitchMode.NEVER:
+            return
 
-                # activate the process and remove it from the ready queue
-                self.current_process = np
-                self._ready_queue.remove(np)
-                np.activate(self._processor)
-                # make sure the activation is processed completely before
+        if always or self._context_switch_mode == ContextSwitchMode.ALWAYS:
+            self._log.debug(f"store the context of process {process.full_name}")
+            yield self.env.timeout(self._processor.context_store_ticks())
+
+    def run(self):
+        self._log.debug("scheduler starts")
+
+        while True:
+            self._log.debug("run scheduling algorithm")
+            yield from self._schedule_next_process()
+
+    def _wait_for_ready_process(self):
+        """A simpy process for waiting until a new process becomes ready"""
+        self._log.debug("There is no ready process -> sleep")
+        # Record the idle event in our internal load trace
+        if len(self._load_trace) == 0 or self._load_trace[0][1] == 1:
+            self._load_trace.appendleft((self.env.now, 0))
+        # wait until a process becomes ready
+        yield self.process_ready
+
+    def _schedule_next_process(self):
+        next_process = self.schedule()
+
+        # Found no process to be scheduled? Then, wait for a process to become
+        # ready and then try again.
+        if next_process is None:
+            yield from self._wait_for_ready_process()
+            # by returning, we trigger the algorithm again
+            return
+
+        # record the activation event in our internal load trace
+        if len(self._load_trace) == 0 or self._load_trace[0][1] == 0:
+            self._load_trace.appendleft((self.env.now, 1))
+
+        # pay for the scheduling delay
+        ticks = self._processor.ticks(self._scheduling_cycles)
+        yield self.env.timeout(ticks)
+
+        self._log.debug("schedule process %s next", next_process.full_name)
+
+        # pay for context switching
+        yield from self._load_context(self.current_process, next_process)
+
+        # it could happen, that the process gets killed or removed
+        # before the context was loaded completely. In this case we
+        # just return and the algorithm will be run again
+        if next_process not in self._processes or next_process.check_state(
+            ProcessState.FINISHED
+        ):
+            self._log.debug(
+                f"process {next_process.name} was migrated or killed before its"
+                " context could be loaded"
+            )
+            return
+
+        # activate the process and remove it from the ready queue
+        self.current_process = next_process
+        next_process.activate(self._processor)
+        # make sure the activation is processed completely before
+        # continuing
+        yield self.env.timeout(0)
+
+        # model the actual workload execution of the process
+        yield from self._execute_process_workload(self.current_process)
+
+        # check if the process is being removed
+        if self.current_process not in self._processes:
+            self._log.debug("Cleaning up after removing a running process")
+            # first store the context
+            yield from self._store_context(self.current_process, always=True)
+            # reset current process
+            self.current_process = None
+            # notify the event to indicate that migration completed
+            assert self._process_removal_complete is not None
+            self._process_removal_complete.succeed()
+        else:
+            # Otherwise, just pay for context switching
+            yield from self._store_context(self.current_process)
+
+    def _execute_process_workload(self, process):
+        # record the process activation in the simulation trace
+        if self._system.platform_trace_enabled:
+            self.trace_writer.begin_duration(
+                self._system.platform.name,
+                self._processor.name,
+                process.full_name,
+                category="Schedule",
+            )
+        # also let the power estimator know
+        self._system.energy_estimator.register_process_start(
+            self._processor, process
+        )
+
+        # execute the process workload
+        workload = self.env.process(process.workload())
+        if self._time_slice is not None:
+            timeout = self.env.timeout(self._time_slice)
+            yield self.env.any_of([timeout, workload])
+            if timeout.processed:
+                process.preempt()
+                # Although we requested to preempt the process, it may
+                # still continue running in order to finish any atomic
+                # operations it might be processing at the moment. Thus
+                # we wait for the workload process to terminate before
                 # continuing
-                yield self.env.timeout(0)
-                # record the process activation in the simulation trace
-                if self._system.platform_trace_enabled:
-                    self.trace_writer.begin_duration(
-                        self._system.platform.name,
-                        self._processor.name,
-                        np.full_name,
-                        category="Schedule",
-                    )
+                yield workload
+                assert not process.check_state(ProcessState.RUNNING)
+        else:
+            yield workload
 
-                # execute the process workload
-                workload = self.env.process(self.current_process.workload())
-                if self._time_slice is not None:
-                    timeout = self.env.timeout(self._time_slice)
-                    yield self.env.any_of([timeout, workload])
-                    if timeout.processed:
-                        self.current_process.preempt()
-                        # Although we requested to preempt the process, it may
-                        # still continue running in order to finish any atomic
-                        # operations it might be processing at the moment. Thus
-                        # we wait for the workload process to terminate before
-                        # continuing
-                        yield workload
-                        assert not self.current_process.check_state(
-                            ProcessState.RUNNING
-                        )
-                else:
-                    yield workload
-
-                # record the process halting in the simulation trace
-                if self._system.platform_trace_enabled:
-                    self.trace_writer.end_duration(
-                        self._system.platform.name,
-                        self._processor.name,
-                        np.full_name,
-                        category="Schedule",
-                    )
-
-                # pay for context switching
-                if self._context_switch_mode == ContextSwitchMode.ALWAYS:
-                    self._log.debug(
-                        "store the context of process %s", np.full_name
-                    )
-                    yield self.env.timeout(
-                        self._processor.context_store_ticks()
-                    )
-            else:
-                # Wait for ready events if the scheduling algorithm did not
-                # find a process that is ready for execution
-                self._log.debug("There is no ready process -> sleep")
-                # Record the idle event in our internal load trace
-                if len(self._load_trace) == 0 or self._load_trace[0][1] == 1:
-                    self._load_trace.appendleft((self.env.now, 0))
-                yield self.process_ready
+        # record the process halting in the simulation trace
+        if self._system.platform_trace_enabled:
+            self.trace_writer.end_duration(
+                self._system.platform.name,
+                self._processor.name,
+                process.full_name,
+                category="Schedule",
+            )
+        # also let the power estimator know
+        self._system.energy_estimator.register_process_end(
+            self._processor, process
+        )
 
     def ready_queue_length(self):
         """Get the current length of the ready queue"""
         return len(self._ready_queue)
-
-
-class DummyScheduler(RuntimeScheduler):
-    """A Dummy Scheduler.
-
-    This scheduler does not implement any policy and is intended to be used
-    when there is no scheduler in the platform. This scheduler simply runs all
-    processes sequentially. It always waits until the current process finishes
-    before starting a new one.
-    """
-
-    def __init__(
-        self, name, processor, context_switch_mode, scheduling_cycles, env
-    ):
-        """Initialize a dummy scheduler
-
-        Calls :func:`RuntimeScheduler.__init__`.
-        """
-        super().__init__(
-            name, processor, context_switch_mode, scheduling_cycles, None, env
-        )
-
-    def schedule(self):
-        """Perform the scheduling.
-
-        Returns the next process from the ready queue if the current process is
-        finished or no process is currently being executed. Returns the
-        current_process if it is ready. Returns None in all other cases.
-        """
-        cp = self.current_process
-
-        if cp is None:
-            # Schedule next ready process if no process was loaded before
-            if len(self._ready_queue) > 0:
-                return self._ready_queue[0]
-        elif cp.check_state(ProcessState.FINISHED):
-            # Schedule next ready process if current process finished
-            if len(self._ready_queue) > 0:
-                return self._ready_queue[0]
-        elif cp.check_state(ProcessState.READY):
-            # Schedule the current process if it became ready again
-            return cp
-
-        # sleep otherwise
-        return None
 
 
 class FifoScheduler(RuntimeScheduler):
@@ -403,31 +480,22 @@ class FifoScheduler(RuntimeScheduler):
     def schedule(self):
         """Perform the scheduling.
 
-        Returns the next ready process or the current process if it is ready.
+        Returns the next ready process.
         """
-        cp = self.current_process
 
-        if cp is None:
-            # Schedule next ready process if no process was loaded before
-            if len(self._ready_queue) > 0:
-                return self._ready_queue[0]
-        elif cp.check_state(ProcessState.FINISHED) or cp.check_state(
-            ProcessState.BLOCKED
-        ):
-            # Schedule next ready process if current process finished or is
-            # blocked
-            if len(self._ready_queue) > 0:
-                return self._ready_queue[0]
-        elif cp.check_state(ProcessState.READY):
-            # Schedule the current process if it became ready again
-            return cp
+        # Schedule next ready process if there are any ready processes
+        if len(self._ready_queue) > 0:
+            return self._ready_queue.popleft()
 
         # sleep otherwise
         return None
 
 
 class RoundRobinScheduler(RuntimeScheduler):
-    """"""
+    """A RoundRobin Scheduler
+
+    Schedules ready processes in round robin manner.
+    """
 
     def __init__(
         self,
@@ -444,7 +512,7 @@ class RoundRobinScheduler(RuntimeScheduler):
         """
         if time_slice is None:
             raise RuntimeError(
-                "time_slice must be defined for a RoundRobin " "scheduler"
+                "time_slice must be defined for a RoundRobin scheduler"
             )
         super(RoundRobinScheduler, self).__init__(
             name,
@@ -455,40 +523,39 @@ class RoundRobinScheduler(RuntimeScheduler):
             env,
         )
 
-        # status var, keeps track of position in process list
-        self._queue_position = 0
-
     def schedule(self):
-        """Perform the scheduling."""
-        cp = self.current_process
+        """Perform the scheduling.
 
-        # if current process is ready and not currently in ready queue append
-        if cp is not None and cp.check_state(ProcessState.READY):
-            if cp not in self._ready_queue:
-                self._ready_queue.append(cp)
+        Returns returns the first ready process found while iterating over
+        all processes in round robin manner.
+        """
 
+        # Abort if there are no ready processes
         if len(self._ready_queue) == 0:
             return None
+        assert len(self._processes) > 0
 
-        # start at the position of the last scheduled process in process list
-        check_next = self._queue_position
-        # increment by one
-        check_next = (check_next + 1) % len(self._processes)
-        stop_at = check_next
+        # keep track of the process where we start searching
+        stop_at = self._processes[-1]
 
         while True:
-            # check if process is in ready queue and if so, return it
-            if self._processes[check_next] in self._ready_queue:
-                self._queue_position = check_next
-                return self._processes[check_next]
+            # check if the first process in the deque is ready
+            process = self._processes[0]
+            if process in self._ready_queue:
+                # if it is ready, then remove it from the ready queue and
+                # return it
+                self._ready_queue.remove(process)
+                return process
 
-            # increment
-            check_next = (check_next + 1) % len(self._processes)
-            if check_next == stop_at:
-                break
+            # check if we already iterated over the complete process queue
+            if stop_at is process:
+                raise RuntimeError(
+                    "Did not find a ready process although the ready queue is "
+                    "not empty"
+                )
 
-        # if no process is ready, we sleep and start at same position next time
-        return None
+            # rotate the deque by one to the left and try again
+            self._processes.rotate(-1)
 
 
 def create_scheduler(name, processor, policy, env):
@@ -504,15 +571,8 @@ def create_scheduler(name, processor, policy, env):
     Returns:
         RuntimeScheduler: a runtime scheduler object
     """
-    if policy.name == "Dummy":
-        s = DummyScheduler(
-            name,
-            processor,
-            ContextSwitchMode.NEVER,
-            policy.scheduling_cycles,
-            env,
-        )
     if policy.name == "FIFO":
+        log.debug(f"Initialize new FIFO scheduler ({name})")
         s = FifoScheduler(
             name,
             processor,
@@ -521,6 +581,7 @@ def create_scheduler(name, processor, policy, env):
             env,
         )
     elif policy.name == "RoundRobin":
+        log.debug(f"Initialize new RoundRobin scheduler ({name})")
         s = RoundRobinScheduler(
             name,
             processor,

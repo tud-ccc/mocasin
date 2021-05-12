@@ -7,7 +7,7 @@ import logging
 
 from hydra.utils import to_absolute_path
 
-from mocasin.tgff.trace import TgffTraceGenerator
+from mocasin.tgff.trace import TgffTrace
 from mocasin.tgff.tgffParser.parser import Parser
 
 
@@ -70,7 +70,7 @@ class TraceGeneratorWrapper:
         for processor in tgff_components[1]:
             processor_dict.update({processor.type: processor})
 
-        trace_generator = TgffTraceGenerator(
+        trace_generator = TgffTrace(
             processor_dict, tgff_components[0][graph_name], repetition
         )
 

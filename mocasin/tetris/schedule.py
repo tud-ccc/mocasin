@@ -195,7 +195,7 @@ class SingleJobSegmentMapping:
         return self.__energy
 
     def verify(self):
-        """ Verify that the object in a consistent state."""
+        """Verify that the object in a consistent state."""
         assert self.__end_time is not None
         assert self.__end_cratio is not None
         assert self.__end_cratio <= 1.0
@@ -372,7 +372,7 @@ class MultiJobSegmentMapping:
         self.__time_range = (new_start_time, new_end_time)
 
     def get_used_processors(self):
-        """ Returns the set of used processors. """
+        """Returns the set of used processors."""
         return reduce(
             set.union, [x.mapping.get_used_processors() for x in self.jobs()]
         )
@@ -631,7 +631,7 @@ class Schedule:
         return res
 
     def is_request_completed(self, request):
-        """ Returns whether the request comleted in the current schedule."""
+        """Returns whether the request comleted in the current schedule."""
         for segment in self:
             for j in segment:
                 if j.request == request and j.finished:
@@ -639,7 +639,7 @@ class Schedule:
         return False
 
     def is_any_request_migrated(self):
-        """ Returns whether any job migrates in the schedule. """
+        """Returns whether any job migrates in the schedule."""
         job_schedules = self.per_requests()
         for job, segments in job_schedules.items():
             rep = SimpleVectorRepresentation(job.app, self.platform)

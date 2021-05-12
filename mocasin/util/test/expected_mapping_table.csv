@@ -1,0 +1,3 @@
+mapping,t_a,t_b,executionTime,dynamicEnergy,num_resources
+0,processor_0000,processor_0000,10.2,21.45,1
+1,processor_0000,processor_0005,5.2,31.15,2

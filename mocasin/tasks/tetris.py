@@ -5,7 +5,6 @@
 #
 # Author: Robert Khasanov
 
-import sys
 import timeit
 import logging
 import hydra
@@ -23,7 +22,6 @@ def init_logging():
     logging.getLogger("mocasin.common.mapping").setLevel(logging.WARNING)
 
 
-@hydra.main(config_path="../conf", config_name="tetris_scheduler")
 def tetris_scheduler(cfg):
     """Tetris scheduler
 
@@ -66,7 +64,6 @@ def tetris_scheduler(cfg):
                 print(scheduling.schedule.to_str(verbose=True), file=f)
 
 
-@hydra.main(config_path="../conf", config_name="tetris_manager")
 def tetris_manager(cfg):
     """Tetris manager
 

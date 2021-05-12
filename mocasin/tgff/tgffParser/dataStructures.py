@@ -35,7 +35,7 @@ class TgffProcessor:
         frequency_domain = FrequencyDomain(
             "fd{0}".format(self.name), math.ceil(1 / self.cycle_time)
         )
-        return Processor(self.name, self.type, frequency_domain)
+        return Processor(self.name, self.type, frequency_domain, None)
 
     def _get_cycle_time(self, operations):
         """Calculates the time needed for a single processor cycle, in a way that the
@@ -87,38 +87,6 @@ class TgffGraph:
 
     def get_task_type(self, identifier):
         return self.tasks[identifier]
-
-    def get_execution_order(self, task_name):
-        """Returns the order of actions for a single task (node) of the task
-        graph
-
-        :param task_name: the name of the specific task
-        :type task_name: String
-        :returns the order and type of actions the task performs when executed
-        :rtype list[tuple(char, string)] a list of actions (read, write execute)
-        and their target operation/channel
-        """
-        execution_order = []
-        read_from = []
-        write_to = []
-
-        for name, properties in self.channels.items():
-            # source
-            if task_name == properties[0]:
-                write_to.append(name)
-            # sink
-            if task_name == properties[1]:
-                read_from.append(name)
-
-        for channel_name in read_from:
-            execution_order.append(("r", channel_name))
-
-        execution_order.append(("e", self.tasks[task_name]))
-
-        for channel_name in write_to:
-            execution_order.append(("w", channel_name))
-
-        return execution_order
 
     def to_dataflow_graph(self):
         """Transfers the the tgff graph into a dataflow graph

@@ -10,12 +10,11 @@ import mocasin.representations.automorphisms as aut
 
 log = logging.getLogger(__name__)
 try:
-    import pympsym
+    import mpsym
 except ModuleNotFoundError:
     log.warning("mpsym could not be loaded")
 
 
-@hydra.main(config_path="../conf", config_name="calculate_platform_symmetries")
 def calculate_platform_symmetries(cfg):
     """Calculate the Automorphism Group of a Platform Graph
 
@@ -32,8 +31,8 @@ def calculate_platform_symmetries(cfg):
     """
     platform = hydra.utils.instantiate(cfg["platform"])
     log.info("start converting platform to edge graph for automorphisms.")
-    plat_graph = platform.to_adjacency_dict()
-    mpsym = cfg["mpsym"]
+    plat_graph = platform.to_adjacency_dict(include_proc_type_labels=True)
+    use_mpsym = cfg["mpsym"]
 
     (
         adjacency_dict,
@@ -68,19 +67,19 @@ def calculate_platform_symmetries(cfg):
     log.info("done coverting automorhpism of edges to nodes.")
 
     log.info("start writing to file.")
-    if mpsym:
+    if use_mpsym:
         try:
-            pympsym
+            mpsym
         except NameError:
             log.error(
-                "Configured for mpsym output but could not load pympsym. Fallback to python implementation"
+                "Configured for mpsym output but could not load mpsym. Fallback to python implementation"
             )
-            mpsym = False
+            use_mpsym = False
 
-    if mpsym:
+    if use_mpsym:
         out_filename = str(cfg["out_file"])
-        mpsym_autgrp = pympsym.ArchGraphAutomorphisms(
-            [pympsym.Perm(g) for g in autgrp]
+        mpsym_autgrp = mpsym.ArchGraphAutomorphisms(
+            [mpsym.Perm(g) for g in autgrp]
         )
         json_out = mpsym_autgrp.to_json()
         with open(out_filename, "w") as f:

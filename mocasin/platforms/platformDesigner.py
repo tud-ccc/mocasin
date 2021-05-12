@@ -11,6 +11,7 @@ from mocasin.common.platform import (
     Storage,
     CommunicationPhase,
     Primitive,
+    ProcessorPowerModel,
     CommunicationResource,
     CommunicationResourceType,
 )
@@ -19,7 +20,7 @@ from mocasin.util import logging
 import sys
 
 try:
-    import pympsym
+    import mpsym
 except:
     pass
 
@@ -69,7 +70,7 @@ class PlatformDesigner:
         self.__elementDict = {"base": {}}
 
         try:
-            pympsym
+            mpsym
             self.__symLibrary = False  # Disabled for now. Needn refactoring
             self.__agDict = {"base": {}}
         except NameError:
@@ -83,7 +84,7 @@ class PlatformDesigner:
         """
         if self.__symLibrary:
             if self._ag_hasSuperGraph():
-                raise ValueError("pympsym: extending super graph not supported")
+                raise ValueError("mpsym: extending super graph not supported")
 
         self.__scopeStack.append(self.__activeScope)
         self.__activeScope = identifier
@@ -129,7 +130,15 @@ class PlatformDesigner:
 
         self.__activeScope = nextScope
 
-    def addPeCluster(self, identifier, name, amount, frequency):
+    def addPeCluster(
+        self,
+        identifier,
+        name,
+        amount,
+        frequency,
+        static_power=None,
+        dynamic_power=None,
+    ):
         """Creates a new cluster of processing elements on the platform.
 
         :param identifier: The identifier the cluster can be addressed within the currently active scope.
@@ -140,17 +149,27 @@ class PlatformDesigner:
         :type amount: int
         :param frequency: The frequency of the processing elements.
         :type frequency: int
+        :param static_power: The static power of the processing elements.
+        :type static_power: float
+        :param dynamic_power: The dynamic power of the processing elements.
+        :type dynamic_power: float
         """
         log.warning(
             "Deprecationg warning: use addPEClusterForProcessor instead."
         )
         try:
             fd = FrequencyDomain("fd_" + name, frequency)
+            if static_power is not None and dynamic_power is not None:
+                ppm = ProcessorPowerModel(
+                    "ppm_" + name, static_power, dynamic_power
+                )
+            else:
+                ppm = None
             start = self.__peAmount
             end = self.__peAmount + amount
             processors = []
             for i in range(start, end):
-                processor = Processor("PE%02d" % i, name, fd)
+                processor = Processor("PE%02d" % i, name, fd, ppm)
                 self.__platform.add_processor(processor)
                 self.__platform.add_scheduler(
                     Scheduler(
@@ -191,6 +210,7 @@ class PlatformDesigner:
                     name,
                     processor.type,
                     processor.frequency_domain,
+                    processor.power_model,
                     processor.context_load_cycles,
                     processor.context_store_cycles,
                 )
@@ -239,8 +259,9 @@ class PlatformDesigner:
         writeLatency,
         readThroughput,
         writeThroughput,
+        # FIXME, this is a strange default
         frequencyDomain=100000,  # TODO: this should be added to tests
-        name="default",
+        name="L1_",
     ):
         """Adds a level 1 cache to each PE of the given cluster.
 
@@ -257,26 +278,25 @@ class PlatformDesigner:
         :param name: The cache name, in case it differs from L1.
         :type name: String
         """
+        # FIXME: this should probably produce an error instead of returning
+        # silently
         if self.__schedulingPolicy == None:
             return
         if self.__activeScope == None:
             return
 
-        nameToGive = None
+        nameToGive = name
 
         if not identifier in self.__elementDict[self.__activeScope]:
             raise RuntimeWarning("Identifier does not exist in active scope.")
-        if name != "default":
-            nameToGive = name
-        else:
-            nameToGive = "L1_"
+
         peList = self.__elementDict[self.__activeScope][identifier]
 
         fd = FrequencyDomain("fd_" + name, frequencyDomain)
 
         try:
             for pe in peList:
-                communicationRessource = Storage(
+                l1 = Storage(
                     nameToGive + pe[0].name,
                     frequency_domain=fd,
                     read_latency=readLatency,
@@ -284,19 +304,20 @@ class PlatformDesigner:
                     read_throughput=readThroughput,
                     write_throughput=writeThroughput,
                 )
-                self.__platform.add_communication_resource(
-                    communicationRessource
-                )
-                pe[1].append(communicationRessource)
+                self.__platform.add_communication_resource(l1)
+
+                # FIXME: What is this doing??
+                pe[1].append(l1)
 
                 prim = Primitive("prim_" + nameToGive + pe[0].name)
-                produce = CommunicationPhase("produce", pe[1], "write")
-                consume = CommunicationPhase("consume", pe[1], "read")
+
+                produce = CommunicationPhase("produce", [l1], "write")
+                consume = CommunicationPhase("consume", [l1], "read")
                 prim.add_producer(pe[0], [produce])
                 prim.add_consumer(pe[0], [consume])
                 self.__platform.add_primitive(prim)
 
-        except:
+        except:  # FIXME: This is fishy
             log.error("Exception caught: " + sys.exc_info()[0])
 
         if self.__symLibrary:
@@ -310,7 +331,10 @@ class PlatformDesigner:
         writeLatency,
         readThroughput,
         writeThroughput,
+        # FIXME: probably we should just rename the method to add_storage
         resourceType=CommunicationResourceType.Storage,
+        # FIXME: this argument should either be renamed to frequency or
+        # expect an actual FrequencyDomain object
         frequencyDomain=0,
     ):
         """Adds a communication resource to the platform. All cores of the given cluster identifiers can communicate
@@ -329,6 +353,8 @@ class PlatformDesigner:
         :param writeThroughput: The write throughput of the communication resource.
         :type writeThroughput: int
         """
+        # FIXME: shouldn't these checks produce an error instead of just
+        # silently aborting?
         if not self.__schedulingPolicy:
             return
         if not self.__activeScope:
@@ -349,6 +375,7 @@ class PlatformDesigner:
         fd = FrequencyDomain("fd_" + name, frequencyDomain)
 
         try:
+            # FIXME: why distinguish storage and other types here?
             if resourceType == CommunicationResourceType.Storage:
                 com_resource = Storage(
                     nameToGive,
@@ -361,8 +388,8 @@ class PlatformDesigner:
             else:
                 com_resource = CommunicationResource(
                     nameToGive,
-                    resourceType,
                     fd,
+                    resourceType,
                     readLatency,
                     writeLatency,
                     readThroughput,
@@ -386,7 +413,7 @@ class PlatformDesigner:
 
             self.__platform.add_primitive(prim)
 
-        except:
+        except:  # FIXME: this is fishy
             log.error("Exception caught: " + str(sys.exc_info()[0]))
             return
 
@@ -396,7 +423,7 @@ class PlatformDesigner:
             if self._ag_hasChips():
                 if idType != "chips":
                     raise ValueError(
-                        "pympsym: cannot mix clusters/chips connections"
+                        "mpsym: cannot mix clusters/chips connections"
                     )
 
                 if self._ag_hasIdenticalChips():
@@ -410,7 +437,7 @@ class PlatformDesigner:
             else:
                 if idType != "clusters":
                     raise ValueError(
-                        "pympsym: cannot mix clusters/chips connections"
+                        "mpsym: cannot mix clusters/chips connections"
                     )
 
                 self._ag_fullyConnectClusters(clusterIds, name)
@@ -508,6 +535,7 @@ class PlatformDesigner:
                     prim = Primitive(networkName + "_" + processor[0].name)
                     memoryName = (
                         str(clusterIdentifier)
+                        # FIXME: this will lead to issues if we have >=2 NoCs
                         + "_noc_mem_"
                         + str(processor[0].name)
                     )
@@ -548,7 +576,7 @@ class PlatformDesigner:
                                 "produce", resourceList, "write"
                             )
                             consume = CommunicationPhase(
-                                "consume", reversed(resourceList), "read"
+                                "consume", list(reversed(resourceList)), "read"
                             )
 
                             prim.add_producer(innerProcessor[0], [produce])
@@ -559,7 +587,7 @@ class PlatformDesigner:
                                 "produce", resourceList, "write"
                             )
                             consume = CommunicationPhase(
-                                "consume", reversed(resourceList), "read"
+                                "consume", list(reversed(resourceList)), "read"
                             )
 
                             prim.add_producer(innerProcessor[0], [produce])
@@ -707,7 +735,7 @@ class PlatformDesigner:
 
                 if not self._ag_classifyIdentifiers(chipIds):
                     raise ValueError(
-                        "pympsym: chip network must consist of chips only"
+                        "mpsym: chip network must consist of chips only"
                     )
 
                 if self._ag_hasIdenticalChips():
@@ -720,6 +748,10 @@ class PlatformDesigner:
                         self._ag_updateBaseAgs()
         else:
             return
+
+    def setPeripheralStaticPower(self, static_power):
+        """Set peripheral static power of the platform."""
+        self.__platform.peripheral_static_power = static_power
 
     def getClusterList(self, identifier):
         """Returns a list of all processing elements contained in specified cluster.
@@ -791,10 +823,10 @@ class PlatformDesigner:
 
     def _ag_updateAgs(self, lastScope, nextScope):
         if self._ag_isBase(lastScope):
-            raise ValueError("pympsym: improperly nested elements")
+            raise ValueError("mpsym: improperly nested elements")
 
         if self._ag_hasAgs(lastScope):
-            raise ValueError("pympsym: improperly nested elements")
+            raise ValueError("mpsym: improperly nested elements")
 
         self._ag_setAgs(self._ag_makeAgs(lastScope), lastScope)
 
@@ -808,14 +840,14 @@ class PlatformDesigner:
 
     def _ag_addChip(self, chipName, chip, scope=None):
         if self._ag_hasClusters(scope):
-            raise ValueError("pympsym: mixing cannot mix chips/clusters")
+            raise ValueError("mpsym: mixing cannot mix chips/clusters")
 
         ag = self._ag(scope)
 
         ag["chips"] = ag.get("chips", []) + [(chipName, chip)]
 
     def _ag_makeChipAgs(self, scope=None):
-        agc = pympsym.ArchGraphCluster()
+        agc = mpsym.ArchGraphCluster()
         for _, chip in self._ag(scope)["chips"]:
             agc.add_subsystem(chip["system"])
 
@@ -832,7 +864,7 @@ class PlatformDesigner:
         protoChipName, protoChip = ag["chips"][0]
         proto = protoChip["system"]
 
-        superGraph = pympsym.ArchGraph()
+        superGraph = mpsym.ArchGraph()
         superGraphProcessors = {}
 
         for i, (chipName, chip) in enumerate(ag["chips"]):
@@ -875,14 +907,14 @@ class PlatformDesigner:
     def _ag_makeSuperGraphAgs(self, scope=None):
         ag = self._ag(scope)
 
-        return pympsym.ArchUniformSuperGraph(ag["super_graph"], ag["proto"])
+        return mpsym.ArchUniformSuperGraph(ag["super_graph"], ag["proto"])
 
     def _ag_hasClusters(self, scope=None):
         return "clusters" in self._ag(scope)
 
     def _ag_addCluster(self, clusterId, peName, peAmount, pes, scope=None):
         if self._ag_hasChips(scope):
-            raise ValueError("pympsym: mixing cannot mix chips/clusters")
+            raise ValueError("mpsym: mixing cannot mix chips/clusters")
 
         ag = self._ag(scope)
 
@@ -890,7 +922,7 @@ class PlatformDesigner:
             ag["clusters"] = {
                 "processors": {},
                 "groups": {},
-                "graph": pympsym.ArchGraph(),
+                "graph": mpsym.ArchGraph(),
             }
 
         pes = [p.name for p, _ in pes]
@@ -957,11 +989,23 @@ class genericProcessor(Processor):
     :param frequency: The processor frequency
     :type type: int
     :returns: A processor object
+    :param static_power: The static power of the processing elements.
+    :type static_power: float
+    :param dynamic_power: The dynamic power of the processing elements.
+    :type dynamic_power: float
     :rtype mocasin.common.platform.Processor:
     """
 
-    def __init__(self, type, frequency=2000000000):
+    def __init__(
+        self, type, frequency=2000000000, static_power=None, dynamic_power=None
+    ):
         fd = FrequencyDomain("fd_" + type, frequency)
+        if static_power is not None and dynamic_power is not None:
+            ppm = ProcessorPowerModel(
+                "ppm_" + type, static_power, dynamic_power
+            )
+        else:
+            ppm = None
         super().__init__(
-            "DesignerGenericProc" + str(type) + str(frequency), type, fd
+            "DesignerGenericProc" + str(type) + str(frequency), type, fd, ppm
         )

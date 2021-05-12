@@ -48,12 +48,28 @@ def test_sdf3_simulate(datadir):
         check=True,
         stdout=subprocess.PIPE,
     )
-    found_line = False
+    found_flags = 0x0
     stdout = res.stdout.decode()
     for line in stdout.split("\n"):
         if line.startswith("Total simulated time: "):
-            time = line[22:]
-            assert time == "26.434296828 ms"
-            found_line = True
+            value = line[22:]
+            assert value == "24.900902367 ms"
+            found_flags |= 0x1
+        if line.startswith("Total energy consumption: "):
+            value = line[26:]
+            assert value == "76.139183427 mJ"
+            found_flags |= 0x2
+        if line.startswith("      ---  static energy: "):
+            value = line[26:]
+            assert value == "54.376100499 mJ"
+            found_flags |= 0x4
+        if line.startswith("      --- dynamic energy: "):
+            value = line[26:]
+            assert value == "21.763082928 mJ"
+            found_flags |= 0x8
+        if line.startswith("Average power: "):
+            value = line[15:]
+            assert value == "3.057688 W"
+            found_flags |= 0x10
 
-    assert found_line
+    assert found_flags == 0x1F

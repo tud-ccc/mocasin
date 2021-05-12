@@ -9,7 +9,6 @@ import hydra
 log = logging.getLogger(__name__)
 
 
-@hydra.main(config_path="../conf", config_name="enumerate_equivalent")
 def enumerate_equivalent(cfg):
     graph = hydra.utils.instantiate(cfg["graph"])
     platform = hydra.utils.instantiate(cfg["platform"])
@@ -29,9 +28,10 @@ def enumerate_equivalent(cfg):
     ).generate_mapping()
 
     log.info(("calculating orbit for mapping:" + str(mapping.to_list())))
-    orbit = representation.allEquivalent(mapping)
-    log.info("orbit of size: " + str(len(orbit)))
     with open(cfg["output_file"], "w") as output_file:
-        for i, elem in enumerate(orbit):
+        i = 0
+        for i, elem in enumerate(representation.allEquivalent(mapping)):
             output_file.write(f"\n mapping {i}:\n")
+            log.debug(f"mapping {i}: {elem.to_list()}")
             output_file.write(elem.to_string())
+    log.info(f"orbit of size: {i}")

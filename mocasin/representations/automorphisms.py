@@ -19,7 +19,8 @@ def to_labeled_edge_graph(g):
 
     # probably inefficient: first label, then add edges, but simpler.
     for node_from in g.keys():
-        for (node_to, value) in g[node_from]:
+        for (node_to, value_raw) in g[node_from]:
+            value = (value_raw, node_to[1])  # add proc type to value
             nodes_correspondence[num_nodes] = ((node_from, node_to), value)
             if value not in coloring_values:
                 coloring_values[value] = []

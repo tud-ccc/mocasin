@@ -7,10 +7,10 @@ platforms.
 Installation
 ------------
 
-It is recommended to install mocasin within a virtual environment. Currently we support Python versions 3.6, 3.7, and 3.8.
+It is recommended to install mocasin within a virtual environment. Currently we support Python versions 3.6, 3.7, 3.8 and 3.9.
 You can create a new environment with
 ```
-virtualenv -p python3.7 ~/virtualenvs/mocasin
+virtualenv -p python3 ~/virtualenvs/mocasin
 ```
 Note that you can adjust the path to your needs. You can activate the previously created environment as follows:
 ```
@@ -105,6 +105,26 @@ mocasin comes with a set of tests. You can run them as follows:
 python setup.py test
 ```
 
+Style Guide
+-----------
+
+See [Style Guide](style-guide.md)
+
+
+Autocompletion for bash/zsh
+-------------
+mocasin supports bash autocompletion.  To activate bash completion, run:
+```
+eval "$(cat misc/bash-autocomplete.sh)"
+```
+
+For completion in zsh, you first need to add
+```
+autoload -Uz bashcompinit && bashcompinit
+```
+to your .zshrc configuration file.
+
+
 Publications
 ------------
 
@@ -114,7 +134,7 @@ Publications
   Approaches in Mapping Software to Heterogeneous Multi-cores. In *DroneSE
   and RAPIDO 2021, System Engineering for constrained embedded systems,
   January 18-20, 2021, Virtual event*. ACM, New York, NY, USA, 8 pages.
-  https://doi.org/10.1145/3444950.3447285
+  ([PDF](https://cfaed.tu-dresden.de/files/Images/people/chair-cc/publications/2101_Menard_RAPIDO.pdf), [Video Presentation](https://www.youtube.com/watch?v=JOrdIn_kWBs&t=8981s), [doi](https://doi.org/10.1145/3444950.3447285))
 
 
 

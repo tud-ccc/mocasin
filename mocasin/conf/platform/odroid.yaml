@@ -7,13 +7,18 @@ _target_: mocasin.platforms.odroid.DesignerPlatformOdroid
 processor_0:
   _target_: mocasin.platforms.platformDesigner.genericProcessor
   type : 'proc_type_0'
-  frequency : 1400000000
+  frequency : 1500000000
+  static_power: 0.1403
+  dynamic_power: 0.3202
 processor_1:
   _target_: mocasin.platforms.platformDesigner.genericProcessor
   type : 'proc_type_1'
-  frequency : 2000000000
+  frequency : 1800000000
+  static_power: 0.2148
+  dynamic_power: 1.3196
 num_big : 4
 num_little : 4
+peripheral_static_power: 0.7633
 name: 'exynos'
 symmetries_json: "${mocasin_path:platforms/symmetries/odroid.json}"
 embedding_json: "${mocasin_path:platforms/embeddings/odroid.json}"

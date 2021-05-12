@@ -3,10 +3,11 @@
 #
 # Authors: Christian Menard
 
+import logging
 
 from simpy.resources.resource import Resource
 
-from mocasin.util import logging
+from mocasin.simulate.energy import EnergyEstimator
 from mocasin.simulate.process import ProcessState
 from mocasin.simulate.scheduler import create_scheduler
 from mocasin.simulate.trace_writer import TraceWriter
@@ -47,7 +48,6 @@ class RuntimeSystem:
             env: the simpy environment
         """
         log.info("Initialize the system")
-        logging.inc_indent()
 
         self._env = env
         self.platform = platform
@@ -58,6 +58,8 @@ class RuntimeSystem:
         self.app_trace_enabled = False
         self.platform_trace_enabled = False
         self.load_trace_cfg = None
+
+        self.energy_estimator = EnergyEstimator(platform, env)
 
         # initialize all schedulers
 
@@ -105,16 +107,16 @@ class RuntimeSystem:
             if r.exclusive and not hasattr(r, "simpy_resource"):
                 r.simpy_resource = Resource(self.env, capacity=1)
 
-        logging.dec_indent()
         return
 
-    def start_process(self, process, mapping_info):
+    def start_process(self, process, processor):
         """Start execution of a process.
 
         This should only be called by a RuntimeApplication.
 
         Args:
             process (RuntimeProcess): the runtime process to be started
+            processor (str): name of the processor to run the process on
             mapping_info (ProcessMappingInfo): object that specifies where to
                 start the process
         """
@@ -123,10 +125,88 @@ class RuntimeSystem:
                 f"The process {process.name} was already started!"
             )
         self._processes.add(process)
-        processor = mapping_info.affinity
         scheduler = self._processors_to_schedulers[processor]
         scheduler.add_process(process)
         process.start()
+
+    def move_process(self, process, from_processor, to_processor):
+        """Move a running process from one processor to another
+
+        Args:
+            process (RuntimeProcess): the runtime process to be moved
+            from_processor (str): name of the processor the process is currently
+                running on
+            to_processor (str): name of the processor the process should be
+                moved to
+        """
+        # nothing to do if the process is already finished
+        if process.check_state(ProcessState.FINISHED):
+            return
+
+        # remove the process from its current scheduler
+        event = self.pause_process(process, from_processor)
+
+        # The remove call above may return an event that indicates the
+        # completion of the process removal. This is necessary in cases where
+        # the process is currently running and first needs to be deactivated.
+        if event:
+            # if we got an event, add a callback that adds the process to the
+            # new scheduler as soon as the event is triggered (i.e. as soon
+            # as the process is removed completely)
+            event.callbacks.append(
+                lambda _: self.resume_process(process, to_processor)
+            )
+        else:
+            # otherwise, resume the process on the new scheduler immediately
+            self.resume_process(process, to_processor)
+
+    def pause_process(self, process, current_processor):
+        """Pause a running process
+
+        Removes the process from its current processor and pauses its execution
+        until it is resumed on the same or another processor.
+
+        Args:
+            process (RuntimeProcess): the runtime process to be moved
+            current_processor (str): name of the processor the process is
+                currently running on
+        Returns:
+            None: if the process was removed immediately
+            simpy.events.Event: An event indicating completion of the removal
+                if the process cannot be removed immediately (sine it is
+                currently running)
+        """
+        # nothing to do if the process is already finished
+        if process.check_state(ProcessState.FINISHED):
+            return
+
+        assert process in self._processes
+
+        # Remove the process from its scheduler. If the process is currently
+        # running, then it needs to be preempted. This might take a while, and
+        # in this case remove_process() returns an event indicating when
+        # preemption completed. We simply return this event here to indicate
+        # when the process has paused.
+        scheduler = self._processors_to_schedulers[current_processor]
+        event = scheduler.remove_process(process)
+        return event
+
+    def resume_process(self, process, processor):
+        """Resume a paused process on a given processor
+
+        Args:
+            process (RuntimeProcess): the runtime process to be moved
+            processor (str): name of the processor the process is
+                should resume its execution on
+        """
+        # nothing to do if the process is already finished
+        if process.check_state(ProcessState.FINISHED):
+            return
+
+        assert process in self._processes
+
+        scheduler = self._processors_to_schedulers[processor]
+        scheduler.add_process(process)
 
     def record_system_load(self):
         # create an init event in order to give the trace viewer a hint
@@ -190,3 +270,9 @@ class RuntimeSystem:
             path (str): path to the file that should be generated
         """
         self.trace_writer.write_trace(path)
+
+    def check_power_model(self):
+        return self.energy_estimator.check_power_model()
+
+    def calculate_energy(self):
+        return self.energy_estimator.calculate_energy()

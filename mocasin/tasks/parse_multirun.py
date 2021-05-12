@@ -49,6 +49,11 @@ _parsers = {
         "total_time_estimator",
         "Estimates the total execution time for each run using timestamps.",
     ),
+    "simulate_summary": (
+        "mocasin.tasks.simulate",
+        "summary_parser",
+        "Parses the summary file from a simulation.",
+    ),
 }
 
 
@@ -83,7 +88,6 @@ def load_parser(name):
         return function
 
 
-@hydra.main(config_path="../conf", config_name="parse_multirun")
 def parse_multirun(cfg):
     """This task parses the directory structure of a Hydra multirun execution.
     It generates a csv file with all options given explicitly to the multirun as columns,

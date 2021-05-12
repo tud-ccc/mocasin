@@ -19,7 +19,6 @@ from mocasin.design_centering import util as dc_util
 log = logging.getLogger(__name__)
 
 
-@hydra.main(config_path="../conf", config_name="find_design_center")
 def dc_task(cfg):
     tp = dc_util.ThingPlotter()
     random.seed(cfg["random_seed"])
@@ -97,7 +96,7 @@ def dc_task(cfg):
     json_dc_dump["center"]["mapping"] = center.getMapping().to_list()
     json_dc_dump["center"]["feasible"] = center.getFeasibility()
     json_dc_dump["center"]["runtime"] = (
-        center.getSimContext().exec_time / 1000000000.0
+        center.getSimContext().result.exec_time / 1000000000.0
     )
     # FIXME: This crashs with index out of range:
     # json_dc_dump['center']['radius'] = radii[-1]
@@ -114,7 +113,7 @@ def dc_task(cfg):
                 "feasible"
             ] = cent.getFeasibility()
             json_dc_dump["samples"][cent_idx]["center"]["runtime"] = (
-                cent.getSimContext().exec_time / 1000000000.0
+                cent.getSimContext().result.exec_time / 1000000000.0
             )
             json_dc_dump["samples"][cent_idx]["center"]["radius"] = radii[
                 cent_idx
@@ -131,7 +130,7 @@ def dc_task(cfg):
                 "feasible"
             ] = sample.getFeasibility()
             json_dc_dump["samples"][idx][i % n]["runtime"] = (
-                sample.getSimContext().exec_time / 1000000000.0
+                sample.getSimContext().result.exec_time / 1000000000.0
             )
 
     # run perturbation test
