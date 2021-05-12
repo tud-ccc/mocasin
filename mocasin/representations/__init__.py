@@ -35,7 +35,7 @@ from .automorphisms import (
     to_labeled_edge_graph,
     edge_to_node_autgrp,
     list_to_tuple_permutation,
-    testSymmetries,
+    checkSymmetries,
 )
 from .permutations import Permutation, PermutationGroup
 import mocasin.util.random_distributions.lp as lp
@@ -442,7 +442,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
                         log.warning("Using symmetries JSON without testing.")
                         correct = True
                     else:
-                        correct = testSymmetries(
+                        correct = checkSymmetries(
                             platform.to_adjacency_dict(),
                             self._ag.automorphisms(),
                         )

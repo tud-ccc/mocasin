@@ -2,6 +2,7 @@
 # Licensed under the ISC license (see LICENSE.txt)
 #
 # Authors: Andres Goens
+import pytest
 
 try:
     import pynauty as pynauty
@@ -135,7 +136,7 @@ def platform_graph_to_num_dict(platform_graph):
     return res
 
 
-def testSymmetries(platform_graph, ag):
+def checkSymmetries(platform_graph, ag):
     correct = True
     graph = platform_graph_to_num_dict(platform_graph)
     for p in ag:
