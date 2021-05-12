@@ -104,3 +104,26 @@ def test_pareto_front_tgff_odroid(datadir, objectives, suffix, expected_dir):
         assert compare_mapping_tables(out_csv_file, expected_csv)
     else:
         assert out_csv_file.is_file()
+
+
+def test_pareto_front_tgff_odroid_fair(datadir, expected_dir):
+    out_csv_file = Path(datadir).joinpath("mappings.csv")
+    expected_filename = f"mappings_auto-indust-cords_odroid_fair.csv"
+    expected_csv = Path(expected_dir).joinpath(expected_filename)
+    subprocess.check_call(
+        [
+            "mocasin",
+            "pareto_front",
+            "graph=tgff_reader",
+            "platform=odroid",
+            "tgff.directory=tgff/e3s-0.9",
+            "tgff.file=auto-indust-cords.tgff",
+            f"mapping_table={out_csv_file}",
+            "mapper=static_cfs",
+            "trace=tgff_reader",
+            "evaluate_metadata=True",
+        ],
+        cwd=datadir,
+    )
+
+    assert filecmp.cmp(out_csv_file, expected_csv, shallow=False)

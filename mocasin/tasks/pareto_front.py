@@ -24,21 +24,22 @@ def pareto_front(cfg):
         cfg(~omegaconf.dictconfig.DictConfig): the hydra configuration object
 
     **Hydra Parameters**:
-        * **export_all:** a flag indicating whether all mappings should be
-          exported. If ``false`` only the best mapping will be exported.
         * **graph:** the input datafloe graph. The task expects a configuration
           dict that can be instantiated to a
           :class:`~mocasin.common.graph.DataflowGraph` object.
-        * **outdir:** the output directory
-        * **progress:** a flag indicating whether to show a progress bar with
-          ETA
         * **platform:** the input platform. The task expects a configuration
           dict that can be instantiated to a
           :class:`~mocasin.common.platform.Platform` object.
         * **trace:** the input trace. The task expects a configuration dict
           that can be instantiated to a
           :class:`~mocasin.common.trace.TraceGenerator` object.
-        * **mapping_table:** the ouput path for the mapping table.
+        * **representation:** the representation. The task expects a
+          configuration dict that can be instantiated to a
+          :class:`~mocasin.representations.MappingRepresentation` object.
+        * **mapper:** the mapper.
+        * **evaluate_metadata:** the flag to force the evaluation of the mapping
+          metadata if the mapper does not evaluate them.
+        * **mapping_table:** the output path for the mapping table.
     """
     graph = hydra.utils.instantiate(cfg["graph"])
     platform = hydra.utils.instantiate(cfg["platform"])
@@ -49,15 +50,24 @@ def pareto_front(cfg):
     mapper = hydra.utils.instantiate(
         cfg["mapper"], graph, platform, trace, representation
     )
+    evaluate_metadata = cfg["evaluate_metadata"]
 
     # Run genetic algorithm
     pareto_front = mapper.generate_pareto_front()
 
-    # obtain simulation values
-    simulation_manager = SimulationManager(
-        representation, trace, jobs=None, parallel=True
-    )
-    simulation_manager.simulate(pareto_front)
+    # If the mapper evaluated the metadata, do not evaluate it again.
+    if pareto_front and evaluate_metadata:
+        if pareto_front[0].metadata.exec_time:
+            evaluate_metadata = False
+
+    if evaluate_metadata:
+        # obtain simulation values
+        simulation_manager = SimulationManager(
+            representation, trace, jobs=None, parallel=True
+        )
+        simulation_manager.simulate(pareto_front)
+        for mapping in pareto_front:
+            simulation_manager.append_mapping_metadata(mapping)
 
     # export the pareto front
     mapping_table_path = Path(cfg["mapping_table"])
