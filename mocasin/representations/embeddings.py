@@ -146,7 +146,6 @@ class MetricSpaceEmbeddingBase:
         self.M = M
         self.target_distortion = target_distortion
         self.jlt_tries = jlt_tries
-        write_to_file = False
 
         # First: calculate a good embedding by solving an optimization problem
         if embedding_matrix_path is not None:
@@ -186,7 +185,7 @@ class MetricSpaceEmbeddingBase:
                     )
             else:  # path does not exist but is not None
                 log.warning(
-                    "No embedding matrix stored. Calculating and storing."
+                    "No embedding matrix stored. Calculating it now ..."
                     "(this might take some time)"
                 )
                 E, self.distortion = self.calculateEmbeddingMatrix(
@@ -195,7 +194,6 @@ class MetricSpaceEmbeddingBase:
                     target_dist=self.target_distortion,
                     jlt_tries=self.jlt_tries,
                 )
-                write_to_file = True
 
         else:  # path is None
             E, self.distortion = self.calculateEmbeddingMatrix(
@@ -217,9 +215,6 @@ class MetricSpaceEmbeddingBase:
         self._f_iota = np.array(
             list([self.iota[i] for i in range(M.n)])
         ).reshape([M.n, self._k])
-
-        if write_to_file:
-            self.dump_json(embedding_matrix_path)
 
     def i(self, i):
         assert 0 <= i and i <= self.M.n
