@@ -54,13 +54,13 @@ class SchedulerBase(ABC):
             preemptions (bool): whether scheduler can preempt processes
             rotations (bool): whether the scheduler rotate the mappings
         """
-        self.__platform = platform
-        self.__migrations = migrations
-        self.__preemptions = preemptions
-        self.__rotations = rotations
+        self.platform = platform
+        self._migrations = migrations
+        self._preemptions = preemptions
+        self._rotations = rotations
         if orbit_lookup_manager is None:
             orbit_lookup_manager = OrbitLookupManager(self.platform)
-        self.__orbit_lookup_manager = orbit_lookup_manager
+        self._orbit_lookup_manager = orbit_lookup_manager
 
         super().__init__()
 
@@ -70,24 +70,20 @@ class SchedulerBase(ABC):
         pass
 
     @property
-    def platform(self):
-        return self.__platform
-
-    @property
     def migrations(self):
-        return self.__migrations
+        return self._migrations
 
     @property
     def preemptions(self):
-        return self.__preemptions
+        return self._preemptions
 
     @property
     def rotations(self):
-        return self.__rotations
+        return self._rotations
 
     @property
     def orbit_lookup_manager(self):
-        return self.__orbit_lookup_manager
+        return self._orbit_lookup_manager
 
     @abstractmethod
     def schedule(self, jobs, scheduling_start_time=0.0):
@@ -133,7 +129,7 @@ class SegmentedScheduler(SchedulerBase):
                 cjobs = None
                 break
             new_segment, cjobs = res_segment
-            schedule.append_segment(new_segment)
+            schedule.add_segment(new_segment)
             ctime = schedule.end_time
 
         if cjobs is not None:

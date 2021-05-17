@@ -166,14 +166,14 @@ class SegMedfSegmentMapper(SegmentMapperBase):
             return None
 
         # Check that all jobs meet dealines
-        for js in segment:
+        for js in segment.jobs():
             if js.end_time > js.request.deadline:
                 return None
 
         # Generate the job states at the end of the segment
         new_jobs = [
             x
-            for x in Job.from_schedule(Schedule(self.platform, segment), jobs)
+            for x in Job.from_schedule(Schedule(self.platform, [segment]), jobs)
             if not x.is_terminated()
         ]
 
