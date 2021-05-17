@@ -227,7 +227,7 @@ class PlatformDesigner:
                 self.__platform.add_processor(new_processor)
                 self.__platform.add_scheduler(
                     Scheduler(
-                        "sched%02d" % pe_counter,
+                        f"sched_{name}",
                         [new_processor],
                         self.__schedulingPolicy,
                     )
