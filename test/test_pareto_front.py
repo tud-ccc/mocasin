@@ -3,11 +3,37 @@
 #
 # Authors: Felix Teweleit, Andres Goens, Robert Khasanov
 
-import filecmp
+import csv
 from pathlib import Path
 import pytest
 import subprocess
 import sys
+
+
+def compare_mapping_tables(path1, path2):
+    """Compare two mapping tables."""
+    with open(path1, "r") as file1:
+        with open(path2, "r") as file2:
+            csv1 = csv.DictReader(file1)
+            csv2 = csv.DictReader(file2)
+            if csv1.fieldnames != csv2.fieldnames:
+                return False
+            fieldnames = csv1.fieldnames
+            for row1, row2 in zip(csv1, csv2):
+                for field in fieldnames:
+                    if field in ["executionTime", "dynamicEnergy"]:
+                        if bool(row1[field]) ^ bool(row2[field]):
+                            return False
+                        if row1[field] == row2[field] == "":
+                            continue
+                        if abs(float(row1[field]) - float(row2[field])) > 1e-6:
+                            return False
+                        continue
+                    if row1[field] != row2[field]:
+                        return False
+            if len(list(csv1)) or len(list(csv2)):
+                return False
+            return True
 
 
 def test_pareto_front_tgff_exynos990(datadir, expected_dir):
@@ -32,7 +58,7 @@ def test_pareto_front_tgff_exynos990(datadir, expected_dir):
     # On Python 3.6 different mappings is generated. This might be due to
     # implementation in the library.
     if sys.version_info >= (3, 7):
-        assert filecmp.cmp(out_csv_file, expected_csv, shallow=False)
+        assert compare_mapping_tables(out_csv_file, expected_csv)
     else:
         assert out_csv_file.is_file()
 
@@ -66,6 +92,6 @@ def test_pareto_front_tgff_odroid(datadir, objectives, suffix, expected_dir):
     # On Python 3.6 different mappings is generated. This might be due to
     # implementation in the library.
     if sys.version_info >= (3, 7):
-        assert filecmp.cmp(out_csv_file, expected_csv, shallow=False)
+        assert compare_mapping_tables(out_csv_file, expected_csv)
     else:
         assert out_csv_file.is_file()
