@@ -12,14 +12,24 @@ workflow and, for instance, run black automatically on each
 save. Alternatively, [git hooks](https://git-scm.com/book/pl/v2/Customizing-Git-Git-Hooks)
 could be setup to automatically apply black before each commit.
 
-To setup the git hooks, please install `pre-commit`:
+To setup the git hooks, please perform the following actions:
+1. Install `pre-commit`: `pip install pre-commit`
+2. Add the file `.pre-commit-config.yaml` to the root of the project with the
+following content:
 ```
-pip install pre-commit
+repos:
+  - repo: https://github.com/psf/black
+    rev: stable
+    hooks:
+      - id: black
+        language_version: python3
 ```
-Then run:
-```
-pre-commit install
-```
+
+3. Then execute `pre-commit install` to install git hooks in your `.git/`
+ directory.
+
+You can update the hooks to the latest version by running
+ `pre-commit autoupdate`.
 
 Linting
 -------

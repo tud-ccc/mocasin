@@ -108,7 +108,7 @@ python setup.py test
 Style Guide
 -----------
 
-See [Style Guide](style-guide.md)
+See [Style Guide](coding-style.md)
 
 
 Autocompletion for bash/zsh
