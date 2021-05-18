@@ -5,6 +5,8 @@
 
 
 import pytest
+import weakref
+
 from mocasin.common.trace import (
     ComputeSegment,
     ReadTokenSegment,
@@ -179,7 +181,9 @@ class TestRuntimeDataflowProcess:
     ):
         dataflow_process._trace = trace
         env.run()
-        dataflow_process._channels["chan"] = channel
+        dataflow_process._channels["chan"] = (
+            weakref.ref(channel) if channel else None
+        )
         dataflow_process.start()
         env.run()
         dataflow_process.activate(processor)
@@ -278,7 +282,7 @@ class TestRuntimeDataflowProcess:
     ):
         dataflow_process._trace = self.read_trace_generator()
         env.run()
-        dataflow_process._channels["chan"] = empty_channel
+        dataflow_process._channels["chan"] = weakref.ref(empty_channel)
         dataflow_process.start()
         env.run()
         dataflow_process.activate(processor)
@@ -315,7 +319,7 @@ class TestRuntimeDataflowProcess:
         self.test_workload_read_block(
             env, dataflow_process, processor, empty_channel
         )
-        dataflow_process._channels["chan"] = full_channel
+        dataflow_process._channels["chan"] = weakref.ref(full_channel)
         self._run_after_block(env, dataflow_process, processor)
         assert dataflow_process._state == ProcessState.FINISHED
         assert env.now == 515
@@ -326,7 +330,7 @@ class TestRuntimeDataflowProcess:
         self.test_workload_write_block(
             env, dataflow_process, processor, full_channel
         )
-        dataflow_process._channels["chan"] = empty_channel
+        dataflow_process._channels["chan"] = weakref.ref(empty_channel)
         self._run_after_block(env, dataflow_process, processor)
         assert dataflow_process._state == ProcessState.FINISHED
         assert env.now == 5015
@@ -335,14 +339,14 @@ class TestRuntimeDataflowProcess:
         channel = mocker.Mock()
         channel.name = "test"
         dataflow_process.connect_to_incomming_channel(channel)
-        assert dataflow_process._channels["test"] is channel
+        assert dataflow_process._channels["test"]() is channel
         channel.add_sink.assert_called_once_with(dataflow_process)
 
     def test_connect_to_outgoing_channel(self, dataflow_process, mocker):
         channel = mocker.Mock()
         channel.name = "test"
         dataflow_process.connect_to_outgoing_channel(channel)
-        assert dataflow_process._channels["test"] is channel
+        assert dataflow_process._channels["test"]() is channel
         channel.set_src.assert_called_once_with(dataflow_process)
 
 

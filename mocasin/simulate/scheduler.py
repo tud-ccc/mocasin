@@ -275,10 +275,13 @@ class RuntimeScheduler(object):
             )
         process = event.value
         assert process.check_state(ProcessState.FINISHED)
-        try:
+
+        # remove registered ready callback
+        process.ready.callbacks.remove(self._cb_process_ready)
+
+        self._processes.remove(process)
+        if process in self._ready_queue:
             self._ready_queue.remove(process)
-        except ValueError:
-            pass
 
     def schedule(self):
         """Perform the scheduling.
@@ -398,7 +401,10 @@ class RuntimeScheduler(object):
         yield from self._execute_process_workload(self.current_process)
 
         # check if the process is being removed
-        if self.current_process not in self._processes:
+        if (
+            not self.current_process.check_state(ProcessState.FINISHED)
+            and self.current_process not in self._processes
+        ):
             self._log.debug("Cleaning up after removing a running process")
             # first store the context
             yield from self._store_context(self.current_process, always=True)
