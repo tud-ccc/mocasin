@@ -5,6 +5,7 @@
 
 import logging
 
+from mocasin.simulate.manager import RuntimeManager
 from mocasin.simulate.adapter import SimulateLoggerAdapter
 from mocasin.tetris.job_request import JobRequestStatus
 
@@ -12,15 +13,10 @@ from mocasin.tetris.job_request import JobRequestStatus
 log = logging.getLogger(__name__)
 
 
-class RuntimeResourceManager:
+class RuntimeTetrisManager(RuntimeManager):
     def __init__(self, resource_manager, system):
+        super().__init__(system)
         self.resource_manager = resource_manager
-        self.system = system
-
-        # a special logger that allows printing timestamped messages
-        self._log = SimulateLoggerAdapter(
-            log, "Runtime Resource Manager", self.env
-        )
 
         # New applications
         self._new_applications = []
@@ -34,8 +30,10 @@ class RuntimeResourceManager:
 
         # an event indicating that new schedule need to be generated
         self._request_generate_schedule = self.env.event()
-        # an event indicating that tetris should shut down
-        self._request_shutdown = self.env.event()
+
+    @property
+    def name(self):
+        return "Tetris Manager"
 
     def run(self):
         """Start a simpy process modelling the actual resource manager."""
@@ -56,6 +54,7 @@ class RuntimeResourceManager:
             # reinitialize the event
             self._request_generate_schedule = self.env.event()
 
+            # Generate new schedule
             self._generate_schedule()
 
             # Note: We probably should also model delays here which Tetris
@@ -183,17 +182,3 @@ class RuntimeResourceManager:
                 f"Application {request.app.name} is modeled as finished, but "
                 f"it is still running (cratio = {cratio:.4f})"
             )
-
-    def shutdown(self):
-        """Terminate Tetris.
-
-        Tetris will not stop immediately but wait until all currently running
-        applications terminate.
-        """
-        self._log.debug("Shutdown was requested")
-        self._request_shutdown.succeed()
-
-    @property
-    def env(self):
-        """The simpy environment."""
-        return self.system.env
