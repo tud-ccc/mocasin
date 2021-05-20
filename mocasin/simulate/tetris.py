@@ -3,17 +3,32 @@
 #
 # Authors: Robert Khasanov, Christian Menard
 
-import logging
-
+from mocasin.simulate.application import RuntimeDataflowApplication
 from mocasin.simulate.manager import RuntimeManager
-from mocasin.simulate.adapter import SimulateLoggerAdapter
 from mocasin.tetris.job_request import JobRequestStatus
 
 
-log = logging.getLogger(__name__)
-
-
 class RuntimeTetrisManager(RuntimeManager):
+    """Runtime Tetris Manager.
+
+    The runtime tetris manager is used in the multi-application simulations, it
+    manages the (real-time) applications and distribute resource among them.
+    To start the applications, the method `start_applications` should be called.
+    Tetris attempts to generate the schedule, and if successful, the
+    applications are accepted, otherwise they are rejected.
+
+    The generated schedule could be inaccurate due to system contentions. In
+    this case the manager tracks the state of the started applications, and
+    update the Tetris's internal state. If the application finished earlier than
+    expected, the generated schedule is adjusted. If the application's execution
+    time was underestimated, the runtime manager keeps it running assuming it
+    needs a short time to finish.
+
+    Args:
+        resource_manager (ResourceManager): the resource manager
+        system (System): the system
+    """
+
     def __init__(self, resource_manager, system):
         super().__init__(system)
         self.resource_manager = resource_manager
@@ -26,6 +41,8 @@ class RuntimeTetrisManager(RuntimeManager):
         self._runtime_applications = {}
         # keep track of all events indicating when an app finished
         # {(request: event)}
+        # TODO: The dict could cause the high memory utiliazation,
+        # change to the list.
         self._finished_events = {}
 
         # an event indicating that new schedule need to be generated
@@ -33,6 +50,7 @@ class RuntimeTetrisManager(RuntimeManager):
 
     @property
     def name(self):
+        """The runtime manager name."""
         return "Tetris Manager"
 
     def run(self):
@@ -91,6 +109,11 @@ class RuntimeTetrisManager(RuntimeManager):
         self._log.info("Shutting down")
 
     def start_applications(self, graphs, traces, pareto_fronts, timeouts):
+        """Start new applications.
+
+        The runtime manager expects arguments graphs, traces, pareto fronts and
+        timeouts  be lists of the equal size.
+        """
         self._log.debug(f"Starting {len(graphs)} application")
 
         for tup in zip(graphs, traces, pareto_fronts, timeouts):
