@@ -90,6 +90,54 @@ class RuntimeTetrisManager(RuntimeManager):
 
         self._log.info("Shutting down")
 
+    def start_applications(self, graphs, traces, pareto_fronts, timeouts):
+        self._log.debug(f"Starting {len(graphs)} application")
+
+        for tup in zip(graphs, traces, pareto_fronts, timeouts):
+            self._new_applications.append(tup)
+
+        assert not self._request_generate_schedule.triggered
+        self._request_generate_schedule.succeed()
+
+    def _generate_schedule(self):
+        self.resource_manager.advance_to_time(self.env.now / 1000000000.0)
+        self._check_finished_applications()
+
+        # Register new requests at the resource manager
+        requests = []
+        for tup in self._new_applications:
+            graph, trace, pareto, timeout = tup
+            request = self.resource_manager.new_request(
+                graph, pareto, timeout=timeout
+            )
+            requests.append((request, trace))
+        # Reset the list of new applications
+        self._new_applications.clear()
+        # Generate the schedule
+        self.resource_manager.generate_schedule()
+
+        new_apps = {}
+        for request, trace in requests:
+            graph = request.app
+            if request.status == JobRequestStatus.ACCEPTED:
+                self._log.debug(f"Application {graph.name} is accepted")
+                app = self._create_runtime_application(request, trace)
+                new_apps.update({request: app})
+            elif request.status == JobRequestStatus.REFUSED:
+                self._log.debug(f"Application {graph.name} is rejected")
+            else:
+                raise ValueError(f"Unexpected status {request.status}")
+
+        self._runtime_applications.update(new_apps)
+
+    def _create_runtime_application(self, request, trace):
+        # TODO: Deadlines are not supported, support them.
+        # See Issue #109
+        graph = request.app
+        return RuntimeDataflowApplication(
+            name=graph.name, graph=graph, app_trace=trace, system=self.system
+        )
+
     def _check_finished_applications(self):
         """Check whether any application was finished."""
         requests = self._get_modeled_active_requests()
