@@ -11,6 +11,15 @@ log = logging.getLogger(__name__)
 
 
 class RuntimeManager:
+    """Base class for runtime managers.
+
+    The runtime manager is used in the multi-application simulations. To start
+    the applications, the method `start_applications` should be called.
+
+    Args:
+        system (System): the system
+    """
+
     def __init__(self, system):
         self.system = system
 
