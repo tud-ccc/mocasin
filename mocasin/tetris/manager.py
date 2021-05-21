@@ -137,7 +137,7 @@ class ResourceManager:
         log.debug(f"Request {request.app.name} finished")
         # update request
         request.status = JobRequestStatus.FINISHED
-        self.requests.update({request: None})
+        self.requests.pop(request)
 
     def finish_request(self, request):
         """Mark request as completed, and remove request from the schedule.
@@ -217,6 +217,7 @@ class ResourceManager:
             else:
                 log.debug(f"Request {request.app.name} is rejected")
                 request.status = JobRequestStatus.REFUSED
+                self.requests.pop(request)
 
         self._new_requests = []
 
