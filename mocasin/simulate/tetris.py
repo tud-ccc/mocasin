@@ -101,7 +101,7 @@ class RuntimeTetrisManager(RuntimeManager):
                 self.resource_manager.advance_segment()
 
                 # Check if any application was finished before it is expected
-                self._check_finished_applications()
+                self._clean_finished_applications()
 
         # wait for all applications to terminate
         yield self.env.all_of(self._finished_events.values())
@@ -124,7 +124,7 @@ class RuntimeTetrisManager(RuntimeManager):
 
     def _generate_schedule(self):
         self.resource_manager.advance_to_time(self.env.now / 1000000000.0)
-        self._check_finished_applications()
+        self._clean_finished_applications()
 
         # Register new requests at the resource manager
         requests = []
@@ -161,20 +161,18 @@ class RuntimeTetrisManager(RuntimeManager):
             name=graph.name, graph=graph, app_trace=trace, system=self.system
         )
 
-    def _check_finished_applications(self):
-        """Check whether any application was finished."""
-        requests = self._get_modeled_active_requests()
-        for request in requests:
-            if request not in self._finished_events:
-                continue
-            finished = self._finished_events[request]
-            if finished.triggered:
-                self._log.debug(
-                    f"Application {request.app.name} was already finished, "
-                    f"modeled current cratio "
-                    f"{self.resource_manager.requests[request].cratio:.4f}"
-                )
-                self.resource_manager.finish_request(request)
+    def _clean_finished_applications(self):
+        """Clean finished applications."""
+        for request, app in list(self._runtime_applications.items()):
+            if app.is_finished():
+                if request.status != JobRequestStatus.FINISHED:
+                    self._log.debug(
+                        f"Application {request.app.name} was already finished, "
+                        f"modeled current cratio "
+                        f"{self.resource_manager.requests[request].cratio:.4f}"
+                    )
+                    self.resource_manager.finish_request(request)
+                self._runtime_applications.pop(request)
 
     def _get_modeled_active_requests(self):
         """Get active requests from the resource manager."""
