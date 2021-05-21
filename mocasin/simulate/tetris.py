@@ -39,11 +39,8 @@ class RuntimeTetrisManager(RuntimeManager):
         # keep track of runtime applications
         # {(request: RuntimeDataflowApplication)}
         self._runtime_applications = {}
-        # keep track of all events indicating when an app finished
-        # {(request: event)}
-        # TODO: The dict could cause the high memory utiliazation,
-        # change to the list.
-        self._finished_events = {}
+        # keep track of all finished events
+        self._finished_events = []
 
         # an event indicating that new schedule need to be generated
         self._request_generate_schedule = self.env.event()
@@ -104,7 +101,7 @@ class RuntimeTetrisManager(RuntimeManager):
                 self._clean_finished_applications()
 
         # wait for all applications to terminate
-        yield self.env.all_of(self._finished_events.values())
+        yield self.env.all_of(self._finished_events)
 
         self._log.info("Shutting down")
 
@@ -191,16 +188,11 @@ class RuntimeTetrisManager(RuntimeManager):
 
         Returns: a list of requests.
         """
+        # TODO: remove this function
         result = []
         for request, app in self._runtime_applications.items():
-            if app.is_new():
-                result.append(request)
-                continue
-            # for uknown to me reason, the application might already finish, but
-            # app.is_finished will be false, checking finished event
-            finished = self._finished_events[request]
-            if not finished.triggered:
-                result.append(request)
+            assert not app.is_finished()
+            result.append(request)
         return result
 
     def _handle_mapping_segment(self):
@@ -221,7 +213,7 @@ class RuntimeTetrisManager(RuntimeManager):
             if app.is_new():
                 # the application is not yet started
                 finished = self.env.process(app.run(job_segment.mapping))
-                self._finished_events.update({request: finished})
+                self._finished_events.append(finished)
             elif app.is_running():
                 # the application is  running
                 app.update_mapping(job_segment.mapping)
