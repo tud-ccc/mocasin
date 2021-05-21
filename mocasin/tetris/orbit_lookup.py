@@ -25,7 +25,9 @@ class OrbitLookupEntry:
         self._lock = Lock()
         self._representation = SymmetryRepresentation(graph, platform)
         self._cached_mappings = []
-        self._orbit_generator = self._representation.allEquivalent(mapping)
+        self._orbit_generator = self._representation.allEquivalent(
+            mapping, only_support=True
+        )
 
     def _at(self, i):
         with self._lock:
