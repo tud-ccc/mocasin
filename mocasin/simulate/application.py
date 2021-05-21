@@ -165,8 +165,8 @@ class RuntimeDataflowApplication(RuntimeApplication):
 
     def _app_finished_callback(self, event):
         self._log.info(f"Application {self.name} terminates")
-        self._running = False
-        self._finished = True
+        self._is_running = False
+        self._is_finished = True
 
     def kill(self):
         """Stop execution of this application
