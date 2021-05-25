@@ -137,7 +137,7 @@ class ResourceManager:
         log.debug(f"Request {request.app.name} finished")
         # update request
         request.status = JobRequestStatus.FINISHED
-        self.requests.pop(request)
+        self._remove_request(request)
 
     def finish_request(self, request):
         """Mark request as completed, and remove request from the schedule.
@@ -217,7 +217,7 @@ class ResourceManager:
             else:
                 log.debug(f"Request {request.app.name} is rejected")
                 request.status = JobRequestStatus.REFUSED
-                self.requests.pop(request)
+                self._remove_request(request)
 
         self._new_requests = []
 
@@ -231,8 +231,16 @@ class ResourceManager:
 
         return None
 
-    def update_request_state(self, request, state):
-        raise NotImplementedError()
+    def _remove_request(self, request):
+        """Remove finished or refused request."""
+        assert (
+            request.status == JobRequestStatus.REFUSED
+            or request.status == JobRequestStatus.FINISHED
+        )
+        self.requests.pop(request)
+        self.scheduler.orbit_lookup_manager.remove_graph_orbit_entries(
+            request.app
+        )
 
     def _advance_segment(self, segment, till_time=None):
         """Advance an internal state by the schedule segment.

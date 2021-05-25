@@ -74,3 +74,7 @@ class OrbitLookupManager:
                 self.platform, graph, mapping
             )
         return self._entries[graph][mapping]
+
+    def remove_graph_orbit_entries(self, graph):
+        """Remove graph's orbits entries."""
+        self._entries.pop(graph, None)
