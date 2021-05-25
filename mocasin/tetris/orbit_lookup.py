@@ -18,7 +18,7 @@ class OrbitLookupEntry:
     it generates new mappings.
     """
 
-    def __init__(self, platform, graph, mapping):
+    def __init__(self, platform, graph, mapping, only_support=True):
         self.platform = platform
         self.graph = graph
         self.mapping = mapping
@@ -26,7 +26,7 @@ class OrbitLookupEntry:
         self._representation = SymmetryRepresentation(graph, platform)
         self._cached_mappings = []
         self._orbit_generator = self._representation.allEquivalent(
-            mapping, only_support=True
+            mapping, only_support=only_support
         )
 
     def _at(self, i):
@@ -61,8 +61,9 @@ class OrbitLookupManager:
     overhead by caching the already calculated orbits.
     """
 
-    def __init__(self, platform):
+    def __init__(self, platform, only_support=True):
         self.platform = platform
+        self._only_support = only_support
         self._entries = {}
 
     def get_orbit_entry(self, graph, mapping):
@@ -71,7 +72,7 @@ class OrbitLookupManager:
             self._entries[graph] = {}
         if mapping not in self._entries[graph]:
             self._entries[graph][mapping] = OrbitLookupEntry(
-                self.platform, graph, mapping
+                self.platform, graph, mapping, only_support=self._only_support
             )
         return self._entries[graph][mapping]
 

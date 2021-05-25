@@ -31,7 +31,6 @@ def test_manager_new_request(platform, graph, pareto_mappings):
         schedule = manager.generate_schedule()
         assert schedule
         assert request.status == JobRequestStatus.ACCEPTED
-        assert len(manager.requests) == i
         assert len(manager.accepted_requests()) == i
         assert len(manager.schedule.get_job_mappings()) == i
         assert manager.schedule.start_time == 0.0
@@ -43,7 +42,6 @@ def test_manager_new_request(platform, graph, pareto_mappings):
         request = manager.new_request(graph, pareto_mappings, timeout=10.0)
         requests.append(request)
         assert request.status == JobRequestStatus.NEW
-        assert len(manager.requests) == i
         assert len(manager.accepted_requests()) == 3
         assert len(manager.schedule.get_job_mappings()) == 3
 
@@ -51,7 +49,6 @@ def test_manager_new_request(platform, graph, pareto_mappings):
     assert schedule
     assert all(r.status == JobRequestStatus.ACCEPTED for r in requests[:3])
     assert requests[3].status == JobRequestStatus.REFUSED
-    assert len(manager.requests) == 7
     assert len(manager.accepted_requests()) == 6
     assert len(manager.schedule.get_job_mappings()) == 6
     assert manager.schedule.start_time == 0.0
