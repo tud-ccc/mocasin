@@ -36,9 +36,6 @@ class MedfScheduler(SchedulerBase):
                 "MedfScheduler only generates schedules with preemtpions"
             )
 
-        if self.rotations:
-            raise RuntimeError("MedfScheduler does not support rotations")
-
     @property
     def name(self):
         return "MEDF"
@@ -291,4 +288,5 @@ class MedfScheduler(SchedulerBase):
                         )
                     )
 
-        return schedule
+        rotated_schedule = self.variant_selector.finalize_schedule(schedule)
+        return rotated_schedule
