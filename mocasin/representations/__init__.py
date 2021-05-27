@@ -35,7 +35,7 @@ from .automorphisms import (
     to_labeled_edge_graph,
     edge_to_node_autgrp,
     list_to_tuple_permutation,
-    testSymmetries,
+    checkSymmetries,
 )
 from .permutations import Permutation, PermutationGroup
 import mocasin.util.random_distributions.lp as lp
@@ -95,7 +95,8 @@ class MappingRepresentation(type):
                 MappingRepresentation, cls
             ).__call__(*args, **kwargs)
             log.info(
-                f"Initializing representation {cls} of graph with processes: {graph_names} on platform with cores {platform_names}"
+                f"Initializing representation {cls} of graph with processes: "
+                f"{graph_names} on platform with cores {platform_names}"
             )
 
         instance = copy(cls._instances[(cls, graph_names, platform_names)])
@@ -206,7 +207,8 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
                     sink_pe_names = [PEs[res[s]] for s in sink_procs_idxs]
                 except:
                     log.error(
-                        f"Invalid mapping: {res} \n PEs: {PEs},\n sink_procs_idxs: {sink_procs_idxs}\n"
+                        f"Invalid mapping: {res} \n PEs: "
+                        f"{PEs},\n sink_procs_idxs: {sink_procs_idxs}\n"
                     )
                 sinks = [
                     self.platform.find_processor(snk) for snk in sink_pe_names
@@ -360,6 +362,34 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
 
     In order to work with other mappings in the same class, the methods
     allEquivalent/_allEquivalent returns for a mapping, all mappings in that class.
+
+    The channels flag, when set to true, considers channels in the mapping vectors too.
+    This is not supported and tested yet.
+
+    The periodic_boundary_conditions flag encodes whether distances measured in this
+    space are considered by taking periodic boundary conditions or not.
+
+    The norm_p parameter sets the p value for the norm (\sum |x_i|^p)^(1/p).
+
+    The symmetries representation might be used to accelerate a meta-heuristic without
+    changing it, by enabling a symmetry-aware cache. This can be achieved by setting
+    the canonical_operations flag to False. This way, the operations of the
+    representation, like distances or considering elements in a ball, are not executed
+    on the canonical representatives but on the raw elements instead.
+
+    The symmetries representation uses the mpsym library to accelerate symmetry
+    calculations. This can be disabled by setting disable_mpsym to True, which
+    uses the python fallback version of the symmetries instead.
+
+    The calculation of the symmetries can be a costly computation, yet it only
+    depends on the architecture. Thus, the symmetries of an architecture can be
+    pre-computed, stored to and read from a file. If the platform object has
+    the field symmetries_json, the symmetries are read from the file in that path.
+    Testing that these symmetries actually correspond to the platform can be disabled
+    with the disable_symmetries_test flag. This can be useful, e.g. for approximating
+    a NoC architecture as a bus. To pre-compute the symmetries and store them in a file,
+    use the calculate_platform_symmetries task.  This pre-computation only works when
+    using mpsym.
     """
 
     def __init__(
@@ -413,7 +443,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
                         log.warning("Using symmetries JSON without testing.")
                         correct = True
                     else:
-                        correct = testSymmetries(
+                        correct = checkSymmetries(
                             platform.to_adjacency_dict(),
                             self._ag.automorphisms(),
                         )
@@ -428,7 +458,8 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
                 if not hasattr(self, "_ag"):
                     # only calculate this if not already present
                     log.info(
-                        "No pre-comupted mpsym symmetry group available. Initalizing architecture graph..."
+                        "No pre-comupted mpsym symmetry group available."
+                        " Initalizing architecture graph..."
                     )
                     (
                         adjacency_dict,
@@ -440,7 +471,8 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
                         num_vertices, True, adjacency_dict, coloring
                     )
                     log.info(
-                        "Architecture graph initialized. Calculating automorphism group using Nauty..."
+                        "Architecture graph initialized. Calculating "
+                        "automorphism group using Nauty..."
                     )
                     autgrp_edges = pynauty.autgrp(nautygraph)
                     autgrp, _ = edge_to_node_autgrp(
@@ -452,19 +484,6 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
                     for node in self._arch_nc:
                         self._arch_nc_inv[self._arch_nc[node]] = node
                         # TODO: ensure that nodes_correspondence fits simpleVec
-
-                    # write symmetries calculated to json if exsits
-                    if not hasattr(platform, "ag_json"):
-                        log.warning(
-                            "No JSON file specified for symmetries."
-                            " Will not store them."
-                        )
-                    elif not correct == False:
-                        with open(platform.ag_json, "w") as f:
-                            f.write(self._ag.to_json())
-                        log.info(
-                            f"Storing platform symmetries in file {platform.ag_json}."
-                        )
 
         if not self.sym_library:
             log.info(
@@ -480,7 +499,8 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
                 num_vertices, True, adjacency_dict, coloring
             )
             log.info(
-                "Architecture graph initialized. Calculating automorphism group using Nauty..."
+                "Architecture graph initialized. Calculating "
+                "automorphism group using Nauty..."
             )
             autgrp_edges = pynauty.autgrp(nautygraph)
             autgrp, _ = edge_to_node_autgrp(autgrp_edges[0], self._arch_nc)
@@ -628,6 +648,27 @@ class MetricEmbeddingRepresentation(
     when multiple processes are mapped to the same PE. The scaling factor for those extra
     dimensions is controlled by the value of extra_dims_factor.
 
+    When the ignore_channels flag is set to true, the embedding ignores communication channels,
+    only focusing on the mapping of computation.
+
+    The target_distortion value sets the maximum distortion of the metric space that is allowed
+    for the embedding. A value close to 1 might be hard or even impossible,
+    a higher value reduces accuracy but allows to reduce the dimension of the embedding more using the
+    JLT-based dimensionality-reduction. The number of tries to achieve the target distortion for
+    a given dimension is controlled by the parameter jlt_tries.
+
+    The verbose flag controls the verbosity of the module.
+
+    Finally, since the embedding depends only on the architecture, it can be pre-computed
+    and stored in a file. This file is read from the architecture description. If the
+    architecture object has a field embedding_json, it will read the precomputed
+    embedding from a json file in this path. Most architectures set this field from a
+    parameter with the same name that can be configured in hydra.
+
+    Such a json file can be generated using the calculate_platform_embedding task.
+    If no such file exists, or it is invalid, an embedding will be computed from scratch.
+    The flag disable_embedding_test can be set to True to accept the embedding from the
+    json without checking it fits the given architecture and parameters.
     """
 
     def __init__(

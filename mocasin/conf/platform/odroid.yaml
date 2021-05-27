@@ -20,5 +20,5 @@ num_big : 4
 num_little : 4
 peripheral_static_power: 0.7633
 name: 'exynos'
-symmetries_json: null
-embedding_json: null
+symmetries_json: "${mocasin_path:platforms/symmetries/odroid.json}"
+embedding_json: "${mocasin_path:platforms/embeddings/odroid.json}"

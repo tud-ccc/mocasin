@@ -190,9 +190,9 @@ class PermutationGroup(list):
                     orbit.append(sim)
                     yield im
 
-    def point_orbit(self, point, only_support=False):
+    def point_orbit(self, point):
         return self.orbit(
-            (lambda perm, p: perm[p]), point, only_support=only_support
+            (lambda perm, p: perm[p]), point, only_support=False
         )
 
     def tuple_orbit(self, tup, only_support=False):
