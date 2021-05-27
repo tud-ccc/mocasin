@@ -9,7 +9,9 @@ functionality in other scripts of the platform package.
 """
 import numpy as np
 import logging
+
 log = logging.getLogger(__name__)
+
 
 def simpleDijkstra(adjacencyList, source, target):
     """
@@ -83,24 +85,29 @@ def simpleDijkstra(adjacencyList, source, target):
             visitedNodes.append(nextNode)
     return currentPath
 
-def valToXY(val,n):
+
+def valToXY(val, n):
     x = int(val % n)
     y = int(val / n)
-    return x,y
+    return x, y
 
-def XYToVal(x,y,n):
+
+def XYToVal(x, y, n):
     val = y * n + x
     return int(val)
+
 
 def sign(x):
     if x < 0:
         return -1
-    #also for 0, so that it works for the range
+    # also for 0, so that it works for the range
     elif x >= 0:
         return 1
 
+
 def inclusive_range(start, stop, step):
     return range(start, (stop + 1) if step >= 0 else (stop - 1), step)
+
 
 def yxRouting(adjacency_list, source, target):
     """
@@ -112,38 +119,38 @@ def yxRouting(adjacency_list, source, target):
     """
     n = np.sqrt(len(adjacency_list))
     if int(n) != n:
-        log.error("Trying to calculate Y-X routing on an "
-                  "adjacency list that is not a square mesh.")
+        log.error(
+            "Trying to calculate Y-X routing on an "
+            "adjacency list that is not a square mesh."
+        )
         raise RuntimeError
     if source == target:
         return [source]
-    source_val = int(source.replace("processor_",""))
-    target_val = int(target.replace("processor_",""))
-    source_x,source_y = valToXY(source_val,n)
-    target_x,target_y = valToXY(target_val,n)
+    source_val = int(source.replace("processor_", ""))
+    target_val = int(target.replace("processor_", ""))
+    source_x, source_y = valToXY(source_val, n)
+    target_x, target_y = valToXY(target_val, n)
     route = []
-    range_y = inclusive_range(source_y,target_y,sign(target_y-source_y))
-    range_x = inclusive_range(source_x,target_x,sign(target_x-source_x))
+    range_y = inclusive_range(source_y, target_y, sign(target_y - source_y))
+    range_x = inclusive_range(source_x, target_x, sign(target_x - source_x))
 
     for y in range_y:
-        val = XYToVal(source_x,y,n)
+        val = XYToVal(source_x, y, n)
         route.append(f"processor_{val:04d}")
-    #do not count the value of the change of direction twice
+    # do not count the value of the change of direction twice
     for x in range_x[1:]:
-        val = XYToVal(x,target_y,n)
+        val = XYToVal(x, target_y, n)
         route.append(f"processor_{val:04d}")
 
-    #sanity check
+    # sanity check
     last_proc = source
     for proc in route[1:]:
         if proc not in adjacency_list[last_proc]:
-            log.error("Trying to calculate Y-X routing on an "
-                      "adjacency list that is not a square mesh.")
+            log.error(
+                "Trying to calculate Y-X routing on an "
+                "adjacency list that is not a square mesh."
+            )
             raise RuntimeError
         last_proc = proc
 
     return route
-
-
-
-
