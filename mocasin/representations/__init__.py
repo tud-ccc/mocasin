@@ -493,9 +493,8 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
 
     def _simpleVec2Elem(self, x):
         x_ = x[: self._d]
-        _x = x[
-            self._d :
-        ]  # keep channels if exist (they should be mapped accordingly...)
+        # keep channels if exist (they should be mapped accordingly...)
+        _x = x[self._d :]
         if self.sym_library:
             return list(self._ag.representative(x_)) + _x
         else:
