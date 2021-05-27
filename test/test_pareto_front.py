@@ -44,7 +44,6 @@ def compare_mapping_tables(path1, path2):
 # point, which means it is a pareto front, and is invariant of the
 # parameters in the algorithms
 @pytest.mark.xfail
->>>>>>> origin/structure_generators_fix
 def test_pareto_front_tgff_exynos990(datadir, expected_dir):
     out_csv_file = Path(datadir).joinpath("mappings.csv")
     expected_filename = f"mappings_auto-indust-cords_exynos990_tr.csv"
@@ -79,7 +78,6 @@ def test_pareto_front_tgff_exynos990(datadir, expected_dir):
         ("[exec_time,resources,energy]", "etr"),
     ],
 )
-
 @pytest.mark.xfail
 def test_pareto_front_tgff_odroid(datadir, objectives, suffix, expected_dir):
     out_csv_file = Path(datadir).joinpath("mappings.csv")
