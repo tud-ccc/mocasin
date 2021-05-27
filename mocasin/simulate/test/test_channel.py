@@ -6,6 +6,7 @@
 import simpy
 
 import pytest
+from mocasin.common.mapping import ChannelMappingInfo
 from mocasin.common.platform import Primitive
 from mocasin.simulate.process import ProcessState
 
@@ -41,14 +42,14 @@ class TestRuntimeChannel:
     def test_set_src(self, channel, mocker):
         process = mocker.Mock()
         channel.set_src(process)
-        assert channel._src is process
+        assert channel.src is process
         with pytest.raises(AssertionError):
             channel.set_src(process)
 
     def test_add_sink(self, channel, mocker):
         process = mocker.Mock()
         channel.add_sink(process)
-        assert process in channel._sinks
+        assert process in channel.sinks
         assert channel._fifo_state[process.name] == 0
 
     def test_can_produce(self, channel, mocker):
@@ -336,7 +337,8 @@ class TestRuntimeChannel:
 
         # setup the primitive
         prim = Primitive("test_prim")
-        channel._primitive = prim
+        info = ChannelMappingInfo(primitive=prim, capacity=4)
+        channel.update_mapping_info(info)
 
         # src processor not added yet -> should fail
         with pytest.raises(RuntimeError):

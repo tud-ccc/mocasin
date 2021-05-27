@@ -14,6 +14,7 @@
 
 import enum
 import logging
+import weakref
 
 from mocasin.common.trace import SegmentType
 from mocasin.simulate.adapter import SimulateLoggerAdapter
@@ -36,6 +37,16 @@ class ProcessState(enum.Enum):
     """The process is blocked and waits for a resource to become available."""
     FINISHED = 4
     """The process completed its execution."""
+
+
+@enum.unique
+class InterruptSource(enum.Enum):
+    """Possible reasons for a process to be interrupted."""
+
+    PREEMPT = 0
+    """The scheduler requests preemption of the process"""
+    KILL = 1
+    """The process is killed and should terminate immediately"""
 
 
 class RuntimeProcess(object):
@@ -112,7 +123,9 @@ class RuntimeProcess(object):
 
     def __init__(self, name, app):
         self.name = name
-        self.app = app
+        # a weakref ensures that there is no dependency cycle and the garbage
+        # collector knows what it can delete
+        self._app = weakref.ref(app)
         self._state = ProcessState.CREATED
         self.processor = None
         self._log = SimulateLoggerAdapter(log, self.full_name, self.env)
@@ -129,12 +142,10 @@ class RuntimeProcess(object):
         self.blocked = self.env.event()
         self.blocked.callbacks.append(self._cb_blocked)
 
-        # internal event for requesting preemption
-        self._preempt = self.env.event()
-        # internal event for requesting termination
-        self._kill = self.env.event()
+        # internal event for interrupts
+        self._interrupt = self.env.event()
 
-        # record the process creation int the simulation trace
+        # record the process creation in the simulation trace
         if self.app.system.app_trace_enabled:
             self.trace_writer.begin_duration(
                 self.app.name, self.name, "CREATED", category="Process"
@@ -147,13 +158,21 @@ class RuntimeProcess(object):
 
     @property
     def full_name(self):
-        """Full name including the application name"""
-        return f"{self.app.name}.{self.name}"
+        """Return full name including the application name."""
+        if self.app:
+            return f"{self.app.name}.{self.name}"
+        else:
+            return f"None.{self.name}"
 
     @property
     def trace_writer(self):
         """The system's trace writer"""
         return self.app.system.trace_writer
+
+    @property
+    def app(self):
+        """Return the application this process belongs to."""
+        return self._app()
 
     def _transition(self, state_name):
         """Helper function for convenient state transitions.
@@ -265,9 +284,9 @@ class RuntimeProcess(object):
         self._log.debug(
             "Preempt workload execution on processor %s", self.processor.name
         )
-        old_event = self._preempt
-        self._preempt = self.env.event()
-        old_event.succeed()
+        old_event = self._interrupt
+        self._interrupt = self.env.event()
+        old_event.succeed(InterruptSource.PREEMPT)
 
     def _finish(self):
         """Terminate the process.
@@ -285,9 +304,9 @@ class RuntimeProcess(object):
         """Request termination of a running process"""
         self._log.debug("Kill request")
         if self._state == ProcessState.RUNNING:
-            old_event = self._kill
-            self._kill = self.env.event()
-            old_event.succeed()
+            old_event = self._interrupt
+            self._interrupt = self.env.event()
+            old_event.succeed(InterruptSource.KILL)
         else:
             self._finish()
 
@@ -354,6 +373,12 @@ class RuntimeProcess(object):
         assert self._state == ProcessState.FINISHED
         self._log.debug("Entered FINISHED state")
 
+        self.created.callbacks.remove(self._cb_created)
+        self.ready.callbacks.remove(self._cb_ready)
+        self.running.callbacks.remove(self._cb_running)
+        self.finished.callbacks.remove(self._cb_finished)
+        self.blocked.callbacks.remove(self._cb_blocked)
+
     def _cb_blocked(self, event):
         """Callback invoked upon entering the :const:`~ProcessState.BLOCKED`
         state.
@@ -408,16 +433,23 @@ class RuntimeDataflowProcess(RuntimeProcess):
         app (RuntimeApplication): the application this process is part of
     """
 
-    def __init__(self, name, process_trace, app):
+    def __init__(self, name, app):
         super().__init__(name, app)
         log.debug(
             "initialize new dataflow runtime process (%s)", self.full_name
         )
 
+        app_trace = app.trace
+
         self._channels = {}
-        self._trace = process_trace
+        self._trace = app_trace.get_trace(name)
         self._current_segment = None
         self._remaining_compute_cycles = None
+
+        # keep track of the total cycles to process and the sum of cycles
+        # already processed
+        self._total_cycles = app_trace.accumulate_processor_cycles(name)
+        self._total_cycles_processed = {p: 0 for p in self._total_cycles.keys()}
 
         # lets the workload method know whether it is run for the first time
         # or whether it is resumed
@@ -431,7 +463,8 @@ class RuntimeDataflowProcess(RuntimeProcess):
         Args:
             channel (RuntimeChannel): the channel to connect to
         """
-        self._channels[channel.name] = channel
+        log.debug(f"make process {self.name} a sink to {channel.name}")
+        self._channels[channel.name] = weakref.ref(channel)
         channel.add_sink(self)
 
     def connect_to_outgoing_channel(self, channel):
@@ -442,7 +475,8 @@ class RuntimeDataflowProcess(RuntimeProcess):
         Args:
             channel (RuntimeChannel): the channel to connect to
         """
-        self._channels[channel.name] = channel
+        log.debug(f"make process {self.name} a source to {channel.name}")
+        self._channels[channel.name] = weakref.ref(channel)
         channel.set_src(self)
 
     def workload(self):
@@ -458,10 +492,9 @@ class RuntimeDataflowProcess(RuntimeProcess):
         self._init_workload()
 
         while self._current_segment is not None:
-            # The preempt and kill events will be overwritten once
-            # triggered. Thus we keep references to the original events here.
-            preempt = self._preempt
-            kill = self._kill
+            # The interrupt event will be overwritten once triggered. Thus we
+            # keep a reference to the original event here.
+            interrupt = self._interrupt
 
             s = self._current_segment
             if s.segment_type == SegmentType.COMPUTE:
@@ -490,14 +523,18 @@ class RuntimeDataflowProcess(RuntimeProcess):
                     f"Encountered an unknown segment type! ({s.segment_type})"
                 )
 
-            # Stop processing if we where preempted or killed
-            if kill.triggered:
-                self._finish()
-                self._log.debug("process was killed")
-                return
-            if preempt.triggered:
-                self._deactivate()
-                self._log.debug("process was preempted")
+            # Stop processing if we where interrupted
+            if interrupt.triggered:
+                if interrupt.value == InterruptSource.KILL:
+                    self._finish()
+                    self._log.debug("process was killed")
+                elif interrupt.value == InterruptSource.PREEMPT:
+                    self._deactivate()
+                    self._log.debug("process was preempted")
+                else:
+                    raise RuntimeError(
+                        f"Unexpected interrupt source {interrupt.value.name}"
+                    )
                 return
 
             # move on to the next segment
@@ -543,7 +580,7 @@ class RuntimeDataflowProcess(RuntimeProcess):
         # interrupt.  Therefore, both consume and produce ignore any preemption
         # requests and process it only after the operation completes.
         s = self._current_segment
-        c = self._channels[s.channel]
+        c = self._channels[s.channel]()
         self._log.debug(f"read {s.num_tokens} tokens from channel {s.channel}")
         if c.can_consume(self, s.num_tokens):
             return self.env.process(c.consume(self, s.num_tokens))
@@ -558,7 +595,7 @@ class RuntimeDataflowProcess(RuntimeProcess):
         # considered as an atomic operation and an preemption request is only
         # processed after this operation completes.
         s = self._current_segment
-        c = self._channels[s.channel]
+        c = self._channels[s.channel]()
         self._log.debug(f"write {s.num_tokens} tokens to channel {s.channel}")
         if c.can_produce(self, s.num_tokens):
             return self.env.process(c.produce(self, s.num_tokens))
@@ -569,18 +606,18 @@ class RuntimeDataflowProcess(RuntimeProcess):
             return None
 
     def _handle_compute(self):
-        # The preempt and kill events will be overwritten once triggered. Thus
-        # we keep references to the original events here.
-        preempt = self._preempt
-        kill = self._kill
+        # The interrupt event will be overwritten once triggered. Thus we keep
+        # a reference to the original event here.
+        interrupt = self._interrupt
 
         s = self._current_segment
 
         if self._remaining_compute_cycles is None:
-            cycles = s.processor_cycles[self.processor.type]
+            processor_cycles = s.processor_cycles
         else:
-            cycles = self._remaining_compute_cycles
+            processor_cycles = self._remaining_compute_cycles
 
+        cycles = processor_cycles[self.processor.type]
         self._log.debug(f"process for {cycles} cycles")
         ticks = self.processor.ticks(cycles)
 
@@ -589,12 +626,15 @@ class RuntimeDataflowProcess(RuntimeProcess):
 
         # process until computation completes (timeout) or until the
         # process is preempted
-        yield self.env.any_of([timeout, preempt, kill])
+        yield self.env.any_of([timeout, interrupt])
 
         # if the timeout was processed, the computation completed
         if timeout.processed:
             self._remaining_compute_cycles = None
-        elif preempt.processed:
+            # update total processed cycles
+            for processor, cycles in processor_cycles.items():
+                self._total_cycles_processed[processor] += cycles
+        elif interrupt.processed and interrupt.value == InterruptSource.PREEMPT:
             # Calculate how many cycles where executed until the process was
             # preempted. Note that the preemption can occur in between full
             # cycles in our simulation. We lose a bit of precision here, by
@@ -603,10 +643,48 @@ class RuntimeDataflowProcess(RuntimeProcess):
             # error should be marginal.
             ticks_processed = self.env.now - start
             ratio = float(ticks_processed) / float(ticks)
-            cycles_processed = int(round(float(cycles) * ratio))
 
-            self._remaining_compute_cycles = cycles - cycles_processed
-            assert self._remaining_compute_cycles >= 0
+            self._remaining_compute_cycles = {}
+            for processor, cycles in processor_cycles.items():
+                cycles_processed = int(round(float(cycles) * ratio))
+                cycles_remaining = cycles - cycles_processed
+                assert cycles_remaining >= 0
+                self._remaining_compute_cycles[processor] = cycles_remaining
+
+                # update total processed cycles
+                self._total_cycles_processed[processor] += cycles_processed
             self._log.debug(
                 f"process was deactivated after {cycles_processed} cycles"
             )
+
+    def get_progress(self):
+        """Calculate how far the process has progressed its execution
+
+        Note that the calculation is not accurate if the processes is currently
+        running. The total amount of processed cycles is only updated after
+        finishing processing a compute segment or when the process is preempted.
+
+        Also note that the result is slightly inaccurate due to rounding errors
+        even if the process is not currently running.
+
+        Returns:
+            float: completion ratio of this process
+        """
+        ratio_sum = 0.0
+        for processor, total_cycles in self._total_cycles.items():
+            processed_cycles = self._total_cycles_processed[processor]
+            if total_cycles == 0:
+                # if there are no compute segments in the trace, we cannot
+                # calculate the ratio and assume a fixed value
+                if self.check_state(ProcessState.FINISHED):
+                    ratio = 1.0
+                else:
+                    ratio = 0.0
+            else:
+                ratio = processed_cycles / total_cycles
+            ratio_sum += ratio
+        # we take the average because the ratios for individual processor types
+        # might be slightly off due to rounding errors. Taking the average
+        # should minimize the error.
+        average = ratio_sum / len(self._total_cycles)
+        return average

@@ -2,6 +2,9 @@
 
 _target_: mocasin.tetris.scheduler.bruteforce.BruteforceScheduler
 
+migrations: True
+preemptions: True
+rotations: False
+
 # Dump the status of the queue every N steps
 bf_dump_steps: 1000
-

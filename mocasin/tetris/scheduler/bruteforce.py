@@ -169,9 +169,10 @@ class BruteforceSegmentGenerator:
         elif not self.scheduler.migrations and job.last_mapping is not None:
             variants = [mapping]
         else:
-            variants = self.scheduler.orbit_lookup_manager.get_orbit(
+            entry = self.scheduler.orbit_lookup_manager.get_orbit_entry(
                 job.app, mapping
             )
+            variants = entry.get_generator()
         used_cores = reduce(
             set.union,
             [
@@ -248,14 +249,14 @@ class BruteforceSegmentGenerator:
                 continue
 
             # 4. Check that all jobs meet dealines
-            if any(js.end_time > js.request.deadline for js in segment):
+            if any(js.end_time > js.request.deadline for js in segment.jobs()):
                 continue
 
             # Generate the job states at the end of the segment
             njobs = [
                 x
                 for x in Job.from_schedule(
-                    Schedule(self.platform, segment), self.__jobs
+                    Schedule(self.platform, [segment]), self.__jobs
                 )
                 if not x.is_terminated()
             ]
@@ -266,7 +267,7 @@ class BruteforceSegmentGenerator:
 
             # 6. Save segment
             new_schedule = self.__prev_schedule.copy()
-            new_schedule.append_segment(segment)
+            new_schedule.add_segment(segment)
             self.__results.append((new_schedule, njobs))
 
     def __schedule_step(self, current_mappings):

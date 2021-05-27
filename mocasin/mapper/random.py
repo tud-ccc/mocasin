@@ -16,14 +16,14 @@ log = logging.getLogger(__name__)
 
 
 class RandomPartialMapper(object):
-    """Generates a random mapping
+    """Generates a random mapping.
 
     This class is used to generate a random mapping for a given
     platform and dataflow graph
     """
 
-    def __init__(self, graph, platform, seed=None, support_first=False):
-        """Generates a random mapping for a given platform and dataflow application.
+    def __init__(self, graph, platform, seed=None, resources_first=False):
+        """Generate a random mapping for a given platform and dataflow application.
 
         :param graph: a dataflow graph
         :type graph: DataflowGraph
@@ -31,20 +31,20 @@ class RandomPartialMapper(object):
         :type platform: Platform
         :param seed: a random seed for the RNG
         :type seed: int
-        :param support_first: Changes the generation method to first choose processors,
-        and then assign processes only to those processors
-        :type support_first: bool
+        :param resources_first: Changes the generation method to first choose
+        processors, and then assign processes only to those processors
+        :type resources_first: bool
         """
         if seed is not None:
             random.seed(seed)
         self.seed = seed
-        self.support_first = support_first
+        self.resources_first = resources_first
         self.full_mapper = True
         self.platform = platform
         self.graph = graph
 
     def generate_mapping(self, part_mapping=None):
-        """Generates a random mapping
+        """Generate a random mapping.
 
         The generated mapping takes a partial mapping (that may also be empty)
         as starting point. All open mapping decissions were taken by generated
@@ -55,26 +55,23 @@ class RandomPartialMapper(object):
         :param part_mapping: partial mapping to start from
         :type part_mapping: Mapping
         """
-
         # generate new mapping if no partial mapping is given
         if not part_mapping:
             part_mapping = Mapping(self.graph, self.platform)
 
         # check if the platform/graph is equivalent
         if (
-            not part_mapping.platform is self.platform
-            or not part_mapping.graph is self.graph
+            part_mapping.platform is not self.platform
+            or part_mapping.graph is not self.graph
         ):
             raise RuntimeError(
-                "rand_map: Try to map partial mapping of platform,dataflow %s,%s to %s,%s",
-                part_mapping.platform.name,
-                part_mapping.graph.name,
-                self.platform.name,
-                self.graph.name,
+                "rand_map: Try to map partial mapping of platform,dataflow "
+                f"{part_mapping.platform.name},{part_mapping.graph.name} to "
+                f"{self.platform.name},{self.graph.name}",
             )
 
         available_processors = list(self.platform.processors())
-        if self.support_first:
+        if self.resources_first:
             num = random.randint(1, len(available_processors))
             available_processors = random.sample(available_processors, num)
 
@@ -98,7 +95,8 @@ class RandomPartialMapper(object):
                 affinity = processors[i]
             if affinity is None:
                 raise RuntimeError(
-                    f"Could not find an appropriate scheduler for any of the processors: {available_processors}"
+                    f"Could not find an appropriate scheduler for any of "
+                    f"the processors: {available_processors}"
                 )
 
             priority = random.randrange(0, 20)
@@ -145,9 +143,8 @@ class RandomPartialMapper(object):
 
 
 class RandomPartialMapperHydra(RandomPartialMapper):
-    """
-    This class implements a new constructor for the random_partial mapper in order to handle the instantiation via a
-    hydra config file.
+    """This class implements a new constructor for the random_partial mapper in
+    order to handle the instantiation via a hydra config file.
     TODO: do we need this??
     """
 
@@ -159,9 +156,9 @@ class RandomPartialMapperHydra(RandomPartialMapper):
 
 
 class RandomMapper(RandomPartialMapper):
-    """Generates a random mapping
-    This class is a FullMapper wrapper
-    for RandomPartialMapper.
+    """Generate a random mapping.
+
+    This class is a FullMapper wrapper for RandomPartialMapper.
     """
 
     def __init__(

@@ -20,6 +20,7 @@ class DesignerPlatformOdroid(Platform):
         num_big=4,
         num_little=4,
         name="odroid",
+        peripheral_static_power=None,
         **kwargs,
     ):
 
@@ -33,76 +34,75 @@ class DesignerPlatformOdroid(Platform):
             kwargs.get("symmetries_json", None),
             kwargs.get("embedding_json", None),
         )
-        if processor_0.frequency_domain.frequency != 1400000000.0:
-            log.warning(
-                f"Rescaling processor {processor_0.name} to fit Odroid frequency"
-            )
-            fd_a7 = FrequencyDomain("fd_a7", 1400000000.0)
-            processor_0.frequency_domain = fd_a7
 
         designer = PlatformDesigner(self)
-        if processor_1.frequency_domain.frequency != 2000000000.0:
-            log.warning(
-                f"Rescaling processor {processor_1.name} to fit Odroid frequency"
-            )
-            fd_a15 = FrequencyDomain("fd_a15", 2000000000.0)
-            processor_1.frequency_domain = fd_a15
-
         designer.setSchedulingPolicy("FIFO", 1000)
         designer.newElement("exynos5422")
 
         # cluster 0 with l2 cache
-        designer.addPeClusterForProcessor("cluster_a7", processor_0, num_little)
+        pe_names = [f"A7_{i:02d}" for i in range(num_little)]
+        designer.addPeClusterForProcessor(
+            "cluster_a7", processor_0, num_little, processor_names=pe_names
+        )
         # Add L1/L2 caches
         designer.addCacheForPEs(
             "cluster_a7",
-            1,
-            0,
-            8.0,
-            float("inf"),
-            frequencyDomain=1400000000.0,
+            readLatency=1,
+            writeLatency=1,
+            readThroughput=8,
+            writeThroughput=8,
+            frequencyDomain=processor_0.frequency_domain.frequency,
             name="L1_A7",
         )
         designer.addCommunicationResource(
-            "L2_A7",
-            ["cluster_a7"],
-            250,
-            250,
-            float("inf"),
-            float("inf"),
-            frequencyDomain=1400000000.0,
+            name="L2_A7",
+            clusterIds=["cluster_a7"],
+            readLatency=21,
+            writeLatency=21,
+            readThroughput=8,
+            writeThroughput=8,
+            frequencyDomain=processor_0.frequency_domain.frequency,
         )
 
         # cluster 1, with l2 cache
-        designer.addPeClusterForProcessor("cluster_a15", processor_1, num_big)
+        pe_names = [f"A15_{i:02d}" for i in range(num_big)]
+        designer.addPeClusterForProcessor(
+            "cluster_a15", processor_1, num_big, processor_names=pe_names
+        )
         # Add L1/L2 caches
         designer.addCacheForPEs(
             "cluster_a15",
-            1,
-            4,
-            8.0,
-            8.0,
-            frequencyDomain=2000000000.0,
+            readLatency=1,
+            writeLatency=1,
+            readThroughput=8,
+            writeThroughput=8,
+            frequencyDomain=processor_1.frequency_domain.frequency,
             name="L1_A15",
         )
+        # L2 latency is L1 latency plus 21 cycles
         designer.addCommunicationResource(
             "L2_A15",
             ["cluster_a15"],
-            250,
-            250,
-            float("inf"),
-            float("inf"),
-            frequencyDomain=2000000000.0,
+            readLatency=22,
+            writeLatency=22,
+            readThroughput=8,
+            writeThroughput=8,
+            frequencyDomain=processor_1.frequency_domain.frequency,
         )
 
         # RAM connecting all clusters
+        # RAM latency is L2 latency plus 120 cycles
         designer.addCommunicationResource(
             "DRAM",
             ["cluster_a7", "cluster_a15"],
-            120,
-            120,
-            8.0,
-            8.0,
+            readLatency=142,
+            writeLatency=142,
+            readThroughput=8,
+            writeThroughput=8,
             frequencyDomain=933000000.0,
         )
+
+        # Set peripheral static power of the platform.
+        designer.setPeripheralStaticPower(peripheral_static_power)
+
         designer.finishElement()

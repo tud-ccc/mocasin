@@ -249,7 +249,7 @@ class SegLRSegmentMapper(SegmentMapperBase):
         new_jobs = [
             x
             for x in Job.from_schedule(
-                Schedule(self.platform, new_segment), jobs
+                Schedule(self.platform, [new_segment]), jobs
             )
             if not x.is_terminated()
         ]

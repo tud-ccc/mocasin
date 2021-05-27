@@ -274,7 +274,7 @@ class Mapping:
         self._process_info[process_name].affinity = processor
 
     def get_used_processors(self):
-        """ Returns a set of used processors. """
+        """Returns a set of used processors."""
         return {self.affinity(p) for p in self.graph.processes()}
 
     def get_used_processor_types(self):

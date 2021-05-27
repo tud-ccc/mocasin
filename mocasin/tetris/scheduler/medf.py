@@ -28,7 +28,7 @@ def get_mapping_time_core_product(mapping, cratio=0.0):
 
 class MedfScheduler(SchedulerBase):
     def __init__(self, platform, **kwargs):
-        """ Maximum Energy Difference First Scheduler. """
+        """Maximum Energy Difference First Scheduler."""
         super().__init__(platform, **kwargs)
 
         if not self.preemptions:
@@ -91,7 +91,7 @@ class MedfScheduler(SchedulerBase):
         mapping_proc_types = mapping.get_used_processor_types()
 
         # First try to put the job into segments
-        for index, segment in enumerate(schedule):
+        for segment in schedule.segments():
             if check_only_counters:
                 # Check only the counters
                 added_segment_proc_types = (
@@ -108,9 +108,9 @@ class MedfScheduler(SchedulerBase):
             if cur_rtime < segment.duration - TIME_EPS:
                 s1, s2 = segment.split(segment.start_time + cur_rtime)
                 # Remove old segment, insert new two segments
-                schedule.remove_segment(index)
-                schedule.insert_segment(index, s2)
-                schedule.insert_segment(index, s1)
+                schedule.remove_segment(segment)
+                schedule.add_segment(s2)
+                schedule.add_segment(s1)
                 segment_to_add = s1
             else:
                 segment_to_add = segment
@@ -134,7 +134,7 @@ class MedfScheduler(SchedulerBase):
         if job_finish_time is None:
             # Create new segment with a job.
             segment_start_time = self.__scheduling_start_time
-            if len(schedule) != 0:
+            if not schedule.is_empty():
                 segment_start_time = schedule.end_time
 
             jm = SingleJobSegmentMapping(
@@ -145,7 +145,7 @@ class MedfScheduler(SchedulerBase):
                 finished=True,
             )
             new_segment = MultiJobSegmentMapping(self.platform, jobs=[jm])
-            schedule.append_segment(new_segment)
+            schedule.add_segment(new_segment)
             job_finish_time = jm.end_time
 
         # Check deadline

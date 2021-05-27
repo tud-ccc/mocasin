@@ -3,12 +3,11 @@
 #
 # Authors: Robert Khasanov
 import csv
+import logging
 import os
 import time
 
-from mocasin.tetris.manager import ResourceManager
-
-import logging
+from mocasin.tetris.job_request import JobRequestStatus
 
 log = logging.getLogger(__name__)
 
@@ -19,86 +18,117 @@ class TracePlayer:
     This class simulates a trace scenario, which consists of events of
     applications arrival. The trace is read from CSV file.
 
+    FIXME: Now we supply input events in the forms of the requests, in the
+    resource manager we create also requests.
+
     Args:
-        manager (ResourceManager): A resource manager
-        scenario (str): Path to scenario
+        resource_manager (ResourceManager): A resource manager
+        events (list of JobRequestInfo): List of input requests
         dump_summary (bool): A flag to dump the summary (default: False)
         dump_path (str): A path to summary file
     """
 
-    def __init__(self, manager, requests, dump_summary=False, dump_path=""):
-        assert isinstance(manager, ResourceManager)
-        self.__manager = manager
+    def __init__(
+        self, resource_manager, events, dump_summary=False, dump_path=""
+    ):
+        self.resource_manager = resource_manager
 
         # Read scenario from file
-        self.__events = requests
+        self._events = events
+        self._requests = []
 
         # Initialize time
-        self.__time = 0.0
+        self._time = 0.0
 
         # Initialize dump paramerers
-        self.__dump_summary = dump_summary
-        self.__dump_path = dump_path
+        self._dump_summary = dump_summary
+        self._dump_path = dump_path
 
-    def __simulate_to(self, new_time):
+    def _simulate_to(self, new_time):
         assert isinstance(new_time, (int, float))
-        assert new_time >= self.__time
+        assert new_time >= self._time
 
-        if new_time > self.__time:
+        if new_time > self._time:
             # Update manager's state
-            self.__manager.simulate_to(new_time)
+            self.resource_manager.advance_to_time(new_time)
 
-        self.__time = new_time
+        self._time = new_time
 
     def run(self):
         """Run the simulation."""
-        self.__simulation_start_time = time.time()
+        self._simulation_start_time = time.time()
         log.info("Simulation started")
-        self.__manager.start()
 
-        for request in self.__events:
-            arr = request.arrival
-            self.__simulate_to(arr)
-            self.__manager.new_request(request)
+        for event in self._events:
+            log.debug(f"Handling request {event.to_str()}")
+            graph = event.app
+            mappings = event.mappings
+            arrival = event.arrival
+            deadline = event.deadline
+            self._simulate_to(arrival)
+            request = self.resource_manager.new_request(
+                graph, mappings, deadline - arrival
+            )
+            self._requests.append(request)
+            schedule = self.resource_manager.generate_schedule()
 
-        new_time = self.__manager.finish()
-        self.__time = new_time
-        log.info("Simulation finished at time {:.2f}".format(self.__time))
-        self.__simulation_end_time = time.time()
+        while self.resource_manager.schedule:
+            self.resource_manager.advance_segment()
 
-        self.__print_stats()
-        self.__dump_stats()
+        new_time = self.resource_manager.state_time
+        self._time = new_time
+        log.info("Simulation finished at time {:.2f}".format(self._time))
+        self._simulation_end_time = time.time()
 
-    def __print_stats(self):
-        stats = self.__manager.stats()
+        # TODO: Create methods is_new, is_arrived, ...
+        assert all(r.status != JobRequestStatus.NEW for r in self._requests)
+        assert all(r.status != JobRequestStatus.ARRIVED for r in self._requests)
+        assert all(
+            r.status != JobRequestStatus.ACCEPTED for r in self._requests
+        )
+
+        self._generate_stats()
+        self._print_stats()
+        self._dump_stats()
+
+    def _generate_stats(self):
+        self._stats = {
+            "requests": len(self._requests),
+            "accepted": sum(
+                r.status == JobRequestStatus.FINISHED for r in self._requests
+            ),
+            "dynamic_energy": self.resource_manager.dynamic_energy,
+            "scheduler": self.resource_manager.scheduler.name,
+        }
+
+    def _print_stats(self):
         log.info("==================================")
         log.info("Results:")
-        log.info("Total requests: {}".format(stats["requests"]))
+        log.info("Total requests: {}".format(self._stats["requests"]))
         log.info(
             "Accepted requests (rate): {} ({:.2f}%)".format(
-                stats["accepted"], 100 * stats["accepted"] / stats["requests"]
+                self._stats["accepted"],
+                100 * self._stats["accepted"] / self._stats["requests"],
             )
         )
-        log.info("Energy consumption: {:.3f}J".format(stats["energy"]))
-        log.info("Simulated time: {:.2f}s".format(self.__time))
+        log.info(f"Dynamic energy: {self._stats['dynamic_energy']:.3f}J")
+        log.info("Simulated time: {:.2f}s".format(self._time))
         log.info(
             "Simulation time: {:.2f}s".format(
-                self.__simulation_end_time - self.__simulation_start_time
+                self._simulation_end_time - self._simulation_start_time
             )
         )
 
-    def __dump_stats(self):
-        if not self.__dump_summary:
+    def _dump_stats(self):
+        if not self._dump_summary:
             return
-        if os.path.exists(self.__dump_path):
-            assert os.path.isfile(self.__dump_path)
+        if os.path.exists(self._dump_path):
+            assert os.path.isfile(self._dump_path)
             mod = "a"
         else:
             mod = "w"
 
-        stats = self.__manager.stats()
-
-        with open(self.__dump_path, mod) as f:
+        with open(self._dump_path, mod) as f:
             if mod == "w":
                 print(
                     "input_scenario,scheduler,requests,accepted,energy,"
@@ -107,13 +137,13 @@ class TracePlayer:
                 )
             print(
                 "{},{},{},{},{},{},{}".format(
-                    self.__scenario,
-                    stats["scheduler"],
-                    stats["requests"],
-                    stats["accepted"],
-                    stats["energy"],
-                    self.__time,
-                    self.__simulation_end_time - self.__simulation_start_time,
+                    self._scenario,
+                    self._stats["scheduler"],
+                    self._stats["requests"],
+                    self._stats["accepted"],
+                    self._stats["energy"],
+                    self._time,
+                    self._simulation_end_time - self._simulation_start_time,
                 ),
                 file=f,
             )

@@ -6,6 +6,8 @@
 import hydra
 import logging
 import timeit
+import os
+import csv
 
 
 log = logging.getLogger(__name__)
@@ -58,20 +60,56 @@ def simulate(cfg):
         stop = timeit.default_timer()
         log.info("Simulation done")
 
-        exec_time = float(simulation.exec_time) / 1000000000.0
+        result = simulation.result
+
+        exec_time = float(result.exec_time) / 1000000000.0
         print("Total simulated time: " + str(exec_time) + " ms")
         print("Total simulation time: " + str(stop - start) + " s")
+        summary = {}
+        summary["Total_simulated_time_ms"] = str(exec_time)
+        summary["Total_simulation_time_ms"] = str(stop - start)
 
-        if simulation.total_energy is not None:
-            total_energy = float(simulation.total_energy) / 1000000000.0
-            static_energy = float(simulation.static_energy) / 1000000000.0
-            dynamic_energy = float(simulation.dynamic_energy) / 1000000000.0
+        if result.total_energy is not None:
+            total_energy = float(result.total_energy) / 1000000000.0
+            static_energy = float(result.static_energy) / 1000000000.0
+            dynamic_energy = float(result.dynamic_energy) / 1000000000.0
             avg_power = total_energy / exec_time
             print(f"Total energy consumption: {total_energy:.9f} mJ")
             print(f"      ---  static energy: {static_energy:.9f} mJ")
             print(f"      --- dynamic energy: {dynamic_energy:.9f} mJ")
             print(f"Average power: {avg_power:.6f} W")
 
+            summary["total_energy_mj"] = f"{total_energy:.9f}"
+            summary["static_energy_mj"] = f"{static_energy:.9f}"
+            summary["dynamic_energy_mj"] = f"{dynamic_energy:.9f}"
+            summary["avg_power_W"] = f"{avg_power:.6f}"
+
+        summary_to_file(summary)
+
         if trace_cfg is not None and trace_cfg["file"] is not None:
             simulation.system.write_simulation_trace(trace_cfg["file"])
         hydra.utils.call(cfg["cleanup"])
+
+
+def summary_to_file(summary):
+    with open("summary.csv", "x") as file:
+        writer = csv.writer(
+            file,
+            delimiter=",",
+            lineterminator="\n",
+        )
+        writer.writerow(summary.keys())
+        writer.writerow(summary.values())
+
+
+def summary_parser(dir):
+    results = {}
+    try:
+        with open(os.path.join(dir, "summary.csv"), "r") as f:
+            reader = csv.reader(f, delimiter=",")
+            headers = next(reader)
+            results = dict(zip(headers, next(reader)))
+
+        return results, headers
+    except FileNotFoundError:
+        return {}, []

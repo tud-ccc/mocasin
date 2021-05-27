@@ -1,22 +1,49 @@
 # Copyright (C) 2019 TU Dresden
 # Licensed under the ISC license (see LICENSE.txt)
 #
-# Authors: Andrés Goens
-
-import deap
-import random
-import numpy as np
-import pickle
+# Authors: Andrés Goens, Robert Khasanov
 
 from mocasin.util import logging
 from mocasin.mapper.utils import SimulationManager
 from mocasin.mapper.random import RandomPartialMapper
 from mocasin.representations import MappingRepresentation
 
+import deap
 from deap import creator, tools, base, algorithms
+import enum
 from hydra.utils import instantiate
+import random
+import numpy as np
+import pickle
+
 
 log = logging.getLogger(__name__)
+
+
+class Objectives(enum.Flag):
+    """Objective flags for multi-objective design-space exploration."""
+
+    NONE = 0
+    EXEC_TIME = enum.auto()
+    RESOURCES = enum.auto()
+    ENERGY = enum.auto()
+
+    @classmethod
+    def from_string_list(cls, objectives):
+        """Initialize Objectives object from a list of strings"""
+        flags = Objectives.NONE
+        for obj in objectives:
+            if obj == "exec_time":
+                flags |= cls.EXEC_TIME
+                continue
+            if obj == "energy":
+                flags |= cls.ENERGY
+                continue
+            if obj == "resources":
+                flags |= cls.RESOURCES
+                continue
+            raise RuntimeError(f"Unexpected objective {obj}")
+        return flags
 
 
 class GeneticMapper(object):
@@ -29,8 +56,7 @@ class GeneticMapper(object):
         trace,
         representation,
         initials="random",
-        objective_num_resources=False,
-        objective_exec_time=True,
+        objectives=["exec_time"],
         pop_size=10,
         num_gens=5,
         mutpb=0.5,
@@ -59,10 +85,8 @@ class GeneticMapper(object):
         :type representation: MappingRepresentation
         :param initials: what initial population to use (e.g. random)
         :type initials: string
-        :param objective_num_resources: Use number of resources as an optimization objective?
-        :type objective_num_resources: bool
-        :param objective_exec_time: Use execution time as an optimization objective?
-        :type objective_exec_time: bool
+        :param objectives: Optimization objectives
+        :type objectives: list of strings
         :param pop_size: Population size
         :type pop_size: int
         :param num_gens: Number of generations
@@ -99,12 +123,8 @@ class GeneticMapper(object):
         self.full_mapper = True  # flag indicating the mapper type
         self.graph = graph
         self.platform = platform
-        self.random_mapper = RandomPartialMapper(
-            self.graph, self.platform, support_first=objective_num_resources
-        )
         self.crossover_rate = crossover_rate
-        self.exec_time = objective_exec_time
-        self.num_resources = objective_num_resources
+        self.objectives = Objectives.from_string_list(objectives)
         self.pop_size = pop_size
         self.num_gens = num_gens
         self.mutpb = mutpb
@@ -113,14 +133,29 @@ class GeneticMapper(object):
         self.dump_cache = dump_cache
         self.radius = radius
         self.progress = progress
-        if not self.exec_time and not self.num_resources:
+
+        objective_resources = Objectives.RESOURCES in self.objectives
+        self.random_mapper = RandomPartialMapper(
+            self.graph, self.platform, resources_first=objective_resources
+        )
+
+        if Objectives.ENERGY in self.objectives:
+            if not self.platform.has_power_model():
+                log.warning(
+                    "The platform does not have a power model, excluding "
+                    "energy consumption from the objectives."
+                )
+                self.objectives ^= Objectives.ENERGY
+
+        if self.objectives == Objectives.NONE:
             raise RuntimeError(
                 "Trying to initalize genetic algorithm without objectives"
             )
 
         if self.crossover_rate > len(self.graph.processes()):
             log.error(
-                "Crossover rate cannot be higher than number of processes in application"
+                "Crossover rate cannot be higher than number of processes "
+                "in application"
             )
             raise RuntimeError("Invalid crossover rate")
 
@@ -140,9 +175,11 @@ class GeneticMapper(object):
 
         if "FitnessMin" not in deap.creator.__dict__:
             num_params = 0
-            if self.exec_time:
+            if Objectives.EXEC_TIME in self.objectives:
                 num_params += 1
-            if self.num_resources:
+            if Objectives.ENERGY in self.objectives:
+                num_params += 1
+            if Objectives.RESOURCES in self.objectives:
                 num_params += len(self.platform.get_processor_types())
             # this will weigh a milisecond as equivalent to an additional core
             # todo: add a general parameter for controlling weights
@@ -196,10 +233,12 @@ class GeneticMapper(object):
 
     def evaluate_mapping(self, mapping):
         result = []
-        if self.exec_time:
-            exec_time = self.simulation_manager.simulate([list(mapping)])[0]
-            result.append(exec_time)
-        if self.num_resources:
+        simres = self.simulation_manager.simulate([list(mapping)])[0]
+        if Objectives.EXEC_TIME in self.objectives:
+            result.append(simres.exec_time)
+        if Objectives.ENERGY in self.objectives:
+            result.append(simres.dynamic_energy)
+        if Objectives.RESOURCES in self.objectives:
             mapping_obj = self.representation.fromRepresentation(list(mapping))
             resource_dict = mapping_obj.to_resourceDict()
             for core_type in resource_dict:

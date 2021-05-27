@@ -6,7 +6,7 @@
 from mocasin.tetris.job_request import JobRequestInfo
 
 from mocasin.maps.graph import MapsDataflowGraph
-from mocasin.util.csv_reader import DataReader
+from mocasin.util.mapping_table import MappingTableReader
 
 import csv
 import logging
@@ -45,15 +45,8 @@ def read_applications(base_dir, platform):
         app_file = os.path.join(app_folder, CPN_FILENAME)
         graph = MapsDataflowGraph(name, app_file)
         mapping_file = os.path.join(app_folder, platform.name + MAPPINGS_SUFFIX)
-        reader_kwargs = {
-            "attribute": [],
-            "exec_time_col": "executionTime",
-            "energy_col": "totalEnergy",
-        }
-        mappings_reader = DataReader(
-            platform, graph, mapping_file, **reader_kwargs
-        )
-        mappings = [m[0] for m in mappings_reader.formMappings().values()]
+        mappings_reader = MappingTableReader(platform, graph, mapping_file)
+        mappings = [m[0] for m in mappings_reader.form_mappings()]
         apps.update({name: (graph, mappings)})
         log.info("   * {}".format(name))
     return apps
@@ -72,8 +65,8 @@ def read_requests(jobs_file, apps):
             read_applications
     """
     reqs = []
-    with open(jobs_file) as csvFile:
-        reader = csv.DictReader(csvFile)
+    with open(jobs_file) as csv_file:
+        reader = csv.DictReader(csv_file)
         for row in reader:
             app = apps[row["app"]][0]
             mappings = apps[row["app"]][1]

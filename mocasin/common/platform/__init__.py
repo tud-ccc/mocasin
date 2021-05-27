@@ -228,12 +228,18 @@ class Primitive:
             raise RuntimeError(
                 "Primitive already has a consumer %s" % sink.name
             )
+        for phase in phases:
+            if phase.direction != "read":
+                raise RuntimeError("A consumer can only use read phases")
         self.consume_phases[sink.name] = phases
         self.consumers.append(sink)
 
     def add_producer(self, src, phases):
         if src.name in self.produce_phases:
             raise RuntimeError("Primitive already has a producer %s" % src.name)
+        for phase in phases:
+            if phase.direction != "write":
+                raise RuntimeError("A producer can only use produces phases")
         self.produce_phases[src.name] = phases
         self.producers.append(src)
 
@@ -374,7 +380,13 @@ class Platform(object):
     platform by creating the corresponding objects.
     """
 
-    def __init__(self, name, symmetries_json=None, embedding_json=None):
+    def __init__(
+        self,
+        name,
+        symmetries_json=None,
+        embedding_json=None,
+        peripheral_static_power=None,
+    ):
         """Initialize the platform.
 
         This initializes all attributes to empty dicts. Derived classes should
@@ -389,6 +401,9 @@ class Platform(object):
             self.ag_json = to_absolute_path(symmetries_json)
         if embedding_json is not None:
             self.embedding_json = to_absolute_path(embedding_json)
+
+        # The static power not included to the processors' power
+        self.peripheral_static_power = peripheral_static_power
 
     def processors(self):
         return self._processors.values()
@@ -484,6 +499,18 @@ class Platform(object):
             res[p.type] += 1
         return res
 
+    def has_power_model(self):
+        """Returns whether the platform has a power model."""
+        result = any(pe.power_model is not None for pe in self.processors())
+        if result:
+            for pe in self.processors():
+                if pe.power_model is None:
+                    log.warning(
+                        f"No power model exists for {pe.name}. "
+                        "The energy consumption might be not complete."
+                    )
+        return result
+
     def to_pydot(self):
         """
         Convert the platform to a dot graph.
@@ -521,7 +548,7 @@ class Platform(object):
 
         return dot
 
-    def to_adjacency_dict(self, precision=5):
+    def to_adjacency_dict(self, precision=5, include_proc_type_labels=False):
         """
         Convert the platform to an adjacency dictionary.
 
@@ -532,11 +559,13 @@ class Platform(object):
 
         precision: number of significant figures to consider on costs.
         for full precision, select -1
+
+        include_proc_type_labels: adds a flag that also includes labels
+        for the processor types.
         """
         num_vertices = 0
         vertices = {}
         adjacency_dict = {}
-        coloring = []
 
         for s in self.schedulers():
             for p in s.processors:
@@ -563,7 +592,7 @@ class Platform(object):
                     if y.name not in adjacency_dict[x.name]:
                         adjacency_dict[x.name][y.name] = cost
                     # here we should decide what to do with the different primitive
-                    # I dediced to just take the minimum for now.
+                    # I decided to just take the minimum for now.
                     else:
                         adjacency_dict[x.name][y.name] = min(
                             adjacency_dict[x.name][y.name], cost
@@ -571,10 +600,21 @@ class Platform(object):
 
         res = {}
         for elem in adjacency_dict:
-            res[elem] = [
-                (adjacent, adjacency_dict[elem][adjacent])
-                for adjacent in adjacency_dict[elem]
-            ]
+            if include_proc_type_labels:
+                key = (elem, self.find_processor(elem).type)
+                res[key] = [
+                    (
+                        (adjacent, self.find_processor(adjacent).type),
+                        adjacency_dict[elem][adjacent],
+                    )
+                    for adjacent in adjacency_dict[elem]
+                ]
+
+            else:
+                res[elem] = [
+                    (adjacent, adjacency_dict[elem][adjacent])
+                    for adjacent in adjacency_dict[elem]
+                ]
         return res
 
     def to_primitive_latency_dict(self, precision=5):

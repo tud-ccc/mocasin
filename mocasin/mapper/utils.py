@@ -1,19 +1,23 @@
 # Copyright (C) 2019 TU Dresden
 # Licensed under the ISC license (see LICENSE.txt)
 #
-# Authors: Andrés Goens, Felix Teweleit
+# Authors: Andrés Goens, Felix Teweleit, Robert Khasanov
 
-from time import process_time
-import os
 import multiprocessing as mp
-import numpy as np
-from copy import deepcopy
+import os
+from time import process_time
+
+import cloudpickle
 import csv
 import h5py
+import hydra
+import numpy as np
+import pickle
+
+from hydra.core.hydra_config import HydraConfig
 
 from mocasin.common.mapping import Mapping
 from mocasin.simulate import DataflowSimulation
-
 from mocasin.util.logging import getLogger
 
 log = getLogger(__name__)
@@ -94,7 +98,6 @@ class SimulationManager(object):
             log, len(self.graph.processes()), record_statistics
         )
         self.statistics.set_rep_init_time(representation.init_time)
-        self._last_added = None
         self.jobs = jobs
         self.trace = trace
         self.parallel = parallel
@@ -102,49 +105,47 @@ class SimulationManager(object):
         self.chunk_size = chunk_size
 
     def lookup(self, mapping):
+        """Look up the results from the cache."""
         if mapping not in self._cache:
             self._cache.update({mapping: None})
-            self._last_added = mapping
             return False
 
         return self._cache[mapping]
 
-    def add_time(self, time):
-        if not self._last_added:
-            raise RuntimeError("Cache mapping before adding a simulation time!")
-
-        self._cache[self._last_added] = time
-        self._last_added = None
-
-    def add_time_mapping(self, mapping, time):
-        self._cache[mapping] = time
-        self._last_added = None
+    def add_mapping_result(self, mapping, sim_res):
+        """Save the simulation results in the cache."""
+        self._cache[mapping] = sim_res
 
     def simulate(self, input_mappings):
+        """Simulate multiple mappings.
+
+        Args:
+            input_mappings: input mappings
+
+        Returns:
+            list of the objects of the class `SimulationResult`. The length of
+            the list is equal to the length of `input_mappings`.
+        """
         # check inputs
         if len(input_mappings) == 0:
             log.warning("Trying to simulate an empty mapping list")
             return []
-        else:
-            if isinstance(input_mappings[0], Mapping):
-                time = process_time()
-                tup = [
-                    tuple(self.representation.toRepresentation(m))
-                    for m in input_mappings
-                ]
-                self.statistics.add_rep_time(process_time() - time)
-                mappings = input_mappings
-            else:  # assume mappings are list type then
-                # transform into tuples
-                time = process_time()
-                tup = [
-                    tuple(self.representation.approximate(np.array(m)))
-                    for m in input_mappings
-                ]
-                mappings = [
-                    self.representation.fromRepresentation(m) for m in tup
-                ]
-                self.statistics.add_rep_time(process_time() - time)
+
+        time = process_time()
+        if isinstance(input_mappings[0], Mapping):
+            tup = [
+                tuple(self.representation.toRepresentation(m))
+                for m in input_mappings
+            ]
+            mappings = input_mappings
+        else:  # assume mappings are list type then
+            # transform into tuples
+            tup = [
+                tuple(self.representation.approximate(np.array(m)))
+                for m in input_mappings
+            ]
+            mappings = [self.representation.fromRepresentation(m) for m in tup]
+        self.statistics.add_rep_time(process_time() - time)
 
         # first look up as many as possible:
         lookups = [self.lookup(t) for t in tup]
@@ -156,8 +157,17 @@ class SimulationManager(object):
         if num == len(tup):
             return lookups
 
-        # create a list of simulations to be run
+        # create a list of simulations to be run.
+        # each element is a tuple (simulation, hydra_configuration)
         simulations = []
+        # Logging are not configured in the spawned processes on mac OS.
+        # As a workaround, suggested in
+        # https://github.com/facebookresearch/hydra/issues/1005
+        # we pass the hydra configuration to the child processes
+        cfg_pickled = None
+        if HydraConfig.initialized():
+            config = HydraConfig.get()
+            cfg_pickled = cloudpickle.dumps(config)
         for i, mapping in enumerate(mappings):
             # skip if this particular mapping is in the cache
             if lookups[i]:
@@ -167,72 +177,64 @@ class SimulationManager(object):
                 self.platform, self.graph, mapping, self.trace
             )
 
-            simulations.append(simulation)
-
+            simulations.append((simulation, cfg_pickled))
         if self.parallel and len(simulations) > self.chunk_size:
             # since mappings are simulated in parallel, whole simulation time
             # is added later as offset
-            for _ in range(len(simulations)):
+            for _ in simulations:
                 self.statistics.mapping_evaluated(0)
 
             # run the simulations in parallel
             with mp.Pool(processes=self.jobs) as pool:
+                to_simulate = pool.imap(
+                    run_simulation_logger_wrapper,
+                    simulations,
+                    chunksize=self.chunk_size,
+                )
                 if self.progress:
                     import tqdm
 
-                    results = list(
-                        tqdm.tqdm(
-                            pool.imap(
-                                run_simulation,
-                                simulations,
-                                chunksize=self.chunk_size,
-                            ),
-                            total=len(mappings),
-                        )
+                    to_simulate = tqdm.tqdm(
+                        to_simulate,
+                        total=len(mappings),
                     )
-                    time = sum([res[1] for res in results])
-                    results = [res[0] for res in results]
-                else:
-                    results = list(
-                        pool.map(
-                            run_simulation,
-                            simulations,
-                            chunksize=self.chunk_size,
-                        )
-                    )
-                    time = sum([res[1] for res in results])
-                    results = [res[0] for res in results]
+                simulated = list(to_simulate)
+                time = sum([s[1] for s in simulated])
+                simulated = [s[0] for s in simulated]
                 self.statistics.add_offset(time)
         else:
-            results = []
+            simulated = []
             # run the simulations sequentially
             for s in simulations:
-                r, time = run_simulation(s)
-                results.append(r)
+                s, time = run_simulation(s[0])
+                simulated.append(s)
                 self.statistics.mapping_evaluated(time)
 
-        # calculate the execution times in milliseconds and store them
-        exec_times = []  # keep a list of exec_times for later
-        res_iter = iter(results)
+        # Collect the simulation results and store them
+        sim_results = []
+        sim_iter = iter(simulated)
         for i, mapping in enumerate(mappings):
-            exec_time = lookups[i]
-            if exec_time:
-                exec_times.append(exec_time)
+            sim_res = lookups[i]
+            if sim_res:
+                sim_results.append(sim_res)
             else:
-                r = next(res_iter)
-                exec_time = float(r.exec_time / 1000000000.0)
-                exec_times.append(exec_time)
-                self.add_time_mapping(tup[i], exec_time)
-        return exec_times
+                s = next(sim_iter)
+                sim_results.append(s.result)
+                self.add_mapping_result(tup[i], s.result)
+        return sim_results
 
     def append_mapping_metadata(self, mapping):
-        """Append metadata to the mapping object such as execution_time.
+        """Append metadata to the mapping object such as execution_time, energy.
 
         Args:
             mapping (Mapping): a mapping object.
         """
-        exec_time = self.simulate([mapping])
-        mapping.metadata.exec_time = exec_time[0]
+        sim_res = self.simulate([mapping])[0]
+        # save execution time and energy in ms and mJ, respectively
+        mapping.metadata.exec_time = sim_res.exec_time / 1000000000.0
+        mapping.metadata.energy = None
+        if sim_res.dynamic_energy is not None:
+            mapping.metadata.energy = sim_res.dynamic_energy / 1000000000.0
 
     def dump(self, filename):
         log.info(f"dumping cache to {filename}")
@@ -252,6 +254,21 @@ class SimulationManager(object):
             f[str(i)].attrs["runtime"] = self._cache[mapping]
         f.close()
         log.info("cache dumped.")
+
+
+def run_simulation_logger_wrapper(arguments):
+    """Simulation wrapper with logger settings.
+
+    Logging are not configured in the spawned processes on mac OS.
+    As a workaround, suggested in
+    https://github.com/facebookresearch/hydra/issues/1005
+    we pass the hydra configuration from the main process.
+    """
+    simulation, cfg_pickled = arguments
+    if cfg_pickled:
+        config = pickle.loads(cfg_pickled)
+        hydra.core.utils.configure_log(config.job_logging, config.verbose)
+    return run_simulation(simulation)
 
 
 def run_simulation(simulation):

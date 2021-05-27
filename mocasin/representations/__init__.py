@@ -373,7 +373,9 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         disable_mpsym=False,
         disable_symmetries_test=False,
     ):
-        self._topologyGraph = platform.to_adjacency_dict()
+        self._topologyGraph = platform.to_adjacency_dict(
+            include_proc_type_labels=True
+        )
         self.graph = graph
         self.platform = platform
         self._d = len(graph.processes())
@@ -515,23 +517,36 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
     def uniform(self):
         return self.fromRepresentation(self._uniform())
 
-    def _allEquivalent(self, x):
+    def _allEquivalent(self, x, only_support=False):
         x_ = x[: self._d]
         if self.sym_library:
-            return frozenset([tuple(p) for p in self._ag.orbit(x_)])
-        else:
-            return self._G.tuple_orbit(x_)
+            # TODO: Orbit exploration with support is not implemented in mpsym
+            support_orbit = set()
+            for p in self._ag.orbit(x_):
+                if only_support:
+                    support = frozenset(p)
+                    if support in support_orbit:
+                        continue
+                    support_orbit.add(support)
+                yield tuple(p)
 
-    def allEquivalent(self, x):
+        else:
+            for x in self._G.tuple_orbit(x_, only_support=only_support):
+                yield x
+
+    def allEquivalent(self, x, only_support=False):
+        """Generate all equivalent mappings to the given one.
+
+        If `only_support` is true, the generator returns only the mappings, for
+        which occupied cores (or a support) are different, otherwise, it returns
+        all equivalent mappings.
+        """
         x_ = x.to_list(channels=False)
-        orbit = self._allEquivalent(x_)
-        res = []
-        for elem in orbit:
+        for elem in self._allEquivalent(x_, only_support=only_support):
             mapping = self.list_mapper.generate_mapping(list(elem))
             if hasattr(x, "metadata"):
                 mapping.metadata = copy(x.metadata)
-            res.append(mapping)
-        return res
+            yield mapping
 
     def toRepresentation(self, mapping):
         return self._simpleVec2Elem(mapping.to_list(channels=self.channels))

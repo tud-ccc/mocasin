@@ -6,6 +6,7 @@
 
 from mocasin.simulate.process import RuntimeProcess, ProcessState
 from mocasin.simulate.scheduler import ContextSwitchMode, RuntimeScheduler
+from mocasin.simulate.process import RuntimeDataflowProcess
 
 
 import pytest
@@ -28,9 +29,9 @@ def runtime_scheduler(system, processor):
 
 def mock_process_workload(env, process, ticks):
     assert process.check_state(ProcessState.RUNNING)
-    preempt = process._preempt
-    yield env.any_of([env.timeout(ticks), preempt])
-    if preempt.processed:
+    interrupt = process._interrupt
+    yield env.any_of([env.timeout(ticks), interrupt])
+    if interrupt.processed:
         process._deactivate()
     else:
         process._finish()
@@ -61,17 +62,21 @@ class TestRuntimeScheduler:
         env.run(1)  # start simulation to initialize the process
         process._transition(state)
         env.run(2)
-        if state == "CREATED":
+        if state == "FINISHED" or state == "RUNNING":
+            with pytest.raises(RuntimeError):
+                runtime_scheduler.add_process(process)
+        else:
             runtime_scheduler.add_process(process)
             env.run(3)
             assert runtime_scheduler.current_process is None
-            assert len(runtime_scheduler._ready_queue) == 0
+            if state == "READY":
+                assert len(runtime_scheduler._ready_queue) == 1
+            else:
+                assert len(runtime_scheduler._ready_queue) == 0
             assert len(runtime_scheduler._processes) == 1
             assert process in runtime_scheduler._processes
             assert process.processor is None
-        else:
-            with pytest.raises(RuntimeError):
-                runtime_scheduler.add_process(process)
+            assert process._state == getattr(ProcessState, state)
 
     def test_process_becomes_ready(self, runtime_scheduler, process, env):
         ready_event = runtime_scheduler.process_ready
@@ -125,6 +130,90 @@ class TestRuntimeScheduler:
     def test_run(self, runtime_scheduler, processes, env, mocker):
         self.call_run(runtime_scheduler, processes, env, mocker)
         assert env.now == sum(range(1, len(processes) + 1)) * workload_ticks
+
+    def test_remove_process(self, runtime_scheduler, env, app, mocker):
+        proc_a = RuntimeDataflowProcess("test_proc_a", app)
+        proc_b = RuntimeDataflowProcess("test_proc_b", app)
+        env.run(1)  # start simulation to initialize the processes
+
+        # add the processes
+        runtime_scheduler.add_process(proc_a)
+        runtime_scheduler.add_process(proc_b)
+
+        assert len(runtime_scheduler._ready_queue) == 0
+        assert len(runtime_scheduler._processes) == 2
+
+        # mark proc_b as ready
+        proc_b.start()
+        env.run(2)
+
+        assert len(runtime_scheduler._ready_queue) == 1
+        assert len(runtime_scheduler._processes) == 2
+
+        # remove proc_a
+        runtime_scheduler.remove_process(proc_a)
+        assert len(runtime_scheduler._ready_queue) == 1
+        assert len(runtime_scheduler._processes) == 1
+
+        # try to remove proc_a again
+        with pytest.raises(ValueError):
+            res = runtime_scheduler.remove_process(proc_a)
+            assert res is None
+        assert len(runtime_scheduler._ready_queue) == 1
+        assert len(runtime_scheduler._processes) == 1
+
+        # remove proc_b
+        res = runtime_scheduler.remove_process(proc_b)
+        assert res is None
+        assert len(runtime_scheduler._ready_queue) == 0
+        assert len(runtime_scheduler._processes) == 0
+
+    def test_remove_running_process(self, runtime_scheduler, env, app, mocker):
+        proc_a = RuntimeDataflowProcess("test_proc_a", app)
+        proc_b = RuntimeDataflowProcess("test_proc_b", app)
+
+        # give proc_b a workload
+        proc_b.workload = mocker.Mock(
+            side_effect=lambda: mock_process_workload(env, proc_b, 10)
+        )
+
+        # also mock up the schedule function
+        runtime_scheduler.schedule = mocker.Mock(
+            side_effect=lambda: runtime_scheduler._ready_queue[0]
+            if len(runtime_scheduler._ready_queue) > 0
+            else None
+        )
+
+        env.run(1)  # start simulation to initialize the processes
+
+        # add the processes
+        runtime_scheduler.add_process(proc_a)
+        runtime_scheduler.add_process(proc_b)
+
+        assert len(runtime_scheduler._ready_queue) == 0
+        assert len(runtime_scheduler._processes) == 2
+
+        # start the scheduler
+        env.process(runtime_scheduler.run())
+        env.run(2)
+
+        # mark proc_b as ready
+        proc_b.start()
+        env.run(5)
+
+        assert proc_b.check_state(ProcessState.RUNNING)
+
+        event = runtime_scheduler.remove_process(proc_b)
+        assert proc_b not in runtime_scheduler._processes
+        assert proc_b not in runtime_scheduler._ready_queue
+        assert event is not None
+        assert not event.triggered
+
+        env.run(6)
+        assert proc_b.check_state(ProcessState.READY)
+        assert proc_b not in runtime_scheduler._processes
+        assert proc_b not in runtime_scheduler._ready_queue
+        assert event.triggered
 
     def test_scheduling_delay(self, runtime_scheduler, processes, env, mocker):
         runtime_scheduler._scheduling_cycles = scheduling_delay

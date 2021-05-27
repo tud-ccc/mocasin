@@ -6,8 +6,33 @@
 import hydra
 import simpy
 
+from dataclasses import dataclass
+
 from mocasin.simulate.application import RuntimeDataflowApplication
 from mocasin.simulate.system import RuntimeSystem
+
+
+@dataclass
+class SimulationResult:
+    """Class for keeping the simulation results.
+
+    Attributes:
+        exec_time (float): total simulated time in ps.
+        static_energy (float): static energy consumption in pJ.
+        dynamic_energy (float): dynamic energy consumption in pJ.
+    """
+
+    exec_time: float
+    static_energy: float
+    dynamic_energy: float
+
+    @property
+    def total_energy(self) -> float:
+        """total energy consumption in pJ"""
+        if self.static_energy and self.dynamic_energy:
+            return self.static_energy + self.dynamic_energy
+        else:
+            return None
 
 
 class BaseSimulation:
@@ -39,17 +64,11 @@ class BaseSimulation:
         system (RuntimeSystem): The runtime representation of the simulated
             system. This is only valid inside a with block and is ``None``
             otherwise.
-        exec_time (int): total simulated time in ps. This is initial to
-            ``None`` and only set after a call to :func:`run`.
-        static_energy (float): static energy consumption in pJ. This is initial to
-            ``None`` and only set after a call to :func:`run`.
-        dynamic_energy (float): dynamic energy consumption in pJ. This is initial to
-            ``None`` and only set after a call to :func:`run`.
-        total_energy (float): total energy consumption in pJ. This is initial to
-            ``None`` and only set after a call to :func:`run`.
         run: A callable object that triggers the actual simulation. If called
             outside of a with block, calling ``run()`` will raise a
             ``RuntimeError`` .
+        result (SimulationResult): the result of the simulation run. This is
+            initialized to ``None`` and updated after calling ``run()``
 
     Args:
         platform (Platform): the platform that is simulated by this object
@@ -59,13 +78,7 @@ class BaseSimulation:
         self.env = None
         self.platform = platform
         self.system = None
-
-        self.exec_time = None
-
-        self.static_energy = None
-        self.dynamic_energy = None
-        self.total_energy = None
-
+        self.result = None
         self.run = self._default_run
 
     def __enter__(self):
@@ -147,7 +160,6 @@ class DataflowSimulation(BaseSimulation):
         self.app = RuntimeDataflowApplication(
             name=self.graph.name,
             graph=self.graph,
-            mapping=self.mapping,
             app_trace=self.app_trace,
             system=self.system,
         )
@@ -164,26 +176,30 @@ class DataflowSimulation(BaseSimulation):
     def _run(self):
         """Run the simulation.
 
-        May only be called once. Updates the :attr:`exec_time` attribute.
+        May only be called once. Updates the :attr:`result` attribute.
         """
-        if self.exec_time is not None:
+        if self.result is not None:
             raise RuntimeError("A DataflowSimulation may only be run once!")
 
         # start all schedulers
         self.system.start_schedulers()
         # start the application
-        finished = self.env.process(self.app.run())
+        finished = self.env.process(self.app.run(self.mapping))
         # run the actual simulation until the application finishes
         self.env.run(finished)
         # check if all graph processes finished execution
         self.system.check_errors()
         # save the execution time
-        self.exec_time = self.env.now
-        # save the energy consumption
-        if self.system.power_enabled:
-            energy_results = self.system.calculate_energy()
-            (self.static_energy, self.dynamic_energy) = energy_results
-            self.total_energy = self.static_energy + self.dynamic_energy
+        self.result = SimulationResult(
+            exec_time=self.env.now, static_energy=None, dynamic_energy=None
+        )
+
+        energy = self.system.calculate_energy()
+        # If the power model is enabled, also save the energy consumption
+        if energy:
+            static_energy, dynamic_energy = energy
+            self.result.static_energy = static_energy
+            self.result.dynamic_energy = dynamic_energy
 
     @staticmethod
     def from_hydra(cfg):

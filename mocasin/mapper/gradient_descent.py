@@ -154,7 +154,8 @@ class GradientDescentMapper(object):
             mappings.append(m)
 
         self.dim = len(mappings[0])
-        cur_exec_times = self.simulation_manager.simulate(mappings)
+        cur_sim_results = self.simulation_manager.simulate(mappings)
+        cur_exec_times = [x.exec_time for x in cur_sim_results]
         idx = np.argmin(cur_exec_times)
         self.best_mapping = mappings[idx]
         self.best_exec_time = cur_exec_times[idx]
@@ -204,7 +205,8 @@ class GradientDescentMapper(object):
                 )
                 log.debug(f"approximating to: {mappings[i]}")
 
-            cur_exec_times = self.simulation_manager.simulate(mappings)
+            cur_sim_results = self.simulation_manager.simulate(mappings)
+            cur_exec_times = [x.exec_time for x in cur_sim_results]
             idx = np.argmin(cur_exec_times)
             log.info(f"{idx} best mapping in batch: {cur_exec_times[idx]}")
             if cur_exec_times[idx] < self.best_exec_time:
@@ -260,7 +262,8 @@ class GradientDescentMapper(object):
             m_plus.append(mapping + evec)
             m_minus.append(mapping - evec)
 
-        exec_times = self.simulation_manager.simulate(m_plus + m_minus)
+        sim_results = self.simulation_manager.simulate(m_plus + m_minus)
+        exec_times = [x.exec_time for x in sim_results]
 
         for i in range(self.dim):
             diff_plus = exec_times[i] - cur_exec_time
