@@ -2,28 +2,27 @@
 # Licensed under the ISC license (see LICENSE.txt)
 #
 # Authors: Robert Khasanov
-"""This module implements scheduler with an algorithm from:
+"""Segmentized scheduled based on Lagrangian relaxation.
+
+This module implements scheduler with an algorithm from:
 
 S. Wildermann, A. Weichslgartner, and J. Teich, “Design methodology
 and run-time management for predictable many-core systems,”
 in 2015 IEEE International Symposium on Object/Component/Service-Oriented
 Real-Time Distributed Computing Workshops, April 2015, pp. 103–110.
 """
+from enum import Enum
+import logging
+import math
 
 from mocasin.tetris.job_state import Job
 from mocasin.tetris.schedule import (
     Schedule,
     MultiJobSegmentMapping,
     SingleJobSegmentMapping,
-    MAX_END_GAP,
 )
 from mocasin.tetris.scheduler import SegmentMapperBase, SegmentedScheduler
 from mocasin.tetris.scheduler.lr_solver import LRSolver, LRConstraint
-
-from collections import Counter
-from enum import Enum
-import logging
-import math
 
 log = logging.getLogger(__name__)
 
@@ -76,7 +75,6 @@ class SegLRSegmentMapper(SegmentMapperBase):
         self.__lr_solver = LRSolver(platform, lr_constraints, lr_rounds)
 
     def generate_segment(self, jobs, segment_start_time=0.0):
-
         # Solve Lagrangian relaxation of MMKP
         log.debug("Solving Lagrangian relaxation of MMKP...")
         l, job_mappings = self.__lr_solver.solve(
@@ -134,7 +132,7 @@ class SegLRSegmentMapper(SegmentMapperBase):
                 (LRSolver.job_config_cost(job, m, l), m)
                 for m in job.request.mappings
             ]
-            cost_mappings.sort()
+            cost_mappings.sort(key=lambda x: x[0])
             assert self.__explore_mode == SegLRExploreMode.ALL, "NYI"
 
             added = False
