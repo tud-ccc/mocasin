@@ -7,7 +7,7 @@ from mocasin.tetris.orbit_lookup import OrbitLookupManager
 
 
 def test_orbit_generator(platform, graph, mapping):
-    orbit_lookup_manager = OrbitLookupManager(platform)
+    orbit_lookup_manager = OrbitLookupManager(platform, only_support=False)
     orbit_entry = orbit_lookup_manager.get_orbit_entry(graph, mapping)
 
     gen1 = orbit_entry.get_generator()
@@ -44,3 +44,13 @@ def test_orbit_generator(platform, graph, mapping):
     # check that the old generator still produce correct value
     gen2_m_3 = next(gen2)
     assert gen1_m_3 == gen2_m_3
+
+
+def test_orbit_support_generator(platform, graph, mapping):
+    orbit_lookup_manager = OrbitLookupManager(platform, only_support=True)
+    orbit_entry = orbit_lookup_manager.get_orbit_entry(graph, mapping)
+
+    # Check the total size of the orbit
+    orbit_list = [x for x in orbit_entry.get_generator()]
+    assert len(orbit_entry._cached_mappings) == 6
+    assert len(orbit_list) == 6
