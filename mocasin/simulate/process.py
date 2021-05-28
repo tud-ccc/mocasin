@@ -525,7 +525,7 @@ class RuntimeDataflowProcess(RuntimeProcess):
             # to block and wait for tokens in the channels
             channel_token_pairs = []
             for segment in initial_read_segments:
-                channel = self._channels[segment.channel]
+                channel = self._channels[segment.channel]()
                 if not channel.can_consume(self, segment.num_tokens):
                     channel_token_pairs.append((channel, segment.num_tokens))
                     self._log.debug(
