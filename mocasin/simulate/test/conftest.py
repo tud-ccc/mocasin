@@ -40,6 +40,7 @@ def state(request):
 def app(system, mocker):
     app = RuntimeApplication("test_app", system)
     app.trace = mocker.Mock()
+    app.trace.get_trace = mocker.MagicMock(return_value=[])
     app.trace.accumulate_processor_cycles = mocker.MagicMock(
         return_value={"Test": 0, "Test2": 0}
     )
