@@ -5,6 +5,7 @@
 
 
 import pytest
+import more_itertools
 import weakref
 
 from mocasin.common.trace import (
@@ -132,6 +133,7 @@ class TestRuntimeProcess(object):
 @pytest.fixture
 def full_channel(env, mocker):
     channel = mocker.Mock()
+    channel.env = env
     channel.can_consume = lambda x, y: True
     channel.can_produce = lambda x, y: False
     channel.consume = lambda x, y: (yield env.timeout(100))
@@ -146,6 +148,8 @@ def empty_channel(env, mocker):
     channel.can_produce = lambda x, y: True
     channel.consume = lambda x, y: (yield env.timeout(100))
     channel.produce = lambda x, y: (yield env.timeout(1000))
+    channel.tokens_produced = env.event()
+    channel.tokens_consumed = env.event()
     return channel
 
 
@@ -163,6 +167,11 @@ class TestRuntimeDataflowProcess:
             yield ComputeSegment(processor_cycles={"Test": i})
             yield ReadTokenSegment(channel="chan", num_tokens=1)
 
+    def initial_read_trace_generator(self):
+        for i in range(1, 6):
+            yield ReadTokenSegment(channel="chan", num_tokens=1)
+            yield ComputeSegment(processor_cycles={"Test": i})
+
     def write_trace_generator(self):
         for i in range(1, 6):
             yield ComputeSegment(processor_cycles={"Test": i})
@@ -179,7 +188,7 @@ class TestRuntimeDataflowProcess:
         trace=None,
         channel=None,
     ):
-        dataflow_process._trace = trace
+        dataflow_process._trace = more_itertools.seekable(trace, maxlen=16)
         env.run()
         dataflow_process._channels["chan"] = (
             weakref.ref(channel) if channel else None
@@ -207,7 +216,9 @@ class TestRuntimeDataflowProcess:
 
     def test_preemption(self, env, dataflow_process, processor, processor2):
         # monkey patch the process to add a trace
-        dataflow_process._trace = self.preemption_trace_generator()
+        dataflow_process._trace = more_itertools.seekable(
+            self.preemption_trace_generator(), maxlen=16
+        )
         dataflow_process._total_cycles = {"Test": 10, "Test2": 20}
         dataflow_process._remaining_compute_cycles = {"Test": 0, "Test2": 0}
 
@@ -280,7 +291,9 @@ class TestRuntimeDataflowProcess:
     def test_workload_read_block(
         self, env, dataflow_process, processor, empty_channel
     ):
-        dataflow_process._trace = self.read_trace_generator()
+        dataflow_process._trace = more_itertools.seekable(
+            self.read_trace_generator(), maxlen=16
+        )
         env.run()
         dataflow_process._channels["chan"] = weakref.ref(empty_channel)
         dataflow_process.start()
@@ -291,6 +304,19 @@ class TestRuntimeDataflowProcess:
         env.run(finished)
         assert dataflow_process._state == ProcessState.BLOCKED
         assert env.now == 1
+
+    def test_workload_wait_for_initial_token(
+        self, env, dataflow_process, processor, empty_channel
+    ):
+        dataflow_process._wait_for_initial_tokens = True
+        dataflow_process._trace = more_itertools.seekable(
+            self.initial_read_trace_generator(), maxlen=16
+        )
+        env.run()
+        dataflow_process._channels["chan"] = weakref.ref(empty_channel)
+        dataflow_process.start()
+        env.run()
+        assert dataflow_process._state == ProcessState.BLOCKED
 
     def test_workload_write_block(
         self, env, dataflow_process, processor, full_channel
