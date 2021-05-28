@@ -435,24 +435,33 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
                     log.info(
                         "Symmetries initialized with mpsym: Platform Generator."
                     )
-                elif hasattr(platform, "ag_json") and exists(platform.ag_json):
-                    self._ag = mpsym.ArchGraphSystem.from_json_file(
-                        platform.ag_json
-                    )
-                    if disable_symmetries_test:
-                        log.warning("Using symmetries JSON without testing.")
-                        correct = True
-                    else:
-                        correct = checkSymmetries(
-                            platform.to_adjacency_dict(),
-                            self._ag.automorphisms(),
+                elif hasattr(platform, "ag_json"):
+                    if exists(platform.ag_json):
+                        self._ag = mpsym.ArchGraphSystem.from_json_file(
+                            platform.ag_json
                         )
-                    if not correct:
-                        log.warning("Symmetries json does not fit platform.")
-                        del self._ag
+                        if disable_symmetries_test:
+                            log.warning(
+                                "Using symmetries JSON without testing."
+                            )
+                            correct = True
+                        else:
+                            correct = checkSymmetries(
+                                platform.to_adjacency_dict(),
+                                self._ag.automorphisms(),
+                            )
+                        if not correct:
+                            log.warning(
+                                "Symmetries json does not fit platform."
+                            )
+                            del self._ag
+                        else:
+                            log.info(
+                                "Symmetries initialized with mpsym: JSON file."
+                            )
                     else:
-                        log.info(
-                            "Symmetries initialized with mpsym: JSON file."
+                        log.warning(
+                            "Invalid symmetries JSON path (file does not exist)."
                         )
 
                 if not hasattr(self, "_ag"):
