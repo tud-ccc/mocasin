@@ -189,7 +189,9 @@ class PlatformDesigner:
         if self.__symLibrary:
             self._ag_addCluster(identifier, name, amount, processors)
 
-    def addPeClusterForProcessor(self, identifier, processor, amount):
+    def addPeClusterForProcessor(
+        self, identifier, processor, amount, processor_names=None
+    ):
         """Creates a new cluster of processing elements on the platform.
 
         :param identifier: The identifier the cluster can be addressed within the currently active scope.
@@ -198,14 +200,21 @@ class PlatformDesigner:
         :type processor: Processor
         :param amount: The amount of processing elements in the cluster.
         :type amount: int
+        :param processor_names: The names of the processors.
+        :type amount: list of strings
         """
         try:
             start = self.__peAmount
             end = self.__peAmount + amount
             processors = []
-            for i in range(start, end):
+            for i in range(amount):
+                pe_counter = start + i
+
                 # copy the input processor since a single processor can only be added once
-                name = f"processor_{self.__peAmount:04d}"
+                if processor_names is not None:
+                    name = processor_names[i]
+                else:
+                    name = f"processor_{self.__peAmount:04d}"
                 new_processor = Processor(
                     name,
                     processor.type,
@@ -218,7 +227,7 @@ class PlatformDesigner:
                 self.__platform.add_processor(new_processor)
                 self.__platform.add_scheduler(
                     Scheduler(
-                        "sched%02d" % i,
+                        f"sched_{name}",
                         [new_processor],
                         self.__schedulingPolicy,
                     )
@@ -748,6 +757,10 @@ class PlatformDesigner:
                         self._ag_updateBaseAgs()
         else:
             return
+
+    def setPeripheralStaticPower(self, static_power):
+        """Set peripheral static power of the platform."""
+        self.__platform.peripheral_static_power = static_power
 
     def getClusterList(self, identifier):
         """Returns a list of all processing elements contained in specified cluster.

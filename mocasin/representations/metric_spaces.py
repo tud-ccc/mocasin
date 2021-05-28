@@ -303,7 +303,7 @@ class FiniteMetricSpaceLPSym(FiniteMetricSpaceLP, FiniteMetricSpaceSym):
     def _distCalc(self, x, y):
         # we need to iterate over the orbits of *tuples*
         # again one is enough
-        print(x)
+        # print(x)
         orb = list(self.elem2orb[self.orb2elem[tuple(x[0])]])
         dists = map(
             lambda xs: FiniteMetricSpaceLP.dist(self, list(xs), list(y[0])), orb

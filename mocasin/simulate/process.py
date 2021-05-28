@@ -15,6 +15,7 @@
 import enum
 import logging
 import more_itertools
+import weakref
 
 from mocasin.common.trace import SegmentType
 from mocasin.simulate.adapter import SimulateLoggerAdapter
@@ -123,7 +124,9 @@ class RuntimeProcess(object):
 
     def __init__(self, name, app):
         self.name = name
-        self.app = app
+        # a weakref ensures that there is no dependency cycle and the garbage
+        # collector knows what it can delete
+        self._app = weakref.ref(app)
         self._state = ProcessState.CREATED
         self.processor = None
         self._log = SimulateLoggerAdapter(log, self.full_name, self.env)
@@ -156,13 +159,21 @@ class RuntimeProcess(object):
 
     @property
     def full_name(self):
-        """Full name including the application name"""
-        return f"{self.app.name}.{self.name}"
+        """Return full name including the application name."""
+        if self.app:
+            return f"{self.app.name}.{self.name}"
+        else:
+            return f"None.{self.name}"
 
     @property
     def trace_writer(self):
         """The system's trace writer"""
         return self.app.system.trace_writer
+
+    @property
+    def app(self):
+        """Return the application this process belongs to."""
+        return self._app()
 
     def _transition(self, state_name):
         """Helper function for convenient state transitions.
@@ -363,6 +374,12 @@ class RuntimeProcess(object):
         assert self._state == ProcessState.FINISHED
         self._log.debug("Entered FINISHED state")
 
+        self.created.callbacks.remove(self._cb_created)
+        self.ready.callbacks.remove(self._cb_ready)
+        self.running.callbacks.remove(self._cb_running)
+        self.finished.callbacks.remove(self._cb_finished)
+        self.blocked.callbacks.remove(self._cb_blocked)
+
     def _cb_blocked(self, event):
         """Callback invoked upon entering the :const:`~ProcessState.BLOCKED`
         state.
@@ -455,7 +472,7 @@ class RuntimeDataflowProcess(RuntimeProcess):
             channel (RuntimeChannel): the channel to connect to
         """
         log.debug(f"make process {self.name} a sink to {channel.name}")
-        self._channels[channel.name] = channel
+        self._channels[channel.name] = weakref.ref(channel)
         channel.add_sink(self)
 
     def connect_to_outgoing_channel(self, channel):
@@ -467,7 +484,7 @@ class RuntimeDataflowProcess(RuntimeProcess):
             channel (RuntimeChannel): the channel to connect to
         """
         log.debug(f"make process {self.name} a source to {channel.name}")
-        self._channels[channel.name] = channel
+        self._channels[channel.name] = weakref.ref(channel)
         channel.set_src(self)
 
     def start(self, event=None):
@@ -636,7 +653,7 @@ class RuntimeDataflowProcess(RuntimeProcess):
         # interrupt.  Therefore, both consume and produce ignore any preemption
         # requests and process it only after the operation completes.
         s = self._current_segment
-        c = self._channels[s.channel]
+        c = self._channels[s.channel]()
         self._log.debug(f"read {s.num_tokens} tokens from channel {s.channel}")
         if c.can_consume(self, s.num_tokens):
             return self.env.process(c.consume(self, s.num_tokens))
@@ -651,7 +668,7 @@ class RuntimeDataflowProcess(RuntimeProcess):
         # considered as an atomic operation and an preemption request is only
         # processed after this operation completes.
         s = self._current_segment
-        c = self._channels[s.channel]
+        c = self._channels[s.channel]()
         self._log.debug(f"write {s.num_tokens} tokens to channel {s.channel}")
         if c.can_produce(self, s.num_tokens):
             return self.env.process(c.produce(self, s.num_tokens))
@@ -699,13 +716,11 @@ class RuntimeDataflowProcess(RuntimeProcess):
             # error should be marginal.
             ticks_processed = self.env.now - start
             ratio = float(ticks_processed) / float(ticks)
-            print(ratio)
 
             self._remaining_compute_cycles = {}
             for processor, cycles in processor_cycles.items():
                 cycles_processed = int(round(float(cycles) * ratio))
                 cycles_remaining = cycles - cycles_processed
-                print(f"{processor}: {cycles_remaining}")
                 assert cycles_remaining >= 0
                 self._remaining_compute_cycles[processor] = cycles_remaining
 

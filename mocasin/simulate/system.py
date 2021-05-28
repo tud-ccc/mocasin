@@ -59,8 +59,7 @@ class RuntimeSystem:
         self.platform_trace_enabled = False
         self.load_trace_cfg = None
 
-        self.energy_estimator = EnergyEstimator(platform, self.trace_writer)
-        self.power_enabled = platform.has_power_model()
+        self.energy_estimator = EnergyEstimator(platform, env)
 
         # initialize all schedulers
 
@@ -126,9 +125,21 @@ class RuntimeSystem:
                 f"The process {process.name} was already started!"
             )
         self._processes.add(process)
+        process.finished.callbacks.append(self._process_finished_cb)
+
         scheduler = self._processors_to_schedulers[processor]
         scheduler.add_process(process)
         process.start()
+
+    def _process_finished_cb(self, event):
+        """Callback for the finished event of runtime processes
+
+        Makes sure that the process is removed from the internal set of all
+        processes.
+        """
+        process = event.value
+        assert process.check_state(ProcessState.FINISHED)
+        self._processes.remove(process)
 
     def move_process(self, process, from_processor, to_processor):
         """Move a running process from one processor to another

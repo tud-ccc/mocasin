@@ -12,6 +12,7 @@ version = "0.1.0"
 
 install_requirements = [
     "arpeggio",
+    "cloudpickle",
     "cvxopt",
     "cvxpy!=1.1.8,<1.2" if sys.version_info < (3, 7) else "cvxpy!=1.1.8",
     "deap",

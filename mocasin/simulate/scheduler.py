@@ -277,10 +277,13 @@ class RuntimeScheduler(object):
             )
         process = event.value
         assert process.check_state(ProcessState.FINISHED)
-        try:
+
+        # remove registered ready callback
+        process.ready.callbacks.remove(self._cb_process_ready)
+
+        self._processes.remove(process)
+        if process in self._ready_queue:
             self._ready_queue.remove(process)
-        except ValueError:
-            pass
 
     def schedule(self):
         """Perform the scheduling.
@@ -406,7 +409,10 @@ class RuntimeScheduler(object):
         self._log.debug("after workload of process %s", next_process.full_name)
 
         # check if the process is being removed
-        if self.current_process not in self._processes:
+        if (
+            not self.current_process.check_state(ProcessState.FINISHED)
+            and self.current_process not in self._processes
+        ):
             self._log.debug("Cleaning up after removing a running process")
             # first store the context
             yield from self._store_context(self.current_process, always=True)
@@ -421,13 +427,17 @@ class RuntimeScheduler(object):
 
     def _execute_process_workload(self, process):
         # record the process activation in the simulation trace
-        if self._system.platform_trace_enabled or self._system.power_enabled:
+        if self._system.platform_trace_enabled:
             self.trace_writer.begin_duration(
                 self._system.platform.name,
                 self._processor.name,
                 process.full_name,
                 category="Schedule",
             )
+        # also let the power estimator know
+        self._system.energy_estimator.register_process_start(
+            self._processor, process
+        )
 
         # execute the process workload
         workload = self.env.process(process.workload())
@@ -447,13 +457,17 @@ class RuntimeScheduler(object):
             yield workload
 
         # record the process halting in the simulation trace
-        if self._system.platform_trace_enabled or self._system.power_enabled:
+        if self._system.platform_trace_enabled:
             self.trace_writer.end_duration(
                 self._system.platform.name,
                 self._processor.name,
                 process.full_name,
                 category="Schedule",
             )
+        # also let the power estimator know
+        self._system.energy_estimator.register_process_end(
+            self._processor, process
+        )
 
     def ready_queue_length(self):
         """Get the current length of the ready queue"""

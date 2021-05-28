@@ -20,6 +20,7 @@ class DesignerPlatformOdroid(Platform):
         num_big=4,
         num_little=4,
         name="odroid",
+        peripheral_static_power=None,
         **kwargs,
     ):
 
@@ -37,7 +38,10 @@ class DesignerPlatformOdroid(Platform):
         designer.newElement("exynos5422")
 
         # cluster 0 with l2 cache
-        designer.addPeClusterForProcessor("cluster_a7", processor_0, num_little)
+        pe_names = [f"A7_{i:02d}" for i in range(num_little)]
+        designer.addPeClusterForProcessor(
+            "cluster_a7", processor_0, num_little, processor_names=pe_names
+        )
         # Add L1/L2 caches
         designer.addCacheForPEs(
             "cluster_a7",
@@ -59,7 +63,10 @@ class DesignerPlatformOdroid(Platform):
         )
 
         # cluster 1, with l2 cache
-        designer.addPeClusterForProcessor("cluster_a15", processor_1, num_big)
+        pe_names = [f"A15_{i:02d}" for i in range(num_big)]
+        designer.addPeClusterForProcessor(
+            "cluster_a15", processor_1, num_big, processor_names=pe_names
+        )
         # Add L1/L2 caches
         designer.addCacheForPEs(
             "cluster_a15",
@@ -92,4 +99,8 @@ class DesignerPlatformOdroid(Platform):
             writeThroughput=8,
             frequencyDomain=933000000.0,
         )
+
+        # Set peripheral static power of the platform.
+        designer.setPeripheralStaticPower(peripheral_static_power)
+
         designer.finishElement()

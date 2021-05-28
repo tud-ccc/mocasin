@@ -8,7 +8,6 @@ from threading import Thread
 from mocasin.common.mapping import Mapping
 from arpeggio import ParserPython, visit_parse_tree
 from mocasin.representations import SymmetryRepresentation
-from mocasin.mapper.mapgen import MappingGeneratorOrbit, MappingGeneratorSimvec
 from mocasin.ontologies.logicLanguage import (
     Grammar,
     SemanticAnalysis,
@@ -17,6 +16,7 @@ from mocasin.ontologies.logicLanguage import (
     SharedCoreUsageConstraint,
     ProcessingConstraint,
 )
+from mocasin.ontologies.simvec_mapper import SimpleVectorMapper
 
 import sys
 import queue
@@ -76,7 +76,7 @@ class Solver:
             threadResult = threadQueue.get()
             threadCounter -= 1
             if isinstance(threadResult[1], Mapping):
-                print(threadResult[0])
+                # print(threadResult[0])
                 result = threadResult[1]
                 RUN_THREADS = False
                 break
@@ -188,54 +188,47 @@ class Solver:
         """Decision which generator to choose and creation of generator
         """
         generator = None
-        try:
-            if not equalsConstraints == []:
-                genMapping = equalsConstraints[0].getMapping()
+        if not equalsConstraints == []:
+            genMapping = equalsConstraints[0].getMapping()
 
-                """Check for contradictions in IsEqualConstraints
-                """
-                if len(equalsConstraints) > 1:
-                    for i in range(1, len(equalsConstraints)):
-                        if not equalsConstraints[i].isFulfilled(genMapping):
-                            returnBuffer.put((threadIdentifier, False))
-                            return
-
-                remaining = (
-                    remaining + mappingConstraints + sharedCoreConstraints
-                )
-                symmetryLense = SymmetryRepresentation(
-                    self.__graph, self.__platform
-                )
-                generator = MappingGeneratorOrbit(symmetryLense, genMapping)
-            else:
-                generator = MappingGeneratorSimvec(
-                    self.__graph,
-                    self.__platform,
-                    mappingConstraints,
-                    sharedCoreConstraints,
-                    processingConstraints,
-                    vec,
-                )
-
-            """Iteration over the mapping space, checking if remaining constraints are fulfilled
+            """Check for contradictions in IsEqualConstraints
             """
-            if generator:
-                for mapping in generator:
-                    global RUN_THREADS
-                    if not RUN_THREADS:
+            if len(equalsConstraints) > 1:
+                for i in range(1, len(equalsConstraints)):
+                    if not equalsConstraints[i].isFulfilled(genMapping):
+                        returnBuffer.put((threadIdentifier, False))
                         return
-                    mappingValid = True
-                    for constraint in remaining:
-                        if not constraint.isFulfilled(mapping):
-                            mappingValid = False
-                            break
 
-                    if mappingValid:
-                        returnBuffer.put((threadIdentifier, mapping))
-                        return
-        except:
-            print("Exception occurred: ", sys.exc_info()[0])
-            traceback.print_exc()
-            returnBuffer.put((threadIdentifier, False))
+            remaining = remaining + mappingConstraints + sharedCoreConstraints
+            symmetryLense = SymmetryRepresentation(
+                self.__graph, self.__platform
+            )
+            generator = symmetryLense.allEquivalent(genMapping)
+        else:
+            generator = SimpleVectorMapper(
+                self.__graph,
+                self.__platform,
+                mappingConstraints,
+                sharedCoreConstraints,
+                processingConstraints,
+                vec,
+            )
+
+        """Iteration over the mapping space, checking if remaining constraints are fulfilled
+        """
+        if generator:
+            for mapping in generator:
+                global RUN_THREADS
+                if not RUN_THREADS:
+                    return
+                mappingValid = True
+                for constraint in remaining:
+                    if not constraint.isFulfilled(mapping):
+                        mappingValid = False
+                        break
+
+                if mappingValid:
+                    returnBuffer.put((threadIdentifier, mapping))
+                    return
 
         returnBuffer.put((threadIdentifier, False))

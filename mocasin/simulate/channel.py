@@ -7,6 +7,7 @@
 """Contains the :class:`RuntimeChannel` class which manages the simulation of
 dataflow channels."""
 
+import weakref
 
 from mocasin.util import logging
 from mocasin.simulate.adapter import SimulateLoggerAdapter
@@ -49,7 +50,9 @@ class RuntimeChannel(object):
 
     def __init__(self, name, token_size, app):
         self.name = name
-        self.app = app
+        # a weakref ensures that there is no dependency cycle and the garbage
+        # collector knows what it can delete
+        self._app = weakref.ref(app)
 
         log.debug(f"initialize new runtime channel: ({self.full_name})")
 
@@ -79,6 +82,11 @@ class RuntimeChannel(object):
         """The system's trace writer"""
         return self.app.system.trace_writer
 
+    @property
+    def app(self):
+        """Return the application this process belongs to."""
+        return self._app()
+
     def set_src(self, process):
         """Set the source process.
 
@@ -88,7 +96,7 @@ class RuntimeChannel(object):
             AssertionError: if the source was already set
         """
         assert self._src is None
-        self._src = process
+        self._src = weakref.ref(process)
 
     def add_sink(self, process):
         """Add a sink process.
@@ -98,7 +106,7 @@ class RuntimeChannel(object):
         Warning:
             Adding a sink during a simulation might have unexpected effects.
         """
-        self._sinks.append(process)
+        self._sinks.append(weakref.ref(process))
         self._fifo_state[process.name] = 0
 
         # record the channel creation in the simulation trace
@@ -109,6 +117,19 @@ class RuntimeChannel(object):
                 self._fifo_state.copy(),
                 category="Channel",
             )
+
+    @property
+    def src(self):
+        """Return the source process of this channel."""
+        if self._src:
+            return self._src()
+        else:
+            return None
+
+    @property
+    def sinks(self):
+        """Return a generator of sink processes of this channel."""
+        return (s() for s in self._sinks)
 
     def can_consume(self, process, num):
         """Check if a process can consume a number of tokens.
@@ -123,11 +144,11 @@ class RuntimeChannel(object):
             ValueError: if `num` is not an integer greater than 0
             RuntimeError: if no source is registered to the channel
         """
-        if process not in self._sinks:
+        if process not in self.sinks:
             raise ValueError("Process %s is not a sink" % process.full_name)
         if (not isinstance(num, int)) or num < 1:
             raise ValueError("num must be an integer greater than 0")
-        if self._src is None:
+        if self.src is None:
             raise RuntimeError("No source registered to the channel")
         return bool(self._fifo_state[process.name] >= num)
 
@@ -144,7 +165,7 @@ class RuntimeChannel(object):
             ValueError: if `num` is not an integer greater than 0
             RuntimeError: if no sinks are registered to the channel
         """
-        if process is not self._src:
+        if process is not self.src:
             raise ValueError(f"Process {process.full_name} is not the source")
         if (not isinstance(num, int)) or num < 1:
             raise ValueError("num must be an integer greater than 0")
@@ -153,7 +174,7 @@ class RuntimeChannel(object):
         return all(
             [
                 (self._fifo_state[p.name] + num) <= self._capacity
-                for p in self._sinks
+                for p in self.sinks
             ]
         )
 
