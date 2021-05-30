@@ -4,7 +4,7 @@
 # Authors: Robert Khasanov, Christian Menard
 
 import csv
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 import logging
 
 from mocasin.simulate.adapter import SimulateLoggerAdapter
@@ -20,12 +20,12 @@ class ManagerStatisticsApplicationEntry:
     arrival: int
     deadline: int
 
-    accepted: bool = None
-    expected_end_time: float = None
+    accepted: bool = field(default=None, init=False)
+    expected_end_time: float = field(default=None, init=False)
 
-    start_time: int = None
-    end_time: int = None
-    missed_deadline: bool = None
+    start_time: int = field(default=None, init=False)
+    end_time: int = field(default=None, init=False)
+    missed_deadline: bool = field(default=None, init=False)
 
     def to_dict(self):
         """Get the dict representation."""
@@ -54,10 +54,11 @@ class ManagerStatistics:
         self.applications = {}
         self.activations = []
 
-    def new_application(self, name, arrival=None, deadline=None):
+    def new_application(self, graph, arrival=None, deadline=None):
         """Create an application entry."""
+        # TODO: Change the argument graph to runtime application.
         entry = ManagerStatisticsApplicationEntry(
-            name=name, arrival=arrival, deadline=deadline
+            name=graph.name, arrival=arrival, deadline=deadline
         )
         self.applications[entry.name] = entry
         return entry

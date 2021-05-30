@@ -147,7 +147,7 @@ class RuntimeTetrisManager(RuntimeManager):
         for request, trace in requests:
             graph = request.app
             entry = self.statistics.new_application(
-                graph.name, arrival=self.env.now, deadline=request.deadline
+                graph, arrival=self.env.now, deadline=request.deadline
             )
             if request.status == JobRequestStatus.ACCEPTED:
                 self._log.debug(f"Application {graph.name} is accepted")
