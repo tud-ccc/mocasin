@@ -111,16 +111,14 @@ class ManagerStatistics:
 
     def dump_applications(self, filename):
         """Dump application entries to a CSV file."""
-        fieldnames = [
-            "name",
-            "arrival",
-            "deadline",
-            "accepted",
-            "expected_end_time",
-            "start_time",
-            "end_time",
-            "missed_deadline",
-        ]
+        if not self.applications:
+            log.warning(
+                "No records of applications in the manager statistics. "
+                "Skip dumping."
+            )
+            return
+        elem = next(iter(self.applications.values()))
+        fieldnames = list(elem.to_dict().keys())
         with open(filename, "w", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
@@ -129,13 +127,14 @@ class ManagerStatistics:
 
     def dump_activations(self, filename):
         """Dump activation entries to a CSV file."""
-        fieldnames = [
-            "activation_time",
-            "num_new_apps",
-            "num_accepted_apps",
-            "num_prev_apps",
-            "scheduling_time",
-        ]
+        if not self.activations:
+            log.warning(
+                "No records of activations in the manager statistics. "
+                "Skip dumping."
+            )
+            return
+        elem = next(iter(self.activations))
+        fieldnames = list(elem.to_dict().keys())
         with open(filename, "w", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
