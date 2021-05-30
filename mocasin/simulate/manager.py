@@ -152,9 +152,11 @@ class RuntimeManager:
         system (System): the system
     """
 
-    def __init__(self, system):
+    def __init__(self, system, statistics=None):
         self.system = system
-        self.statistics = ManagerStatistics()
+        self.statistics = statistics
+        if not self.statistics:
+            self.statistics = ManagerStatistics()
 
         # a special logger that allows printing timestamped messages
         self._log = SimulateLoggerAdapter(log, self.name, self.env)

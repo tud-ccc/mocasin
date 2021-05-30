@@ -31,8 +31,8 @@ class RuntimeTetrisManager(RuntimeManager):
         system (System): the system
     """
 
-    def __init__(self, resource_manager, system):
-        super().__init__(system)
+    def __init__(self, resource_manager, system, statistics=None):
+        super().__init__(system, statistics)
         self.resource_manager = resource_manager
 
         # New applications
