@@ -3,6 +3,8 @@
 #
 # Authors: Robert Khasanov, Christian Menard
 
+import time
+
 from mocasin.simulate.application import RuntimeDataflowApplication
 from mocasin.simulate.manager import RuntimeManager
 from mocasin.tetris.job_request import JobRequestStatus
@@ -122,6 +124,7 @@ class RuntimeTetrisManager(RuntimeManager):
     def _generate_schedule(self):
         self.resource_manager.advance_to_time(self.env.now / 1000000000.0)
         self._clean_finished_applications()
+        num_prev = len(self._runtime_applications)
 
         # Register new requests at the resource manager
         requests = []
@@ -131,24 +134,43 @@ class RuntimeTetrisManager(RuntimeManager):
                 graph, pareto, timeout=timeout
             )
             requests.append((request, trace))
+
         # Reset the list of new applications
         self._new_applications.clear()
+
         # Generate the schedule
+        start = time.process_time()
         self.resource_manager.generate_schedule()
+        scheduling_time = time.process_time() - start
 
         new_apps = {}
         for request, trace in requests:
             graph = request.app
+            entry = self.statistics.new_application(
+                graph.name, arrival=self.env.now, deadline=request.deadline
+            )
             if request.status == JobRequestStatus.ACCEPTED:
                 self._log.debug(f"Application {graph.name} is accepted")
                 app = self._create_runtime_application(request, trace)
                 new_apps.update({request: app})
+                entry.accepted = True
             elif request.status == JobRequestStatus.REFUSED:
                 self._log.debug(f"Application {graph.name} is rejected")
+                entry.accepted = False
             else:
                 raise ValueError(f"Unexpected status {request.status}")
 
         self._runtime_applications.update(new_apps)
+
+        # Save the information about the applications and activations
+        self._update_statistics()
+        self.statistics.new_activation(
+            self.env.now,
+            len(requests),
+            len(new_apps),
+            num_prev,
+            scheduling_time,
+        )
 
     def _create_runtime_application(self, request, trace):
         # TODO: Deadlines are not supported, support them.
@@ -243,3 +265,19 @@ class RuntimeTetrisManager(RuntimeManager):
                 f"Application {request.app.name} is modeled as finished, but "
                 f"it is still running (cratio = {cratio:.4f})"
             )
+
+    def _update_statistics(self):
+        """Update application statistics.
+
+        Update the expected end time of the applications. The method should be
+        called after new schedule is generated.
+        """
+        schedule = self.resource_manager.schedule
+        # Update accepted tasks
+        if schedule:
+            for request, segments in schedule.per_requests().items():
+                assert segments[-1].finished
+                expected_end_time = segments[-1].end_time
+                entry = self.statistics.find_application(request.app.name)
+                assert entry.accepted
+                entry.expected_end_time = expected_end_time * 1000000000.0
