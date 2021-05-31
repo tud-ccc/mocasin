@@ -166,8 +166,24 @@ class MetricSpaceEmbeddingBase:
                         else:  # embedding test disabled
                             log.warning("Using embedding without testing.")
                             valid = True
-                except TypeError as e:
+                # The call to check_distortion may throw various exceptions.
+                # By intercepting all, we can detect any errors in the
+                # validation process, produce a warning for the user and
+                # continue operation by recalculating the matrix
+                except Exception as e:
                     valid = False  # could not read json
+                    if isinstance(e, TypeError):
+                        log.warning(
+                            "Could not read embedding JSON file (error "
+                            f"parsing). {e}"
+                        )
+                    else:
+                        log.warning(
+                            "An unknown error occurred while reading the "
+                            "embedding JSON file. Did you provide the correct"
+                            f"file for the given platform? ({e})")
+                    log.warning("Recalculating...")
+                    dist = np.inf
                     log.warning(
                         f"Could not read embedding JSON file (error parsing). {e}"
                     )
