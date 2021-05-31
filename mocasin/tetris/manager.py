@@ -30,9 +30,6 @@ class ResourceManager:
         self.requests = {}
         self._schedule = None
 
-        # New request queue
-        self._new_requests = []
-
     @property
     def state_time(self):
         return self._state_time
@@ -66,8 +63,10 @@ class ResourceManager:
             current_time = segment.end_time
         return True
 
-    def _adjust_schedule_after_removal(self, schedule):
-        """If some segments were removed in the schedule, we need to adjust by
+    def _adjust_schedule(self, schedule):
+        """Adjust the schedule.
+
+        If some segments were removed in the schedule, we need to adjust by
         correcting the segment's start_time and end_time.
         """
         current_time = self.state_time
@@ -86,14 +85,6 @@ class ResourceManager:
             new_schedule.add_segment(new_segment)
             current_time = new_segment.end_time
         return new_schedule
-
-    def accepted_requests(self):
-        """Get the list of tuples of active requests and job states."""
-        res = []
-        for request, job in self.requests.items():
-            if request.status == JobRequestStatus.ACCEPTED:
-                res.append((request, job))
-        return res
 
     def new_request(self, graph, mappings, timeout=None):
         """Handle new request.
@@ -122,9 +113,6 @@ class ResourceManager:
             f"New request {graph.name}, "
             f"timeout [deadline] = {timeout} [{deadline}]"
         )
-
-        # add the request to the queue
-        self._new_requests.append(request)
         return request
 
     def _finish_request(self, request):
@@ -157,7 +145,7 @@ class ResourceManager:
                 new_schedule.remove_segment(segment)
         if not self._is_schedule_adjusted(new_schedule):
             log.debug("Schedule is not adjusted. Adjusting..")
-            new_schedule = self._adjust_schedule_after_removal(new_schedule)
+            new_schedule = self._adjust_schedule(new_schedule)
         self._set_schedule(new_schedule)
 
     def _generate_schedule(self, new_requests=None):
@@ -168,10 +156,10 @@ class ResourceManager:
         """
         # Create a copy of the current job list with the new request
         # Ensure that jobs are immutable
-        jobs = [j for _, j in self.accepted_requests()]
+        jobs = [j for _, j in self.requests.items() if j]
         if new_requests:
             for request in new_requests:
-                jobs.append(Job.from_request(request))
+                jobs.append(Job.from_request(request).dispatch())
         # Generate scheduling with the new job
         st = time.time()
         schedule = self.scheduler.schedule(
@@ -206,7 +194,10 @@ class ResourceManager:
             None
         """
         new_schedule = None
-        for request in self._new_requests:
+        new_requests = [
+            r for r in self.requests.keys() if r.status == JobRequestStatus.NEW
+        ]
+        for request in new_requests:
             schedule = self._generate_schedule([request])
             if schedule:
                 log.debug(f"Request {request.app.name} is accepted")
@@ -218,8 +209,6 @@ class ResourceManager:
                 log.debug(f"Request {request.app.name} is rejected")
                 request.status = JobRequestStatus.REFUSED
                 self._remove_request(request)
-
-        self._new_requests = []
 
         if not new_schedule and force:
             new_schedule = self._generate_schedule()
@@ -268,7 +257,7 @@ class ResourceManager:
                 )
             segment, rest = segment.split(till_time)
 
-        jobs = [j for _, j in self.accepted_requests()]
+        jobs = [j for _, j in self.requests.items() if j]
         schedule = Schedule(self.platform, [segment])
         # FIXME: Remove this constructor, create method in
         # SingleJobMappingSegment class
@@ -287,7 +276,7 @@ class ResourceManager:
 
     def advance_segment(self):
         """Advance an internal state by the schedule segment."""
-        if self._new_requests:
+        if any(r.status == JobRequestStatus.NEW for r in self.requests):
             raise RuntimeError(
                 "New requests must be scheduled when advancing "
                 "the resource manager"
@@ -300,7 +289,7 @@ class ResourceManager:
 
     def advance_to_time(self, new_time):
         """Advance an internal state till `new_time`."""
-        if self._new_requests:
+        if any(r.status == JobRequestStatus.NEW for r in self.requests):
             raise RuntimeError(
                 "New requests must be scheduled when advancing "
                 "the resource manager"
@@ -317,7 +306,7 @@ class ResourceManager:
 
         # Simply update state time if there are no currently running jobs
         if not self.schedule:
-            if self.accepted_requests():
+            if self.requests:
                 raise RuntimeError(
                     "The resource manager must have an active schedule "
                     "for still running requests"
