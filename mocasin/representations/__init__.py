@@ -446,10 +446,19 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
                             )
                             correct = True
                         else:
-                            correct = checkSymmetries(
-                                platform.to_adjacency_dict(),
-                                self._ag.automorphisms(),
-                            )
+                            try:
+                                correct = checkSymmetries(
+                                    platform.to_adjacency_dict(),
+                                    self._ag.automorphisms(),
+                                )
+                            except Exception as e:
+                                log.warning(
+                                    "An unknown error occurred while reading "
+                                    "the embedding JSON file. Did you provide "
+                                    "the correct file for the given platform? "
+                                    f"({e})"
+                                )
+                                correct = False
                         if not correct:
                             log.warning(
                                 "Symmetries json does not fit platform."
