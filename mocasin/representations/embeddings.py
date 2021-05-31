@@ -181,18 +181,20 @@ class MetricSpaceEmbeddingBase:
                         log.warning(
                             "An unknown error occurred while reading the "
                             "embedding JSON file. Did you provide the correct"
-                            f"file for the given platform? ({e})")
+                            f"file for the given platform? ({e})"
+                        )
                     log.warning("Recalculating...")
                     dist = np.inf
+
+                if dist != np.inf and dist > self.target_distortion:
                     log.warning(
-                        f"Could not read embedding JSON file (error parsing). {e}"
+                        "Stored embedding is matrix invalid "
+                        f"(distortion {dist} > {self.target_distortion}). "
+                        "Recalculating..."
                     )
-                    dist = np.inf
+                    valid = False
+
                 if not valid:
-                    if dist != np.inf:
-                        log.warning(
-                            f"Stored embedding matrix invalid (distortion {dist} > {self.target_distortion}). Recalculating."
-                        )
                     E, self.distortion = self.calculateEmbeddingMatrix(
                         np.array(M.D),
                         verbose=verbose,
