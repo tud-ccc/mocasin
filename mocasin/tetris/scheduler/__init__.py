@@ -3,11 +3,11 @@
 #
 # Authors: Robert Khasanov
 
-from mocasin.tetris.job_state import Job
+from abc import ABC, abstractmethod
+
 from mocasin.tetris.orbit_lookup import OrbitLookupManager
 from mocasin.tetris.schedule import Schedule
-
-from abc import ABC, abstractmethod
+from mocasin.tetris.variant import CounterVariantSelector
 
 
 class SegmentMapperBase(ABC):
@@ -36,7 +36,7 @@ class SchedulerBase(ABC):
         rotations=False,
         **kwargs
     ):
-        """A base class for tetris scheduler
+        """A base class for tetris scheduler.
 
         If rotations is False, the scheduler does not rotate the mappings. In
         the final scheduler it is only checked that total number of used cores
@@ -49,11 +49,12 @@ class SchedulerBase(ABC):
 
         Args:
             platform (Platform): a platform
-            orbit_lookup (OrbitLookupManager): an orbit lookup manager
+            orbit_lookup_manager (OrbitLookupManager): an orbit lookup manager
             migrations (bool): whether scheduler can migrate processes
             preemptions (bool): whether scheduler can preempt processes
             rotations (bool): whether the scheduler rotate the mappings
         """
+        super().__init__()
         self.platform = platform
         self._migrations = migrations
         self._preemptions = preemptions
@@ -61,8 +62,7 @@ class SchedulerBase(ABC):
         if orbit_lookup_manager is None:
             orbit_lookup_manager = OrbitLookupManager(self.platform)
         self._orbit_lookup_manager = orbit_lookup_manager
-
-        super().__init__()
+        self.variant_selector = CounterVariantSelector(self.platform)
 
     @property
     @abstractmethod
@@ -113,8 +113,7 @@ class SegmentedScheduler(SchedulerBase):
         self.segment_mapper = segment_mapper
 
     def schedule(self, jobs, scheduling_start_time=0.0):
-        """Run a segmentized scheduler"""
-
+        """Run a segmentized scheduler."""
         # Init mapping
         schedule = Schedule(self.platform)
         cjobs = jobs.copy()
@@ -133,5 +132,5 @@ class SegmentedScheduler(SchedulerBase):
             ctime = schedule.end_time
 
         if cjobs is not None:
-            return schedule
+            return self.variant_selector.finalize_schedule(schedule)
         return None

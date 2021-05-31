@@ -141,14 +141,25 @@ class DataflowSimulation(BaseSimulation):
             given ``platform``
         mapping (Mapping): a mapping of the ``graph`` to the ``platform``
         app_trace (DataflowTrace): a trace for the given ``graph``
+        wait_for_initial_tokens (bool): If true, the application's processes
+            only start if initial tokens (first reads in the trace) are
+            available. Otherwise, they would start and immediately block.
     """
 
-    def __init__(self, platform, graph, mapping, app_trace):
+    def __init__(
+        self,
+        platform,
+        graph,
+        mapping,
+        app_trace,
+        wait_for_initial_tokens=False,
+    ):
         super().__init__(platform)
         self.graph = graph
         self.mapping = mapping
         self.app_trace = app_trace
         self.app = None
+        self._wait_for_initial_tokens = wait_for_initial_tokens
 
     def __enter__(self):
         """Setup the simulation
@@ -162,6 +173,7 @@ class DataflowSimulation(BaseSimulation):
             graph=self.graph,
             app_trace=self.app_trace,
             system=self.system,
+            wait_for_initial_tokens=self._wait_for_initial_tokens,
         )
         return self
 
@@ -202,7 +214,7 @@ class DataflowSimulation(BaseSimulation):
             self.result.dynamic_energy = dynamic_energy
 
     @staticmethod
-    def from_hydra(cfg):
+    def from_hydra(cfg, wait_for_initial_tokens):
         """Factory method.
 
         Instantiates :class:`DataflowSimulation` from a hydra configuration object.
@@ -218,6 +230,8 @@ class DataflowSimulation(BaseSimulation):
             cfg["mapper"], graph, platform, trace, rep
         )
         mapping = mapper.generate_mapping()
-        simulation = DataflowSimulation(platform, graph, mapping, trace)
+        simulation = DataflowSimulation(
+            platform, graph, mapping, trace, wait_for_initial_tokens
+        )
 
         return simulation

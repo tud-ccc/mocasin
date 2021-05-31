@@ -21,6 +21,7 @@ install_requirements = [
     "scipy<1.6.0" if sys.version_info < (3, 7) else "scipy",
     "lxml",
     "matplotlib",
+    "more_itertools",
     "mpsym",
     "numba>=0.53.0rc1",
     "numpy",

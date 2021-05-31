@@ -31,7 +31,11 @@ def test_manager_new_request(platform, graph, pareto_mappings):
         schedule = manager.generate_schedule()
         assert schedule
         assert request.status == JobRequestStatus.ACCEPTED
-        assert len(manager.accepted_requests()) == i
+        assert len(manager.requests) == i
+        accepted = sum(
+            1 for r in manager.requests if r.status == JobRequestStatus.ACCEPTED
+        )
+        assert accepted == i
         assert len(manager.schedule.get_job_mappings()) == i
         assert manager.schedule.start_time == 0.0
         assert manager.schedule.end_time <= 10.0
@@ -42,14 +46,21 @@ def test_manager_new_request(platform, graph, pareto_mappings):
         request = manager.new_request(graph, pareto_mappings, timeout=10.0)
         requests.append(request)
         assert request.status == JobRequestStatus.NEW
-        assert len(manager.accepted_requests()) == 3
+        assert len(manager.requests) == i
+        accepted = sum(
+            1 for r in manager.requests if r.status == JobRequestStatus.ACCEPTED
+        )
+        assert accepted == 3
         assert len(manager.schedule.get_job_mappings()) == 3
 
     schedule = manager.generate_schedule()
     assert schedule
     assert all(r.status == JobRequestStatus.ACCEPTED for r in requests[:3])
     assert requests[3].status == JobRequestStatus.REFUSED
-    assert len(manager.accepted_requests()) == 6
+    accepted = sum(
+        1 for r in manager.requests if r.status == JobRequestStatus.ACCEPTED
+    )
+    assert accepted == 6
     assert len(manager.schedule.get_job_mappings()) == 6
     assert manager.schedule.start_time == 0.0
     assert manager.schedule.end_time <= 10.0
@@ -72,7 +83,7 @@ def test_manager_advance_to_time(platform, graph, pareto_mappings):
     job_end_time = schedule.end_time
     assert job_end_time <= 10.0
     # Check the job state at the beginning of execution
-    job = manager.accepted_requests()[0][1]
+    job = manager.requests[request]
     assert job.request == request
     assert job.is_ready()
     assert not job.mapping
@@ -82,7 +93,7 @@ def test_manager_advance_to_time(platform, graph, pareto_mappings):
     # Advance the manager within a single segment
     manager.advance_to_time(6.0)
     assert manager.state_time == 6.0
-    job = manager.accepted_requests()[0][1]
+    job = manager.requests[request]
     assert job.request == request
     assert job.is_running()
     assert job.mapping
@@ -103,19 +114,19 @@ def test_manager_advance_to_time(platform, graph, pareto_mappings):
     request = manager.new_request(graph, pareto_mappings, timeout=5.5)
     manager.generate_schedule()
     segment_end_time = manager.schedule.segments()[0].end_time
-    assert len(manager.accepted_requests()) == 3
+    assert len(manager.requests) == 3
 
     # Jump by a segment
     manager.advance_segment()
     assert manager.state_time == segment_end_time
     assert manager.schedule.start_time == segment_end_time
-    assert len(manager.accepted_requests()) == 2
+    assert len(manager.requests) == 2
 
     # Jump after the schedule
     manager.advance_to_time(20.0)
     assert not manager.schedule
     assert manager.state_time == 20.0
-    assert not manager.accepted_requests()
+    assert not manager.requests
 
 
 def test_manager_advance_to_time_raise(platform, graph, pareto_mappings):

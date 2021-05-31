@@ -14,6 +14,7 @@
 
 import enum
 import logging
+import more_itertools
 import weakref
 
 from mocasin.common.trace import SegmentType
@@ -431,9 +432,11 @@ class RuntimeDataflowProcess(RuntimeProcess):
             within the same system.
         process_trace (generator): a generator of process trace segments
         app (RuntimeApplication): the application this process is part of
+        wait_for_initial_tokens (bool): If true, the process only starts if
+            initial tokens (first reads in the trace) are available.
     """
 
-    def __init__(self, name, app):
+    def __init__(self, name, app, wait_for_initial_tokens=False):
         super().__init__(name, app)
         log.debug(
             "initialize new dataflow runtime process (%s)", self.full_name
@@ -442,7 +445,14 @@ class RuntimeDataflowProcess(RuntimeProcess):
         app_trace = app.trace
 
         self._channels = {}
-        self._trace = app_trace.get_trace(name)
+        self._current_segment = None
+        self._remaining_compute_cycles = None
+
+        # a seekable iterator over all segments in the process trace
+        self._trace = more_itertools.seekable(
+            app_trace.get_trace(name), maxlen=16
+        )
+
         self._current_segment = None
         self._remaining_compute_cycles = None
 
@@ -454,6 +464,8 @@ class RuntimeDataflowProcess(RuntimeProcess):
         # lets the workload method know whether it is run for the first time
         # or whether it is resumed
         self._is_running = False
+
+        self._wait_for_initial_tokens = wait_for_initial_tokens
 
     def connect_to_incomming_channel(self, channel):
         """Connect the process to an incoming runtime channel
@@ -479,6 +491,72 @@ class RuntimeDataflowProcess(RuntimeProcess):
         self._channels[channel.name] = weakref.ref(channel)
         channel.set_src(self)
 
+    def start(self, event=None):
+        """Start the process.
+
+        Transition to the :const:`~ProcessState.READY` state. This function may
+        be called directly, but can also be registered as a callback to a simpy
+        event.
+
+        Args:
+            event(~simpy.events.Event): unused (only required for usage as a
+                 simpy callback)
+        Raises:
+            AssertionError: if not in :const:`ProcessState.CREATED` state
+        """
+        assert self._state == ProcessState.CREATED
+        self._log.debug("Process starts.")
+
+        self.processor = None
+
+        if self._wait_for_initial_tokens:
+            # collect all initial read segments in the traces
+            initial_read_segments = []
+            for segment in self._trace:
+                if segment.segment_type == SegmentType.READ_TOKEN:
+                    # collect read segments
+                    initial_read_segments.append(segment)
+                else:
+                    break  # abort at the fist occurrence of any other segment
+                # reset the seekable iterator to its initial state
+            self._trace.seek(0)
+
+            # iterate over the initial read segments and see if we would need
+            # to block and wait for tokens in the channels
+            channel_token_pairs = []
+            for segment in initial_read_segments:
+                channel = self._channels[segment.channel]()
+                if not channel.can_consume(self, segment.num_tokens):
+                    channel_token_pairs.append((channel, segment.num_tokens))
+                    self._log.debug(
+                        f"Process blocks because it needs {segment.num_tokens} "
+                        f"initial tokens in channel {segment.channel}"
+                    )
+
+            if len(channel_token_pairs) > 0:
+                self.env.process(
+                    self._do_wait_for_initial_tokens(channel_token_pairs)
+                )
+                self._transition("BLOCKED")
+                return
+
+        self._transition("READY")
+
+    def _do_wait_for_initial_tokens(self, channel_token_pairs):
+        # Keep waiting in a loop until enough tokens can be found in all
+        # channels to support the initial needs of this process.
+        while not all((c.can_consume(self, n) for c, n in channel_token_pairs)):
+            token_produced_events = [
+                c.tokens_produced for c, _ in channel_token_pairs
+            ]
+            # wait for a token to be produced on any of the channels
+            yield self.env.any_of(token_produced_events)
+
+        self._log.debug(
+            "Initial tokens are available now on all channels -> unblock"
+        )
+        self.unblock()
+
     def workload(self):
         """Replay a dataflow execution trace
 
@@ -488,6 +566,8 @@ class RuntimeDataflowProcess(RuntimeProcess):
         process may also return when it blocks or was deactivated. Then the
         execution is resumed on the next call of this method.
         """
+
+        self._log.debug("start workload execution")
 
         self._init_workload()
 

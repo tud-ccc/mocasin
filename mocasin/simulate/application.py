@@ -57,9 +57,19 @@ class RuntimeDataflowApplication(RuntimeApplication):
             behavior of the application
         system (System): the system the application is supposed to be
             executed on
+        wait_for_initial_tokens (bool): If true, the application's processes
+            only start if initial tokens (first reads in the trace) are
+            available. Otherwise, they would start and immediately block.
     """
 
-    def __init__(self, name, graph, app_trace, system):
+    def __init__(
+        self,
+        name,
+        graph,
+        app_trace,
+        system,
+        wait_for_initial_tokens=False,
+    ):
         super().__init__(name, system)
         self.graph = graph
         self.trace = app_trace
@@ -83,7 +93,7 @@ class RuntimeDataflowApplication(RuntimeApplication):
         # Instantiate all processes
         self._processes = {}
         for p in graph.processes():
-            proc = RuntimeDataflowProcess(p.name, self)
+            proc = RuntimeDataflowProcess(p.name, self, wait_for_initial_tokens)
             self._processes[p.name] = proc
             for c in p.incoming_channels:
                 rc = self._channels[c.name]
