@@ -605,6 +605,8 @@ class Schedule:
 
         If verbose is True, it also returns the information of job segment mappings.
         """
+        if self.is_empty():
+            return "Schedule <Empty>"
         res = (
             f"Schedule t:({self.start_time:.3f}, {self.end_time:.3f}), "
             f"e:{self.energy:.3f}\n"
@@ -655,8 +657,8 @@ class Schedule:
     def find_request_segments(self, request):
         """Returns a list of job segment mappings for of specific job request."""
         res = []
-        for segment in self:
-            for j in segment:
+        for segment in self._segments:
+            for j in segment.jobs():
                 if j.request == request:
                     res.append(j)
         return res
