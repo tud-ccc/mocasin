@@ -18,12 +18,12 @@ log = logging.getLogger(__name__)
 
 
 class ResourceManager:
-    def __init__(self, platform, scheduler):
+    def __init__(self, platform, scheduler, schedule_iteratively=True):
         self.platform = platform
         self.scheduler = scheduler
 
         # Parameters
-        self._schedule_iteratively = False
+        self._schedule_iteratively = schedule_iteratively
 
         # Time corresponding to the current internal state of resource manager
         self._state_time = 0.0
