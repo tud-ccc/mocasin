@@ -103,6 +103,8 @@ class ManagerStatistics:
 
     def average_scheduling_time(self):
         """Returns the average scheduling time."""
+        if self.total_activations() == 0:
+            return 0.0
         return self.total_scheduling_time() / self.total_activations()
 
     def find_application(self, name):
