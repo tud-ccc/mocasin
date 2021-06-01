@@ -86,7 +86,9 @@ class SchedulerBase(ABC):
         return self._orbit_lookup_manager
 
     @abstractmethod
-    def schedule(self, jobs, scheduling_start_time=0.0):
+    def schedule(
+        self, jobs, scheduling_start_time=0.0, allow_partial_solution=False
+    ):
         """Schedule jobs.
 
         Args:

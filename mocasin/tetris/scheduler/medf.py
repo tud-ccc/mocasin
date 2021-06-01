@@ -3,6 +3,12 @@
 #
 # Authors: Robert Khasanov
 
+from collections import Counter
+import copy
+import logging
+import math
+
+from mocasin.tetris.job_request import JobRequestStatus
 from mocasin.tetris.schedule import (
     Schedule,
     MultiJobSegmentMapping,
@@ -10,11 +16,6 @@ from mocasin.tetris.schedule import (
     TIME_EPS,
 )
 from mocasin.tetris.scheduler import SchedulerBase
-
-from collections import Counter
-import copy
-import logging
-import math
 
 log = logging.getLogger(__name__)
 
@@ -40,27 +41,33 @@ class MedfScheduler(SchedulerBase):
     def name(self):
         return "MEDF"
 
-    def _filter_job_mappings_by_deadline_jars(self, job, time_core_jars):
+    def _update_filtered_mappings(self, filtered, jobs, time_core_jars):
         """Filters mappings which can feet core jars and deadlines.
 
         Args:
-            job (Job): a job
+            filtered (List): a list of mappings to be filtered
+            jobs (List): a list of remaining jobs
             core_jars (Counter): available core jars volume
 
-        Returns: a list of mappings satisfying deadline and jars consditions.
+        Returns: a list of mappings satisfying deadline and jars conditions.
         """
-        res = []
-
-        for m in job.request.mappings:
-            rtime = m.metadata.exec_time * (1.0 - job.cratio)
-            if rtime > job.request.deadline - self.__scheduling_start_time:
+        for job in filtered.copy():
+            if job not in jobs:
+                filtered.pop(job)
                 continue
-            m_time_core_prod = get_mapping_time_core_product(m, job.cratio)
-            if (m_time_core_prod | time_core_jars) != time_core_jars:
-                continue
-
-            res.append(m)
-        return res
+            renergies = []
+            for m in filtered[job].copy():
+                rtime = m.metadata.exec_time * (1.0 - job.cratio)
+                if rtime > job.request.deadline - self.__scheduling_start_time:
+                    filtered[job].remove(m)
+                    continue
+                m_time_core_prod = get_mapping_time_core_product(m, job.cratio)
+                if (m_time_core_prod | time_core_jars) != time_core_jars:
+                    filtered[job].remove(m)
+                    continue
+                renergies.append(m.metadata.energy * (1.0 - job.cratio))
+            log.debug("filtered[{}]: {}".format(job.to_str(), renergies))
+        return filtered
 
     def _append_job_mapping_to_schedule(
         self, schedule, job, mapping, check_only_counters=False
@@ -175,12 +182,14 @@ class MedfScheduler(SchedulerBase):
         schedule = Schedule(self.platform)
 
         for j, m in ordered_job_mappings:
+            if not m:
+                continue
             schedule = self._form_schedule_with_job_mapping(schedule, j, m)
             if schedule is None:
                 return None
         return schedule
 
-    def _map_infinite_jobs(self):
+    def _map_infinite_jobs(self, jobs):
         """Map jobs without deadlines.
 
         Since the algorithm uses an internal data structures "jars" initialized
@@ -189,84 +198,91 @@ class MedfScheduler(SchedulerBase):
 
         Returns: a dict of job mappings
         """
-        jobs = self.__jobs
+        assert all(job.request.deadline == math.inf for job in jobs)
+
         job_mappings = {
             j: min(j.request.mappings, key=lambda m: m.metadata.energy)
             for j in jobs
-            if j.request.deadline == math.inf
         }
         return job_mappings
 
-    def schedule(self, jobs, scheduling_start_time=0.0):
-        self.__jobs = jobs
-        self.__scheduling_start_time = scheduling_start_time
-        job_mappings = self._map_infinite_jobs()
-        schedule = self._form_schedule(job_mappings)
+    def _initialize_filtered_mappings(self, jobs):
+        res = {}
+        for job in jobs:
+            mappings = job.request.mappings.copy()
+            mappings.sort(key=lambda m: m.metadata.energy)
+            res[job] = mappings
+        return res
 
-        max_deadline = max(
-            [
-                j.request.deadline - scheduling_start_time
-                for j in jobs
-                if j.request.deadline != math.inf
-            ],
-            default=0,
-        )
+    def _schedule_job_set(self, job_mappings, job_set, time_window):
+        """Schedule a job set
 
+        The function returns the schedule, as well as the `job_mappings` object
+        is updated.
+        """
+        # Initialize time_core_jars
         time_core_jars = Counter(
             {
-                k: v * max_deadline
+                k: v * time_window
                 for k, v in self.platform.get_processor_types().items()
             }
         )
+        for job, mapping in job_mappings.items():
+            m_time_core_prod = get_mapping_time_core_product(
+                mapping, job.cratio
+            )
+            time_core_jars -= m_time_core_prod
 
-        while any(j not in job_mappings for j in jobs):
+        remaining_jobs = job_set.copy()
+
+        filtered = self._initialize_filtered_mappings(remaining_jobs)
+        resultant_schedule = None
+
+        while remaining_jobs:
             log.debug("Jars: {}".format(time_core_jars))
             # List of mappings to finish the applications
-            to_finish = {}
+            filtered = self._update_filtered_mappings(
+                filtered, remaining_jobs, time_core_jars
+            )
+            # Find the job with the maximum energy difference between first two
+            # mappings
             diff = (-math.inf, None)
-            for job in (j for j in jobs if j not in job_mappings):
-                to_finish[job] = self._filter_job_mappings_by_deadline_jars(
-                    job, time_core_jars
-                )
-                to_finish[job].sort(key=lambda m: m.metadata.energy)
-                log.debug(
-                    "to_finish[{}]: {}".format(
-                        job.to_str(),
-                        [
-                            m.metadata.energy * (1.0 - job.cratio)
-                            for m in to_finish[job]
-                        ],
-                    )
-                )
-                if len(to_finish[job]) == 0:
+            for job in remaining_jobs:
+                if len(filtered[job]) == 0:
                     continue
-                if len(to_finish[job]) == 1:
+                if len(filtered[job]) == 1:
                     diff = (math.inf, job)
                     continue
                 # Check energy difference between first two mappings
                 cdiff = (1.0 - job.cratio) * (
-                    to_finish[job][1].metadata.energy
-                    - to_finish[job][0].metadata.energy
+                    filtered[job][1].metadata.energy
+                    - filtered[job][0].metadata.energy
                 )
                 if cdiff > diff[0]:
                     diff = (cdiff, job)
+
+            # Select the job to schedule
             _, job_d = diff
             if job_d is None:
-                return None
+                # There are still jobs, but no mappings could be assigned
+                for job in remaining_jobs:
+                    job_mappings[job] = None
+                break
             log.debug("Choose {}".format(job_d.to_str()))
 
             while job_d not in job_mappings:
-                current_mapping = to_finish[job_d][0]
+                current_mapping = filtered[job_d].pop(0)
                 job_mappings[job_d] = current_mapping
                 log.debug(
-                    f"Checking mapping e:{current_mapping.metadata.energy*(1.0-job_d.cratio)}"
+                    "Checking mapping e:{}".format(
+                        current_mapping.metadata.energy * (1.0 - job_d.cratio)
+                    )
                 )
                 schedule = self._form_schedule(job_mappings)
                 if schedule is None:
-                    to_finish[job_d].pop(0)
                     del job_mappings[job_d]
-                    if len(to_finish[job_d]) == 0:
-                        return None
+                    if len(filtered[job_d]) == 0:
+                        job_mappings[job_d] = None
                 else:
                     log.debug(schedule.to_str())
 
@@ -275,6 +291,7 @@ class MedfScheduler(SchedulerBase):
                         current_mapping, job_d.cratio
                     )
                     time_core_jars -= m_time_core_prod
+                    resultant_schedule = schedule
                     log.debug(
                         "Job_mappings: {}".format(
                             [
@@ -283,10 +300,83 @@ class MedfScheduler(SchedulerBase):
                                     m.get_used_processor_types(),
                                     m.metadata.energy * (1.0 - j.cratio),
                                 )
+                                if m
+                                else (j.to_str(), None)
                                 for j, m in job_mappings.items()
                             ]
                         )
                     )
+            assert job_d in job_mappings
+            remaining_jobs.remove(job_d)
+        return resultant_schedule
+
+    def schedule(
+        self, jobs, scheduling_start_time=0.0, allow_partial_solution=False
+    ):
+        """Schedule the jobs.
+
+        If `allow_partial_solution` is True, the scheduler could schedule only
+        the part of the jobs if it cannot schedule all jobs. Otherwise, it
+        schedules all jobs or returns None.
+        """
+        self.__scheduling_start_time = scheduling_start_time
+
+        # Schedule jobs with infinite deadline
+        infinite_jobs = [
+            job for job in jobs if job.request.deadline == math.inf
+        ]
+        job_mappings = self._map_infinite_jobs(infinite_jobs)
+        resultant_schedule = self._form_schedule(job_mappings)
+
+        remaining_jobs = [j for j in jobs if j not in job_mappings]
+
+        time_window = max(
+            [
+                j.request.deadline - scheduling_start_time
+                for j in remaining_jobs
+            ],
+            default=0,
+        )
+
+        if allow_partial_solution:
+            # Schedule jobs which were already accepted
+            accepted_jobs = [
+                job
+                for job in remaining_jobs
+                if job.request.status == JobRequestStatus.ACCEPTED
+            ]
+            schedule = self._schedule_job_set(
+                job_mappings, accepted_jobs, time_window
+            )
+            # If any previously accepted job was refused, return None
+            if any(job_mappings[j] is None for j in accepted_jobs):
+                log.warning(
+                    "One of the earlier accepted jobs was not scheduled. Cancelling"
+                )
+                return None
+            if schedule:
+                resultant_schedule = schedule
+
+            # Schedule new jobs
+            remaining_jobs = [
+                j for j in remaining_jobs if j not in accepted_jobs
+            ]
+            assert all(
+                job.request.status == JobRequestStatus.NEW
+                for job in remaining_jobs
+            )
+            schedule = self._schedule_job_set(
+                job_mappings, remaining_jobs, time_window
+            )
+            if schedule:
+                resultant_schedule = schedule
+        else:
+            schedule = self._schedule_job_set(
+                job_mappings, remaining_jobs, time_window
+            )
+            # If any previously accepted job was refused, return None
+            if any(job_mappings[j] is None for j in jobs):
+                return None
 
         rotated_schedule = self.variant_selector.finalize_schedule(schedule)
         return rotated_schedule
