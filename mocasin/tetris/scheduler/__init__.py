@@ -87,13 +87,21 @@ class SchedulerBase(ABC):
 
     @abstractmethod
     def schedule(
-        self, jobs, scheduling_start_time=0.0, allow_partial_solution=False
+        self,
+        jobs,
+        scheduling_start_time=0.0,
+        allow_partial_solution=False,
+        current_schedule=None,
     ):
         """Schedule jobs.
 
         Args:
             jobs (list[JobState]): input jobs
             scheduling_start_time (float): a start time
+            allow_partial_solution (bool): schedule only part of the jobs, if
+                all jobs cannot be scheduled (not supported by every scheduler)
+            current_schedule (Schedule): a current schedule, which could be
+                reused (not supported by every scheduler)
         """
         pass
 

@@ -311,13 +311,20 @@ class MedfScheduler(SchedulerBase):
         return resultant_schedule
 
     def schedule(
-        self, jobs, scheduling_start_time=0.0, allow_partial_solution=False
+        self,
+        jobs,
+        scheduling_start_time=0.0,
+        allow_partial_solution=False,
+        current_schedule=None,
     ):
         """Schedule the jobs.
 
         If `allow_partial_solution` is True, the scheduler could schedule only
         the part of the jobs if it cannot schedule all jobs. Otherwise, it
         schedules all jobs or returns None.
+
+        if `current_schedule` is not None, the scheduler tries to reuse the
+        previously generated schedule.
         """
         self.__scheduling_start_time = scheduling_start_time
 
@@ -328,52 +335,41 @@ class MedfScheduler(SchedulerBase):
         job_mappings = self._map_infinite_jobs(infinite_jobs)
         resultant_schedule = self._form_schedule(job_mappings)
 
+        # Calculate time window
+        remaining_jobs = [j for j in jobs if j not in job_mappings]
+        time_window = 0
+        if remaining_jobs:
+            max_deadline = max([j.request.deadline for j in remaining_jobs])
+            time_window = max_deadline - scheduling_start_time
+
+        # Reuse the job mappings from the previous schedule
+        if current_schedule:
+            current_schedule_requests = current_schedule.get_requests()
+            for job in remaining_jobs:
+                request = job.request
+                if request not in current_schedule_requests:
+                    continue
+                mapping_list = current_schedule.find_request_segments(request)
+                job_mappings[job] = mapping_list[-1].mapping
+            resultant_schedule = current_schedule
+
         remaining_jobs = [j for j in jobs if j not in job_mappings]
 
-        time_window = max(
-            [
-                j.request.deadline - scheduling_start_time
-                for j in remaining_jobs
-            ],
-            default=0,
-        )
-
-        if allow_partial_solution:
-            # Schedule jobs which were already accepted
-            accepted_jobs = [
-                job
-                for job in remaining_jobs
-                if job.request.status == JobRequestStatus.ACCEPTED
-            ]
-            schedule = self._schedule_job_set(
-                job_mappings, accepted_jobs, time_window
-            )
-            # If any previously accepted job was refused, return None
-            if any(job_mappings[j] is None for j in accepted_jobs):
-                log.warning(
-                    "One of the earlier accepted jobs was not scheduled. Cancelling"
-                )
-                return None
-            if schedule:
-                resultant_schedule = schedule
-
-            # Schedule new jobs
-            remaining_jobs = [
-                j for j in remaining_jobs if j not in accepted_jobs
-            ]
+        # Map the remaining jobs
+        if current_schedule:
+            # if current schedule is supplied, all remaining jobs should be new
             assert all(
                 job.request.status == JobRequestStatus.NEW
                 for job in remaining_jobs
             )
-            schedule = self._schedule_job_set(
-                job_mappings, remaining_jobs, time_window
-            )
-            if schedule:
-                resultant_schedule = schedule
-        else:
-            schedule = self._schedule_job_set(
-                job_mappings, remaining_jobs, time_window
-            )
+
+        schedule = self._schedule_job_set(
+            job_mappings, remaining_jobs, time_window
+        )
+        if schedule:
+            resultant_schedule = schedule
+
+        if not allow_partial_solution:
             # If any previously accepted job was refused, return None
             if any(job_mappings[j] is None for j in jobs):
                 return None

@@ -167,11 +167,19 @@ class ResourceManager:
                 jobs.append(Job.from_request(request).dispatch())
         # Generate scheduling with the new job
         st = time.time()
-        schedule = self.scheduler.schedule(
-            jobs,
-            scheduling_start_time=self.state_time,
-            allow_partial_solution=allow_partial_solution,
-        )
+        if allow_partial_solution:
+            schedule = self.scheduler.schedule(
+                jobs,
+                scheduling_start_time=self.state_time,
+                allow_partial_solution=True,
+                current_schedule=self.schedule,
+            )
+        else:
+            schedule = self.scheduler.schedule(
+                jobs,
+                scheduling_start_time=self.state_time,
+            )
+
         et = time.time()
         log.debug(
             f"Schedule found = {schedule is not None}. "
