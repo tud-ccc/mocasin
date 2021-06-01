@@ -5,3 +5,4 @@ defaults:
   - tgff: default
   - platform: ???
   - representation: MetricSpaceEmbedding
+out_file: "${platform.embedding_json}"

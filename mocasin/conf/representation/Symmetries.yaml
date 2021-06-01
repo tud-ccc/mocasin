@@ -5,3 +5,4 @@ periodic_boundary_conditions: false
 norm_p: 2
 canonical_operations: true
 disable_mpsym : false
+disable_symmetries_test : false

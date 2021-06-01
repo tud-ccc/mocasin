@@ -2,11 +2,14 @@
 # Licensed under the ISC license (see LICENSE.txt)
 #
 # Authors: Andres Goens
+import pytest
 
 try:
     import pynauty as pynauty
 except:
     pass
+
+from .permutations import Permutation
 
 
 def to_labeled_edge_graph(g):
@@ -110,7 +113,6 @@ edge_graph_square = {
     7: [4, 6],
 }
 
-
 if __name__ == "__main__":
     print(list_to_tuple_permutation([0, 1, 2, 4, 3, 5]))  # [[3, 4]]
     print(
@@ -119,3 +121,33 @@ if __name__ == "__main__":
     print(list_to_tuple_permutation([1, 2, 3, 4, 5, 0]))  # [[0, 1, 2, 3, 4, 5]]
     square_aut_grp = pynauty.autgrp(pynauty.Graph(8, True, edge_graph_square))
     print(str(list(map(list_to_tuple_permutation, square_aut_grp[0]))))
+
+
+def platform_graph_to_num_dict(platform_graph):
+    core_to_int = {}
+    for i, core in enumerate(platform_graph):
+        core_to_int[core] = i
+    res = {}
+    for core in platform_graph:
+        vals = []
+        for val in platform_graph[core]:
+            vals.append(core_to_int[val[0]])
+        res[core_to_int[core]] = set(vals)
+    return res
+
+
+def checkSymmetries(platform_graph, ag):
+    correct = True
+    graph = platform_graph_to_num_dict(platform_graph)
+    for p in ag:
+        p_list = list(p)
+        if type(p) == Permutation:
+            perm = p
+        else:
+            perm = Permutation(p)
+        moved = {}
+        cores_moved = perm.act(list(graph.keys()))
+        for i, j in enumerate(cores_moved):
+            moved[j] = set(perm.act(list(graph[i])))
+        correct = correct and moved == graph
+    return correct

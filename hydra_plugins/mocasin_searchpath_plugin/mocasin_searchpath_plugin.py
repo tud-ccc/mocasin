@@ -4,8 +4,10 @@
 # Authors: Christian Menard
 
 import os
+import mocasin
 
 from hydra.plugins.search_path_plugin import SearchPathPlugin
+from omegaconf import OmegaConf
 
 
 class MocasinSearchPathPlugin(SearchPathPlugin):
@@ -16,7 +18,20 @@ class MocasinSearchPathPlugin(SearchPathPlugin):
     The plugin adds all directories specified in environment variable
     ~MOCASIN_CONF_PATH~ to the search path. The plugin expects a ':' separated
     list of paths which it prepends to the search path.
+
+    The plugin also provides a custom resolver ``mocasin_path`` for reading
+    files from the mocasin package.
     """
+
+    def __init__(self):
+        # register a custom resolver to resolve paths to files located within
+        # the mocasin package
+        OmegaConf.register_resolver(
+            "mocasin_path",
+            lambda path="": os.path.join(
+                os.path.dirname(mocasin.__file__), path
+            ),
+        )
 
     def manipulate_search_path(self, search_path):
         # prepend paths from the environment variable MOCASIN_CONF_PATH

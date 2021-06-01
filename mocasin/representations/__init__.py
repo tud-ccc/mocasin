@@ -9,7 +9,6 @@ from copy import copy
 import random
 import timeit
 from os.path import exists
-import json
 
 try:
     import pynauty as pynauty
@@ -36,6 +35,7 @@ from .automorphisms import (
     to_labeled_edge_graph,
     edge_to_node_autgrp,
     list_to_tuple_permutation,
+    checkSymmetries,
 )
 from .permutations import Permutation, PermutationGroup
 import mocasin.util.random_distributions.lp as lp
@@ -95,7 +95,8 @@ class MappingRepresentation(type):
                 MappingRepresentation, cls
             ).__call__(*args, **kwargs)
             log.info(
-                f"Initializing representation {cls} of graph with processes: {graph_names} on platform with cores {platform_names}"
+                f"Initializing representation {cls} of graph with processes: "
+                f"{graph_names} on platform with cores {platform_names}"
             )
 
         instance = copy(cls._instances[(cls, graph_names, platform_names)])
@@ -206,7 +207,8 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
                     sink_pe_names = [PEs[res[s]] for s in sink_procs_idxs]
                 except:
                     log.error(
-                        f"Invalid mapping: {res} \n PEs: {PEs},\n sink_procs_idxs: {sink_procs_idxs}\n"
+                        f"Invalid mapping: {res} \n PEs: "
+                        f"{PEs},\n sink_procs_idxs: {sink_procs_idxs}\n"
                     )
                 sinks = [
                     self.platform.find_processor(snk) for snk in sink_pe_names
@@ -326,38 +328,6 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         return m1, m2
 
 
-# FIXME: UNTESTED!!
-class MetricSpaceRepresentation(
-    FiniteMetricSpaceLP, metaclass=MappingRepresentation
-):
-    """Metric Space Representation
-    A representation for a generic metric space. Currently still untested and undocumented.
-    It is recommended to use the Metri Space Embedding Representation instead, as it is more efficient,
-    (slightly better) tested and documented.
-    """
-
-    def __init__(self, graph, platform):
-        raise RuntimeError("represetation not properly implemented")
-        self._topologyGraph = platform.to_adjacency_dict()
-        (
-            M_list,
-            self._arch_nc,
-            self._arch_nc_inv,
-        ) = arch_graph_to_distance_metric(self._topologyGraph)
-        M = FiniteMetricSpace(M_list)
-        self.graph = graph
-        self.platform = platform
-        d = len(graph.processes())
-        init_app_ncs(self, graph)
-        super().__init__(M, d)
-
-    def _simpleVec2Elem(self, x):
-        return x
-
-    def _elem2SimpleVec(self, x):
-        return x
-
-
 class SymmetryRepresentation(metaclass=MappingRepresentation):
     """Symmetry Representation
     This representation considers the *archtiecture* symmetries for mappings.
@@ -392,6 +362,34 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
 
     In order to work with other mappings in the same class, the methods
     allEquivalent/_allEquivalent returns for a mapping, all mappings in that class.
+
+    The channels flag, when set to true, considers channels in the mapping vectors too.
+    This is not supported and tested yet.
+
+    The periodic_boundary_conditions flag encodes whether distances measured in this
+    space are considered by taking periodic boundary conditions or not.
+
+    The norm_p parameter sets the p value for the norm (\sum |x_i|^p)^(1/p).
+
+    The symmetries representation might be used to accelerate a meta-heuristic without
+    changing it, by enabling a symmetry-aware cache. This can be achieved by setting
+    the canonical_operations flag to False. This way, the operations of the
+    representation, like distances or considering elements in a ball, are not executed
+    on the canonical representatives but on the raw elements instead.
+
+    The symmetries representation uses the mpsym library to accelerate symmetry
+    calculations. This can be disabled by setting disable_mpsym to True, which
+    uses the python fallback version of the symmetries instead.
+
+    The calculation of the symmetries can be a costly computation, yet it only
+    depends on the architecture. Thus, the symmetries of an architecture can be
+    pre-computed, stored to and read from a file. If the platform object has
+    the field symmetries_json, the symmetries are read from the file in that path.
+    Testing that these symmetries actually correspond to the platform can be disabled
+    with the disable_symmetries_test flag. This can be useful, e.g. for approximating
+    a NoC architecture as a bus. To pre-compute the symmetries and store them in a file,
+    use the calculate_platform_symmetries task.  This pre-computation only works when
+    using mpsym.
     """
 
     def __init__(
@@ -403,6 +401,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         norm_p=2,
         canonical_operations=True,
         disable_mpsym=False,
+        disable_symmetries_test=False,
     ):
         self._topologyGraph = platform.to_adjacency_dict(
             include_proc_type_labels=True
@@ -420,6 +419,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         self.canonical_operations = canonical_operations
 
         n = len(self.platform.processors())
+        correct = None
 
         if disable_mpsym:
             self.sym_library = False
@@ -435,17 +435,49 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
                     log.info(
                         "Symmetries initialized with mpsym: Platform Generator."
                     )
-                elif hasattr(platform, "ag_json") and exists(platform.ag_json):
-                    # todo: make sure the correspondence of cores is correct!
-                    self._ag = mpsym.ArchGraphSystem.from_json_file(
-                        platform.ag_json
-                    )
-                    log.info("Symmetries initialized with mpsym: JSON file.")
+                elif hasattr(platform, "ag_json"):
+                    if exists(platform.ag_json):
+                        self._ag = mpsym.ArchGraphSystem.from_json_file(
+                            platform.ag_json
+                        )
+                        if disable_symmetries_test:
+                            log.warning(
+                                "Using symmetries JSON without testing."
+                            )
+                            correct = True
+                        else:
+                            try:
+                                correct = checkSymmetries(
+                                    platform.to_adjacency_dict(),
+                                    self._ag.automorphisms(),
+                                )
+                            except Exception as e:
+                                log.warning(
+                                    "An unknown error occurred while reading "
+                                    "the embedding JSON file. Did you provide "
+                                    "the correct file for the given platform? "
+                                    f"({e})"
+                                )
+                                correct = False
+                        if not correct:
+                            log.warning(
+                                "Symmetries json does not fit platform."
+                            )
+                            del self._ag
+                        else:
+                            log.info(
+                                "Symmetries initialized with mpsym: JSON file."
+                            )
+                    else:
+                        log.warning(
+                            "Invalid symmetries JSON path (file does not exist)."
+                        )
 
-                else:
+                if not hasattr(self, "_ag"):
                     # only calculate this if not already present
                     log.info(
-                        "No pre-comupted mpsym symmetry group available. Initalizing architecture graph..."
+                        "No pre-comupted mpsym symmetry group available."
+                        " Initalizing architecture graph..."
                     )
                     (
                         adjacency_dict,
@@ -457,7 +489,8 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
                         num_vertices, True, adjacency_dict, coloring
                     )
                     log.info(
-                        "Architecture graph initialized. Calculating automorphism group using Nauty..."
+                        "Architecture graph initialized. Calculating "
+                        "automorphism group using Nauty..."
                     )
                     autgrp_edges = pynauty.autgrp(nautygraph)
                     autgrp, _ = edge_to_node_autgrp(
@@ -469,16 +502,6 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
                     for node in self._arch_nc:
                         self._arch_nc_inv[self._arch_nc[node]] = node
                         # TODO: ensure that nodes_correspondence fits simpleVec
-
-                    # write symmetries calculated to json if exsits
-                    if not hasattr(platform, "ag_json"):
-                        log.warning(
-                            "No JSON file specified for symmetries."
-                            "Will not store them."
-                        )
-                    else:
-                        with open(platform.ag_json, "w") as f:
-                            f.write(self._ag.to_json())
 
         if not self.sym_library:
             log.info(
@@ -494,20 +517,22 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
                 num_vertices, True, adjacency_dict, coloring
             )
             log.info(
-                "Architecture graph initialized. Calculating automorphism group using Nauty..."
+                "Architecture graph initialized. Calculating "
+                "automorphism group using Nauty..."
             )
             autgrp_edges = pynauty.autgrp(nautygraph)
             autgrp, _ = edge_to_node_autgrp(autgrp_edges[0], self._arch_nc)
             permutations_lists = map(list_to_tuple_permutation, autgrp)
-            permutations = [Permutation(p, n=n) for p in permutations_lists]
+            permutations = [
+                Permutation.fromLists(p, n=n) for p in permutations_lists
+            ]
             self._G = PermutationGroup(permutations)
             log.info("Initialized automorphism group with internal symmetries")
 
     def _simpleVec2Elem(self, x):
         x_ = x[: self._d]
-        _x = x[
-            self._d :
-        ]  # keep channels if exist (they should be mapped accordingly...)
+        # keep channels if exist (they should be mapped accordingly...)
+        _x = x[self._d :]
         if self.sym_library:
             return list(self._ag.representative(x_)) + _x
         else:
@@ -621,57 +646,6 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         return self._simpleVec2Elem(approx)
 
 
-# FIXME: UNTESTED!!
-class MetricSymmetryRepresentation(
-    FiniteMetricSpaceLPSym, metaclass=MappingRepresentation
-):
-    """Metric Symmetry Representation
-    A representation combining symmetries and a metric space. Currently still untested and undocumented.
-    It is recommended to use the Symmetry Embedding Representation instead, as it is more efficient.
-    """
-
-    def __init__(self, graph, platform):
-        self._topologyGraph = platform.to_adjacency_dict()
-        self.graph = graph
-        self.platform = platform
-        self._d = len(graph.processes())
-        (
-            M_matrix,
-            self._arch_nc,
-            self._arch_nc_inv,
-        ) = arch_graph_to_distance_metric(self._topologyGraph)
-        M = FiniteMetricSpace(M_matrix)
-        (
-            adjacency_dict,
-            num_vertices,
-            coloring,
-            self._arch_nc,
-        ) = to_labeled_edge_graph(self._topologyGraph)
-        init_app_ncs(self, graph)
-        self._arch_nc_inv = {}
-        for node in self._arch_nc:
-            self._arch_nc_inv[self._arch_nc[node]] = node
-        # TODO: ensure that nodes_correspondence fits simpleVec
-
-        n = len(self.platform.processors())
-        nautygraph = pynauty.Graph(num_vertices, True, adjacency_dict, coloring)
-        autgrp_edges = pynauty.autgrp(nautygraph)
-        autgrp, new_nodes_correspondence = edge_to_node_autgrp(
-            autgrp_edges[0], self._arch_nc
-        )
-        permutations_lists = map(list_to_tuple_permutation, autgrp)
-        permutations = [Permutation(p, n=n) for p in permutations_lists]
-        self._G = PermutationGroup(permutations)
-        FiniteMetricSpaceLPSym.__init__(self, M, self._G, self._d)
-        self.p = 1
-
-    def _simpleVec2Elem(self, x):
-        return x
-
-    def _elem2SimpleVec(self, x):
-        return x
-
-
 class MetricEmbeddingRepresentation(
     MetricSpaceEmbedding, metaclass=MappingRepresentation
 ):
@@ -692,6 +666,27 @@ class MetricEmbeddingRepresentation(
     when multiple processes are mapped to the same PE. The scaling factor for those extra
     dimensions is controlled by the value of extra_dims_factor.
 
+    When the ignore_channels flag is set to true, the embedding ignores communication channels,
+    only focusing on the mapping of computation.
+
+    The target_distortion value sets the maximum distortion of the metric space that is allowed
+    for the embedding. A value close to 1 might be hard or even impossible,
+    a higher value reduces accuracy but allows to reduce the dimension of the embedding more using the
+    JLT-based dimensionality-reduction. The number of tries to achieve the target distortion for
+    a given dimension is controlled by the parameter jlt_tries.
+
+    The verbose flag controls the verbosity of the module.
+
+    Finally, since the embedding depends only on the architecture, it can be pre-computed
+    and stored in a file. This file is read from the architecture description. If the
+    architecture object has a field embedding_json, it will read the precomputed
+    embedding from a json file in this path. Most architectures set this field from a
+    parameter with the same name that can be configured in hydra.
+
+    Such a json file can be generated using the calculate_platform_embedding task.
+    If no such file exists, or it is invalid, an embedding will be computed from scratch.
+    The flag disable_embedding_test can be set to True to accept the embedding from the
+    json without checking it fits the given architecture and parameters.
     """
 
     def __init__(
@@ -705,6 +700,7 @@ class MetricEmbeddingRepresentation(
         target_distortion=1.1,
         jlt_tries=10,
         verbose=False,
+        disable_embedding_test=False,
     ):
         # todo: make sure the correspondence of cores is correct!
         M_matrix, self._arch_nc, self._arch_nc_inv = arch_to_distance_metric(
@@ -753,6 +749,7 @@ class MetricEmbeddingRepresentation(
             embedding_matrix_path=self.embedding_matrix_path,
             target_distortion=self.target_distortion,
             verbose=verbose,
+            disable_embedding_test=disable_embedding_test,
         )
         log.info(f"Found embedding with distortion: {self.distortion}")
 
@@ -870,6 +867,8 @@ class SymmetryEmbeddingRepresentation(
         target_distortion=1.1,
         canonical_operations=True,
         disable_mpsym=False,
+        disable_symmetries_test=False,
+        disable_embedding_test=False,
     ):
 
         self.sym = SymmetryRepresentation(
@@ -880,6 +879,7 @@ class SymmetryEmbeddingRepresentation(
             disable_mpsym=disable_mpsym,
             periodic_boundary_conditions=periodic_boundary_conditions,
             canonical_operations=canonical_operations,
+            disable_symmetries_test=disable_symmetries_test,
         )
         self.emb = MetricEmbeddingRepresentation(
             graph,
@@ -891,6 +891,7 @@ class SymmetryEmbeddingRepresentation(
             target_distortion=target_distortion,
             jlt_tries=jlt_tries,
             ignore_channels=ignore_channels,
+            disable_embedding_test=disable_embedding_test,
         )
         self.canonical_operations = canonical_operations
         log.warning(

@@ -139,6 +139,7 @@ class MetricSpaceEmbeddingBase:
         embedding_matrix_path=None,
         verbose=False,
         target_distortion=1.1,
+        disable_embedding_test=False,
         jlt_tries=30,
     ):
         assert isinstance(M, metric.FiniteMetricSpace)
@@ -157,22 +158,43 @@ class MetricSpaceEmbeddingBase:
                         read_distortion = contents["distortion"]
                         if read_distortion > self.target_distortion:
                             valid = False
-                        else:
+                        elif not disable_embedding_test:
                             dist = check_distortion(M.D, E)
                             valid = dist <= self.target_distortion
                             if valid:
                                 self.distortion = dist
-                except TypeError as e:
+                        else:  # embedding test disabled
+                            log.warning("Using embedding without testing.")
+                            valid = True
+                # The call to check_distortion may throw various exceptions.
+                # By intercepting all, we can detect any errors in the
+                # validation process, produce a warning for the user and
+                # continue operation by recalculating the matrix
+                except Exception as e:
                     valid = False  # could not read json
-                    log.warning(
-                        f"Could not read embedding JSON file (error parsing). {e}"
-                    )
-                    dist = np.inf
-                if not valid:
-                    if dist != np.inf:
+                    if isinstance(e, TypeError):
                         log.warning(
-                            f"Stored embedding matrix invalid (distortion {dist} > {self.target_distortion}). Recalculating."
+                            "Could not read embedding JSON file (error "
+                            f"parsing). {e}"
                         )
+                    else:
+                        log.warning(
+                            "An unknown error occurred while reading the "
+                            "embedding JSON file. Did you provide the correct"
+                            f"file for the given platform? ({e})"
+                        )
+                    log.warning("Recalculating...")
+                    dist = np.inf
+
+                if dist != np.inf and dist > self.target_distortion:
+                    log.warning(
+                        "Stored embedding is matrix invalid "
+                        f"(distortion {dist} > {self.target_distortion}). "
+                        "Recalculating..."
+                    )
+                    valid = False
+
+                if not valid:
                     E, self.distortion = self.calculateEmbeddingMatrix(
                         np.array(M.D),
                         verbose=verbose,
@@ -181,7 +203,8 @@ class MetricSpaceEmbeddingBase:
                     )
             else:  # path does not exist but is not None
                 log.warning(
-                    "No embedding matrix stored. Calculating and storing."
+                    "No embedding matrix stored. Calculating it now ..."
+                    "(this might take some time)"
                 )
                 E, self.distortion = self.calculateEmbeddingMatrix(
                     np.array(M.D),
@@ -189,13 +212,6 @@ class MetricSpaceEmbeddingBase:
                     target_dist=self.target_distortion,
                     jlt_tries=self.jlt_tries,
                 )
-                with open(embedding_matrix_path, "w") as f:
-                    contents = {
-                        "matrix": E.tolist(),
-                        "shape": E.shape,
-                        "distortion": self.distortion,
-                    }
-                    f.write(json.dumps(contents))
 
         else:  # path is None
             E, self.distortion = self.calculateEmbeddingMatrix(
@@ -323,6 +339,15 @@ class MetricSpaceEmbeddingBase:
         approx = self.approx(vec)
         return self.inv(approx)
 
+    def dump_json(self, filename):
+        with open(filename, "w") as f:
+            contents = {
+                "matrix": self._f_iota.tolist(),
+                "shape": self._f_iota.shape,
+                "distortion": self.distortion,
+            }
+            f.write(json.dumps(contents))
+
 
 @nb.njit(fastmath=True, parallel=True, cache=True)
 def dist_1(mat, vec):
@@ -344,6 +369,7 @@ class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
         verbose=False,
         jlt_tries=30,
         target_distortion=1.1,
+        disable_embedding_test=False,
     ):
         MetricSpaceEmbeddingBase.__init__(
             self,
@@ -352,6 +378,7 @@ class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
             target_distortion=target_distortion,
             jlt_tries=jlt_tries,
             verbose=verbose,
+            disable_embedding_test=disable_embedding_test,
         )
         self._d = d
         if not hasattr(self, "_split_d"):

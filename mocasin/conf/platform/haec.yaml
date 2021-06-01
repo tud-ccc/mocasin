@@ -8,7 +8,7 @@ processor_0:
   _target_: mocasin.platforms.platformDesigner.genericProcessor
   type : 'proc_type_0'
   frequency : 2000000000
-symmetries_json: null
-embedding_json: null
+symmetries_json: "${mocasin_path:platforms/symmetries/haec.json}"
+embedding_json: "${mocasin_path:platforms/embeddings/haec.json}"
 name: "HAEC"
 
