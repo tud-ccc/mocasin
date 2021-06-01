@@ -69,6 +69,8 @@ class CounterVariantSelector(BaseVariantSelector):
         The output returns the schedule, where no mappings overlap in the same
         segment, and each transformed mapping is equivalent to the original one.
         """
+        if not schedule:
+            return None
         # TODO: Check that the transformed mapping is equivalent. (Check that
         # SymmetryRepresentation does not create the whole orbit for that.)
         rotated_schedule = Schedule(self.platform)
