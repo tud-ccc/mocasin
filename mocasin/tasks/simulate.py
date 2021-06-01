@@ -67,7 +67,7 @@ def simulate(cfg):
         print("Total simulation time: " + str(stop - start) + " s")
         summary = {}
         summary["Total_simulated_time_ms"] = str(exec_time)
-        summary["Total_simulation_time_ms"] = str(stop - start)
+        summary["Total_simulation_time_s"] = str(stop - start)
 
         if result.total_energy is not None:
             total_energy = float(result.total_energy) / 1000000000.0
