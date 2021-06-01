@@ -373,6 +373,13 @@ class MultiJobSegmentMapping:
         assert job in self._jobs
         self._jobs.remove(job)
 
+    def get_requests(self):
+        """Get active requests in the segment."""
+        res = set()
+        for job in self._jobs:
+            res.add(job.request)
+        return res
+
     def get_used_processors(self):
         """Returns the set of used processors."""
         return reduce(
@@ -652,6 +659,13 @@ class Schedule:
             for j in segment:
                 if j.request == request:
                     res.append(j)
+        return res
+
+    def get_requests(self):
+        """Get active requests in the schedule."""
+        res = set()
+        for segment in self._segments:
+            res.update(segment.get_requests())
         return res
 
     def is_request_completed(self, request):
