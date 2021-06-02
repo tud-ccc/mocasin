@@ -374,5 +374,7 @@ class MedfScheduler(SchedulerBase):
             if any(job_mappings[j] is None for j in jobs):
                 return None
 
-        rotated_schedule = self.variant_selector.finalize_schedule(schedule)
+        rotated_schedule = self.variant_selector.finalize_schedule(
+            resultant_schedule
+        )
         return rotated_schedule
