@@ -2,11 +2,9 @@
 # Licensed under the ISC license (see LICENSE.txt)
 #
 # Authors: Andres Goens
-import pytest
-
 try:
     import pynauty as pynauty
-except:
+except ImportError:
     pass
 
 from .permutations import Permutation
