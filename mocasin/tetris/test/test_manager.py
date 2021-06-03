@@ -66,6 +66,44 @@ def test_manager_new_request(platform, graph, pareto_mappings):
     assert manager.schedule.end_time <= 10.0
 
 
+def test_manager_new_request_jointly(platform, graph, pareto_mappings):
+    scheduler = MedfScheduler(platform)
+    manager = ResourceManager(platform, scheduler, schedule_iteratively=False)
+
+    assert manager.state_time == 0.0
+    assert manager.schedule is None
+    assert not manager.requests
+
+    # schedule 0 jobs
+    schedule = manager.generate_schedule()
+    assert not schedule
+    schedule = manager.generate_schedule(force=True)
+    assert not schedule
+
+    # Schedule seven jobs at the same time
+    requests = []
+    for i in range(1, 8):
+        request = manager.new_request(graph, pareto_mappings, timeout=10.0)
+        requests.append(request)
+        assert request.status == JobRequestStatus.NEW
+        assert len(manager.requests) == i
+
+    accepted = sum(
+        1 for r in manager.requests if r.status == JobRequestStatus.ACCEPTED
+    )
+    assert accepted == 0
+    schedule = manager.generate_schedule()
+    assert schedule
+    accepted = sum(1 for r in requests if r.status == JobRequestStatus.ACCEPTED)
+    rejected = sum(1 for r in requests if r.status == JobRequestStatus.REFUSED)
+    assert len(manager.requests) == 6
+    assert accepted == 6
+    assert rejected == 1
+    assert len(manager.schedule.get_job_mappings()) == 6
+    assert manager.schedule.start_time == 0.0
+    assert manager.schedule.end_time <= 10.0
+
+
 def test_manager_advance_to_time(platform, graph, pareto_mappings):
     scheduler = MedfScheduler(platform)
     manager = ResourceManager(platform, scheduler)

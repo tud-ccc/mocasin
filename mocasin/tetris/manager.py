@@ -18,9 +18,12 @@ log = logging.getLogger(__name__)
 
 
 class ResourceManager:
-    def __init__(self, platform, scheduler):
+    def __init__(self, platform, scheduler, schedule_iteratively=True):
         self.platform = platform
         self.scheduler = scheduler
+
+        # Parameters
+        self._schedule_iteratively = schedule_iteratively
 
         # Time corresponding to the current internal state of resource manager
         self._state_time = 0.0
@@ -148,7 +151,9 @@ class ResourceManager:
             new_schedule = self._adjust_schedule(new_schedule)
         self._set_schedule(new_schedule)
 
-    def _generate_schedule(self, new_requests=None):
+    def _generate_schedule(
+        self, new_requests=None, allow_partial_solution=False
+    ):
         """Generate a schedule with new requests.
 
         Internal method to generate a schedule. The schedule is not applied in
@@ -162,14 +167,82 @@ class ResourceManager:
                 jobs.append(Job.from_request(request).dispatch())
         # Generate scheduling with the new job
         st = time.time()
-        schedule = self.scheduler.schedule(
-            jobs, scheduling_start_time=self.state_time
-        )
+        if allow_partial_solution:
+            schedule = self.scheduler.schedule(
+                jobs,
+                scheduling_start_time=self.state_time,
+                allow_partial_solution=True,
+                current_schedule=self.schedule,
+            )
+        else:
+            schedule = self.scheduler.schedule(
+                jobs,
+                scheduling_start_time=self.state_time,
+            )
+
         et = time.time()
         log.debug(
             f"Schedule found = {schedule is not None}. "
             f"Time to find the schedule: {et-st}"
         )
+        return schedule
+
+    def _generate_schedule_iteratively(self):
+        """Generate schedule for multiple requests iteratively."""
+        new_requests = [
+            r for r in self.requests.keys() if r.status == JobRequestStatus.NEW
+        ]
+        new_schedule = None
+        for request in new_requests:
+            schedule = self._generate_schedule([request])
+            if schedule:
+                log.debug(f"Request {request.app.name} is accepted")
+                request.status = JobRequestStatus.ACCEPTED
+                job = Job.from_request(request).dispatch()
+                self.requests.update({request: job})
+                new_schedule = schedule
+            else:
+                log.debug(f"Request {request.app.name} is rejected")
+                request.status = JobRequestStatus.REFUSED
+                self._remove_request(request)
+        return new_schedule
+
+    def _generate_schedule_jointly(self):
+        """Generate schedule for multiple requests jointly."""
+        # Schedule all jobs in once
+        new_requests = [
+            r for r in self.requests.keys() if r.status == JobRequestStatus.NEW
+        ]
+        schedule = self._generate_schedule(
+            new_requests, allow_partial_solution=True
+        )
+        if not schedule:
+            log.debug(f"Schedule was not generated")
+            for request in new_requests:
+                log.debug(f"Request {request.app.name} is rejected")
+                request.status = JobRequestStatus.REFUSED
+                self._remove_request(request)
+            return None
+
+        scheduled_requests = schedule.get_requests()
+        for request in list(self.requests.keys()):
+            if request.status == JobRequestStatus.ACCEPTED:
+                if request not in scheduled_requests:
+                    raise RuntimeError(
+                        f"The earlier accepted request {request.app.name} "
+                        "was not scheduled"
+                    )
+                continue
+            assert request.status == JobRequestStatus.NEW
+            if request in scheduled_requests:
+                log.debug(f"Request {request.app.name} is accepted")
+                request.status = JobRequestStatus.ACCEPTED
+                job = Job.from_request(request).dispatch()
+                self.requests.update({request: job})
+            else:
+                log.debug(f"Request {request.app.name} is rejected")
+                request.status = JobRequestStatus.REFUSED
+                self._remove_request(request)
         return schedule
 
     def generate_schedule(self, force=False):
@@ -193,29 +266,21 @@ class ResourceManager:
         Returns: a new schedule if the new schedule was generated, otherwise
             None
         """
-        new_schedule = None
+        schedule = None
         new_requests = [
             r for r in self.requests.keys() if r.status == JobRequestStatus.NEW
         ]
-        for request in new_requests:
-            schedule = self._generate_schedule([request])
-            if schedule:
-                log.debug(f"Request {request.app.name} is accepted")
-                request.status = JobRequestStatus.ACCEPTED
-                job = Job.from_request(request).dispatch()
-                self.requests.update({request: job})
-                new_schedule = schedule
-            else:
-                log.debug(f"Request {request.app.name} is rejected")
-                request.status = JobRequestStatus.REFUSED
-                self._remove_request(request)
+        if self._schedule_iteratively:
+            schedule = self._generate_schedule_iteratively()
+        else:
+            schedule = self._generate_schedule_jointly()
 
-        if not new_schedule and force:
-            new_schedule = self._generate_schedule()
-            assert new_schedule
+        if not schedule and force:
+            schedule = self._generate_schedule()
+            assert schedule
 
-        if new_schedule:
-            self._set_schedule(new_schedule)
+        if schedule:
+            self._set_schedule(schedule)
             return self.schedule
 
         return None

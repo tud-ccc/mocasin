@@ -373,6 +373,13 @@ class MultiJobSegmentMapping:
         assert job in self._jobs
         self._jobs.remove(job)
 
+    def get_requests(self):
+        """Get active requests in the segment."""
+        res = set()
+        for job in self._jobs:
+            res.add(job.request)
+        return res
+
     def get_used_processors(self):
         """Returns the set of used processors."""
         return reduce(
@@ -598,6 +605,8 @@ class Schedule:
 
         If verbose is True, it also returns the information of job segment mappings.
         """
+        if self.is_empty():
+            return "Schedule <Empty>"
         res = (
             f"Schedule t:({self.start_time:.3f}, {self.end_time:.3f}), "
             f"e:{self.energy:.3f}\n"
@@ -648,10 +657,17 @@ class Schedule:
     def find_request_segments(self, request):
         """Returns a list of job segment mappings for of specific job request."""
         res = []
-        for segment in self:
-            for j in segment:
+        for segment in self._segments:
+            for j in segment.jobs():
                 if j.request == request:
                     res.append(j)
+        return res
+
+    def get_requests(self):
+        """Get active requests in the schedule."""
+        res = set()
+        for segment in self._segments:
+            res.update(segment.get_requests())
         return res
 
     def is_request_completed(self, request):
