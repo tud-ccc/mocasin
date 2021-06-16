@@ -36,6 +36,13 @@ You can now execute the mocasin command:
 mocasin help
 ```
 
+### Dependencies
+
+Depending on your OS, you might need to install further dependencies in order
+to install Mocasin (or more accurately, to install some of the python packages
+Mocasin depends on). On Ubuntu, you might need to install `libboost-all-dev`
+and `lua5.3-dev`.
+
 Configuration
 -------------
 
