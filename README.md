@@ -14,7 +14,7 @@ virtualenv -p python3 ~/virtualenvs/mocasin
 ```
 Note that you can adjust the path to your needs. You can activate the previously created environment as follows:
 ```
-source ~/source ~/virtualenvs/mocasin/bin/activate
+source ~/virtualenvs/mocasin/bin/activate
 ```
 
 Then you can install mocasin and all its dependencies from inside the mocasin root directory:
