@@ -17,6 +17,11 @@ Note that you can adjust the path to your needs. You can activate the previously
 source ~/virtualenvs/mocasin/bin/activate
 ```
 
+It is recomended to use the latest version of pip. To ensure your version is up to date, simply run the following command:
+```
+python -m pip install --upgrade pip
+```
+
 Then you can install mocasin and all its dependencies from inside the mocasin root directory:
 ```
 pip install .
@@ -38,10 +43,10 @@ mocasin help
 
 ### Dependencies
 
-Depending on your OS, you might need to install further dependencies in order
-to install Mocasin (or more accurately, to install some of the python packages
-Mocasin depends on). On Ubuntu, you might need to install `libboost-all-dev`
-and `lua5.3-dev`.
+Depending on your OS and your version of pip, you might need to install further
+dependencies in order to install Mocasin (or more accurately, to install some
+of the python packages Mocasin depends on). On Ubuntu, you might need to
+install `libboost-all-dev` and `lua5.3-dev`.
 
 Configuration
 -------------
