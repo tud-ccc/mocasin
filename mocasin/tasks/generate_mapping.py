@@ -25,7 +25,7 @@ def generate_mapping(cfg):
 
     **Hydra Parameters**:
         * **mapper:** the mapper (mapping algorithm) to be used.
-        * **export_all:** a flag indicating whether all mappings should be
+        * **simulate_best:** a flag indicating whether all mappings should be
           exported. If ``false`` only the best mapping will be exported.
         * **graph:** the input dataflow graph. The task expects a configuration dict
           that can be instantiated to a :class:`~mocasin.common.graph.DataflowGraph`
