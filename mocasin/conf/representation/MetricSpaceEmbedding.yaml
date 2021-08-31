@@ -1,4 +1,3 @@
-# @package _group_
 _target_: mocasin.representations.MetricEmbeddingRepresentation
 norm_p : 2
 extra_dimensions : true

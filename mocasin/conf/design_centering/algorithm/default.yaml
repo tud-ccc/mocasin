@@ -1,4 +1,3 @@
-# @package _group_
 _target_ : mocasin.design_centering.DesignCentering
 max_samples : 50
 adapt_samples : 10

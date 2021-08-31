@@ -1,3 +1,2 @@
-# @package _group_
 _target_: mocasin.mapper.from_file.FromFileMapper
 files_pattern : ???

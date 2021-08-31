@@ -1,4 +1,3 @@
-# @package _group_
 _target_: mocasin.tgff.tgffSimulation.TraceGeneratorWrapper
 tgff_file: ${tgff.directory}/${tgff.file}
 graph_name: ${tgff.graph_name}

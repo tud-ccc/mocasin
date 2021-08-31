@@ -1,4 +1,3 @@
-# @package _group_
 _target_ : mocasin.design_centering.volume.Cube
 max_step : 10
 max_pe : 16
