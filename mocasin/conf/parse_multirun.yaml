@@ -2,6 +2,7 @@
 defaults:
   - common
   - plugin: no_plugin
+  - _self_
 
 #work at CWD, don't output log
 hydra:

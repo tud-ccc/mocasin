@@ -5,6 +5,7 @@ defaults:
     # Set the platform
   - platform: default
   - resource_manager: default
+  - _self_
 
 # Base directory with applications and mappings info
 tetris_apps_dir: ???

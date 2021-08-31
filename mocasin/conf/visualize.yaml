@@ -9,6 +9,7 @@ defaults:
   - mapper: default
   - representation: SimpleVector
   - sdf3: default
+  - _self_
 
 task_names: True
 width: 800

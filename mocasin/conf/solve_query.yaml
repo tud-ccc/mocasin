@@ -7,6 +7,8 @@ defaults:
     - graph: default
     - representation: SimpleVector
     - sdf3: default
+    - _self_
+
 query: ???
 output_file: "None"
 vector: "None"

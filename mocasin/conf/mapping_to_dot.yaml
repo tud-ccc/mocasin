@@ -9,5 +9,6 @@ defaults:
   - representation: SimpleVector
   - mapper: default
   - sdf3: default
+  - _self_
 
 output_file: "mapping.dot"

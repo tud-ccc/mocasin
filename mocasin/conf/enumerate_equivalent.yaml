@@ -9,4 +9,5 @@ defaults:
   - mapper: from_file
   - representation: Symmetries
   - sdf3: default
+  - _self_
 output_file: equivalent_mappings.txt

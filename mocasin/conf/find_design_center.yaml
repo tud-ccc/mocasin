@@ -13,6 +13,7 @@ defaults:
   - design_centering/sample_generator: metric
   - design_centering/volume: lpvolume
   - sdf3: default
+  - _self_
 
 
 record_samples : false

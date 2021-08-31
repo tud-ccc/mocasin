@@ -10,6 +10,7 @@ defaults:
   - representation: SimpleVector
   - simulation_type: dataflow
   - sdf3: default
+  - _self_
 
 simtrace:
   file: "trace.json"

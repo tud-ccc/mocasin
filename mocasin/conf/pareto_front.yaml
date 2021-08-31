@@ -8,6 +8,7 @@ defaults:
   - representation: SimpleVector
   - mapper : genetic
   - sdf3: default
+  - _self_
 
 outdir : ./
 progress :  false
