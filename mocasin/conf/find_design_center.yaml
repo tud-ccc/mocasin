@@ -1,7 +1,6 @@
 # @package _global_
 defaults:
   - common
-  - hydra/job_logging: mocasin
   - tgff: default
   - graph: default
   - platform: default
@@ -13,6 +12,7 @@ defaults:
   - design_centering/sample_generator: metric
   - design_centering/volume: lpvolume
   - sdf3: default
+  - override hydra/job_logging: mocasin
   - _self_
 
 

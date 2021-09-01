@@ -1,10 +1,10 @@
 # @package _global_
 defaults:
   - common
-  - hydra/job_logging: mocasin
   - tgff: default
   - platform: default
   - sdf3: default
+  - override hydra/job_logging: mocasin
   - _self_
 
 output_file: "platform.dot"

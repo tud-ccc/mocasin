@@ -1,10 +1,10 @@
 # @package _global_
 defaults:
   - common
-  - hydra/job_logging: mocasin
   - tgff: default
   - sdf3: default
   - platform: ???
+  - override hydra/job_logging: mocasin
   - _self_
 mpsym : true
 out_file: "${platform.symmetries_json}"
