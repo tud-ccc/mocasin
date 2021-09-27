@@ -55,8 +55,6 @@ class PlatformDesigner:
         self.__peAmount = 0
         self.__namingSuffix = 0
 
-        self.__clusterDict = OrderedDict()
-
         self.__schedulingPolicy = None
         self.__platform = platform
 
