@@ -15,7 +15,6 @@ from mocasin.common.platform import (
     CommunicationResource,
     CommunicationResourceType,
 )
-from collections import OrderedDict
 from mocasin.util import logging
 import sys
 
@@ -177,11 +176,8 @@ class PlatformDesigner:
         :type amount: list of strings
         """
         try:
-            start = self.__peAmount
-            end = self.__peAmount + amount
             processors = []
             for i in range(amount):
-                pe_counter = start + i
 
                 # copy the input processor since a single processor can only be added once
                 if processor_names is not None:
@@ -437,7 +433,6 @@ class PlatformDesigner:
             processorList = self.__elementDict[self.__activeScope][
                 clusterIdentifier
             ]
-            processorNames = [p.name for p, _ in processorList]
 
             """Adding physical links and NOC memories according to the adjacency list
             """
