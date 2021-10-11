@@ -97,66 +97,12 @@ class PlatformDesigner:
                 raise RuntimeWarning(
                     "Expected an element of type list or dict!"
                 )
+
+        #element = self.__elementDict[lastScope]
         self.__elementDict[nextScope].update({lastScope: tmpPElist})
         self.__elementDict.pop(lastScope, None)
 
         self.__activeScope = nextScope
-
-    def addPeCluster(
-        self,
-        identifier,
-        name,
-        amount,
-        frequency,
-        static_power=None,
-        dynamic_power=None,
-    ):
-        """Creates a new cluster of processing elements on the platform.
-
-        :param identifier: The identifier the cluster can be addressed within the currently active scope.
-        :type identifier: int
-        :param name: The name of the processing elements.
-        :type name: string
-        :param amount: The amount of processing elements in the cluster.
-        :type amount: int
-        :param frequency: The frequency of the processing elements.
-        :type frequency: int
-        :param static_power: The static power of the processing elements.
-        :type static_power: float
-        :param dynamic_power: The dynamic power of the processing elements.
-        :type dynamic_power: float
-        """
-        log.warning(
-            "Deprecationg warning: use addPEClusterForProcessor instead."
-        )
-        try:
-            fd = FrequencyDomain("fd_" + name, frequency)
-            if static_power is not None and dynamic_power is not None:
-                ppm = ProcessorPowerModel(
-                    "ppm_" + name, static_power, dynamic_power
-                )
-            else:
-                ppm = None
-            start = self.__peAmount
-            end = self.__peAmount + amount
-            processors = []
-            for i in range(start, end):
-                processor = Processor("PE%02d" % i, name, fd, ppm)
-                self.__platform.add_processor(processor)
-                self.__platform.add_scheduler(
-                    Scheduler(
-                        "sched%02d" % i, [processor], self.__schedulingPolicy
-                    )
-                )
-                processors.append((processor, []))
-                self.__peAmount += 1
-
-                self.__elementDict[self.__activeScope].update(
-                    {identifier: processors}
-                )
-
-        except:
-            log.error("Exception caught: " + sys.exc_info()[0])
 
     def addPeClusterForProcessor(
         self, identifier, processor, amount, processor_names=None
