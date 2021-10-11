@@ -57,9 +57,9 @@ class PlatformDesigner:
         self.__schedulingPolicy = None
         self.__platform = platform
 
-        self.__activeScope = "base"
+        self.__activeScope = None
         self.__scopeStack = []
-        self.__elementDict = {"base": {}}
+        self.__elementDict = {}
 
     def newElement(self, identifier):
         """A new scope is opened and pushed on the stack.
@@ -67,11 +67,10 @@ class PlatformDesigner:
         :param identifier: The identifier, the element can be addressed with.
         :type identifier: int
         """
-        self.__scopeStack.append(self.__activeScope)
+        if self.__activeScope is not None:
+            self.__scopeStack.append(self.__activeScope)
         self.__activeScope = identifier
-
         self.__namingSuffix += 1
-
         self.__elementDict.update({identifier: {}})
 
     def finishElement(self):
@@ -80,7 +79,6 @@ class PlatformDesigner:
         """
         if len(self.__scopeStack) == 0:
             return
-
         lastScope = self.__activeScope
         nextScope = self.__scopeStack.pop()
 
@@ -99,7 +97,6 @@ class PlatformDesigner:
                 raise RuntimeWarning(
                     "Expected an element of type list or dict!"
                 )
-
         self.__elementDict[nextScope].update({lastScope: tmpPElist})
         self.__elementDict.pop(lastScope, None)
 
