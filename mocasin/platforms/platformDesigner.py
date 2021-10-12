@@ -38,8 +38,6 @@ class PlatformDesigner:
     :type __platform: Platform
     :ivar __activeScope: The identifier of the scope, the designer is currently working on.
     :type __activeScope: string
-    :ivar __scopeStack: A stack for the identifiers of the scopes that are currently opened.
-    :type __scopeStack: list[string]
     :ivar __elementDict: List of elements in the platform.
     :type __elementDict: list[element]
     """
@@ -57,11 +55,10 @@ class PlatformDesigner:
         self.__platform = platform
 
         self.__activeScope = None
-        self.__scopeStack = []
         self.__elementDict = []
 
     class element:
-        """ Represents one element in the platform. An element can contain a set of elements or a set processors.
+        """ Represents one element in the platform. An element can contain a set of elements or a set of processors.
     
         :ivar string identifier: Name of the element.
         :type identifier: string
@@ -76,7 +73,7 @@ class PlatformDesigner:
             self.outerElement = None
 
     def newElement(self, identifier):
-        """A new scope is opened and pushed on the stack.
+        """A new scope is opened.
 
         :param identifier: The identifier, the element can be addressed with.
         :type identifier: int
