@@ -40,9 +40,8 @@ class PlatformDesigner:
     :type __activeScope: string
     :ivar __scopeStack: A stack for the identifiers of the scopes that are currently opened.
     :type __scopeStack: list[string]
-    :ivar __elementDict: For each scope it maps the cluster identifiers to
-                            the list of processing elements of the cluster.
-    :type __elementDict: dict{string : {int : [processors]}}
+    :ivar __elementDict: List of elements in the platform.
+    :type __elementDict: list[element]
     """
 
     def __init__(self, platform):
@@ -59,7 +58,22 @@ class PlatformDesigner:
 
         self.__activeScope = None
         self.__scopeStack = []
-        self.__elementDict = {}
+        self.__elementDict = []
+
+    class element:
+        """ Represents one element in the platform. An element can contain a set of elements or a set processors.
+    
+        :ivar string identifier: Name of the element.
+        :type identifier: string
+        :ivar innerElements: Holds all elements inside the current element. it may be a set of elements or a set of PEs.
+        :type innerElements: list[element xor processors]
+        :ivar innerElements: Holds parent element.
+        :type innerElements: element
+        """
+        def __init__(self, identifier):
+            self.identifier= identifier
+            self.innerElements = []
+            self.outerElement = None
 
     def newElement(self, identifier):
         """A new scope is opened and pushed on the stack.
@@ -67,50 +81,27 @@ class PlatformDesigner:
         :param identifier: The identifier, the element can be addressed with.
         :type identifier: int
         """
+        newElement = self.element(identifier)
+        self.__elementDict.append(newElement)
+
         if self.__activeScope is not None:
-            self.__scopeStack.append(self.__activeScope)
-        self.__activeScope = identifier
+            self.__activeScope.innerElements.append(newElement)
+            newElement.outerElement = self.__activeScope
+        self.__activeScope = newElement
         self.__namingSuffix += 1
-        self.__elementDict.update({identifier: {}})
 
     def finishElement(self):
         """The first scope on the stack is closed. The element is still addressable with
         the scopes identifier.
         """
-        if len(self.__scopeStack) == 0:
-            return
-        lastScope = self.__activeScope
-        nextScope = self.__scopeStack.pop()
-
-        tmpPElist = []
-
-        for element in self.__elementDict[lastScope]:
-            if isinstance(self.__elementDict[lastScope][element], list):
-                for entry in self.__elementDict[lastScope][element]:
-                    tmpPElist.append(entry)
-
-            elif isinstance(self.__elementDict[lastScope][element], dict):
-                for innerElement in self.__elementDict[lastScope][element]:
-                    for entry in innerElement:
-                        tmpPElist.append(entry)
-            else:
-                raise RuntimeWarning(
-                    "Expected an element of type list or dict!"
-                )
-
-        #element = self.__elementDict[lastScope]
-        self.__elementDict[nextScope].update({lastScope: tmpPElist})
-        self.__elementDict.pop(lastScope, None)
-
-        self.__activeScope = nextScope
+        self.__activeScope = self.__activeScope.outerElement
+        #TODO: implement element counter
 
     def addPeClusterForProcessor(
         self, identifier, processor, amount, processor_names=None
     ):
         """Creates a new cluster of processing elements on the platform.
 
-        :param identifier: The identifier the cluster can be addressed within the currently active scope.
-        :type identifier: int
         :param processor: The mocasin Processor object which will be used for the cluster.
         :type processor: Processor
         :param amount: The amount of processing elements in the cluster.
@@ -121,7 +112,6 @@ class PlatformDesigner:
         try:
             processors = []
             for i in range(amount):
-
                 # copy the input processor since a single processor can only be added once
                 if processor_names is not None:
                     name = processor_names[i]
@@ -147,9 +137,7 @@ class PlatformDesigner:
                 processors.append((new_processor, []))
                 self.__peAmount += 1
 
-                self.__elementDict[self.__activeScope].update(
-                    {identifier: processors}
-                )
+            self.__activeScope.innerElements.extend(processors)
         except:
             log.error("Exception caught: " + str(sys.exc_info()[0]))
 
@@ -204,11 +192,10 @@ class PlatformDesigner:
             return
 
         nameToGive = name
+        #TODO: if identifier is not in element list raise error
+        #raise RuntimeWarning("Identifier does not exist in active scope.")
 
-        if not identifier in self.__elementDict[self.__activeScope]:
-            raise RuntimeWarning("Identifier does not exist in active scope.")
-
-        peList = self.__elementDict[self.__activeScope][identifier]
+        peList = self.__activeScope.innerElements
 
         fd = FrequencyDomain("fd_" + name, frequencyDomain)
 
@@ -275,13 +262,14 @@ class PlatformDesigner:
         if not self.__activeScope:
             return
 
-        for clusterId in clusterIds:
-            if clusterId not in self.__elementDict[self.__activeScope]:
-                return
+        #for clusterId in clusterIds:
+        #    if clusterId not in self.__elementDict[self.__activeScope]:
+        #        return
+        #TODO: check that cluster exists
 
-        clusterDict = self.__elementDict[self.__activeScope]
+        clusterDict = self.__activeScope.identifier
         nameToGive = (
-            str(self.__activeScope)
+            str(self.__activeScope.identifier)
             + "_"
             + name
             + "_"
@@ -315,7 +303,8 @@ class PlatformDesigner:
             prim = Primitive("prim_" + nameToGive)
 
             for clusterId in clusterIds:
-                for pe in clusterDict[clusterId]:
+                cluster = next((x for x in self.__elementDict if x.identifier == clusterId), None)
+                for pe in cluster.innerElements:
                     pe[1].append(com_resource)
                     produce = CommunicationPhase(
                         "produce", [com_resource], "write"
@@ -373,9 +362,8 @@ class PlatformDesigner:
         fd = FrequencyDomain("fd_" + networkName, frequencyDomain)
 
         if self.__activeScope is not None:
-            processorList = self.__elementDict[self.__activeScope][
-                clusterIdentifier
-            ]
+            cluster = next((x for x in self.__elementDict if x.identifier == clusterIdentifier), None)
+            processorList = cluster.innerElements
 
             """Adding physical links and NOC memories according to the adjacency list
             """
