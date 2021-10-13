@@ -28,8 +28,8 @@ class PlatformDesigner:
 
     :ivar int __peAmount: Holds the amount of the platforms PEs.
     :type __peAmount: int
-    :ivar __namingSuffix: Increases every time a new element is pushed on the stack. Will be added to the
-                            name of every communication resource added to this element.
+    :ivar __namingSuffix: Increases every time a new cluster is pushed on the stack. Will be added to the
+                            name of every communication resource added to this cluster.
     :type __namingSuffix: int
     :ivar __schedulingPolicy: Holds the currently set scheduling policy. This policy will
                             be applied to all PE clusters initialized afterwards.
@@ -38,8 +38,8 @@ class PlatformDesigner:
     :type __platform: Platform
     :ivar __activeScope: The identifier of the scope, the designer is currently working on.
     :type __activeScope: string
-    :ivar __elementDict: List of elements in the platform.
-    :type __elementDict: list[element]
+    :ivar __clusterDict: List of clusters in the platform.
+    :type __clusterDict: list[cluster]
     """
 
     def __init__(self, platform):
@@ -55,53 +55,67 @@ class PlatformDesigner:
         self.__platform = platform
 
         self.__activeScope = None
-        self.__elementDict = []
+        self.__clusterDict = []
 
-    class element:
-        """ Represents one element in the platform. An element can contain a set of elements or a set of processors.
-    
-        :ivar string identifier: Name of the element.
+    class cluster:
+        """Represents one cluster in the platform. A cluster can contain a set of clusters or a set of processors.
+
+        :ivar string identifier: Name of the cluster.
         :type identifier: string
-        :ivar innerElements: Holds all elements inside the current element. it may be a set of elements or a set of PEs.
-        :type innerElements: list[element xor processors]
-        :ivar innerElements: Holds parent element.
-        :type innerElements: element
+        :ivar innerClusters: Holds all clusters inside the current cluster. it may be a set of clusters or a set of PEs.
+        :type innerClusters: list[cluster xor processors]
+        :ivar innerClusters: Holds parent cluster.
+        :type innerClusters: cluster
         """
-        def __init__(self, identifier):
-            self.identifier= identifier
-            self.innerElements = []
-            self.outerElement = None
 
-    def newElement(self, identifier):
+        def __init__(self, identifier):
+            self.identifier = identifier
+            self.innerClusters = []
+            self.outerCluster = None
+
+    def newPlatform(self, identifier):
         """A new scope is opened.
 
-        :param identifier: The identifier, the element can be addressed with.
+        :param identifier: The identifier, the cluster can be addressed with.
         :type identifier: int
         """
-        newElement = self.element(identifier)
-        self.__elementDict.append(newElement)
-
         if self.__activeScope is not None:
-            self.__activeScope.innerElements.append(newElement)
-            newElement.outerElement = self.__activeScope
-        self.__activeScope = newElement
+            log.error("A platform has been already created")
+        newCluster = self.cluster(identifier)
+        self.__clusterDict.append(newCluster)
+        self.__activeScope = newCluster
+
+    def newCluster(self, identifier, parent):
+        """A new scope is opened.
+
+        :param identifier: The identifier, the cluster can be addressed with.
+        :type identifier: int
+        """
+        newCluster = self.cluster(identifier)
+        self.__clusterDict.append(newCluster)
+        cluster = next(
+            (x for x in self.__clusterDict if x.identifier == parent), None
+        )
+        self.__activeScope.innerClusters.append(newCluster)
+        newCluster.outerCluster = cluster
+        self.__activeScope = newCluster
         self.__namingSuffix += 1
 
-    def finishElement(self):
-        """The first scope on the stack is closed. The element is still addressable with
+    def finishCluster(self):
+        """The first scope on the stack is closed. The cluster is still addressable with
         the scopes identifier.
         """
-        self.__activeScope = self.__activeScope.outerElement
-        #TODO: implement element counter
+        self.__activeScope = self.__activeScope.outerCluster
+        # TODO: implement cluster counter
 
     def addPeClusterForProcessor(
         self, identifier, processor, amount, processor_names=None
     ):
-        """Creates a new cluster of processing elements on the platform.
+        """Creates a new cluster of processing clusters on the platform.
 
         :param processor: The mocasin Processor object which will be used for the cluster.
         :type processor: Processor
-        :param amount: The amount of processing elements in the cluster.
+        :param amount: The amount of processing clusters in the cluster.
         :type amount: int
         :param processor_names: The names of the processors.
         :type amount: list of strings
@@ -134,7 +148,7 @@ class PlatformDesigner:
                 processors.append((new_processor, []))
                 self.__peAmount += 1
 
-            self.__activeScope.innerElements.extend(processors)
+            self.__activeScope.innerClusters.extend(processors)
         except:
             log.error("Exception caught: " + str(sys.exc_info()[0]))
 
@@ -189,10 +203,10 @@ class PlatformDesigner:
             return
 
         nameToGive = name
-        #TODO: if identifier is not in element list raise error
-        #raise RuntimeWarning("Identifier does not exist in active scope.")
+        # TODO: if identifier is not in cluster list raise error
+        # raise RuntimeWarning("Identifier does not exist in active scope.")
 
-        peList = self.__activeScope.innerElements
+        peList = self.__activeScope.innerClusters
 
         fd = FrequencyDomain("fd_" + name, frequencyDomain)
 
@@ -259,10 +273,10 @@ class PlatformDesigner:
         if not self.__activeScope:
             return
 
-        #for clusterId in clusterIds:
-        #    if clusterId not in self.__elementDict[self.__activeScope]:
+        # for clusterId in clusterIds:
+        #    if clusterId not in self.__clusterDict[self.__activeScope]:
         #        return
-        #TODO: check that cluster exists
+        # TODO: check that cluster exists
 
         clusterDict = self.__activeScope.identifier
         nameToGive = (
@@ -300,8 +314,15 @@ class PlatformDesigner:
             prim = Primitive("prim_" + nameToGive)
 
             for clusterId in clusterIds:
-                cluster = next((x for x in self.__elementDict if x.identifier == clusterId), None)
-                for pe in cluster.innerElements:
+                cluster = next(
+                    (
+                        x
+                        for x in self.__clusterDict
+                        if x.identifier == clusterId
+                    ),
+                    None,
+                )
+                for pe in cluster.innerClusters:
                     pe[1].append(com_resource)
                     produce = CommunicationPhase(
                         "produce", [com_resource], "write"
@@ -337,12 +358,12 @@ class PlatformDesigner:
         :param networkName: The name of the network. (primitives belonging to the network will be named
                                 like this.
         :type networkName: String
-        :param adjacencyList: The adjacency list of the processing elements within the network.
-                                The key is the name of a processing element and the list contains
-                                the names of processing elements the key has a physical link to.
+        :param adjacencyList: The adjacency list of the processing clusters within the network.
+                                The key is the name of a processing cluster and the list contains
+                                the names of processing clusters the key has a physical link to.
         :type adjacencyList: dict {String : list[String]}
-        :param routingFunction: A function that takes the name of a source processing element, a target
-                                processing element and the adjacency list. Should return the path taken to communicate
+        :param routingFunction: A function that takes the name of a source processing cluster, a target
+                                processing cluster and the adjacency list. Should return the path taken to communicate
                                 between source and target, in case there is no direct physical link between them.
         :type routingFunction: function
         :param frequencyDomain: The frequency of the physical links an network routers.
@@ -359,8 +380,15 @@ class PlatformDesigner:
         fd = FrequencyDomain("fd_" + networkName, frequencyDomain)
 
         if self.__activeScope is not None:
-            cluster = next((x for x in self.__elementDict if x.identifier == clusterIdentifier), None)
-            processorList = cluster.innerElements
+            cluster = next(
+                (
+                    x
+                    for x in self.__clusterDict
+                    if x.identifier == clusterIdentifier
+                ),
+                None,
+            )
+            processorList = cluster.innerClusters
 
             """Adding physical links and NOC memories according to the adjacency list
             """
@@ -468,23 +496,22 @@ class PlatformDesigner:
         else:
             return
 
-
     def setPeripheralStaticPower(self, static_power):
         """Set peripheral static power of the platform."""
         self.__platform.peripheral_static_power = static_power
 
     def getClusterList(self, identifier):
-        """Returns a list of all processing elements contained in specified cluster.
+        """Returns a list of all processing clusters contained in specified cluster.
 
         :param identifier: The identifier of the target cluster.
         :type identifier: int
-        :returns: A list of names of processing elements
+        :returns: A list of names of processing clusters
         :rtype list[string]:
         """
-        if not identifier in self.__elementDict[self.__activeScope]:
+        if not identifier in self.__clusterDict[self.__activeScope]:
             return None
         else:
-            return self.__elementDict[self.__activeScope][identifier]
+            return self.__clusterDict[self.__activeScope][identifier]
 
     def getPlatform(self):
         """Returns the platform, created with the designer. (Only needed for test issues.)
