@@ -37,7 +37,7 @@ class PlatformDesigner:
     :ivar __platform: The platform object, that is created and manipulated.
     :type __platform: Platform
     :ivar __clusterDict: List of clusters in the platform.
-    :type __clusterDict: list[cluster]
+    :type __clusterDict: list[clusters]
     """
 
     def __init__(self, platform):
@@ -53,14 +53,16 @@ class PlatformDesigner:
         self.__clusterDict = []
 
     class cluster:
-        """Represents one cluster in the platform. A cluster can contain a set of clusters or a set of processors.
+        """Represents one cluster in the platform. A cluster contains a set of clusters and/or processors.
 
         :ivar string identifier: Name of the cluster.
         :type identifier: string
-        :ivar innerClusters: Holds all clusters inside the current cluster. it may be a set of clusters or a set of PEs.
-        :type innerClusters: list[cluster xor processors]
-        :ivar innerClusters: Holds parent cluster.
-        :type innerClusters: cluster
+        :ivar innerClusters: Holds all components inside the current cluster. 
+                            Components might be other clusters and/or PEs.
+        :type innerClusters: list[cluster or processors]
+        :ivar outerCluster: Holds parent cluster in which the cluster will be contained.
+                            outerCluster can be set to None.
+        :type outerCluster: cluster
         """
         def __init__(self, identifier):
             self.identifier = identifier
@@ -68,7 +70,7 @@ class PlatformDesigner:
             self.outerCluster = None
 
     def addCluster(self, identifier, parent=None):
-        """A new scope is opened.
+        """Add a new cluster to the platform.
 
         :param identifier: The identifier, the cluster can be addressed with.
         :type identifier: int
@@ -83,14 +85,16 @@ class PlatformDesigner:
         self.__namingSuffix += 1
         return newCluster
 
-    def addPeSetToCluster(
+    def addPeSet(
         self, cluster, processor, amount, processor_names=None
     ):
-        """Creates a new cluster of processing clusters on the platform.
+        """Adds a set of processing elements to a cluster.
 
+        :param cluster: The cluster the processing elements will be added to.
+        :type cluster: cluster
         :param processor: The mocasin Processor object which will be used for the cluster.
         :type processor: Processor
-        :param amount: The amount of processing clusters in the cluster.
+        :param amount: The amount of processing elements in the cluster.
         :type amount: int
         :param processor_names: The names of the processors.
         :type amount: list of strings
@@ -156,8 +160,8 @@ class PlatformDesigner:
     ):
         """Adds a level 1 cache to each PE of the given cluster.
 
-        :param identifier: The identifier of the cluster to which the cache will be added.
-        :type identifier: int
+        :param cluster: The cluster the cache will be added to.
+        :type cluster: cluster
         :param readLatency: The read latency of the cache.
         :type readLatency: int
         :param writeLatency: The write latency of the cache.
@@ -176,18 +180,13 @@ class PlatformDesigner:
         if cluster == None:
             return
 
-        nameToGive = name
-        # TODO: if identifier is not in cluster list raise error
-        # raise RuntimeWarning("Identifier does not exist in active scope.")
-
         peList = cluster.innerClusters
-
         fd = FrequencyDomain("fd_" + name, frequencyDomain)
 
         try:
             for pe in peList:
                 l1 = Storage(
-                    nameToGive + pe[0].name,
+                    name + pe[0].name,
                     frequency_domain=fd,
                     read_latency=readLatency,
                     write_latency=writeLatency,
@@ -198,8 +197,7 @@ class PlatformDesigner:
 
                 # FIXME: What is this doing??
                 pe[1].append(l1)
-
-                prim = Primitive("prim_" + nameToGive + pe[0].name)
+                prim = Primitive("prim_" + name + pe[0].name)
 
                 produce = CommunicationPhase("produce", [l1], "write")
                 consume = CommunicationPhase("consume", [l1], "read")
@@ -229,7 +227,7 @@ class PlatformDesigner:
 
         :param name: The name of the storage
         :type name: String
-        :param clusterIds: A list of identifiers for all clusters which will be connected.
+        :param clusterIds: A list of clusters which will be connected.
         :type clusterIds: list[int]
         :param readLatency: The read latency of the communication resource.
         :type readLatency: int
@@ -310,8 +308,8 @@ class PlatformDesigner:
     ):
         """Creates a network on chip topology for the given cluster.
 
-        :param clusterIdentifier: The identifier of the cluster the network will be created for.
-        :type clusterIdentifier: int
+        :param cluster: The cluster the network will be created for.
+        :type cluster: cluster
         :param networkName: The name of the network. (primitives belonging to the network will be named
                                 like this.
         :type networkName: String
