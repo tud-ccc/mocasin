@@ -36,8 +36,6 @@ class PlatformDesigner:
     :type __schedulingPolicy: SchedulingPolicy
     :ivar __platform: The platform object, that is created and manipulated.
     :type __platform: Platform
-    :ivar __activeScope: The identifier of the scope, the designer is currently working on.
-    :type __activeScope: string
     :ivar __clusterDict: List of clusters in the platform.
     :type __clusterDict: list[cluster]
     """
@@ -50,11 +48,8 @@ class PlatformDesigner:
         """
         self.__peAmount = 0
         self.__namingSuffix = 0
-
         self.__schedulingPolicy = None
         self.__platform = platform
-
-        self.__activeScope = None
         self.__clusterDict = []
 
     class cluster:
@@ -67,49 +62,29 @@ class PlatformDesigner:
         :ivar innerClusters: Holds parent cluster.
         :type innerClusters: cluster
         """
-
         def __init__(self, identifier):
             self.identifier = identifier
             self.innerClusters = []
             self.outerCluster = None
 
-    def newPlatform(self, identifier):
+    def addCluster(self, identifier, parent=None):
         """A new scope is opened.
 
         :param identifier: The identifier, the cluster can be addressed with.
         :type identifier: int
-        """
-        if self.__activeScope is not None:
-            log.error("A platform has been already created")
-        newCluster = self.cluster(identifier)
-        self.__clusterDict.append(newCluster)
-        self.__activeScope = newCluster
-
-    def newCluster(self, identifier, parent):
-        """A new scope is opened.
-
-        :param identifier: The identifier, the cluster can be addressed with.
-        :type identifier: int
+        :param parent: The parent cluster in which the new cluster will be contained.
+        :type parent: cluster
         """
         newCluster = self.cluster(identifier)
         self.__clusterDict.append(newCluster)
-        cluster = next(
-            (x for x in self.__clusterDict if x.identifier == parent), None
-        )
-        self.__activeScope.innerClusters.append(newCluster)
-        newCluster.outerCluster = cluster
-        self.__activeScope = newCluster
+        if not self.__clusterDict:
+            parent.innerClusters.append(newCluster)
+            newCluster.outerCluster = parent
         self.__namingSuffix += 1
+        return newCluster
 
-    def finishCluster(self):
-        """The first scope on the stack is closed. The cluster is still addressable with
-        the scopes identifier.
-        """
-        self.__activeScope = self.__activeScope.outerCluster
-        # TODO: implement cluster counter
-
-    def addPeClusterForProcessor(
-        self, identifier, processor, amount, processor_names=None
+    def addPeSetToCluster(
+        self, cluster, processor, amount, processor_names=None
     ):
         """Creates a new cluster of processing clusters on the platform.
 
@@ -147,8 +122,7 @@ class PlatformDesigner:
                 )
                 processors.append((new_processor, []))
                 self.__peAmount += 1
-
-            self.__activeScope.innerClusters.extend(processors)
+            cluster.innerClusters.extend(processors)
         except:
             log.error("Exception caught: " + str(sys.exc_info()[0]))
 
@@ -171,7 +145,7 @@ class PlatformDesigner:
 
     def addCacheForPEs(
         self,
-        identifier,
+        cluster,
         readLatency,
         writeLatency,
         readThroughput,
@@ -199,14 +173,14 @@ class PlatformDesigner:
         # silently
         if self.__schedulingPolicy == None:
             return
-        if self.__activeScope == None:
+        if cluster == None:
             return
 
         nameToGive = name
         # TODO: if identifier is not in cluster list raise error
         # raise RuntimeWarning("Identifier does not exist in active scope.")
 
-        peList = self.__activeScope.innerClusters
+        peList = cluster.innerClusters
 
         fd = FrequencyDomain("fd_" + name, frequencyDomain)
 
@@ -239,7 +213,7 @@ class PlatformDesigner:
     def addCommunicationResource(
         self,
         name,
-        clusterIds,
+        clusters,
         readLatency,
         writeLatency,
         readThroughput,
@@ -270,18 +244,9 @@ class PlatformDesigner:
         # silently aborting?
         if not self.__schedulingPolicy:
             return
-        if not self.__activeScope:
-            return
 
-        # for clusterId in clusterIds:
-        #    if clusterId not in self.__clusterDict[self.__activeScope]:
-        #        return
-        # TODO: check that cluster exists
-
-        clusterDict = self.__activeScope.identifier
         nameToGive = (
-            str(self.__activeScope.identifier)
-            + "_"
+            "_"
             + name
             + "_"
             + str(self.__namingSuffix)
@@ -313,15 +278,7 @@ class PlatformDesigner:
             self.__platform.add_communication_resource(com_resource)
             prim = Primitive("prim_" + nameToGive)
 
-            for clusterId in clusterIds:
-                cluster = next(
-                    (
-                        x
-                        for x in self.__clusterDict
-                        if x.identifier == clusterId
-                    ),
-                    None,
-                )
+            for cluster in clusters:
                 for pe in cluster.innerClusters:
                     pe[1].append(com_resource)
                     produce = CommunicationPhase(
@@ -341,7 +298,7 @@ class PlatformDesigner:
 
     def createNetworkForCluster(
         self,
-        clusterIdentifier,
+        cluster,
         networkName,
         adjacencyList,
         routingFunction,
@@ -378,25 +335,36 @@ class PlatformDesigner:
         :type writeThroughput: int
         """
         fd = FrequencyDomain("fd_" + networkName, frequencyDomain)
+        processorList = cluster.innerClusters
 
-        if self.__activeScope is not None:
-            cluster = next(
-                (
-                    x
-                    for x in self.__clusterDict
-                    if x.identifier == clusterIdentifier
-                ),
-                None,
+        """Adding physical links and NOC memories according to the adjacency list
+        """
+        for key in adjacencyList:
+            name = str(cluster.identifier) + "_noc_mem_" + str(key)
+            communicationResource = Storage(
+                name,
+                fd,
+                readLatency,
+                writeLatency,
+                readThroughput,
+                writeThroughput,
             )
-            processorList = cluster.innerClusters
+            self.__platform.add_communication_resource(
+                communicationResource
+            )
 
-            """Adding physical links and NOC memories according to the adjacency list
-            """
-            for key in adjacencyList:
-                name = str(clusterIdentifier) + "_noc_mem_" + str(key)
-                communicationResource = Storage(
+            for target in adjacencyList[key]:
+                name = (
+                    str(cluster.identifier)
+                    + "_pl_"
+                    + str(target)
+                    + "_"
+                    + str(key)
+                )
+                communicationResource = CommunicationResource(
                     name,
                     fd,
+                    CommunicationResourceType.PhysicalLink,
                     readLatency,
                     writeLatency,
                     readThroughput,
@@ -406,95 +374,74 @@ class PlatformDesigner:
                     communicationResource
                 )
 
-                for target in adjacencyList[key]:
-                    name = (
-                        str(clusterIdentifier)
-                        + "_pl_"
-                        + str(target)
-                        + "_"
-                        + str(key)
-                    )
-                    communicationResource = CommunicationResource(
-                        name,
-                        fd,
-                        CommunicationResourceType.PhysicalLink,
-                        readLatency,
-                        writeLatency,
-                        readThroughput,
-                        writeThroughput,
-                    )
-                    self.__platform.add_communication_resource(
-                        communicationResource
-                    )
+        for processor in processorList:
+            if not adjacencyList[processor[0].name]:
+                continue
+            else:
+                prim = Primitive(networkName + "_" + processor[0].name)
+                memoryName = (
+                    str(cluster.identifier)
+                    # FIXME: this will lead to issues if we have >=2 NoCs
+                    + "_noc_mem_"
+                    + str(processor[0].name)
+                )
+                memory = self.__platform.find_communication_resource(
+                    memoryName
+                )
 
-            for processor in processorList:
-                if not adjacencyList[processor[0].name]:
-                    continue
-                else:
-                    prim = Primitive(networkName + "_" + processor[0].name)
-                    memoryName = (
-                        str(clusterIdentifier)
-                        # FIXME: this will lead to issues if we have >=2 NoCs
-                        + "_noc_mem_"
-                        + str(processor[0].name)
-                    )
-                    memory = self.__platform.find_communication_resource(
-                        memoryName
-                    )
+                for innerProcessor in processorList:
+                    if not adjacencyList[innerProcessor[0].name]:
+                        continue
 
-                    for innerProcessor in processorList:
-                        if not adjacencyList[innerProcessor[0].name]:
-                            continue
+                    resourceList = [memory]
 
-                        resourceList = [memory]
+                    if innerProcessor != processor:
+                        path = routingFunction(
+                            adjacencyList,
+                            processor[0].name,
+                            innerProcessor[0].name,
+                        )
+                        lastPoint = None
 
-                        if innerProcessor != processor:
-                            path = routingFunction(
-                                adjacencyList,
-                                processor[0].name,
-                                innerProcessor[0].name,
-                            )
-                            lastPoint = None
+                        for point in path:
+                            if lastPoint != None:
+                                name = (
+                                    str(cluster.identifier)
+                                    + "_pl_"
+                                    + str(lastPoint)
+                                    + "_"
+                                    + str(point)
+                                )
+                                resource = self.__platform.find_communication_resource(
+                                    name
+                                )
+                                resourceList.append(resource)
+                            lastPoint = point
 
-                            for point in path:
-                                if lastPoint != None:
-                                    name = (
-                                        str(clusterIdentifier)
-                                        + "_pl_"
-                                        + str(lastPoint)
-                                        + "_"
-                                        + str(point)
-                                    )
-                                    resource = self.__platform.find_communication_resource(
-                                        name
-                                    )
-                                    resourceList.append(resource)
-                                lastPoint = point
+                        produce = CommunicationPhase(
+                            "produce", resourceList, "write"
+                        )
+                        consume = CommunicationPhase(
+                            "consume", list(reversed(resourceList)), "read"
+                        )
 
-                            produce = CommunicationPhase(
-                                "produce", resourceList, "write"
-                            )
-                            consume = CommunicationPhase(
-                                "consume", list(reversed(resourceList)), "read"
-                            )
+                        prim.add_producer(innerProcessor[0], [produce])
+                        prim.add_consumer(innerProcessor[0], [consume])
 
-                            prim.add_producer(innerProcessor[0], [produce])
-                            prim.add_consumer(innerProcessor[0], [consume])
+                    else:
+                        produce = CommunicationPhase(
+                            "produce", resourceList, "write"
+                        )
+                        consume = CommunicationPhase(
+                            "consume", list(reversed(resourceList)), "read"
+                        )
 
-                        else:
-                            produce = CommunicationPhase(
-                                "produce", resourceList, "write"
-                            )
-                            consume = CommunicationPhase(
-                                "consume", list(reversed(resourceList)), "read"
-                            )
+                        prim.add_producer(innerProcessor[0], [produce])
+                        prim.add_consumer(innerProcessor[0], [consume])
 
-                            prim.add_producer(innerProcessor[0], [produce])
-                            prim.add_consumer(innerProcessor[0], [consume])
-
-                    self.__platform.add_primitive(prim)
-        else:
-            return
+                self.__platform.add_primitive(prim)
+        #else:
+            #return
 
     def setPeripheralStaticPower(self, static_power):
         """Set peripheral static power of the platform."""
