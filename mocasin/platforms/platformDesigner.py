@@ -87,6 +87,35 @@ class PlatformDesigner:
         self.__namingSuffix += 1
         return newCluster
 
+    def generatePeList(self, processor, amount, processor_names):
+        """generates a list of processors from a base processor.
+
+        :param processor: The identifier, the cluster can be addressed with.
+        :type processor: Processor
+        :param amount: Amount of processors to generate.
+        :type amount: int
+        :param processor_names: names to give to the processors.
+        :type processor_names: list[string]
+        """
+
+        if len(processor_names) != amount:
+            raise RuntimeWarning(
+                "processor_names must contain as many elements as the amount of processors"            
+            )
+                    
+        processors = []
+        for i in range(amount):
+            new_processor = Processor(
+                processor_names[i],
+                processor.type,
+                processor.frequency_domain,
+                processor.power_model,
+                processor.context_load_cycles,
+                processor.context_store_cycles,
+            )
+            processors.append(new_processor)
+        return processors
+
     def addPeSet(self, cluster, processors):
         """Adds a set of processing elements to a cluster.
 
