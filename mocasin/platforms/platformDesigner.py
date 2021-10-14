@@ -26,8 +26,6 @@ class PlatformDesigner:
     It provides the necessary methods to create PE clusters and connect PEs in clusters
     or clusters themselves with communication resources.
 
-    :ivar int __peAmount: Holds the amount of the platforms PEs.
-    :type __peAmount: int
     :ivar __namingSuffix: Increases every time a new cluster is pushed on the stack. Will be added to the
                             name of every communication resource added to this cluster.
     :type __namingSuffix: int
@@ -46,7 +44,6 @@ class PlatformDesigner:
         :param platform: The platform object which will be modified.
         :type platform: Platform
         """
-        self.__peAmount = 0
         self.__namingSuffix = 0
         self.__schedulingPolicy = None
         self.__platform = platform
@@ -104,10 +101,7 @@ class PlatformDesigner:
             processors = []
             for i in range(amount):
                 # copy the input processor since a single processor can only be added once
-                if processor_names is not None:
-                    name = processor_names[i]
-                else:
-                    name = f"processor_{self.__peAmount:04d}"
+                name = processor_names[i]
                 new_processor = Processor(
                     name,
                     processor.type,
@@ -126,7 +120,6 @@ class PlatformDesigner:
                     )
                 )
                 processors.append((new_processor, []))
-                self.__peAmount += 1
             cluster.innerClusters.extend(processors)
         except:
             log.error("Exception caught: " + str(sys.exc_info()[0]))
