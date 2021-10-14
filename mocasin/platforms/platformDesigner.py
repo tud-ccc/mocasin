@@ -54,9 +54,12 @@ class PlatformDesigner:
 
         :ivar string identifier: Name of the cluster.
         :type identifier: string
-        :ivar innerClusters: Holds all components inside the current cluster. 
-                            Components might be other clusters and/or PEs.
-        :type innerClusters: list[cluster or processors]
+        :ivar innerClusters: Holds all clusters inside the current cluster.
+        :type innerClusters: list[cluster]
+        :ivar commResources: Holds all communication resources inside cluster.
+        :type commResources: list[CommunicationResource]
+        :ivar pes: Holds all processors inside the cluster.
+        :type pes: list[processor]
         :ivar outerCluster: Holds parent cluster in which the cluster will be contained.
                             outerCluster can be set to None.
         :type outerCluster: cluster
@@ -65,6 +68,7 @@ class PlatformDesigner:
             self.identifier = identifier
             self.innerClusters = []
             self.commResources = []
+            self.pes = []
             self.outerCluster = None
 
     def addCluster(self, identifier, parent=None):
@@ -120,7 +124,7 @@ class PlatformDesigner:
                     )
                 )
                 processors.append((new_processor, []))
-            cluster.innerClusters.extend(processors)
+            cluster.pes.extend(processors)
         except:
             log.error("Exception caught: " + str(sys.exc_info()[0]))
 
@@ -174,7 +178,7 @@ class PlatformDesigner:
         if cluster == None:
             return
 
-        peList = cluster.innerClusters
+        peList = cluster.pes
         fd = FrequencyDomain("fd_" + name, frequencyDomain)
 
         try:
@@ -300,7 +304,7 @@ class PlatformDesigner:
         prim = Primitive("prim_" + nameToGive)
 
         for cluster in clusters:
-            for pe in cluster.innerClusters:
+            for pe in cluster.pes:
                 pe[1].append(comResource)
                 produce = CommunicationPhase(
                     "produce", [comResource], "write"
@@ -352,7 +356,7 @@ class PlatformDesigner:
         :type writeThroughput: int
         """
         fd = FrequencyDomain("fd_" + networkName, frequencyDomain)
-        processorList = cluster.innerClusters
+        processorList = cluster.pes
 
         """Adding physical links and NOC memories according to the adjacency list
         """
