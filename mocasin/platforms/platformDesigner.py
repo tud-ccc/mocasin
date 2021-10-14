@@ -36,8 +36,8 @@ class PlatformDesigner:
     :type __schedulingPolicy: SchedulingPolicy
     :ivar __platform: The platform object, that is created and manipulated.
     :type __platform: Platform
-    :ivar __clusterDict: List of clusters in the platform.
-    :type __clusterDict: list[clusters]
+    :ivar __clusterList: List of clusters in the platform.
+    :type __clusterList: list[clusters]
     """
 
     def __init__(self, platform):
@@ -50,7 +50,7 @@ class PlatformDesigner:
         self.__namingSuffix = 0
         self.__schedulingPolicy = None
         self.__platform = platform
-        self.__clusterDict = []
+        self.__clusterList = []
 
     class cluster:
         """Represents one cluster in the platform. A cluster contains a set of clusters and/or processors.
@@ -78,8 +78,8 @@ class PlatformDesigner:
         :type parent: cluster
         """
         newCluster = self.cluster(identifier)
-        self.__clusterDict.append(newCluster)
-        if not self.__clusterDict:
+        self.__clusterList.append(newCluster)
+        if not self.__clusterList:
             parent.innerClusters.append(newCluster)
             newCluster.outerCluster = parent
         self.__namingSuffix += 1
@@ -211,7 +211,7 @@ class PlatformDesigner:
     def addCommunicationResource(
         self,
         name,
-        clusters,
+        cluster,
         readLatency,
         writeLatency,
         readThroughput,
@@ -238,10 +238,6 @@ class PlatformDesigner:
         :param writeThroughput: The write throughput of the communication resource.
         :type writeThroughput: int
         """
-        # FIXME: shouldn't these checks produce an error instead of just
-        # silently aborting?
-        if not self.__schedulingPolicy:
-            return
 
         nameToGive = (
             "_"
@@ -254,7 +250,7 @@ class PlatformDesigner:
         try:
             # FIXME: why distinguish storage and other types here?
             if resourceType == CommunicationResourceType.Storage:
-                com_resource = Storage(
+                comResource = Storage(
                     nameToGive,
                     fd,
                     readLatency,
@@ -263,7 +259,7 @@ class PlatformDesigner:
                     writeThroughput,
                 )
             else:
-                com_resource = CommunicationResource(
+                comResource = CommunicationResource(
                     nameToGive,
                     fd,
                     resourceType,
@@ -272,27 +268,56 @@ class PlatformDesigner:
                     readThroughput,
                     writeThroughput,
                 )
-
-            self.__platform.add_communication_resource(com_resource)
-            prim = Primitive("prim_" + nameToGive)
-
-            for cluster in clusters:
-                for pe in cluster.innerClusters:
-                    pe[1].append(com_resource)
-                    produce = CommunicationPhase(
-                        "produce", [com_resource], "write"
-                    )
-                    consume = CommunicationPhase(
-                        "consume", [com_resource], "read"
-                    )
-                    prim.add_producer(pe[0], [produce])
-                    prim.add_consumer(pe[0], [consume])
-
-            self.__platform.add_primitive(prim)
+            self.__platform.add_communication_resource(comResource)
+            cluster.innerClusters.append(comResource)
+            return comResource
 
         except:  # FIXME: this is fishy
             log.error("Exception caught: " + str(sys.exc_info()[0]))
             return
+
+    def connectPesInClusterToComm(
+        self,
+        name,
+        clusters,
+        comResource,):
+        """Adds a communication resource to the platform. All cores of the given cluster identifiers can communicate
+        via this resource.
+
+        :param name: The name of the storage
+        :type name: String
+        :param clusterIds: A list of clusters which will be connected.
+        :type clusterIds: list[int]
+        :param readLatency: The read latency of the communication resource.
+        :type readLatency: int
+        :param writeLatency: The write latency of the communication resource.
+        :type writeLatency: int
+        :param readThroughput: The read throughput of the communication resource.
+        :type readThroughput: int
+        :param writeThroughput: The write throughput of the communication resource.
+        :type writeThroughput: int
+        """
+        nameToGive = (
+            "_"
+            + name
+            + "_"
+            + str(self.__namingSuffix)
+        )
+        prim = Primitive("prim_" + nameToGive)
+
+        for cluster in clusters:
+            for pe in cluster.innerClusters:
+                pe[1].append(comResource)
+                produce = CommunicationPhase(
+                    "produce", [comResource], "write"
+                )
+                consume = CommunicationPhase(
+                    "consume", [comResource], "read"
+                )
+                prim.add_producer(pe[0], [produce])
+                prim.add_consumer(pe[0], [consume])
+
+        self.__platform.add_primitive(prim)
 
     def createNetworkForCluster(
         self,
@@ -453,10 +478,10 @@ class PlatformDesigner:
         :returns: A list of names of processing clusters
         :rtype list[string]:
         """
-        if not identifier in self.__clusterDict[self.__activeScope]:
+        if not identifier in self.__clusterList[self.__activeScope]:
             return None
         else:
-            return self.__clusterDict[self.__activeScope][identifier]
+            return self.__clusterList[self.__activeScope][identifier]
 
     def getPlatform(self):
         """Returns the platform, created with the designer. (Only needed for test issues.)
