@@ -49,28 +49,6 @@ class PlatformDesigner:
         self.__platform = platform
         self.__clusterList = []
 
-    class cluster:
-        """Represents one cluster in the platform. A cluster contains a set of clusters and/or processors.
-
-        :ivar string identifier: Name of the cluster.
-        :type identifier: string
-        :ivar innerClusters: Holds all clusters inside the current cluster.
-        :type innerClusters: list[cluster]
-        :ivar commResources: Holds all communication resources inside cluster.
-        :type commResources: list[CommunicationResource]
-        :ivar pes: Holds all processors inside the cluster.
-        :type pes: list[processor]
-        :ivar outerCluster: Holds parent cluster in which the cluster will be contained.
-                            outerCluster can be set to None.
-        :type outerCluster: cluster
-        """
-        def __init__(self, identifier):
-            self.identifier = identifier
-            self.innerClusters = []
-            self.commResources = []
-            self.pes = []
-            self.outerCluster = None
-
     def addCluster(self, identifier, parent=None):
         """Add a new cluster to the platform.
 
@@ -81,7 +59,7 @@ class PlatformDesigner:
         :returns: The generated cluster.
         :rtype: cluster
         """
-        newCluster = self.cluster(identifier)
+        newCluster = cluster(identifier)
         self.__clusterList.append(newCluster)
         if not self.__clusterList:
             parent.innerClusters.append(newCluster)
@@ -532,3 +510,25 @@ class genericProcessor(Processor):
         super().__init__(
             "DesignerGenericProc" + str(type) + str(frequency), type, fd, ppm
         )
+
+class cluster:
+    """Represents one cluster in the platform. A cluster contains a set of clusters and/or processors.
+
+    :ivar string identifier: Name of the cluster.
+    :type identifier: string
+    :ivar innerClusters: Holds all clusters inside the current cluster.
+    :type innerClusters: list[cluster]
+    :ivar commResources: Holds all communication resources inside cluster.
+    :type commResources: list[CommunicationResource]
+    :ivar pes: Holds all processors inside the cluster.
+    :type pes: list[processor]
+    :ivar outerCluster: Holds parent cluster in which the cluster will be contained.
+                        outerCluster can be set to None.
+    :type outerCluster: cluster
+    """
+    def __init__(self, identifier):
+        self.identifier = identifier
+        self.innerClusters = []
+        self.commResources = []
+        self.pes = []
+        self.outerCluster = None
