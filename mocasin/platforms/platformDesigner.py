@@ -87,44 +87,27 @@ class PlatformDesigner:
         self.__namingSuffix += 1
         return newCluster
 
-    def addPeSet(
-        self, cluster, processor, amount, processor_names=None
-    ):
+    def addPeSet(self, cluster, processors):
         """Adds a set of processing elements to a cluster.
 
         :param cluster: The cluster the processing elements will be added to.
         :type cluster: cluster
-        :param processor: The mocasin Processor object which will be used for the cluster.
-        :type processor: Processor
-        :param amount: The amount of processing elements in the cluster.
-        :type amount: int
-        :param processor_names: The names of the processors.
-        :type amount: list of strings
+        :param processors: The set of Processor objects that will be added to the cluster.
+        :type processors: list[Processor]
         """
         try:
-            processors = []
-            for i in range(amount):
-                # copy the input processor since a single processor can only be added once
-                name = processor_names[i]
-                new_processor = Processor(
-                    name,
-                    processor.type,
-                    processor.frequency_domain,
-                    processor.power_model,
-                    processor.context_load_cycles,
-                    processor.context_store_cycles,
-                )
-
-                self.__platform.add_processor(new_processor)
+            pes = []
+            for pe in processors:
+                self.__platform.add_processor(pe)
                 self.__platform.add_scheduler(
                     Scheduler(
-                        f"sched_{name}",
-                        [new_processor],
+                        f"sched_{pe.name}",
+                        [pe],
                         self.__schedulingPolicy,
                     )
                 )
-                processors.append((new_processor, []))
-            cluster.pes.extend(processors)
+                pes.append((pe, []))
+            cluster.pes.extend(pes)
         except:
             log.error("Exception caught: " + str(sys.exc_info()[0]))
 
