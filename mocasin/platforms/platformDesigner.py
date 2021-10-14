@@ -117,7 +117,7 @@ class PlatformDesigner:
                         self.__schedulingPolicy,
                     )
                 )
-                pes.append((pe, []))
+                pes.append(pe)
             cluster.pes.extend(pes)
         except:
             log.error("Exception caught: " + str(sys.exc_info()[0]))
@@ -149,21 +149,21 @@ class PlatformDesigner:
             log.error("Exception caught: " + sys.exc_info()[0])
             return False
 
-    def addCacheForPEs(
+    def addCacheToPE(
         self,
-        cluster,
+        name,
+        processor,
         readLatency,
         writeLatency,
         readThroughput,
         writeThroughput,
         # FIXME, this is a strange default
         frequencyDomain=100000,  # TODO: this should be added to tests
-        name="L1_",
     ):
-        """Adds a level 1 cache to each PE of the given cluster.
+        """Adds a level 1 cache to each of the given PEs.
 
-        :param cluster: The cluster the cache will be added to.
-        :type cluster: cluster
+        :param processors: The processors the cache will be added to.
+        :type processors: list[Processor]
         :param readLatency: The read latency of the cache.
         :type readLatency: int
         :param writeLatency: The write latency of the cache.
@@ -175,40 +175,25 @@ class PlatformDesigner:
         :param name: The cache name, in case it differs from L1.
         :type name: String
         """
-        # FIXME: this should probably produce an error instead of returning
-        # silently
-        if self.__schedulingPolicy == None:
-            return
-        if cluster == None:
-            return
 
-        peList = cluster.pes
         fd = FrequencyDomain("fd_" + name, frequencyDomain)
 
-        try:
-            for pe in peList:
-                l1 = Storage(
-                    name + pe[0].name,
-                    frequency_domain=fd,
-                    read_latency=readLatency,
-                    write_latency=writeLatency,
-                    read_throughput=readThroughput,
-                    write_throughput=writeThroughput,
-                )
-                self.__platform.add_communication_resource(l1)
+        l1 = Storage(
+            name,
+            frequency_domain=fd,
+            read_latency=readLatency,
+            write_latency=writeLatency,
+            read_throughput=readThroughput,
+            write_throughput=writeThroughput,
+        )
+        self.__platform.add_communication_resource(l1)
+        prim = Primitive("prim_" + name)
 
-                # FIXME: What is this doing??
-                pe[1].append(l1)
-                prim = Primitive("prim_" + name + pe[0].name)
-
-                produce = CommunicationPhase("produce", [l1], "write")
-                consume = CommunicationPhase("consume", [l1], "read")
-                prim.add_producer(pe[0], [produce])
-                prim.add_consumer(pe[0], [consume])
-                self.__platform.add_primitive(prim)
-
-        except:  # FIXME: This is fishy
-            log.error("Exception caught: " + sys.exc_info()[0])
+        produce = CommunicationPhase("produce", [l1], "write")
+        consume = CommunicationPhase("consume", [l1], "read")
+        prim.add_producer(processor, [produce])
+        prim.add_consumer(processor, [consume])
+        self.__platform.add_primitive(prim)
 
     def addCommunicationResource(
         self,
@@ -309,15 +294,14 @@ class PlatformDesigner:
 
         for cluster in clusters:
             for pe in cluster.pes:
-                pe[1].append(comResource)
                 produce = CommunicationPhase(
                     "produce", [comResource], "write"
                 )
                 consume = CommunicationPhase(
                     "consume", [comResource], "read"
                 )
-                prim.add_producer(pe[0], [produce])
-                prim.add_consumer(pe[0], [consume])
+                prim.add_producer(pe, [produce])
+                prim.add_consumer(pe, [consume])
 
         self.__platform.add_primitive(prim)
 
