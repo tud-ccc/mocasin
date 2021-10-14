@@ -144,6 +144,15 @@ class PlatformDesigner:
         except:
             log.error("Exception caught: " + str(sys.exc_info()[0]))
 
+    def getPesInCluster(self, cluster):
+        """get list of PEs contained in a cluster. It does not consider PEs contined in inner clusters.
+
+        :param cluster: The cluster the processing elements will be added to.
+        :type cluster: cluster
+        :returns: list of PEs in cluster.
+        :rtype: list[processor]
+        """
+        return cluster.pes
 
     def setSchedulingPolicy(self, policy, cycles):
         """Sets a new scheduling policy, which will be applied to all schedulers of new PE Clusters.
