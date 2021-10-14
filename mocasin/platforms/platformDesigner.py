@@ -78,6 +78,8 @@ class PlatformDesigner:
         :type identifier: int
         :param parent: The parent cluster in which the new cluster will be contained.
         :type parent: cluster
+        :returns: The generated cluster.
+        :rtype: cluster
         """
         newCluster = self.cluster(identifier)
         self.__clusterList.append(newCluster)
@@ -96,6 +98,8 @@ class PlatformDesigner:
         :type amount: int
         :param processor_names: names to give to the processors.
         :type processor_names: list[string]
+        :returns: list of generated processors.
+        :rtype: list[processor]
         """
 
         if len(processor_names) != amount:
@@ -139,6 +143,7 @@ class PlatformDesigner:
             cluster.pes.extend(pes)
         except:
             log.error("Exception caught: " + str(sys.exc_info()[0]))
+
 
     def setSchedulingPolicy(self, policy, cycles):
         """Sets a new scheduling policy, which will be applied to all schedulers of new PE Clusters.
