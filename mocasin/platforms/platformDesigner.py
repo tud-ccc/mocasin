@@ -494,19 +494,6 @@ class PlatformDesigner:
         """Set peripheral static power of the platform."""
         self.__platform.peripheral_static_power = static_power
 
-    def getClusterList(self, identifier):
-        """Returns a list of all processing clusters contained in specified cluster.
-
-        :param identifier: The identifier of the target cluster.
-        :type identifier: int
-        :returns: A list of names of processing clusters
-        :rtype list[string]:
-        """
-        if not identifier in self.__clusterList[self.__activeScope]:
-            return None
-        else:
-            return self.__clusterList[self.__activeScope][identifier]
-
     def getPlatform(self):
         """Returns the platform, created with the designer. (Only needed for test issues.)
 
