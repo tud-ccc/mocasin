@@ -67,6 +67,7 @@ class PlatformDesigner:
         def __init__(self, identifier):
             self.identifier = identifier
             self.innerClusters = []
+            self.commResources = []
             self.outerCluster = None
 
     def addCluster(self, identifier, parent=None):
@@ -269,7 +270,7 @@ class PlatformDesigner:
                     writeThroughput,
                 )
             self.__platform.add_communication_resource(comResource)
-            cluster.innerClusters.append(comResource)
+            cluster.commResources.append(comResource)
             return comResource
 
         except:  # FIXME: this is fishy
