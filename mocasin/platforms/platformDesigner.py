@@ -133,23 +133,6 @@ class PlatformDesigner:
         """
         return cluster.pes
 
-    def setSchedulingPolicy(self, policy, cycles):
-        """Sets a new scheduling policy, which will be applied to all schedulers of new PE Clusters.
-
-        :param policy: The name of the policy.
-        :type policy: String
-        :param cycles: The cycles of the policy.
-        :type cycles: int
-        :returns: Whether the policy set successfully or not.
-        :rtype: bool
-        """
-        try:
-            self.__schedulingPolicy = SchedulingPolicy(policy, cycles)
-            return True
-        except:
-            log.error("Exception caught: " + sys.exc_info()[0])
-            return False
-
     def addCacheToPE(
         self,
         name,
@@ -165,6 +148,8 @@ class PlatformDesigner:
 
         :param processors: The processors the cache will be added to.
         :type processors: list[Processor]
+        :param name: The cache name, in case it differs from L1.
+        :type name: String
         :param readLatency: The read latency of the cache.
         :type readLatency: int
         :param writeLatency: The write latency of the cache.
@@ -173,8 +158,6 @@ class PlatformDesigner:
         :type readThroughput: int
         :param writeThroughput: The write throughput of the cache.
         :type writeThroughput: int
-        :param name: The cache name, in case it differs from L1.
-        :type name: String
         """
 
         fd = FrequencyDomain("fd_" + name, frequencyDomain)
@@ -215,8 +198,8 @@ class PlatformDesigner:
 
         :param name: The name of the storage
         :type name: String
-        :param clusterIds: A list of clusters which will be connected.
-        :type clusterIds: list[int]
+        :param cluster: A list of clusters which will be connected.
+        :type cluster: list[int]
         :param readLatency: The read latency of the communication resource.
         :type readLatency: int
         :param writeLatency: The write latency of the communication resource.
@@ -444,8 +427,23 @@ class PlatformDesigner:
                         prim.add_consumer(innerProcessor[0], [consume])
 
                 self.__platform.add_primitive(prim)
-        #else:
-            #return
+
+    def setSchedulingPolicy(self, policy, cycles):
+        """Sets a new scheduling policy, which will be applied to all schedulers of new PE Clusters.
+
+        :param policy: The name of the policy.
+        :type policy: String
+        :param cycles: The cycles of the policy.
+        :type cycles: int
+        :returns: Whether the policy set successfully or not.
+        :rtype: bool
+        """
+        try:
+            self.__schedulingPolicy = SchedulingPolicy(policy, cycles)
+            return True
+        except:
+            log.error("Exception caught: " + sys.exc_info()[0])
+            return False
 
     def setPeripheralStaticPower(self, static_power):
         """Set peripheral static power of the platform."""
