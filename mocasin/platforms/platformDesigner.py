@@ -69,6 +69,7 @@ class PlatformDesigner:
 
     def generatePeList(self, processor, amount, processor_names):
         """generates a list of processors from a base processor.
+        The returned list is not automatically added to the platform.
 
         :param processor: The identifier, the cluster can be addressed with.
         :type processor: Processor
@@ -273,16 +274,10 @@ class PlatformDesigner:
 
         :param name: The name of the storage
         :type name: String
-        :param clusterIds: A list of clusters which will be connected.
-        :type clusterIds: list[int]
-        :param readLatency: The read latency of the communication resource.
-        :type readLatency: int
-        :param writeLatency: The write latency of the communication resource.
-        :type writeLatency: int
-        :param readThroughput: The read throughput of the communication resource.
-        :type readThroughput: int
-        :param writeThroughput: The write throughput of the communication resource.
-        :type writeThroughput: int
+        :param clusters: A list of clusters whose inner PEs will be connected to the given communication resource.
+        :type clusters: list[cluster]
+        :param comResource: Communication resource the PEs in the given cluster will be connected to.
+        :type comResource: communicationResource
         """
         nameToGive = (
             "_"
