@@ -26,9 +26,6 @@ class PlatformDesigner:
     It provides the necessary methods to create PE clusters and connect PEs in clusters
     or clusters themselves with communication resources.
 
-    :ivar __namingSuffix: Increases every time a new cluster is pushed on the stack. Will be added to the
-                            name of every communication resource added to this cluster.
-    :type __namingSuffix: int
     :ivar __schedulingPolicy: Holds the currently set scheduling policy. This policy will
                             be applied to all PE clusters initialized afterwards.
     :type __schedulingPolicy: SchedulingPolicy
@@ -44,7 +41,6 @@ class PlatformDesigner:
         :param platform: The platform object which will be modified.
         :type platform: Platform
         """
-        self.__namingSuffix = 0
         self.__schedulingPolicy = None
         self.__platform = platform
         self.__clusterList = []
@@ -64,7 +60,6 @@ class PlatformDesigner:
         if not self.__clusterList:
             parent.innerClusters.append(newCluster)
             newCluster.outerCluster = parent
-        self.__namingSuffix += 1
         return newCluster
 
     def generatePeList(self, processor, amount, processor_names):
@@ -209,20 +204,14 @@ class PlatformDesigner:
         :param writeThroughput: The write throughput of the communication resource.
         :type writeThroughput: int
         """
-
-        nameToGive = (
-            "_"
-            + name
-            + "_"
-            + str(self.__namingSuffix)
-        )
+        #TODO: check that there are not other fd with the same name
         fd = FrequencyDomain("fd_" + name, frequencyDomain)
 
         try:
             # FIXME: why distinguish storage and other types here?
             if resourceType == CommunicationResourceType.Storage:
                 comResource = Storage(
-                    nameToGive,
+                    name,
                     fd,
                     readLatency,
                     writeLatency,
@@ -231,7 +220,7 @@ class PlatformDesigner:
                 )
             else:
                 comResource = CommunicationResource(
-                    nameToGive,
+                    name,
                     fd,
                     resourceType,
                     readLatency,
@@ -249,7 +238,6 @@ class PlatformDesigner:
 
     def connectPesInClusterToComm(
         self,
-        name,
         clusters,
         comResource,):
         """Adds a communication resource to the platform. All cores of the given cluster identifiers can communicate
@@ -262,13 +250,7 @@ class PlatformDesigner:
         :param comResource: Communication resource the PEs in the given cluster will be connected to.
         :type comResource: communicationResource
         """
-        nameToGive = (
-            "_"
-            + name
-            + "_"
-            + str(self.__namingSuffix)
-        )
-        prim = Primitive("prim_" + nameToGive)
+        prim = Primitive("prim_" + comResource.name)
 
         for cluster in clusters:
             for pe in cluster.pes:
