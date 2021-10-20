@@ -45,17 +45,17 @@ class PlatformDesigner:
         self.__platform = platform
         self.__clusterList = []
 
-    def addCluster(self, identifier, parent=None):
+    def addCluster(self, name, parent=None):
         """Add a new cluster to the platform.
 
-        :param identifier: The identifier, the cluster can be addressed with.
-        :type identifier: int
+        :param name: The name, the cluster can be addressed with.
+        :type name: int
         :param parent: The parent cluster in which the new cluster will be contained.
         :type parent: cluster
         :returns: The generated cluster.
         :rtype: cluster
         """
-        newCluster = cluster(identifier)
+        newCluster = cluster(name)
         self.__clusterList.append(newCluster)
         if not self.__clusterList:
             parent.innerClusters.append(newCluster)
@@ -66,7 +66,7 @@ class PlatformDesigner:
         """generates a list of processors from a base processor.
         The returned list is not automatically added to the platform.
 
-        :param processor: The identifier, the cluster can be addressed with.
+        :param processor: The name, the cluster can be addressed with.
         :type processor: Processor
         :param amount: Amount of processors to generate.
         :type amount: int
@@ -188,7 +188,7 @@ class PlatformDesigner:
         # expect an actual FrequencyDomain object
         frequencyDomain=0,
     ):
-        """Adds a communication resource to the platform. All cores of the given cluster identifiers can communicate
+        """Adds a communication resource to the platform. All cores of the given cluster names can communicate
         via this resource.
 
         :param name: The name of the storage
@@ -240,11 +240,9 @@ class PlatformDesigner:
         self,
         clusters,
         comResource,):
-        """Adds a communication resource to the platform. All cores of the given cluster identifiers can communicate
+        """Adds a communication resource to the platform. All cores of the given cluster names can communicate
         via this resource.
 
-        :param name: The name of the storage
-        :type name: String
         :param clusters: A list of clusters whose inner PEs will be connected to the given communication resource.
         :type clusters: list[cluster]
         :param comResource: Communication resource the PEs in the given cluster will be connected to.
@@ -262,6 +260,161 @@ class PlatformDesigner:
                 )
                 prim.add_producer(pe, [produce])
                 prim.add_consumer(pe, [consume])
+        self.__platform.add_primitive(prim)
+
+    def connectPeToCom(
+        self,
+        elements,
+        communicationResource):
+        """Adds a communication resource to the platform. All cores of the given cluster names can communicate
+        via this resource.
+
+        :param elements: A list of elements (communicationResource or Processor) to be connected to the given communication resource.
+        :type elements: list[communicationResource or Processor]
+        :param communicationResource: Communication resource the PEs in the given cluster will be connected to.
+        :type communicationResource: communicationResource
+        """
+        name = "prim_" + communicationResource.name
+        print(name)
+        if name in self.__platform.primitives():
+            prim = self.__platform.find_primitive(name)
+        else:
+            prim = Primitive(name)
+
+        for element in elements:
+            # if pe, must be contained in the current cluster
+            if isinstance(element, Processor):
+                for cluster in self.__clusterList:
+                    for comRes in cluster.commResources:
+                        if comRes.name == communicationResource.name:
+                            currentCluster = cluster
+                            break
+                    else:
+                        continue
+                    break
+                if element in currentCluster.pes:
+                    produce = CommunicationPhase(
+                        "produce", [communicationResource], "write"
+                    )
+                    consume = CommunicationPhase(
+                        "consume", [communicationResource], "read"
+                    )
+                    prim.add_producer(element, [produce])
+                    prim.add_consumer(element, [consume])
+                #TODO: else: error pe not in cluster
+        self.__platform.add_primitive(prim)
+
+    def connectClusterToCom(
+        self,
+        elements,
+        communicationResource):
+        """Adds a communication resource to the platform. All cores of the given cluster names can communicate
+        via this resource.
+
+        :param elements: A list of elements (communicationResource or Processor) to be connected to the given communication resource.
+        :type elements: list[communicationResource or Processor]
+        :param communicationResource: Communication resource the PEs in the given cluster will be connected to.
+        :type communicationResource: communicationResource
+        """
+        name = "prim_" + communicationResource.name
+        if name in self.__platform.primitives():
+            prim = self.__platform.find_primitive("prim_" + communicationResource.name)
+        else:
+            prim = Primitive("prim_" + communicationResource.name)
+
+        for element in elements:
+            # TODO: check that element is a comm resource or pe
+            if isinstance(element, CommunicationResource):
+                # if comm resource, it must be contained in one of the inner clusters
+                # take inner communicationResource as base, and add up the given commResource
+                # to the new primitive
+                for cluster in self.__clusterList:
+                    for comRes in cluster.commResources:
+                        if comRes.name == element.name:
+                            innerComPrim = self.__platform.find_primitive("prim_" + comRes.name)
+                            break
+                        # TODO: else - error, comResource not in cluster
+                    # work around to break out of nested loops if the inner loop breaks
+                    else:
+                        continue
+                    break
+
+                for producer in innerComPrim.producers:
+                    resources = innerComPrim.produce_phases[producer.name]
+                    res = []
+                    for ns in resources:
+                        res.extend(ns.resources)
+                    res.append(communicationResource)
+                    produce = CommunicationPhase(
+                        "produce", res, "write"
+                    )
+                    prim.add_producer(producer, [produce])
+                for consumer in innerComPrim.consumers:
+                    resources = innerComPrim.consume_phases[consumer.name]
+                    res = []
+                    for ns in resources:
+                        res.extend(ns.resources)
+                    res.append(communicationResource)
+                    consume = CommunicationPhase(
+                        "consume", res, "read"
+                    )
+                    prim.add_consumer(consumer, [consume])
+
+        self.__platform.add_primitive(prim)
+
+    def connectComToCom(
+        self,
+        elements,
+        communicationResource):
+        """Adds a communication resource to the platform. All cores of the given cluster names can communicate
+        via this resource.
+
+        :param elements: A list of elements (communicationResource or Processor) to be connected to the given communication resource.
+        :type elements: list[communicationResource or Processor]
+        :param communicationResource: Communication resource the PEs in the given cluster will be connected to.
+        :type communicationResource: communicationResource
+        """
+        name = "prim_" + communicationResource.name
+        if name in self.__platform.primitives():
+            prim = self.__platform.find_primitive("prim_" + communicationResource.name)
+        else:
+            prim = Primitive("prim_" + communicationResource.name)
+
+        for element in elements:
+            # TODO: check that element is a comm resource or pe
+            if isinstance(element, CommunicationResource):
+                # if comm resource, it must be contained in one of the inner clusters
+                # take inner communicationResource as base, and add up the given commResource
+                # to the new primitive
+                for cluster in self.__clusterList:
+                    for comRes in cluster.commResources:
+                        if comRes.name == communicationResource.name:
+                            currentCluster = cluster
+                            break
+                    else:
+                        continue
+                    break
+                if element in currentCluster.pes:
+                    for producer in element.producers:
+                        resources = element.produce_phases[producer.name]
+                        res = []
+                        for ns in resources:
+                            res.extend(ns.resources)
+                        res.append(communicationResource)
+                        produce = CommunicationPhase(
+                            "produce", res, "write"
+                        )
+                        prim.add_producer(producer, [produce])
+                    for consumer in element.consumers:
+                        resources = element.consume_phases[consumer.name]
+                        res = []
+                        for ns in resources:
+                            res.extend(ns.resources)
+                        res.append(communicationResource)
+                        consume = CommunicationPhase(
+                            "consume", res, "read"
+                        )
+                        prim.add_consumer(consumer, [consume])
 
         self.__platform.add_primitive(prim)
 
@@ -309,7 +462,7 @@ class PlatformDesigner:
         """Adding physical links and NOC memories according to the adjacency list
         """
         for key in adjacencyList:
-            name = str(cluster.identifier) + "_noc_mem_" + str(key)
+            name = str(cluster.name) + "_noc_mem_" + str(key)
             communicationResource = Storage(
                 name,
                 fd,
@@ -324,7 +477,7 @@ class PlatformDesigner:
 
             for target in adjacencyList[key]:
                 name = (
-                    str(cluster.identifier)
+                    str(cluster.name)
                     + "_pl_"
                     + str(target)
                     + "_"
@@ -349,7 +502,7 @@ class PlatformDesigner:
             else:
                 prim = Primitive(networkName + "_" + processor[0].name)
                 memoryName = (
-                    str(cluster.identifier)
+                    str(cluster.name)
                     # FIXME: this will lead to issues if we have >=2 NoCs
                     + "_noc_mem_"
                     + str(processor[0].name)
@@ -375,7 +528,7 @@ class PlatformDesigner:
                         for point in path:
                             if lastPoint != None:
                                 name = (
-                                    str(cluster.identifier)
+                                    str(cluster.name)
                                     + "_pl_"
                                     + str(lastPoint)
                                     + "_"
@@ -473,8 +626,8 @@ class genericProcessor(Processor):
 class cluster:
     """Represents one cluster in the platform. A cluster contains a set of clusters and/or processors.
 
-    :ivar string identifier: Name of the cluster.
-    :type identifier: string
+    :ivar string name: Name of the cluster.
+    :type name: string
     :ivar innerClusters: Holds all clusters inside the current cluster.
     :type innerClusters: list[cluster]
     :ivar commResources: Holds all communication resources inside cluster.
@@ -485,9 +638,23 @@ class cluster:
                         outerCluster can be set to None.
     :type outerCluster: cluster
     """
-    def __init__(self, identifier):
-        self.identifier = identifier
+    def __init__(self, name):
+        self.name = name
         self.innerClusters = []
         self.commResources = []
         self.pes = []
         self.outerCluster = None
+
+class myPrimitive:
+    def __init__(self, identifier):
+        #self.name = name
+        self.consumers = []
+        self.producers = []
+        self.consume_phases = {}
+        self.produce_phases = {}
+
+
+
+
+
+
