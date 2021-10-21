@@ -94,27 +94,51 @@ class PlatformDesigner:
             processors.append(new_processor)
         return processors
 
-    def addPeSet(self, cluster, processors):
-        """Adds a set of processing elements to a cluster.
+    def addPeToCluster(
+        self,
+        cluster,
+        name,
+        processorType,
+        frequency_domain,
+        power_model,
+        context_load_cycles,
+        context_store_cycles
+    ):
+        """Adds a processing element to cluster.
 
-        :param cluster: The cluster the processing elements will be added to.
+        :param cluster: The cluster the processing element will be added to.
         :type cluster: cluster
-        :param processors: The set of Processor objects that will be added to the cluster.
-        :type processors: list[Processor]
+        :param name: processor name.
+        :type name: string
+        :param processorType: Processor type.
+        :type processorType: string
+        :param frequency_domain: Prequency domain for processor.
+        :type frequency_domain: FrequencyDomain
+        :param power_model: Power model for processor.
+        :type power_model: ProcessorPowerModel
+        :param context_load_cycles: Context load cycles for processor.
+        :type context_load_cycles: int
+        :param context_store_cycles: Context store cycles for processor.
+        :type context_store_cycles: int
         """
         try:
-            pes = []
-            for pe in processors:
-                self.__platform.add_processor(pe)
-                self.__platform.add_scheduler(
-                    Scheduler(
-                        f"sched_{pe.name}",
-                        [pe],
-                        self.__schedulingPolicy,
-                    )
+            new_processor = Processor(
+                name,
+                processorType,
+                frequency_domain,
+                power_model,
+                context_load_cycles,
+                context_store_cycles,
+            )
+            self.__platform.add_processor(new_processor)
+            self.__platform.add_scheduler(
+                Scheduler(
+                    f"sched_{new_processor.name}",
+                    [new_processor],
+                    self.__schedulingPolicy,
                 )
-                pes.append(pe)
-            cluster.pes.extend(pes)
+            )
+            cluster.pes.append(new_processor)
         except:
             log.error("Exception caught: " + str(sys.exc_info()[0]))
 
@@ -275,7 +299,6 @@ class PlatformDesigner:
         :type communicationResource: communicationResource
         """
         name = "prim_" + communicationResource.name
-        print(name)
         if name in self.__platform.primitives():
             prim = self.__platform.find_primitive(name)
         else:
