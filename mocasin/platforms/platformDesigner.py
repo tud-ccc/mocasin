@@ -88,6 +88,8 @@ class PlatformDesigner:
         :type context_load_cycles: int
         :param context_store_cycles: Context store cycles for processor.
         :type context_store_cycles: int
+        :returns: new PE added to the cluster.
+        :rtype: Processor
         """
         try:
             new_processor = Processor(
@@ -107,6 +109,7 @@ class PlatformDesigner:
                 )
             )
             cluster.pes.append(new_processor)
+            return new_processor
         except:
             log.error("Exception caught: " + str(sys.exc_info()[0]))
 
