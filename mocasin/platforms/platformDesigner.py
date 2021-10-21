@@ -231,32 +231,6 @@ class PlatformDesigner:
             log.error("Exception caught: " + str(sys.exc_info()[0]))
             return
 
-    def connectPesInClusterToComm(
-        self,
-        clusters,
-        comResource,):
-        """Adds a communication resource to the platform. All cores of the given cluster names can communicate
-        via this resource.
-
-        :param clusters: A list of clusters whose inner PEs will be connected to the given communication resource.
-        :type clusters: list[cluster]
-        :param comResource: Communication resource the PEs in the given cluster will be connected to.
-        :type comResource: communicationResource
-        """
-        prim = Primitive("prim_" + comResource.name)
-
-        for cluster in clusters:
-            for pe in cluster.pes:
-                produce = CommunicationPhase(
-                    "produce", [comResource], "write"
-                )
-                consume = CommunicationPhase(
-                    "consume", [comResource], "read"
-                )
-                prim.add_producer(pe, [produce])
-                prim.add_consumer(pe, [consume])
-        self.__platform.add_primitive(prim)
-
     def connectPeToCom(
         self,
         elements,
