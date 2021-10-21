@@ -62,38 +62,6 @@ class PlatformDesigner:
             newCluster.outerCluster = parent
         return newCluster
 
-    def generatePeList(self, processor, amount, processor_names):
-        """generates a list of processors from a base processor.
-        The returned list is not automatically added to the platform.
-
-        :param processor: The name, the cluster can be addressed with.
-        :type processor: Processor
-        :param amount: Amount of processors to generate.
-        :type amount: int
-        :param processor_names: names to give to the processors.
-        :type processor_names: list[string]
-        :returns: list of generated processors.
-        :rtype: list[processor]
-        """
-
-        if len(processor_names) != amount:
-            raise RuntimeWarning(
-                "processor_names must contain as many elements as the amount of processors"            
-            )
-                    
-        processors = []
-        for i in range(amount):
-            new_processor = Processor(
-                processor_names[i],
-                processor.type,
-                processor.frequency_domain,
-                processor.power_model,
-                processor.context_load_cycles,
-                processor.context_store_cycles,
-            )
-            processors.append(new_processor)
-        return processors
-
     def addPeToCluster(
         self,
         cluster,
