@@ -123,52 +123,6 @@ class PlatformDesigner:
         """
         return cluster.pes
 
-    def addCacheToPE(
-        self,
-        name,
-        processor,
-        readLatency,
-        writeLatency,
-        readThroughput,
-        writeThroughput,
-        # FIXME, this is a strange default
-        frequencyDomain=100000,  # TODO: this should be added to tests
-    ):
-        """Adds a level 1 cache to each of the given PEs.
-
-        :param processors: The processors the cache will be added to.
-        :type processors: list[Processor]
-        :param name: The cache name, in case it differs from L1.
-        :type name: String
-        :param readLatency: The read latency of the cache.
-        :type readLatency: int
-        :param writeLatency: The write latency of the cache.
-        :type writeLatency: int
-        :param readThroughput: The read throughput of the cache.
-        :type readThroughput: int
-        :param writeThroughput: The write throughput of the cache.
-        :type writeThroughput: int
-        """
-
-        fd = FrequencyDomain("fd_" + name, frequencyDomain)
-
-        l1 = Storage(
-            name,
-            frequency_domain=fd,
-            read_latency=readLatency,
-            write_latency=writeLatency,
-            read_throughput=readThroughput,
-            write_throughput=writeThroughput,
-        )
-        self.__platform.add_communication_resource(l1)
-        prim = Primitive("prim_" + name)
-
-        produce = CommunicationPhase("produce", [l1], "write")
-        consume = CommunicationPhase("consume", [l1], "read")
-        prim.add_producer(processor, [produce])
-        prim.add_consumer(processor, [consume])
-        self.__platform.add_primitive(prim)
-
     def addCommunicationResource(
         self,
         name,
