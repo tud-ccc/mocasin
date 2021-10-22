@@ -286,9 +286,9 @@ class PlatformDesigner:
         """
         name = "prim_" + communicationResource.name
         if name in self.__platform.primitives():
-            prim = self.__platform.find_primitive("prim_" + communicationResource.name)
+            prim = self.__platform.find_primitive(name)
         else:
-            prim = Primitive("prim_" + communicationResource.name)
+            prim = Primitive(name)
 
         for element in elements:
             # TODO: check that element is a comm resource or pe
@@ -308,23 +308,23 @@ class PlatformDesigner:
                     break
 
                 for producer in innerComPrim.producers:
-                    resources = innerComPrim.produce_phases[producer.name]
-                    res = []
-                    for ns in resources:
-                        res.extend(ns.resources)
-                    res.append(communicationResource)
+                    phases = innerComPrim.produce_phases[producer.name]
+                    resources = []
+                    for ph in phases:
+                        resources.extend(ph.resources)
+                    resources.append(communicationResource)
                     produce = CommunicationPhase(
-                        "produce", res, "write"
+                        "produce", resources, "write"
                     )
                     prim.add_producer(producer, [produce])
                 for consumer in innerComPrim.consumers:
-                    resources = innerComPrim.consume_phases[consumer.name]
-                    res = []
-                    for ns in resources:
-                        res.extend(ns.resources)
-                    res.append(communicationResource)
+                    phases = innerComPrim.consume_phases[consumer.name]
+                    resources = []
+                    for ph in phases:
+                        resources.extend(ph.resources)
+                    resources.insert(0, communicationResource)
                     consume = CommunicationPhase(
-                        "consume", res, "read"
+                        "consume", resources, "read"
                     )
                     prim.add_consumer(consumer, [consume])
 
@@ -343,10 +343,12 @@ class PlatformDesigner:
         :type communicationResource: communicationResource
         """
         name = "prim_" + communicationResource.name
-        if name in self.__platform.primitives():
-            prim = self.__platform.find_primitive("prim_" + communicationResource.name)
-        else:
-            prim = Primitive("prim_" + communicationResource.name)
+        primitives = self.__platform.primitives()
+        prim = Primitive(name)
+        for primitive in primitives:
+            if name == primitive.name:
+                prim = self.__platform.find_primitive(name)
+                break
 
         for element in elements:
             # TODO: check that element is a comm resource or pe
@@ -362,29 +364,46 @@ class PlatformDesigner:
                     else:
                         continue
                     break
-                if element in currentCluster.pes:
-                    for producer in element.producers:
-                        resources = element.produce_phases[producer.name]
-                        res = []
-                        for ns in resources:
-                            res.extend(ns.resources)
-                        res.append(communicationResource)
-                        produce = CommunicationPhase(
-                            "produce", res, "write"
-                        )
-                        prim.add_producer(producer, [produce])
-                    for consumer in element.consumers:
-                        resources = element.consume_phases[consumer.name]
-                        res = []
-                        for ns in resources:
-                            res.extend(ns.resources)
-                        res.append(communicationResource)
-                        consume = CommunicationPhase(
-                            "consume", res, "read"
-                        )
-                        prim.add_consumer(consumer, [consume])
+                print("currentCLuster: " + currentCluster.name)
+                for comRes in currentCluster.commResources:
+                    print("comRes: " + comRes.name + " == element: " + element.name)
+                    if element == comRes:
+                        innerComPrim = self.__platform.find_primitive("prim_" + comRes.name)
+                        for producer in innerComPrim.producers:
+                            print("producer: " + producer.name)
+                            phases = innerComPrim.produce_phases[producer.name]
+                            resources = []
+                            for ph in phases:
+                                resources.extend(ph.resources)
+                            resources.append(communicationResource)
+                            produce = CommunicationPhase(
+                                "produce", resources, "write"
+                            )
+                            prim.add_producer(producer, [produce])
+                        for consumer in innerComPrim.consumers:
+                            phases = innerComPrim.consume_phases[consumer.name]
+                            resources = []
+                            for ph in phases:
+                                resources.extend(ph.resources)
+                            resources.insert(0, communicationResource)
+                            consume = CommunicationPhase(
+                                "consume", resources, "read"
+                            )
+                            prim.add_consumer(consumer, [consume])
+                        break
+                else:
+                    continue
+                break
 
-        self.__platform.add_primitive(prim)
+        name = "prim_" + communicationResource.name
+        primitives = self.__platform.primitives()
+        a = False
+        for primitive in primitives:
+            if name == primitive.name:
+                a = True
+        if not a:
+            self.__platform.add_primitive(prim)
+
 
     def createNetworkForCluster(
         self,
