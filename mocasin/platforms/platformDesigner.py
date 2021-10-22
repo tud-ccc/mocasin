@@ -187,7 +187,7 @@ class PlatformDesigner:
 
     def connectPeToCom(
         self,
-        elements,
+        processor,
         communicationResource):
         """Adds a communication resource to the platform. All cores of the given cluster names can communicate
         via this resource.
@@ -198,37 +198,41 @@ class PlatformDesigner:
         :type communicationResource: communicationResource
         """
         name = "prim_" + communicationResource.name
-        if name in self.__platform.primitives():
+        primitives = self.__platform._primitives
+        if name in primitives:
+            exists = True
             prim = self.__platform.find_primitive(name)
         else:
+            exists = False
             prim = Primitive(name)
 
-        for element in elements:
+        if isinstance(processor, Processor):
             # if pe, must be contained in the current cluster
-            if isinstance(element, Processor):
-                for cluster in self.__clusterList:
-                    for comRes in cluster.commResources:
-                        if comRes.name == communicationResource.name:
-                            currentCluster = cluster
-                            break
-                    else:
-                        continue
-                    break
-                if element in currentCluster.pes:
-                    produce = CommunicationPhase(
-                        "produce", [communicationResource], "write"
-                    )
-                    consume = CommunicationPhase(
-                        "consume", [communicationResource], "read"
-                    )
-                    prim.add_producer(element, [produce])
-                    prim.add_consumer(element, [consume])
+            for cluster in self.__clusterList:
+                for comRes in cluster.commResources:
+                    if comRes.name == communicationResource.name:
+                        currentCluster = cluster
+                        break
+                else:
+                    continue
+                break
+            if processor in currentCluster.pes:
+                produce = CommunicationPhase(
+                    "produce", [communicationResource], "write"
+                )
+                consume = CommunicationPhase(
+                    "consume", [communicationResource], "read"
+                )
+                prim.add_producer(processor, [produce])
+                prim.add_consumer(processor, [consume])
                 #TODO: else: error pe not in cluster
-        self.__platform.add_primitive(prim)
+
+        if not exists:
+            self.__platform.add_primitive(prim)
 
     def connectClusterToCom(
         self,
-        elements,
+        element,
         communicationResource):
         """Adds a communication resource to the platform. All cores of the given cluster names can communicate
         via this resource.
@@ -239,54 +243,57 @@ class PlatformDesigner:
         :type communicationResource: communicationResource
         """
         name = "prim_" + communicationResource.name
-        if name in self.__platform.primitives():
+        primitives = self.__platform._primitives
+        if name in primitives:
+            exists = True
             prim = self.__platform.find_primitive(name)
         else:
+            exists = False
             prim = Primitive(name)
 
-        for element in elements:
-            # TODO: check that element is a comm resource or pe
-            if isinstance(element, CommunicationResource):
-                # if comm resource, it must be contained in one of the inner clusters
-                # take inner communicationResource as base, and add up the given commResource
-                # to the new primitive
-                for cluster in self.__clusterList:
-                    for comRes in cluster.commResources:
-                        if comRes.name == element.name:
-                            innerComPrim = self.__platform.find_primitive("prim_" + comRes.name)
-                            break
-                        # TODO: else - error, comResource not in cluster
-                    # work around to break out of nested loops if the inner loop breaks
-                    else:
-                        continue
-                    break
+        # TODO: check that element is a comm resource or pe
+        if isinstance(element, CommunicationResource):
+            # if comm resource, it must be contained in one of the inner clusters
+            # take inner communicationResource as base, and add up the given commResource
+            # to the new primitive
+            for cluster in self.__clusterList:
+                for comRes in cluster.commResources:
+                    if comRes.name == element.name:
+                        innerComPrim = self.__platform.find_primitive("prim_" + comRes.name)
+                        break
+                    # TODO: else - error, comResource not in cluster
+                # work around to break out of nested loops if the inner loop breaks
+                else:
+                    continue
+                break
 
-                for producer in innerComPrim.producers:
-                    phases = innerComPrim.produce_phases[producer.name]
-                    resources = []
-                    for ph in phases:
-                        resources.extend(ph.resources)
-                    resources.append(communicationResource)
-                    produce = CommunicationPhase(
-                        "produce", resources, "write"
-                    )
-                    prim.add_producer(producer, [produce])
-                for consumer in innerComPrim.consumers:
-                    phases = innerComPrim.consume_phases[consumer.name]
-                    resources = []
-                    for ph in phases:
-                        resources.extend(ph.resources)
-                    resources.insert(0, communicationResource)
-                    consume = CommunicationPhase(
-                        "consume", resources, "read"
-                    )
-                    prim.add_consumer(consumer, [consume])
+            for producer in innerComPrim.producers:
+                phases = innerComPrim.produce_phases[producer.name]
+                resources = []
+                for ph in phases:
+                    resources.extend(ph.resources)
+                resources.append(communicationResource)
+                produce = CommunicationPhase(
+                    "produce", resources, "write"
+                )
+                prim.add_producer(producer, [produce])
+            for consumer in innerComPrim.consumers:
+                phases = innerComPrim.consume_phases[consumer.name]
+                resources = []
+                for ph in phases:
+                    resources.extend(ph.resources)
+                resources.insert(0, communicationResource)
+                consume = CommunicationPhase(
+                    "consume", resources, "read"
+                )
+                prim.add_consumer(consumer, [consume])
 
-        self.__platform.add_primitive(prim)
+        if not exists:
+            self.__platform.add_primitive(prim)
 
     def connectComToCom(
         self,
-        elements,
+        element,
         communicationResource):
         """Adds a communication resource to the platform. All cores of the given cluster names can communicate
         via this resource.
@@ -297,65 +304,57 @@ class PlatformDesigner:
         :type communicationResource: communicationResource
         """
         name = "prim_" + communicationResource.name
-        primitives = self.__platform.primitives()
-        prim = Primitive(name)
-        for primitive in primitives:
-            if name == primitive.name:
-                prim = self.__platform.find_primitive(name)
-                break
+        primitives = self.__platform._primitives
+        if name in primitives:
+            exists = True
+            prim = self.__platform.find_primitive(name)
+        else:
+            exists = False
+            prim = Primitive(name)
 
-        for element in elements:
-            # TODO: check that element is a comm resource or pe
-            if isinstance(element, CommunicationResource):
-                # if comm resource, it must be contained in one of the inner clusters
-                # take inner communicationResource as base, and add up the given commResource
-                # to the new primitive
-                for cluster in self.__clusterList:
-                    for comRes in cluster.commResources:
-                        if comRes.name == communicationResource.name:
-                            currentCluster = cluster
-                            break
-                    else:
-                        continue
-                    break
-                print("currentCLuster: " + currentCluster.name)
-                for comRes in currentCluster.commResources:
-                    print("comRes: " + comRes.name + " == element: " + element.name)
-                    if element == comRes:
-                        innerComPrim = self.__platform.find_primitive("prim_" + comRes.name)
-                        for producer in innerComPrim.producers:
-                            print("producer: " + producer.name)
-                            phases = innerComPrim.produce_phases[producer.name]
-                            resources = []
-                            for ph in phases:
-                                resources.extend(ph.resources)
-                            resources.append(communicationResource)
-                            produce = CommunicationPhase(
-                                "produce", resources, "write"
-                            )
-                            prim.add_producer(producer, [produce])
-                        for consumer in innerComPrim.consumers:
-                            phases = innerComPrim.consume_phases[consumer.name]
-                            resources = []
-                            for ph in phases:
-                                resources.extend(ph.resources)
-                            resources.insert(0, communicationResource)
-                            consume = CommunicationPhase(
-                                "consume", resources, "read"
-                            )
-                            prim.add_consumer(consumer, [consume])
+        # TODO: check that element is a comm resource or pe
+        if isinstance(element, CommunicationResource):
+            # if comm resource, it must be contained in one of the inner clusters
+            # take inner communicationResource as base, and add up the given commResource
+            # to the new primitive
+            for cluster in self.__clusterList:
+                for comRes in cluster.commResources:
+                    if comRes.name == communicationResource.name:
+                        currentCluster = cluster
                         break
                 else:
                     continue
                 break
 
-        name = "prim_" + communicationResource.name
-        primitives = self.__platform.primitives()
-        a = False
-        for primitive in primitives:
-            if name == primitive.name:
-                a = True
-        if not a:
+            for comRes in currentCluster.commResources:
+                if element == comRes:
+                    innerComPrim = self.__platform.find_primitive("prim_" + comRes.name)
+                    for producer in innerComPrim.producers:
+                        phases = innerComPrim.produce_phases[producer.name]
+                        resources = []
+                        for ph in phases:
+                            resources.extend(ph.resources)
+                        resources.append(communicationResource)
+                        produce = CommunicationPhase(
+                            "produce", resources, "write"
+                        )
+                        prim.add_producer(producer, [produce])
+                    for consumer in innerComPrim.consumers:
+                        phases = innerComPrim.consume_phases[consumer.name]
+                        resources = []
+                        for ph in phases:
+                            resources.extend(ph.resources)
+                        resources.insert(0, communicationResource)
+                        consume = CommunicationPhase(
+                            "consume", resources, "read"
+                        )
+                        prim.add_consumer(consumer, [consume])
+                    break
+                else:
+                    continue
+                break
+
+        if not exists:
             self.__platform.add_primitive(prim)
 
 
