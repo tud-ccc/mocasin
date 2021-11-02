@@ -114,8 +114,8 @@ class CommunicationResource(object):
         self.exclusive = exclusive
         self.is_storage = is_storage
 
-    def ressource_type(self):
-        return self.ressource_type
+    def resource_type(self):
+        return self._resource_type
 
     def read_latency(self):
         return self._frequency_domain.cycles_to_ticks(self._read_latency)
