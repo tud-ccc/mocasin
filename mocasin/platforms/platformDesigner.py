@@ -318,7 +318,7 @@ class PlatformDesigner:
 
             # check if processor and communication resource are placed in the same cluster
             currentCluster = self.getClusterForPe(processor)
-            if communicationResource in currentCluster.comResources:
+            if communicationResource in currentCluster.commResources:
                 produce = CommunicationPhase(
                     "produce", [communicationResource], "write"
                 )
@@ -327,11 +327,6 @@ class PlatformDesigner:
                 )
                 prim.add_producer(processor, [produce])
                 prim.add_consumer(processor, [consume])
-
-            else:
-                log.error(
-                    "Exception caught: PE and communication resource must be contained in the same cluster"
-                )
 
             if not prim_exists:
                 self.__platform.add_primitive(prim)
