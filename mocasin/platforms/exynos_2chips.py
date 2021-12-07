@@ -60,7 +60,6 @@ class Exynos2Chips(Platform):
 
                 l1_list = list()
                 for k in range(num_pes):
-                    print(pe_base.name)
                     # Processors
                     pe = designer.addPeToCluster(
                         cluster,
