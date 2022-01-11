@@ -1,7 +1,7 @@
 # Copyright (C) 2017-2020 TU Dresden
 # Licensed under the ISC license (see LICENSE.txt)
 #
-# Authors: Christian Menard, Felix Teweleit, Andres Goens
+# Authors: Christian Menard, Felix Teweleit, Andres Goens, Julian Robledo
 
 
 from mocasin.common.platform import (
@@ -46,7 +46,7 @@ class GenericBusPlatform(Platform):
 
         for i in range(0, num_processors):
             name = "PE%02d" % (i)
-            processor = Processor(name, "RISC", fd_pes, 100, 100)
+            processor = Processor(name, "proc_type_0", fd_pes, None, 100, 100)
             bus.connect_processor(processor)
             self.add_processor(processor)
             self.add_scheduler(Scheduler("sp_" + name, [processor], policy))
