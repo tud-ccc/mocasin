@@ -7,12 +7,7 @@
 from mocasin.common.platform import (
     FrequencyDomain,
     Platform,
-    Processor,
-    SchedulingPolicy,
-    Scheduler,
-    Storage,
-    CommunicationPhase,
-    Primitive,
+    Processor
 )
 from mocasin.platforms.platformDesigner import PlatformDesigner
 
