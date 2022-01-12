@@ -399,19 +399,20 @@ class PlatformDesigner:
 
         for key in adjacencyList:
             for target in adjacencyList[key]:
-                name = "pl_" + str(target) + "_" + str(key)
-                communicationResource = CommunicationResource(
-                    name,
-                    physicalLink._frequency_domain,
-                    CommunicationResourceType.PhysicalLink,
-                    physicalLink._read_latency,
-                    physicalLink._write_latency,
-                    physicalLink._read_throughput,
-                    physicalLink._write_throughput,
-                )
-                self.__platform.add_communication_resource(
-                    communicationResource
-                )
+                if physicalLink:
+                    name = "pl_" + str(target) + "_" + str(key)
+                    communicationResource = CommunicationResource(
+                        name,
+                        physicalLink._frequency_domain,
+                        CommunicationResourceType.PhysicalLink,
+                        physicalLink._read_latency,
+                        physicalLink._write_latency,
+                        physicalLink._read_throughput,
+                        physicalLink._write_throughput,
+                    )
+                    self.__platform.add_communication_resource(
+                        communicationResource
+                    )
 
         for router in routerList:
             pes = self.__routerList[router.name]
@@ -419,19 +420,19 @@ class PlatformDesigner:
                 innerPes = self.__routerList[innerRouter.name]
 
                 if innerRouter != router:
-                    #print(f"routers: {router.name} to {innerRouter.name}")
                     resourceList = []
                     path = routingFunction(adjacencyList, router, innerRouter)
                     lastPoint = None
                     for point in path:
                         if lastPoint != None:
-                            name = "pl_" + str(lastPoint) + "_" + str(point)
-                            resource = (
-                                self.__platform.find_communication_resource(
-                                    name
+                            if physicalLink:
+                                name = "pl_" + str(lastPoint) + "_" + str(point)
+                                resource = (
+                                    self.__platform.find_communication_resource(
+                                        name
+                                    )
                                 )
-                            )
-                            resourceList.append(resource)
+                                resourceList.append(resource)
                         lastPoint = point
 
                     for pe in pes:
