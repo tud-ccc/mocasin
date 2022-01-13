@@ -160,7 +160,7 @@ class DesignerPlatformBus(Platform):
         self, processor_0, name="bus", symmetries_json=None, embedding_json=None
     ):
         """Initializes an example platform with four processing
-        elements connected via an shared memory.
+        elements connected via a shared memory.
         :param processor_0: the processing element for the platform
         :type processor_0: Processor
         :param name: The name for the returned platform
@@ -174,15 +174,28 @@ class DesignerPlatformBus(Platform):
             processor_0 = instantiate(processor_0)
         designer = PlatformDesigner(self)
         designer.setSchedulingPolicy("FIFO", 1000)
-        designer.newElement("test_chip")
-        designer.addPeClusterForProcessor("cluster_0", processor_0, 4)
-        designer.addCommunicationResource(
+        test_chip = designer.addCluster("test_chip")
+
+        cluster0 = designer.addCluster("cluster0", test_chip)
+        # Add memory
+        shared_memory = designer.addStorage(
             "shared_memory",
-            ["cluster_0"],
-            100,
-            100,
-            1000,
-            1000,
-            frequencyDomain=2000,
+            cluster0,
+            readLatency=100,
+            writeLatency=100,
+            readThroughput=1000,
+            writeThroughput=1000,
+            frequency=2000,
         )
-        designer.finishElement()
+        for i in range(4):
+            pe = designer.addPeToCluster(
+                cluster0,
+                f"processor_{i}",
+                processor_0.type,
+                processor_0.frequency_domain,
+                processor_0.power_model,
+                processor_0.context_load_cycles,
+                processor_0.context_store_cycles,
+            )
+            # Connect pe to shared memory
+            designer.connectPeToCom(pe, shared_memory)
