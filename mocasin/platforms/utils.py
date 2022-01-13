@@ -26,7 +26,6 @@ def simpleDijkstra(adjacencyList, source, target):
     :returns: The list of nodes we need to visit to reach target from source.
     :rtype list[int]:
     """
-    print(adjacencyList)
     if isinstance(adjacencyList, dict):
         for element in adjacencyList:
             if not isinstance(adjacencyList[element], list):
@@ -130,12 +129,12 @@ def yxRouting(adjacency_list, source, target):
         return [source]
 
     keys = list(OrderedDict(adjacency_list))
-    
+
     source_val = keys.index(source)
-    source_val = int((source_val/n)) * n + (source_val % n)
+    source_val = (source_val % n) * n + int(source_val / n)
 
     target_val = keys.index(target)
-    target_val = int((target_val/n)) * n + (target_val % n)
+    target_val = (target_val % n) * n + int(target_val / n)
 
     source_x, source_y = valToXY(source_val, n)
     target_x, target_y = valToXY(target_val, n)
@@ -145,10 +144,14 @@ def yxRouting(adjacency_list, source, target):
 
     for y in range_y:
         val = XYToVal(source_x, y, n)
+        val = (val % n) * n + int(val / n)
+        val = int(val)
         route.append(keys[val])
     # do not count the value of the change of direction twice
     for x in range_x[1:]:
         val = XYToVal(x, target_y, n)
+        val = (val % n) * n + int(val / n)
+        val = int(val)
         route.append(keys[val])
 
     # sanity check
