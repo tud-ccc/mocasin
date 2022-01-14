@@ -1,9 +1,9 @@
 # Copyright (C) 2020 TU Dresden
 # Licensed under the ISC license (see LICENSE.txt)
 #
-# Authors: Felix Teweleit, Andres Goens
+# Authors: Felix Teweleit, Andres Goens, Julian Robledo
 
-from mocasin.common.platform import Platform, Processor
+from mocasin.common.platform import Platform, Processor, FrequencyDomain, CommunicationResource, CommunicationResourceType
 from mocasin.platforms.topologies import fullyConnectedTopology
 from mocasin.platforms.platformDesigner import PlatformDesigner
 from mocasin.platforms.utils import simpleDijkstra as sd
@@ -30,74 +30,119 @@ class DesignerPlatformCoolidge(Platform):
             processor_0 = instantiate(processor_0)
         if not isinstance(processor_1, Processor):
             processor_1 = instantiate(processor_1)
+
         designer = PlatformDesigner(self)
         designer.setSchedulingPolicy("FIFO", 1000)
-        designer.newElement("coolidge")
+        coolidge = designer.addCluster("coolidge")
+
+        fd = FrequencyDomain("fd_electric", 6000000.0)
+        pl = CommunicationResource(
+            "electric",
+            fd,
+            CommunicationResourceType.PhysicalLink,
+            100,
+            150,
+            100,
+            60
+        )
 
         # create five chips with 16 cores, NoC, +Security Core
-        clusters = []
+        l2_list = list()
         for i in range(5):
-            cluster = "cluster_{0}".format(i)
-            designer.newElement(cluster)
-            clusters.append(cluster)
+            cluster = designer.addCluster(f"cluster_{i}", coolidge)
+            cluster_0 = designer.addCluster(f"cluster_{i}_0", cluster)
+            nocList = list()
+            l1_list = list()
+            for j in range(16):
+                pe = designer.addPeToCluster(
+                    cluster_0,
+                    f"processor0_{(j+i*16):04d}",
+                    processor_0.type,
+                    processor_0.frequency_domain,
+                    processor_0.power_model,
+                    processor_0.context_load_cycles,
+                    processor_0.context_store_cycles,
+                )
+                noc = designer.addRouter(
+                    f"noc_{(j+i*16):04d}",
+                    cluster_0,
+                    readLatency=100,
+                    writeLatency=150,
+                    readThroughput=100,
+                    writeThroughput=60,
+                    frequency=40000.0,
+                )
+                # workaround to connect pes in cluster to an external memory
+                l1_0 = designer.addStorage(
+                    f"l1_{(j+i*16):04d}_0",
+                    cluster_0,
+                    readLatency=0,
+                    writeLatency=0,
+                    readThroughput=float("inf"),
+                    writeThroughput=float("inf"),
+                    frequency=600000.0,
+                )
+                designer.connectPeToCom(pe, noc)
+                designer.connectPeToCom(pe, l1_0)
+                nocList.append(noc)
+                l1_list.append(l1_0)
 
-            designer.addPeClusterForProcessor(f"cluster_{i}_0", processor_0, 16)
-
-            topology = fullyConnectedTopology(
-                [
-                    "processor_{:04d}".format(i * 17),
-                    "processor_{:04d}".format(i * 17 + 1),
-                    "processor_{:04d}".format(i * 17 + 2),
-                    "processor_{:04d}".format(i * 17 + 3),
-                    "processor_{:04d}".format(i * 17 + 4),
-                    "processor_{:04d}".format(i * 17 + 5),
-                    "processor_{:04d}".format(i * 17 + 6),
-                    "processor_{:04d}".format(i * 17 + 7),
-                    "processor_{:04d}".format(i * 17 + 8),
-                    "processor_{:04d}".format(i * 17 + 9),
-                    "processor_{:04d}".format(i * 17 + 10),
-                    "processor_{:04d}".format(i * 17 + 11),
-                    "processor_{:04d}".format(i * 17 + 12),
-                    "processor_{:04d}".format(i * 17 + 13),
-                    "processor_{:04d}".format(i * 17 + 14),
-                    "processor_{:04d}".format(i * 17 + 15),
-                ]
-            )
-
-            designer.createNetworkForCluster(
-                f"cluster_{i}_0",
+            topology = fullyConnectedTopology(nocList)
+            designer.createNetworkForRouters(
                 f"noc_{i}",
+                nocList,
                 topology,
                 sd,
-                40000.0,
-                100,
-                150,
-                100,
-                60,
+                pl
             )
 
-            designer.addPeClusterForProcessor(f"cluster_{i}_1", processor_1, 1)
+            cluster_1 = designer.addCluster(f"cluster_{i}_1", cluster)
+            pe = designer.addPeToCluster(
+                cluster_1,
+                f"processor1_{i}",
+                processor_1.type,
+                processor_1.frequency_domain,
+                processor_1.power_model,
+                processor_1.context_load_cycles,
+                processor_1.context_store_cycles,
+            )
+            # workaround to connect pes in cluster to an external memory
+            l1_1 = designer.addStorage(
+                f"l1_{i:04d}_1",
+                cluster_1,
+                readLatency=0,
+                writeLatency=0,
+                readThroughput=float("inf"),
+                writeThroughput=float("inf"),
+                frequency=600000.0,
+            )
+            designer.connectPeToCom(pe, l1_1)
 
-            designer.addCommunicationResource(
+            # L2 memory
+            l2 = designer.addCommunicationResource(
                 f"L2_{i}",
-                [f"cluster_{i}_0", f"cluster_{i}_1"],
-                500,
-                1500,
-                float("inf"),
-                float("inf"),
-                frequencyDomain=600000.0,
+                cluster,
+                readLatency=500,
+                writeLatency=1500,
+                readThroughput=float("inf"),
+                writeThroughput=float("inf"),
+                frequency=600000.0,
             )
+            for l1_0 in l1_list:
+                designer.connectStorageLevels(l1_0, l2)
+            designer.connectStorageLevels(l1_1, l2)
+            l2_list.append(l2)
 
-            designer.finishElement()
-
-        designer.addCommunicationResource(
+        # RAM
+        ram = designer.addCommunicationResource(
             "RAM",
-            clusters,
+            coolidge,
             1000,
             3000,
             float("inf"),
             float("inf"),
-            frequencyDomain=10000,
+            frequency=10000,
         )
+        for l2 in l2_list:
+            designer.connectStorageLevels(l2, ram)
 
-        designer.finishElement()
