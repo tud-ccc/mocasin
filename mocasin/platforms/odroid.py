@@ -57,20 +57,19 @@ class DesignerPlatformOdroid(Platform):
                 processor_0.context_store_cycles,
             )
 
-            L1 = designer.addCommunicationResource(
+            L1 = designer.addStorage(
                 "L1_" + pe.name,
                 cluster_a7,
                 readLatency=1,
                 writeLatency=1,
                 readThroughput=8,
                 writeThroughput=8,
-                resourceType=CommunicationResourceType.Storage,
                 frequency=processor_0.frequency_domain.frequency,
             )
             designer.connectPeToCom(pe, L1)
             L1_list.append(L1)
 
-        L2_A7 = designer.addCommunicationResource(
+        L2_A7 = designer.addStorage(
             "L2_A7",
             cluster_a7,
             readLatency=21,
@@ -96,21 +95,20 @@ class DesignerPlatformOdroid(Platform):
                 processor_1.context_store_cycles,
             )
 
-            L1 = designer.addCommunicationResource(
+            L1 = designer.addStorage(
                 "L1_" + pe.name,
                 cluster_a15,
                 readLatency=1,
                 writeLatency=1,
                 readThroughput=8,
                 writeThroughput=8,
-                resourceType=CommunicationResourceType.Storage,
                 frequency=processor_1.frequency_domain.frequency,
             )
             designer.connectPeToCom(pe, L1)
             L1_list.append(L1)
 
         # L2 latency is L1 latency plus 21 cycles
-        L2_A15 = designer.addCommunicationResource(
+        L2_A15 = designer.addStorage(
             "L2_A15",
             cluster_a15,
             readLatency=21,
@@ -124,7 +122,7 @@ class DesignerPlatformOdroid(Platform):
 
         # RAM connecting all clusters
         # RAM latency is L2 latency plus 120 cycles
-        DRAM = designer.addCommunicationResource(
+        DRAM = designer.addStorage(
             "DRAM",
             exynos5422,
             readLatency=120,
