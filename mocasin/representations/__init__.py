@@ -201,14 +201,7 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
                     for i, x in enumerate(Procs)
                     if x in [snk.name for snk in c.sinks]
                 ]
-                try:
-                    sink_pe_names = [PEs[res[s]] for s in sink_procs_idxs]
-                except:
-                    log.error(
-                        f"Invalid mapping: {res} \n"
-                        f" PEs: {PEs},\n"
-                        f" sink_procs_idxs: {sink_procs_idxs}\n"
-                    )
+                sink_pe_names = [PEs[res[s]] for s in sink_procs_idxs]
                 sinks = [
                     self.platform.find_processor(snk) for snk in sink_pe_names
                 ]
