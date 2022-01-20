@@ -25,9 +25,6 @@ from mocasin.mapper.partial import ProcPartialMapper, ComFullMapper
 
 from .metric_spaces import (
     FiniteMetricSpace,
-    FiniteMetricSpaceSym,
-    FiniteMetricSpaceLP,
-    FiniteMetricSpaceLPSym,
     arch_to_distance_metric,
 )
 from .embeddings import MetricSpaceEmbedding
@@ -111,7 +108,7 @@ class MappingRepresentation(type):
         return self.simpleVec2Elem(mapping.to_list())
 
     def fromRepresentation(self, mapping):
-        log.error(f"Trying to transform to an unknown representation")
+        log.error("Trying to transform to an unknown representation")
         return None
 
 
@@ -125,13 +122,14 @@ def init_app_ncs(self, graph):
 
 
 class SimpleVectorRepresentation(metaclass=MappingRepresentation):
-    """Simple Vector Representation:
-    This representation treats mappings as vectors. The first dimensions (or components)
-    of this vector represent the processes, and the values represent the PE where
-    said processes are mapped. After the mapping of processes to PEs, the same
-    method is applied to encode the channel to communication primitive mapping.
-    This is only done if the channels variable is set when intializing the
-    repreresentation object.
+    """Simple Vector Representation
+
+    This representation treats mappings as vectors. The first dimensions (or
+    components) of this vector represent the processes, and the values represent
+    the PE where said processes are mapped. After the mapping of processes to
+    PEs, the same method is applied to encode the channel to communication
+    primitive mapping. This is only done if the channels variable is set when
+    intializing the repreresentation object.
 
     A visualization of the encoding:
     [ P_1, P_2, ... , P_k, C_1, ..., C_l]
@@ -207,8 +205,9 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
                     sink_pe_names = [PEs[res[s]] for s in sink_procs_idxs]
                 except:
                     log.error(
-                        f"Invalid mapping: {res} \n PEs: "
-                        f"{PEs},\n sink_procs_idxs: {sink_procs_idxs}\n"
+                        f"Invalid mapping: {res} \n"
+                        f" PEs: {PEs},\n"
+                        f" sink_procs_idxs: {sink_procs_idxs}\n"
                     )
                 sinks = [
                     self.platform.find_processor(snk) for snk in sink_pe_names
@@ -330,15 +329,16 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
 
 class SymmetryRepresentation(metaclass=MappingRepresentation):
     """Symmetry Representation
+
     This representation considers the *archtiecture* symmetries for mappings.
     Application symmetries are still WIP. Mappings in this representation are
     vectors, too, just like in the Simple Vector Representation. The difference
-    is that the vectors don't correspond to a single mapping, but to an equivalence
-    class of mappings. Thus, two mappings that are equivalent through symmetries
-    will yield the same vector in this representation. This unique vectors
-    for each equivalent class are called "canonical mappings", because they
-    are canonical representatives of their orbit. Canonical mappings are the
-    lexicographical lowest elements of the equivalence class.
+    is that the vectors don't correspond to a single mapping, but to an
+    equivalence class of mappings. Thus, two mappings that are equivalent
+    through symmetries will yield the same vector in this representation. This
+    unique vectors for each equivalent class are called "canonical mappings",
+    because they are canonical representatives of their orbit. Canonical
+    mappings are the lexicographical lowest elements of the equivalence class.
 
     For example, if the PEs 0-3 are all equivalent, and PEs 4-7
     are also equivalent independently (as would be the case on
@@ -348,8 +348,8 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
     This representation would yield neither of them, as the
     following mapping is smaller lexicographically than both:
        [0,0,1,4,5]
-    This is the canonical mapping of this orbit and what this representation would
-    use to represent the class.
+    This is the canonical mapping of this orbit and what this representation
+    would use to represent the class.
 
     This representation currently just supports global symmetries,
     partial symmetries are WIP.
@@ -361,21 +361,23 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
     with the representation.
 
     In order to work with other mappings in the same class, the methods
-    allEquivalent/_allEquivalent returns for a mapping, all mappings in that class.
+    allEquivalent/_allEquivalent returns for a mapping, all mappings in that
+    class.
 
-    The channels flag, when set to true, considers channels in the mapping vectors too.
-    This is not supported and tested yet.
+    The channels flag, when set to true, considers channels in the mapping
+    vectors too. This is not supported and tested yet.
 
-    The periodic_boundary_conditions flag encodes whether distances measured in this
-    space are considered by taking periodic boundary conditions or not.
+    The periodic_boundary_conditions flag encodes whether distances measured in
+    this space are considered by taking periodic boundary conditions or not.
 
-    The norm_p parameter sets the p value for the norm (\sum |x_i|^p)^(1/p).
+    The norm_p parameter sets the p value for the norm (\\sum |x_i|^p)^(1/p).
 
-    The symmetries representation might be used to accelerate a meta-heuristic without
-    changing it, by enabling a symmetry-aware cache. This can be achieved by setting
-    the canonical_operations flag to False. This way, the operations of the
-    representation, like distances or considering elements in a ball, are not executed
-    on the canonical representatives but on the raw elements instead.
+    The symmetries representation might be used to accelerate a meta-heuristic
+    without changing it, by enabling a symmetry-aware cache. This can be
+    achieved by setting the canonical_operations flag to False. This way, the
+    operations of the representation, like distances or considering elements in
+    a ball, are not executed on the canonical representatives but on the raw
+    elements instead.
 
     The symmetries representation uses the mpsym library to accelerate symmetry
     calculations. This can be disabled by setting disable_mpsym to True, which
@@ -384,12 +386,12 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
     The calculation of the symmetries can be a costly computation, yet it only
     depends on the architecture. Thus, the symmetries of an architecture can be
     pre-computed, stored to and read from a file. If the platform object has
-    the field symmetries_json, the symmetries are read from the file in that path.
-    Testing that these symmetries actually correspond to the platform can be disabled
-    with the disable_symmetries_test flag. This can be useful, e.g. for approximating
-    a NoC architecture as a bus. To pre-compute the symmetries and store them in a file,
-    use the calculate_platform_symmetries task.  This pre-computation only works when
-    using mpsym.
+    the field symmetries_json, the symmetries are read from the file in that
+    path. Testing that these symmetries actually correspond to the platform can
+    be disabled with the disable_symmetries_test flag. This can be useful, e.g.
+    for approximating a NoC architecture as a bus. To pre-compute the symmetries
+    and store them in a file, use the calculate_platform_symmetries task. This
+    pre-computation only works when using mpsym.
     """
 
     def __init__(
@@ -470,7 +472,8 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
                             )
                     else:
                         log.warning(
-                            "Invalid symmetries JSON path (file does not exist)."
+                            "Invalid symmetries JSON path "
+                            "(file does not exist)."
                         )
 
                 if not hasattr(self, "_ag"):
@@ -650,43 +653,48 @@ class MetricEmbeddingRepresentation(
     MetricSpaceEmbedding, metaclass=MappingRepresentation
 ):
     """Metric Space Representation
-    A representation for a metric space that uses an efficient embedding into a real space.
-    Upon initialization, this representation calculates an embedding into a real space such
-    that the distances in the metric space differ from the embedded distances by a factor of
-    at most `distortion`.
 
-    Elements in this representation are real vectors, the meaning of the components
-    does not have a concrete interpretation. However, they do have a particular
-    structure. For multiple processes, a single embedding for the architecture is
-    calculated. The multi-process vector space is the orthogonal sum of copies of a vector
-    space emebedding for the single-process case. This provably preserves the distortion
-    and makes calculations much more efficient.
+    A representation for a metric space that uses an efficient embedding into a
+    real space. Upon initialization, this representation calculates an embedding
+    into a real space such that the distances in the metric space differ from
+    the embedded distances by a factor of at most `distortion`.
 
-    The additional option, extra_dims, adds additional dimensions for each PE to count
-    when multiple processes are mapped to the same PE. The scaling factor for those extra
-    dimensions is controlled by the value of extra_dims_factor.
+    Elements in this representation are real vectors, the meaning of the
+    components does not have a concrete interpretation. However, they do have a
+    particular structure. For multiple processes, a single embedding for the
+    architecture is calculated. The multi-process vector space is the orthogonal
+    sum of copies of a vector space emebedding for the single-process case. This
+    provably preserves the distortion and makes calculations much more
+    efficient.
 
-    When the ignore_channels flag is set to true, the embedding ignores communication channels,
-    only focusing on the mapping of computation.
+    The additional option, extra_dims, adds additional dimensions for each PE to
+    count when multiple processes are mapped to the same PE. The scaling factor
+    for those extra dimensions is controlled by the value of extra_dims_factor.
 
-    The target_distortion value sets the maximum distortion of the metric space that is allowed
-    for the embedding. A value close to 1 might be hard or even impossible,
-    a higher value reduces accuracy but allows to reduce the dimension of the embedding more using the
-    JLT-based dimensionality-reduction. The number of tries to achieve the target distortion for
-    a given dimension is controlled by the parameter jlt_tries.
+    When the ignore_channels flag is set to true, the embedding ignores
+    communication channels, only focusing on the mapping of computation.
+
+    The target_distortion value sets the maximum distortion of the metric space
+    that is allowed for the embedding. A value close to 1 might be hard or even
+    impossible, a higher value reduces accuracy but allows to reduce the
+    dimension of the embedding more using the JLT-based dimensionality-
+    reduction. The number of tries to achieve the target distortion for a given
+    dimension is controlled by the parameter jlt_tries.
 
     The verbose flag controls the verbosity of the module.
 
-    Finally, since the embedding depends only on the architecture, it can be pre-computed
-    and stored in a file. This file is read from the architecture description. If the
-    architecture object has a field embedding_json, it will read the precomputed
-    embedding from a json file in this path. Most architectures set this field from a
-    parameter with the same name that can be configured in hydra.
+    Finally, since the embedding depends only on the architecture, it can be
+    pre-computed and stored in a file. This file is read from the architecture
+    description. If the architecture object has a field embedding_json, it will
+    read the precomputed embedding from a json file in this path. Most
+    architectures set this field from a parameter with the same name that can be
+    configured in hydra.
 
-    Such a json file can be generated using the calculate_platform_embedding task.
-    If no such file exists, or it is invalid, an embedding will be computed from scratch.
-    The flag disable_embedding_test can be set to True to accept the embedding from the
-    json without checking it fits the given architecture and parameters.
+    Such a json file can be generated using the calculate_platform_embedding
+    task. If no such file exists, or it is invalid, an embedding will be
+    computed from scratch. The flag disable_embedding_test can be set to True to
+    accept the embedding from the json without checking it fits the given
+    architecture and parameters.
     """
 
     def __init__(
@@ -736,10 +744,10 @@ class MetricEmbeddingRepresentation(
         init_app_ncs(self, graph)
         if self.p != 2:
             log.error(
-                f"Metric space embeddings only supports p = 2."
-                f" For p = 1, for example, finding such an embedding"
-                f" is NP-hard (See Matousek, J.,  Lectures on Discrete"
-                f" Geometry, Chap. 15.5)"
+                "Metric space embeddings only supports p = 2."
+                " For p = 1, for example, finding such an embedding"
+                " is NP-hard (See Matousek, J.,  Lectures on Discrete"
+                " Geometry, Chap. 15.5)"
             )
         MetricSpaceEmbedding.__init__(
             self,
@@ -849,8 +857,10 @@ class SymmetryEmbeddingRepresentation(
     MetricSpaceEmbedding, metaclass=MappingRepresentation
 ):
     """Symmetry Embedding Representation
+
     A representation combining symmetries with an embedding of a metric space.
-    The mapping is first normalized using symmetries and then converted with the embedding.
+    The mapping is first normalized using symmetries and then converted with the
+    embedding.
     """
 
     def __init__(
@@ -895,9 +905,9 @@ class SymmetryEmbeddingRepresentation(
         )
         self.canonical_operations = canonical_operations
         log.warning(
-            "The SymmetryEmbedding representation is not well-tested yet."
-            " In particular, it currently ignores the symmetries of the channels,"
-            "which should not be very problematic, however."
+            "The SymmetryEmbedding representation is not well-tested yet. "
+            "In particular, it currently ignores the symmetries of the "
+            "channels, which should not be very problematic, however."
         )
 
     def _simpleVec2Elem(self, x):
