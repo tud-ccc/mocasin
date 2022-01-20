@@ -24,7 +24,7 @@ install_requirements = [
     "more_itertools",
     "mpsym",
     "numba>=0.53.0rc1",
-    "numpy",
+    "numpy<1.22",
     "pint",
     "pydot",
     "pynauty",
