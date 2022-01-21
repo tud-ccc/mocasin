@@ -27,7 +27,7 @@ install_requirements = [
     "numpy<1.22",
     "pint",
     "pydot",
-    "pynauty",
+    "pynauty@https://files.pythonhosted.org/packages/fa/b1/87b0cb000fe6bf0201428c068659e02638f2c9583f205465fd14a1977a95/pynauty-1.0.2.tar.gz",
     "pyxb",
     "simpy",
     "sortedcontainers",
