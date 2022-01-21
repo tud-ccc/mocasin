@@ -36,7 +36,6 @@ if sys.version_info[0:2] == (3, 7):
             gammas.append(gamma)
         return gammas
 
-
 else:
     # Can't use `nopython` because of np.allclose apparently
     # See: https://github.com/numba/numba/pull/6286
