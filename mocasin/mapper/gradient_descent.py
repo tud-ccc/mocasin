@@ -38,7 +38,8 @@ if sys.version_info[0:2] == (3, 7):
 
 
 else:
-    # can't use `nopython` because of np.allclose apparently
+    # Can't use `nopython` because of np.allclose apparently
+    # See: https://github.com/numba/numba/pull/6286
     @nb.jit(fastmath=True, parallel=True, cache=True)
     def _calculate_gammas(grads, old_grads, xs, old_xs):
         gammas = []
