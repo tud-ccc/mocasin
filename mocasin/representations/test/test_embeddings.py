@@ -77,7 +77,9 @@ class TestEmbeddings(object):
             assert value >= 0 and value < 18
 
     def test_calculate_embedding_matrix(self, D):
-        L, d = np.array(MetricSpaceEmbeddingBase.calculateEmbeddingMatrix(D))
+        L, d = np.array(
+            MetricSpaceEmbeddingBase.calculateEmbeddingMatrix(D), dtype=object
+        )
         # print(f"Found embedding with distortion {d}")
         n = D.shape[0]
         iota = dict()
