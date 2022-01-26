@@ -12,13 +12,15 @@ import random
 from os.path import exists
 import json
 
-# import fjlt.fjlt as fjlt #TODO: use fjlt to (automatically) lower the dimension of embedding
+# import fjlt.fjlt as fjlt
+# TODO: use fjlt to (automatically) lower the dimension of embedding
 from mocasin.representations import metric_spaces as metric
 from mocasin.util import logging
 import mocasin.util.random_distributions.lp as lp
 
 
 log = logging.getLogger(__name__)
+
 
 #  An embedding \iota: M \hookrightarrow R^k
 #  will be calculated and realized as a lookup-table.
@@ -27,7 +29,7 @@ log = logging.getLogger(__name__)
 #  However: the idea is to do this for the small space M
 #  and then handle the case M^d \hat \iota R^{kd} specially.
 
-# from: https://jeremykun.com/2016/02/08/big-dimensions-and-what-you-can-do-about-it/0/
+#  from: https://jeremykun.com/2016/02/08/big-dimensions-and-what-you-can-do-about-it/0/
 def randomSubspace(subspaceDimension, ambientDimension):
     return np.random.normal(0, 1, size=(subspaceDimension, ambientDimension))
 
@@ -267,10 +269,12 @@ class MetricSpaceEmbeddingBase:
                     Q[i, i] + Q[j, j] - 2 * Q[i, j] <= d * D[i, j] ** 2
                 ]
                 log.debug(
-                    f"adding constraint: {D[i,j]}**2 <= Q{[i,i]} + Q{[j,j]} - 2*Q{[i,j]}"
+                    f"adding constraint: "
+                    f"{D[i,j]}**2 <= Q{[i,i]} + Q{[j,j]} - 2*Q{[i,j]}"
                 )
                 log.debug(
-                    f"adding constraint: Q{[i,i]} + Q{[j,j]} - 2*Q{[i,j]} <= d * {D[i,j]}**2 "
+                    f"adding constraint: "
+                    f"Q{[i,i]} + Q{[j,j]} - 2*Q{[i,j]} <= d * {D[i,j]}**2 "
                 )
 
         obj = cvx.Minimize(d)
@@ -308,12 +312,10 @@ class MetricSpaceEmbeddingBase:
             min_eigenv = min(eigenvals)
             if min_eigenv < 0:
                 log.warning(
-                    "Warning, matrix not positive semidefinite."
-                    + "Trying to correct for numerical errors with minimal eigenvalue: "
-                    + str(min_eigenv)
-                    + " (max. eigenvalue:"
-                    + str(max(eigenvals))
-                    + ")."
+                    f"Warning, matrix not positive semidefinite."
+                    f"Trying to correct for numerical errors with minimal "
+                    f"eigenvalue: {min_eigenv} "
+                    f"(max. eigenvalue:{max(eigenvals)})."
                 )
 
                 Q_new_t = (
@@ -321,7 +323,8 @@ class MetricSpaceEmbeddingBase:
                 )
                 # print(eigenvals)
                 # print(Q_new_t) # should be = diagonal(eigenvalues)
-                # print(np.transpose(eigenvecs) * eigenvecs) # should be = Identity matrix
+                # print(np.transpose(eigenvecs) * eigenvecs)
+                # should be = Identity matrix
                 Q_new_t += np.diag([-min_eigenv] * len(eigenvals))
                 Q_new = eigenvecs @ Q_new_t @ np.transpose(eigenvecs)
                 L = np.linalg.cholesky(Q_new)
@@ -414,7 +417,8 @@ class MetricSpaceEmbedding(MetricSpaceEmbeddingBase):
             log.error(f"i_vec: {i_vec}")
             raise RuntimeError("unrecognized type.")
         assert vec.shape[0] == self._k * self._d or log.error(
-            f"length of vector ({vec.shape[0]}) does not fit to dimensions ({self._k} * {self._d})"
+            f"length of vector ({vec.shape[0]}) does not fit to dimensions "
+            f"({self._k} * {self._d})"
         )
         res = _f_emb_approx(
             vec,
