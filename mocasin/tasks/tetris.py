@@ -43,6 +43,13 @@ def tetris_scheduler(cfg):
     init_logging()
 
     scheduling = TetrisScheduling.from_hydra(cfg)
+    if cfg["precalc_orbits"]:
+        log.info("Start precalculation of all orbits")
+        start = timeit.default_timer()
+        scheduling.precalculate_orbits()
+        stop = timeit.default_timer()
+        log.info("Precalculation done")
+        precalc_time = stop - start
 
     log.info("Start the scheduling")
     start = timeit.default_timer()
@@ -53,6 +60,10 @@ def tetris_scheduler(cfg):
 
     print("Job table file: " + str(cfg["job_table"]))
     print("Scheduler: " + str(scheduling.scheduler.name))
+
+    if cfg["precalc_orbits"]:
+        print("Orbit precalculation time: {:.5f} s".format(precalc_time))
+
     print("Scheduling time: {:.5f} s".format(scheduling_time))
     print("Found schedule: {}".format(scheduling.found_schedule))
     if scheduling.found_schedule:
