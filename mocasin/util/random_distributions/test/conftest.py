@@ -32,5 +32,5 @@ def r():
 
 @pytest.fixture
 def eigenv(r, Q):
-    eigenv, _ = np.linalg.eig(r ** 2 * Q @ np.transpose(Q))
+    eigenv, _ = np.linalg.eig(r**2 * Q @ np.transpose(Q))
     return eigenv

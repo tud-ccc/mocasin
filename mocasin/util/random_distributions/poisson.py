@@ -16,8 +16,8 @@ fig, axes = plt.subplots(len(sigmas), sharex=True, sharey=True)
 # for i,p in enumerate([0.3,0.4,0.5]):
 # for i,(p,n_tot) in enumerate([(0.5,16),(0.5,48),(0.5,16016)]):
 for i, sigma in enumerate(sigmas):
-    n_tot = (int(4 * sigma ** 2 / float(n)) + 1) * n
-    p = (1 + np.sqrt(1 - 4 * sigma ** 2 / float(n_tot))) / 2
+    n_tot = (int(4 * sigma**2 / float(n)) + 1) * n
+    p = (1 + np.sqrt(1 - 4 * sigma**2 / float(n_tot))) / 2
     print(
         "i: "
         + str(i)
