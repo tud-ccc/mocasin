@@ -53,6 +53,12 @@ def pareto_front(cfg):
     evaluate_metadata = cfg["evaluate_metadata"]
 
     # Run genetic algorithm
+    if not hasattr(mapper, "generate_pareto_front") or not callable(
+        getattr(mapper, "generate_pareto_front")
+    ):
+        raise RuntimeError(
+            "The method 'generate_pareto_front' is not implemented"
+        )
     pareto_front = mapper.generate_pareto_front()
 
     # If the mapper evaluated the metadata, do not evaluate it again.
