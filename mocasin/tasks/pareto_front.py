@@ -7,7 +7,6 @@ import hydra
 import logging
 from pathlib import Path
 
-from mocasin.mapper.utils import SimulationManager
 from mocasin.util.mapping_table import MappingTableWriter
 
 log = logging.getLogger(__name__)
@@ -59,21 +58,10 @@ def pareto_front(cfg):
         raise RuntimeError(
             "The method 'generate_pareto_front' is not implemented"
         )
-    pareto_front = mapper.generate_pareto_front()
 
-    # If the mapper evaluated the metadata, do not evaluate it again.
-    if pareto_front and evaluate_metadata:
-        if pareto_front[0].metadata.exec_time:
-            evaluate_metadata = False
-
-    if evaluate_metadata:
-        # obtain simulation values
-        simulation_manager = SimulationManager(
-            representation, trace, jobs=None, parallel=True
-        )
-        simulation_manager.simulate(pareto_front)
-        for mapping in pareto_front:
-            simulation_manager.append_mapping_metadata(mapping)
+    pareto_front = mapper.generate_pareto_front(
+        evaluate_metadata=evaluate_metadata
+    )
 
     # export the pareto front
     mapping_table_path = Path(cfg["mapping_table"])

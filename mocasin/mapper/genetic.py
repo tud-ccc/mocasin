@@ -332,7 +332,7 @@ class GeneticMapper(object):
         self.cleanup()
         return result
 
-    def generate_pareto_front(self):
+    def generate_pareto_front(self, evaluate_metadata=None):
         """Generates a pareto front of (full) mappings using a genetic algorithm
         the input parameters determine the criteria with which the pareto
         front is going to be built.
