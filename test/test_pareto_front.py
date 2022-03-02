@@ -1,13 +1,65 @@
 # Copyright (C) 2020 TU Dresden
 # Licensed under the ISC license (see LICENSE.txt)
 #
-# Authors: Felix Teweleit, Andres Goens, Robert Khasanov
+# Authors: Robert Khasanov, Felix Teweleit, Andres Goens
 
 import csv
+import numpy as np
 from pathlib import Path
 import pytest
 import subprocess
-import sys
+
+from mocasin.mapper.pareto import _is_pareto_efficient
+
+
+def check_pareto_optimality(path):
+    """Check whether the generated pareto set is Pareto-optimal."""
+    with open(path, "r") as file:
+        csv_reader = csv.DictReader(file)
+        fieldnames = csv_reader.fieldnames
+        processes = [x for x in fieldnames if x.startswith("t_")]
+
+        # collect all processors
+        processors = set()
+        for row in csv_reader:
+            for p in processes:
+                processors.add(row[p])
+        proc_dict = {}
+        for i, proc in enumerate(processors):
+            proc_dict[proc] = i
+
+        # start reading from the beginning
+        file.seek(0)
+        next(csv_reader)
+
+        # initialize costs array
+        costs = np.empty((0, len(processors) + 2), float)
+        no_energy = False
+
+        # collect costs
+        for row in csv_reader:
+            lm = [0] * len(processors)
+            # mark used processors
+            for p in processes:
+                lm[proc_dict[row[p]]] = 1
+            # execution time
+            assert row["executionTime"] != ""
+            lm.append(float(row["executionTime"]))
+            # energy
+            if row["dynamicEnergy"] == "":
+                no_energy = True
+                lm.append(0)
+            else:
+                lm.append(float(row["dynamicEnergy"]))
+            costs = np.append(costs, [lm], axis=0)
+
+        # assert that all mappings either have or not have energy data
+        if no_energy:
+            assert np.all(costs[:, len(processors) + 1] == 0)
+
+        # calculate pareto front
+        flags = _is_pareto_efficient(costs)
+        return np.all(flags)
 
 
 def compare_mapping_tables(path1, path2):
@@ -36,18 +88,8 @@ def compare_mapping_tables(path1, path2):
             return True
 
 
-# This test relies on hard-coded results that depend on  multiple
-# parameters. Thus, a failing test here does not mean incorrect
-# behavior. Instead, this test should check for an invariant of
-# the actual function. In the case of the pareto front, for example,
-# a better test might check that indeed no point dominates any other
-# point, which means it is a pareto front, and is invariant of the
-# parameters in the algorithms
-@pytest.mark.xfail
-def test_pareto_front_tgff_exynos990(datadir, expected_dir):
+def test_pareto_front_tgff_exynos990(datadir):
     out_csv_file = Path(datadir).joinpath("mappings.csv")
-    expected_filename = f"mappings_auto-indust-cords_exynos990_tr.csv"
-    expected_csv = Path(expected_dir).joinpath(expected_filename)
     subprocess.check_call(
         [
             "mocasin",
@@ -57,32 +99,20 @@ def test_pareto_front_tgff_exynos990(datadir, expected_dir):
             "tgff.directory=tgff/e3s-0.9",
             "tgff.file=auto-indust-cords.tgff",
             f"mapping_table={out_csv_file}",
-            f"mapper.objectives=[exec_time,resources]",
+            "mapper.objectives=[exec_time,resources]",
             "trace=tgff_reader",
         ],
         cwd=datadir,
     )
 
-    # On Python 3.6 different mappings are generated. This might be due to
-    # implementation in the library.
-    if sys.version_info >= (3, 7):
-        assert compare_mapping_tables(out_csv_file, expected_csv)
-    else:
-        assert out_csv_file.is_file()
+    assert check_pareto_optimality(out_csv_file)
 
 
 @pytest.mark.parametrize(
-    "objectives,suffix",
-    [
-        ("[exec_time,resources]", "tr"),
-        ("[exec_time,resources,energy]", "etr"),
-    ],
+    "objectives", ["[exec_time,resources]", "[exec_time,resources,energy]"]
 )
-@pytest.mark.xfail
-def test_pareto_front_tgff_odroid(datadir, objectives, suffix, expected_dir):
+def test_pareto_front_tgff_odroid(datadir, objectives):
     out_csv_file = Path(datadir).joinpath("mappings.csv")
-    expected_filename = f"mappings_auto-indust-cords_odroid_{suffix}.csv"
-    expected_csv = Path(expected_dir).joinpath(expected_filename)
     subprocess.check_call(
         [
             "mocasin",
@@ -98,17 +128,21 @@ def test_pareto_front_tgff_odroid(datadir, objectives, suffix, expected_dir):
         cwd=datadir,
     )
 
-    # On Python 3.6 different mappings are generated. This might be due to
-    # implementation in the library.
-    if sys.version_info >= (3, 7):
-        assert compare_mapping_tables(out_csv_file, expected_csv)
-    else:
-        assert out_csv_file.is_file()
+    assert check_pareto_optimality(out_csv_file)
 
 
-def test_pareto_front_tgff_odroid_fair(datadir, expected_dir):
+@pytest.mark.parametrize(
+    "evaluate_metadata,suffix",
+    [
+        ("True", "eval"),
+        ("False", "noeval"),
+    ],
+)
+def test_pareto_front_tgff_odroid_fair(
+    datadir, evaluate_metadata, suffix, expected_dir
+):
     out_csv_file = Path(datadir).joinpath("mappings.csv")
-    expected_filename = f"mappings_auto-indust-cords_odroid_fair.csv"
+    expected_filename = f"mappings_auto-indust-cords_odroid_fair_{suffix}.csv"
     expected_csv = Path(expected_dir).joinpath(expected_filename)
     subprocess.check_call(
         [
@@ -121,9 +155,11 @@ def test_pareto_front_tgff_odroid_fair(datadir, expected_dir):
             f"mapping_table={out_csv_file}",
             "mapper=static_cfs",
             "trace=tgff_reader",
-            "evaluate_metadata=True",
+            f"evaluate_metadata={evaluate_metadata}",
         ],
         cwd=datadir,
     )
 
-    assert filecmp.cmp(out_csv_file, expected_csv, shallow=False)
+    if evaluate_metadata == "True":
+        assert check_pareto_optimality(out_csv_file)
+    assert compare_mapping_tables(out_csv_file, expected_csv)
