@@ -48,7 +48,10 @@ def mark_pareto_front(mappings):
         return []
 
     processors = mappings[0].platform.processors()
-    costs = np.empty((0, len(processors) + 2), float)
+    num_costs = len(processors) + 1
+    if mappings[0].metadata.energy:
+        num_costs += 1
+    costs = np.empty((0, num_costs), float)
     for m in mappings:
         lm = [0] * len(processors)
         procs = m.get_used_processors()
@@ -56,7 +59,8 @@ def mark_pareto_front(mappings):
             if p in procs:
                 lm[i] = 1
         lm.append(m.metadata.exec_time)
-        lm.append(m.metadata.energy)
+        if m.metadata.energy:
+            lm.append(m.metadata.energy)
         costs = np.append(costs, [lm], axis=0)
     flags = _is_pareto_efficient(costs)
     return list(flags)
