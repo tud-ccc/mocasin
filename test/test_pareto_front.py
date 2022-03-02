@@ -12,8 +12,18 @@ import subprocess
 from mocasin.mapper.pareto import _is_pareto_efficient
 
 
-def check_pareto_optimality(path):
+def check_pareto_optimality(path, objectives):
     """Check whether the generated pareto set is Pareto-optimal."""
+    obj_resources = False
+    obj_exec_time = False
+    obj_energy = False
+    if "resources" in objectives:
+        obj_resources = True
+    if "exec_time" in objectives:
+        obj_exec_time = True
+    if "energy" in objectives:
+        obj_energy = True
+
     with open(path, "r") as file:
         csv_reader = csv.DictReader(file)
         fieldnames = csv_reader.fieldnames
@@ -33,29 +43,27 @@ def check_pareto_optimality(path):
         next(csv_reader)
 
         # initialize costs array
-        costs = np.empty((0, len(processors) + 2), float)
-        no_energy = False
+        num_costs = int(obj_exec_time) + int(obj_energy)
+        if obj_resources:
+            num_costs += len(processors)
+        costs = np.empty((0, num_costs), float)
 
         # collect costs
         for row in csv_reader:
-            lm = [0] * len(processors)
-            # mark used processors
-            for p in processes:
-                lm[proc_dict[row[p]]] = 1
+            lm = []
+            # resources
+            if obj_resources:
+                lm = [0] * len(processors)
+                # mark used processors
+                for p in processes:
+                    lm[proc_dict[row[p]]] = 1
             # execution time
-            assert row["executionTime"] != ""
-            lm.append(float(row["executionTime"]))
+            if obj_exec_time:
+                lm.append(float(row["executionTime"]))
             # energy
-            if row["dynamicEnergy"] == "":
-                no_energy = True
-                lm.append(0)
-            else:
+            if obj_energy:
                 lm.append(float(row["dynamicEnergy"]))
             costs = np.append(costs, [lm], axis=0)
-
-        # assert that all mappings either have or not have energy data
-        if no_energy:
-            assert np.all(costs[:, len(processors) + 1] == 0)
 
         # calculate pareto front
         flags = _is_pareto_efficient(costs)
@@ -105,7 +113,7 @@ def test_pareto_front_tgff_exynos990(datadir):
         cwd=datadir,
     )
 
-    assert check_pareto_optimality(out_csv_file)
+    assert check_pareto_optimality(out_csv_file, "[exec_time,resources]")
 
 
 @pytest.mark.parametrize(
@@ -128,7 +136,7 @@ def test_pareto_front_tgff_odroid(datadir, objectives):
         cwd=datadir,
     )
 
-    assert check_pareto_optimality(out_csv_file)
+    assert check_pareto_optimality(out_csv_file, objectives)
 
 
 @pytest.mark.parametrize(
@@ -161,5 +169,7 @@ def test_pareto_front_tgff_odroid_fair(
     )
 
     if evaluate_metadata == "True":
-        assert check_pareto_optimality(out_csv_file)
+        assert check_pareto_optimality(
+            out_csv_file, "[exec_time,resources,energy]"
+        )
     assert compare_mapping_tables(out_csv_file, expected_csv)
