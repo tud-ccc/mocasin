@@ -1,8 +1,9 @@
 # @package _global_
 defaults:
   - common
-  - hydra/job_logging: mocasin
   - tgff: default
   - platform: ???
   - representation: MetricSpaceEmbedding
+  - override hydra/job_logging: mocasin
+  - _self_
 out_file: "${platform.embedding_json}"

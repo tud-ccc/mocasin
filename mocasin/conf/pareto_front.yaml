@@ -1,6 +1,5 @@
 defaults:
   - common
-  - hydra/job_logging: mocasin
   - tgff: default
   - graph: default
   - platform: default
@@ -8,6 +7,8 @@ defaults:
   - representation: SimpleVector
   - mapper : genetic
   - sdf3: default
+  - override hydra/job_logging: mocasin
+  - _self_
 
 mapping_table : "mappings.csv"
 evaluate_metadata: true
