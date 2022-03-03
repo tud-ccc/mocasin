@@ -6,9 +6,11 @@
 from sortedcontainers import SortedList
 
 from mocasin.common.mapping import Mapping, ProcessMappingInfo
-from mocasin.util import logging
-from mocasin.mapper.random import RandomPartialMapper
+from mocasin.mapper.pareto import filter_pareto_front
 from mocasin.mapper.partial import ComPartialMapper
+from mocasin.mapper.random import RandomPartialMapper
+from mocasin.mapper.utils import SimulationManager
+from mocasin.util import logging
 
 
 log = logging.getLogger(__name__)
@@ -32,7 +34,8 @@ def gen_trace_summary(graph, platform, trace):
 
 
 class StaticCFS(object):
-    """Base class for mapping using a static method similar to the Linux CFS scheduler.
+    """Base class for mapping using a static method similar to the Linux CFS.
+
     See: http://people.redhat.com/mingo/cfs-scheduler/sched-design-CFS.txt
     """
 
@@ -63,7 +66,8 @@ class StaticCFS(object):
 
         for type in core_types:
             processes[type] = SortedList()
-            # use best time at first and update depending on the proc. that is next
+            # use best time at first and update depending on the process
+            # that is next
             for graph in graphs:
                 for p in graph.processes():
                     processes[type].add(
@@ -124,6 +128,7 @@ class StaticCFSMapper(StaticCFS):
         self.full_mapper = True  # flag indicating the mapper type
         self.graph = graph
         self.trace = trace
+        self.representation = representation
         self.randMapGen = RandomPartialMapper(self.graph, self.platform)
         self.comMapGen = ComPartialMapper(
             self.graph, self.platform, self.randMapGen
@@ -139,7 +144,11 @@ class StaticCFSMapper(StaticCFS):
             self.map_to_core(mapping, proc, mapping_dict[proc])
         return self.comMapGen.generate_mapping(mapping)
 
-    def generate_pareto_front(self):
+    def generate_pareto_front(self, evaluate_metadata=None):
+        """Generate Pareto front of the mappings."""
+        # By default, we do not evaluate metadata
+        if evaluate_metadata is None:
+            evaluate_metadata = False
         pareto = []
         restricted = [[]]
         cores = {}
@@ -167,7 +176,21 @@ class StaticCFSMapper(StaticCFS):
             #            tot += 1
             #    num_resources.append(tot)
             pareto.append(mapping)
-        return pareto
+
+        if not evaluate_metadata:
+            return pareto
+
+        # Obtain simulation values
+        simulation_manager = SimulationManager(
+            self.representation, self.trace, jobs=None, parallel=True
+        )
+        simulation_manager.simulate(pareto)
+        for mapping in pareto:
+            simulation_manager.append_mapping_metadata(mapping)
+
+        filtered = filter_pareto_front(pareto)
+
+        return filtered
 
 
 class StaticCFSMapperMultiApp(StaticCFS):
@@ -182,7 +205,8 @@ class StaticCFSMapperMultiApp(StaticCFS):
         comMapGen = {}
         if len(traces) != len(graphs):
             raise RuntimeError(
-                f"Mapper received unbalanced number of traces ({len(traces)}) and applications ({len(graphs)})"
+                f"Mapper received unbalanced number of traces ({len(traces)}) "
+                f"and applications ({len(graphs)})"
             )
         for graph in graphs:
             randMapGen = RandomPartialMapper(graph, self.platform)

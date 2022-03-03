@@ -9,6 +9,5 @@ defaults:
   - mapper : genetic
   - sdf3: default
 
-outdir : ./
-progress :  false
 mapping_table : "mappings.csv"
+evaluate_metadata: true
