@@ -28,7 +28,7 @@ install_requirements = [
     "pint",
     "pydot",
     "pynauty@https://files.pythonhosted.org/packages/fa/b1/87b0cb000fe6bf0201428c068659e02638f2c9583f205465fd14a1977a95/pynauty-1.0.2.tar.gz",
-    "pyxb",
+    "pyxb @ git+https://github.com/nightglass/pyxb.git@fix-collections-warning#egg=pyxb",  # this fork includes a fix needed for Python 3.10, see https://github.com/pabigot/pyxb/pull/111
     "simpy",
     "sortedcontainers",
     "termcolor",
