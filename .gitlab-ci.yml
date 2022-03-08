@@ -62,7 +62,12 @@ build-python3.6:
 
 .test:
   script:
+    # install runtime dependencies for mpsym
+    - apt-get update
+    - apt-get install -y lua5.3 liblua5.3 luarocks
+    # install mocasin
     - pip install mocasin --no-index --find-links=./wheels
+    # run tests
     - python setup.py test
 
 test-python3.10:
