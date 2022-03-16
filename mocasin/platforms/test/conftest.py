@@ -1,7 +1,7 @@
 # Copyright (C) 2019 TU Dresden
 # Licensed under the ISC license (see LICENSE.txt)
 #
-# Authors: Felix Teweleit
+# Authors: Felix Teweleit, Julian Robledo
 
 import pytest
 from mocasin.platforms.platformDesigner import (
@@ -16,6 +16,7 @@ from mocasin.platforms.generic_mesh import DesignerPlatformMesh
 from mocasin.platforms.mppa_coolidge import DesignerPlatformCoolidge
 from mocasin.platforms.multi_cluster import DesignerPlatformMultiCluster
 from mocasin.platforms.generic_bus import DesignerPlatformBus
+from mocasin.platforms.generic_bus import GenericBusPlatform
 
 
 @pytest.fixture(
@@ -23,6 +24,7 @@ from mocasin.platforms.generic_bus import DesignerPlatformBus
         "exynos990",
         "odroid",
         "generic_bus",
+        "flat_bus",
         "generic_mesh",
         "multi_cluster",
         "haec",
@@ -43,6 +45,8 @@ def platform(request):
         return DesignerPlatformOdroid(processor0, processor1)
     elif request.param == "generic_bus":
         return DesignerPlatformBus(processor0)
+    elif request.param == "flat_bus":
+        return GenericBusPlatform("bus", 4)
     elif request.param == "generic_mesh":
         return DesignerPlatformMesh(processor0, processor1)
     elif request.param == "multi_cluster":
