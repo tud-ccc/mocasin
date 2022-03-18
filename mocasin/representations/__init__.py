@@ -99,7 +99,7 @@ class MappingRepresentation(type):
         instance = copy(cls._instances[(cls, graph_names, platform_names)])
         instance.graph = graph
         instance.platform = platform
-        com_mapper = ComFullMapper(graph, platform)
+        com_mapper = ComFullMapper(platform)
         instance.list_mapper = ProcPartialMapper(graph, platform, com_mapper)
         instance.init_time = timeit.default_timer() - time
         return instance
@@ -161,7 +161,8 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         self.boundary_conditions = periodic_boundary_conditions
         self.p = norm_p
         self.num_procs = len(list(self.graph._processes.keys()))
-        com_mapper = ComFullMapper(graph, platform)
+        com_mapper = ComFullMapper(platform)
+        # FIXME: ProcPartialMapper is not yet adjusted to Mapper API
         self.list_mapper = ProcPartialMapper(graph, platform, com_mapper)
 
     def changed_parameters(
@@ -409,7 +410,7 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         self.channels = channels
         self.boundary_conditions = periodic_boundary_conditions
         self.p = norm_p
-        com_mapper = ComFullMapper(graph, platform)
+        com_mapper = ComFullMapper(platform)
         self.list_mapper = ProcPartialMapper(graph, platform, com_mapper)
         self.canonical_operations = canonical_operations
 
@@ -732,7 +733,7 @@ class MetricEmbeddingRepresentation(
             self._split_k = len(platform.processors())
             self._d += len(graph.channels())
         self.p = norm_p
-        com_mapper = ComFullMapper(graph, platform)
+        com_mapper = ComFullMapper(platform)
         self.list_mapper = ProcPartialMapper(graph, platform, com_mapper)
         init_app_ncs(self, graph)
         if self.p != 2:
