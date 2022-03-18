@@ -153,15 +153,6 @@ class ComPartialMapper(BaseMapper):
             return None
 
 
-class CommListFullMapper(object):
-    """Generates a mapping by placing processes to processing elemends
-    and channels to communication primitives from a list.
-
-    This class is used to generate a full mapping for a given
-    platform and dataflow application.
-    """
-
-
 class ProcPartialMapper(object):
     """Generates a partial mapping derived from a vector(tuple).
     If the tuple is longer than the num. of processors, it takes
@@ -300,10 +291,12 @@ class ProcPartialMapper(object):
         if mapping in map_history:
             return None
         else:
-            return self.full_generator.generate_mapping(mapping)
+            return self.full_generator.generate_mapping(
+                self.graph, partial_mapping=mapping
+            )
 
 
-class ComFullMapper(object):
+class ComFullMapper(BaseMapper):
     """Generates a full mapping by placing communication primitivesi.
 
     This generator either requires a partial mapping as input that already
@@ -319,7 +312,7 @@ class ComFullMapper(object):
     dataflow application.
     """
 
-    def __init__(self, graph, platform):
+    def __init__(self, platform):
         """Generates a partial mapping for a given platform and dataflow
         application.
 
@@ -330,17 +323,36 @@ class ComFullMapper(object):
         :param fullGenerator: the associated full mapping generator
         :type fullGererator: FullMapper
         """
-        self.full_mapper = True  # flag indicating the mapper type
-        self.platform = platform
-        self.graph = graph
+        super().__init__(platform, full_mapper=True)
 
-    def generate_mapping(self, part_mapping=None):
+    def generate_mapping(
+        self,
+        graph,
+        trace=None,
+        representation=None,
+        processors=None,
+        partial_mapping=None,
+    ):
+        """Generate mapping.
+
+        Args:
+        :param graph: a dataflow graph
+        :type graph: DataflowGraph
+        :param trace: a trace generator
+        :type trace: TraceGenerator
+        :param representation: a mapping representation object
+        :type representation: MappingRepresentation
+        :param processors: list of processors to map to.
+        :type processors: a list[Processor]
+        :param partial_mapping: a partial mapping to complete
+        :type partial_mapping: Mapping
+        """
         # configure policy of schedulers
-        if part_mapping is None:
-            part_mapping = Mapping(self.graph, self.platform)
+        if partial_mapping is None:
+            partial_mapping = Mapping(graph, self.platform)
 
         return ComPartialMapper.generate_mapping_static(
-            self.graph, self.platform, part_mapping=part_mapping
+            graph, self.platform, partial_mapping=partial_mapping
         )
 
 
