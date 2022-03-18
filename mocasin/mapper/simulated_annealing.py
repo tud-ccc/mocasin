@@ -1,36 +1,32 @@
 # Copyright (C) 2020 TU Dresden
 # Licensed under the ISC license (see LICENSE.txt)
 #
-# Authors: Andrés Goens
+# Authors: Andrés Goens, Robert Khasanov
 
 import random
+
 import numpy as np
 import tqdm
-from hydra.utils import instantiate
 
-from mocasin.util import logging
-from mocasin.representations import MappingRepresentation
+from mocasin.mapper import BaseMapper
 from mocasin.mapper.random import RandomPartialMapper
-from mocasin.mapper.utils import SimulationManager
-from mocasin.mapper.utils import Statistics
+from mocasin.mapper.utils import SimulationManager, Statistics
+from mocasin.util import logging
 
 
 log = logging.getLogger(__name__)
 
 
-class SimulatedAnnealingMapper(object):
+class SimulatedAnnealingMapper(BaseMapper):
     """Generates a full mapping by using a simulated annealing algorithm from:
-    Orsila, H., Kangas, T., Salminen, E., Hämäläinen, T. D., & Hännikäinen, M. (2007).
-    Automated memory-aware application distribution for multi-processor system-on-chips.
-    Journal of Systems Architecture, 53(11), 795-815.e.
+    Orsila, H., Kangas, T., Salminen, E., Hämäläinen, T. D., & Hännikäinen, M.
+    (2007). Automated memory-aware application distribution for multi-processor
+    system-on-chips. Journal of Systems Architecture, 53(11), 795-815.e.
     """
 
     def __init__(
         self,
-        graph,
         platform,
-        trace,
-        representation,
         random_seed=42,
         record_statistics=False,
         initial_temperature=1.0,
@@ -43,23 +39,18 @@ class SimulatedAnnealingMapper(object):
         parallel=False,
         jobs=1,
     ):
-        """Generates a full mapping for a given platform and dataflow application.
+        """Generate a full mapping for a given platform and dataflow application.
 
-        :param graph: a dataflow graph
-        :type graph: DataflowGraph
         :param platform: a platform
         :type platform: Platform
-        :param trace: a trace generator
-        :type trace: TraceGenerator
-        :param representation: a mapping representation object
-        :type representation: MappingRepresentation
         :param random_seed: A random seed for the RNG
         :type random_seed: int
         :param initial_temperature: Initial temperature for simmulated annealing
         :type initial_temperature: float
         :param final_temperature: Final temperature for simmulated annealing
         :type final_temperature: float
-        :param temperature_proportionality_constant: Temperature prop. constant for simmulated annealing
+        :param temperature_proportionality_constant: Temperature prop. constanti
+            for simmulated annealing
         :type temperature_proportionality_constant: float
         :param radius: Radius for search when moving
         :type radius: int
@@ -76,22 +67,12 @@ class SimulatedAnnealingMapper(object):
         :param jobs: Number of jobs for parallel simulation
         :type jobs: int
         """
+        super().__init__(platform, full_mapper=True)
         random.seed(random_seed)
         np.random.seed(random_seed)
-        self.full_mapper = True  # flag indicating the mapper type
-        self.graph = graph
-        self.platform = platform
-        self.random_mapper = RandomPartialMapper(
-            self.graph, self.platform, seed=None
-        )
-        self.statistics = Statistics(
-            log, len(self.graph.processes()), record_statistics
-        )
+        self.random_mapper = RandomPartialMapper(self.platform, seed=None)
         self.initial_temperature = initial_temperature
         self.final_temperature = final_temperature
-        self.max_rejections = len(self.graph.processes()) * (
-            len(self.platform.processors()) - 1
-        )  # R_max = L
         self.p = temperature_proportionality_constant
         self.radius = radius
         self.progress = progress
@@ -100,23 +81,16 @@ class SimulatedAnnealingMapper(object):
         if not (1 > self.p > 0):
             log.error(
                 f"Temperature proportionality constant {self.p} not suitable, "
-                f"it should be close to, but smaller than 1 (algorithm probably won't terminate)."
+                f"it should be close to, but smaller than 1 (algorithm probably"
+                " won't terminate)."
             )
 
-        # This is a workaround until Hydra 1.1 (with recursive instantiaton!)
-        if not issubclass(type(type(representation)), MappingRepresentation):
-            representation = instantiate(representation, graph, platform)
-        self.representation = representation
-
-        self.simulation_manager = SimulationManager(
-            self.representation,
-            trace,
-            jobs,
-            parallel,
-            progress,
-            chunk_size,
-            record_statistics,
-        )
+        # save parameters to simulation manager
+        self._jobs = jobs
+        self._parallel = parallel
+        self._progress = progress
+        self._chunk_size = chunk_size
+        self._record_statistics = record_statistics
 
     def temperature_cooling(self, temperature, iter):
         return self.initial_temperature * self.p ** np.floor(
@@ -134,12 +108,10 @@ class SimulatedAnnealingMapper(object):
 
         return normalized_probability
 
-    def move(self, mapping, temperature):
+    def move(self, representation, mapping, temperature):
         radius = self.radius
         while 1:
-            new_mappings = self.representation._uniformFromBall(
-                mapping, radius, 20
-            )
+            new_mappings = representation._uniformFromBall(mapping, radius, 20)
             for m in new_mappings:
                 if list(m) != list(mapping):
                     return m
@@ -148,18 +120,56 @@ class SimulatedAnnealingMapper(object):
                 log.error("Could not mutate mapping")
                 raise RuntimeError("Could not mutate mapping")
 
-    def generate_mapping(self):
-        """Generates a full mapping using simulated anealing"""
-        mapping_obj = self.random_mapper.generate_mapping()
+    def generate_mapping(
+        self,
+        graph,
+        trace=None,
+        representation=None,
+        processors=None,
+        partial_mapping=None,
+    ):
+        """Generate a full mapping using simulated annealing.
+
+        Args:
+        :param graph: a dataflow graph
+        :type graph: DataflowGraph
+        :param trace: a trace generator
+        :type trace: TraceGenerator
+        :param representation: a mapping representation object
+        :type representation: MappingRepresentation
+        :param processors: list of processors to map to.
+        :type processors: a list[Processor]
+        :param partial_mapping: a partial mapping to complete
+        :type partial_mapping: Mapping
+
+        """
+        self.max_rejections = len(graph.processes()) * (
+            len(self.platform.processors()) - 1
+        )  # R_max = L
+        self.statistics = Statistics(
+            log, len(graph.processes()), self._record_statistics
+        )
+        self.simulation_manager = SimulationManager(
+            representation,
+            trace,
+            self._jobs,
+            self._parallel,
+            self._progress,
+            self._chunk_size,
+            self._record_statistics,
+        )
+
+        mapping_obj = self.random_mapper.generate_mapping(
+            graph, trace=trace, representation=representation
+        )
         if (
-            hasattr(self.representation, "canonical_operations")
-            and not self.representation.canonical_operations
+            hasattr(representation, "canonical_operations")
+            and not representation.canonical_operations
         ):
-            mapping = self.representation.toRepresentationNoncanonical(
-                mapping_obj
-            )
+            to_representation_fun = representation.toRepresentationNoncanonical
         else:
-            mapping = self.representation.toRepresentation(mapping_obj)
+            to_representation_fun = representation.toRepresentation
+        mapping = to_representation_fun(mapping_obj)
 
         last_mapping = mapping
         last_simres = self.simulation_manager.simulate([mapping])[0]
@@ -177,7 +187,7 @@ class SimulatedAnnealingMapper(object):
         while rejections < self.max_rejections:
             temperature = self.temperature_cooling(temperature, iter)
             log.info(f"Current temperature {temperature}")
-            mapping = self.move(last_mapping, temperature)
+            mapping = self.move(representation, last_mapping, temperature)
             cur_simres = self.simulation_manager.simulate([mapping])[0]
             cur_exec_time = cur_simres.exec_time
             faster = cur_exec_time < last_exec_time
@@ -214,4 +224,4 @@ class SimulatedAnnealingMapper(object):
         if self.dump_cache:
             self.simulation_manager.dump("mapping_cache.csv")
 
-        return self.representation.fromRepresentation(best_mapping)
+        return representation.fromRepresentation(best_mapping)
