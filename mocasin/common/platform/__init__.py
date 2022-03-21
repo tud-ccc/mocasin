@@ -13,6 +13,7 @@ from hydra.utils import to_absolute_path
 
 log = logging.getLogger(__name__)
 
+
 class CommunicationResourceType(Enum):
     PhysicalLink = 1
     LogicalLink = 2
