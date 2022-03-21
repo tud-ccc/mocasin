@@ -110,3 +110,11 @@ def platform_power():
     pe_big = genericProcessor("proc_type_1", static_power=2, dynamic_power=7)
     p = DesignerPlatformOdroid(pe_little, pe_big)
     return p
+
+
+@pytest.fixture
+def platform_power_partial():
+    pe_little = genericProcessor("proc_type_0", static_power=1, dynamic_power=3)
+    pe_big = genericProcessor("proc_type_1", static_power=None, dynamic_power=None)
+    p = DesignerPlatformOdroid(pe_little, pe_big)
+    return p
