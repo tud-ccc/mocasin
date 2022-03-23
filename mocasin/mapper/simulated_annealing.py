@@ -10,7 +10,7 @@ import tqdm
 
 from mocasin.mapper import BaseMapper
 from mocasin.mapper.random import RandomPartialMapper
-from mocasin.mapper.utils import SimulationManager, Statistics
+from mocasin.mapper.utils import SimulationManager
 from mocasin.util import logging
 
 
@@ -92,9 +92,9 @@ class SimulatedAnnealingMapper(BaseMapper):
         self._chunk_size = chunk_size
         self._record_statistics = record_statistics
 
-    def temperature_cooling(self, temperature, iter):
+    def temperature_cooling(self, temperature, iteration, max_rejections):
         return self.initial_temperature * self.p ** np.floor(
-            iter / self.max_rejections
+            iteration / max_rejections
         )
 
     def query_accept(self, time, temperature):
@@ -143,11 +143,9 @@ class SimulatedAnnealingMapper(BaseMapper):
         :type partial_mapping: Mapping
 
         """
-        self.max_rejections = len(graph.processes()) * (
+        # R_max = L
+        max_rejections = len(graph.processes()) * (
             len(self.platform.processors()) - 1
-        )  # R_max = L
-        self.statistics = Statistics(
-            log, len(graph.processes()), self._record_statistics
         )
         self.simulation_manager = SimulationManager(
             representation,
@@ -179,13 +177,15 @@ class SimulatedAnnealingMapper(BaseMapper):
         best_exec_time = last_exec_time
         rejections = 0
 
-        iter = 0
+        iteration = 0
         temperature = self.initial_temperature
         if self.progress:
-            pbar = tqdm.tqdm(total=self.max_rejections * 20)
+            pbar = tqdm.tqdm(total=max_rejections * 20)
 
-        while rejections < self.max_rejections:
-            temperature = self.temperature_cooling(temperature, iter)
+        while rejections < max_rejections:
+            temperature = self.temperature_cooling(
+                temperature, iteration, max_rejections
+            )
             log.info(f"Current temperature {temperature}")
             mapping = self.move(representation, last_mapping, temperature)
             cur_simres = self.simulation_manager.simulate([mapping])[0]
@@ -212,11 +212,11 @@ class SimulatedAnnealingMapper(BaseMapper):
                 # reject
                 if temperature <= self.final_temperature:
                     rejections += 1
-            iter += 1
+            iteration += 1
             if self.progress:
                 pbar.update(1)
         if self.progress:
-            pbar.update(self.max_rejections * 20 - iter)
+            pbar.update(max_rejections * 20 - iteration)
             pbar.close()
 
         self.simulation_manager.statistics.log_statistics()
