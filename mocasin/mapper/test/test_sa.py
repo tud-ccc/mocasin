@@ -3,11 +3,13 @@
 #
 # Authors: Felix Teweleit, Andres Goens
 
-from mocasin.mapper.test.mock_cache import MockMappingCache
-from mocasin.mapper.simulated_annealing import SimulatedAnnealingMapper
 from itertools import product
+
 import pytest
 import numpy as np
+
+from mocasin.mapper.test.mock_cache import MockMappingCache
+from mocasin.mapper.simulated_annealing import SimulatedAnnealingMapper
 
 
 @pytest.fixture
@@ -34,32 +36,18 @@ def conf():
 
 
 @pytest.fixture
-def mapper(
-    graph, platform, trace, representation, simres_evaluation_function, mocker
-):
+def mapper(platform, simres_evaluation_function, mocker):
     m = SimulatedAnnealingMapper(
-        graph,
-        platform,
-        trace,
-        representation,
-        42,
-        False,
-        1.0,
-        0.01,
-        0.5,
-        2,
-        False,
-        10,
-        False,
-        True,
-        4,
+        platform, 42, False, 1.0, 0.01, 0.5, 2, False, 10, False, True, 4
     )
     m.simulation_manager = MockMappingCache(simres_evaluation_function, mocker)
     return m
 
 
-def test_sa(mapper, evaluation_function):
-    result_mapper = mapper.generate_mapping()
+def test_sa(mapper, graph, trace, representation, evaluation_function):
+    result_mapper = mapper.generate_mapping(
+        graph, trace=trace, representation=representation
+    )
     results = [
         (evaluation_function([x, y]), x, y)
         for x, y in product(range(7), range(7))
@@ -72,10 +60,11 @@ def test_sa(mapper, evaluation_function):
 
 def test_temperature_cooling(conf, mapper):
     timeout = 10000
+    max_rejections = 12
     temperature = conf["mapper"]["initial_temperature"]
 
     for i in range(timeout):
-        temperature = mapper.temperature_cooling(temperature, i)
+        temperature = mapper.temperature_cooling(temperature, i, max_rejections)
         if temperature <= conf["mapper"]["final_temperature"]:
             break
 
