@@ -421,25 +421,47 @@ class GeneticMapper(BaseMapper):
         engine.cleanup()
         return result
 
-    def generate_pareto_front(self, evaluate_metadata=None):
+    def generate_pareto_front(
+        self, graph, trace=None, representation=None, evaluate_metadata=False
+    ):
         """Generates a pareto front of (full) mappings using a genetic algorithm
         the input parameters determine the criteria with which the pareto
         front is going to be built.
         """
-        _, logbook, hof = self._run_genetic_algorithm()
+        simulation_manager = SimulationManager(
+            representation,
+            trace,
+            self._jobs,
+            self._parallel,
+            self._progress,
+            self._chunk_size,
+            self._record_statistics,
+        )
+
+        engine = _GeneticMapperEngine(
+            self.platform,
+            graph,
+            trace,
+            representation,
+            simulation_manager,
+            self._config,
+        )
+
+        _, logbook, hof = engine.run()
+
         results = []
-        self.simulation_manager.statistics.log_statistics()
+        simulation_manager.statistics.log_statistics()
         with open("evolutionary_logbook.pickle", "wb") as f:
             pickle.dump(logbook, f)
         for mapping in hof:
-            mapping_object = self.representation.fromRepresentation(
+            mapping_object = representation.fromRepresentation(
                 np.array(mapping)
             )
-            self.simulation_manager.append_mapping_metadata(mapping_object)
+            simulation_manager.append_mapping_metadata(mapping_object)
             results.append(mapping_object)
         pareto = filter_pareto_front(results)
-        self.simulation_manager.statistics.to_file()
+        simulation_manager.statistics.to_file()
         if self._dump_cache:
-            self.simulation_manager.dump("mapping_cache.csv")
-        self._cleanup()
+            simulation_manager.dump("mapping_cache.csv")
+        engine.cleanup()
         return pareto
