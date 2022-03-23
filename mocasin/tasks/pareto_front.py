@@ -3,9 +3,10 @@
 #
 # Authors: Andres Goens, Christian Menard, Robert Khasanov
 
-import hydra
 import logging
 from pathlib import Path
+
+import hydra
 
 from mocasin.util.mapping_table import MappingTableWriter
 
@@ -46,9 +47,7 @@ def pareto_front(cfg):
     representation = hydra.utils.instantiate(
         cfg["representation"], graph, platform
     )
-    mapper = hydra.utils.instantiate(
-        cfg["mapper"], graph, platform, trace, representation
-    )
+    mapper = hydra.utils.instantiate(cfg["mapper"], platform)
     evaluate_metadata = cfg["evaluate_metadata"]
 
     # Run genetic algorithm
@@ -60,7 +59,10 @@ def pareto_front(cfg):
         )
 
     pareto_front = mapper.generate_pareto_front(
-        evaluate_metadata=evaluate_metadata
+        graph,
+        trace=trace,
+        representation=representation,
+        evaluate_metadata=evaluate_metadata,
     )
 
     # export the pareto front

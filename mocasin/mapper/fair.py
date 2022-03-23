@@ -7,10 +7,8 @@ from sortedcontainers import SortedList
 
 from mocasin.common.mapping import Mapping, ProcessMappingInfo
 from mocasin.mapper import BaseMapper
-from mocasin.mapper.pareto import filter_pareto_front
 from mocasin.mapper.partial import ComPartialMapper
 from mocasin.mapper.random import RandomPartialMapper
-from mocasin.mapper.utils import SimulationManager
 from mocasin.util import logging
 
 
@@ -142,44 +140,6 @@ class StaticCFSMapper(StaticCFS):
             representation=representation,
             partial_mapping=mapping,
         )
-
-    def generate_pareto_front(self, evaluate_metadata=False):
-        """Generate Pareto front of the mappings."""
-        pareto = []
-        restricted = [[]]
-        cores = {}
-        all_cores = list(self.platform.processors())
-        for core_type, _ in self.platform.get_processor_types().items():
-            cores[core_type] = [
-                core.name for core in all_cores if core.type == core_type
-            ]
-        for core_type, _ in self.platform.get_processor_types().items():
-            new_res = []
-            for r in restricted:
-                for i in range(len(cores[core_type])):
-                    new_res.append(r + cores[core_type][: i + 1])
-            restricted = restricted + new_res
-        restricted = restricted[:-1]
-        log.debug(f"Length of restricted = {len(restricted)}")
-        log.debug(f"{restricted}")
-        for res in restricted:
-            mapping = self.generate_mapping(restricted=res)
-            pareto.append(mapping)
-
-        if not evaluate_metadata:
-            return pareto
-
-        # Obtain simulation values
-        simulation_manager = SimulationManager(
-            self.representation, self.trace, jobs=None, parallel=True
-        )
-        simulation_manager.simulate(pareto)
-        for mapping in pareto:
-            simulation_manager.append_mapping_metadata(mapping)
-
-        filtered = filter_pareto_front(pareto)
-
-        return filtered
 
 
 class StaticCFSMapperMultiApp(StaticCFS):
