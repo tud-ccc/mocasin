@@ -13,7 +13,7 @@ from mocasin.simulate import SimulationResult
 
 @pytest.fixture
 def mapper(graph, platform_odroid):
-    com_mapper = ComFullMapper(graph, platform_odroid)
+    com_mapper = ComFullMapper(platform_odroid)
     return ProcPartialMapper(graph, platform_odroid, com_mapper)
 
 
