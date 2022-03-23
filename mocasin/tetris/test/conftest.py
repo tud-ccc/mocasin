@@ -6,7 +6,6 @@
 import pytest
 
 from mocasin.common.graph import DataflowChannel, DataflowGraph, DataflowProcess
-from mocasin.common.platform import Platform, Processor, Scheduler
 from mocasin.mapper.partial import ComFullMapper, ProcPartialMapper
 from mocasin.platforms.odroid import DesignerPlatformOdroid
 from mocasin.platforms.platformDesigner import genericProcessor
@@ -36,7 +35,7 @@ def graph():
 
 @pytest.fixture
 def mapping(graph, platform):
-    com_mapper = ComFullMapper(graph, platform)
+    com_mapper = ComFullMapper(platform)
     mapper = ProcPartialMapper(graph, platform, com_mapper)
     from_list = []
     # Map process "a"
@@ -49,7 +48,7 @@ def mapping(graph, platform):
 
 @pytest.fixture
 def pareto_mappings(platform, graph):
-    com_mapper = ComFullMapper(graph, platform)
+    com_mapper = ComFullMapper(platform)
     mapper = ProcPartialMapper(graph, platform, com_mapper)
 
     mapping_tuples = [
