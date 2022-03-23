@@ -3,11 +3,13 @@
 #
 # Authors: Felix Teweleit, Andres Goens
 
-from mocasin.mapper.test.mock_cache import MockMappingCache
-from mocasin.mapper.gradient_descent import GradientDescentMapper
+from itertools import product
+
 import pytest
 import numpy as np
-from itertools import product
+
+from mocasin.mapper.gradient_descent import GradientDescentMapper
+from mocasin.mapper.test.mock_cache import MockMappingCache
 
 
 @pytest.fixture
@@ -19,35 +21,18 @@ def evaluation_function_gradient():
 
 
 @pytest.fixture
-def mapper(
-    graph,
-    platform,
-    trace,
-    representation_pbc,
-    simres_evaluation_function,
-    mocker,
-):
+def mapper(platform, simres_evaluation_function, mocker):
     m = GradientDescentMapper(
-        graph,
-        platform,
-        trace,
-        representation_pbc,
-        100,
-        2,
-        42,
-        False,
-        False,
-        10,
-        False,
-        True,
-        4,
+        platform, 100, 2, 42, False, False, 10, False, True, 4
     )
     m.simulation_manager = MockMappingCache(simres_evaluation_function, mocker)
     return m
 
 
-def test_gd(mapper, evaluation_function):
-    result_mapper = mapper.generate_mapping()
+def test_gd(mapper, graph, trace, representation_pbc, evaluation_function):
+    result_mapper = mapper.generate_mapping(
+        graph, trace=trace, representation=representation_pbc
+    )
     results = [
         (evaluation_function([x, y]), x, y)
         for x, y in product(range(7), range(7))
