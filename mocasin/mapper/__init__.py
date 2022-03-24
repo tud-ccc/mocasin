@@ -4,7 +4,7 @@
 # Authors: Robert Khasanov
 
 from mocasin.mapper.pareto import filter_pareto_front
-from mocasin.mapper.utils import SimulationManager
+from mocasin.mapper.utils import SimulationManager, SimulationManagerConfig
 
 
 class BaseMapper:
@@ -105,7 +105,9 @@ class BaseMapper:
 
         # obtain simulation values
         simulation_manager = SimulationManager(
-            representation, trace, jobs=None, parallel=True
+            representation,
+            trace,
+            SimulationManagerConfig(jobs=None, parallel=True),
         )
         simulation_manager.simulate(pareto)
         for mapping in pareto:

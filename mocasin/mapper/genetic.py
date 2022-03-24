@@ -15,7 +15,7 @@ import numpy as np
 from mocasin.mapper import BaseMapper
 from mocasin.mapper.pareto import filter_pareto_front
 from mocasin.mapper.random import RandomPartialMapper
-from mocasin.mapper.utils import SimulationManager
+from mocasin.mapper.utils import SimulationManager, SimulationManagerConfig
 from mocasin.util import logging
 
 
@@ -329,13 +329,6 @@ class GeneticMapper(BaseMapper):
 
         self._dump_cache = dump_cache
 
-        # save parameters to simulation manager
-        self._jobs = jobs
-        self._parallel = parallel
-        self._progress = progress
-        self._chunk_size = chunk_size
-        self._record_statistics = record_statistics
-
         objs = Objectives.from_string_list(objectives)
 
         if Objectives.ENERGY in objs:
@@ -351,7 +344,7 @@ class GeneticMapper(BaseMapper):
                 "Trying to initalize genetic algorithm without objectives"
             )
 
-        self._config = _GeneticMapperConfig(
+        self._mapper_config = _GeneticMapperConfig(
             initials,
             objs,
             pop_size,
@@ -363,6 +356,13 @@ class GeneticMapper(BaseMapper):
             crossover_rate,
             radius,
             progress,
+        )
+        self._simulation_config = SimulationManagerConfig(
+            jobs=jobs,
+            parallel=parallel,
+            progress=progress,
+            chunk_size=chunk_size,
+            record_statistics=record_statistics,
         )
 
     def _init_deap_engine(self):
@@ -391,13 +391,7 @@ class GeneticMapper(BaseMapper):
         :type partial_mapping: Mapping
         """
         simulation_manager = SimulationManager(
-            representation,
-            trace,
-            self._jobs,
-            self._parallel,
-            self._progress,
-            self._chunk_size,
-            self._record_statistics,
+            representation, trace, config=self._simulation_config
         )
 
         engine = _GeneticMapperEngine(
@@ -406,7 +400,7 @@ class GeneticMapper(BaseMapper):
             trace,
             representation,
             simulation_manager,
-            self._config,
+            self._mapper_config,
         )
 
         _, logbook, hof = engine.run()
@@ -429,13 +423,7 @@ class GeneticMapper(BaseMapper):
         front is going to be built.
         """
         simulation_manager = SimulationManager(
-            representation,
-            trace,
-            self._jobs,
-            self._parallel,
-            self._progress,
-            self._chunk_size,
-            self._record_statistics,
+            representation, trace, config=self._simulation_config
         )
 
         engine = _GeneticMapperEngine(
@@ -444,7 +432,7 @@ class GeneticMapper(BaseMapper):
             trace,
             representation,
             simulation_manager,
-            self._config,
+            self._mapper_config,
         )
 
         _, logbook, hof = engine.run()

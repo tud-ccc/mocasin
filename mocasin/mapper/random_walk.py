@@ -11,7 +11,7 @@ import tqdm
 
 from mocasin.mapper import BaseMapper
 from mocasin.mapper.random import RandomMapper
-from mocasin.mapper.utils import SimulationManager
+from mocasin.mapper.utils import SimulationManager, SimulationManagerConfig
 from mocasin.util import logging
 
 
@@ -82,11 +82,13 @@ class RandomWalkMapper(BaseMapper):
             np.random.seed(self.seed)
 
         # save parameters to simulation manager
-        self._jobs = jobs
-        self._parallel = parallel
-        self._progress = progress
-        self._chunk_size = chunk_size
-        self._record_statistics = record_statistics
+        self._simulation_config = SimulationManagerConfig(
+            jobs=jobs,
+            parallel=parallel,
+            progress=progress,
+            chunk_size=chunk_size,
+            record_statistics=record_statistics,
+        )
 
     def generate_mapping(
         self,
@@ -108,13 +110,7 @@ class RandomWalkMapper(BaseMapper):
         :type representation: MappingRepresentation
         """
         self.simulation_manager = SimulationManager(
-            representation,
-            trace,
-            self._jobs,
-            self._parallel,
-            self._progress,
-            self._chunk_size,
-            self._record_statistics,
+            representation, trace, config=self._simulation_config
         )
 
         start = timeit.default_timer()

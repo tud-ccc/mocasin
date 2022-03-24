@@ -7,7 +7,7 @@ import pytest
 
 from mocasin.mapper.partial import ComFullMapper, ProcPartialMapper
 from mocasin.mapper.test.test_fair import MockTrace
-from mocasin.mapper.utils import SimulationManager
+from mocasin.mapper.utils import SimulationManager, SimulationManagerConfig
 from mocasin.simulate import SimulationResult
 
 
@@ -25,7 +25,9 @@ def test_simulation_manager_cache(
     trace = MockTrace(proc_names, core_types, lambda _: 5, max_length=10)
     mapping = mapper.generate_mapping([0, 4])
     simulation_manager = SimulationManager(
-        representation_odroid, trace, jobs=None, parallel=True
+        representation_odroid,
+        trace,
+        SimulationManagerConfig(jobs=None, parallel=True),
     )
     assert not simulation_manager._cache
     lookup_result = simulation_manager.lookup(tuple([0, 4]))

@@ -10,7 +10,7 @@ import tqdm
 
 from mocasin.mapper import BaseMapper
 from mocasin.mapper.random import RandomPartialMapper
-from mocasin.mapper.utils import SimulationManager
+from mocasin.mapper.utils import SimulationManager, SimulationManagerConfig
 from mocasin.util import logging
 
 
@@ -86,11 +86,13 @@ class SimulatedAnnealingMapper(BaseMapper):
             )
 
         # save parameters to simulation manager
-        self._jobs = jobs
-        self._parallel = parallel
-        self._progress = progress
-        self._chunk_size = chunk_size
-        self._record_statistics = record_statistics
+        self._simulation_config = SimulationManagerConfig(
+            jobs=jobs,
+            parallel=parallel,
+            progress=progress,
+            chunk_size=chunk_size,
+            record_statistics=record_statistics,
+        )
 
     def temperature_cooling(self, temperature, iteration, max_rejections):
         return self.initial_temperature * self.p ** np.floor(
@@ -148,13 +150,7 @@ class SimulatedAnnealingMapper(BaseMapper):
             len(self.platform.processors()) - 1
         )
         self.simulation_manager = SimulationManager(
-            representation,
-            trace,
-            self._jobs,
-            self._parallel,
-            self._progress,
-            self._chunk_size,
-            self._record_statistics,
+            representation, trace, config=self._simulation_config
         )
 
         mapping_obj = self.random_mapper.generate_mapping(

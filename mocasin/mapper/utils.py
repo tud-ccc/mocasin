@@ -3,18 +3,18 @@
 #
 # Authors: Andrés Goens, Felix Teweleit, Robert Khasanov
 
+import csv
+from dataclasses import dataclass
 import multiprocessing as mp
 import os
+import pickle
 from time import process_time
 
 import cloudpickle
-import csv
 import h5py
 import hydra
-import numpy as np
-import pickle
-
 from hydra.core.hydra_config import HydraConfig
+import numpy as np
 
 from mocasin.common.mapping import Mapping
 from mocasin.simulate import DataflowSimulation
@@ -24,6 +24,16 @@ log = getLogger(__name__)
 
 
 class Statistics(object):
+    """Simulation Manager Statistics.
+
+    Note: This class is now rigid to the number of processes.
+
+    Args:
+        logger (Logger): a logger
+        process_amount (int): a number of processes in the task
+        record (bool): a flag whether to save results to a file
+    """
+
     def __init__(self, logger, process_amount, record):
         self._log = logger
         self.record = record
@@ -59,50 +69,43 @@ class Statistics(object):
     def to_file(self):
         if not self.record:
             return
-        file = open("statistics.txt", "x")
-        file.write("Processes: " + str(self._processes) + "\n")
-        file.write("Mappings cached: " + str(self._mappings_cached) + "\n")
-        file.write(
-            "Mappings evaluated: " + str(self._mappings_evaluated) + "\n"
-        )
-        file.write(
-            "Time spent simulating: " + str(self._simulation_time) + "\n"
-        )
-        file.write(
-            "Representation time: " + str(self._representation_time) + "\n"
-        )
-        file.write(
-            "Representation initialization time: "
-            + str(self._representation_init_time)
-            + "\n"
-        )
-        file.close()
+        with open("statistics.txt", "x") as file:
+            file.write(f"Processes: {self._processes}\n")
+            file.write(f"Mappings cached: {self._mappings_cached}\n")
+            file.write(f"Mappings evaluated: {self._mappings_evaluated}\n")
+            file.write(f"Time spent simulating: {self._simulation_time}\n")
+            file.write(f"Representation time: {self._representation_time}\n")
+            file.write(
+                "Representation initialization time:"
+                f" {self._representation_init_time}\n"
+            )
+
+
+@dataclass
+class SimulationManagerConfig:
+    """A configuration for simulation manager."""
+
+    jobs: int = 1
+    parallel: bool = False
+    progress: bool = False
+    chunk_size: int = 10
+    record_statistics: bool = False
 
 
 class SimulationManager(object):
-    def __init__(
-        self,
-        representation,
-        trace,
-        jobs=1,
-        parallel=False,
-        progress=False,
-        chunk_size=10,
-        record_statistics=False,
-    ):
-        self._cache = {}
+    def __init__(self, representation, trace, config=None):
+        if not config:
+            config = SimulationManagerConfig()
+        self.config = config
         self.representation = representation
         self.graph = representation.graph
+        self.trace = trace
         self.platform = representation.platform
         self.statistics = Statistics(
-            log, len(self.graph.processes()), record_statistics
+            log, len(self.graph.processes()), self.config.record_statistics
         )
         self.statistics.set_rep_init_time(representation.init_time)
-        self.jobs = jobs
-        self.trace = trace
-        self.parallel = parallel
-        self.progress = progress
-        self.chunk_size = chunk_size
+        self._cache = {}
 
     def lookup(self, mapping):
         """Look up the results from the cache."""
@@ -178,20 +181,20 @@ class SimulationManager(object):
             )
 
             simulations.append((simulation, cfg_pickled))
-        if self.parallel and len(simulations) > self.chunk_size:
+        if self.config.parallel and len(simulations) > self.config.chunk_size:
             # since mappings are simulated in parallel, whole simulation time
             # is added later as offset
             for _ in simulations:
                 self.statistics.mapping_evaluated(0)
 
             # run the simulations in parallel
-            with mp.Pool(processes=self.jobs) as pool:
+            with mp.Pool(processes=self.config.jobs) as pool:
                 to_simulate = pool.imap(
                     run_simulation_logger_wrapper,
                     simulations,
-                    chunksize=self.chunk_size,
+                    chunksize=self.config.chunk_size,
                 )
-                if self.progress:
+                if self.config.progress:
                     import tqdm
 
                     to_simulate = tqdm.tqdm(
@@ -238,13 +241,13 @@ class SimulationManager(object):
 
     def dump(self, filename):
         log.info(f"dumping cache to {filename}")
-        file = open(filename, "x")
-        file.write("mapping,runtime\n")
-        for mapping in self._cache:
-            file.write(
-                f"\"{str(mapping).replace('(','').replace(')','')}\",{self._cache[mapping]}\n"
-            )
-        file.close()
+        with open(filename, "x") as file:
+            file.write("mapping,runtime\n")
+            for mapping in self._cache:
+                file.write(
+                    f"\"{str(mapping).replace('(','').replace(')','')}\","
+                    f"{self._cache[mapping]}\n"
+                )
 
         filename = filename.replace("csv", "h5")
         log.info(f"dumping cache to {filename}")
