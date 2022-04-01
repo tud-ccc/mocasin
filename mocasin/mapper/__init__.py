@@ -98,7 +98,8 @@ class BaseMapper:
                 representation=representation,
                 processors=allowed_processors,
             )
-            pareto.append(mapping)
+            if mapping:
+                pareto.append(mapping)
 
         if not evaluate_metadata:
             return pareto
