@@ -86,13 +86,16 @@ class SimulatedAnnealingMapper(BaseMapper):
             )
 
         # save parameters to simulation manager
-        self._simulation_config = SimulationManagerConfig(
+        simulation_config = SimulationManagerConfig(
             jobs=jobs,
             parallel=parallel,
             progress=progress,
             chunk_size=chunk_size,
-            record_statistics=record_statistics,
         )
+        self._simulation_manager = SimulationManager(
+            self.platform, config=simulation_config
+        )
+        self._record_statistics = record_statistics
 
     def temperature_cooling(self, temperature, iteration, max_rejections):
         return self.initial_temperature * self.p ** np.floor(
@@ -145,12 +148,10 @@ class SimulatedAnnealingMapper(BaseMapper):
         :type partial_mapping: Mapping
 
         """
+        self._simulation_manager.reset_statistics()
         # R_max = L
         max_rejections = len(graph.processes()) * (
             len(self.platform.processors()) - 1
-        )
-        self.simulation_manager = SimulationManager(
-            representation, trace, config=self._simulation_config
         )
 
         mapping_obj = self.random_mapper.generate_mapping(
@@ -166,7 +167,9 @@ class SimulatedAnnealingMapper(BaseMapper):
         mapping = to_representation_fun(mapping_obj)
 
         last_mapping = mapping
-        last_simres = self.simulation_manager.simulate([mapping])[0]
+        last_simres = self._simulation_manager.simulate(
+            graph, trace, representation, [mapping]
+        )[0]
         last_exec_time = last_simres.exec_time
         self.initial_cost = last_exec_time
         best_mapping = mapping
@@ -184,7 +187,9 @@ class SimulatedAnnealingMapper(BaseMapper):
             )
             log.info(f"Current temperature {temperature}")
             mapping = self.move(representation, last_mapping, temperature)
-            cur_simres = self.simulation_manager.simulate([mapping])[0]
+            cur_simres = self._simulation_manager.simulate(
+                graph, trace, representation, [mapping]
+            )[0]
             cur_exec_time = cur_simres.exec_time
             faster = cur_exec_time < last_exec_time
             if not faster and cur_exec_time != last_exec_time:
@@ -215,9 +220,10 @@ class SimulatedAnnealingMapper(BaseMapper):
             pbar.update(max_rejections * 20 - iteration)
             pbar.close()
 
-        self.simulation_manager.statistics.log_statistics()
-        self.simulation_manager.statistics.to_file()
+        self._simulation_manager.statistics.log_statistics()
+        if self._record_statistics:
+            self._simulation_manager.statistics.to_file()
         if self.dump_cache:
-            self.simulation_manager.dump("mapping_cache.csv")
+            self._simulation_manager.dump("mapping_cache.csv")
 
         return representation.fromRepresentation(best_mapping)

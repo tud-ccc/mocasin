@@ -118,6 +118,7 @@ class _GeneticMapperEngine:
             )
 
         toolbox = deap.base.Toolbox()
+        # FIXME: Remove number of processes
         toolbox.register("attribute", random.random)
         toolbox.register("mapping", self._random_mapping)
         toolbox.register(
@@ -157,7 +158,9 @@ class _GeneticMapperEngine:
 
     def _evaluate_mapping(self, mapping):
         result = []
-        simres = self.simulation_manager.simulate([list(mapping)])[0]
+        simres = self.simulation_manager.simulate(
+            self.graph, self.trace, self.representation, [list(mapping)]
+        )[0]
         if Objectives.EXEC_TIME in self.config.objectives:
             result.append(simres.exec_time)
         if Objectives.ENERGY in self.config.objectives:
@@ -275,7 +278,7 @@ class GeneticMapper(BaseMapper):
         crossover_rate=1,
         radius=2.0,
         random_seed=42,
-        record_statistics=True,
+        record_statistics=False,
         dump_cache=False,
         chunk_size=10,
         progress=False,
@@ -357,13 +360,16 @@ class GeneticMapper(BaseMapper):
             radius,
             progress,
         )
-        self._simulation_config = SimulationManagerConfig(
+        simulation_config = SimulationManagerConfig(
             jobs=jobs,
             parallel=parallel,
             progress=progress,
             chunk_size=chunk_size,
-            record_statistics=record_statistics,
         )
+        self._simulation_manager = SimulationManager(
+            self.platform, simulation_config
+        )
+        self._record_statistics = record_statistics
 
     def _init_deap_engine(self):
         pass
@@ -390,28 +396,26 @@ class GeneticMapper(BaseMapper):
         :param partial_mapping: a partial mapping to complete
         :type partial_mapping: Mapping
         """
-        simulation_manager = SimulationManager(
-            representation, trace, config=self._simulation_config
-        )
-
+        self._simulation_manager.reset_statistics()
         engine = _GeneticMapperEngine(
             self.platform,
             graph,
             trace,
             representation,
-            simulation_manager,
+            self._simulation_manager,
             self._mapper_config,
         )
 
         _, logbook, hof = engine.run()
         mapping = hof[0]
-        simulation_manager.statistics.log_statistics()
+        self._simulation_manager.statistics.log_statistics()
         with open("evolutionary_logbook.txt", "w") as f:
             f.write(str(logbook))
         result = representation.fromRepresentation(np.array(mapping))
-        simulation_manager.statistics.to_file()
+        if self._record_statistics:
+            self._simulation_manager.statistics.to_file()
         if self._dump_cache:
-            simulation_manager.dump("mapping_cache.csv")
+            self._simulation_manager.dump("mapping_cache.csv")
         engine.cleanup()
         return result
 
@@ -422,34 +426,36 @@ class GeneticMapper(BaseMapper):
         the input parameters determine the criteria with which the pareto
         front is going to be built.
         """
-        simulation_manager = SimulationManager(
-            representation, trace, config=self._simulation_config
-        )
-
+        self._simulation_manager.reset_statistics()
         engine = _GeneticMapperEngine(
             self.platform,
             graph,
             trace,
             representation,
-            simulation_manager,
+            self._simulation_manager,
             self._mapper_config,
         )
 
         _, logbook, hof = engine.run()
 
         results = []
-        simulation_manager.statistics.log_statistics()
+        self._simulation_manager.statistics.log_statistics()
         with open("evolutionary_logbook.pickle", "wb") as f:
             pickle.dump(logbook, f)
         for mapping in hof:
             mapping_object = representation.fromRepresentation(
                 np.array(mapping)
             )
-            simulation_manager.append_mapping_metadata(mapping_object)
             results.append(mapping_object)
+            print(mapping_object.metadata.exec_time)
+        self._simulation_manager.simulate(graph, trace, representation, results)
+        for m in results:
+            print(m.metadata.exec_time)
+
         pareto = filter_pareto_front(results)
-        simulation_manager.statistics.to_file()
+        if self._record_statistics:
+            self._simulation_manager.statistics.to_file()
         if self._dump_cache:
-            simulation_manager.dump("mapping_cache.csv")
+            self._simulation_manager.dump("mapping_cache.csv")
         engine.cleanup()
         return pareto

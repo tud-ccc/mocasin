@@ -25,7 +25,7 @@ def mapper(platform, simres_evaluation_function, mocker):
     m = GradientDescentMapper(
         platform, 100, 2, 42, False, False, 10, False, True, 4
     )
-    m.simulation_manager = MockMappingCache(simres_evaluation_function, mocker)
+    m._simulation_manager = MockMappingCache(simres_evaluation_function, mocker)
     return m
 
 
@@ -43,7 +43,14 @@ def test_gd(mapper, graph, trace, representation_pbc, evaluation_function):
     assert tuple(result_mapper.to_list()) in expected
 
 
-def test_gradient(mapper, evaluation_function, evaluation_function_gradient):
+def test_gradient(
+    graph,
+    trace,
+    representation,
+    mapper,
+    evaluation_function,
+    evaluation_function_gradient,
+):
     mapper.dim = 2
     good = 0
     bad = 0
@@ -54,7 +61,7 @@ def test_gradient(mapper, evaluation_function, evaluation_function_gradient):
         mapper.best_mapping = np.zeros(mapper.dim)
         actual_grad = np.array(evaluation_function_gradient([x, y]))
         calculated_grad = mapper.calculate_gradient(
-            [x, y], evaluation_function([x, y])
+            graph, trace, representation, [x, y], evaluation_function([x, y])
         )
 
         if not np.allclose(actual_grad, np.zeros(mapper.dim)):

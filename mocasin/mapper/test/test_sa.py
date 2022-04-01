@@ -40,7 +40,7 @@ def mapper(platform, simres_evaluation_function, mocker):
     m = SimulatedAnnealingMapper(
         platform, 42, False, 1.0, 0.01, 0.5, 2, False, 10, False, True, 4
     )
-    m.simulation_manager = MockMappingCache(simres_evaluation_function, mocker)
+    m._simulation_manager = MockMappingCache(simres_evaluation_function, mocker)
     return m
 
 

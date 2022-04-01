@@ -105,14 +105,10 @@ class BaseMapper:
 
         # obtain simulation values
         simulation_manager = SimulationManager(
-            representation,
-            trace,
+            self.platform,
             SimulationManagerConfig(jobs=None, parallel=True),
         )
-        simulation_manager.simulate(pareto)
-        for mapping in pareto:
-            simulation_manager.append_mapping_metadata(mapping)
-
+        simulation_manager.simulate(graph, trace, representation, pareto)
         filtered = filter_pareto_front(pareto)
 
         return filtered

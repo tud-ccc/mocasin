@@ -14,7 +14,7 @@ def mapper(
     graph, platform, trace, representation, simres_evaluation_function, mocker
 ):
     m = GeneticMapper(platform)
-    m.simulation_manager = MockMappingCache(simres_evaluation_function, mocker)
+    m._simulation_manager = MockMappingCache(simres_evaluation_function, mocker)
     return m
 
 

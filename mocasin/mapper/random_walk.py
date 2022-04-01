@@ -82,13 +82,17 @@ class RandomWalkMapper(BaseMapper):
             np.random.seed(self.seed)
 
         # save parameters to simulation manager
-        self._simulation_config = SimulationManagerConfig(
+        simulation_config = SimulationManagerConfig(
             jobs=jobs,
             parallel=parallel,
             progress=progress,
             chunk_size=chunk_size,
-            record_statistics=record_statistics,
         )
+        self._simulation_manager = SimulationManager(
+            self.platform, config=simulation_config
+        )
+
+        self._record_statistics = record_statistics
 
     def generate_mapping(
         self,
@@ -109,10 +113,7 @@ class RandomWalkMapper(BaseMapper):
         :param representation: a mapping representation object
         :type representation: MappingRepresentation
         """
-        self.simulation_manager = SimulationManager(
-            representation, trace, config=self._simulation_config
-        )
-
+        self._simulation_manager.reset_statistics()
         start = timeit.default_timer()
         # Create a list of 'simulations'. These are later executed by multiple
         # worker processes.
@@ -137,7 +138,9 @@ class RandomWalkMapper(BaseMapper):
             to_repr_func = representation.toRepresentation
         tup = list(map(to_repr_func, mappings))
 
-        sim_results = self.simulation_manager.simulate(tup)
+        sim_results = self._simulation_manager.simulate(
+            graph, trace, representation, tup
+        )
         exec_times = [x.exec_time for x in sim_results]
         best_result_idx = exec_times.index(min(exec_times))
         best_result = mappings[best_result_idx]
@@ -145,8 +148,9 @@ class RandomWalkMapper(BaseMapper):
         log.info(
             f"Tried {len(exec_times)} random mappings in {stop-start:.1f}s"
         )
-        self.simulation_manager.statistics.to_file()
+        if self._record_statistics:
+            self._simulation_manager.statistics.to_file()
         if self.dump_cache:
-            self.simulation_manager.dump("mapping_cache.csv")
+            self._simulation_manager.dump("mapping_cache.csv")
 
         return best_result

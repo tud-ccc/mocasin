@@ -111,13 +111,16 @@ class GradientDescentMapper(BaseMapper):
         self.progress = progress
 
         # save parameters to simulation manager
-        self._simulation_config = SimulationManagerConfig(
+        simulation_config = SimulationManagerConfig(
             jobs=jobs,
             parallel=parallel,
             progress=progress,
             chunk_size=chunk_size,
-            record_statistics=record_statistics,
         )
+        self._simulation_manager = SimulationManager(
+            self.platform, config=simulation_config
+        )
+        self._record_statistics = record_statistics
 
     def generate_mapping(
         self,
@@ -141,9 +144,7 @@ class GradientDescentMapper(BaseMapper):
         :param partial_mapping: a partial mapping to complete
         :type partial_mapping: Mapping
         """
-        self.simulation_manager = SimulationManager(
-            representation, trace, config=self._simulation_config
-        )
+        self._simulation_manager.reset_statistics()
         mappings = []
 
         if (
@@ -162,7 +163,9 @@ class GradientDescentMapper(BaseMapper):
             mappings.append(m)
 
         self.dim = len(mappings[0])
-        cur_sim_results = self.simulation_manager.simulate(mappings)
+        cur_sim_results = self._simulation_manager.simulate(
+            graph, trace, representation, mappings
+        )
         cur_exec_times = [x.exec_time for x in cur_sim_results]
         idx = np.argmin(cur_exec_times)
         self.best_mapping = mappings[idx]
@@ -188,7 +191,9 @@ class GradientDescentMapper(BaseMapper):
             for i in active_points:
                 grads[i] = self.momentum_decay * old_grads[
                     i
-                ] + self.calculate_gradient(mappings[i], cur_exec_times[i])
+                ] + self.calculate_gradient(
+                    graph, trace, representation, mappings[i], cur_exec_times[i]
+                )
                 log.debug(f"gradient (point {i}): {grads[i]}")
 
             before_last_mappings = copy.copy(last_mappings)
@@ -213,7 +218,9 @@ class GradientDescentMapper(BaseMapper):
                 mappings[i] = representation.approximate(np.array(mappings[i]))
                 log.debug(f"approximating to: {mappings[i]}")
 
-            cur_sim_results = self.simulation_manager.simulate(mappings)
+            cur_sim_results = self._simulation_manager.simulate(
+                graph, trace, representation, mappings
+            )
             cur_exec_times = [x.exec_time for x in cur_sim_results]
             idx = np.argmin(cur_exec_times)
             log.info(f"{idx} best mapping in batch: {cur_exec_times[idx]}")
@@ -254,14 +261,17 @@ class GradientDescentMapper(BaseMapper):
         self.best_mapping = np.array(
             representation.approximate(np.array(self.best_mapping))
         )
-        self.simulation_manager.statistics.log_statistics()
-        self.simulation_manager.statistics.to_file()
+        self._simulation_manager.statistics.log_statistics()
+        if self._record_statistics:
+            self._simulation_manager.statistics.to_file()
         if self.dump_cache:
-            self.simulation_manager.dump("mapping_cache.csv")
+            self._simulation_manager.dump("mapping_cache.csv")
 
         return representation.fromRepresentation(self.best_mapping)
 
-    def calculate_gradient(self, mapping, cur_exec_time):
+    def calculate_gradient(
+        self, graph, trace, representation, mapping, cur_exec_time
+    ):
         grad = np.zeros(self.dim)
         m_plus = []
         m_minus = []
@@ -271,7 +281,9 @@ class GradientDescentMapper(BaseMapper):
             m_plus.append(mapping + evec)
             m_minus.append(mapping - evec)
 
-        sim_results = self.simulation_manager.simulate(m_plus + m_minus)
+        sim_results = self._simulation_manager.simulate(
+            graph, trace, representation, m_plus + m_minus
+        )
         exec_times = [x.exec_time for x in sim_results]
 
         for i in range(self.dim):

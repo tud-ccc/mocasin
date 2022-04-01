@@ -79,20 +79,25 @@ class TabuSearchMapper(BaseMapper):
         self.tabu_moves = dict()
 
         # save parameters to simulation manager
-        self._simulation_config = SimulationManagerConfig(
+        simulation_config = SimulationManagerConfig(
             jobs=jobs,
             parallel=parallel,
             progress=progress,
             chunk_size=chunk_size,
-            record_statistics=record_statistics,
         )
+        self._simulation_manager = SimulationManager(
+            self.platform, config=simulation_config
+        )
+        self._record_statistics = record_statistics
 
-    def update_candidate_moves(self, representation, mapping):
+    def update_candidate_moves(self, graph, trace, representation, mapping):
         new_mappings = representation._uniformFromBall(
             mapping, self.radius, self.move_set_size
         )
         new_mappings = list(map(np.array, new_mappings))
-        sim_results = self.simulation_manager.simulate(new_mappings)
+        sim_results = self._simulation_manager.simulate(
+            graph, trace, representation, new_mappings
+        )
         sim_exec_times = [x.exec_time for x in sim_results]
         moves = set(
             zip(
@@ -109,7 +114,9 @@ class TabuSearchMapper(BaseMapper):
             new_mappings = representation._uniformFromBall(
                 mapping, self.radius, missing
             )
-            sim_results = self.simulation_manager.simulate(new_mappings)
+            sim_results = self._simulation_manager.simulate(
+                graph, trace, representation, new_mappings
+            )
             sim_exec_times = [x.exec_time for x in sim_results]
             new_moves = set(
                 zip(
@@ -153,18 +160,21 @@ class TabuSearchMapper(BaseMapper):
             # no need to re-sort:
             # https://stackoverflow.com/questions/1286167/is-the-order-of-results-coming-from-a-list-comprehension-guaranteed # noqa
             if len(non_tabu) > 0:
+
                 self.tabu_moves[non_tabu[0][0]] = self.tabu_tenure
                 return non_tabu[0]
             else:
                 self.tabu_moves[moves_sorted[0][0]] = self.tabu_tenure
                 return moves_sorted[0]
 
-    def diversify(self, representation, mapping):
+    def diversify(self, graph, trace, representation, mapping):
         new_mappings = representation._uniformFromBall(
             mapping, 3 * self.radius, self.move_set_size
         )
         new_mappings = list(map(np.array, new_mappings))
-        sim_results = self.simulation_manager.simulate(new_mappings)
+        sim_results = self._simulation_manager.simulate(
+            graph, trace, representation, new_mappings
+        )
         sim_exec_times = [x.exec_time for x in sim_results]
         moves = set(
             zip(
@@ -198,7 +208,7 @@ class TabuSearchMapper(BaseMapper):
         :param partial_mapping: a partial mapping to complete
         :type partial_mapping: Mapping
         """
-
+        self._simulation_manager.reset_statistics()
         if processors:
             raise NotImplementedError(
                 "This mapper does not support `processors` argument"
@@ -208,10 +218,6 @@ class TabuSearchMapper(BaseMapper):
             raise NotImplementedError(
                 "This mapper does not support `partial_mapping` argument"
             )
-
-        self.simulation_manager = SimulationManager(
-            representation, trace, config=self._simulation_config
-        )
 
         mapping_obj = self.random_mapper.generate_mapping(
             graph, trace=trace, representation=representation
@@ -226,7 +232,9 @@ class TabuSearchMapper(BaseMapper):
         cur_mapping = to_representation_fun(mapping_obj)
 
         best_mapping = cur_mapping
-        best_simres = self.simulation_manager.simulate([cur_mapping])[0]
+        best_simres = self._simulation_manager.simulate(
+            graph, trace, representation, [cur_mapping]
+        )[0]
         best_exec_time = best_simres.exec_time
         since_last_improvement = 0
 
@@ -236,7 +244,9 @@ class TabuSearchMapper(BaseMapper):
             iterations_range = range(self.max_iterations)
         for iter in iterations_range:
             while since_last_improvement < self.iteration_size:
-                self.update_candidate_moves(representation, cur_mapping)
+                self.update_candidate_moves(
+                    graph, trace, representation, cur_mapping
+                )
                 move, cur_exec_time = self.move(
                     best_exec_time
                 )  # updates tabu set
@@ -248,12 +258,15 @@ class TabuSearchMapper(BaseMapper):
                     best_mapping = cur_mapping
 
             since_last_improvement = 0
-            move, cur_exec_time = self.diversify(representation, cur_mapping)
+            move, cur_exec_time = self.diversify(
+                graph, trace, representation, cur_mapping
+            )
             cur_mapping = cur_mapping + np.array(move)
 
-        self.simulation_manager.statistics.log_statistics()
-        self.simulation_manager.statistics.to_file()
+        self._simulation_manager.statistics.log_statistics()
+        if self._record_statistics:
+            self._simulation_manager.statistics.to_file()
         if self.dump_cache:
-            self.simulation_manager.dump("mapping_cache.csv")
+            self._simulation_manager.dump("mapping_cache.csv")
 
         return representation.fromRepresentation(np.array(best_mapping))

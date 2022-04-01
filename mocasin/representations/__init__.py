@@ -74,6 +74,8 @@ class MappingRepresentation(type):
         return graph_names, platform_names
 
     def __call__(cls, *args, **kwargs):
+        """Check whether a representation was created for the same application
+        platform, and copy the object."""
         time = timeit.default_timer()
         graph = args[0]
         platform = args[1]

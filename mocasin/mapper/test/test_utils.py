@@ -25,15 +25,16 @@ def test_simulation_manager_cache(
     trace = MockTrace(proc_names, core_types, lambda _: 5, max_length=10)
     mapping = mapper.generate_mapping([0, 4])
     simulation_manager = SimulationManager(
-        representation_odroid,
-        trace,
+        platform_odroid,
         SimulationManagerConfig(jobs=None, parallel=True),
     )
     assert not simulation_manager._cache
-    lookup_result = simulation_manager.lookup(tuple([0, 4]))
+    lookup_result = simulation_manager.lookup(graph, tuple([0, 4]))
     assert not lookup_result
-    simulation_result = simulation_manager.simulate([mapping])
+    simulation_result = simulation_manager.simulate(
+        graph, trace, representation_odroid, [mapping]
+    )
     assert len(simulation_manager._cache) == 1
-    lookup_result = simulation_manager.lookup(tuple([0, 4]))
+    lookup_result = simulation_manager.lookup(graph, tuple([0, 4]))
     assert isinstance(lookup_result, SimulationResult)
     assert simulation_result[0] == lookup_result
