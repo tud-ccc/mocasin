@@ -3,17 +3,15 @@
 #
 # Authors: Gerald Hempel, Andres Goens
 
+import sys
 import traceback
-import pint
-from sys import exit
 
-from copy import deepcopy
+import pint
+
 from mocasin.mapper.partial import ProcPartialMapper, ComPartialMapper
 from mocasin.mapper.random import RandomPartialMapper
-from mocasin.mapper import utils
+from mocasin.mapper.utils import run_simulation
 from mocasin.simulate import DataflowSimulation
-
-
 from mocasin.util import logging
 
 log = logging.getLogger(__name__)
@@ -42,7 +40,7 @@ class Oracle(object):
             )
         else:
             log.error("Error, unknown oracle:" + oracle_type)
-            exit(1)
+            sys.exit(1)
 
     def validate(self, sample):
         """check whether a single sample is feasible"""
@@ -77,10 +75,8 @@ class Simulation(Oracle):
         self.graph = graph
         self.platform = platform
         self.trace = trace
-        self.randMapGen = RandomPartialMapper(self.graph, self.platform)
-        self.comMapGen = ComPartialMapper(
-            self.graph, self.platform, self.randMapGen
-        )
+        self.randMapGen = RandomPartialMapper(self.platform)
+        self.comMapGen = ComPartialMapper(self.platform, self.randMapGen)
         self.dcMapGen = ProcPartialMapper(
             self.graph, self.platform, self.comMapGen
         )
@@ -91,11 +87,13 @@ class Simulation(Oracle):
         self.oracle_type = "simulation"
 
     def prepare_sim_contexts_for_samples(self, samples):
-        """Prepare simualtion/application context and mapping for a each element in `samples`."""
+        """Prepare simualtion/application context and mapping for a each element
+        in `samples`.
+        """
 
         # Create a list of 'simulation contexts'.
         # These can be later executed by multiple worker processes.
-        simulation_contexts = []
+        # simulation_contexts = []
 
         for i in range(0, len(samples)):
             log.debug("Using simcontext no.: {} {}".format(i, samples[i]))
@@ -115,10 +113,11 @@ class Simulation(Oracle):
         return sim_context
 
     def is_feasible(self, samples):
-        """Checks if a set of samples is feasible in context of a given timing threshold.
+        """Checks if a set of samples is feasible in context of a given timing
+        threshold.
 
-        Trigger the simulation on 4 for parallel jobs and process the resulting array
-        of simulation results according to the given threshold.
+        Trigger the simulation on 4 for parallel jobs and process the resulting
+        array of simulation results according to the given threshold.
         """
         results = []
         # run simulations and search for the best mapping
@@ -168,7 +167,7 @@ class Simulation(Oracle):
             self.total_cached += 1
             return sample
         try:
-            utils.run_simulation(sample.sim_context)
+            run_simulation(sample.sim_context)
 
             # add to cache
             mapping = tuple(sample.getMapping().to_list())
@@ -191,7 +190,7 @@ class TestSet(Oracle):
         # print("oracle for: " + str(s))
         if len(s) != 2:
             log.error("test oracle requires a dimension of 2\n")
-            exit(1)
+            sys.exit(1)
         x = s[0]
         y = s[1]
         if (x in range(1, 3)) and (y in range(1, 3)):  # 1<=x<=2 1<=y<=2
@@ -211,7 +210,7 @@ class TestTwoPrGraph(Oracle):
         """test oracle function (2-dim)"""
         if len(s) != 2:
             log.error("test oracle requires a dimension of 2\n")
-            exit(1)
+            sys.exit(1)
         x = s[0]
         y = s[1]
         if x == y:  # same PE

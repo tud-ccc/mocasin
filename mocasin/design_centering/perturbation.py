@@ -3,16 +3,16 @@
 #
 # Authors: Gerald Hempel, Andres Goens
 
-import sys
-import pint
 import random as rand
+import sys
+
 import numpy as np
+import pint
 
 from mocasin.design_centering import sample as dc_sample
 from mocasin.design_centering import oracle
 from mocasin.mapper.partial import ProcPartialMapper
 from mocasin.mapper.random import RandomPartialMapper
-
 from mocasin.util import logging
 
 log = logging.getLogger(__name__)
@@ -49,15 +49,17 @@ class PerturbationManager(object):
         # if config['representation'] != "GeomDummy":
         self.representation = representation
 
-        # TODO: (FIXME) Perturbation manager only works in simple vector representation (for now)
-        # self.representation = (reps.RepresentationType['SimpleVector'].getClassType())(self.graph, self.platform)
+        # TODO: (FIXME) Perturbation manager only works in simple vector
+        # representation (for now)
+        # self.representation = (reps.RepresentationType['SimpleVector'].
+        #    getClassType())(self.graph, self.platform)
 
     def create_randomMappings(self):
         """Creates a defined number of unique random mappings"""
         mapping_set = set([])
         while len(mapping_set) < self.num_mappings:
-            mg = RandomPartialMapper(self.graph, self.platform)
-            mapping_set.add(mg.generate_mapping())
+            mg = RandomPartialMapper(self.platform)
+            mapping_set.add(mg.generate_mapping(self.graph))
         return mapping_set
 
     def apply_perturbation(self, mapping, history):
@@ -66,7 +68,7 @@ class PerturbationManager(object):
         elif self.perturbation_type == "representation":
             return self.applyPerturbationRepresentation(mapping, history)
         else:
-            log.error(f"Unknown perturbation type: {self.perturbation_type} ")
+            log.error(f"Unknown perturbation type: {self.perturbation_type}")
             sys.exit(1)
 
     def apply_singlePerturbation(self, mapping, history):
@@ -74,7 +76,7 @@ class PerturbationManager(object):
         Therefore, the mapping is interpreted as vector with the
         processor cores assigned to the vector elements.
         """
-        rand_part_mapper = RandomPartialMapper(self.graph, self.platform)
+        rand_part_mapper = RandomPartialMapper(self.platform)
         proc_part_mapper = ProcPartialMapper(
             self.graph, self.platform, rand_part_mapper
         )
@@ -96,7 +98,8 @@ class PerturbationManager(object):
         vec[process] = pe  # apply initial perturbation to mapping
         log.debug("Perturbated vec: {} Original vec: {}".format(vec, orig_vec))
 
-        # The code above can produce identical perturbations, the following loop should prevent this:
+        # The code above can produce identical perturbations, the following loop
+        # should prevent this:
         timeout = 0
         while timeout < iteration_max:
             perturbated_mapping = proc_part_mapper.generate_mapping(
@@ -132,7 +135,8 @@ class PerturbationManager(object):
                 mapping, radius, self.perturbation_ball_num
             )
             for m in perturbation_ball:
-                # TODO: this should be handled in the representations too (with an _equal function or something)
+                # TODO: this should be handled in the representations too (with
+                # an _equal function or something)
                 if not (m == mapping).all():
                     if len(history) == 0:
                         log.debug("Perturbated vec (rep): {}".format(m))
@@ -162,7 +166,8 @@ class PerturbationManager(object):
     def run_perturbation(self, mapping):
         """
         Runs the perturbation test with the defined Perturbation Method.
-        The given mapping is evaluated by comparing it to randomly generated mappings.
+        The given mapping is evaluated by comparing it to randomly generated
+        mappings.
         """
 
         history = []
