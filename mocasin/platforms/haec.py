@@ -8,7 +8,8 @@ from mocasin.common.platform import (
     Processor,
     CommunicationResourceType,
     CommunicationResource,
-    FrequencyDomain)
+    FrequencyDomain,
+)
 from mocasin.platforms.platformDesigner import PlatformDesigner, cluster
 from hydra.utils import instantiate
 from mocasin.platforms.topologies import meshTopology, fullyConnectedTopology
@@ -53,10 +54,7 @@ class DesignerPlatformHAEC(Platform):
                 designer.connectComponents(pe, ram)
 
         designer.createNetwork(
-            "optic",
-            wirelessList,
-            fullyConnectedTopology,
-            getPlForWireless()
+            "optic", wirelessList, fullyConnectedTopology, getPlForWireless()
         )
         self.generate_all_primitives()
 
@@ -75,12 +73,7 @@ class makeCluster(cluster):
             nocList.append(noc)
 
         pl = getPlForRouter()
-        designer.createNetwork(
-            f"electric_{name}",
-            nocList,
-            meshTopology,
-            pl
-        )
+        designer.createNetwork(f"electric_{name}", nocList, meshTopology, pl)
 
     def getWirelessRouter(self):
         return self.wireless
@@ -90,20 +83,36 @@ class makeWireless(cluster):
     def __init__(self, name, designer, pe0, router):
         super(makeCluster, self).__init__(name, designer)
 
+
 def peParams(processor):
     return (
         processor.type,
         processor.frequency_domain,
         processor.power_model,
         processor.context_load_cycles,
-        processor.context_store_cycles
+        processor.context_store_cycles,
     )
 
+
 def nocRouter():
-    return (100, 150, 100, 60, 6000000.0,)
+    return (
+        100,
+        150,
+        100,
+        60,
+        6000000.0,
+    )
+
 
 def nocWireless():
-    return (200, 300, float("inf"), float("inf"), 6000000.0,)
+    return (
+        200,
+        300,
+        float("inf"),
+        float("inf"),
+        6000000.0,
+    )
+
 
 def getPlForRouter():
     fd = FrequencyDomain("fd_electric", 6000000.0)
@@ -114,9 +123,10 @@ def getPlForRouter():
         100,
         150,
         100,
-        60
+        60,
     )
     return pl
+
 
 def getPlForWireless():
     fd = FrequencyDomain("fd_wireless", 6000000.0)

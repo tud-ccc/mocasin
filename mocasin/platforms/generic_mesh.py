@@ -10,7 +10,8 @@ from mocasin.common.platform import (
     Processor,
     FrequencyDomain,
     CommunicationResource,
-    CommunicationResourceType)
+    CommunicationResourceType,
+)
 from mocasin.platforms.platformDesigner import PlatformDesigner, cluster
 from hydra.utils import instantiate
 
@@ -62,12 +63,19 @@ class DesignerPlatformMesh(Platform):
 
         self.generate_all_primitives()
 
+
 class makeCluster0(cluster):
     def __init__(self, name, designer, pe0):
         super(makeCluster0, self).__init__(name, designer)
 
         noc_list = list()
-        routerParams= (100, 150, 100, 60, 6000000.0,)
+        routerParams = (
+            100,
+            150,
+            100,
+            60,
+            6000000.0,
+        )
         for i in range(16):
             pe = self.addPeToCluster(f"processor0_{i:04d}", *peParams(pe0))
             noc = self.addRouter(f"noc_{i:04d}", *routerParams)
@@ -83,16 +91,12 @@ class makeCluster0(cluster):
             100,
             150,
             100,
-            60
+            60,
         )
 
         # create network
-        designer.createNetwork(
-            "electric",
-            noc_list,
-            meshTopology,
-            pl
-        )
+        designer.createNetwork("electric", noc_list, meshTopology, pl)
+
 
 class makeCluster1(cluster):
     def __init__(self, name, designer, pe1):
@@ -118,5 +122,5 @@ def peParams(processor):
         processor.frequency_domain,
         processor.power_model,
         processor.context_load_cycles,
-        processor.context_store_cycles
+        processor.context_store_cycles,
     )

@@ -4,6 +4,7 @@
 # Authors: Felix Teweleit, Andres Goens, Julian Robledo
 
 import logging
+
 log = logging.getLogger(__name__)
 
 from mocasin.common.platform import (
@@ -85,7 +86,6 @@ class DesignerPlatformOdroid(Platform):
 
         self.generate_all_primitives()
 
-
     # get parameters for pes
     def peParams(self, processor):
         return (
@@ -93,7 +93,7 @@ class DesignerPlatformOdroid(Platform):
             processor.frequency_domain,
             processor.power_model,
             processor.context_load_cycles,
-            processor.context_store_cycles
+            processor.context_store_cycles,
         )
 
     # returns (readLatency, writeLatency, readThroughput, writeThroughput, freq)

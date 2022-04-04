@@ -8,6 +8,7 @@ from mocasin.platforms.platformDesigner import PlatformDesigner, cluster
 from hydra.utils import instantiate
 from mocasin.common.platform import Processor
 
+
 class DesignerPlatformExynos990(Platform):
     def __init__(
         self,
@@ -55,9 +56,15 @@ class DesignerPlatformExynos990(Platform):
         designer.setSchedulingPolicy("FIFO", 1000)
 
         # clusters with l2 cache
-        cluster0 = makeCluster("cluster_0", designer, pe0Params, l1c0Params, l2c0Params, 2)
-        cluster1 = makeCluster("cluster_1", designer, pe1Params, l1c1Params, l2c1Params, 2)
-        cluster2 = makeCluster("cluster_2", designer, pe2Params, l1c2Params, l2c2Params, 4)
+        cluster0 = makeCluster(
+            "cluster_0", designer, pe0Params, l1c0Params, l2c0Params, 2
+        )
+        cluster1 = makeCluster(
+            "cluster_1", designer, pe1Params, l1c1Params, l2c1Params, 2
+        )
+        cluster2 = makeCluster(
+            "cluster_2", designer, pe2Params, l1c2Params, l2c2Params, 4
+        )
         # single GPU
         cluster3 = makeCluster("cluster_3", designer, pe3Params, l1c3Params)
 
@@ -91,7 +98,7 @@ class DesignerPlatformExynos990(Platform):
             processor.frequency_domain,
             processor.power_model,
             processor.context_load_cycles,
-            processor.context_store_cycles
+            processor.context_store_cycles,
         )
 
     # returns (readLatency, writeLatency, readThroughput, writeThroughput, freq)
@@ -122,8 +129,11 @@ class DesignerPlatformExynos990(Platform):
     def busParams(self):
         return (2000, 6000, float("inf"), float("inf"), 4000000.0)
 
+
 class makeCluster(cluster):
-    def __init__(self, name, designer, peParams, l1Params, l2Params=None, num_pes=1):
+    def __init__(
+        self, name, designer, peParams, l1Params, l2Params=None, num_pes=1
+    ):
         super(makeCluster, self).__init__(name, designer)
 
         if l2Params:

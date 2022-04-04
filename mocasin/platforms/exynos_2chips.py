@@ -4,12 +4,9 @@
 # Authors: Christian Menard, Julian Robledo
 
 
-from mocasin.common.platform import (
-    FrequencyDomain,
-    Platform,
-    Processor
-)
+from mocasin.common.platform import FrequencyDomain, Platform, Processor
 from mocasin.platforms.platformDesigner import PlatformDesigner, cluster
+
 
 class Exynos2Chips(Platform):
     def __init__(self):
@@ -69,8 +66,9 @@ class makeExynos(cluster):
             processor.frequency_domain,
             processor.power_model,
             processor.context_load_cycles,
-            processor.context_store_cycles
+            processor.context_store_cycles,
         )
+
 
 class makeCluster(cluster):
     def __init__(self, name, designer, processor, num_pes):
@@ -83,5 +81,3 @@ class makeCluster(cluster):
             l1 = self.addStorage(f"l1_{k}", 1, 4, 8, 8, freq)
             designer.connectComponents(pe, l1)
             designer.connectComponents(l1, l2)
-
-

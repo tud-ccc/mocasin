@@ -53,6 +53,7 @@ class DesignerPlatformMultiCluster(Platform):
 
         self.generate_all_primitives()
 
+
 class makeCluster(cluster):
     def __init__(self, name, designer, processor, num_pes):
         super(makeCluster, self).__init__(name, designer)

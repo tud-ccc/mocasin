@@ -37,8 +37,7 @@ class PlatformDesigner:
         self.links = []
 
     def find_cluster(self, name, index):
-        """ return a cluster with the given name
-        """
+        """return a cluster with the given name"""
         # TODO: check index
         for cluster in self.clusterList:
             if cluster.name == name and cluster.index == 0:
@@ -54,9 +53,7 @@ class PlatformDesigner:
             elif component in cluster.commResources:
                 return cluster
 
-    def connectComponents(
-        self, component1, component2, physicalLink=None
-    ):
+    def connectComponents(self, component1, component2, physicalLink=None):
         """Connect two different componentes with the given physical Link.
         The components may be either processor or communication resource
         """
@@ -82,7 +79,10 @@ class PlatformDesigner:
         adjacencyList = routingFunction(nodeList)
 
         if physicalLink:
-            if physicalLink._resource_type == CommunicationResourceType.PhysicalLink:
+            if (
+                physicalLink._resource_type
+                == CommunicationResourceType.PhysicalLink
+            ):
                 for key in adjacencyList:
                     for target in adjacencyList[key]:
                         name = "pl_" + str(target) + "_" + str(key)
@@ -108,10 +108,8 @@ class PlatformDesigner:
                     self.adjacentList[k].append(i)
             self.nocList[networkName][0].update({k: v})
 
-
     def setSchedulingPolicy(self, policy, cycles):
-        """Sets a new scheduling policy, which will be applied to all schedulers of new PE Clusters.
-        """
+        """Sets a new scheduling policy, which will be applied to all schedulers of new PE Clusters."""
         try:
             self.schedulingPolicy = SchedulingPolicy(policy, cycles)
             return True
@@ -119,15 +117,12 @@ class PlatformDesigner:
             log.error("Exception caught: " + sys.exc_info()[0])
             return False
 
-
     def setPeripheralStaticPower(self, static_power):
         """Set peripheral static power of the platform."""
         self.platform.peripheral_static_power = static_power
 
-
     def getPlatform(self):
-        """Returns the platform, created with the designer.
-        """
+        """Returns the platform, created with the designer."""
         return self.platform
 
 
@@ -135,6 +130,7 @@ class genericProcessor(Processor):
     """This class is a generic processor to be passed to the
     different architectures generated with the platform designer.
     """
+
     def __init__(
         self, type, frequency=2000000000, static_power=None, dynamic_power=None
     ):
@@ -165,8 +161,7 @@ class cluster:
         self.designer = designer
 
     def addCluster(self, innerCluster):
-        """Add a cluster to the list of inner clusters.
-        """
+        """Add a cluster to the list of inner clusters."""
         # TODO: check the outer cluster is not an inner cluster
         self.innerClusters.append(innerCluster)
         innerCluster.outerCluster = self
@@ -181,8 +176,7 @@ class cluster:
         context_load_cycles,
         context_store_cycles,
     ):
-        """Adds a processing element to cluster.
-        """
+        """Adds a processing element to cluster."""
         try:
             new_processor = Processor(
                 name + "_" + self.name,
@@ -216,8 +210,7 @@ class cluster:
         frequency,
         resourceType=Storage,
     ):
-        """Adds a communication resource to the cluster.
-        """
+        """Adds a communication resource to the cluster."""
         try:
             name = f"{name}_{self.name}"
             fd = FrequencyDomain("fd_" + name, frequency)
@@ -271,7 +264,7 @@ class cluster:
         except:  # FIXME: this is fishy
             print("storage")
             log.error("Exception caught: " + str(sys.exc_info()[0]))
-            assert (False)
+            assert False
             return
 
     def addRouter(
@@ -308,8 +301,7 @@ class cluster:
             return
 
     def findPe(self, name):
-        """ Find pe with the given name into the cluster
-        """
+        """Find pe with the given name into the cluster"""
         for pe in self.pes:
             peName = pe.name.replace(f"_{self.name}", "")
             if peName == name:
@@ -317,8 +309,7 @@ class cluster:
         return None
 
     def findComRes(self, name):
-        """ Find communication resource with the given name
-        """
+        """Find communication resource with the given name"""
         for comRes in self.commResources:
             comName = comRes.name.replace(f"_{self.name}", "")
             if comName == name:

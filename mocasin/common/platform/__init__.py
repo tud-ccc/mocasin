@@ -684,7 +684,10 @@ class Platform(object):
         # Check if there is a bus and use it to split produce-consume phases
         bus = False
         for i in range(len(resources)):
-            if (resources[i].name.startswith("BUS") or resources[i].name.startswith("bus")) and bus == False:
+            if (
+                resources[i].name.startswith("BUS")
+                or resources[i].name.startswith("bus")
+            ) and bus == False:
                 index = i
                 resources.insert(index, resources[index])
                 bus = True
@@ -696,7 +699,6 @@ class Platform(object):
             if len(resources) % 2:
                 if type(resources[index]) is Storage:
                     resources.insert(index, resources[index])
-
 
         # remove processors from communication resources
         resources = resources[1:-1]
@@ -754,7 +756,7 @@ class Platform(object):
         # get routing according to the noc topology
         resources = list()
         if sameNoc:
-            if (v[1] == meshTopology):
+            if v[1] == meshTopology:
                 resources = yxRouting(v[0], src_router, sink_router)
             else:
                 resources = simpleDijkstra(v[0], src_router, sink_router)
@@ -765,7 +767,10 @@ class Platform(object):
 
             # remove noc nodes and leave only physical links
             for i in range(len(resources) - 3, 2, -1):
-                if resources[i]._resource_type == CommunicationResourceType.Router:
+                if (
+                    resources[i]._resource_type
+                    == CommunicationResourceType.Router
+                ):
                     resources.pop(i)
 
         return resources

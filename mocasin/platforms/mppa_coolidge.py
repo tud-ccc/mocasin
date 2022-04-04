@@ -3,7 +3,13 @@
 #
 # Authors: Felix Teweleit, Andres Goens, Julian Robledo
 
-from mocasin.common.platform import Platform, Processor, FrequencyDomain, CommunicationResource, CommunicationResourceType
+from mocasin.common.platform import (
+    Platform,
+    Processor,
+    FrequencyDomain,
+    CommunicationResource,
+    CommunicationResourceType,
+)
 from mocasin.platforms.topologies import fullyConnectedTopology
 from mocasin.platforms.platformDesigner import PlatformDesigner
 from mocasin.platforms.platformDesigner import cluster as cl
@@ -42,7 +48,7 @@ class DesignerPlatformCoolidge(Platform):
             l2_list = l2_list + chip.getCommunicationResources()
 
         # RAM
-        ram = coolidge.addStorage("RAM",*ramParams())
+        ram = coolidge.addStorage("RAM", *ramParams())
         for l2 in l2_list:
             designer.connectComponents(l2, ram)
 
@@ -86,12 +92,7 @@ class makeCluster0(cl):
 
         fd = FrequencyDomain("fd_electric", 6000000.0)
         pl = CommunicationResource("pl", *plParams(fd))
-        designer.createNetwork(
-            f"noc",
-            nocList,
-            fullyConnectedTopology,
-            pl
-        )
+        designer.createNetwork(f"noc", nocList, fullyConnectedTopology, pl)
 
 
 class makeCluster1(cl):
@@ -100,6 +101,7 @@ class makeCluster1(cl):
 
         self.addPeToCluster("pe", *pe1)
 
+
 # get parameters for pes
 def peParams(processor):
     return (
@@ -107,18 +109,40 @@ def peParams(processor):
         processor.frequency_domain,
         processor.power_model,
         processor.context_load_cycles,
-        processor.context_store_cycles
+        processor.context_store_cycles,
     )
+
 
 # readLatency, writeLatency, readThroughput, writeThroughput. frequency
 def routerParams():
-    return (100, 150, 100, 60, 40000.0,)
+    return (
+        100,
+        150,
+        100,
+        60,
+        40000.0,
+    )
+
 
 def l2Params():
-    return (500, 1500, float("inf"), float("inf"), 600000.0,)
+    return (
+        500,
+        1500,
+        float("inf"),
+        float("inf"),
+        600000.0,
+    )
+
 
 def ramParams():
-    return (1000, 3000, float("inf"), float("inf"), 10000.0,)
+    return (
+        1000,
+        3000,
+        float("inf"),
+        float("inf"),
+        10000.0,
+    )
+
 
 def plParams(fd):
     return (
@@ -128,5 +152,5 @@ def plParams(fd):
         100,
         150,
         100,
-        60
+        60,
     )
