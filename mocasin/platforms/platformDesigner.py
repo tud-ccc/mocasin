@@ -36,11 +36,10 @@ class PlatformDesigner:
         self.clusterList = []
         self.links = []
 
-    def find_cluster(self, name, index):
+    def find_cluster(self, name):
         """return a cluster with the given name"""
-        # TODO: check index
         for cluster in self.clusterList:
-            if cluster.name == name and cluster.index == 0:
+            if cluster.name == name:
                 return name
         return None
 
@@ -152,7 +151,6 @@ class cluster:
     """
 
     def __init__(self, name, designer):
-        self.index = 0
         self.name = name
         self.pes = []
         self.commResources = []
@@ -229,7 +227,6 @@ class cluster:
             return comResource
 
         except:  # FIXME: this is fishy
-            print("com")
             log.error("Exception caught: " + str(sys.exc_info()[0]))
             return
 
@@ -262,7 +259,6 @@ class cluster:
             return comResource
 
         except:  # FIXME: this is fishy
-            print("storage")
             log.error("Exception caught: " + str(sys.exc_info()[0]))
             assert False
             return
