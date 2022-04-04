@@ -797,11 +797,8 @@ class TestPermutation(object):
             ]
 
         def test_DuplicateGroup(self):
-            assert (
-                DuplicateGroup(
-                    SymmetricGroupTranspositions(2, action=1),
-                    times=7,
-                    trivials=[6, 7],
-                )
-                == [[1, 0, 3, 2, 5, 4, 6, 7, 9, 8, 11, 10, 13, 12, 15, 14]]
-            )
+            assert DuplicateGroup(
+                SymmetricGroupTranspositions(2, action=1),
+                times=7,
+                trivials=[6, 7],
+            ) == [[1, 0, 3, 2, 5, 4, 6, 7, 9, 8, 11, 10, 13, 12, 15, 14]]

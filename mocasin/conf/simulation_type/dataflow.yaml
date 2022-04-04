@@ -1,3 +1,2 @@
-# @package _group_
 _target_: mocasin.simulate.DataflowSimulation.from_hydra
 wait_for_initial_tokens: False

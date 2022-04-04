@@ -1,4 +1,3 @@
-# @package _group_
 _target_: mocasin.platforms.haec.DesignerPlatformHAEC
 # Once hydra 1.1 rolls out with recursive instantiation,
 # we should replace this and recursively instantiate

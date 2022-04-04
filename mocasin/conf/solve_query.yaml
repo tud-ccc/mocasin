@@ -1,12 +1,14 @@
 # @package _global_
 defaults:
     - common
-    - hydra/job_logging: mocasin
     - tgff: default
     - platform: default
     - graph: default
     - representation: SimpleVector
     - sdf3: default
+    - override hydra/job_logging: mocasin
+    - _self_
+
 query: ???
 output_file: "None"
 vector: "None"

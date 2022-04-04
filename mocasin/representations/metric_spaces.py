@@ -63,7 +63,7 @@ class FiniteMetricSpaceLP(FiniteMetricSpace):
         self.D = None
         self.M = M
         self.d = d
-        self.n = M.n ** d
+        self.n = M.n**d
         self.p = p
 
     def dist(self, x, y):
@@ -90,7 +90,7 @@ class FiniteMetricSpaceLP(FiniteMetricSpace):
             exit(1)
 
     def tuple2Int(self, x):
-        return sum([xi * (self.M.n ** i) for (i, xi) in enumerate(x)])
+        return sum([xi * (self.M.n**i) for (i, xi) in enumerate(x)])
 
     def int2Tuple(self, x):
         res = [0] * self.d
@@ -99,7 +99,7 @@ class FiniteMetricSpaceLP(FiniteMetricSpace):
         rem = x
         i = self.d - 1
         while rem != 0:
-            res[i], rem = divmod(rem, self.M.n ** i)
+            res[i], rem = divmod(rem, self.M.n**i)
             i = i - 1
         return res
 

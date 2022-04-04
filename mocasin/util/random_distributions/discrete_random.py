@@ -18,7 +18,7 @@ def _discrete_random(dims, mu, r, Q, func):
         assert isinstance(comp, (int, np.integer))
     assert type(Q) == np.ndarray
     n = sum(dims)
-    Sigma = float(r ** 2) * Q @ np.transpose(Q)
+    Sigma = float(r**2) * Q @ np.transpose(Q)
     # T eigenvectors as transformation matrix
     eigenvals, T = np.linalg.eig(Sigma)
 

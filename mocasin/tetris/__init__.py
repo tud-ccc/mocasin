@@ -79,6 +79,24 @@ class TetrisScheduling:
                 log.error("{}".format(s.to_str()))
             sys.exit(1)
 
+    def precalculate_orbits(self):
+        """Precalculate all orbits before running the scheduler.
+
+        The calculation of the mapping orbit is implemented in strict way, which
+        is time-consuming. For some tests, it takes up to 99% of the overall
+        scheduling time. Until the lazy computation of the orbit is implemented,
+        we estimate the scalability of the algorithm by pre-calculation of the
+        orbits and excluding the precalculation time from the overall scheduling
+        time.
+        """
+        orbit_manager = self.scheduler.orbit_lookup_manager
+        for job in self.jobs:
+            mappings = job.request.mappings
+            for mapping in mappings:
+                entry = orbit_manager.get_orbit_entry(job.app, mapping)
+                gen = entry.get_generator()
+                list(gen)
+
     def run(self):
         self.schedule = self.scheduler.schedule(
             self.jobs, scheduling_start_time=0.0

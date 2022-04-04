@@ -1,4 +1,3 @@
-# @package _group_
 _target_: mocasin.mapper.genetic.GeneticMapper
 pop_size : 10
 num_gens : 5

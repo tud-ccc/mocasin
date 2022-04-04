@@ -17,7 +17,7 @@ install_requirements = [
     "cvxpy!=1.1.8,<1.2" if sys.version_info < (3, 7) else "cvxpy!=1.1.8",
     "deap",
     "h5py",
-    "hydra-core>=1.0.3,<1.1.0",
+    "hydra-core>=1.1",
     "scipy<1.6.0" if sys.version_info < (3, 7) else "scipy",
     "lxml",
     "matplotlib",
@@ -27,8 +27,10 @@ install_requirements = [
     "numpy<1.22",
     "pint",
     "pydot",
-    "pynauty@https://files.pythonhosted.org/packages/fa/b1/87b0cb000fe6bf0201428c068659e02638f2c9583f205465fd14a1977a95/pynauty-1.0.2.tar.gz",
-    "pyxb",
+    "pynauty@https://files.pythonhosted.org/packages/fa/b1/87b0cb000fe6bf0201428c068659e02638f2c9583f205465fd14a1977a95/pynauty-1.0.2.tar.gz",  # noqa
+    # this fork includes a fix needed for Python 3.10,
+    # see https://github.com/pabigot/pyxb/pull/111
+    "pyxb @ git+https://github.com/nightglass/pyxb.git@fix-collections-warning#egg=pyxb",  # noqa
     "simpy",
     "sortedcontainers",
     "termcolor",
@@ -40,6 +42,11 @@ setup_requirements = ["pip", "pytest-runner", "sphinx"]
 if sys.version_info < (3, 7):
     install_requirements.append("dataclasses")
 
+tests_requirements = [
+    "pytest<7.0" if sys.version_info < (3, 7) else "pytest",
+    "pytest_mock",
+    "pytest_raises",
+]
 
 setup(
     name=project_name,
@@ -48,7 +55,7 @@ setup(
     + find_namespace_packages(include=["hydra_plugins.*"]),
     install_requires=install_requirements,
     setup_requires=setup_requirements,
-    tests_require=["pytest", "pytest_mock", "pytest_raises"],
+    tests_require=tests_requirements,
     command_options={
         "build_sphinx": {
             "project": ("setup.py", project_name),

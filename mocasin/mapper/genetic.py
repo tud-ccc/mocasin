@@ -3,18 +3,19 @@
 #
 # Authors: Andrés Goens, Robert Khasanov
 
-from mocasin.util import logging
-from mocasin.mapper.utils import SimulationManager
-from mocasin.mapper.random import RandomPartialMapper
-from mocasin.representations import MappingRepresentation
-
 import deap
 from deap import creator, tools, base, algorithms
 import enum
 from hydra.utils import instantiate
-import random
 import numpy as np
 import pickle
+import random
+
+from mocasin.mapper.pareto import filter_pareto_front
+from mocasin.mapper.random import RandomPartialMapper
+from mocasin.mapper.utils import SimulationManager
+from mocasin.representations import MappingRepresentation
+from mocasin.util import logging
 
 
 log = logging.getLogger(__name__)
@@ -332,7 +333,7 @@ class GeneticMapper(object):
         self.cleanup()
         return result
 
-    def generate_pareto_front(self):
+    def generate_pareto_front(self, evaluate_metadata=None):
         """Generates a pareto front of (full) mappings using a genetic algorithm
         the input parameters determine the criteria with which the pareto
         front is going to be built.
@@ -348,11 +349,12 @@ class GeneticMapper(object):
             )
             self.simulation_manager.append_mapping_metadata(mapping_object)
             results.append(mapping_object)
+        pareto = filter_pareto_front(results)
         self.simulation_manager.statistics.to_file()
         if self.dump_cache:
             self.simulation_manager.dump("mapping_cache.csv")
         self.cleanup()
-        return results
+        return pareto
 
     def cleanup(self):
         log.info("cleaning up")
