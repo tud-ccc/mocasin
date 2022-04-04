@@ -11,7 +11,7 @@ from mocasin.common.platform import (
     FrequencyDomain,
     CommunicationResource,
     CommunicationResourceType)
-from mocasin.platforms.platformDesigner import PlatformDesigner
+from mocasin.platforms.platformDesigner import PlatformDesigner, cluster
 from hydra.utils import instantiate
 
 
@@ -32,12 +32,49 @@ class DesignerPlatformMesh(Platform):
             processor_0 = instantiate(processor_0)
         if not isinstance(processor_1, Processor):
             processor_1 = instantiate(processor_1)
+
         designer = PlatformDesigner(self)
         designer.setSchedulingPolicy("FIFO", 1000)
-        test_chip = designer.addCluster("test_chip")
+        test_chip = cluster("test_chip", designer)
 
-        # define communication resource to be used as reference to build
-        # the NoC network
+        # cluster 0
+        cluster0 = makeCluster0("cluster0", designer, processor_0)
+        test_chip.addCluster(cluster0)
+
+        # cluster 1
+        cluster1 = makeCluster1("cluster1", designer, processor_1)
+        test_chip.addCluster(cluster1)
+
+        # RAM
+        ram = test_chip.addStorage(
+            "RAM",
+            readLatency=1000,
+            writeLatency=3000,
+            readThroughput=float("inf"),
+            writeThroughput=float("inf"),
+            frequency=6000000.0,
+        )
+
+        pes = cluster0.getProcessors()
+        l2 = cluster1.getCommunicationResources()
+        for component in pes + l2:
+            designer.connectComponents(component, ram)
+
+        self.generate_all_primitives()
+
+class makeCluster0(cluster):
+    def __init__(self, name, designer, pe0):
+        super(makeCluster0, self).__init__(name, designer)
+
+        noc_list = list()
+        routerParams= (100, 150, 100, 60, 6000000.0,)
+        for i in range(16):
+            pe = self.addPeToCluster(f"processor0_{i:04d}", *peParams(pe0))
+            noc = self.addRouter(f"noc_{i:04d}", *routerParams)
+            designer.connectComponents(pe, noc)
+            noc_list.append(noc)
+
+        # physical link
         fd = FrequencyDomain("fd_electric", 6000000.0)
         pl = CommunicationResource(
             "electric",
@@ -49,95 +86,37 @@ class DesignerPlatformMesh(Platform):
             60
         )
 
-        # cluster 0
-        cluster_0 = designer.addCluster("cluster_0", test_chip)
-        noc_list = list()
-        pes_cluster_0 = list()
-        l1_list = list()
-        for i in range(16):
-            pe = designer.addPeToCluster(
-                cluster_0,
-                f"processor0_{i:04d}",
-                processor_0.type,
-                processor_0.frequency_domain,
-                processor_0.power_model,
-                processor_0.context_load_cycles,
-                processor_0.context_store_cycles,
-            )
-            noc = designer.addRouter(
-                f"noc_{i:04d}",
-                cluster_0,
-                readLatency=100,
-                writeLatency=150,
-                readThroughput=100,
-                writeThroughput=60,
-                frequency=6000000.0,
-            )
-
-            # workaround to connect pes in cluster to an external memory
-            l1 = designer.addStorage(
-                f"l1_{i:04d}",
-                cluster_0,
-                readLatency=0,
-                writeLatency=0,
-                readThroughput=float("inf"),
-                writeThroughput=float("inf"),
-                frequency=6000000.0,
-            )
-            designer.connectPeToCom(pe, noc)
-            designer.connectPeToCom(pe, l1)
-            noc_list.append(noc)
-            pes_cluster_0.append(pe)
-            l1_list.append(l1)
-
-        topology = meshTopology(noc_list)
-        designer.createNetworkForRouters(
+        # create network
+        designer.createNetwork(
             "electric",
             noc_list,
-            topology,
-            yx,
+            meshTopology,
             pl
         )
 
-        # cluster 1
-        cluster_1 = designer.addCluster("cluster_1", test_chip)
-        pes_cluster_1 = list()
-        for i in range(2):
-            pe = designer.addPeToCluster(
-                cluster_1,
-                f"processor1_{i:04d}",
-                processor_1.type,
-                processor_1.frequency_domain,
-                processor_1.power_model,
-                processor_1.context_load_cycles,
-                processor_1.context_store_cycles,
-            )
-            pes_cluster_1.append(pe)
+class makeCluster1(cluster):
+    def __init__(self, name, designer, pe1):
+        super(makeCluster1, self).__init__(name, designer)
 
-        lvl2_cl1 = designer.addStorage(
-            "lvl2_cl1",
-            cluster_1,
+        l1 = self.addStorage(
+            "l1",
             readLatency=500,
             writeLatency=1000,
             readThroughput=float("inf"),
             writeThroughput=float("inf"),
             frequency=600000000.0,
         )
-        for pe in pes_cluster_1:
-            designer.connectPeToCom(pe, lvl2_cl1)
+        for i in range(2):
+            pe = self.addPeToCluster(f"processor1_{i:04d}", *peParams(pe1))
+            designer.connectComponents(pe, l1)
 
-        # RAM
-        ram = designer.addStorage(
-            "RAM",
-            test_chip,
-            readLatency=1000,
-            writeLatency=3000,
-            readThroughput=float("inf"),
-            writeThroughput=float("inf"),
-            frequency=6000000.0,
-        )
 
-        designer.connectStorageLevels(lvl2_cl1, ram)
-        for l1 in l1_list:
-            designer.connectStorageLevels(l1, ram)
-
+# get parameters for pes
+def peParams(processor):
+    return (
+        processor.type,
+        processor.frequency_domain,
+        processor.power_model,
+        processor.context_load_cycles,
+        processor.context_store_cycles
+    )

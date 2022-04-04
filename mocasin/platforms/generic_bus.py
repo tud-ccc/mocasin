@@ -13,7 +13,7 @@ from mocasin.common.platform import (
     Storage,
 )
 from mocasin.common.platform.bus import Bus, primitives_from_buses
-from mocasin.platforms.platformDesigner import PlatformDesigner
+from mocasin.platforms.platformDesigner import PlatformDesigner, cluster
 from hydra.utils import instantiate
 
 
@@ -31,16 +31,18 @@ class GenericBusPlatform(Platform):
         communication via shared RAM is generated.
         """
         super().__init__(name, symmetries_json, embedding_json)
-
+        designer = PlatformDesigner(self)
         fd_pes = FrequencyDomain("fd_pes", 500000000)
         fd_ram = FrequencyDomain("fd_ram", 100000000)
 
         ram = Storage("RAM", fd_ram, 5, 7, 16, 12)
         self.add_communication_resource(ram)
+        designer.adjacentList.update({ram: []})
 
         bus = Bus("bus", fd_pes, 1, 8)
         self.add_communication_resource(bus)
         bus.connect_storage(ram)
+        designer.adjacentList.update({bus: []})
 
         policy = SchedulingPolicy("FIFO", 100)
 
@@ -50,10 +52,11 @@ class GenericBusPlatform(Platform):
             bus.connect_processor(processor)
             self.add_processor(processor)
             self.add_scheduler(Scheduler("sp_" + name, [processor], policy))
+            designer.adjacentList.update({processor: []})
+            designer.connectComponents(processor, bus)
+        designer.connectComponents(bus, ram)
 
-        primitives = primitives_from_buses([bus])
-        for p in primitives:
-            self.add_primitive(p)
+        self.generate_all_primitives()
 
 
 class GenericClusteredPlatform(Platform):
@@ -174,13 +177,13 @@ class DesignerPlatformBus(Platform):
             processor_0 = instantiate(processor_0)
         designer = PlatformDesigner(self)
         designer.setSchedulingPolicy("FIFO", 1000)
-        test_chip = designer.addCluster("test_chip")
+        test_chip = cluster("test_chip", designer)
+        cluster0 = cluster("cluster0", designer)
+        test_chip.addCluster(cluster0)
 
-        cluster0 = designer.addCluster("cluster0", test_chip)
         # Add memory
-        shared_memory = designer.addStorage(
+        shared_memory = cluster0.addStorage(
             "shared_memory",
-            cluster0,
             readLatency=100,
             writeLatency=100,
             readThroughput=1000,
@@ -188,8 +191,7 @@ class DesignerPlatformBus(Platform):
             frequency=2000,
         )
         for i in range(4):
-            pe = designer.addPeToCluster(
-                cluster0,
+            pe = cluster0.addPeToCluster(
                 f"processor_{i}",
                 processor_0.type,
                 processor_0.frequency_domain,
@@ -198,4 +200,6 @@ class DesignerPlatformBus(Platform):
                 processor_0.context_store_cycles,
             )
             # Connect pe to shared memory
-            designer.connectPeToCom(pe, shared_memory)
+            designer.connectComponents(pe, shared_memory)
+
+        self.generate_all_primitives()

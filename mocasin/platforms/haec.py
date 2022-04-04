@@ -9,10 +9,9 @@ from mocasin.common.platform import (
     CommunicationResourceType,
     CommunicationResource,
     FrequencyDomain)
-from mocasin.platforms.platformDesigner import PlatformDesigner
+from mocasin.platforms.platformDesigner import PlatformDesigner, cluster
 from hydra.utils import instantiate
 from mocasin.platforms.topologies import meshTopology, fullyConnectedTopology
-from mocasin.platforms.utils import simpleDijkstra as sd
 
 
 class DesignerPlatformHAEC(Platform):
@@ -33,93 +32,9 @@ class DesignerPlatformHAEC(Platform):
 
         designer = PlatformDesigner(self)
         designer.setSchedulingPolicy("FIFO", 1000)
-        haec = designer.addCluster("haec_like")
-
-        fd = FrequencyDomain("fd_electric", 6000000.0)
-        pl = CommunicationResource(
-            "electric",
-            fd,
-            CommunicationResourceType.PhysicalLink,
-            100,
-            150,
-            100,
-            60
-        )
-
-        clusters = list()
-        for i in range(4):
-            cluster = designer.addCluster(f"cluster_{i}", haec)
-            nocList = []
-            for j in range(16):
-                pe = designer.addPeToCluster(
-                    cluster,
-                    f"processor_{(j+i*16):04d}",
-                    processor_0.type,
-                    processor_0.frequency_domain,
-                    processor_0.power_model,
-                    processor_0.context_load_cycles,
-                    processor_0.context_store_cycles,
-                )
-                noc = designer.addRouter(
-                    f"noc_{(j+i*16):04d}",
-                    cluster,
-                    readLatency=100,
-                    writeLatency=150,
-                    readThroughput=100,
-                    writeThroughput=60,
-                    frequency=6000000.0,
-                )
-                designer.connectPeToCom(pe, noc)
-                nocList.append(noc)
-
-            topology = meshTopology(nocList)
-            designer.createNetworkForRouters(
-                "electric",
-                nocList,
-                topology,
-                sd,
-                pl
-            )
-            clusters.append(cluster)
-
-        wirelessList = list()
-        for i in range(4):
-            wireless = designer.addRouter(
-                f"wireless_{i}",
-                clusters[i],
-                readLatency=200,
-                writeLatency=300,
-                readThroughput=float("inf"),
-                writeThroughput=float("inf"),
-                frequency=6000000.0,
-            )
-
-            processors = designer.getPesInCluster(clusters[i])
-            for pe in processors:
-                designer.connectPeToCom(pe, wireless)
-            wirelessList.append(wireless)
-
-        pl = CommunicationResource(
-            "wireless",
-            fd,
-            CommunicationResourceType.PhysicalLink,
-            200,
-            300,
-            float("inf"),
-            float("inf"),
-        )
-        topology = fullyConnectedTopology(wirelessList)
-        designer.createNetworkForRouters(
-            "optic",
-            wirelessList,
-            topology,
-            sd,
-            pl
-        )
-
-        ram = designer.addStorage(
+        haec = cluster("haec_like", designer)
+        ram = haec.addStorage(
             "RAM",
-            haec,
             readLatency=2000,
             writeLatency=3000,
             readThroughput=float("inf"),
@@ -127,17 +42,91 @@ class DesignerPlatformHAEC(Platform):
             frequency=6000000.0,
         )
 
+        pe0 = peParams(processor_0)
+        wirelessList = list()
         for i in range(4):
-            cache = designer.addStorage(
-                f"cache_{i}",
-                clusters[i],
-                readLatency=0,
-                writeLatency=0,
-                readThroughput=float("inf"),
-                writeThroughput=float("inf"),
-                frequency=6000000.0,
-            )
-            processors = designer.getPesInCluster(clusters[i])
-            for pe in processors:
-                designer.connectPeToCom(pe, cache)
-            designer.connectStorageLevels(cache, ram)
+            cluster_i = makeCluster(f"cluster{i}", designer, pe0)
+            pes = cluster_i.getProcessors()
+            haec.addCluster(cluster_i)
+            wirelessList.append(cluster_i.getWirelessRouter())
+            for pe in pes:
+                designer.connectComponents(pe, ram)
+
+        designer.createNetwork(
+            "optic",
+            wirelessList,
+            fullyConnectedTopology,
+            getPlForWireless()
+        )
+        self.generate_all_primitives()
+
+
+class makeCluster(cluster):
+    def __init__(self, name, designer, pe0):
+        super(makeCluster, self).__init__(name, designer)
+
+        nocList = []
+        self.wireless = self.addRouter(f"wireless", *nocWireless())
+        for j in range(16):
+            pe = self.addPeToCluster(f"processor_{j:04d}", *pe0)
+            noc = self.addRouter(f"noc_{j:04d}", *nocRouter())
+            designer.connectComponents(pe, noc)
+            designer.connectComponents(pe, self.wireless)
+            nocList.append(noc)
+
+        pl = getPlForRouter()
+        designer.createNetwork(
+            f"electric_{name}",
+            nocList,
+            meshTopology,
+            pl
+        )
+
+    def getWirelessRouter(self):
+        return self.wireless
+
+
+class makeWireless(cluster):
+    def __init__(self, name, designer, pe0, router):
+        super(makeCluster, self).__init__(name, designer)
+
+def peParams(processor):
+    return (
+        processor.type,
+        processor.frequency_domain,
+        processor.power_model,
+        processor.context_load_cycles,
+        processor.context_store_cycles
+    )
+
+def nocRouter():
+    return (100, 150, 100, 60, 6000000.0,)
+
+def nocWireless():
+    return (200, 300, float("inf"), float("inf"), 6000000.0,)
+
+def getPlForRouter():
+    fd = FrequencyDomain("fd_electric", 6000000.0)
+    pl = CommunicationResource(
+        "electric",
+        fd,
+        CommunicationResourceType.PhysicalLink,
+        100,
+        150,
+        100,
+        60
+    )
+    return pl
+
+def getPlForWireless():
+    fd = FrequencyDomain("fd_wireless", 6000000.0)
+    pl = CommunicationResource(
+        "wireless",
+        fd,
+        CommunicationResourceType.PhysicalLink,
+        200,
+        300,
+        float("inf"),
+        float("inf"),
+    )
+    return pl

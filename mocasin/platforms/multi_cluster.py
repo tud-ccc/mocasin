@@ -4,7 +4,7 @@
 # Authors: Felix Teweleit, Andres Goens
 
 from mocasin.common.platform import Platform, Processor
-from mocasin.platforms.platformDesigner import PlatformDesigner
+from mocasin.platforms.platformDesigner import PlatformDesigner, cluster
 from hydra.utils import instantiate
 
 
@@ -29,71 +29,53 @@ class DesignerPlatformMultiCluster(Platform):
 
         designer = PlatformDesigner(self)
         designer.setSchedulingPolicy("FIFO", 1000)
-        multi_cluster = designer.addCluster("multi_cluster")
+        multi_cluster = cluster("multi_cluster", designer)
 
         # add first cluster with L2 cache
-        cluster_0 = designer.addCluster("cluster_0", multi_cluster)
-        pe_list = list()
-        for i in range(2):
-            pe = designer.addPeToCluster(
-                cluster_0,
-                f"processor_{i:02d}_0",
-                processor_0.type,
-                processor_0.frequency_domain,
-                processor_0.power_model,
-                processor_0.context_load_cycles,
-                processor_0.context_store_cycles,
-            )
-            pe_list.append(pe)
-
-        cl0_l2 = designer.addStorage(
-            "cl0_l2",
-            cluster_0,
-            readLatency=100,
-            writeLatency=100,
-            readThroughput=float("inf"),
-            writeThroughput=float("inf"),
-            frequency=10000,
-        )
-        for pe in pe_list:
-            designer.connectPeToCom(pe, cl0_l2)
-
-        # add second cluster with L2 cache
-        cluster_1 = designer.addCluster("cluster_1", multi_cluster)
-        pe_list = list()
-        for i in range(2):
-            pe = designer.addPeToCluster(
-                cluster_1,
-                f"processor_{i:02d}_1",
-                processor_1.type,
-                processor_1.frequency_domain,
-                processor_1.power_model,
-                processor_1.context_load_cycles,
-                processor_1.context_store_cycles,
-            )
-            pe_list.append(pe)
-
-        cl1_l2 = designer.addStorage(
-            "cl1_l2",
-            cluster_1,
-            readLatency=100,
-            writeLatency=100,
-            readThroughput=float("inf"),
-            writeThroughput=float("inf"),
-            frequency=10000,
-        )
-        for pe in pe_list:
-            designer.connectPeToCom(pe, cl1_l2)
+        cluster_0 = makeCluster("cluster_0", designer, processor_0, 2)
+        cluster_1 = makeCluster("cluster_1", designer, processor_1, 2)
+        multi_cluster.addCluster(cluster_0)
+        multi_cluster.addCluster(cluster_1)
 
         # RAM connecting all clusters
-        ram = designer.addStorage(
+        ram = multi_cluster.addStorage(
             "RAM",
-            multi_cluster,
             1000,
             1000,
             float("inf"),
             float("inf"),
             frequency=1000,
         )
-        designer.connectStorageLevels(cl0_l2, ram)
-        designer.connectStorageLevels(cl1_l2, ram)
+        cl0_l2 = cluster_0.findComRes("l2")
+        cl1_l2 = cluster_1.findComRes("l2")
+        designer.connectComponents(cl0_l2, ram)
+        designer.connectComponents(cl1_l2, ram)
+
+        self.generate_all_primitives()
+
+class makeCluster(cluster):
+    def __init__(self, name, designer, processor, num_pes):
+        super(makeCluster, self).__init__(name, designer)
+
+        pe_list = list()
+        for i in range(num_pes):
+            pe = self.addPeToCluster(
+                f"processor_{i:02d}",
+                processor.type,
+                processor.frequency_domain,
+                processor.power_model,
+                processor.context_load_cycles,
+                processor.context_store_cycles,
+            )
+            pe_list.append(pe)
+
+        l2 = self.addStorage(
+            "l2",
+            readLatency=100,
+            writeLatency=100,
+            readThroughput=float("inf"),
+            writeThroughput=float("inf"),
+            frequency=10000,
+        )
+        for pe in pe_list:
+            designer.connectComponents(pe, l2)

@@ -4,15 +4,13 @@
 # Authors: Felix Teweleit, Andres Goens, Julian Robledo
 
 import logging
-
 log = logging.getLogger(__name__)
 
 from mocasin.common.platform import (
     Platform,
     Processor,
-    CommunicationResourceType,
 )
-from mocasin.platforms.platformDesigner import PlatformDesigner
+from mocasin.platforms.platformDesigner import PlatformDesigner, cluster
 from hydra.utils import instantiate
 
 
@@ -39,100 +37,71 @@ class DesignerPlatformOdroid(Platform):
             kwargs.get("embedding_json", None),
         )
 
+        # get parameters for components
+        pe0Params = self.peParams(processor_0)
+        pe1Params = self.peParams(processor_1)
+        l1a7Params = self.l1Params(processor_0.frequency_domain.frequency)
+        l2a7Params = self.l2Params(processor_0.frequency_domain.frequency)
+        l1a15Params = self.l1Params(processor_1.frequency_domain.frequency)
+        l2a15Params = self.l2Params(processor_1.frequency_domain.frequency)
+        dramParams = self.dramParams()
+
+        # Start platform designer
         designer = PlatformDesigner(self)
+        exynos5422 = cluster("exynos5422", designer)
+
+        # Schedulers
         designer.setSchedulingPolicy("FIFO", 1000)
-        exynos5422 = designer.addCluster("exynos5422")
 
         # cluster 0 with l2 cache
-        cluster_a7 = designer.addCluster("cluster_a7", exynos5422)
-        L1_list = list()
+        cluster_a7 = cluster("cluster_a7", designer)
+        exynos5422.addCluster(cluster_a7)
+
+        L2_A7 = cluster_a7.addStorage("L2_A7", *l2a7Params)
         for i in range(num_little):
-            pe = designer.addPeToCluster(
-                cluster_a7,
-                f"A7_{i:02d}",
-                processor_0.type,
-                processor_0.frequency_domain,
-                processor_0.power_model,
-                processor_0.context_load_cycles,
-                processor_0.context_store_cycles,
-            )
-
-            L1 = designer.addStorage(
-                "L1_" + pe.name,
-                cluster_a7,
-                readLatency=1,
-                writeLatency=1,
-                readThroughput=8,
-                writeThroughput=8,
-                frequency=processor_0.frequency_domain.frequency,
-            )
-            designer.connectPeToCom(pe, L1)
-            L1_list.append(L1)
-
-        L2_A7 = designer.addStorage(
-            "L2_A7",
-            cluster_a7,
-            readLatency=21,
-            writeLatency=21,
-            readThroughput=8,
-            writeThroughput=8,
-            frequency=processor_0.frequency_domain.frequency,
-        )
-        for l1 in L1_list:
-            designer.connectStorageLevels(l1, L2_A7)
+            pe = cluster_a7.addPeToCluster(f"A7_{i:02d}", *pe0Params)
+            l1 = cluster_a7.addStorage("L1_" + pe.name, *l1a7Params)
+            designer.connectComponents(pe, l1)
+            designer.connectComponents(l1, L2_A7)
 
         # cluster 1, with l2 cache
-        cluster_a15 = designer.addCluster("cluster_a15", exynos5422)
-        L1_list = list()
+        cluster_a15 = cluster("cluster_a15", designer)
+        exynos5422.addCluster(cluster_a15)
+
+        L2_A15 = cluster_a15.addStorage("L2_A15", *l2a15Params)
         for i in range(num_big):
-            pe = designer.addPeToCluster(
-                cluster_a15,
-                f"A15_{i:02d}",
-                processor_1.type,
-                processor_1.frequency_domain,
-                processor_1.power_model,
-                processor_1.context_load_cycles,
-                processor_1.context_store_cycles,
-            )
-
-            L1 = designer.addStorage(
-                "L1_" + pe.name,
-                cluster_a15,
-                readLatency=1,
-                writeLatency=1,
-                readThroughput=8,
-                writeThroughput=8,
-                frequency=processor_1.frequency_domain.frequency,
-            )
-            designer.connectPeToCom(pe, L1)
-            L1_list.append(L1)
-
-        # L2 latency is L1 latency plus 21 cycles
-        L2_A15 = designer.addStorage(
-            "L2_A15",
-            cluster_a15,
-            readLatency=21,
-            writeLatency=21,
-            readThroughput=8,
-            writeThroughput=8,
-            frequency=processor_1.frequency_domain.frequency,
-        )
-        for l1 in L1_list:
-            designer.connectStorageLevels(l1, L2_A15)
+            pe = cluster_a15.addPeToCluster(f"A15_{i:02d}", *pe1Params)
+            l1 = cluster_a15.addStorage("L1_" + pe.name, *l1a15Params)
+            designer.connectComponents(pe, l1)
+            designer.connectComponents(l1, L2_A15)
 
         # RAM connecting all clusters
-        # RAM latency is L2 latency plus 120 cycles
-        DRAM = designer.addStorage(
-            "DRAM",
-            exynos5422,
-            readLatency=120,
-            writeLatency=120,
-            readThroughput=8,
-            writeThroughput=8,
-            frequency=933000000.0,
-        )
-        designer.connectStorageLevels(L2_A7, DRAM)
-        designer.connectStorageLevels(L2_A15, DRAM)
+        DRAM = exynos5422.addStorage("DRAM", *dramParams)
+        designer.connectComponents(L2_A7, DRAM)
+        designer.connectComponents(L2_A15, DRAM)
 
         # Set peripheral static power of the platform.
         designer.setPeripheralStaticPower(peripheral_static_power)
+
+        self.generate_all_primitives()
+
+
+    # get parameters for pes
+    def peParams(self, processor):
+        return (
+            processor.type,
+            processor.frequency_domain,
+            processor.power_model,
+            processor.context_load_cycles,
+            processor.context_store_cycles
+        )
+
+    # returns (readLatency, writeLatency, readThroughput, writeThroughput, freq)
+    def l1Params(self, freq):
+        return (1, 1, 8, 8, freq)
+
+    def l2Params(self, freq):
+        return (21, 21, 8, 8, freq)
+
+    def dramParams(self):
+        return (120, 120, 8, 8, 933000000.0)

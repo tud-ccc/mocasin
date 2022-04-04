@@ -6,7 +6,7 @@
 from mocasin.common.platform import Platform, Processor, FrequencyDomain, CommunicationResource, CommunicationResourceType
 from mocasin.platforms.topologies import fullyConnectedTopology
 from mocasin.platforms.platformDesigner import PlatformDesigner
-from mocasin.platforms.utils import simpleDijkstra as sd
+from mocasin.platforms.platformDesigner import cluster as cl
 from hydra.utils import instantiate
 
 
@@ -33,116 +33,100 @@ class DesignerPlatformCoolidge(Platform):
 
         designer = PlatformDesigner(self)
         designer.setSchedulingPolicy("FIFO", 1000)
-        coolidge = designer.addCluster("coolidge")
-
-        fd = FrequencyDomain("fd_electric", 6000000.0)
-        pl = CommunicationResource(
-            "electric",
-            fd,
-            CommunicationResourceType.PhysicalLink,
-            100,
-            150,
-            100,
-            60
-        )
+        coolidge = cl("coolidge", designer)
 
         # create five chips with 16 cores, NoC, +Security Core
         l2_list = list()
         for i in range(5):
-            cluster = designer.addCluster(f"cluster_{i}", coolidge)
-            cluster_0 = designer.addCluster(f"cluster_{i}_0", cluster)
-            nocList = list()
-            l1_list = list()
-            for j in range(16):
-                pe = designer.addPeToCluster(
-                    cluster_0,
-                    f"processor0_{(j+i*16):04d}",
-                    processor_0.type,
-                    processor_0.frequency_domain,
-                    processor_0.power_model,
-                    processor_0.context_load_cycles,
-                    processor_0.context_store_cycles,
-                )
-                noc = designer.addRouter(
-                    f"noc_{(j+i*16):04d}",
-                    cluster_0,
-                    readLatency=100,
-                    writeLatency=150,
-                    readThroughput=100,
-                    writeThroughput=60,
-                    frequency=40000.0,
-                )
-                # workaround to connect pes in cluster to an external memory
-                l1_0 = designer.addStorage(
-                    f"l1_{(j+i*16):04d}_0",
-                    cluster_0,
-                    readLatency=0,
-                    writeLatency=0,
-                    readThroughput=float("inf"),
-                    writeThroughput=float("inf"),
-                    frequency=600000.0,
-                )
-                designer.connectPeToCom(pe, noc)
-                designer.connectPeToCom(pe, l1_0)
-                nocList.append(noc)
-                l1_list.append(l1_0)
-
-            topology = fullyConnectedTopology(nocList)
-            designer.createNetworkForRouters(
-                f"noc_{i}",
-                nocList,
-                topology,
-                sd,
-                pl
-            )
-
-            cluster_1 = designer.addCluster(f"cluster_{i}_1", cluster)
-            pe = designer.addPeToCluster(
-                cluster_1,
-                f"processor1_{i}",
-                processor_1.type,
-                processor_1.frequency_domain,
-                processor_1.power_model,
-                processor_1.context_load_cycles,
-                processor_1.context_store_cycles,
-            )
-            # workaround to connect pes in cluster to an external memory
-            l1_1 = designer.addStorage(
-                f"l1_{i:04d}_1",
-                cluster_1,
-                readLatency=0,
-                writeLatency=0,
-                readThroughput=float("inf"),
-                writeThroughput=float("inf"),
-                frequency=600000.0,
-            )
-            designer.connectPeToCom(pe, l1_1)
-
-            # L2 memory
-            l2 = designer.addCommunicationResource(
-                f"L2_{i}",
-                cluster,
-                readLatency=500,
-                writeLatency=1500,
-                readThroughput=float("inf"),
-                writeThroughput=float("inf"),
-                frequency=600000.0,
-            )
-            for l1_0 in l1_list:
-                designer.connectStorageLevels(l1_0, l2)
-            designer.connectStorageLevels(l1_1, l2)
-            l2_list.append(l2)
+            chip = makeChip(f"chip{i}", designer, processor_0, processor_1)
+            l2_list = l2_list + chip.getCommunicationResources()
 
         # RAM
-        ram = designer.addCommunicationResource(
-            "RAM",
-            coolidge,
-            1000,
-            3000,
-            float("inf"),
-            float("inf"),
-            frequency=10000,
-        )
+        ram = coolidge.addStorage("RAM",*ramParams())
         for l2 in l2_list:
-            designer.connectStorageLevels(l2, ram)
+            designer.connectComponents(l2, ram)
 
+        self.generate_all_primitives()
+
+
+class makeChip(cl):
+    def __init__(self, name, designer, pe0, pe1):
+        super(makeChip, self).__init__(name, designer)
+
+        pe0 = peParams(pe0)
+        pe1 = peParams(pe1)
+        router = routerParams()
+
+        cluster_0 = makeCluster0(f"cluster0_{name}", designer, pe0, router)
+        cluster_1 = makeCluster1(f"cluster1_{name}", designer, pe1)
+        self.addCluster(cluster_0)
+        self.addCluster(cluster_1)
+
+        # L2 memory
+        l2 = self.addStorage("l2", *l2Params())
+        pe0_list = cluster_0.getProcessors()
+        pe1_list = cluster_1.getProcessors()
+        pes = pe0_list + pe1_list
+        for pe in pes:
+            designer.connectComponents(pe, l2)
+
+
+class makeCluster0(cl):
+    def __init__(self, name, designer, pe0, router):
+        super(makeCluster0, self).__init__(name, designer)
+
+        nocList = list()
+        for j in range(16):
+            pe = self.addPeToCluster(f"pe_{(j):04d}", *pe0)
+            noc = self.addRouter(f"noc_{(j):04d}", *router)
+
+            # connect pes to routers and l1s
+            designer.connectComponents(pe, noc)
+            nocList.append(noc)
+
+        fd = FrequencyDomain("fd_electric", 6000000.0)
+        pl = CommunicationResource("pl", *plParams(fd))
+        designer.createNetwork(
+            f"noc",
+            nocList,
+            fullyConnectedTopology,
+            pl
+        )
+
+
+class makeCluster1(cl):
+    def __init__(self, name, designer, pe1):
+        super(makeCluster1, self).__init__(name, designer)
+
+        self.addPeToCluster("pe", *pe1)
+
+# get parameters for pes
+def peParams(processor):
+    return (
+        processor.type,
+        processor.frequency_domain,
+        processor.power_model,
+        processor.context_load_cycles,
+        processor.context_store_cycles
+    )
+
+# readLatency, writeLatency, readThroughput, writeThroughput. frequency
+def routerParams():
+    return (100, 150, 100, 60, 40000.0,)
+
+def l2Params():
+    return (500, 1500, float("inf"), float("inf"), 600000.0,)
+
+def ramParams():
+    return (1000, 3000, float("inf"), float("inf"), 10000.0,)
+
+def plParams(fd):
+    return (
+        "electric",
+        fd,
+        CommunicationResourceType.PhysicalLink,
+        100,
+        150,
+        100,
+        60
+    )
