@@ -155,7 +155,7 @@ class DesignCentering(object):
                     self.vol.center, self.vol.radius, cur_p, self.p_value[i]
                 )
             )
-            area = cur_p * self.vol.radius ** self.vol.true_dim
+            area = cur_p * self.vol.radius**self.vol.true_dim
 
             if (
                 cur_p >= self.p_threshold

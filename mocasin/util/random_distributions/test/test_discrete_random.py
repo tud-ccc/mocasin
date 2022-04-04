@@ -74,7 +74,7 @@ def test_discrete_gauss(ns, eigenv):
 
 
 def test_discrete_random(ns, mu, r, Q):
-    Sigma = float(r ** 2) * Q @ np.transpose(Q)
+    Sigma = float(r**2) * Q @ np.transpose(Q)
     eigenvals, _ = np.linalg.eig(Sigma)
     transformed = []
     vals, median_vec = constant_nums(ns, eigenvals)

@@ -1282,7 +1282,7 @@ class dragAndDropManager:
 
                 if (self.__mouseX - midX) ** 2 + (
                     self.__mouseY - midY
-                ) ** 2 <= self.__radius ** 2:
+                ) ** 2 <= self.__radius**2:
                     self.__draggedItemId = handle
                     self.__startX = midX
                     self.__startY = midY

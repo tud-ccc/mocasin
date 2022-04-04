@@ -1,4 +1,3 @@
-# @package _group_
 _target_: mocasin.mapper.tabu_search.TabuSearchMapper
 random_seed : 42
 record_statistics: true
