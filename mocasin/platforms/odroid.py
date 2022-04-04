@@ -38,25 +38,48 @@ class DesignerPlatformOdroid(Platform):
             kwargs.get("embedding_json", None),
         )
 
-        # get parameters for components
-        pe0Params = self.peParams(processor_0)
-        pe1Params = self.peParams(processor_1)
-        l1a7Params = self.l1Params(processor_0.frequency_domain.frequency)
-        l2a7Params = self.l2Params(processor_0.frequency_domain.frequency)
-        l1a15Params = self.l1Params(processor_1.frequency_domain.frequency)
-        l2a15Params = self.l2Params(processor_1.frequency_domain.frequency)
-        dramParams = self.dramParams()
-
         # Start platform designer
         designer = PlatformDesigner(self)
-        exynos5422 = cluster("exynos5422", designer)
+        exynos5422 = makeOdroid(
+            name,
+            designer,
+            processor_0,
+            processor_1,
+            peripheral_static_power,
+            num_little,
+            num_big
+        )
+
+        self.generate_all_primitives()
+
+class makeOdroid(cluster):
+    def __init__(
+            self,
+            name,
+            designer,
+            processor_0,
+            processor_1,
+            peripheral_static_power,
+            num_little,
+            num_big
+    ):
+        super(makeOdroid, self).__init__(name, designer)
+
+        # get parameters for components
+        pe0Params = peParams(processor_0)
+        pe1Params = peParams(processor_1)
+        l1a7Params = l1Params(processor_0.frequency_domain.frequency)
+        l2a7Params = l2Params(processor_0.frequency_domain.frequency)
+        l1a15Params = l1Params(processor_1.frequency_domain.frequency)
+        l2a15Params = l2Params(processor_1.frequency_domain.frequency)
+        ramParams = dramParams()
 
         # Schedulers
         designer.setSchedulingPolicy("FIFO", 1000)
 
         # cluster 0 with l2 cache
-        cluster_a7 = cluster("cluster_a7", designer)
-        exynos5422.addCluster(cluster_a7)
+        cluster_a7 = cluster(f"cluster_a7_{name}", designer)
+        self.addCluster(cluster_a7)
 
         L2_A7 = cluster_a7.addStorage("L2_A7", *l2a7Params)
         for i in range(num_little):
@@ -66,8 +89,8 @@ class DesignerPlatformOdroid(Platform):
             designer.connectComponents(l1, L2_A7)
 
         # cluster 1, with l2 cache
-        cluster_a15 = cluster("cluster_a15", designer)
-        exynos5422.addCluster(cluster_a15)
+        cluster_a15 = cluster(f"cluster_a15_{name}", designer)
+        self.addCluster(cluster_a15)
 
         L2_A15 = cluster_a15.addStorage("L2_A15", *l2a15Params)
         for i in range(num_big):
@@ -77,31 +100,30 @@ class DesignerPlatformOdroid(Platform):
             designer.connectComponents(l1, L2_A15)
 
         # RAM connecting all clusters
-        DRAM = exynos5422.addStorage("DRAM", *dramParams)
+        DRAM = self.addStorage("DRAM", *ramParams)
         designer.connectComponents(L2_A7, DRAM)
         designer.connectComponents(L2_A15, DRAM)
 
         # Set peripheral static power of the platform.
         designer.setPeripheralStaticPower(peripheral_static_power)
 
-        self.generate_all_primitives()
 
-    # get parameters for pes
-    def peParams(self, processor):
-        return (
-            processor.type,
-            processor.frequency_domain,
-            processor.power_model,
-            processor.context_load_cycles,
-            processor.context_store_cycles,
-        )
+# get parameters for pes
+def peParams(processor):
+    return (
+        processor.type,
+        processor.frequency_domain,
+        processor.power_model,
+        processor.context_load_cycles,
+        processor.context_store_cycles,
+    )
 
-    # returns (readLatency, writeLatency, readThroughput, writeThroughput, freq)
-    def l1Params(self, freq):
-        return (1, 1, 8, 8, freq)
+# returns (readLatency, writeLatency, readThroughput, writeThroughput, freq)
+def l1Params(freq):
+    return (1, 1, 8, 8, freq)
 
-    def l2Params(self, freq):
-        return (21, 21, 8, 8, freq)
+def l2Params(freq):
+    return (21, 21, 8, 8, freq)
 
-    def dramParams(self):
-        return (120, 120, 8, 8, 933000000.0)
+def dramParams():
+    return (120, 120, 8, 8, 933000000.0)
