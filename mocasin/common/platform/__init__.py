@@ -10,6 +10,8 @@ import math
 from collections import Counter
 from enum import Enum
 from hydra.utils import to_absolute_path
+from mocasin.platforms.utils import simpleDijkstra, yxRouting
+from mocasin.platforms.topologies import meshTopology
 
 
 class CommunicationResourceType(Enum):
@@ -397,6 +399,8 @@ class Platform(object):
         self._communication_resources = {}  #: dict of communication resources
         self._primitives = {}  #: dict of communication primitives
         self._schedulers = {}  #: dict of schedulers
+        self.network = {}
+        self.nocs = {}
         if symmetries_json is not None:
             self.ag_json = to_absolute_path(symmetries_json)
         if embedding_json is not None:
@@ -457,7 +461,9 @@ class Platform(object):
 
     def find_communication_resource(self, name):
         """Search for a communication resource object by its name."""
-        return self._communication_resources[name]
+        if name in self._communication_resources:
+            return self._communication_resources[name]
+        return None
 
     def find_primitive(self, name):
         """Search for a communication primitive group."""
@@ -647,3 +653,130 @@ class Platform(object):
                         )
                     latency_dict[p.name][(x.name, y.name)] = cost
         return latency_dict
+
+    def generate_all_primitives(self):
+        for pe1 in self.processors():
+            for pe2 in self.processors():
+                prim = self.generate_primitive(pe1, pe2)
+                self.add_primitive(prim[0])
+
+    def generate_primitive(self, src, sink):
+        platform = self
+
+        # check if nodes are in the same noc
+        nocResources = self.generate_primitive_for_Noc(src, sink)
+        resources = nocResources
+
+        # if not in the same noc, apply simpleDijkstra routing algorithm
+        if not nocResources:
+            resources = simpleDijkstra(platform.network, src, sink)
+            # fill with physical links
+            resources = self.find_physical_links(resources)
+
+        # if element communicating to itself, find the nearest storage
+        if src == sink:
+            for storage in platform.network[src]:
+                if storage._resource_type == CommunicationResourceType.Storage:
+                    resources.append(storage)
+                    resources.append(sink)
+                    break
+
+        # Check if there is a bus and use it to split produce-consume phases
+        bus = False
+        for i in range(len(resources)):
+            if (resources[i].name.startswith("BUS") or resources[i].name.startswith("bus")) and bus == False:
+                index = i
+                resources.insert(index, resources[index])
+                bus = True
+                break
+
+        # Otherwise split in the central element
+        if bus == False:
+            index = int(len(resources) / 2)
+            if len(resources) % 2:
+                if type(resources[index]) is Storage:
+                    resources.insert(index, resources[index])
+
+
+        # remove processors from communication resources
+        resources = resources[1:-1]
+
+        # add produce/consume phases
+        if nocResources:
+            resources.reverse()
+            produce = CommunicationPhase("produce", [resources[-1]], "write")
+            consume = CommunicationPhase("consume", resources, "read")
+        else:
+            produce = CommunicationPhase("produce", resources[:index], "write")
+            consume = CommunicationPhase("consume", resources[index:], "read")
+        name = f"prim_{src.name}_{sink.name}"
+        suitable_prim = Primitive(name)
+        suitable_prim.add_producer(src, [produce])
+        suitable_prim.add_consumer(sink, [consume])
+
+        suitable_primitives = [suitable_prim]
+        return suitable_primitives
+
+    # checks if nodes are in a same Noc and returns communication
+    # resources
+    def generate_primitive_for_Noc(self, src, sink):
+        platform = self
+
+        # get all routers the src is connected to
+        src_routers = list()
+        for router in platform.network[src]:
+            if router._resource_type == CommunicationResourceType.Router:
+                src_routers.append(router)
+
+        # get all routers the sink is connected to
+        sink_routers = list()
+        for router in platform.network[sink]:
+            if router._resource_type == CommunicationResourceType.Router:
+                sink_routers.append(router)
+
+        # check if routers are in a same noc
+        sameNoc = False
+        for src in src_routers:
+            for sink in sink_routers:
+                for k, v in platform.nocs.items():
+                    if src in v[0].keys() and sink in v[0].keys():
+                        sameNoc = True
+                        src_router = src
+                        sink_router = sink
+                        break
+                else:
+                    continue
+                break
+            else:
+                continue
+            break
+
+        # get routing according to the noc topology
+        resources = list()
+        if sameNoc:
+            if (v[1] == meshTopology):
+                resources = yxRouting(v[0], src_router, sink_router)
+            else:
+                resources = simpleDijkstra(v[0], src_router, sink_router)
+            resources.insert(0, src)
+            resources.append(sink)
+            # fill with physical links
+            resources = self.find_physical_links(resources)
+
+            # remove noc nodes and leave only physical links
+            for i in range(len(resources) - 3, 2, -1):
+                if resources[i]._resource_type == CommunicationResourceType.Router:
+                    resources.pop(i)
+
+        return resources
+
+    # fill resources with physical links
+    def find_physical_links(self, resources):
+        for i in range(len(resources) - 1, 1, -1):
+            source = resources[i - 1].name
+            target = resources[i].name
+            pl_name = "pl_" + source + "_" + target
+            pl = self.find_communication_resource(pl_name)
+            if pl:
+                resources.insert(i, pl)
+        return resources
