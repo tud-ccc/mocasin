@@ -324,7 +324,7 @@ class Mapping:
     def to_coreDict(self):
         """Returns a dict where the Names of processing elements are the keys and
             mapped processes are the values
-        :rtype dict[string, string]:
+        :rtype dict[string, list[string]]:
         """
         procs_list = self.graph.processes()
         pes_list = self.platform.processors()
@@ -335,6 +335,8 @@ class Mapping:
             pes2procs[self.affinity(proc).name].append(proc.name)
         return pes2procs
 
+    # Looks like this method is a duplicate of get_used_processor_types().
+    # TODO: Double-check it and remove duplication.
     def to_resourceDict(self):
         """Returns a dict where the types of processing elements are the keys and
            the values are the corresponding number of cores of that type which

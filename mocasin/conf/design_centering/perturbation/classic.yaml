@@ -1,4 +1,3 @@
-# @package _group_
 _target_ : mocasin.design_centering.perturbation.PerturbationManager
 threads : 4
 max_iters : 1000

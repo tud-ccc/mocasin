@@ -8,23 +8,7 @@ import pytest
 from mocasin.mapper.partial import ComFullMapper, ProcPartialMapper
 from mocasin.mapper.test.test_fair import MockTrace
 from mocasin.mapper.utils import SimulationManager
-from mocasin.platforms.odroid import DesignerPlatformOdroid
-from mocasin.platforms.platformDesigner import genericProcessor
-from mocasin.representations import SimpleVectorRepresentation
 from mocasin.simulate import SimulationResult
-
-
-@pytest.fixture
-def platform_odroid():
-    pe_little = genericProcessor("ARM_CORTEX_A7")
-    pe_big = genericProcessor("ARM_CORTEX_A15")
-    p = DesignerPlatformOdroid(pe_little, pe_big)
-    return p
-
-
-@pytest.fixture
-def representation_odroid(graph, platform_odroid):
-    return SimpleVectorRepresentation(graph, platform_odroid)
 
 
 @pytest.fixture

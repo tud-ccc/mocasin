@@ -145,7 +145,7 @@ class LPVolume(Volume):
         self.weight_center = 1 / (np.exp(1) * self.dim)
         self.rk1_learning_constant = 1 / np.sqrt(self.true_dim)
         self.rk1_vec = np.zeros(self.dim)
-        self.transformation = np.identity(self.dim) * self.radius ** 2
+        self.transformation = np.identity(self.dim) * self.radius**2
         self.adapt_covariance()
 
     def update_factors(self, p, num_samples):
@@ -222,7 +222,7 @@ class LPVolume(Volume):
 
     def adapt_radius(self, num_feasible, num_samples):
         factor = (
-            self.expansion_factor ** num_feasible
+            self.expansion_factor**num_feasible
             * self.contraction_factor ** (num_samples - num_feasible)
         )
         if factor > 1:
@@ -318,7 +318,7 @@ class LPVolume(Volume):
             log.warning(
                 f"failed to norm ({norm}) covariance matrix. Resetting to identity"
             )
-            self.transformation = np.identity(self.dim) * self.radius ** 2
+            self.transformation = np.identity(self.dim) * self.radius**2
             self.covariance = np.identity(self.dim)
 
     # def draw_volume_projection(self,coordinates):

@@ -1,12 +1,14 @@
 # Copyright (C) 2020 TU Dresden
 # Licensed under the ISC license (see LICENSE.txt)
 #
-# Authors: Felix Teweleit, Andres Goens
+# Authors: Felix Teweleit, Andres Goens, Robert Khasanov
 
 
 from mocasin.common.graph import DataflowProcess, DataflowGraph
 from mocasin.common.platform import Platform, Processor, Scheduler
 from mocasin.common.trace import EmptyTrace
+from mocasin.platforms.odroid import DesignerPlatformOdroid
+from mocasin.platforms.platformDesigner import genericProcessor
 from mocasin.simulate import SimulationResult
 from mocasin.representations import SimpleVectorRepresentation
 
@@ -53,6 +55,19 @@ def representation_pbc(graph, platform):
     return SimpleVectorRepresentation(
         graph, platform, periodic_boundary_conditions=True
     )
+
+
+@pytest.fixture
+def platform_odroid():
+    pe_little = genericProcessor("ARM_CORTEX_A7")
+    pe_big = genericProcessor("ARM_CORTEX_A15")
+    p = DesignerPlatformOdroid(pe_little, pe_big)
+    return p
+
+
+@pytest.fixture
+def representation_odroid(graph, platform_odroid):
+    return SimpleVectorRepresentation(graph, platform_odroid)
 
 
 @pytest.fixture

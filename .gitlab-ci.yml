@@ -11,6 +11,10 @@ stages:
 
 .build:
   script:
+    # install dependencies for builing mpsym and qdldl from source
+    - apt-get update
+    - apt-get install -y build-essential cmake libboost-dev libboost-graph-dev lua5.3 liblua5.3-dev luarocks
+    # build the wheels
     - pip wheel -w wheels .
   artifacts:
     paths:
@@ -20,6 +24,13 @@ stages:
     key: "$CI_JOB_NAME"
     paths:
       - .cache/pip
+
+build-python3.10:
+  extends: .build
+  stage: build
+  image: python:3.10
+  tags:
+    - python3.10
 
 build-python3.9:
   extends: .build
@@ -51,8 +62,22 @@ build-python3.6:
 
 .test:
   script:
+    # install runtime dependencies for mpsym
+    - apt-get update
+    - apt-get install -y lua5.3 liblua5.3 luarocks
+    # install mocasin
     - pip install mocasin --no-index --find-links=./wheels
+    # run tests
     - python setup.py test
+
+test-python3.10:
+  extends: .test
+  stage: test
+  image: python:3.10
+  tags:
+    - python3.10
+  needs:
+    - build-python3.10
 
 test-python3.9:
   extends: .test
@@ -164,9 +189,9 @@ test-fivegsim:
 
 check-formatting:
   stage: test
-  image: python:3.8
+  image: python:3.9
   tags:
-    - python3.8
+    - python3.9
   needs: []
   script:
     - pip install black
