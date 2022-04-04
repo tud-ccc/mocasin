@@ -99,10 +99,11 @@ class PlatformDesigner:
                         )
 
         self.nocList[networkName] = [{}, routingFunction]
+
         for k, v in adjacencyList.items():
             for i in v:
                 if not self.adjacentList[k]:
-                    self.adjacentList.update({k: [v]})
+                    self.adjacentList.update({k: [i]})
                 else:
                     self.adjacentList[k].append(i)
             self.nocList[networkName][0].update({k: v})
@@ -260,7 +261,6 @@ class cluster:
 
         except:  # FIXME: this is fishy
             log.error("Exception caught: " + str(sys.exc_info()[0]))
-            assert False
             return
 
     def addRouter(
