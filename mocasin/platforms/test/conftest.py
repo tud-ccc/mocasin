@@ -16,7 +16,7 @@ from mocasin.platforms.generic_mesh import DesignerPlatformMesh
 from mocasin.platforms.mppa_coolidge import DesignerPlatformCoolidge
 from mocasin.platforms.multi_cluster import DesignerPlatformMultiCluster
 from mocasin.platforms.generic_bus import DesignerPlatformBus
-from mocasin.platforms.generic_bus import GenericBusPlatform
+from mocasin.platforms.generic_bus import DesignerPlatformFlatBus
 
 
 @pytest.fixture(
@@ -46,7 +46,7 @@ def platform(request):
     elif request.param == "generic_bus":
         return DesignerPlatformBus(processor0)
     elif request.param == "flat_bus":
-        return GenericBusPlatform("bus", 4)
+        return DesignerPlatformFlatBus("bus", 4)
     elif request.param == "generic_mesh":
         return DesignerPlatformMesh(processor0, processor1)
     elif request.param == "multi_cluster":
