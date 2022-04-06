@@ -83,7 +83,7 @@ class makeOdroid(cluster):
 
         L2_A7 = cluster_a7.addStorage("L2_A7", *l2a7Params)
         for i in range(num_little):
-            pe = cluster_a7.addPeToCluster(f"A7_{i:02d}", *pe0Params)
+            pe = cluster_a7.addPeToCluster(f"pe{i:02d}", *pe0Params)
             l1 = cluster_a7.addStorage("L1_" + pe.name, *l1a7Params)
             designer.connectComponents(pe, l1)
             designer.connectComponents(l1, L2_A7)
@@ -94,7 +94,7 @@ class makeOdroid(cluster):
 
         L2_A15 = cluster_a15.addStorage("L2_A15", *l2a15Params)
         for i in range(num_big):
-            pe = cluster_a15.addPeToCluster(f"A15_{i:02d}", *pe1Params)
+            pe = cluster_a15.addPeToCluster(f"pe{i:02d}", *pe1Params)
             l1 = cluster_a15.addStorage("L1_" + pe.name, *l1a15Params)
             designer.connectComponents(pe, l1)
             designer.connectComponents(l1, L2_A15)
