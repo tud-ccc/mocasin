@@ -47,21 +47,22 @@ class DesignerPlatformOdroid(Platform):
             processor_1,
             peripheral_static_power,
             num_little,
-            num_big
+            num_big,
         )
 
         self.generate_all_primitives()
 
+
 class makeOdroid(cluster):
     def __init__(
-            self,
-            name,
-            designer,
-            processor_0,
-            processor_1,
-            peripheral_static_power,
-            num_little,
-            num_big
+        self,
+        name,
+        designer,
+        processor_0,
+        processor_1,
+        peripheral_static_power,
+        num_little,
+        num_big,
     ):
         super(makeOdroid, self).__init__(name, designer)
 
@@ -118,12 +119,15 @@ def peParams(processor):
         processor.context_store_cycles,
     )
 
+
 # returns (readLatency, writeLatency, readThroughput, writeThroughput, freq)
 def l1Params(freq):
     return (1, 1, 8, 8, freq)
 
+
 def l2Params(freq):
     return (21, 21, 8, 8, freq)
+
 
 def dramParams():
     return (120, 120, 8, 8, 933000000.0)

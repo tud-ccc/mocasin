@@ -120,7 +120,6 @@ class TestPlatformDesigner(object):
                     assert prim.static_costs(src, sink, 8) == 16500
                     assert prim.static_costs(src, sink, 1024) == 80000
 
-
     def test_networkOnChip(self, designer):
         processor = genericProcessor("TestCluster", 1000)
         chip = cluster("chip", designer)
