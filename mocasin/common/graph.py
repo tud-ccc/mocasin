@@ -5,7 +5,9 @@
 
 import pydot
 import logging
+
 log = logging.getLogger(__name__)
+
 
 class DataflowProcess(object):
     """Represents a dataflow process
@@ -156,7 +158,9 @@ class DataflowGraph(object):
         if entry_nodes:
             dfs(entry_nodes[0])
         else:
-            log.error("ERROR: topological sort is only possible if graph is DAG")
+            log.error(
+                "ERROR: topological sort is only possible if graph is DAG"
+            )
 
         # Then keep doing it while there are white nodes
         for n in colours:
