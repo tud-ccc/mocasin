@@ -4,7 +4,8 @@
 # Authors: Christian Menard
 
 import pydot
-
+import logging
+log = logging.getLogger(__name__)
 
 class DataflowProcess(object):
     """Represents a dataflow process
@@ -128,7 +129,54 @@ class DataflowGraph(object):
 
     def sort(self):
         """Sort process list in topological order"""
-        pass
+        if len(self.process_names()) == 0:
+            return []
+
+        WHITE = 0  # Not seen yet
+        GRAY = 1  # Seen but not completed
+        BLACK = 2  # Seen and completed
+        colours = {n: WHITE for n in self.process_names()}
+        nodes = []
+
+        # The actual DFS
+        def dfs(n):
+            colours[n] = GRAY
+            for channel in n.outgoing_channels:
+                for ch in channel.sinks:
+                    if colours[ch.name] == WHITE:
+                        dfs(ch)
+            colours[n.name] = BLACK
+            nodes.append(n)
+
+        # Do it from the root node first
+        entry_nodes = list()
+        for process in self.processes():
+            if len(process.incoming_channels) == 0:
+                entry_nodes.append(process)
+        if entry_nodes:
+            dfs(entry_nodes[0])
+        else:
+            log.error("ERROR: topological sort is only possible if graph is DAG")
+
+        # Then keep doing it while there are white nodes
+        for n in colours:
+            if colours[n] == WHITE:
+                dfs(n)
+        nodes.reverse()
+
+        # get ordered channels
+        channels = list()
+        visited_nodes = list()
+        for node in nodes:
+            for v in visited_nodes:
+                out_channels = self.find_process(v.name).outgoing_channels
+                for ch in out_channels:
+                    sink = ch.sinks[0]
+                    if sink == node:
+                        channels.append(ch)
+            visited_nodes.append(node)
+
+        return nodes, channels
 
     def to_pydot(self, channels=True):
         """Convert the dataflow graph to a dot graph."""
