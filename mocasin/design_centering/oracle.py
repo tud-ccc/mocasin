@@ -90,11 +90,6 @@ class Simulation(Oracle):
         """Prepare simualtion/application context and mapping for a each element
         in `samples`.
         """
-
-        # Create a list of 'simulation contexts'.
-        # These can be later executed by multiple worker processes.
-        # simulation_contexts = []
-
         for i in range(0, len(samples)):
             log.debug("Using simcontext no.: {} {}".format(i, samples[i]))
             # create a simulation context
