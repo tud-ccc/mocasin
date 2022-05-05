@@ -115,7 +115,6 @@ class _GeneticMapperEngine:
             )
 
         toolbox = deap.base.Toolbox()
-        # FIXME: Remove number of processes
         toolbox.register("attribute", random.random)
         toolbox.register("mapping", self._random_mapping)
         toolbox.register(
