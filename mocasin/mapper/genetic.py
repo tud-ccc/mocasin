@@ -72,16 +72,13 @@ class _GeneticMapperEngine:
     algorithm. The objects of this class are created by GeneticMapper for each
     application/trace/platform combination.
 
-    :param platform: a platform
-    :type platform: Platform
-    :param graph: a dataflow graph
-    :type graph: DataflowGraph
-    :param trace: a trace generator
-    :type trace: TraceGenerator
-    :param representation: a mapping representation object
-    :type representation: MappingRepresentation
-    :param config: genetic mapper configuration
-    :type config: _GeneticMapperConfig
+    Args:
+        platform (Platform): a platform
+        graph (DataflowGraph): a dataflow graph
+        trace (TraceGenerator): a trace generator
+        representation (MappingRepresentation): a mapping representation object
+        simulation_manager (SimulationManager): a simulation manager
+        config (_GeneticMapperConfig): a genetic mapper configuration
     """
 
     def __init__(
@@ -262,7 +259,39 @@ class _GeneticMapperEngine:
 
 
 class GeneticMapper(BaseMapper):
-    """Generates a full mapping by using genetic algorithms."""
+    """Generates a full mapping by using genetic algorithms.
+
+    Args:
+        platform (Platform): A platform
+        initials (str, optional): What initial population to use. Defaults to
+            "random".
+        objectives (:obj:`list` of :obj:`str`, optional): Optimization
+            objectives. Defaults to ["exec_time"].
+        pop_size (int, optional): Population size. Defaults to 10.
+        num_gens (int, optional): Number of generations. Defaults to 5.
+        mutpb (float, optional): Probability of mutation. Defaults to 0.5.
+        cxpb (float, optional): Crossover probability. Defaults to 0.35.
+        tournsize (int, optional): Size of tournament for selection.
+            Defaults to 4.
+        mupluslambda (bool, optional): Use mu+lambda algorithm?
+            If False: mu,lambda. Defaults to True.
+        crossover_rate (int, optional): The number of crossovers in the
+            crossover operator. Defaults to 1.
+        radius (float, optional): The radius for searching mutations.
+            Defaults to 2.0.
+        random_seed (int, optional): A random seed for the RNG. Defautls to 42.
+        record_statistics (bool, optional): Record statistics on mappings
+            evaluated? Defautls to False.
+        dump_cache (bool, optional): Dump the mapping cache? Defaults to False.
+        chunk_size (int, optional): Size of chunks for parallel simulation.
+            Defaults to 10.
+        progress (bool, optional): Display simulation progress visually?
+            Defaults to False.
+        parallel (bool, optional): Execute simulations in parallel?
+            Defaults to True.
+        jobs (int, optional): Number of jobs for parallel simulation.
+            Defaults to 4.
+    """
 
     def __init__(
         self,
@@ -285,47 +314,6 @@ class GeneticMapper(BaseMapper):
         parallel=True,
         jobs=4,
     ):
-        """Generates a partial mapping for a given platform and dataflow
-        application.
-
-        :param platform: a platform
-        :type platform: Platform
-        :param initials: what initial population to use (e.g. random)
-        :type initials: string
-        :param objectives: Optimization objectives
-        :type objectives: list of strings
-        :param pop_size: Population size
-        :type pop_size: int
-        :param num_gens: Number of generations
-        :type num_gens: int
-        :param mutpb: Probability of mutation
-        :type mutpb: float
-        :param cxpb: Crossover probability
-        :type cxpb: float
-        :param tournsize: Size of tournament for selection
-        :type tournsize: int
-        :param mupluslambda: Use mu+lambda algorithm? if False: mu,lambda
-        :type mupluslambda: bool
-        :param crossover_rate: The number of crossovers in the crossover
-            operator
-        :type crossover_rate: int
-        :param radius: The radius for searching mutations
-        :type radius: float
-        :param random_seed: A random seed for the RNG
-        :type random_seed: int
-        :param record_statistics: Record statistics on mappings evaluated?
-        :type record_statistics: bool
-        :param dump_cache: Dump the mapping cache?
-        :type dump_cache: bool
-        :param chunk_size: Size of chunks for parallel simulation
-        :type chunk_size: int
-        :param progress: Display simulation progress visually?
-        :type progress: bool
-        :param parallel: Execute simulations in parallel?
-        :type parallel: bool
-        :param jobs: Number of jobs for parallel simulation
-        :type jobs: int
-        """
         super().__init__(platform, full_mapper=True)
         random.seed(random_seed)
         np.random.seed(random_seed)
@@ -385,16 +373,16 @@ class GeneticMapper(BaseMapper):
         """Generate a full mapping using a genetic algorithm.
 
         Args:
-        :param graph: a dataflow graph
-        :type graph: DataflowGraph
-        :param trace: a trace generator
-        :type trace: TraceGenerator
-        :param representation: a mapping representation object
-        :type representation: MappingRepresentation
-        :param processors: list of processors to map to.
-        :type processors: a list[Processor]
-        :param partial_mapping: a partial mapping to complete
-        :type partial_mapping: Mapping
+            graph (DataflowGraph): a dataflow graph
+            trace (TraceGenerator, optional): a trace generator
+            representation (MappingRepresentation, optional): a mapping
+                representation object
+            processors (:obj:`list` of :obj:`Processor`, optional): a list of
+                processors to map to.
+            partial_mapping (Mapping, optional): a partial mapping to complete
+
+        Returns:
+            Mapping: the generated mapping.
         """
         self._simulation_manager.reset_statistics()
         engine = _GeneticMapperEngine(
@@ -420,11 +408,21 @@ class GeneticMapper(BaseMapper):
         return result
 
     def generate_pareto_front(
-        self, graph, trace=None, representation=None, evaluate_metadata=False
+        self, graph, trace=None, representation=None, **kwargs
     ):
         """Generates a pareto front of (full) mappings using a genetic algorithm
         the input parameters determine the criteria with which the pareto
         front is going to be built.
+
+        Args:
+            graph (DataflowGraph): a dataflow graph
+            trace (TraceGenerator, optional): a trace generator
+            representation (MappingRepresentation, optional): a mapping
+                representation object
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+           :obj:`lst` of :obj:`Mapping`: the list of generated mappings
         """
         self._simulation_manager.reset_statistics()
         engine = _GeneticMapperEngine(
@@ -447,10 +445,7 @@ class GeneticMapper(BaseMapper):
                 np.array(mapping)
             )
             results.append(mapping_object)
-            print(mapping_object.metadata.exec_time)
         self._simulation_manager.simulate(graph, trace, representation, results)
-        for m in results:
-            print(m.metadata.exec_time)
 
         pareto = filter_pareto_front(results)
         if self._record_statistics:

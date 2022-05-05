@@ -55,8 +55,30 @@ else:
 
 
 class GradientDescentMapper(BaseMapper):
+    # TODO: Update the description of the last two arguments
     """This mapper generates a full mapping by using a gradient descent on the
     mapping space.
+
+    Args:
+        platform (Platform): A platform.
+        gd_iterations (int, optional): Number of iterations for gradient
+            descent. Defaults to 100.
+        stepsize (float, optional): Factor to multiply to (Barzilai–Borwein)
+            factor gradient in step. Defaults to 2.
+        random_seed (int, optional): A random seed for the RNG. Defaults to 42.
+        record_statistics (bool, optional): Record statistics on mappings
+            evaluated? Defautls to False.
+        dump_cache (bool, optional): Dump the mapping cache? Defaults to False.
+        chunk_size (int, optional): Size of chunks for parallel simulation.
+            Defaults to 10.
+        progress (bool, optional): Display simulation progress visually?
+            Defaults to False.
+        parallel (bool, optional): Execute simulations in parallel?
+            Defaults to False.
+        jobs (int, optional): Number of jobs for parallel simulation.
+            Defaults to 2.
+        momentum_decay (float, optional): To be described. Defaults to 0.5.
+        parallel_points (int, optional): To be described. Defaults to 5.
     """
 
     def __init__(
@@ -74,30 +96,6 @@ class GradientDescentMapper(BaseMapper):
         momentum_decay=0.5,
         parallel_points=5,
     ):
-        """Generates a full mapping for a given platform and dataflow application.
-
-        :param platform: a platform
-        :type platform: Platform
-        :param gd_iterations: Number of iterations for gradient descent
-        :type gd_iterations: int
-        :param stepsize: Factor to multiply to (Barzilai–Borwein) factor
-            gradient in step
-        :type stepsize: float
-        :param random_seed: A random seed for the RNG
-        :type random_seed: int
-        :param record_statistics: Record statistics on mappings evaluated?
-        :type record_statistics: bool
-        :param dump_cache: Dump the mapping cache?
-        :type dump_cache: bool
-        :param chunk_size: Size of chunks for parallel simulation
-        :type chunk_size: int
-        :param progress: Display simulation progress visually?
-        :type progress: bool
-        :param parallel: Execute simulations in parallel?
-        :type parallel: bool
-        :param jobs: Number of jobs for parallel simulation
-        :type jobs: int
-        """
         super().__init__(platform, full_mapper=True)
         random.seed(random_seed)
         np.random.seed(random_seed)
@@ -133,16 +131,16 @@ class GradientDescentMapper(BaseMapper):
         """Generate a full mapping using gradient descent.
 
         Args:
-        :param graph: a dataflow graph
-        :type graph: DataflowGraph
-        :param trace: a trace generator
-        :type trace: TraceGenerator
-        :param representation: a mapping representation object
-        :type representation: MappingRepresentation
-        :param processors: list of processors to map to.
-        :type processors: a list[Processor]
-        :param partial_mapping: a partial mapping to complete
-        :type partial_mapping: Mapping
+            graph (DataflowGraph): a dataflow graph
+            trace (TraceGenerator, optional): a trace generator
+            representation (MappingRepresentation, optional): a mapping
+                representation object
+            processors (:obj:`list` of :obj:`Processor`, optional): a list of
+                processors to map to.
+            partial_mapping (Mapping, optional): a partial mapping to complete
+
+        Returns:
+            Mapping: the generated mapping.
         """
         self._simulation_manager.reset_statistics()
         mappings = []

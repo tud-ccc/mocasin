@@ -14,10 +14,10 @@ class BaseMapper:
     mapping.
 
     Args:
-    :param platform: a platform
-    :type platform: Platform
-    :param full_mapper: a flag whether the mapper generates the full mapping
-    :type full_mapper: bool
+        platform (Platform): a platform
+        full_mapper (bool, optional): a flag whether the mapper generates a full
+            mapping. This flag should not be exposed to the user of the specific
+            mapper, it should be set to a fixed values by each sub-class.
     """
 
     def __init__(self, platform, full_mapper=True):
@@ -39,22 +39,23 @@ class BaseMapper:
         in this argument. If `partial_mapping` is given, use this mapping as a
         starting mapping to complete.
 
-        Args:
-        :param graph: a dataflow graph
-        :type graph: DataflowGraph
-        :param trace: a trace generator
-        :type trace: TraceGenerator
-        :param representation: a mapping representation object
-        :type representation: MappingRepresentation
-        :param processors: list of processors to map to.
-        :type processors: a list[Processor]
-        :param partial_mapping: a partial mapping to complete
-        :type partial_mapping: Mapping
+        Note:
+            This method needs to be overridden by a subclass.
 
-        This needs to be overridden by a subclass.
+        Args:
+            graph (DataflowGraph): a dataflow graph
+            trace (TraceGenerator, optional): a trace generator
+            representation (MappingRepresentation, optional): a mapping
+                representation object
+            processors (:obj:`list` of :obj:`Processor`, optional): a list of
+                processors to map to.
+            partial_mapping (Mapping, optional): a partial mapping to complete
+
+        Returns:
+            Mapping: the generated mapping.
 
         Raises:
-            NotImplementedError
+            NotImplementedError: If the method was not overriden by a subclass.
         """
         # Strange arguments in the following subclass:
         # * ProcPartialMapper: vec, map_history
@@ -69,6 +70,18 @@ class BaseMapper:
         This method provides default implementation of the Pareto-front
         generation by restricting the set of the resources.
         Some subclasses may provide its own implementation of the method.
+
+        Args:
+            graph (DataflowGraph): a dataflow graph
+            trace (TraceGenerator, optional): a trace generator
+            representation (MappingRepresentation, optional): a mapping
+                representation object
+            evaluate_metadata (bool, optional): The flag whther the generated
+                mappings are evaluated with the simulator. After evaluation an
+                additional Pareto-filtering is performed.
+
+        Returns:
+           :obj:`lst` of :obj:`Mapping`: the list of generated mappings
         """
         pareto = []
         pareto_processors = [[]]

@@ -18,7 +18,33 @@ log = logging.getLogger(__name__)
 
 
 class TabuSearchMapper(BaseMapper):
-    """Generates a full mapping by using a tabu search on the mapping space."""
+    """Generates a full mapping by using a tabu search on the mapping space.
+    
+    Args:
+        platform (Platform): A platform
+        random_seed (int, optional): A random seed for the RNG. Defautls to 42.
+        record_statistics (bool, optional): Record statistics on mappings
+            evaluated? Defautls to False.
+        max_iterations (int, optional): Maximal number of iterations of tabu
+            search. Defaults to 10.
+        iteration_size (int, optional): Size (# mappings) of a single iteration.
+            Defaults to 5.
+        tabu_tenure (int, optional): The number of iterations that a move stays
+            in the tabu list. Defaults to 5.
+        move_set_size (int, optional): The size of the move set considered in an
+            iteration. Defaults to 10.
+        radius (float, optional): Radius for updating candidate moves.
+            Defaults to 2.0.
+        dump_cache (bool, optional): Dump the mapping cache? Defaults to False.
+        chunk_size (int, optional): Size of chunks for parallel simulation.
+            Defaults to 10.
+        progress (bool, optional): Display simulation progress visually?
+            Defaults to False.
+        parallel (bool, optional): Execute simulations in parallel?
+            Defaults to False.
+        jobs (int, optional): Number of jobs for parallel simulation.
+            Defaults to 1.
+    """
 
     def __init__(
         self,
@@ -36,35 +62,6 @@ class TabuSearchMapper(BaseMapper):
         parallel=False,
         jobs=1,
     ):
-        """Generates a full mapping for a given platform and dataflow application.
-
-        :param platform: a platform
-        :type platform: Platform
-        :param random_seed: A random seed for the RNG
-        :type random_seed: int
-        :param record_statistics: Record statistics on mappings evaluated?
-        :type record_statistics: bool
-        :param max_iterations: Maximal number of iterations of tabu search
-        :type max_iterations: int
-        :param iteration_size: Size (# mappings) of a single iteration
-        :type iteration_size: int
-        :param tabu_tenure: How long until a tabu move is allowed again?
-        :type tabu_tenure: int
-        :param move_set_size: Size of the move set considered in an iteration
-        :type move_set_size: int
-        :param radius: Radius for updating candidate moves
-        :type radius: float
-        :param dump_cache: Dump the mapping cache?
-        :type dump_cache: bool
-        :param chunk_size: Size of chunks for parallel simulation
-        :type chunk_size: int
-        :param progress: Display simulation progress visually?
-        :type progress: bool
-        :param parallel: Execute simulations in parallel?
-        :type parallel: bool
-        :param jobs: Number of jobs for parallel simulation
-        :type jobs: int
-        """
         super().__init__(platform, full_mapper=True)
         random.seed(random_seed)
         np.random.seed(random_seed)
@@ -197,16 +194,17 @@ class TabuSearchMapper(BaseMapper):
     ):
         """Generate a full mapping using gradient descent.
 
-        :param graph: a dataflow graph
-        :type graph: DataflowGraph
-        :param trace: a trace generator
-        :type trace: TraceGenerator
-        :param representation: a mapping representation object
-        :type representation: MappingRepresentation
-        :param processors: list of processors to map to.
-        :type processors: a list[Processor]
-        :param partial_mapping: a partial mapping to complete
-        :type partial_mapping: Mapping
+        Args:
+            graph (DataflowGraph): a dataflow graph
+            trace (TraceGenerator, optional): a trace generator
+            representation (MappingRepresentation, optional): a mapping
+                representation object
+            processors (:obj:`list` of :obj:`Processor`, optional): a list of
+                processors to map to.
+            partial_mapping (Mapping, optional): a partial mapping to complete
+
+        Returns:
+            Mapping: the generated mapping.
         """
         self._simulation_manager.reset_statistics()
         if processors:

@@ -27,6 +27,25 @@ class RandomWalkMapper(BaseMapper):
     It produces multiple random mappings and simulates each mapping in
     order to find the 'best' mapping. As outlined below, the script expects
     multiple configuration parameters to be available.
+
+    Args:
+        platform (Platform): A platform
+        num_iterations (int, optional): Number of iterations (mappings) in
+            random walk. Defaults to 100.
+        progress (bool, optional): Display simulation progress visually?
+            Defaults to False.
+        radius (float, optional): A radius for searching mappings.
+            Defaults to 3.0. Currently unused.
+        random_seed (int, optional): A random seed for the RNG. Defautls to 42.
+        record_statistics (bool, optional): Record statistics on mappings
+            evaluated? Defautls to False.
+        parallel (bool, optional): Execute simulations in parallel?
+            Defaults to False.
+        dump_cache (bool, optional): Dump the mapping cache? Defaults to False.
+        chunk_size (int, optional): Size of chunks for parallel simulation.
+            Defaults to 10.
+        jobs (int, optional): Number of jobs for parallel simulation.
+            Defaults to 1.
     """
 
     def __init__(
@@ -42,30 +61,6 @@ class RandomWalkMapper(BaseMapper):
         chunk_size=10,
         jobs=1,
     ):
-        """Generates a random mapping for a given platform and application.
-
-        Args:
-        :param platform: a platform
-        :type platform: Platform
-        :param random_seed: A random seed for the RNG
-        :type random_seed: int
-        :param record_statistics: Record statistics on mappings evaluated?
-        :type record_statistics: bool
-        :param num_iterations: Number of iterations (mappings) in random walk
-        :type num_iterations: int
-        :param rodius: Currently unused.
-        :type radius: float
-        :param dump_cache: Dump the mapping cache?
-        :type dump_cache: bool
-        :param chunk_size: Size of chunks for parallel simulation
-        :type chunk_size: int
-        :param progress: Display simulation progress visually?
-        :type progress: bool
-        :param parallel: Execute simulations in parallel?
-        :type parallel: bool
-        :param jobs: Number of jobs for parallel simulation
-        :type jobs: int
-        """
         super().__init__(platform, full_mapper=True)
         self.random_mapper = RandomMapper(
             self.platform,
@@ -104,14 +99,17 @@ class RandomWalkMapper(BaseMapper):
     ):
         """Generate a mapping via a random walk.
 
-        :param graph: a dataflow graph
-        :type graph: DataflowGraph
-        :param platform: a platform
-        :type platform: Platform
-        :param trace: a trace generator
-        :type trace: TraceGenerator
-        :param representation: a mapping representation object
-        :type representation: MappingRepresentation
+        Args:
+            graph (DataflowGraph): a dataflow graph
+            trace (TraceGenerator, optional): a trace generator
+            representation (MappingRepresentation, optional): a mapping
+                representation object
+            processors (:obj:`list` of :obj:`Processor`, optional): a list of
+                processors to map to.
+            partial_mapping (Mapping, optional): a partial mapping to complete
+
+        Returns:
+            Mapping: the generated mapping.
         """
         self._simulation_manager.reset_statistics()
         start = timeit.default_timer()

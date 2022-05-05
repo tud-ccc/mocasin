@@ -21,20 +21,17 @@ class RandomPartialMapper(BaseMapper):
     """Generates a random mapping.
 
     This class is used to generate a random mapping for a given
-    platform and dataflow graph
+    platform and dataflow graph.
+
+    Args:
+        platform (Platform): A platform
+        seed (int, optional): A random seed for the RNG. Defaults to None.
+        resources_first (bool, optional): A flag changing the generation method
+        to first choose processors, and then assign processes only to those
+        processors. Defaults to False.
     """
 
     def __init__(self, platform, seed=None, resources_first=False):
-        """Generate a random mapping for a given platform and application.
-
-        :param platform: a platform
-        :type platform: Platform
-        :param seed: a random seed for the RNG
-        :type seed: int
-        :param resources_first: Changes the generation method to first choose
-        processors, and then assign processes only to those processors
-        :type resources_first: bool
-        """
         super().__init__(platform, full_mapper=True)
         if seed is not None:
             random.seed(seed)
@@ -55,10 +52,14 @@ class RandomPartialMapper(BaseMapper):
         as starting point. All open mapping decissions were taken by generated
         randomness derived from the given seed.
 
-        :param graph: a dataflow graph
-        :type graph: DataflowGraph
-        :param partial_mapping: partial mapping to start from
-        :type partial_mapping: Mapping
+        Args:
+            graph (DataflowGraph): a dataflow graph
+            trace (TraceGenerator, optional): a trace generator
+            representation (MappingRepresentation, optional): a mapping
+                representation object
+            processors (:obj:`list` of :obj:`Processor`, optional): a list of
+                processors to map to.
+            partial_mapping (Mapping, optional): a partial mapping to complete
         """
         # generate new mapping if no partial mapping is given
         if not partial_mapping:

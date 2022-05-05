@@ -22,6 +22,29 @@ class SimulatedAnnealingMapper(BaseMapper):
     Orsila, H., Kangas, T., Salminen, E., Hämäläinen, T. D., & Hännikäinen, M.
     (2007). Automated memory-aware application distribution for multi-processor
     system-on-chips. Journal of Systems Architecture, 53(11), 795-815.e.
+
+    Args:
+        platform (Platform): A platform
+        random_seed (int, optional): A random seed for the RNG. Defautls to 42.
+        record_statistics (bool, optional): Record statistics on mappings
+            evaluated? Defautls to False.
+        initial_temperature (float, optional): Initial temperature for
+            simmulated annealing. Defaults to 1.0.
+        final_temperature (float, optional): Final temperature for simmulated
+            annealing. Defaults to 0.1.
+        temperature_proportionality_constant (float, optional): Temperature
+            prop. constant for simmulated annealing. Defaults to 0.5.
+        radius (float, optional): The radius for searching when moving.
+            Defaults to 3.0.
+        dump_cache (bool, optional): Dump the mapping cache? Defaults to False.
+        chunk_size (int, optional): Size of chunks for parallel simulation.
+            Defaults to 10.
+        progress (bool, optional): Display simulation progress visually?
+            Defaults to False.
+        parallel (bool, optional): Execute simulations in parallel?
+            Defaults to False.
+        jobs (int, optional): Number of jobs for parallel simulation.
+            Defaults to 1.
     """
 
     def __init__(
@@ -39,34 +62,6 @@ class SimulatedAnnealingMapper(BaseMapper):
         parallel=False,
         jobs=1,
     ):
-        """Generate a full mapping for a given platform and dataflow application.
-
-        :param platform: a platform
-        :type platform: Platform
-        :param random_seed: A random seed for the RNG
-        :type random_seed: int
-        :param initial_temperature: Initial temperature for simmulated annealing
-        :type initial_temperature: float
-        :param final_temperature: Final temperature for simmulated annealing
-        :type final_temperature: float
-        :param temperature_proportionality_constant: Temperature prop. constanti
-            for simmulated annealing
-        :type temperature_proportionality_constant: float
-        :param radius: Radius for search when moving
-        :type radius: int
-        :param record_statistics: Record statistics on mappings evaluated?
-        :type record_statistics: bool
-        :param dump_cache: Dump the mapping cache?
-        :type dump_cache: bool
-        :param chunk_size: Size of chunks for parallel simulation
-        :type chunk_size: int
-        :param progress: Display simulation progress visually?
-        :type progress: bool
-        :param parallel: Execute simulations in parallel?
-        :type parallel: bool
-        :param jobs: Number of jobs for parallel simulation
-        :type jobs: int
-        """
         super().__init__(platform, full_mapper=True)
         random.seed(random_seed)
         np.random.seed(random_seed)
@@ -136,17 +131,16 @@ class SimulatedAnnealingMapper(BaseMapper):
         """Generate a full mapping using simulated annealing.
 
         Args:
-        :param graph: a dataflow graph
-        :type graph: DataflowGraph
-        :param trace: a trace generator
-        :type trace: TraceGenerator
-        :param representation: a mapping representation object
-        :type representation: MappingRepresentation
-        :param processors: list of processors to map to.
-        :type processors: a list[Processor]
-        :param partial_mapping: a partial mapping to complete
-        :type partial_mapping: Mapping
+            graph (DataflowGraph): a dataflow graph
+            trace (TraceGenerator, optional): a trace generator
+            representation (MappingRepresentation, optional): a mapping
+                representation object
+            processors (:obj:`list` of :obj:`Processor`, optional): a list of
+                processors to map to.
+            partial_mapping (Mapping, optional): a partial mapping to complete
 
+        Returns:
+            Mapping: the generated mapping.
         """
         self._simulation_manager.reset_statistics()
         # R_max = L

@@ -23,17 +23,13 @@ class ComPartialMapper(BaseMapper):
 
     This class is used to generate a partial mapping for a given platform and
     dataflow application.
+
+    Args:
+        platform (Platform): a platform
+        full_generator (BaseMapper): the associated full mapping generator
     """
 
     def __init__(self, platform, full_generator):
-        """Generates a partial mapping for a given platform and dataflow
-        application.
-
-        :param platform: a platform
-        :type platform: Platform
-        :param fullGenerator: the associated full mapping generator
-        :type fullGererator: FullMapper
-        """
         super().__init__(platform, full_mapper=False)
         self.full_generator = full_generator
 
@@ -68,16 +64,22 @@ class ComPartialMapper(BaseMapper):
         structures. The rest is deterministically chosen to the first available
         option.
 
-        :param graph: a dataflow graph
-        :type graph: DataflowGraph
-        :param platform: a platform
-        :type platform: Platform
-        :param partial_mapping: a partial mapping with placed processes or an
-            empty mapping
-        :type partial_mapping: mapping
-        :raises: RuntimeError if the algorithm is not able to find a suitable
-            channel mapping for a process mapping (for partial mappings
-            with incomplete process mappings).
+        Args:
+            graph (DataflowGraph): a dataflow graph
+            trace (TraceGenerator, optional): a trace generator
+            representation (MappingRepresentation, optional): a mapping
+                representation object
+            processors (:obj:`list` of :obj:`Processor`, optional): a list of
+                processors to map to.
+            partial_mapping (Mapping, optional): a partial mapping to complete
+
+        Returns:
+            Mapping: the generated mapping.
+
+        Raises:
+            RuntimeError: if the algorithm is not able to find a suitable
+                channel mapping for a process mapping (for partial mappings with
+                incomplete process mappings).
         """
         # RK: this function seems to generate the full mapping
 
@@ -160,19 +162,14 @@ class ProcPartialMapper(object):
 
     This class is used to generate a partial mapping for a given
     platform and dataflow application.
+
+    Args:
+        graph (DataflowGraph): a dataflow graph
+        platform (Platform): A platform
+        full_generator (BaseMapper): the associated full mapping generator
     """
 
     def __init__(self, graph, platform, full_generator):
-        """Generate a partial mapping for a given platform and dataflow
-        application.
-
-        :param graph: a dataflow graph
-        :type graph: DataflowGraph
-        :param platform: a platform
-        :type platform: Platform
-        :param fullGenerator: the associated full mapping generator
-        :type fullGererator: PartialMapper
-        """
         self.full_mapper = False  # flag indicating the mapper type
         self.platform = platform
         self.graph = graph
@@ -260,13 +257,18 @@ class ProcPartialMapper(object):
         the mapping. Each value in the vector stands for a Process -> PE
         mapping.
 
-        :param reprVec: a vector describing the mapping in the initilized
-            representation
-        :type reprVec: tuple describing the representation
-        :param map_history: exclution list of already generated mappings
-        :type map_history: list of mappings
-        :raises: RuntimeError if the algorithm is not able to find a suitable
-            channel mapping for a process mapping.
+        Args:
+            vec (:obj:`list` of :obj:`int`): a vector describing the mapping in
+                the initilized representation
+            map_history (:obj:`list` of :obj:`Mapping`): exclution list of
+                already generated mappings
+
+        Returns:
+            Mapping: the generated mapping.
+
+        Raises:
+            RuntimeError: if the algorithm is not able to find a suitable
+                channel mapping for a process mapping.
         """
         # TODO: This should be adapted to use representations
 
@@ -288,6 +290,10 @@ class ProcPartialMapper(object):
             self.vec_pe_mapping,
             self.vec_cp_mapping,
         )
+
+        # RK: Since the returned mapping object is created in the above call,
+        # the condition must be always false.
+        # TODO: Check this.
         if mapping in map_history:
             return None
         else:
@@ -310,19 +316,12 @@ class ComFullMapper(BaseMapper):
 
     This class is used to generate a full mapping for a given platform and
     dataflow application.
+
+    Args:
+        platform (Platform): a platform
     """
 
     def __init__(self, platform):
-        """Generates a partial mapping for a given platform and dataflow
-        application.
-
-        :param graph: a dataflow graph
-        :type graph: DataflowGraph
-        :param platform: a platform
-        :type platform: Platform
-        :param fullGenerator: the associated full mapping generator
-        :type fullGererator: FullMapper
-        """
         super().__init__(platform, full_mapper=True)
 
     def generate_mapping(
@@ -336,16 +335,16 @@ class ComFullMapper(BaseMapper):
         """Generate mapping.
 
         Args:
-        :param graph: a dataflow graph
-        :type graph: DataflowGraph
-        :param trace: a trace generator
-        :type trace: TraceGenerator
-        :param representation: a mapping representation object
-        :type representation: MappingRepresentation
-        :param processors: list of processors to map to.
-        :type processors: a list[Processor]
-        :param partial_mapping: a partial mapping to complete
-        :type partial_mapping: Mapping
+            graph (DataflowGraph): a dataflow graph
+            trace (TraceGenerator, optional): a trace generator
+            representation (MappingRepresentation, optional): a mapping
+                representation object
+            processors (:obj:`list` of :obj:`Processor`, optional): a list of
+                processors to map to.
+            partial_mapping (Mapping, optional): a partial mapping to complete
+
+        Returns:
+            Mapping: the generated mapping.
         """
         # configure policy of schedulers
         if partial_mapping is None:
@@ -357,20 +356,16 @@ class ComFullMapper(BaseMapper):
 
 
 class InputTupleFullMapper:
-    """Generates a mapping from a list given as input"""
+    """Generates a mapping from a list given as input.
+
+    If (some) channels are missing, they are mapped in a best-effort fashion.
+
+    Args:
+        graph (DataflowGraph): a dataflow graph
+        platform (Platform): a platform
+    """
 
     def __init__(self, graph, platform, trace, representation, input_tuple):
-        """Generates a default mapping for a given platform and dataflow
-        application.
-
-        If (some) channels are missing, they are mapped in a best-effort
-        fashion.
-
-        :param graph: a dataflow graph
-        :type graph: DataflowGraph
-        :param platform: a platform
-        :type platform: Platform
-        """
         self.full_mapper = True
         self.platform = platform
         self.graph = graph
@@ -391,10 +386,5 @@ class InputTupleFullMapper:
             raise RuntimeError
 
     def generate_mapping(self):
-        """Generates a mapping from the input list
-
-        :param seed: initial seed for the random generator
-        :type seed: integer
-        :param part_mapping: partial mapping to start from
-        """
+        """Generates a mapping from the input list."""
         return self.proc_mapper.generate_mapping(self.mapping_list)

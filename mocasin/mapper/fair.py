@@ -36,14 +36,12 @@ class StaticCFS(BaseMapper):
     """Base class for mapping using a static method similar to the Linux CFS.
 
     See: http://people.redhat.com/mingo/cfs-scheduler/sched-design-CFS.txt
+
+    Args:
+        platform (Platform): a platform
     """
 
     def __init__(self, platform):
-        """Generates a full mapping for a given platform and application.
-
-        :param platform: a platform
-        :type platform: Platform
-        """
         super().__init__(platform, full_mapper=True)
 
     def generate_mapping_dict(self, graphs, trace_summary, processors=None):
