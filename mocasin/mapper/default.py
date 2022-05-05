@@ -70,7 +70,7 @@ class DefaultFullMapper(BaseMapper):
             or partial_mapping.graph is not graph
         ):
             raise RuntimeError(
-                "rand_map: Try to map partial mapping of platform,dataflow "
+                "default_map: Try to map partial mapping of platform,dataflow "
                 f"{partial_mapping.platform.name},{partial_mapping.graph.name} "
                 f"to {self.platform.name},{graph.name}"
             )
@@ -85,7 +85,7 @@ class DefaultFullMapper(BaseMapper):
             info = ProcessMappingInfo(scheduler, affinity, priority)
             partial_mapping.add_process_info(p, info)
             log.debug(
-                "rand_map: map process %s to scheduler %s and processor %s "
+                "default_map: map process %s to scheduler %s and processor %s "
                 "(priority: %d)",
                 p.name,
                 scheduler.name,
@@ -107,7 +107,7 @@ class DefaultFullMapper(BaseMapper):
                     suitable_primitives.append(p)
             if len(suitable_primitives) == 0:
                 raise RuntimeError(
-                    "rand_map: Mapping failed! No suitable primitive for "
+                    "default_map: Mapping failed! No suitable primitive for "
                     "communication from %s to %s found!"
                     % (src.name, str(sinks))
                 )
@@ -115,8 +115,8 @@ class DefaultFullMapper(BaseMapper):
             info = ChannelMappingInfo(primitive, capacity)
             partial_mapping.add_channel_info(c, info)
             log.debug(
-                "rand_map: map channel %s to the primitive %s and bound to %d "
-                "tokens" % (c.name, primitive.name, capacity)
+                "default_map: map channel %s to the primitive %s and bound to "
+                "%d tokens" % (c.name, primitive.name, capacity)
             )
 
             # finally check if the mapping is fully specified
