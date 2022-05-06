@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 
 class TabuSearchMapper(BaseMapper):
     """Generates a full mapping by using a tabu search on the mapping space.
-    
+
     Args:
         platform (Platform): A platform
         random_seed (int, optional): A random seed for the RNG. Defautls to 42.
