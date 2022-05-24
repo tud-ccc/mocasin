@@ -3,10 +3,11 @@
 #
 # Authors: Felix Teweleit
 
+from builtins import StopIteration
+
 from mocasin.common.mapping import Mapping
 from mocasin.mapper.partial import ComPartialMapper, ProcPartialMapper
 from mocasin.mapper.random import RandomPartialMapper
-from builtins import StopIteration
 
 
 class SimpleVectorMapper:
@@ -35,18 +36,16 @@ class SimpleVectorMapper:
             if constraint.isNegated():
                 self.__processingConstraints.append(constraint)
 
-        """Initialize a vector where mapping constraints are set, unmapped processed encoded
-        with -1
-        """
+        # Initialize a vector where mapping constraints are set, unmapped
+        # processed encoded with -1
         for i in range(0, self.__processes):
             self.__frameMapping.append(-1)
         for constraint in mappingConstraints:
             constraint.setEntry(self.__frameMapping)
 
-        """Initialize a dictionary encoding the shared core constraints, the key is an index,
-        the value is a list of indexes, the processor mapped to the key process, have to be mapped
-        to each value process
-        """
+        # Initialize a dictionary encoding the shared core constraints, the key
+        # is an index, the value is a list of indexes, the processor mapped to
+        # the key process, have to be mapped to each value process
         for constraint in sharedCoreConstraints:
             vector = list(constraint.getIdVector())
             if vector == []:
@@ -151,8 +150,8 @@ class MappingCompletionWrapper:
         self.__graph = graph
         self.__platform = platform
 
-        self.__fullMapper = RandomPartialMapper(graph, platform, None)
-        self.__communicationMapper = ComPartialMapper(graph, platform, self)
+        self.__fullMapper = RandomPartialMapper(platform, None)
+        self.__communicationMapper = ComPartialMapper(platform, self)
         self.__processMapper = ProcPartialMapper(graph, platform, self)
 
     def completeMappingAtRandom(self, processMappingVector):
@@ -168,9 +167,11 @@ class MappingCompletionWrapper:
 
     def completeMappingBestEffort(self, processMappingVector):
         mapping = self.__processMapper.generate_mapping(processMappingVector)
-        mapping = self.__fullMapper.generate_mapping(part_mapping=mapping)
+        mapping = self.__fullMapper.generate_mapping(
+            self.__graph, partial_mapping=mapping
+        )
         # self.__processMapper.reset() #not sure what this is supposed to do
         return mapping
 
-    def generate_mapping(self, mapping):
-        return mapping
+    def generate_mapping(self, graph, partial_mapping=None):
+        return partial_mapping

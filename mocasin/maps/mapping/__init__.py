@@ -4,15 +4,16 @@
 # Authors: Christian Menard
 
 import logging
-import pint
 
 from hydra.utils import to_absolute_path
+import pint
 
 from mocasin.common.mapping import (
     ChannelMappingInfo,
     Mapping,
     ProcessMappingInfo,
 )
+from mocasin.mapper import BaseMapper
 from mocasin.maps.mapping import mapsmapping
 
 
@@ -22,18 +23,25 @@ log = logging.getLogger(__name__)
 _ur = pint.UnitRegistry()
 
 
-class MapsMapper:
+class MapsMapper(BaseMapper):
     """
     Reads a MAPS mapping from a file. The actual mapping is returned when
     calling the generate_mapping method.  This implements the common mapper
     interface.
     """
 
-    def __init__(self, graph, platform, trace, representation, xml_file=None):
-        self.mapping = MapsMapping(graph, platform, xml_file)
+    # RK: I think this class should not be based on BaseMapper at all, since it
+    # does not really generate mappings. Instead we should introduce
+    # MappingReader class. Also 'xml_file' already refers to the concrete graph,
+    # while the graph argument is only supplied at `generate_mapping`
+    def __init__(self, platform, xml_file=None):
+        super().__init__(platform)
+        self._xml_file = xml_file
+        pass
 
-    def generate_mapping(self):
-        return self.mapping
+    def generate_mapping(self, graph, trace=None, representation=None):
+        mapping = MapsMapping(graph, self.platform, self._xml_file)
+        return mapping
 
 
 class MapsMapping(Mapping):
