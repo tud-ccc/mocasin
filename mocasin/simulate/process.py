@@ -102,7 +102,7 @@ class RuntimeProcess(object):
         name (str): the process name
         app (RuntimeApplication): the application this process is part of
         _state (ProcessState): The current process state.
-        _log (SimulateLoggerAdapter): an logger adapter to print messages with
+        _log (SimulateLoggerAdapter): a logger adapter to print messages with
             simulation context
         processor (Processor): the processor that the processes currently runs
             on. This attribute is only valid in the

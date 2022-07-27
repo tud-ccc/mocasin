@@ -19,8 +19,11 @@ class EnergyEstimator:
         self._process_start_registry = {}
 
     def register_process_start(self, processor, process):
+        pass
         """Register the start of a process running on a given processor to
         account for its dynamic energy."""
+
+        '''
         self._last_activity = self.env.now
 
         if processor in self._process_start_registry:
@@ -29,12 +32,16 @@ class EnergyEstimator:
                 f"the processor {processor} is busy."
             )
         self._process_start_registry[processor] = (process, self.env.now)
+        '''
 
     def register_process_end(self, processor, process):
+        pass
         """Register the end of a process running on a given processor to
         account for its dynamic energy."""
-        self._last_activity = self.env.now
 
+        '''
+        self._last_activity = self.env.now
+        
         if processor not in self._process_start_registry:
             raise RuntimeError(
                 f"Failed to register the end of the segment: "
@@ -52,12 +59,14 @@ class EnergyEstimator:
             power = processor.dynamic_power()
             if power is not None:
                 self._accumulated_dynamic_energy += power * td
-
+        '''
     def calculate_energy(self):
+        return 0.0
         """Calculate the energy consumption of the simulation.
 
         Returns the tuple (static_energy, dynamic_energy)
         """
+        '''
         if not self.enabled:
             return None
 
@@ -72,3 +81,4 @@ class EnergyEstimator:
             static_energy += self.platform.peripheral_static_power * total_time
 
         return (static_energy, self._accumulated_dynamic_energy)
+        '''

@@ -7,6 +7,8 @@
 from collections import deque
 from enum import Enum
 
+import simpy
+
 from mocasin.util import logging
 from mocasin.simulate.adapter import SimulateLoggerAdapter
 from mocasin.simulate.process import ProcessState, RuntimeProcess
@@ -583,6 +585,121 @@ class RoundRobinScheduler(RuntimeScheduler):
             self._processes.rotate(-1)
 
 
+class MultithreadFifoScheduler(RuntimeScheduler):
+    """A FIFO Scheduler for Multithread processors.
+
+    Always schedules the process that became ready first and then waits for a free thread to run it.
+    """
+
+    def __init__(
+            self, name, processor, context_switch_mode, scheduling_cycles, env, n_threads
+    ):
+        """Initialize a Multithread FIFO scheduler
+
+        Calls :func:`RuntimeScheduler.__init__`.
+        """
+        super().__init__(
+            name, processor, context_switch_mode, scheduling_cycles, None, env
+        )
+
+        self.threads = simpy.Resource(self.env, capacity=n_threads)
+
+        self.current_process = deque([None] * n_threads, maxlen=n_threads)
+
+        self.next_process = None
+
+    def average_load(self, time_frame):
+        return 0.0
+
+    def schedule(self):
+        """Perform the scheduling.
+
+        Returns the next ready process.
+        """
+
+        # Schedule next ready process if there are any ready processes
+        if len(self._ready_queue) > 0:
+            return self._ready_queue.popleft()
+
+        return None
+
+    def _schedule_next_process(self):
+        next_process = self.schedule()
+        if next_process is None:
+            yield from self._wait_for_ready_process()
+            # by returning, we trigger the algorithm again
+            return
+        self._log.debug("MT Sched: %s selected as next process to run", next_process.full_name)
+
+        thread = self.threads.request()
+        yield thread
+        self._log.debug("MT Sched: a thread is available to run process %s", next_process.full_name)
+
+        self.env.process(self._run_next_process(next_process, thread))
+
+    def _run_next_process(self, next_process, thread):
+        if next_process is None:
+            raise RuntimeError("MT scheduler: a new process has been schedule but there were none ready")
+
+        # record the activation event in our internal load trace
+        if len(self._load_trace) == 0 or self._load_trace[0][1] == 0:
+            self._load_trace.appendleft((self.env.now, 1))
+
+        # pay for the scheduling delay
+        ticks = self._processor.ticks(self._scheduling_cycles)
+        yield self.env.timeout(ticks)
+
+        self._log.debug("schedule process %s next", next_process.full_name)
+
+        # pay for context switching
+        yield from self._load_context(self.current_process[0], next_process)
+
+        # it could happen, that the process gets killed or removed
+        # before the context was loaded completely. In this case we
+        # just return and the algorithm will be run again
+        if next_process not in self._processes or next_process.check_state(
+            ProcessState.FINISHED
+        ):
+            self._log.debug(
+                f"process {next_process.name} was migrated or killed before its"
+                " context could be loaded"
+            )
+            return
+
+        self._log.debug("activate process %s", next_process.full_name)
+
+        self.current_process.appendleft(next_process)
+        next_process.activate(self._processor)
+        # make sure the activation is processed completely before
+        # continuing
+        yield self.env.timeout(0)
+
+        self._log.debug("run workload of process %s", next_process.full_name)
+        # model the actual workload execution of the process
+        yield from self._execute_process_workload(next_process) # qua c'era current_process ... occhio!
+
+        self._log.debug("after workload of process %s", next_process.full_name)
+
+        # check if the process is being removed
+        if (
+            not next_process.check_state(ProcessState.FINISHED)
+            and next_process not in self._processes
+        ):
+            self._log.debug("Cleaning up after removing a running process")
+            # first store the context
+            yield from self._store_context(next_process,  always=True)
+            # reset current process
+            self.current_process.pop()
+            # notify the event to indicate that migration completed
+            assert self._process_removal_complete is not None
+            self._process_removal_complete.succeed()
+        else:
+            # Otherwise, just pay for context switching
+            yield from self._store_context(next_process)
+
+        self.threads.release(thread)
+
+
 def create_scheduler(name, processor, policy, env):
     """Factory method for RuntimeScheduler
 
@@ -592,10 +709,14 @@ def create_scheduler(name, processor, policy, env):
         name (str): name of the new scheduler
         processor (Processor): the processor that the scheduler manages
         policy (SchedulingPolicy): the policy implemented by the new scheduler
+        env (Environment): the simpy environment where the scheduler process runs
 
     Returns:
         RuntimeScheduler: a runtime scheduler object
     """
+
+    n_threads = 2
+
     if policy.name == "FIFO":
         log.debug(f"Initialize new FIFO scheduler ({name})")
         s = FifoScheduler(
@@ -614,6 +735,16 @@ def create_scheduler(name, processor, policy, env):
             policy.scheduling_cycles,
             policy.time_slice,
             env,
+        )
+    elif policy.name == "MT":
+        log.debug(f"Initialize new MT scheduler ({name})")
+        s = MultithreadFifoScheduler(
+            name,
+            processor,
+            ContextSwitchMode.AFTER_SCHEDULING,
+            policy.scheduling_cycles,
+            env,
+            n_threads
         )
     else:
         raise NotImplementedError(
