@@ -48,6 +48,8 @@ class InterruptSource(enum.Enum):
     """The scheduler requests preemption of the process"""
     KILL = 1
     """The process is killed and should terminate immediately"""
+    ADAPT = 2
+    """A performance adaptation is forced due to a change in the number of running threads"""
 
 
 class RuntimeProcess(object):
@@ -259,6 +261,41 @@ class RuntimeProcess(object):
         self.processor = processor
         self._transition("RUNNING")
 
+    def adapt(self):
+        """ Adapt the execution of the process to the changes in the processor.
+
+        Raises:
+            AssertionError: if not in :const:`ProcessState.RUNNING` state
+        """
+        assert self._state == ProcessState.RUNNING
+        self._log.debug(
+            "Adapt workload execution on processor %s", self.processor.name
+        )
+
+        old_event = self._interrupt
+        self._interrupt = self.env.event()
+        old_event.succeed(InterruptSource.ADAPT)
+
+    def _change_frequency(self):
+        """ Change the processing speed.
+
+        Raises:
+            AssertionError: if not in :const:`ProcessState.RUNNING` state
+        """
+        assert self._state == ProcessState.RUNNING
+
+        base_frequency = self.processor.base_frequency
+        n_threads = self._get_n_running_threads()
+
+        old_frequency = self.processor.frequency    # just for debugging purpose
+
+        self.processor.frequency = base_frequency * (1 / n_threads)
+        # This will have to be substituted with a proper model
+        self._log.debug(
+            "Frequency on processor %s changed from %s to %s",
+            self.processor.name, old_frequency, self.processor.frequency
+        )
+
     def _deactivate(self):
         """Halt the process execution.
 
@@ -401,6 +438,10 @@ class RuntimeProcess(object):
         """
         assert self._state == ProcessState.CREATED
         self._log.debug("Entered CREATED state")
+
+    def _get_n_running_threads(self):
+        """ Return the number of threads running concurrently on the same processor"""
+        return self.app.system.get_scheduler(self.processor).n_running_threads
 
     def workload(self):
         """Implements the process functionality.
@@ -611,11 +652,17 @@ class RuntimeDataflowProcess(RuntimeProcess):
                 elif interrupt.value == InterruptSource.PREEMPT:
                     self._deactivate()
                     self._log.debug("process was preempted")
+                elif interrupt.value == InterruptSource.ADAPT:
+                    self._change_frequency()
+                    self._log.debug("process was adapted during a segment of type %s", s.segment_type)
+                    if s.segment_type == SegmentType.COMPUTE:
+                        continue    # Must skip self._update_current_segment() as the compute segment has not finished
                 else:
                     raise RuntimeError(
                         f"Unexpected interrupt source {interrupt.value.name}"
                     )
-                return
+                if not interrupt.value == InterruptSource.ADAPT:
+                    return      # The ADAPT interrupt does't force the process out of the RUNNING state
 
             # move on to the next segment
             self._update_current_segment()
@@ -633,7 +680,7 @@ class RuntimeDataflowProcess(RuntimeProcess):
         else:
             # we start up workload execution for the first time and need
             # to initialize the current trace segment
-            self._log.debug("start workload execution")
+            self._log.debug("init workload execution")
             self._is_running = True
             self._update_current_segment()
             self._remaining_compute_cycles = None
@@ -736,6 +783,26 @@ class RuntimeDataflowProcess(RuntimeProcess):
             self._log.debug(
                 f"process was deactivated after {cycles_processed} cycles"
             )
+        elif interrupt.processed and interrupt.value == InterruptSource.ADAPT:
+            # Same code of PREEMPT. I'll consider avoid the code replication.
+            # Should I create a method for this code block?
+            # Something like: _update_cycle_count()
+            ticks_processed = self.env.now - start
+            ratio = float(ticks_processed) / float(ticks)
+
+            self._remaining_compute_cycles = {}
+            for processor, cycles in processor_cycles.items():
+                cycles_processed = int(round(float(cycles) * ratio))
+                cycles_remaining = cycles - cycles_processed
+                assert cycles_remaining >= 0
+                self._remaining_compute_cycles[processor] = cycles_remaining
+
+                # update total processed cycles
+                self._total_cycles_processed[processor] += cycles_processed
+            self._log.debug(
+                f"process was adapted after {cycles_processed} cycles"
+            )
+
 
     def get_progress(self):
         """Calculate how far the process has progressed its execution

@@ -6,7 +6,6 @@
 
 from collections import deque
 from enum import Enum
-
 import simpy
 
 from mocasin.util import logging
@@ -608,7 +607,18 @@ class MultithreadFifoScheduler(RuntimeScheduler):
 
         self.next_process = None
 
+    @property
+    def n_running_threads(self):
+        """Returns the number of running threads on the processor"""
+        return self.threads.count
+
+    def running_processes(self):
+        for process in self.current_process:
+            if process is not None and process.check_state(ProcessState.RUNNING):
+                yield process
+
     def average_load(self, time_frame):
+        # This method needs to be updated to be compatible with multithread processors
         return 0.0
 
     def schedule(self):
@@ -629,17 +639,19 @@ class MultithreadFifoScheduler(RuntimeScheduler):
             yield from self._wait_for_ready_process()
             # by returning, we trigger the algorithm again
             return
-        self._log.debug("MT Sched: %s selected as next process to run", next_process.full_name)
+        self._log.debug("%s selected as next process to run", next_process.full_name)
 
         thread = self.threads.request()
         yield thread
-        self._log.debug("MT Sched: a thread is available to run process %s", next_process.full_name)
+        self._log.debug("a thread is available to run process %s", next_process.full_name)
 
         self.env.process(self._run_next_process(next_process, thread))
 
     def _run_next_process(self, next_process, thread):
+        self._log.debug("A Simpy process for process %s has been created", next_process.full_name)
+
         if next_process is None:
-            raise RuntimeError("MT scheduler: a new process has been schedule but there were none ready")
+            raise RuntimeError("a new process has been schedule but there were none ready")
 
         # record the activation event in our internal load trace
         if len(self._load_trace) == 0 or self._load_trace[0][1] == 0:
@@ -649,10 +661,8 @@ class MultithreadFifoScheduler(RuntimeScheduler):
         ticks = self._processor.ticks(self._scheduling_cycles)
         yield self.env.timeout(ticks)
 
-        self._log.debug("schedule process %s next", next_process.full_name)
-
         # pay for context switching
-        yield from self._load_context(self.current_process[0], next_process)
+        yield from self._load_context(self.current_process[-1], next_process)
 
         # it could happen, that the process gets killed or removed
         # before the context was loaded completely. In this case we
@@ -674,11 +684,21 @@ class MultithreadFifoScheduler(RuntimeScheduler):
         # continuing
         yield self.env.timeout(0)
 
+        # adapt performance before running
+        for process in self.running_processes():
+            self._log.debug("Forcing adaptation on process %s because another process has started", process.full_name)
+            process.adapt()
+
         self._log.debug("run workload of process %s", next_process.full_name)
         # model the actual workload execution of the process
         yield from self._execute_process_workload(next_process) # qua c'era current_process ... occhio!
 
         self._log.debug("after workload of process %s", next_process.full_name)
+
+        # adapt performance after running
+        for process in self.running_processes():
+            self._log.debug("Forcing adaptation on process %s because another process has ended", process.full_name)
+            process.adapt()
 
         # check if the process is being removed
         if (
