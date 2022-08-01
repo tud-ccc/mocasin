@@ -735,8 +735,6 @@ def create_scheduler(name, processor, policy, env):
         RuntimeScheduler: a runtime scheduler object
     """
 
-    n_threads = 2
-
     if policy.name == "FIFO":
         log.debug(f"Initialize new FIFO scheduler ({name})")
         s = FifoScheduler(
