@@ -756,15 +756,15 @@ def create_scheduler(name, processor, policy, env):
             policy.time_slice,
             env,
         )
-    elif policy.name == "MT":
-        log.debug(f"Initialize new MT scheduler ({name})")
+    elif policy.name == "Multithread":
+        log.debug(f"Initialize new Multithread scheduler ({name})")
         s = MultithreadFifoScheduler(
             name,
             processor,
             ContextSwitchMode.AFTER_SCHEDULING,
             policy.scheduling_cycles,
             env,
-            n_threads
+            processor.n_threads
         )
     else:
         raise NotImplementedError(

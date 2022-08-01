@@ -56,6 +56,7 @@ class Processor:
         power_model,
         context_load_cycles=0,
         context_store_cycles=0,
+        n_threads=1
     ):
         self.name = name
         self.type = type_
@@ -63,6 +64,7 @@ class Processor:
         self.power_model = power_model
         self.context_load_cycles = context_load_cycles
         self.context_store_cycles = context_store_cycles
+        self.n_threads = n_threads
 
     @property
     def base_frequency(self):
