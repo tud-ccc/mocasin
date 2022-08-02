@@ -3,6 +3,7 @@
 #
 # Author: Robert Khasanov
 
+import mocasin.simulate.process as p
 
 class EnergyEstimator:
     """Estimates the overall energy consumption during a simulation.
@@ -16,57 +17,52 @@ class EnergyEstimator:
         self.enabled = platform.has_power_model()
         self._last_activity = 0
         self._accumulated_dynamic_energy = 0  # in pJ
-        self._process_start_registry = {}
+        self._process_start_registry = {
+            processor: {'processes': list(), 'start_time': 0} for processor in platform.processors()
+        }
 
     def register_process_start(self, processor, process):
-        pass
         """Register the start of a process running on a given processor to
         account for its dynamic energy."""
 
-        '''
         self._last_activity = self.env.now
 
-        if processor in self._process_start_registry:
+        if len(self._process_start_registry[processor]['processes']) >= processor.n_threads:
             raise RuntimeError(
                 "Failed to register the start of the segment: "
                 f"the processor {processor} is busy."
             )
-        self._process_start_registry[processor] = (process, self.env.now)
-        '''
+
+        if len(self._process_start_registry[processor]['processes']) == 0:
+            self._process_start_registry[processor]['start_time'] = self.env.now
+
+        self._process_start_registry[processor]['processes'].append(process)
 
     def register_process_end(self, processor, process):
-        pass
         """Register the end of a process running on a given processor to
         account for its dynamic energy."""
 
-        '''
         self._last_activity = self.env.now
         
-        if processor not in self._process_start_registry:
+        if process not in self._process_start_registry[processor]['processes']:
             raise RuntimeError(
                 f"Failed to register the end of the segment: "
                 f"the processor {processor} executes no processes"
             )
-        start_process, start_time = self._process_start_registry.pop(processor)
-        if start_process is not process:
-            raise RuntimeError(
-                f"Failed to register the end of the segment: "
-                "the input process and the executing process mismatch."
-            )
+
+        self._process_start_registry[processor]['processes'].remove(process)
 
         if self.enabled:
-            td = self.env.now - start_time
+            td = self.env.now - self._process_start_registry[processor]['start_time']
             power = processor.dynamic_power()
             if power is not None:
                 self._accumulated_dynamic_energy += power * td
-        '''
+
     def calculate_energy(self):
-        return 0.0
         """Calculate the energy consumption of the simulation.
 
         Returns the tuple (static_energy, dynamic_energy)
         """
-        '''
         if not self.enabled:
             return None
 
@@ -81,4 +77,3 @@ class EnergyEstimator:
             static_energy += self.platform.peripheral_static_power * total_time
 
         return (static_energy, self._accumulated_dynamic_energy)
-        '''
