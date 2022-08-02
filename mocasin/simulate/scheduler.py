@@ -603,7 +603,7 @@ class MultithreadFifoScheduler(RuntimeScheduler):
 
         self.threads = simpy.Resource(self.env, capacity=n_threads)
 
-        self.current_process = deque([None] * n_threads, maxlen=n_threads)
+        self.current_processes = deque(maxlen=n_threads)
 
         self.next_process = None
 
@@ -613,8 +613,8 @@ class MultithreadFifoScheduler(RuntimeScheduler):
         return self.threads.count
 
     def running_processes(self):
-        for process in self.current_process:
-            if process is not None and process.check_state(ProcessState.RUNNING):
+        for process in self.current_processes:
+            if process.check_state(ProcessState.RUNNING):
                 yield process
 
     def average_load(self, time_frame):
@@ -662,7 +662,8 @@ class MultithreadFifoScheduler(RuntimeScheduler):
         yield self.env.timeout(ticks)
 
         # pay for context switching
-        yield from self._load_context(self.current_process[-1], next_process)
+        last_process = self.current_processes[-1] if self.current_processes else None
+        yield from self._load_context(last_process, next_process)
 
         # it could happen, that the process gets killed or removed
         # before the context was loaded completely. In this case we
@@ -678,7 +679,7 @@ class MultithreadFifoScheduler(RuntimeScheduler):
 
         self._log.debug("activate process %s", next_process.full_name)
 
-        self.current_process.appendleft(next_process)
+        self.current_processes.appendleft(next_process)
         next_process.activate(self._processor)
         # make sure the activation is processed completely before
         # continuing
@@ -709,7 +710,7 @@ class MultithreadFifoScheduler(RuntimeScheduler):
             # first store the context
             yield from self._store_context(next_process,  always=True)
             # reset current process
-            self.current_process.pop()
+            self.current_processes.remove(next_process)
             # notify the event to indicate that migration completed
             assert self._process_removal_complete is not None
             self._process_removal_complete.succeed()
