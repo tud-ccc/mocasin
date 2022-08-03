@@ -56,7 +56,8 @@ def mock_process_workload(env, process, ticks):
             elif interrupt.value == InterruptSource.ADAPT:
                 process._change_frequency()
                 process._interrupt = env.event()
-                print(f"Frequency update at time {env.now}")
+                # performance adaptation is triggered but not actually realized
+                # as the scheduler is only responsible for that
             else:
                 pass
         else:
@@ -245,3 +246,40 @@ class TestMultithreadScheduler:
             assert env.now == (len(processes) * workload_ticks) + scheduling_delay
         elif multithread_scheduler._processor.n_threads == 2:   # 90 is obtained with (simple) manual scheduling
             assert env.now == 90 + (3 * scheduling_delay)
+
+    def test_average_load_idle(self, multithread_scheduler, env, mocker):
+        env.process(multithread_scheduler.run())
+        env.run(1000000000000)  # simulate 1 second
+        assert len(multithread_scheduler.current_processes) == 0
+        assert multithread_scheduler.average_load(1) == 0.0
+        assert multithread_scheduler.average_load(1000) == 0.0
+        assert multithread_scheduler.average_load(1000000000000) == 0.0
+
+    def test_average_load_active(
+        self, multithread_scheduler, env, mocker, mt_processor, processes
+    ):
+        process = processes[0]
+        process.workload = mocker.Mock(
+            side_effect=lambda: mock_process_workload(
+                env, process, 2000000000000
+            )
+        )
+        process._get_n_running_threads = mocker.Mock(
+            return_value=mt_processor.n_threads
+        )
+        process.processor = mocker.Mock(
+            return_value=mt_processor
+        )
+
+        # start the process
+        self.test_processes_become_ready(multithread_scheduler, [process], env)
+
+        # start the scheduler
+        env.process(multithread_scheduler.run())
+
+        env.run(1000000000000)  # simulate 1 second
+
+        assert multithread_scheduler.average_load(1) == 1.0
+        assert multithread_scheduler.average_load(1000) == 1.0
+        assert multithread_scheduler.average_load(1000000000000) == 1.0
+        assert multithread_scheduler.average_load(10000000000000) == 0.1

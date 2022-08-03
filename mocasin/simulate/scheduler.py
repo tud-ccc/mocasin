@@ -359,9 +359,7 @@ class RuntimeScheduler(object):
     def _wait_for_ready_process(self):
         """A simpy process for waiting until a new process becomes ready"""
         self._log.debug("There is no ready process -> sleep")
-        # Record the idle event in our internal load trace
-        if len(self._load_trace) == 0 or self._load_trace[0][1] == 1:
-            self._load_trace.appendleft((self.env.now, 0))
+        self._record_idle_event()
         # notify the idle event
         self.idle.succeed(value=self)
         self.idle = self.env.event()
@@ -370,6 +368,16 @@ class RuntimeScheduler(object):
         # wait until a process becomes ready
         yield self.process_ready
         self.is_idle = False
+
+    def _record_idle_event(self):
+        """Record the idle event in our internal load trace"""
+        if len(self._load_trace) == 0 or self._load_trace[0][1] == 1:
+            self._load_trace.appendleft((self.env.now, 0))
+
+    def _record_activation_event(self):
+        """Record the activation event in our internal load trace"""
+        if len(self._load_trace) == 0 or self._load_trace[0][1] == 0:
+            self._load_trace.appendleft((self.env.now, 1))
 
     def _schedule_next_process(self):
         next_process = self.schedule()
@@ -381,9 +389,7 @@ class RuntimeScheduler(object):
             # by returning, we trigger the algorithm again
             return
 
-        # record the activation event in our internal load trace
-        if len(self._load_trace) == 0 or self._load_trace[0][1] == 0:
-            self._load_trace.appendleft((self.env.now, 1))
+        self._record_activation_event()
 
         # pay for the scheduling delay
         ticks = self._processor.ticks(self._scheduling_cycles)
@@ -613,13 +619,10 @@ class MultithreadFifoScheduler(RuntimeScheduler):
         return self.threads.count
 
     def running_processes(self):
+        """Returns the number of running processes on the processor"""
         for process in self.current_processes:
             if process.check_state(ProcessState.RUNNING):
                 yield process
-
-    def average_load(self, time_frame):
-        # This method needs to be updated to be compatible with multithread processors
-        return 0.0
 
     def schedule(self):
         """Perform the scheduling.
@@ -647,15 +650,17 @@ class MultithreadFifoScheduler(RuntimeScheduler):
 
         self.env.process(self._run_next_process(next_process, thread))
 
+    def _record_idle_event(self):
+        if self.n_running_threads == 0:
+            super()._record_idle_event()
+
     def _run_next_process(self, next_process, thread):
         self._log.debug("A Simpy process for process %s has been created", next_process.full_name)
 
         if next_process is None:
             raise RuntimeError("a new process has been schedule but there were none ready")
 
-        # record the activation event in our internal load trace
-        if len(self._load_trace) == 0 or self._load_trace[0][1] == 0:
-            self._load_trace.appendleft((self.env.now, 1))
+        self._record_activation_event()
 
         # pay for the scheduling delay
         ticks = self._processor.ticks(self._scheduling_cycles)
