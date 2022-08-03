@@ -720,6 +720,64 @@ class MultithreadFifoScheduler(RuntimeScheduler):
 
         self.threads.release(thread)
 
+    # This method is exactly the same of the superclass
+    # I have to override it just because of some asserts on self.current_process
+    # I think avoiding this code duplication would be better, but how?
+    def remove_process(self, process):
+        """Remove a process from this scheduler.
+
+        This will usually be called in the context of a process migration,
+        where a process is moved from one scheduler to another.
+
+        Args:
+            process (RuntimeDataflowProcess): the process to be removed
+
+        Raises:
+            ValueError: if the process is not int the :attr:`_processes` list
+
+        Returns:
+            None: if the process was removed immediately
+            simpy.events.Event: An event indicating completion of the removal
+                if the process cannot be removed immediately (since it is
+                currently running)
+        """
+        # there is nothing to do if the process already finished
+        if process.check_state(ProcessState.FINISHED):
+            return
+
+        if process not in self._processes:
+            raise ValueError("Attempted to remove an unknown process")
+
+        # remove any registered callbacks
+        process.ready.callbacks.remove(self._cb_process_ready)
+        process.finished.callbacks.remove(self._cb_process_finished)
+
+        # remove process from _processes list and ready queue
+        self._processes.remove(process)
+        if process in self._ready_queue:
+            self._ready_queue.remove(process)
+
+        # if the process is running, we need to preempt it and wait for its
+        # context to be stored
+        if process.check_state(ProcessState.RUNNING):
+            assert process in self.current_processes
+
+            # prepare an event that will be notified once the process
+            # is preempted and completely removed
+            self._process_removal_complete = self.env.event()
+
+            # preempt the process
+            process.preempt()
+
+            # return the event so that a caller can wait for it
+            return self._process_removal_complete
+
+        # in some seldom cases it could happen that the removed process
+        # is still marked as the current process. In this case we reset
+        # the current process
+        if process in self.current_processes:
+            self.current_processes.remove(process)
+
 
 def create_scheduler(name, processor, policy, env):
     """Factory method for RuntimeScheduler
