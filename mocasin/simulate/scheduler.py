@@ -370,12 +370,12 @@ class RuntimeScheduler(object):
         self.is_idle = False
 
     def _record_idle_event(self):
-        """Record the idle event in our internal load trace"""
+        """Record the idle event in our internal load trace."""
         if len(self._load_trace) == 0 or self._load_trace[0][1] == 1:
             self._load_trace.appendleft((self.env.now, 0))
 
     def _record_activation_event(self):
-        """Record the activation event in our internal load trace"""
+        """Record the activation event in our internal load trace."""
         if len(self._load_trace) == 0 or self._load_trace[0][1] == 0:
             self._load_trace.appendleft((self.env.now, 1))
 
@@ -488,7 +488,7 @@ class RuntimeScheduler(object):
         )
 
     def ready_queue_length(self):
-        """Get the current length of the ready queue"""
+        """Get the current length of the ready queue."""
         return len(self._ready_queue)
 
 
@@ -501,7 +501,7 @@ class FifoScheduler(RuntimeScheduler):
     def __init__(
         self, name, processor, context_switch_mode, scheduling_cycles, env
     ):
-        """Initialize a FIFO scheduler
+        """Initialize a FIFO scheduler.
 
         Calls :func:`RuntimeScheduler.__init__`.
         """
@@ -593,7 +593,8 @@ class RoundRobinScheduler(RuntimeScheduler):
 class MultithreadFifoScheduler(RuntimeScheduler):
     """A FIFO Scheduler for Multithread processors.
 
-    Always schedules the process that became ready first and then waits for a free thread to run it.
+    Always schedules the process that became ready first and
+    then waits for a free thread to run it.
     """
 
     def __init__(
@@ -605,7 +606,7 @@ class MultithreadFifoScheduler(RuntimeScheduler):
         env,
         n_threads,
     ):
-        """Initialize a Multithread FIFO scheduler
+        """Initialize a Multithread FIFO scheduler.
 
         Calls :func:`RuntimeScheduler.__init__`.
         """
@@ -621,11 +622,11 @@ class MultithreadFifoScheduler(RuntimeScheduler):
 
     @property
     def n_running_threads(self):
-        """Returns the number of running threads on the processor"""
+        """Returns the number of running threads on the processor."""
         return self.threads.count
 
     def running_processes(self):
-        """Returns the number of running processes on the processor"""
+        """Returns the number of running processes on the processor."""
         for process in self.current_processes:
             if process.check_state(ProcessState.RUNNING):
                 yield process
@@ -635,7 +636,6 @@ class MultithreadFifoScheduler(RuntimeScheduler):
 
         Returns the next ready process.
         """
-
         # Schedule next ready process if there are any ready processes
         if len(self._ready_queue) > 0:
             return self._ready_queue.popleft()

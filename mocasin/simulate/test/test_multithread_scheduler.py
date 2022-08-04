@@ -10,7 +10,6 @@ from mocasin.simulate.process import (
 )
 from mocasin.simulate.scheduler import (
     ContextSwitchMode,
-    RuntimeScheduler,
     MultithreadFifoScheduler,
 )
 from mocasin.simulate.process import RuntimeDataflowProcess

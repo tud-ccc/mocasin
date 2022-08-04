@@ -49,7 +49,8 @@ class InterruptSource(enum.Enum):
     KILL = 1
     """The process is killed and should terminate immediately"""
     ADAPT = 2
-    """A performance adaptation is forced due to a change in the number of running threads"""
+    """A performance adaptation is forced 
+        due to a change in the number of running threads"""
 
 
 class RuntimeProcess(object):
