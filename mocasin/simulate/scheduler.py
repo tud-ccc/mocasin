@@ -597,7 +597,13 @@ class MultithreadFifoScheduler(RuntimeScheduler):
     """
 
     def __init__(
-            self, name, processor, context_switch_mode, scheduling_cycles, env, n_threads
+        self,
+        name,
+        processor,
+        context_switch_mode,
+        scheduling_cycles,
+        env,
+        n_threads,
     ):
         """Initialize a Multithread FIFO scheduler
 
@@ -642,11 +648,15 @@ class MultithreadFifoScheduler(RuntimeScheduler):
             yield from self._wait_for_ready_process()
             # by returning, we trigger the algorithm again
             return
-        self._log.debug("%s selected as next process to run", next_process.full_name)
+        self._log.debug(
+            "%s selected as next process to run", next_process.full_name
+        )
 
         thread = self.threads.request()
         yield thread
-        self._log.debug("a thread is available to run process %s", next_process.full_name)
+        self._log.debug(
+            "a thread is available to run process %s", next_process.full_name
+        )
 
         self.env.process(self._run_next_process(next_process, thread))
 
@@ -655,10 +665,15 @@ class MultithreadFifoScheduler(RuntimeScheduler):
             super()._record_idle_event()
 
     def _run_next_process(self, next_process, thread):
-        self._log.debug("A Simpy process for process %s has been created", next_process.full_name)
+        self._log.debug(
+            "A Simpy process for process %s has been created",
+            next_process.full_name,
+        )
 
         if next_process is None:
-            raise RuntimeError("a new process has been schedule but there were none ready")
+            raise RuntimeError(
+                "a new process has been schedule but there were none ready"
+            )
 
         self._record_activation_event()
 
@@ -667,7 +682,9 @@ class MultithreadFifoScheduler(RuntimeScheduler):
         yield self.env.timeout(ticks)
 
         # pay for context switching
-        last_process = self.current_processes[-1] if self.current_processes else None
+        last_process = (
+            self.current_processes[-1] if self.current_processes else None
+        )
         yield from self._load_context(last_process, next_process)
 
         # it could happen, that the process gets killed or removed
@@ -692,18 +709,26 @@ class MultithreadFifoScheduler(RuntimeScheduler):
 
         # adapt performance before running
         for process in self.running_processes():
-            self._log.debug("Forcing adaptation on process %s because another process has started", process.full_name)
+            self._log.debug(
+                "Forcing adaptation on process %s because another process has started",
+                process.full_name,
+            )
             process.adapt()
 
         self._log.debug("run workload of process %s", next_process.full_name)
         # model the actual workload execution of the process
-        yield from self._execute_process_workload(next_process) # qua c'era current_process ... occhio!
+        yield from self._execute_process_workload(
+            next_process
+        )  # qua c'era current_process ... occhio!
 
         self._log.debug("after workload of process %s", next_process.full_name)
 
         # adapt performance after running
         for process in self.running_processes():
-            self._log.debug("Forcing adaptation on process %s because another process has ended", process.full_name)
+            self._log.debug(
+                "Forcing adaptation on process %s because another process has ended",
+                process.full_name,
+            )
             process.adapt()
 
         # check if the process is being removed
@@ -713,7 +738,7 @@ class MultithreadFifoScheduler(RuntimeScheduler):
         ):
             self._log.debug("Cleaning up after removing a running process")
             # first store the context
-            yield from self._store_context(next_process,  always=True)
+            yield from self._store_context(next_process, always=True)
             # reset current process
             self.current_processes.remove(next_process)
             # notify the event to indicate that migration completed
@@ -826,7 +851,7 @@ def create_scheduler(name, processor, policy, env):
             ContextSwitchMode.AFTER_SCHEDULING,
             policy.scheduling_cycles,
             env,
-            processor.n_threads
+            processor.n_threads,
         )
     else:
         raise NotImplementedError(

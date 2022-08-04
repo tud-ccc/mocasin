@@ -262,7 +262,7 @@ class RuntimeProcess(object):
         self._transition("RUNNING")
 
     def adapt(self):
-        """ Adapt the execution of the process to the changes in the processor.
+        """Adapt the execution of the process to the changes in the processor.
 
         Raises:
             AssertionError: if not in :const:`ProcessState.RUNNING` state
@@ -277,7 +277,7 @@ class RuntimeProcess(object):
         old_event.succeed(InterruptSource.ADAPT)
 
     def _change_frequency(self):
-        """ Change the processing speed.
+        """Change the processing speed.
 
         Raises:
             AssertionError: if not in :const:`ProcessState.RUNNING` state
@@ -287,13 +287,15 @@ class RuntimeProcess(object):
         base_frequency = self.processor.base_frequency
         n_threads = self._get_n_running_threads()
 
-        old_frequency = self.processor.frequency    # just for debugging purpose
+        old_frequency = self.processor.frequency  # just for debugging purpose
 
         self.processor.frequency = base_frequency * (1 / n_threads)
         # This will have to be substituted with a proper model
         self._log.debug(
             "Frequency on processor %s changed from %s to %s",
-            self.processor.name, old_frequency, self.processor.frequency
+            self.processor.name,
+            old_frequency,
+            self.processor.frequency,
         )
 
     def _deactivate(self):
@@ -440,7 +442,7 @@ class RuntimeProcess(object):
         self._log.debug("Entered CREATED state")
 
     def _get_n_running_threads(self):
-        """ Return the number of threads running concurrently on the same processor"""
+        """Return the number of threads running concurrently on the same processor"""
         return self.app.system.get_scheduler(self.processor).n_running_threads
 
     def workload(self):
@@ -654,15 +656,18 @@ class RuntimeDataflowProcess(RuntimeProcess):
                     self._log.debug("process was preempted")
                 elif interrupt.value == InterruptSource.ADAPT:
                     self._change_frequency()
-                    self._log.debug("process was adapted during a segment of type %s", s.segment_type)
+                    self._log.debug(
+                        "process was adapted during a segment of type %s",
+                        s.segment_type,
+                    )
                     if s.segment_type == SegmentType.COMPUTE:
-                        continue    # Must skip self._update_current_segment() as the compute segment has not finished
+                        continue  # Must skip self._update_current_segment() as the compute segment has not finished
                 else:
                     raise RuntimeError(
                         f"Unexpected interrupt source {interrupt.value.name}"
                     )
                 if not interrupt.value == InterruptSource.ADAPT:
-                    return      # The ADAPT interrupt does't force the process out of the RUNNING state
+                    return  # The ADAPT interrupt does't force the process out of the RUNNING state
 
             # move on to the next segment
             self._update_current_segment()
@@ -802,7 +807,6 @@ class RuntimeDataflowProcess(RuntimeProcess):
             self._log.debug(
                 f"process was adapted after {cycles_processed} cycles"
             )
-
 
     def get_progress(self):
         """Calculate how far the process has progressed its execution

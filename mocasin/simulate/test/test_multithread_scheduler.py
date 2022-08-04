@@ -3,8 +3,16 @@
 #
 # Authors: Francesco Ratto
 
-from mocasin.simulate.process import RuntimeProcess, ProcessState, InterruptSource
-from mocasin.simulate.scheduler import ContextSwitchMode, RuntimeScheduler, MultithreadFifoScheduler
+from mocasin.simulate.process import (
+    RuntimeProcess,
+    ProcessState,
+    InterruptSource,
+)
+from mocasin.simulate.scheduler import (
+    ContextSwitchMode,
+    RuntimeScheduler,
+    MultithreadFifoScheduler,
+)
 from mocasin.simulate.process import RuntimeDataflowProcess
 
 import pytest
@@ -38,7 +46,12 @@ def multithread_scheduler(system, mt_processor):
     mt_processor.context_load_ticks = lambda: context_load_ticks
     mt_processor.context_store_ticks = lambda: context_store_ticks
     return MultithreadFifoScheduler(
-        "sched", mt_processor, ContextSwitchMode.NEVER, 0, system, mt_processor.n_threads
+        "sched",
+        mt_processor,
+        ContextSwitchMode.NEVER,
+        0,
+        system,
+        mt_processor.n_threads,
     )
 
 
@@ -48,7 +61,7 @@ def mock_process_workload(env, process, ticks):
     while 1:
         interrupt = process._interrupt
         ticks_processed = env.now - start_time
-        yield env.any_of([env.timeout(ticks-ticks_processed), interrupt])
+        yield env.any_of([env.timeout(ticks - ticks_processed), interrupt])
         if interrupt.processed:
             if interrupt.value == InterruptSource.PREEMPT:
                 process._deactivate()
@@ -67,19 +80,20 @@ def mock_process_workload(env, process, ticks):
     # Serving the ADAPT interrupt makes the mock woarload end
     # how can I avoid this?
 
+
 @pytest.fixture
 def processes(app, env, mt_processor, mocker):
     processes = [RuntimeProcess(f"test_proc{i}", app) for i in range(0, 5)]
     for i in range(0, len(processes)):
         processes[i].workload = mocker.Mock(
-            side_effect=lambda i=i: mock_process_workload(env, processes[i], workload_ticks * (i + 1))
+            side_effect=lambda i=i: mock_process_workload(
+                env, processes[i], workload_ticks * (i + 1)
+            )
         )
         processes[i]._get_n_running_threads = mocker.Mock(
             return_value=mt_processor.n_threads
         )
-        processes[i].processor = mocker.Mock(
-            return_value=mt_processor
-        )
+        processes[i].processor = mocker.Mock(return_value=mt_processor)
     return processes
 
 
@@ -123,7 +137,9 @@ class TestMultithreadScheduler:
         assert len(multithread_scheduler._ready_queue) == 1
         assert process in multithread_scheduler._ready_queue
 
-    def test_processes_become_ready(self, multithread_scheduler, processes, env):
+    def test_processes_become_ready(
+        self, multithread_scheduler, processes, env
+    ):
         env.run()  # start simulation to initialize the process
         for p in processes:
             ready_event = multithread_scheduler.process_ready
@@ -144,11 +160,17 @@ class TestMultithreadScheduler:
 
     def test_run(self, multithread_scheduler, processes, env, mocker):
         self.call_run(multithread_scheduler, processes, env, mocker)
-        if multithread_scheduler._processor.n_threads == 1:     # same of a single thread scheduler
+        if (
+            multithread_scheduler._processor.n_threads == 1
+        ):  # same of a single thread scheduler
             assert env.now == sum(range(1, len(processes) + 1)) * workload_ticks
-        elif multithread_scheduler._processor.n_threads == 5:   # all processes in parallel
+        elif (
+            multithread_scheduler._processor.n_threads == 5
+        ):  # all processes in parallel
             assert env.now == len(processes) * workload_ticks
-        elif multithread_scheduler._processor.n_threads == 2:   # 90 is obtained with (simple) manual scheduling
+        elif (
+            multithread_scheduler._processor.n_threads == 2
+        ):  # 90 is obtained with (simple) manual scheduling
             assert env.now == 90
 
     def test_remove_process(self, multithread_scheduler, env, app, mocker):
@@ -188,7 +210,9 @@ class TestMultithreadScheduler:
         assert len(multithread_scheduler._ready_queue) == 0
         assert len(multithread_scheduler._processes) == 0
 
-    def test_remove_running_process(self, multithread_scheduler, mt_processor, env, app, mocker):
+    def test_remove_running_process(
+        self, multithread_scheduler, mt_processor, env, app, mocker
+    ):
         proc_a = RuntimeDataflowProcess("test_proc_a", app)
         proc_b = RuntimeDataflowProcess("test_proc_b", app)
 
@@ -199,9 +223,7 @@ class TestMultithreadScheduler:
         proc_b._get_n_running_threads = mocker.Mock(
             return_value=mt_processor.n_threads
         )
-        proc_b.processor = mocker.Mock(
-            return_value=mt_processor
-        )
+        proc_b.processor = mocker.Mock(return_value=mt_processor)
 
         env.run(1)  # start simulation to initialize the processes
 
@@ -234,17 +256,27 @@ class TestMultithreadScheduler:
         assert proc_b not in multithread_scheduler._ready_queue
         assert event.triggered
 
-    def test_scheduling_delay(self, multithread_scheduler, processes, env, mocker):
+    def test_scheduling_delay(
+        self, multithread_scheduler, processes, env, mocker
+    ):
         multithread_scheduler._scheduling_cycles = scheduling_delay
         self.call_run(multithread_scheduler, processes, env, mocker)
-        if multithread_scheduler._processor.n_threads == 1:     # same of a single thread scheduler
+        if (
+            multithread_scheduler._processor.n_threads == 1
+        ):  # same of a single thread scheduler
             assert env.now == (
-            sum(range(1, len(processes) + 1)) * workload_ticks
-            + len(processes) * scheduling_delay
-        )
-        elif multithread_scheduler._processor.n_threads == 5:   # all processes in parallel
-            assert env.now == (len(processes) * workload_ticks) + scheduling_delay
-        elif multithread_scheduler._processor.n_threads == 2:   # 90 is obtained with (simple) manual scheduling
+                sum(range(1, len(processes) + 1)) * workload_ticks
+                + len(processes) * scheduling_delay
+            )
+        elif (
+            multithread_scheduler._processor.n_threads == 5
+        ):  # all processes in parallel
+            assert (
+                env.now == (len(processes) * workload_ticks) + scheduling_delay
+            )
+        elif (
+            multithread_scheduler._processor.n_threads == 2
+        ):  # 90 is obtained with (simple) manual scheduling
             assert env.now == 90 + (3 * scheduling_delay)
 
     def test_average_load_idle(self, multithread_scheduler, env, mocker):
@@ -267,9 +299,7 @@ class TestMultithreadScheduler:
         process._get_n_running_threads = mocker.Mock(
             return_value=mt_processor.n_threads
         )
-        process.processor = mocker.Mock(
-            return_value=mt_processor
-        )
+        process.processor = mocker.Mock(return_value=mt_processor)
 
         # start the process
         self.test_processes_become_ready(multithread_scheduler, [process], env)

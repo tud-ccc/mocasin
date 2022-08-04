@@ -124,7 +124,9 @@ def platform_power_partial():
 
 @pytest.fixture
 def platform_power_partial_2_threads():
-    pe_little = genericProcessor("proc_type_0", static_power=1, dynamic_power=3, n_threads=2)
+    pe_little = genericProcessor(
+        "proc_type_0", static_power=1, dynamic_power=3, n_threads=2
+    )
     pe_big = genericProcessor(
         "proc_type_1", static_power=None, dynamic_power=None
     )

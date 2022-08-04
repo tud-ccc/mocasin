@@ -56,7 +56,7 @@ class Processor:
         power_model,
         context_load_cycles=0,
         context_store_cycles=0,
-        n_threads=1
+        n_threads=1,
     ):
         self.name = name
         self.type = type_

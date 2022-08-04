@@ -13,7 +13,11 @@ from mocasin.common.trace import (
     ReadTokenSegment,
     WriteTokenSegment,
 )
-from mocasin.simulate.process import ProcessState, RuntimeProcess, RuntimeDataflowProcess
+from mocasin.simulate.process import (
+    ProcessState,
+    RuntimeProcess,
+    RuntimeDataflowProcess,
+)
 
 
 class TestRuntimeProcess(object):
@@ -144,6 +148,7 @@ class TestRuntimeProcess(object):
             with pytest.raises(AssertionError):
                 process.adapt()
 
+
 @pytest.fixture
 def full_channel(env, mocker):
     channel = mocker.Mock()
@@ -166,6 +171,7 @@ def empty_channel(env, mocker):
     channel.tokens_consumed = env.event()
     return channel
 
+
 @pytest.fixture
 def mt_processor(mocker):
     mt_processor = mocker.Mock()
@@ -176,6 +182,7 @@ def mt_processor(mocker):
     mt_processor.base_frequency = 1000
     mt_processor.frequency = 1000
     return mt_processor
+
 
 class TestRuntimeDataflowProcess:
     def empty_trace_generator(self):
@@ -407,13 +414,13 @@ class TestRuntimeDataflowProcess:
         assert dataflow_process._channels["test"]() is channel
         channel.set_src.assert_called_once_with(dataflow_process)
 
-    def test_frequency_adaptation(self, env, dataflow_process, mt_processor, mocker):
+    def test_frequency_adaptation(
+        self, env, dataflow_process, mt_processor, mocker
+    ):
         dataflow_process._trace = more_itertools.seekable(
             self.adaptation_trace_generator(), maxlen=16
         )
-        dataflow_process._get_n_running_threads = mocker.Mock(
-            return_value=2
-        )
+        dataflow_process._get_n_running_threads = mocker.Mock(return_value=2)
         dataflow_process._total_cycles = {"Test": 10, "Test2": 20}
         dataflow_process._remaining_compute_cycles = {"Test": 0, "Test2": 0}
 
@@ -433,6 +440,7 @@ class TestRuntimeDataflowProcess:
         # 0.5 is a "magic number" for the moment embedded in the processor class
         # it will be updated when I improve the model of the multithread accelerator
 
+
 def test_default_workload(app, mocker):
     process = RuntimeProcess("test", app)
     process.start()
@@ -441,4 +449,3 @@ def test_default_workload(app, mocker):
     with pytest.raises(NotImplementedError):
         app.env.process(process.workload())
         app.env.run()
-
