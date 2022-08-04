@@ -3,8 +3,6 @@
 #
 # Author: Robert Khasanov
 
-import mocasin.simulate.process as p
-
 class EnergyEstimator:
     """Estimates the overall energy consumption during a simulation.
 
@@ -18,7 +16,7 @@ class EnergyEstimator:
         self._last_activity = 0
         self._accumulated_dynamic_energy = 0  # in pJ
         self._process_start_registry = {
-            processor: {'processes': list(), 'start_time': 0} for processor in platform.processors()
+            processor: {'processes': list(), 'start_time': list()} for processor in platform.processors()
         }
 
     def register_process_start(self, processor, process):
@@ -33,8 +31,7 @@ class EnergyEstimator:
                 f"the processor {processor} is busy."
             )
 
-        if len(self._process_start_registry[processor]['processes']) == 0:
-            self._process_start_registry[processor]['start_time'] = self.env.now
+        self._process_start_registry[processor]['start_time'].append(self.env.now)
 
         self._process_start_registry[processor]['processes'].append(process)
 
@@ -50,10 +47,10 @@ class EnergyEstimator:
                 f"the processor {processor} executes no processes"
             )
 
-        self._process_start_registry[processor]['processes'].remove(process)
-
+        p_index = self._process_start_registry[processor]['processes'].index(process)
+        self._process_start_registry[processor]['processes'].pop(p_index)
         if self.enabled:
-            td = self.env.now - self._process_start_registry[processor]['start_time']
+            td = self.env.now - self._process_start_registry[processor]['start_time'].pop(p_index)
             power = processor.dynamic_power()
             if power is not None:
                 self._accumulated_dynamic_energy += power * td
