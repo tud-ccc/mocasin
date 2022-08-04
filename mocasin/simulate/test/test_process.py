@@ -13,7 +13,7 @@ from mocasin.common.trace import (
     ReadTokenSegment,
     WriteTokenSegment,
 )
-from mocasin.simulate.process import ProcessState, RuntimeProcess
+from mocasin.simulate.process import ProcessState, RuntimeProcess, RuntimeDataflowProcess
 
 
 class TestRuntimeProcess(object):
@@ -129,6 +129,20 @@ class TestRuntimeProcess(object):
             with pytest.raises(AssertionError):
                 process.unblock()
 
+    def test_adapt(self, process, state, mocker):
+        process.env.run(1)  # start simulation to initialze the process
+        process._transition(state)
+        process.env.run(2)
+        processor = mocker.Mock()
+        if state == "RUNNING":
+            process.processor = processor
+            process.adapt()
+            process.env.run(3)
+            assert process._state == ProcessState.RUNNING
+            assert process.processor is processor
+        else:
+            with pytest.raises(AssertionError):
+                process.adapt()
 
 @pytest.fixture
 def full_channel(env, mocker):
@@ -152,6 +166,16 @@ def empty_channel(env, mocker):
     channel.tokens_consumed = env.event()
     return channel
 
+@pytest.fixture
+def mt_processor(mocker):
+    mt_processor = mocker.Mock()
+    mt_processor.name = "Test"
+    mt_processor.type = "Test"
+    mt_processor.ticks = lambda x: x
+    mt_processor.n_threads = 2
+    mt_processor.base_frequency = 1000
+    mt_processor.frequency = 1000
+    return mt_processor
 
 class TestRuntimeDataflowProcess:
     def empty_trace_generator(self):
@@ -179,6 +203,14 @@ class TestRuntimeDataflowProcess:
 
     def preemption_trace_generator(self):
         yield ComputeSegment({"Test": 10, "Test2": 20})
+
+    def adaptation_trace_generator(self):
+        yield ComputeSegment({"Test": 10})
+
+    def adaptation_trigger(self, env, p):
+        yield env.timeout(1)
+        print("Calling adapt")
+        p.adapt()
 
     def _run(
         self,
@@ -375,6 +407,31 @@ class TestRuntimeDataflowProcess:
         assert dataflow_process._channels["test"]() is channel
         channel.set_src.assert_called_once_with(dataflow_process)
 
+    def test_frequency_adaptation(self, env, dataflow_process, mt_processor, mocker):
+        dataflow_process._trace = more_itertools.seekable(
+            self.adaptation_trace_generator(), maxlen=16
+        )
+        dataflow_process._get_n_running_threads = mocker.Mock(
+            return_value=2
+        )
+        dataflow_process._total_cycles = {"Test": 10, "Test2": 20}
+        dataflow_process._remaining_compute_cycles = {"Test": 0, "Test2": 0}
+
+        env.run()
+        dataflow_process.start()
+        env.run()
+        dataflow_process.activate(mt_processor)
+        assert dataflow_process.processor is mt_processor
+        assert mt_processor.frequency == mt_processor.base_frequency
+        env.run()
+        env.process(dataflow_process.workload())
+        env.process(self.adaptation_trigger(env, dataflow_process))
+        env.run(5)
+
+        assert dataflow_process.check_state(ProcessState.RUNNING)
+        assert mt_processor.frequency == 0.5 * mt_processor.base_frequency
+        # 0.5 is a "magic number" for the moment embedded in the processor class
+        # it will be updated when I improve the model of the multithread accelerator
 
 def test_default_workload(app, mocker):
     process = RuntimeProcess("test", app)
@@ -384,3 +441,4 @@ def test_default_workload(app, mocker):
     with pytest.raises(NotImplementedError):
         app.env.process(process.workload())
         app.env.run()
+
