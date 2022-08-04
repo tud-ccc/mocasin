@@ -97,3 +97,41 @@ def test_energy_estimation_partial(env, platform_power_partial, mocker):
     assert len(energy_estimator._process_start_registry[processors[0]]['processes']) == 0
     assert len(energy_estimator._process_start_registry[processors[4]]['processes']) == 0
     assert energy == (12000, 6000)
+
+
+def test_energy_estimation_partial_2_threads(env, platform_power_partial_2_threads, mocker):
+    energy_estimator = EnergyEstimator(platform_power_partial_2_threads, env)
+    assert energy_estimator.enabled
+    assert energy_estimator._last_activity == 0
+
+    processors = list(platform_power_partial_2_threads.processors())
+    process_a = mocker.Mock()
+    process_b = mocker.Mock()
+    energy_estimator.register_process_start(processors[0], process_a)
+    assert energy_estimator._last_activity == 0
+    assert len(energy_estimator._process_start_registry[processors[0]]['processes']) == 1
+    assert len(energy_estimator._process_start_registry[processors[4]]['processes']) == 0
+    assert energy_estimator.calculate_energy() == (0, 0)
+
+    env.run(1000)
+    energy_estimator.register_process_start(processors[0], process_b)
+    assert energy_estimator._last_activity == 1000
+    assert len(energy_estimator._process_start_registry[processors[0]]['processes']) == 2
+    assert len(energy_estimator._process_start_registry[processors[4]]['processes']) == 0
+    assert energy_estimator.calculate_energy() == (4000, 0)
+
+    env.run(2000)
+    energy_estimator.register_process_end(processors[0], process_a)
+    assert energy_estimator._last_activity == 2000
+    assert len(energy_estimator._process_start_registry[processors[0]]['processes']) == 1
+    assert len(energy_estimator._process_start_registry[processors[4]]['processes']) == 0
+    assert energy_estimator.calculate_energy() == (8000, 6000)
+
+    env.run(3000)
+    energy_estimator.register_process_end(processors[0], process_b)
+    energy = energy_estimator.calculate_energy()
+    assert energy_estimator._last_activity == 3000
+    assert len(energy_estimator._process_start_registry[processors[0]]['processes']) == 0
+    assert len(energy_estimator._process_start_registry[processors[4]]['processes']) == 0
+    print(env.now)
+    assert energy == (12000, 6000 + 6000)
