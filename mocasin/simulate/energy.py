@@ -14,57 +14,69 @@ class EnergyEstimator:
         self.platform = platform
         self.env = env
         self.enabled = platform.has_power_model()
-        self._last_activity = 0
-        self._accumulated_dynamic_energy = 0  # in pJ
-        self._process_start_registry = {
-            processor: {"processes": list(), "start_time": list()}
+        self._process_registry = {
+            processor: {"processes": set(), "last_update": 0}
             for processor in platform.processors()
         }
+        self._accumulated_dynamic_energy = 0  # in pJ
+
+    @property
+    def _last_activity(self):
+        """Return the latest activity among all processors."""
+        return max(
+            [
+                self._process_registry[processor]["last_update"]
+                for processor in self.platform.processors()
+            ]
+        )
 
     def register_process_start(self, processor, process):
         """Register the start of a process running on a given processor to
         account for its dynamic energy."""
 
-        self._last_activity = self.env.now
-
         if (
-            len(self._process_start_registry[processor]["processes"])
+            len(self._process_registry[processor]["processes"])
             >= processor.n_threads
         ):
             raise RuntimeError(
                 "Failed to register the start of the segment: "
-                f"the processor {processor} is busy."
+                f"processor {processor} is busy."
             )
+        if self.enabled:
+            self._accumulate_dynamic_energy(processor)
 
-        self._process_start_registry[processor]["start_time"].append(
-            self.env.now
-        )
-
-        self._process_start_registry[processor]["processes"].append(process)
+        self._process_registry[processor]["processes"].add(process)
+        self._process_registry[processor]["last_update"] = self.env.now
 
     def register_process_end(self, processor, process):
         """Register the end of a process running on a given processor to
         account for its dynamic energy."""
 
-        self._last_activity = self.env.now
-
-        if process not in self._process_start_registry[processor]["processes"]:
+        if process not in self._process_registry[processor]["processes"]:
             raise RuntimeError(
                 f"Failed to register the end of the segment: "
-                f"the processor {processor} executes no processes"
+                f"processor {processor} isn't running {process.full_name}"
             )
 
-        p_index = self._process_start_registry[processor]["processes"].index(
-            process
-        )
-        self._process_start_registry[processor]["processes"].pop(p_index)
         if self.enabled:
-            td = self.env.now - self._process_start_registry[processor][
-                "start_time"
-            ].pop(p_index)
-            power = processor.dynamic_power()
-            if power is not None:
-                self._accumulated_dynamic_energy += power * td
+            self._accumulate_dynamic_energy(processor)
+
+        self._process_registry[processor]["processes"].remove(process)
+        self._process_registry[processor]["last_update"] = self.env.now
+
+    def _accumulate_dynamic_energy(self, processor):
+        """Accumulate the dynamic energy consumed by the given processor
+        from the last update up to now."""
+
+        power = processor.dynamic_power()
+        if power is not None:
+            td = self.env.now - self._process_registry[processor]["last_update"]
+            power_coeff = (
+                1
+                if len(self._process_registry[processor]["processes"]) > 0
+                else 0
+            )  # This will depend on the actual power model
+            self._accumulated_dynamic_energy += td * power_coeff * power
 
     def calculate_energy(self):
         """Calculate the energy consumption of the simulation.
