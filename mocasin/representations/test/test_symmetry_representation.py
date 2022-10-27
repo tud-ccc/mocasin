@@ -35,7 +35,7 @@ def graph():
 
 
 def test_allEquivalent(platform, graph):
-    com_mapper = ComFullMapper(graph, platform)
+    com_mapper = ComFullMapper(platform)
     mapper = ProcPartialMapper(graph, platform, com_mapper)
     mapping = mapper.generate_mapping([0, 1])
 

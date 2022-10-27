@@ -17,7 +17,7 @@ install_requirements = [
     "cvxpy!=1.1.8,<1.2" if sys.version_info < (3, 7) else "cvxpy!=1.1.8",
     "deap",
     "h5py",
-    "hydra-core>=1.1",
+    "hydra-core>=1.1,<1.2",
     "scipy<1.6.0" if sys.version_info < (3, 7) else "scipy",
     "lxml",
     "matplotlib",

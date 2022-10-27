@@ -50,7 +50,8 @@ class EnergyEstimator:
         if self.enabled:
             td = self.env.now - start_time
             power = processor.dynamic_power()
-            self._accumulated_dynamic_energy += power * td
+            if power is not None:
+                self._accumulated_dynamic_energy += power * td
 
     def calculate_energy(self):
         """Calculate the energy consumption of the simulation.
@@ -63,7 +64,8 @@ class EnergyEstimator:
         static_energy = 0  # in pJ
         total_time = self._last_activity
         for pe in self.platform.processors():
-            static_energy += pe.static_power() * total_time
+            if pe.static_power() is not None:
+                static_energy += pe.static_power() * total_time
 
         # Add peripheral static power on the platform
         if self.platform.peripheral_static_power:

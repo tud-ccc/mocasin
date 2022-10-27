@@ -3,15 +3,16 @@
 #
 # Author: Robert Khasanov
 
+import filecmp
+from pathlib import Path
+
+import pytest
+
 from mocasin.common.graph import DataflowChannel, DataflowProcess, DataflowGraph
 from mocasin.mapper.partial import ComFullMapper, ProcPartialMapper
 from mocasin.platforms.odroid import DesignerPlatformOdroid
 from mocasin.platforms.platformDesigner import genericProcessor
 from mocasin.util.mapping_table import MappingTableReader, MappingTableWriter
-
-import filecmp
-from pathlib import Path
-import pytest
 
 
 @pytest.fixture
@@ -73,7 +74,7 @@ def num_resources(mapping):
 
 def test_mapping_table_writer(platform, graph, tmpdir, expected_csv):
     output_file = Path(tmpdir).joinpath("output_table.csv")
-    com_mapper = ComFullMapper(graph, platform)
+    com_mapper = ComFullMapper(platform)
     mapper = ProcPartialMapper(graph, platform, com_mapper)
 
     mapping1 = mapper.generate_mapping([0, 0])
@@ -98,7 +99,7 @@ def test_mapping_table_writer(platform, graph, tmpdir, expected_csv):
 
 def test_mapping_table_writer_with(platform, graph, tmpdir, expected_csv):
     output_file = Path(tmpdir).joinpath("output_table.csv")
-    com_mapper = ComFullMapper(graph, platform)
+    com_mapper = ComFullMapper(platform)
     mapper = ProcPartialMapper(graph, platform, com_mapper)
 
     mapping1 = mapper.generate_mapping([0, 0])

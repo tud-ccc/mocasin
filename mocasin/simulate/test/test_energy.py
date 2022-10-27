@@ -63,3 +63,29 @@ def test_energy_estimation_raises(env, platform_power, mocker):
         energy_estimator.register_process_start(processors[0], process_b)
     with pytest.raises(RuntimeError):
         energy_estimator.register_process_end(processors[0], process_b)
+
+
+def test_energy_estimation_partial(env, platform_power_partial, mocker):
+    energy_estimator = EnergyEstimator(platform_power_partial, env)
+    assert energy_estimator.enabled
+    assert energy_estimator._last_activity == 0
+    processors = list(platform_power_partial.processors())
+    process_a = mocker.Mock()
+    process_b = mocker.Mock()
+    energy_estimator.register_process_start(processors[0], process_a)
+    assert energy_estimator._last_activity == 0
+    assert len(energy_estimator._process_start_registry) == 1
+    env.run(1000)
+    energy_estimator.register_process_start(processors[4], process_b)
+    assert energy_estimator._last_activity == 1000
+    assert len(energy_estimator._process_start_registry) == 2
+    env.run(2000)
+    energy_estimator.register_process_end(processors[0], process_a)
+    assert energy_estimator._last_activity == 2000
+    assert len(energy_estimator._process_start_registry) == 1
+    env.run(3000)
+    energy_estimator.register_process_end(processors[4], process_b)
+    energy = energy_estimator.calculate_energy()
+    assert energy_estimator._last_activity == 3000
+    assert not energy_estimator._process_start_registry
+    assert energy == (12000, 6000)

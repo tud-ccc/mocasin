@@ -4,7 +4,7 @@
 # Authors: Christian Menard, Andres Goens
 
 import pydot
-
+import logging
 import math
 
 from collections import Counter
@@ -12,6 +12,8 @@ from enum import Enum
 from hydra.utils import to_absolute_path
 from mocasin.platforms.utils import simpleDijkstra, yxRouting
 from mocasin.platforms.topologies import meshTopology
+
+log = logging.getLogger(__name__)
 
 
 class CommunicationResourceType(Enum):

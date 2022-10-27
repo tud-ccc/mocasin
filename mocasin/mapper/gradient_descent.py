@@ -1,25 +1,25 @@
 # Copyright (C) 2020 TU Dresden
 # Licensed under the ISC license (see LICENSE.txt)
 #
-# Authors: Andrés Goens
+# Authors: Andrés Goens, Robert Khasanov
 
-import random
-from hydra.utils import instantiate
-import numpy as np
-import numba as nb
-import tqdm
 import copy
+import random
+import sys
 
-from mocasin.util import logging
+import numba as nb
+import numpy as np
+import tqdm
+
+from mocasin.mapper import BaseMapper
 from mocasin.mapper.random import RandomPartialMapper
-from mocasin.mapper.utils import SimulationManager
-from mocasin.mapper.utils import Statistics
-from mocasin.representations import MappingRepresentation
+from mocasin.mapper.utils import SimulationManager, SimulationManagerConfig
+from mocasin.util import logging
+
 
 log = logging.getLogger(__name__)
 eps = 1e-8
 
-import sys
 
 if sys.version_info[0:2] == (3, 7):
 
@@ -54,15 +54,36 @@ else:
         return gammas
 
 
-class GradientDescentMapper(object):
-    """Generates a full mapping by using a gradient descent on the mapping space."""
+class GradientDescentMapper(BaseMapper):
+    # TODO: Update the description of the last two arguments
+    """This mapper generates a full mapping by using a gradient descent on the
+    mapping space.
+
+    Args:
+        platform (Platform): A platform.
+        gd_iterations (int, optional): Number of iterations for gradient
+            descent. Defaults to 100.
+        stepsize (float, optional): Factor to multiply to (Barzilai–Borwein)
+            factor gradient in step. Defaults to 2.
+        random_seed (int, optional): A random seed for the RNG. Defaults to 42.
+        record_statistics (bool, optional): Record statistics on mappings
+            evaluated? Defautls to False.
+        dump_cache (bool, optional): Dump the mapping cache? Defaults to False.
+        chunk_size (int, optional): Size of chunks for parallel simulation.
+            Defaults to 10.
+        progress (bool, optional): Display simulation progress visually?
+            Defaults to False.
+        parallel (bool, optional): Execute simulations in parallel?
+            Defaults to False.
+        jobs (int, optional): Number of jobs for parallel simulation.
+            Defaults to 2.
+        momentum_decay (float, optional): To be described. Defaults to 0.5.
+        parallel_points (int, optional): To be described. Defaults to 5.
+    """
 
     def __init__(
         self,
-        graph,
         platform,
-        trace,
-        representation,
         gd_iterations=100,
         stepsize=2,
         random_seed=42,
@@ -75,86 +96,74 @@ class GradientDescentMapper(object):
         momentum_decay=0.5,
         parallel_points=5,
     ):
-        """Generates a full mapping for a given platform and dataflow application.
-
-        :param graph: a dataflow graph
-        :type graph: DataflowGraph
-        :param platform: a platform
-        :type platform: Platform
-        :param trace: a trace generator
-        :type trace: TraceGenerator
-        :param representation: a mapping representation object
-        :type representation: MappingRepresentation
-        :param gd_iterations: Number of iterations for gradient descent
-        :type gd_iterations: int
-        :param stepsize: Factor to multiply to (Barzilai–Borwein) factor gradient in step
-        :type stepsize: float
-        :param random_seed: A random seed for the RNG
-        :type random_seed: int
-        :param record_statistics: Record statistics on mappings evaluated?
-        :type record_statistics: bool
-        :param dump_cache: Dump the mapping cache?
-        :type dump_cache: bool
-        :param chunk_size: Size of chunks for parallel simulation
-        :type chunk_size: int
-        :param progress: Display simulation progress visually?
-        :type progress: bool
-        :param parallel: Execute simulations in parallel?
-        :type parallel: bool
-        :param jobs: Number of jobs for parallel simulation
-        :type jobs: int
-        """
+        super().__init__(platform, full_mapper=True)
         random.seed(random_seed)
         np.random.seed(random_seed)
-        self.full_mapper = True  # flag indicating the mapper type
-        self.graph = graph
-        self.platform = platform
-        self.num_PEs = len(platform.processors())
-        self.random_mapper = RandomPartialMapper(
-            self.graph, self.platform, seed=None
-        )
+        self.num_PEs = len(self.platform.processors())
+        self.random_mapper = RandomPartialMapper(self.platform, seed=None)
         self.gd_iterations = gd_iterations
         self.stepsize = stepsize
         self.momentum_decay = momentum_decay
         self.parallel_points = parallel_points
         self.dump_cache = dump_cache
         self.progress = progress
-        self.statistics = Statistics(
-            log, len(self.graph.processes()), record_statistics
-        )
 
-        # This is a workaround until Hydra 1.1 (with recursive instantiaton!)
-        if not issubclass(type(type(representation)), MappingRepresentation):
-            representation = instantiate(representation, graph, platform)
-        self.representation = representation
-        self.simulation_manager = SimulationManager(
-            self.representation,
-            trace,
-            jobs,
-            parallel,
-            progress,
-            chunk_size,
-            record_statistics,
+        # save parameters to simulation manager
+        simulation_config = SimulationManagerConfig(
+            jobs=jobs,
+            parallel=parallel,
+            progress=progress,
+            chunk_size=chunk_size,
         )
+        self._simulation_manager = SimulationManager(
+            self.platform, config=simulation_config
+        )
+        self._record_statistics = record_statistics
 
-    def generate_mapping(self):
-        """Generates a full mapping using gradient descent"""
+    def generate_mapping(
+        self,
+        graph,
+        trace=None,
+        representation=None,
+        processors=None,
+        partial_mapping=None,
+    ):
+        """Generate a full mapping using gradient descent.
+
+        Args:
+            graph (DataflowGraph): a dataflow graph
+            trace (TraceGenerator, optional): a trace generator
+            representation (MappingRepresentation, optional): a mapping
+                representation object
+            processors (:obj:`list` of :obj:`Processor`, optional): a list of
+                processors to map to.
+            partial_mapping (Mapping, optional): a partial mapping to complete
+
+        Returns:
+            Mapping: the generated mapping.
+        """
+        self._simulation_manager.reset_statistics()
         mappings = []
+
+        if (
+            hasattr(representation, "canonical_operations")
+            and not representation.canonical_operations
+        ):
+            to_representation_fun = representation.toRepresentationNoncanonical
+        else:
+            to_representation_fun = representation.toRepresentation
+
         for _ in range(self.parallel_points):
-            mapping_obj = self.random_mapper.generate_mapping()
-            if (
-                hasattr(self.representation, "canonical_operations")
-                and not self.representation.canonical_operations
-            ):
-                m = self.representation.toRepresentationNoncanonical(
-                    mapping_obj
-                )
-            else:
-                m = self.representation.toRepresentation(mapping_obj)
+            mapping_obj = self.random_mapper.generate_mapping(
+                graph, trace=trace, representation=representation
+            )
+            m = to_representation_fun(mapping_obj)
             mappings.append(m)
 
         self.dim = len(mappings[0])
-        cur_sim_results = self.simulation_manager.simulate(mappings)
+        cur_sim_results = self._simulation_manager.simulate(
+            graph, trace, representation, mappings
+        )
         cur_exec_times = [x.exec_time for x in cur_sim_results]
         idx = np.argmin(cur_exec_times)
         self.best_mapping = mappings[idx]
@@ -180,14 +189,17 @@ class GradientDescentMapper(object):
             for i in active_points:
                 grads[i] = self.momentum_decay * old_grads[
                     i
-                ] + self.calculate_gradient(mappings[i], cur_exec_times[i])
+                ] + self.calculate_gradient(
+                    graph, trace, representation, mappings[i], cur_exec_times[i]
+                )
                 log.debug(f"gradient (point {i}): {grads[i]}")
 
             before_last_mappings = copy.copy(last_mappings)
             last_mappings = copy.copy(mappings)
 
-            # Barzilai–Borwein. Note that before_last_mappings here holds the value for
-            # the last mappings still, since we are currently updating the mappigs
+            # Barzilai–Borwein. Note that before_last_mappings here holds the
+            # value for the last mappings still, since we are currently updating
+            # the mappigs
             gammas = _calculate_gammas(
                 [grads[i] for i in active_points],
                 [old_grads[i] for i in active_points],
@@ -195,23 +207,25 @@ class GradientDescentMapper(object):
                 [np.array(before_last_mappings[i]) for i in active_points],
             )
             for idx, i in enumerate(active_points):
-                # note that gamma has lost the ordering, which is why we enumerate
+                # note that gamma has lost the ordering
+                # due to that we enumerate
                 mappings[i] = (
                     mappings[i] + gammas[idx] * (-grads[i]) * self.stepsize
                 )
                 log.debug(f"moving mapping {i} to: {mappings[i]}")
-                mappings[i] = self.representation.approximate(
-                    np.array(mappings[i])
-                )
+                mappings[i] = representation.approximate(np.array(mappings[i]))
                 log.debug(f"approximating to: {mappings[i]}")
 
-            cur_sim_results = self.simulation_manager.simulate(mappings)
+            cur_sim_results = self._simulation_manager.simulate(
+                graph, trace, representation, mappings
+            )
             cur_exec_times = [x.exec_time for x in cur_sim_results]
             idx = np.argmin(cur_exec_times)
             log.info(f"{idx} best mapping in batch: {cur_exec_times[idx]}")
             if cur_exec_times[idx] < self.best_exec_time:
                 log.info(
-                    f"better than old best time ({self.best_exec_time}). Replacing"
+                    f"better than old best time ({self.best_exec_time})."
+                    " Replacing"
                 )
                 self.best_exec_time = cur_exec_times[idx]
                 self.best_mapping = mappings[idx]
@@ -243,16 +257,19 @@ class GradientDescentMapper(object):
                 break
 
         self.best_mapping = np.array(
-            self.representation.approximate(np.array(self.best_mapping))
+            representation.approximate(np.array(self.best_mapping))
         )
-        self.simulation_manager.statistics.log_statistics()
-        self.simulation_manager.statistics.to_file()
+        self._simulation_manager.statistics.log_statistics()
+        if self._record_statistics:
+            self._simulation_manager.statistics.to_file()
         if self.dump_cache:
-            self.simulation_manager.dump("mapping_cache.csv")
+            self._simulation_manager.dump("mapping_cache.csv")
 
-        return self.representation.fromRepresentation(self.best_mapping)
+        return representation.fromRepresentation(self.best_mapping)
 
-    def calculate_gradient(self, mapping, cur_exec_time):
+    def calculate_gradient(
+        self, graph, trace, representation, mapping, cur_exec_time
+    ):
         grad = np.zeros(self.dim)
         m_plus = []
         m_minus = []
@@ -262,7 +279,9 @@ class GradientDescentMapper(object):
             m_plus.append(mapping + evec)
             m_minus.append(mapping - evec)
 
-        sim_results = self.simulation_manager.simulate(m_plus + m_minus)
+        sim_results = self._simulation_manager.simulate(
+            graph, trace, representation, m_plus + m_minus
+        )
         exec_times = [x.exec_time for x in sim_results]
 
         for i in range(self.dim):

@@ -16,9 +16,9 @@ def graph_to_dot(cfg):
         cfg(~omegaconf.dictconfig.DictConfig): the hydra configuration object
 
     **Hydra Parameters**:
-        * **graph:** the input dataflow graph. The task expects a configuration dict
-          that can be instantiated to a :class:`~mocasin.common.graph.DataflowGraph`
-          object.
+        * **graph:** the input dataflow graph. The task expects a configuration
+          dict that can be instantiated to a
+          :class:`~mocasin.common.graph.DataflowGraph` object.
         * **dot:** the output file
     """
     graph = hydra.utils.instantiate(cfg["graph"])
@@ -45,15 +45,15 @@ def platform_to_dot(cfg):
 
 
 def mapping_to_dot(cfg):
-    """Generate a dot graph representing the mapping of a dataflow application to a
-    platform.
+    """Generate a dot graph representing the mapping of a dataflow application
+    to a platform.
 
     This task expects four hydra parameters to be available.
 
     **Hydra Parameters**:
-        * **graph:** the input dataflow graph. The task expects a configuration dict
-          that can be instantiated to a :class:`~mocasin.common.graph.DataflowGraph`
-          object.
+        * **graph:** the input dataflow graph. The task expects a configuration
+          dict that can be instantiated to a
+          :class:`~mocasin.common.graph.DataflowGraph` object.
         * **platform:** the input platform. The task expects a configuration
           dict that can be instantiated to a
           :class:`~mocasin.common.platform.Platform` object.
@@ -68,8 +68,9 @@ def mapping_to_dot(cfg):
     representation = hydra.utils.instantiate(
         cfg["representation"], graph, platform
     )
-    mapping = hydra.utils.instantiate(
-        cfg["mapper"], graph, platform, trace, representation
-    ).generate_mapping()
+    mapper = hydra.utils.instantiate(cfg["mapper"], platform)
+    mapping = mapper.generate_mapping(
+        graph, trace=trace, representation=representation
+    )
 
     mapping.to_pydot().write_raw(cfg["output_file"])
