@@ -8,7 +8,7 @@ from mocasin.mapper.partial import ComFullMapper, ProcPartialMapper
 
 
 def test_filter_pareto_front(graph, platform_odroid):
-    com_mapper = ComFullMapper(graph, platform_odroid)
+    com_mapper = ComFullMapper(platform_odroid)
     mapper = ProcPartialMapper(graph, platform_odroid, com_mapper)
 
     mappings = []

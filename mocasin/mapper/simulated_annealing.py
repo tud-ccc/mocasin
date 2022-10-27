@@ -1,36 +1,55 @@
 # Copyright (C) 2020 TU Dresden
 # Licensed under the ISC license (see LICENSE.txt)
 #
-# Authors: Andrés Goens
+# Authors: Andrés Goens, Robert Khasanov
 
 import random
+
 import numpy as np
 import tqdm
-from hydra.utils import instantiate
 
-from mocasin.util import logging
-from mocasin.representations import MappingRepresentation
+from mocasin.mapper import BaseMapper
 from mocasin.mapper.random import RandomPartialMapper
-from mocasin.mapper.utils import SimulationManager
-from mocasin.mapper.utils import Statistics
+from mocasin.mapper.utils import SimulationManager, SimulationManagerConfig
+from mocasin.util import logging
 
 
 log = logging.getLogger(__name__)
 
 
-class SimulatedAnnealingMapper(object):
+class SimulatedAnnealingMapper(BaseMapper):
     """Generates a full mapping by using a simulated annealing algorithm from:
-    Orsila, H., Kangas, T., Salminen, E., Hämäläinen, T. D., & Hännikäinen, M. (2007).
-    Automated memory-aware application distribution for multi-processor system-on-chips.
-    Journal of Systems Architecture, 53(11), 795-815.e.
+    Orsila, H., Kangas, T., Salminen, E., Hämäläinen, T. D., & Hännikäinen, M.
+    (2007). Automated memory-aware application distribution for multi-processor
+    system-on-chips. Journal of Systems Architecture, 53(11), 795-815.e.
+
+    Args:
+        platform (Platform): A platform
+        random_seed (int, optional): A random seed for the RNG. Defautls to 42.
+        record_statistics (bool, optional): Record statistics on mappings
+            evaluated? Defautls to False.
+        initial_temperature (float, optional): Initial temperature for
+            simmulated annealing. Defaults to 1.0.
+        final_temperature (float, optional): Final temperature for simmulated
+            annealing. Defaults to 0.1.
+        temperature_proportionality_constant (float, optional): Temperature
+            prop. constant for simmulated annealing. Defaults to 0.5.
+        radius (float, optional): The radius for searching when moving.
+            Defaults to 3.0.
+        dump_cache (bool, optional): Dump the mapping cache? Defaults to False.
+        chunk_size (int, optional): Size of chunks for parallel simulation.
+            Defaults to 10.
+        progress (bool, optional): Display simulation progress visually?
+            Defaults to False.
+        parallel (bool, optional): Execute simulations in parallel?
+            Defaults to False.
+        jobs (int, optional): Number of jobs for parallel simulation.
+            Defaults to 1.
     """
 
     def __init__(
         self,
-        graph,
         platform,
-        trace,
-        representation,
         random_seed=42,
         record_statistics=False,
         initial_temperature=1.0,
@@ -43,55 +62,12 @@ class SimulatedAnnealingMapper(object):
         parallel=False,
         jobs=1,
     ):
-        """Generates a full mapping for a given platform and dataflow application.
-
-        :param graph: a dataflow graph
-        :type graph: DataflowGraph
-        :param platform: a platform
-        :type platform: Platform
-        :param trace: a trace generator
-        :type trace: TraceGenerator
-        :param representation: a mapping representation object
-        :type representation: MappingRepresentation
-        :param random_seed: A random seed for the RNG
-        :type random_seed: int
-        :param initial_temperature: Initial temperature for simmulated annealing
-        :type initial_temperature: float
-        :param final_temperature: Final temperature for simmulated annealing
-        :type final_temperature: float
-        :param temperature_proportionality_constant: Temperature prop. constant for simmulated annealing
-        :type temperature_proportionality_constant: float
-        :param radius: Radius for search when moving
-        :type radius: int
-        :param record_statistics: Record statistics on mappings evaluated?
-        :type record_statistics: bool
-        :param dump_cache: Dump the mapping cache?
-        :type dump_cache: bool
-        :param chunk_size: Size of chunks for parallel simulation
-        :type chunk_size: int
-        :param progress: Display simulation progress visually?
-        :type progress: bool
-        :param parallel: Execute simulations in parallel?
-        :type parallel: bool
-        :param jobs: Number of jobs for parallel simulation
-        :type jobs: int
-        """
+        super().__init__(platform, full_mapper=True)
         random.seed(random_seed)
         np.random.seed(random_seed)
-        self.full_mapper = True  # flag indicating the mapper type
-        self.graph = graph
-        self.platform = platform
-        self.random_mapper = RandomPartialMapper(
-            self.graph, self.platform, seed=None
-        )
-        self.statistics = Statistics(
-            log, len(self.graph.processes()), record_statistics
-        )
+        self.random_mapper = RandomPartialMapper(self.platform, seed=None)
         self.initial_temperature = initial_temperature
         self.final_temperature = final_temperature
-        self.max_rejections = len(self.graph.processes()) * (
-            len(self.platform.processors()) - 1
-        )  # R_max = L
         self.p = temperature_proportionality_constant
         self.radius = radius
         self.progress = progress
@@ -100,27 +76,25 @@ class SimulatedAnnealingMapper(object):
         if not (1 > self.p > 0):
             log.error(
                 f"Temperature proportionality constant {self.p} not suitable, "
-                f"it should be close to, but smaller than 1 (algorithm probably won't terminate)."
+                f"it should be close to, but smaller than 1 (algorithm probably"
+                " won't terminate)."
             )
 
-        # This is a workaround until Hydra 1.1 (with recursive instantiaton!)
-        if not issubclass(type(type(representation)), MappingRepresentation):
-            representation = instantiate(representation, graph, platform)
-        self.representation = representation
-
-        self.simulation_manager = SimulationManager(
-            self.representation,
-            trace,
-            jobs,
-            parallel,
-            progress,
-            chunk_size,
-            record_statistics,
+        # save parameters to simulation manager
+        simulation_config = SimulationManagerConfig(
+            jobs=jobs,
+            parallel=parallel,
+            progress=progress,
+            chunk_size=chunk_size,
         )
+        self._simulation_manager = SimulationManager(
+            self.platform, config=simulation_config
+        )
+        self._record_statistics = record_statistics
 
-    def temperature_cooling(self, temperature, iter):
+    def temperature_cooling(self, temperature, iteration, max_rejections):
         return self.initial_temperature * self.p ** np.floor(
-            iter / self.max_rejections
+            iteration / max_rejections
         )
 
     def query_accept(self, time, temperature):
@@ -134,12 +108,10 @@ class SimulatedAnnealingMapper(object):
 
         return normalized_probability
 
-    def move(self, mapping, temperature):
+    def move(self, representation, mapping, temperature):
         radius = self.radius
         while 1:
-            new_mappings = self.representation._uniformFromBall(
-                mapping, radius, 20
-            )
+            new_mappings = representation._uniformFromBall(mapping, radius, 20)
             for m in new_mappings:
                 if list(m) != list(mapping):
                     return m
@@ -148,37 +120,70 @@ class SimulatedAnnealingMapper(object):
                 log.error("Could not mutate mapping")
                 raise RuntimeError("Could not mutate mapping")
 
-    def generate_mapping(self):
-        """Generates a full mapping using simulated anealing"""
-        mapping_obj = self.random_mapper.generate_mapping()
+    def generate_mapping(
+        self,
+        graph,
+        trace=None,
+        representation=None,
+        processors=None,
+        partial_mapping=None,
+    ):
+        """Generate a full mapping using simulated annealing.
+
+        Args:
+            graph (DataflowGraph): a dataflow graph
+            trace (TraceGenerator, optional): a trace generator
+            representation (MappingRepresentation, optional): a mapping
+                representation object
+            processors (:obj:`list` of :obj:`Processor`, optional): a list of
+                processors to map to.
+            partial_mapping (Mapping, optional): a partial mapping to complete
+
+        Returns:
+            Mapping: the generated mapping.
+        """
+        self._simulation_manager.reset_statistics()
+        # R_max = L
+        max_rejections = len(graph.processes()) * (
+            len(self.platform.processors()) - 1
+        )
+
+        mapping_obj = self.random_mapper.generate_mapping(
+            graph, trace=trace, representation=representation
+        )
         if (
-            hasattr(self.representation, "canonical_operations")
-            and not self.representation.canonical_operations
+            hasattr(representation, "canonical_operations")
+            and not representation.canonical_operations
         ):
-            mapping = self.representation.toRepresentationNoncanonical(
-                mapping_obj
-            )
+            to_representation_fun = representation.toRepresentationNoncanonical
         else:
-            mapping = self.representation.toRepresentation(mapping_obj)
+            to_representation_fun = representation.toRepresentation
+        mapping = to_representation_fun(mapping_obj)
 
         last_mapping = mapping
-        last_simres = self.simulation_manager.simulate([mapping])[0]
+        last_simres = self._simulation_manager.simulate(
+            graph, trace, representation, [mapping]
+        )[0]
         last_exec_time = last_simres.exec_time
         self.initial_cost = last_exec_time
         best_mapping = mapping
         best_exec_time = last_exec_time
         rejections = 0
 
-        iter = 0
+        iteration = 0
         temperature = self.initial_temperature
         if self.progress:
-            pbar = tqdm.tqdm(total=self.max_rejections * 20)
+            pbar = tqdm.tqdm(total=max_rejections * 20)
 
-        while rejections < self.max_rejections:
-            temperature = self.temperature_cooling(temperature, iter)
+        while rejections < max_rejections:
+            temperature = self.temperature_cooling(
+                temperature, iteration, max_rejections
+            )
             log.info(f"Current temperature {temperature}")
-            mapping = self.move(last_mapping, temperature)
-            cur_simres = self.simulation_manager.simulate([mapping])[0]
+            mapping = self.move(representation, last_mapping, temperature)
+            cur_simres = self._simulation_manager.simulate(
+                graph, trace, representation, [mapping]
+            )[0]
             cur_exec_time = cur_simres.exec_time
             faster = cur_exec_time < last_exec_time
             if not faster and cur_exec_time != last_exec_time:
@@ -202,16 +207,17 @@ class SimulatedAnnealingMapper(object):
                 # reject
                 if temperature <= self.final_temperature:
                     rejections += 1
-            iter += 1
+            iteration += 1
             if self.progress:
                 pbar.update(1)
         if self.progress:
-            pbar.update(self.max_rejections * 20 - iter)
+            pbar.update(max_rejections * 20 - iteration)
             pbar.close()
 
-        self.simulation_manager.statistics.log_statistics()
-        self.simulation_manager.statistics.to_file()
+        self._simulation_manager.statistics.log_statistics()
+        if self._record_statistics:
+            self._simulation_manager.statistics.to_file()
         if self.dump_cache:
-            self.simulation_manager.dump("mapping_cache.csv")
+            self._simulation_manager.dump("mapping_cache.csv")
 
-        return self.representation.fromRepresentation(best_mapping)
+        return representation.fromRepresentation(best_mapping)

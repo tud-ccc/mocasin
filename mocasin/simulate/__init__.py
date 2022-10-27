@@ -3,10 +3,10 @@
 #
 # Authors: Christian Menard
 
+from dataclasses import dataclass
+
 import hydra
 import simpy
-
-from dataclasses import dataclass
 
 from mocasin.simulate.application import RuntimeDataflowApplication
 from mocasin.simulate.system import RuntimeSystem
@@ -226,10 +226,10 @@ class DataflowSimulation(BaseSimulation):
         trace = hydra.utils.instantiate(cfg["trace"])
         graph = hydra.utils.instantiate(cfg["graph"])
         rep = hydra.utils.instantiate(cfg["representation"], graph, platform)
-        mapper = hydra.utils.instantiate(
-            cfg["mapper"], graph, platform, trace, rep
+        mapper = hydra.utils.instantiate(cfg["mapper"], platform)
+        mapping = mapper.generate_mapping(
+            graph, trace=trace, representation=rep
         )
-        mapping = mapper.generate_mapping()
         simulation = DataflowSimulation(
             platform, graph, mapping, trace, wait_for_initial_tokens
         )
