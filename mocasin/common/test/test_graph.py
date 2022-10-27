@@ -10,6 +10,7 @@ from mocasin.common.graph import (
     DataflowProcess,
 )
 
+
 @pytest.fixture
 def graph_acyclic():
     k = DataflowGraph("graph")
@@ -28,6 +29,7 @@ def graph_acyclic():
     k.add_process(process_b)
     k.add_process(process_c)
     return k
+
 
 def test_graph_sort(graph_acyclic):
     processes, channels = graph_acyclic.sort()
