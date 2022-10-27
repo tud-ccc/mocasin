@@ -4,12 +4,14 @@
 # Authors: Christian Menard, Andres Goens
 
 import pydot
-
+import logging
 import math
 
 from collections import Counter
 from enum import Enum
 from hydra.utils import to_absolute_path
+
+log = logging.getLogger(__name__)
 
 
 class CommunicationResourceType(Enum):

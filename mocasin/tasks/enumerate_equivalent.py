@@ -4,6 +4,7 @@
 # Authors: Christian Menard, Andres Goens
 
 import logging
+
 import hydra
 
 log = logging.getLogger(__name__)
@@ -18,14 +19,16 @@ def enumerate_equivalent(cfg):
         != "mocasin.representations.SymmetryRepresentation"
     ):
         raise RuntimeError(
-            f"The enumerate equvialent task needs to be called with the Symmetry representation. Called with {cfg['representation']._target_}"
+            "The enumerate equvialent task needs to be called with the Symmetry"
+            f" representation. Called with {cfg['representation']._target_}"
         )
     representation = hydra.utils.instantiate(
         cfg["representation"], graph, platform
     )
-    mapping = hydra.utils.instantiate(
-        cfg["mapper"], graph, platform, trace, representation
-    ).generate_mapping()
+    mapper = hydra.utils.instantiate(cfg["mapper"], platform)
+    mapping = mapper.generate_mapping(
+        graph, trace=trace, representation=representation
+    )
 
     log.info(("calculating orbit for mapping:" + str(mapping.to_list())))
     with open(cfg["output_file"], "w") as output_file:

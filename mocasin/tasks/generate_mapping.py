@@ -4,9 +4,10 @@
 # Authors: Christian Menard, Andres Goens
 
 import logging
-import hydra
 import os
 import pickle
+
+import hydra
 
 from mocasin.maps.mapping import export_maps_mapping
 from mocasin.simulate import DataflowSimulation
@@ -17,7 +18,7 @@ log = logging.getLogger(__name__)
 def generate_mapping(cfg):
     """Mapper Task
 
-    This task produces a mapping using one of multiple possible mapping algorithms.
+    This task produces a mapping using one of multiple mapping algorithms.
 
 
     Args:
@@ -27,9 +28,9 @@ def generate_mapping(cfg):
         * **mapper:** the mapper (mapping algorithm) to be used.
         * **export_all:** a flag indicating whether all mappings should be
           exported. If ``false`` only the best mapping will be exported.
-        * **graph:** the input dataflow graph. The task expects a configuration dict
-          that can be instantiated to a :class:`~mocasin.common.graph.DataflowGraph`
-          object.
+        * **graph:** the input dataflow graph. The task expects a configuration
+          dict that can be instantiated to a
+          :class:`~mocasin.common.graph.DataflowGraph` object.
         * **outdir:** the output directory
         * **progress:** a flag indicating whether to show a progress bar with
           ETA
@@ -42,20 +43,21 @@ def generate_mapping(cfg):
           that can be instantiated to a
           :class:`~mocasin.common.trace.TraceGenerator` object.
 
-    It is recommended to use the silent all logginf o (``-s``) to suppress all logging
-    output from the individual simulations."""
+    It is recommended to use the silent all logginf o (``-s``) to suppress all
+    logging output from the individual simulations.
+    """
     platform = hydra.utils.instantiate(cfg["platform"])
     trace = hydra.utils.instantiate(cfg["trace"])
     graph = hydra.utils.instantiate(cfg["graph"])
     representation = hydra.utils.instantiate(
         cfg["representation"], graph, platform
     )
-    mapper = hydra.utils.instantiate(
-        cfg["mapper"], graph, platform, trace, representation
-    )
+    mapper = hydra.utils.instantiate(cfg["mapper"], platform)
 
     # Run mapper
-    result = mapper.generate_mapping()
+    result = mapper.generate_mapping(
+        graph, trace=trace, representation=representation
+    )
 
     # export the best mapping
     outdir = cfg["outdir"]

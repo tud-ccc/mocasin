@@ -3,11 +3,11 @@
 #
 # Authors: Robert Khasanov, Felix Teweleit
 
-from mocasin.common.mapping import Mapping
-from mocasin.mapper.partial import ComFullMapper, ProcPartialMapper
-
 import csv
 import logging
+
+from mocasin.common.mapping import Mapping
+from mocasin.mapper.partial import ComFullMapper, ProcPartialMapper
 
 log = logging.getLogger(__name__)
 
@@ -71,7 +71,7 @@ class MappingTableReader:
         # Read and constructed mappings
         self.mappings = None
 
-        self.com_mapper = ComFullMapper(graph, platform)
+        self.com_mapper = ComFullMapper(platform)
         self.mapper = ProcPartialMapper(graph, platform, self.com_mapper)
 
         self._process_names = [p.name for p in self.graph.processes()]

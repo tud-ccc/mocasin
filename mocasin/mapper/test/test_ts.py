@@ -3,40 +3,27 @@
 #
 # Authors: Felix Teweleit, Andres Goens
 
-from mocasin.mapper.test.mock_cache import MockMappingCache
-from mocasin.mapper.tabu_search import TabuSearchMapper
-import pytest
 from itertools import product
+
+import pytest
+
+from mocasin.mapper.tabu_search import TabuSearchMapper
+from mocasin.mapper.test.mock_cache import MockMappingCache
 
 
 @pytest.fixture
-def mapper(
-    graph, platform, trace, representation, simres_evaluation_function, mocker
-):
+def mapper(platform, simres_evaluation_function, mocker):
     m = TabuSearchMapper(
-        graph,
-        platform,
-        trace,
-        representation,
-        42,
-        False,
-        100,
-        10,
-        10,
-        10,
-        2,
-        False,
-        10,
-        False,
-        True,
-        4,
+        platform, 42, False, 100, 10, 10, 10, 2, False, 10, False, True, 4
     )
-    m.simulation_manager = MockMappingCache(simres_evaluation_function, mocker)
+    m._simulation_manager = MockMappingCache(simres_evaluation_function, mocker)
     return m
 
 
-def test_ts(mapper, evaluation_function):
-    result_mapper = mapper.generate_mapping()
+def test_ts(mapper, graph, trace, representation, evaluation_function):
+    result_mapper = mapper.generate_mapping(
+        graph, trace=trace, representation=representation
+    )
     results = [
         (evaluation_function([x, y]), x, y)
         for x, y in product(range(7), range(7))
@@ -47,53 +34,33 @@ def test_ts(mapper, evaluation_function):
     assert tuple(result_mapper.to_list()) in expected
 
 
-def test_update_candidate_moves(mapper):
-    mapper.update_candidate_moves([3, 3])
+def test_update_candidate_moves(mapper, graph, trace, representation):
+    mapper.update_candidate_moves(graph, trace, representation, [3, 3])
     moves = [move for (move, _) in mapper.moves]
+    # fmt: off
     expected = {
-        (0, 1),
-        (0, 0),
-        (1, 0),
-        (-1, 1),
-        (1, 1),
-        (0, -2),
-        (-2, 0),
-        (1, -1),
-        (2, 0),
-        (0, 2),
-        (0, -1),
-        (-1, 0),
-        (-1, -1),
-        (-1, -2),
-        (-1, 2),
-        (1, 2),
-        (1, -2),
-        (-2, -1),
-        (-2, 1),
-        (2, 1),
-        (2, -1),
+        (0, 1), (0, 0), (1, 0), (-1, 1), (1, 1), (0, -2), (-2, 0), (1, -1),
+        (2, 0), (0, 2), (0, -1), (-1, 0), (-1, -1), (-1, -2), (-1, 2), (1, 2),
+        (1, -2), (-2, -1), (-2, 1), (2, 1), (2, -1),
     }
+    # fmt: on
 
     assert set(moves).issubset(expected)
 
-    mapper.update_candidate_moves([0, 0])
+    mapper.update_candidate_moves(graph, trace, representation, [0, 0])
     moves = [move for (move, _) in mapper.moves]
     expected = {(0, 1), (0, 0), (1, 0), (1, 1), (2, 0), (0, 2), (1, 2), (2, 1)}
 
     assert set(moves).issubset(expected)
 
-    mapper.update_candidate_moves([6, 6])
+    mapper.update_candidate_moves(graph, trace, representation, [6, 6])
     moves = [move for (move, _) in mapper.moves]
+    # fmt: off
     expected = {
-        (0, -1),
-        (0, 0),
-        (-1, 0),
-        (-1, -1),
-        (-2, 0),
-        (0, -2),
-        (-1, -2),
-        (-2, -1),
+        (0, -1), (0, 0), (-1, 0), (-1, -1),
+        (-2, 0), (0, -2), (-1, -2), (-2, -1),
     }
+    # fmt: on
 
     assert set(moves).issubset(expected)
 
