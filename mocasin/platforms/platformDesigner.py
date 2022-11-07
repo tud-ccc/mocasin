@@ -80,7 +80,7 @@ class PlatformDesigner:
         """A new scope is opened and pushed on the stack.
 
         :param identifier: The identifier, the element can be addressed with.
-        :type identifier: str
+        :type identifier: int
         """
         if self.__symLibrary:
             if self._ag_hasSuperGraph():
@@ -142,7 +142,7 @@ class PlatformDesigner:
         """Creates a new cluster of processing elements on the platform.
 
         :param identifier: The identifier the cluster can be addressed within the currently active scope.
-        :type identifier: str
+        :type identifier: int
         :param name: The name of the processing elements.
         :type name: string
         :param amount: The amount of processing elements in the cluster.
@@ -195,7 +195,7 @@ class PlatformDesigner:
         """Creates a new cluster of processing elements on the platform.
 
         :param identifier: The identifier the cluster can be addressed within the currently active scope.
-        :type identifier: str
+        :type identifier: int
         :param processor: The mocasin Processor object which will be used for the cluster.
         :type processor: Processor
         :param amount: The amount of processing elements in the cluster.
@@ -276,7 +276,7 @@ class PlatformDesigner:
         """Adds a level 1 cache to each PE of the given cluster.
 
         :param identifier: The identifier of the cluster to which the cache will be added.
-        :type identifier: str
+        :type identifier: int
         :param readLatency: The read latency of the cache.
         :type readLatency: int
         :param writeLatency: The write latency of the cache.
@@ -353,7 +353,7 @@ class PlatformDesigner:
         :param name: The name of the storage
         :type name: String
         :param clusterIds: A list of identifiers for all clusters which will be connected.
-        :type clusterIds: list[str]
+        :type clusterIds: list[int]
         :param readLatency: The read latency of the communication resource.
         :type readLatency: int
         :param writeLatency: The write latency of the communication resource.
@@ -467,7 +467,7 @@ class PlatformDesigner:
         """Creates a network on chip topology for the given cluster.
 
         :param clusterIdentifier: The identifier of the cluster the network will be created for.
-        :type clusterIdentifier: str
+        :type clusterIdentifier: int
         :param networkName: The name of the network. (primitives belonging to the network will be named
                                 like this.
         :type networkName: String
@@ -767,7 +767,7 @@ class PlatformDesigner:
         """Returns a list of all processing elements contained in specified cluster.
 
         :param identifier: The identifier of the target cluster.
-        :type identifier: str
+        :type identifier: int
         :returns: A list of names of processing elements
         :rtype list[string]:
         """
