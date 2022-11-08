@@ -244,11 +244,11 @@ class RuntimeScheduler(object):
         self.force_current_process_reset(process)
 
     def assert_current_process(self, process):
-        """ Sanity check on the scheduler status """
+        """Sanity check on the scheduler status"""
         assert process is self.current_process
 
     def force_current_process_reset(self, process):
-        """ Resets current process if an error occurred"""
+        """Resets current process if an error occurred"""
         if process is self.current_process:
             self.current_process = None
 
@@ -759,11 +759,11 @@ class MultithreadFifoScheduler(RuntimeScheduler):
         self.threads.release(thread)
 
     def assert_current_process(self, process):
-        """ Sanity check on the scheduler status. """
+        """Sanity check on the scheduler status."""
         assert process in self.current_processes
 
     def force_current_process_reset(self, process):
-        """ Resets current process if an error occurred. """
+        """Resets current process if an error occurred."""
         if process in self.current_processes:
             self.current_processes.remove(process)
 

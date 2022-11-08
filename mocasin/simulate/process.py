@@ -767,7 +767,10 @@ class RuntimeDataflowProcess(RuntimeProcess):
             # update total processed cycles
             for processor, cycles in processor_cycles.items():
                 self._total_cycles_processed[processor] += cycles
-        elif interrupt.processed and interrupt.value == InterruptSource.PREEMPT:
+        elif interrupt.processed and (
+            interrupt.value == InterruptSource.PREEMPT
+            or interrupt.value == InterruptSource.ADAPT
+        ):
             # Calculate how many cycles where executed until the process was
             # preempted. Note that the preemption can occur in between full
             # cycles in our simulation. We lose a bit of precision here, by
@@ -788,25 +791,6 @@ class RuntimeDataflowProcess(RuntimeProcess):
                 self._total_cycles_processed[processor] += cycles_processed
             self._log.debug(
                 f"process was deactivated after {cycles_processed} cycles"
-            )
-        elif interrupt.processed and interrupt.value == InterruptSource.ADAPT:
-            # Same code of PREEMPT. I'll consider avoid the code replication.
-            # Should I create a method for this code block?
-            # Something like: _update_cycle_count()
-            ticks_processed = self.env.now - start
-            ratio = float(ticks_processed) / float(ticks)
-
-            self._remaining_compute_cycles = {}
-            for processor, cycles in processor_cycles.items():
-                cycles_processed = int(round(float(cycles) * ratio))
-                cycles_remaining = cycles - cycles_processed
-                assert cycles_remaining >= 0
-                self._remaining_compute_cycles[processor] = cycles_remaining
-
-                # update total processed cycles
-                self._total_cycles_processed[processor] += cycles_processed
-            self._log.debug(
-                f"process was adapted after {cycles_processed} cycles"
             )
 
     def get_progress(self):
