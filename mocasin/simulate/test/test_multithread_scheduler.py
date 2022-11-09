@@ -299,7 +299,9 @@ class TestMultithreadScheduler:
         assert multithread_scheduler.average_load(1000000000000) == 1.0
         assert multithread_scheduler.average_load(10000000000000) == 0.1
 
-    def test_frequency_change(self, multithread_scheduler, env, mocker, mt_processor, processes):
+    def test_frequency_change(
+        self, multithread_scheduler, env, mocker, mt_processor, processes
+    ):
         self.test_processes_become_ready(multithread_scheduler, processes, env)
         env.process(multithread_scheduler.run())
         env.run(1)

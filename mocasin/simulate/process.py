@@ -270,7 +270,8 @@ class RuntimeProcess(object):
         """
         assert self._state == ProcessState.RUNNING
         self._log.debug(
-            "Notify adapt workload execution on processor %s", self.processor.name
+            "Notify adapt workload execution on processor %s",
+            self.processor.name,
         )
 
         old_event = self._interrupt

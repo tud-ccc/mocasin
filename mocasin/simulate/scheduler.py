@@ -770,7 +770,7 @@ class MultithreadFifoScheduler(RuntimeScheduler):
             self.current_processes.remove(process)
 
     def _change_processor_frequency(self):
-        """Change the processing speed according to the number of running threads. """
+        """Change the processing speed according to the number of running threads."""
         base_frequency = self._processor.base_frequency
         n_threads = self.n_running_threads
 
