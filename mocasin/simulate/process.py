@@ -420,10 +420,6 @@ class RuntimeProcess(object):
         assert self._state == ProcessState.CREATED
         self._log.debug("Entered CREATED state")
 
-    def _get_n_running_threads(self):
-        """Return the number of threads running concurrently on the same processor"""
-        return self.app.system.get_scheduler(self.processor).n_running_threads
-
     def workload(self):
         """Implements the process functionality.
 
