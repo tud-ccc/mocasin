@@ -73,9 +73,6 @@ def mock_process_workload(env, process, ticks):
             process._finish()
             break
 
-    # Serving the ADAPT interrupt makes the mock woarload end
-    # how can I avoid this?
-
 
 @pytest.fixture
 def processes(app, env, mt_processor, mocker):
@@ -85,9 +82,6 @@ def processes(app, env, mt_processor, mocker):
             side_effect=lambda i=i: mock_process_workload(
                 env, processes[i], workload_ticks * (i + 1)
             )
-        )
-        processes[i]._get_n_running_threads = mocker.Mock(
-            return_value=mt_processor.n_threads
         )
         processes[i].processor = mocker.Mock(return_value=mt_processor)
     return processes
@@ -217,9 +211,6 @@ class TestMultithreadScheduler:
         proc_b.workload = mocker.Mock(
             side_effect=lambda: mock_process_workload(env, proc_b, 10)
         )
-        proc_b._get_n_running_threads = mocker.Mock(
-            return_value=mt_processor.n_threads
-        )
         proc_b.processor = mocker.Mock(return_value=mt_processor)
 
         env.run(1)  # start simulation to initialize the processes
@@ -292,9 +283,6 @@ class TestMultithreadScheduler:
             side_effect=lambda: mock_process_workload(
                 env, process, 2000000000000
             )
-        )
-        process._get_n_running_threads = mocker.Mock(
-            return_value=mt_processor.n_threads
         )
         process.processor = mocker.Mock(return_value=mt_processor)
 
