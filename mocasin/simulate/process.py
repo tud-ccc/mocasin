@@ -262,42 +262,20 @@ class RuntimeProcess(object):
         self.processor = processor
         self._transition("RUNNING")
 
-    def adapt(self):
-        """Adapt the execution of the process to the changes in the processor.
+    def notify_adapt(self):
+        """Notify to the changes in the processor to the process.
 
         Raises:
             AssertionError: if not in :const:`ProcessState.RUNNING` state
         """
         assert self._state == ProcessState.RUNNING
         self._log.debug(
-            "Adapt workload execution on processor %s", self.processor.name
+            "Notify adapt workload execution on processor %s", self.processor.name
         )
 
         old_event = self._interrupt
         self._interrupt = self.env.event()
         old_event.succeed(InterruptSource.ADAPT)
-
-    def _change_frequency(self):
-        """Change the processing speed.
-
-        Raises:
-            AssertionError: if not in :const:`ProcessState.RUNNING` state
-        """
-        assert self._state == ProcessState.RUNNING
-
-        base_frequency = self.processor.base_frequency
-        n_threads = self._get_n_running_threads()
-
-        old_frequency = self.processor.frequency  # just for debugging purpose
-
-        self.processor.frequency = base_frequency * (1 / n_threads)
-        # This will have to be substituted with a proper model
-        self._log.debug(
-            "Frequency on processor %s changed from %s to %s",
-            self.processor.name,
-            old_frequency,
-            self.processor.frequency,
-        )
 
     def _deactivate(self):
         """Halt the process execution.
@@ -647,7 +625,7 @@ class RuntimeDataflowProcess(RuntimeProcess):
                     f"Encountered an unknown segment type! ({s.segment_type})"
                 )
 
-            # Stop processing if we where interrupted
+            # Stop processing if were interrupted
             if interrupt.triggered:
                 if interrupt.value == InterruptSource.KILL:
                     self._finish()
@@ -656,7 +634,6 @@ class RuntimeDataflowProcess(RuntimeProcess):
                     self._deactivate()
                     self._log.debug("process was preempted")
                 elif interrupt.value == InterruptSource.ADAPT:
-                    self._change_frequency()
                     self._log.debug(
                         "process was adapted during a segment of type %s",
                         s.segment_type,

@@ -226,7 +226,7 @@ class RuntimeScheduler(object):
         # if the process is running, we need to preempt it and wait for its
         # context to be stored
         if process.check_state(ProcessState.RUNNING):
-            self.assert_current_process(process)
+            self._assert_current_process(process)
 
             # prepare an event that will be notified once the process
             # is preempted and completely removed
@@ -241,13 +241,13 @@ class RuntimeScheduler(object):
         # in some seldom cases it could happen that the removed process
         # is still marked as the current process. In this case we reset
         # the current process
-        self.force_current_process_reset(process)
+        self._force_current_process_reset(process)
 
-    def assert_current_process(self, process):
+    def _assert_current_process(self, process):
         """Sanity check on the scheduler status"""
         assert process is self.current_process
 
-    def force_current_process_reset(self, process):
+    def _force_current_process_reset(self, process):
         """Resets current process if an error occurred"""
         if process is self.current_process:
             self.current_process = None
@@ -716,12 +716,13 @@ class MultithreadFifoScheduler(RuntimeScheduler):
         yield self.env.timeout(0)
 
         # adapt performance before running
+        self._change_processor_frequency()
         for process in self.running_processes():
             self._log.debug(
-                "Forcing adaptation on process %s because another process has started",
+                "Notifying adaptation on process %s because another process has started",
                 process.full_name,
             )
-            process.adapt()
+            process.notify_adapt()
 
         self._log.debug("run workload of process %s", next_process.full_name)
         # model the actual workload execution of the process
@@ -730,14 +731,6 @@ class MultithreadFifoScheduler(RuntimeScheduler):
         )  # qua c'era current_process ... occhio!
 
         self._log.debug("after workload of process %s", next_process.full_name)
-
-        # adapt performance after running
-        for process in self.running_processes():
-            self._log.debug(
-                "Forcing adaptation on process %s because another process has ended",
-                process.full_name,
-            )
-            process.adapt()
 
         # check if the process is being removed
         if (
@@ -758,14 +751,42 @@ class MultithreadFifoScheduler(RuntimeScheduler):
 
         self.threads.release(thread)
 
-    def assert_current_process(self, process):
+        # adapt performance after running
+        self._change_processor_frequency()
+        for process in self.running_processes():
+            self._log.debug(
+                "Notifying adaptation on process %s because another process has ended",
+                process.full_name,
+            )
+            process.notify_adapt()
+
+    def _assert_current_process(self, process):
         """Sanity check on the scheduler status."""
         assert process in self.current_processes
 
-    def force_current_process_reset(self, process):
+    def _force_current_process_reset(self, process):
         """Resets current process if an error occurred."""
         if process in self.current_processes:
             self.current_processes.remove(process)
+
+    def _change_processor_frequency(self):
+        """Change the processing speed according to the number of running threads. """
+        base_frequency = self._processor.base_frequency
+        n_threads = self.n_running_threads
+
+        old_frequency = self._processor.frequency  # just for debugging purpose
+
+        if n_threads > 0:
+            self._processor.frequency = base_frequency * (1 / n_threads)
+        else:
+            self._processor.frequency = base_frequency
+            # This will have to be substituted with a proper model
+        self._log.debug(
+            "Frequency on processor %s changed from %s to %s",
+            self._processor.name,
+            old_frequency,
+            self._processor.frequency,
+        )
 
 
 def create_scheduler(name, processor, policy, env):
