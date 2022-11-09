@@ -414,33 +414,6 @@ class TestRuntimeDataflowProcess:
         assert dataflow_process._channels["test"]() is channel
         channel.set_src.assert_called_once_with(dataflow_process)
 
-    #TO BE REMOVED
-    # def test_frequency_adaptation(
-    #     self, env, dataflow_process, mt_processor, mocker
-    # ):
-    #     dataflow_process._trace = more_itertools.seekable(
-    #         self.adaptation_trace_generator(), maxlen=16
-    #     )
-    #     dataflow_process._get_n_running_threads = mocker.Mock(return_value=2)
-    #     dataflow_process._total_cycles = {"Test": 10, "Test2": 20}
-    #     dataflow_process._remaining_compute_cycles = {"Test": 0, "Test2": 0}
-    #
-    #     env.run()
-    #     dataflow_process.start()
-    #     env.run()
-    #     dataflow_process.activate(mt_processor)
-    #     assert dataflow_process.processor is mt_processor
-    #     assert mt_processor.frequency == mt_processor.base_frequency
-    #     env.run()
-    #     env.process(dataflow_process.workload())
-    #     env.process(self.adaptation_trigger(env, dataflow_process))
-    #     env.run(5)
-    #
-    #     assert dataflow_process.check_state(ProcessState.RUNNING)
-    #     assert mt_processor.frequency == 0.5 * mt_processor.base_frequency
-        # 0.5 is a "magic number" for the moment embedded in the processor class
-        # it will be updated when I improve the model of the multithread accelerator
-
     def test_adaptation_interrupt(self, env, dataflow_process, mt_processor):
         # monkey patch the process to add a trace
         dataflow_process._trace = more_itertools.seekable(
