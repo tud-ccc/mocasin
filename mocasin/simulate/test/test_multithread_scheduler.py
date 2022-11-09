@@ -66,10 +66,7 @@ def mock_process_workload(env, process, ticks):
                 process._deactivate()
                 break
             elif interrupt.value == InterruptSource.ADAPT:
-                process._change_frequency()
                 process._interrupt = env.event()
-                # performance adaptation is triggered but not actually realized
-                # as the scheduler is only responsible for that
             else:
                 pass
         else:
@@ -158,6 +155,7 @@ class TestMultithreadScheduler:
         env.run()
 
     def test_run(self, multithread_scheduler, processes, env, mocker):
+        # this test does not consider performance adaptation
         self.call_run(multithread_scheduler, processes, env, mocker)
         if (
             multithread_scheduler._processor.n_threads == 1
@@ -312,3 +310,27 @@ class TestMultithreadScheduler:
         assert multithread_scheduler.average_load(1000) == 1.0
         assert multithread_scheduler.average_load(1000000000000) == 1.0
         assert multithread_scheduler.average_load(10000000000000) == 0.1
+
+    def test_frequency_change(self, multithread_scheduler, env, mocker, mt_processor, processes):
+        self.test_processes_become_ready(multithread_scheduler, processes, env)
+        env.process(multithread_scheduler.run())
+        env.run(1)
+        if multithread_scheduler._processor.n_threads == 1:
+            assert multithread_scheduler.n_running_threads == 1
+            assert mt_processor.frequency == base_frequency
+        elif multithread_scheduler._processor.n_threads == 2:
+            assert multithread_scheduler.n_running_threads == 2
+            assert mt_processor.frequency == base_frequency / 2
+        elif multithread_scheduler._processor.n_threads == 5:
+            assert multithread_scheduler.n_running_threads == 5
+            assert mt_processor.frequency == base_frequency / 5
+
+        env.run(20)
+        if multithread_scheduler._processor.n_threads == 5:
+            # the first process has finished
+            assert multithread_scheduler.n_running_threads == 4
+            assert mt_processor.frequency == base_frequency / 4
+
+        env.run()
+        assert multithread_scheduler.n_running_threads == 0
+        assert mt_processor.frequency == base_frequency
