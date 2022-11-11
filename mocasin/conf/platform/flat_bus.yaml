@@ -1,0 +1,10 @@
+_target_: mocasin.platforms.generic_bus.DesignerPlatformFlatBus
+# Once hydra 1.1 rolls out with recursive instantiation,
+# we should replace this and recursively instantiate
+# the processors. See:
+# https://github.com/facebookresearch/hydra/issues/566
+num_processors: 4
+symmetries_json: "${mocasin_path:platforms/symmetries/generic_bus.json}"
+embedding_json: "${mocasin_path:platforms/embeddings/generic_bus.json}"
+name : "generic_bus"
+

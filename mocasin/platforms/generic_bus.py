@@ -17,7 +17,7 @@ from mocasin.platforms.platformDesigner import PlatformDesigner, cluster
 from hydra.utils import instantiate
 
 
-class GenericBusPlatform(Platform):
+class DesignerPlatformFlatBus(Platform):
     """Represents a flat bus-based platform"""
 
     def __init__(
