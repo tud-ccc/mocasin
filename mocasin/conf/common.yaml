@@ -3,6 +3,8 @@ hydra:
   sweep:
     dir: multirun/${now:%Y-%m-%d-%H-%M-%S}
     subdir: ${hydra.job.num}
+  job:
+    chdir: true
 
 log_level : WARNING
 

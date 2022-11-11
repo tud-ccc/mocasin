@@ -9,6 +9,7 @@ from collections import deque
 from mocasin.common.platform import (
     CommunicationPhase,
     CommunicationResource,
+    CommunicationResourceType,
     Primitive,
 )
 
@@ -32,6 +33,7 @@ class Bus(CommunicationResource):
         super().__init__(
             name,
             frequency_domain,
+            CommunicationResourceType.Storage,
             latency,
             latency,
             throughput,
@@ -130,8 +132,8 @@ def primitives_from_buses(buses):
             )
             consume = CommunicationPhase("consume", c_buses + [storage], "read")
             for p in c_processors:
-                prim.add_producer(p, produce)
-                prim.add_consumer(p, consume)
+                prim.add_producer(p, [produce])
+                prim.add_consumer(p, [consume])
 
         primitives.append(prim)
 
