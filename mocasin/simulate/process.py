@@ -48,6 +48,9 @@ class InterruptSource(enum.Enum):
     """The scheduler requests preemption of the process"""
     KILL = 1
     """The process is killed and should terminate immediately"""
+    ADAPT = 2
+    """A performance adaptation is forced 
+        due to a change in the number of running threads"""
 
 
 class RuntimeProcess(object):
@@ -102,7 +105,7 @@ class RuntimeProcess(object):
         name (str): the process name
         app (RuntimeApplication): the application this process is part of
         _state (ProcessState): The current process state.
-        _log (SimulateLoggerAdapter): an logger adapter to print messages with
+        _log (SimulateLoggerAdapter): a logger adapter to print messages with
             simulation context
         processor (Processor): the processor that the processes currently runs
             on. This attribute is only valid in the
@@ -258,6 +261,22 @@ class RuntimeProcess(object):
         )
         self.processor = processor
         self._transition("RUNNING")
+
+    def notify_adapt(self):
+        """Notify to the changes in the processor to the process.
+
+        Raises:
+            AssertionError: if not in :const:`ProcessState.RUNNING` state
+        """
+        assert self._state == ProcessState.RUNNING
+        self._log.debug(
+            "Notify adapt workload execution on processor %s",
+            self.processor.name,
+        )
+
+        old_event = self._interrupt
+        self._interrupt = self.env.event()
+        old_event.succeed(InterruptSource.ADAPT)
 
     def _deactivate(self):
         """Halt the process execution.
@@ -603,7 +622,7 @@ class RuntimeDataflowProcess(RuntimeProcess):
                     f"Encountered an unknown segment type! ({s.segment_type})"
                 )
 
-            # Stop processing if we where interrupted
+            # Stop processing if were interrupted
             if interrupt.triggered:
                 if interrupt.value == InterruptSource.KILL:
                     self._finish()
@@ -611,11 +630,19 @@ class RuntimeDataflowProcess(RuntimeProcess):
                 elif interrupt.value == InterruptSource.PREEMPT:
                     self._deactivate()
                     self._log.debug("process was preempted")
+                elif interrupt.value == InterruptSource.ADAPT:
+                    self._log.debug(
+                        "process was adapted during a segment of type %s",
+                        s.segment_type,
+                    )
+                    if s.segment_type == SegmentType.COMPUTE:
+                        continue  # Must skip self._update_current_segment() as the compute segment has not finished
                 else:
                     raise RuntimeError(
                         f"Unexpected interrupt source {interrupt.value.name}"
                     )
-                return
+                if not interrupt.value == InterruptSource.ADAPT:
+                    return  # The ADAPT interrupt does't force the process out of the RUNNING state
 
             # move on to the next segment
             self._update_current_segment()
@@ -633,7 +660,7 @@ class RuntimeDataflowProcess(RuntimeProcess):
         else:
             # we start up workload execution for the first time and need
             # to initialize the current trace segment
-            self._log.debug("start workload execution")
+            self._log.debug("init workload execution")
             self._is_running = True
             self._update_current_segment()
             self._remaining_compute_cycles = None
@@ -714,7 +741,10 @@ class RuntimeDataflowProcess(RuntimeProcess):
             # update total processed cycles
             for processor, cycles in processor_cycles.items():
                 self._total_cycles_processed[processor] += cycles
-        elif interrupt.processed and interrupt.value == InterruptSource.PREEMPT:
+        elif interrupt.processed and (
+            interrupt.value == InterruptSource.PREEMPT
+            or interrupt.value == InterruptSource.ADAPT
+        ):
             # Calculate how many cycles where executed until the process was
             # preempted. Note that the preemption can occur in between full
             # cycles in our simulation. We lose a bit of precision here, by

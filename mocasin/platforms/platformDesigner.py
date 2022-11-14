@@ -222,6 +222,7 @@ class PlatformDesigner:
                     processor.power_model,
                     processor.context_load_cycles,
                     processor.context_store_cycles,
+                    processor.n_threads,
                 )
 
                 self.__platform.add_processor(new_processor)
@@ -1002,11 +1003,18 @@ class genericProcessor(Processor):
     :type static_power: float
     :param dynamic_power: The dynamic power of the processing elements.
     :type dynamic_power: float
+    :param n_threads: The number of threads supported by the processor
+    :type n_threads: int
     :rtype mocasin.common.platform.Processor:
     """
 
     def __init__(
-        self, type, frequency=2000000000, static_power=None, dynamic_power=None
+        self,
+        type,
+        frequency=2000000000,
+        static_power=None,
+        dynamic_power=None,
+        n_threads=1,
     ):
         fd = FrequencyDomain("fd_" + type, frequency)
         if static_power is not None and dynamic_power is not None:
@@ -1016,5 +1024,9 @@ class genericProcessor(Processor):
         else:
             ppm = None
         super().__init__(
-            "DesignerGenericProc" + str(type) + str(frequency), type, fd, ppm
+            "DesignerGenericProc" + str(type) + str(frequency),
+            type,
+            fd,
+            ppm,
+            n_threads=n_threads,
         )

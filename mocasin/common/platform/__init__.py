@@ -26,6 +26,14 @@ class FrequencyDomain:
     def __init__(self, name, frequency):
         self.name = name
         self.frequency = frequency
+        self.base_frequency = frequency
+        # Christian and I agreed that the  easiest way to adapt performance at runtime
+        # is to dynamically change the frequency of the process as this feature was
+        # supposed to be available in Mocasin (to study dynamic frequency scaling)
+        # but never used in practice.
+        # For the moment, I define a "base_frequency" that is acquired from the processor
+        # model and never changed. The actual running frequency, i.e. "frequency", is
+        # modified at runtime according to the number of running threads in the processor.
 
     def cycles_to_ticks(self, cycles):
         tmp = float(cycles) * 1000000000000 / float(self.frequency)
@@ -48,6 +56,7 @@ class Processor:
         power_model,
         context_load_cycles=0,
         context_store_cycles=0,
+        n_threads=1,
     ):
         self.name = name
         self.type = type_
@@ -55,6 +64,22 @@ class Processor:
         self.power_model = power_model
         self.context_load_cycles = context_load_cycles
         self.context_store_cycles = context_store_cycles
+        self.n_threads = n_threads
+
+    @property
+    def base_frequency(self):
+        """Returns the base frequency of the processor"""
+        return self.frequency_domain.base_frequency
+
+    @property
+    def frequency(self):
+        """Returns the running frequency of the processor"""
+        return self.frequency_domain.frequency
+
+    @frequency.setter
+    def frequency(self, frequency):
+        """Sets the running frequency of the processor"""
+        self.frequency_domain.frequency = int(frequency)
 
     def ticks(self, cycles):
         return self.frequency_domain.cycles_to_ticks(cycles)
