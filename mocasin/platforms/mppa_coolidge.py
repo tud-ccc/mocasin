@@ -12,7 +12,7 @@ from mocasin.common.platform import (
 )
 from mocasin.platforms.topologies import fullyConnectedTopology
 from mocasin.platforms.platformDesigner import PlatformDesigner
-from mocasin.platforms.platformDesigner import cluster as cl
+from mocasin.platforms.platformDesigner import cluster
 from hydra.utils import instantiate
 
 
@@ -39,7 +39,7 @@ class DesignerPlatformCoolidge(Platform):
 
         designer = PlatformDesigner(self)
         designer.setSchedulingPolicy("FIFO", 1000)
-        coolidge = cl("coolidge", designer)
+        coolidge = cluster("coolidge", designer)
 
         # create five chips with 16 cores, NoC, +Security Core
         l2_list = list()
@@ -55,7 +55,7 @@ class DesignerPlatformCoolidge(Platform):
         self.generate_all_primitives()
 
 
-class makeChip(cl):
+class makeChip(cluster):
     def __init__(self, name, designer, pe0, pe1):
         super(makeChip, self).__init__(name, designer)
 
@@ -77,7 +77,7 @@ class makeChip(cl):
             designer.connectComponents(pe, l2)
 
 
-class makeCluster0(cl):
+class makeCluster0(cluster):
     def __init__(self, name, designer, pe0, router):
         super(makeCluster0, self).__init__(name, designer)
 
@@ -92,10 +92,10 @@ class makeCluster0(cl):
 
         fd = FrequencyDomain("fd_electric", 6000000.0)
         pl = CommunicationResource("pl", *plParams(fd))
-        designer.createNetwork(f"noc", nocList, fullyConnectedTopology, pl)
+        designer.createNetwork(f"noc_{name}", nocList, fullyConnectedTopology, pl)
 
 
-class makeCluster1(cl):
+class makeCluster1(cluster):
     def __init__(self, name, designer, pe1):
         super(makeCluster1, self).__init__(name, designer)
 
