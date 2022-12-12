@@ -142,7 +142,7 @@ class genericProcessor(Processor):
         else:
             ppm = None
         super().__init__(
-            "DesignerGenericProc" + str(type) + str(frequency), type, fd, ppm
+            "DesignerGenericProc_" + str(type) + "_" + str(frequency), type, fd, ppm
         )
 
 
