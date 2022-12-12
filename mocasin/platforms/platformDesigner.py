@@ -129,10 +129,28 @@ class PlatformDesigner:
 class genericProcessor(Processor):
     """This class is a generic processor to be passed to the
     different architectures generated with the platform designer.
+
+    :param type: The processor type string (needs to match traces!).
+    :type type: string
+    :param frequency: The processor frequency
+    :type type: int
+    :returns: A processor object
+    :param static_power: The static power of the processing elements.
+    :type static_power: float
+    :param dynamic_power: The dynamic power of the processing elements.
+    :type dynamic_power: float
+    :param n_threads: The number of threads supported by the processor
+    :type n_threads: int
+    :rtype mocasin.common.platform.Processor:
     """
 
     def __init__(
-        self, type, frequency=2000000000, static_power=None, dynamic_power=None
+        self,
+        type,
+        frequency=2000000000,
+        static_power=None,
+        dynamic_power=None,
+        n_threads=1,
     ):
         fd = FrequencyDomain("fd_" + type, frequency)
         if static_power is not None and dynamic_power is not None:
@@ -142,7 +160,11 @@ class genericProcessor(Processor):
         else:
             ppm = None
         super().__init__(
-            "DesignerGenericProc_" + str(type) + "_" + str(frequency), type, fd, ppm
+            "DesignerGenericProc_" + str(type) + "_" + str(frequency),
+            type,
+            fd,
+            ppm,
+            n_threads=n_threads,
         )
 
 
@@ -174,6 +196,7 @@ class cluster:
         power_model,
         context_load_cycles,
         context_store_cycles,
+        n_threads=1,
     ):
         """Adds a processing element to cluster."""
         try:
@@ -184,6 +207,7 @@ class cluster:
                 power_model,
                 context_load_cycles,
                 context_store_cycles,
+                n_threads,
             )
             self.designer.platform.add_processor(new_processor)
             self.designer.platform.add_scheduler(

@@ -6,6 +6,7 @@
 
 from collections import deque
 from enum import Enum
+import simpy
 
 from mocasin.util import logging
 from mocasin.simulate.adapter import SimulateLoggerAdapter
@@ -225,7 +226,7 @@ class RuntimeScheduler(object):
         # if the process is running, we need to preempt it and wait for its
         # context to be stored
         if process.check_state(ProcessState.RUNNING):
-            assert process is self.current_process
+            self._assert_current_process(process)
 
             # prepare an event that will be notified once the process
             # is preempted and completely removed
@@ -240,6 +241,14 @@ class RuntimeScheduler(object):
         # in some seldom cases it could happen that the removed process
         # is still marked as the current process. In this case we reset
         # the current process
+        self._force_current_process_reset(process)
+
+    def _assert_current_process(self, process):
+        """Sanity check on the scheduler status"""
+        assert process is self.current_process
+
+    def _force_current_process_reset(self, process):
+        """Resets current process if an error occurred"""
         if process is self.current_process:
             self.current_process = None
 
@@ -358,9 +367,7 @@ class RuntimeScheduler(object):
     def _wait_for_ready_process(self):
         """A simpy process for waiting until a new process becomes ready"""
         self._log.debug("There is no ready process -> sleep")
-        # Record the idle event in our internal load trace
-        if len(self._load_trace) == 0 or self._load_trace[0][1] == 1:
-            self._load_trace.appendleft((self.env.now, 0))
+        self._record_idle_event()
         # notify the idle event
         self.idle.succeed(value=self)
         self.idle = self.env.event()
@@ -369,6 +376,16 @@ class RuntimeScheduler(object):
         # wait until a process becomes ready
         yield self.process_ready
         self.is_idle = False
+
+    def _record_idle_event(self):
+        """Record the idle event in our internal load trace."""
+        if len(self._load_trace) == 0 or self._load_trace[0][1] == 1:
+            self._load_trace.appendleft((self.env.now, 0))
+
+    def _record_activation_event(self):
+        """Record the activation event in our internal load trace."""
+        if len(self._load_trace) == 0 or self._load_trace[0][1] == 0:
+            self._load_trace.appendleft((self.env.now, 1))
 
     def _schedule_next_process(self):
         next_process = self.schedule()
@@ -380,9 +397,7 @@ class RuntimeScheduler(object):
             # by returning, we trigger the algorithm again
             return
 
-        # record the activation event in our internal load trace
-        if len(self._load_trace) == 0 or self._load_trace[0][1] == 0:
-            self._load_trace.appendleft((self.env.now, 1))
+        self._record_activation_event()
 
         # pay for the scheduling delay
         ticks = self._processor.ticks(self._scheduling_cycles)
@@ -481,7 +496,7 @@ class RuntimeScheduler(object):
         )
 
     def ready_queue_length(self):
-        """Get the current length of the ready queue"""
+        """Get the current length of the ready queue."""
         return len(self._ready_queue)
 
 
@@ -494,7 +509,7 @@ class FifoScheduler(RuntimeScheduler):
     def __init__(
         self, name, processor, context_switch_mode, scheduling_cycles, env
     ):
-        """Initialize a FIFO scheduler
+        """Initialize a FIFO scheduler.
 
         Calls :func:`RuntimeScheduler.__init__`.
         """
@@ -583,6 +598,197 @@ class RoundRobinScheduler(RuntimeScheduler):
             self._processes.rotate(-1)
 
 
+class MultithreadFifoScheduler(RuntimeScheduler):
+    """A FIFO Scheduler for Multithread processors.
+
+    Always schedules the process that became ready first and
+    then waits for a free thread to run it.
+    """
+
+    def __init__(
+        self,
+        name,
+        processor,
+        context_switch_mode,
+        scheduling_cycles,
+        env,
+        n_threads,
+    ):
+        """Initialize a Multithread FIFO scheduler.
+
+        Calls :func:`RuntimeScheduler.__init__`.
+        """
+        super().__init__(
+            name, processor, context_switch_mode, scheduling_cycles, None, env
+        )
+
+        self.threads = simpy.Resource(self.env, capacity=n_threads)
+
+        self.current_processes = deque(maxlen=n_threads)
+
+        self.next_process = None
+
+    @property
+    def n_running_threads(self):
+        """Returns the number of running threads on the processor."""
+        return self.threads.count
+
+    def running_processes(self):
+        """Returns the number of running processes on the processor."""
+        for process in self.current_processes:
+            if process.check_state(ProcessState.RUNNING):
+                yield process
+
+    def schedule(self):
+        """Perform the scheduling.
+
+        Returns the next ready process.
+        """
+        # Schedule next ready process if there are any ready processes
+        if len(self._ready_queue) > 0:
+            return self._ready_queue.popleft()
+
+        return None
+
+    def _schedule_next_process(self):
+        next_process = self.schedule()
+        if next_process is None:
+            yield from self._wait_for_ready_process()
+            # by returning, we trigger the algorithm again
+            return
+        self._log.debug(
+            "%s selected as next process to run", next_process.full_name
+        )
+
+        thread = self.threads.request()
+        yield thread
+        self._log.debug(
+            "a thread is available to run process %s", next_process.full_name
+        )
+
+        self.env.process(self._run_next_process(next_process, thread))
+
+    def _record_idle_event(self):
+        if self.n_running_threads == 0:
+            super()._record_idle_event()
+
+    def _run_next_process(self, next_process, thread):
+        self._log.debug(
+            "A Simpy process for process %s has been created",
+            next_process.full_name,
+        )
+
+        if next_process is None:
+            raise RuntimeError(
+                "a new process has been schedule but there were none ready"
+            )
+
+        self._record_activation_event()
+
+        # pay for the scheduling delay
+        ticks = self._processor.ticks(self._scheduling_cycles)
+        yield self.env.timeout(ticks)
+
+        # pay for context switching
+        last_process = (
+            self.current_processes[-1] if self.current_processes else None
+        )
+        yield from self._load_context(last_process, next_process)
+
+        # it could happen, that the process gets killed or removed
+        # before the context was loaded completely. In this case we
+        # just return and the algorithm will be run again
+        if next_process not in self._processes or next_process.check_state(
+            ProcessState.FINISHED
+        ):
+            self._log.debug(
+                f"process {next_process.name} was migrated or killed before its"
+                " context could be loaded"
+            )
+            return
+
+        self._log.debug("activate process %s", next_process.full_name)
+
+        self.current_processes.appendleft(next_process)
+        next_process.activate(self._processor)
+        # make sure the activation is processed completely before
+        # continuing
+        yield self.env.timeout(0)
+
+        # adapt performance before running
+        self._change_processor_frequency()
+        for process in self.running_processes():
+            self._log.debug(
+                "Notifying adaptation on process %s because another process has started",
+                process.full_name,
+            )
+            process.notify_adapt()
+
+        self._log.debug("run workload of process %s", next_process.full_name)
+        # model the actual workload execution of the process
+        yield from self._execute_process_workload(
+            next_process
+        )  # qua c'era current_process ... occhio!
+
+        self._log.debug("after workload of process %s", next_process.full_name)
+
+        # check if the process is being removed
+        if (
+            not next_process.check_state(ProcessState.FINISHED)
+            and next_process not in self._processes
+        ):
+            self._log.debug("Cleaning up after removing a running process")
+            # first store the context
+            yield from self._store_context(next_process, always=True)
+            # reset current process
+            self.current_processes.remove(next_process)
+            # notify the event to indicate that migration completed
+            assert self._process_removal_complete is not None
+            self._process_removal_complete.succeed()
+        else:
+            # Otherwise, just pay for context switching
+            yield from self._store_context(next_process)
+
+        self.threads.release(thread)
+
+        # adapt performance after running
+        self._change_processor_frequency()
+        for process in self.running_processes():
+            self._log.debug(
+                "Notifying adaptation on process %s because another process has ended",
+                process.full_name,
+            )
+            process.notify_adapt()
+
+    def _assert_current_process(self, process):
+        """Sanity check on the scheduler status."""
+        assert process in self.current_processes
+
+    def _force_current_process_reset(self, process):
+        """Resets current process if an error occurred."""
+        if process in self.current_processes:
+            self.current_processes.remove(process)
+
+    def _change_processor_frequency(self):
+        """Change the processing speed according to the number of running threads."""
+        base_frequency = self._processor.base_frequency
+        n_threads = self.n_running_threads
+
+        old_frequency = self._processor.frequency  # just for debugging purpose
+
+        if n_threads > 0:
+            self._processor.frequency = base_frequency * (1 / n_threads)
+        else:
+            self._processor.frequency = base_frequency
+            # This will have to be substituted with a proper model
+        self._log.debug(
+            "Frequency on processor %s changed from %s to %s",
+            self._processor.name,
+            old_frequency,
+            self._processor.frequency,
+        )
+
+
 def create_scheduler(name, processor, policy, env):
     """Factory method for RuntimeScheduler
 
@@ -592,10 +798,12 @@ def create_scheduler(name, processor, policy, env):
         name (str): name of the new scheduler
         processor (Processor): the processor that the scheduler manages
         policy (SchedulingPolicy): the policy implemented by the new scheduler
+        env (Environment): the simpy environment where the scheduler process runs
 
     Returns:
         RuntimeScheduler: a runtime scheduler object
     """
+
     if policy.name == "FIFO":
         log.debug(f"Initialize new FIFO scheduler ({name})")
         s = FifoScheduler(
@@ -614,6 +822,16 @@ def create_scheduler(name, processor, policy, env):
             policy.scheduling_cycles,
             policy.time_slice,
             env,
+        )
+    elif policy.name == "Multithread":
+        log.debug(f"Initialize new Multithread scheduler ({name})")
+        s = MultithreadFifoScheduler(
+            name,
+            processor,
+            ContextSwitchMode.AFTER_SCHEDULING,
+            policy.scheduling_cycles,
+            env,
+            processor.n_threads,
         )
     else:
         raise NotImplementedError(
