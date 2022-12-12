@@ -92,7 +92,9 @@ class makeCluster0(cluster):
 
         fd = FrequencyDomain("fd_electric", 6000000.0)
         pl = CommunicationResource("pl", *plParams(fd))
-        designer.createNetwork(f"noc_{name}", nocList, fullyConnectedTopology, pl)
+        designer.createNetwork(
+            f"noc_{name}", nocList, fullyConnectedTopology, pl
+        )
 
 
 class makeCluster1(cluster):
