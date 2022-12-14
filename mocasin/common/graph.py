@@ -142,7 +142,7 @@ class DataflowGraph(object):
 
         # The actual DFS
         def dfs(n):
-            colours[n] = GRAY
+            colours[n.name] = GRAY
             for channel in n.outgoing_channels:
                 for ch in channel.sinks:
                     if colours[ch.name] == WHITE:
@@ -165,7 +165,7 @@ class DataflowGraph(object):
         # Then keep doing it while there are white nodes
         for n in colours:
             if colours[n] == WHITE:
-                dfs(n)
+                dfs(self.find_process(n))
         nodes.reverse()
 
         # get ordered channels
