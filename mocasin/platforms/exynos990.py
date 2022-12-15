@@ -99,6 +99,7 @@ class DesignerPlatformExynos990(Platform):
             processor.power_model,
             processor.context_load_cycles,
             processor.context_store_cycles,
+            processor.n_threads,
         )
 
     # returns (readLatency, writeLatency, readThroughput, writeThroughput, freq)
