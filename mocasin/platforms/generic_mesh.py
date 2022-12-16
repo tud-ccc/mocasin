@@ -123,5 +123,5 @@ def peParams(processor):
         processor.power_model,
         processor.context_load_cycles,
         processor.context_store_cycles,
-        processor.n_threads
+        processor.n_threads,
     )
