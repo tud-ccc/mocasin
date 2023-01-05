@@ -30,6 +30,29 @@ def graph_acyclic():
     k.add_process(process_c)
     return k
 
+@pytest.fixture
+def graph_cyclic():
+    k = DataflowGraph("graph")
+    process_a = DataflowProcess("a")
+    process_b = DataflowProcess("b")
+    process_c = DataflowProcess("c")
+    channel_1 = DataflowChannel("ch1", 1)
+    channel_2 = DataflowChannel("ch2", 1)
+    channel_3 = DataflowChannel("ch3", 1)
+    process_a.connect_to_outgoing_channel(channel_1)
+    process_b.connect_to_incomming_channel(channel_1)
+    process_b.connect_to_outgoing_channel(channel_2)
+    process_b.connect_to_outgoing_channel(channel_3)
+    process_c.connect_to_incomming_channel(channel_2)
+    process_a.connect_to_incomming_channel(channel_3)
+    k.add_channel(channel_1)
+    k.add_channel(channel_2)
+    k.add_channel(channel_3)
+    k.add_process(process_a)
+    k.add_process(process_b)
+    k.add_process(process_c)
+    return k
+
 
 @pytest.fixture
 def graph_multiple_roots():
@@ -92,3 +115,10 @@ def test_graph_sort(graph_acyclic):
     assert a == "a"
     assert b == "b"
     assert c == "c"
+
+def test_graph_cyclic(graph_cyclic, graph_acyclic):
+    is_cyclic = graph_cyclic.isCyclic()
+    assert is_cyclic == True
+
+    is_cyclic = graph_acyclic.isCyclic()
+    assert is_cyclic == False

@@ -133,6 +133,10 @@ class DataflowGraph(object):
         """Sort process list in topological order"""
         if len(self.process_names()) == 0:
             return []
+        if self.isCyclic():
+            log.error(
+                "ERROR: topological sort is only possible if graph is DAG"
+            )
 
         WHITE = 0  # Not seen yet
         GRAY = 1  # Seen but not completed
@@ -155,12 +159,7 @@ class DataflowGraph(object):
         for process in self.processes():
             if len(process.incoming_channels) == 0:
                 entry_nodes.append(process)
-        if entry_nodes:
-            dfs(entry_nodes[0])
-        else:
-            log.error(
-                "ERROR: topological sort is only possible if graph is DAG"
-            )
+        dfs(entry_nodes[0])
 
         # Then keep doing it while there are white nodes
         for n in colours:
@@ -181,6 +180,30 @@ class DataflowGraph(object):
             visited_nodes.append(node)
 
         return nodes, channels
+
+
+    def isCyclic(self):
+        """Check if graph is cyclic"""
+
+        def isCyclicRec(currNode, path):
+            if currNode in path:
+                return True
+            else:
+                path.append(currNode)
+                for ch in currNode.outgoing_channels:
+                    node = ch.sinks[0]
+                    if isCyclicRec(node, path):
+                        return True
+                    else:
+                        path.remove(node)
+            return False
+
+        for node in self.processes():
+            initPath = list()
+            if isCyclicRec(node, initPath):
+                return True
+        return False
+
 
     def to_pydot(self, channels=True):
         """Convert the dataflow graph to a dot graph."""
