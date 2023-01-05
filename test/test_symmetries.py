@@ -7,6 +7,7 @@ import subprocess
 import pytest
 import filecmp
 import os
+import sys
 
 
 @pytest.mark.skip(reason="Test just takes too long.")
@@ -53,6 +54,9 @@ def test_symmetries_tgff_large(datadir, large_platform):
 
 
 def test_symmetries_tgff_small(datadir, small_platform):
+    if small_platform == "generic_mesh" and sys.version_info < (3, 7):
+        pytest.skip()
+
     subprocess.check_call(
         [
             "mocasin",
