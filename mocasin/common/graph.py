@@ -181,7 +181,6 @@ class DataflowGraph(object):
 
         return nodes, channels
 
-
     def isCyclic(self):
         """Check if graph is cyclic"""
 
@@ -203,7 +202,6 @@ class DataflowGraph(object):
             if isCyclicRec(node, initPath):
                 return True
         return False
-
 
     def to_pydot(self, channels=True):
         """Convert the dataflow graph to a dot graph."""

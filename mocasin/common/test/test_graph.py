@@ -30,6 +30,7 @@ def graph_acyclic():
     k.add_process(process_c)
     return k
 
+
 @pytest.fixture
 def graph_cyclic():
     k = DataflowGraph("graph")
@@ -115,6 +116,7 @@ def test_graph_sort(graph_acyclic):
     assert a == "a"
     assert b == "b"
     assert c == "c"
+
 
 def test_graph_cyclic(graph_cyclic, graph_acyclic):
     is_cyclic = graph_cyclic.isCyclic()
