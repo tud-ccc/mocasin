@@ -59,8 +59,7 @@ build-python3.7:
     - apt-get update
     - apt-get install -y lua5.3 liblua5.3 luarocks
     # install mocasin
-    - ls -la ./wheels
-    - pip install mocasin --no-index --find-links=./wheels
+    - pip install "mocasin[dev]" --no-index --find-links=./wheels
     # run tests
     - pytest
 
