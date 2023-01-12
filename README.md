@@ -7,7 +7,7 @@ platforms.
 Installation
 ------------
 
-It is recommended to install mocasin within a virtual environment. Currently we support Python versions 3.6, 3.7, 3.8 and 3.9.
+It is recommended to install mocasin within a virtual environment. Currently we support Python versions 3.7, 3.8, 3.9, and 3.10.
 You can create a new environment with
 ```
 virtualenv -p python3 ~/virtualenvs/mocasin
@@ -30,7 +30,7 @@ pip install .
 If you plan to modify the mocasin code base, you should install the package in
 development mode:
 ```
-pip install -e .
+pip install -e ."[dev]"
 ```
 
 This ensures that any modifications you make, will have an immediate effect to
@@ -112,10 +112,7 @@ and load the previously generated trace file
 Running Tests
 -------------
 
-mocasin comes with a set of tests. You can run them as follows:
-```
-python setup.py test
-```
+mocasin comes with a set of tests. You can run them simply by running `pytest`. By default this will run all the tests in the repository. Alternatively, you can also give pytest a path, limiting the tests it searches for.
 
 Style Guide
 -----------
