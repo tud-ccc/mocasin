@@ -53,13 +53,6 @@ build-python3.7:
   tags:
     - python3.7
 
-build-python3.6:
-  extends: .build
-  stage: build
-  image: python:3.6
-  tags:
-    - python3.6
-
 .test:
   script:
     # install runtime dependencies for mpsym
@@ -105,15 +98,6 @@ test-python3.7:
     - python3.7
   needs:
     - build-python3.7
-
-test-python3.6:
-  extends: .test
-  stage: test
-  image: python:3.6
-  tags:
-    - python3.6
-  needs:
-    - build-python3.6
 
 # Use API calls on downstream repositories to determine which branch to trigger
 # in plugin bridge jobs
