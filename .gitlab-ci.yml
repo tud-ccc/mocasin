@@ -61,7 +61,7 @@ build-python3.7:
     # install mocasin
     - pip install "mocasin[dev]" --no-index --find-links=./wheels
     # run tests
-    - pytest
+    - python -m pytest
 
 test-python3.10:
   extends: .test
