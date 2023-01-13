@@ -32,7 +32,9 @@ dependencies = [
     "numpy<1.22",
     "pint",
     "pydot",
-    "pynauty",
+    # pynauty is not binary compatible to some systems including Ubuntu 22.10
+    # this forces an installation from source
+    "pynauty @ git+https://github.com/pdobsan/pynauty.git@v2.8.6",
     # this fork includes a fix needed for Python 3.10,
     # see https://github.com/pabigot/pyxb/pull/111
     "pyxb @ git+https://github.com/nightglass/pyxb.git@fix-collections-warning#egg=pyxb",  # noqa
