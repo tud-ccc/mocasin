@@ -1,3 +1,64 @@
+[build-system]
+requires = ["setuptools>65.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mocasin"
+version = "0.1.0"
+authors = [
+    {name = "Christian Menard", email = "christian.menard@tu-dresden.de"},
+    {name = "Andrés Goens", email = "andres.goens@tu-dresden.de"},
+    {name = "Robert Khasanov", email = "robert.khasanov@tu-dresden.de"},
+    {name = "Julian Robledo", email = "julian.robledo@tu-dresden.de"},
+]
+description = "A framework for modeling dataflow applications and their execution on MPSoC platforms."
+readme = "README.md"
+requires-python = ">=3.7"
+license = {text = "ISC"}
+dependencies = [
+    "arpeggio",
+    "cloudpickle",
+    "cvxopt",
+    "cvxpy!=1.1.8",
+    "deap",
+    "h5py",
+    "hydra-core>=1.2,<1.3",
+    "scipy",
+    "lxml",
+    "matplotlib",
+    "more_itertools",
+    "mpsym",
+    "numba>=0.53.0rc1",
+    "numpy<1.22",
+    "pint",
+    "pydot",
+    # pynauty is not binary compatible to some systems including Ubuntu 22.10
+    # this forces an installation from source
+    "pynauty @ git+https://github.com/pdobsan/pynauty.git@v2.8.6",
+    # this fork includes a fix needed for Python 3.10,
+    # see https://github.com/pabigot/pyxb/pull/111
+    "pyxb @ git+https://github.com/nightglass/pyxb.git@fix-collections-warning#egg=pyxb",  # noqa
+    "simpy",
+    "sortedcontainers",
+    "termcolor",
+    "tqdm",
+]
+
+[project.scripts]
+mocasin = "mocasin.__main__:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest_mock",
+    "pytest_raises",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = ["test", "*.test"]
+namespaces = true
+
 [tool.black]
 line-length = 80
 exclude = "doc|mocasin/sdf3/_sdf_parser.py|mocasin/maps/mapping/mapsmapping.py|mocasin/maps/mapping/_mapsplatform.py|mocasin/maps/platform/parse.py"

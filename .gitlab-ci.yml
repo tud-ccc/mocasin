@@ -15,7 +15,7 @@ stages:
     - apt-get update
     - apt-get install -y build-essential cmake libboost-dev libboost-graph-dev lua5.3 liblua5.3-dev luarocks
     # build the wheels
-    - pip wheel -w wheels .
+    - pip wheel -w wheels ."[dev]"
   artifacts:
     paths:
       - wheels
@@ -53,22 +53,15 @@ build-python3.7:
   tags:
     - python3.7
 
-build-python3.6:
-  extends: .build
-  stage: build
-  image: python:3.6
-  tags:
-    - python3.6
-
 .test:
   script:
     # install runtime dependencies for mpsym
     - apt-get update
     - apt-get install -y lua5.3 liblua5.3 luarocks
     # install mocasin
-    - pip install mocasin --no-index --find-links=./wheels
+    - pip install "mocasin[dev]" --no-index --find-links=./wheels
     # run tests
-    - python setup.py test
+    - python -m pytest
 
 test-python3.10:
   extends: .test
@@ -105,15 +98,6 @@ test-python3.7:
     - python3.7
   needs:
     - build-python3.7
-
-test-python3.6:
-  extends: .test
-  stage: test
-  image: python:3.6
-  tags:
-    - python3.6
-  needs:
-    - build-python3.6
 
 # Use API calls on downstream repositories to determine which branch to trigger
 # in plugin bridge jobs
