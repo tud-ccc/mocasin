@@ -20,7 +20,12 @@ EPS = 0.0001
 
 
 class ResourceManager:
-    def __init__(self, platform, scheduler, schedule_iteratively=True):
+    def __init__(
+        self,
+        platform,
+        scheduler,
+        schedule_iteratively=True,
+    ):
         self.platform = platform
         self.scheduler = scheduler
 
@@ -56,7 +61,7 @@ class ResourceManager:
             self._schedule = None
         else:
             self._schedule = new_schedule
-            log.debug("Applied a new schedule:")
+            log.debug("Current active schedule:")
             log.debug(new_schedule.to_str(verbose=True))
 
     def _is_schedule_adjusted(self, schedule):
@@ -164,9 +169,11 @@ class ResourceManager:
         # Create a copy of the current job list with the new request
         # Ensure that jobs are immutable
         jobs = [j for _, j in self.requests.items() if j]
+
         if new_requests:
             for request in new_requests:
                 jobs.append(Job.from_request(request).dispatch())
+
         # Generate scheduling with the new job
         st = time.time()
         if allow_partial_solution:

@@ -191,7 +191,12 @@ class SegMedfScheduler(SegmentedScheduler):
         :type platform: Platform
         """
         segment_mapper = SegMedfSegmentMapper(self, platform)
-        super().__init__(platform, segment_mapper)
+        super().__init__(platform, segment_mapper, **kwargs)
+
+        if self.schedule_reuse:
+            log.warning(
+                f"{self.__class__.__name__} does not reuse existing schedules"
+            )
 
     @property
     def name(self):

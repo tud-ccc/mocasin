@@ -168,6 +168,7 @@ class TetrisManagement:
         # Initialize tetris scheduler
         scheduler = hydra.utils.instantiate(cfg["resource_manager"], platform)
 
+        # TODO: add a flag to the config: "schedule_iteratively"
         manager = ResourceManager(platform, scheduler)
 
         tracer = TracePlayer(manager, reqs)

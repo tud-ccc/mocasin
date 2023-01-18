@@ -343,7 +343,7 @@ class MedfScheduler(SchedulerBase):
             time_window = max_deadline - scheduling_start_time
 
         # Reuse the job mappings from the previous schedule
-        if current_schedule:
+        if self.schedule_reuse and current_schedule:
             current_schedule_requests = current_schedule.get_requests()
             for job in remaining_jobs:
                 request = job.request
@@ -356,7 +356,7 @@ class MedfScheduler(SchedulerBase):
         remaining_jobs = [j for j in jobs if j not in job_mappings]
 
         # Map the remaining jobs
-        if current_schedule:
+        if self.schedule_reuse and current_schedule:
             # if current schedule is supplied, all remaining jobs should be new
             assert all(
                 job.request.status == JobRequestStatus.NEW
