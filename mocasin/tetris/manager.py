@@ -184,11 +184,12 @@ class ResourceManager:
             )
 
         et = time.time()
+        scheduling_time = et - st
         log.debug(
             f"Schedule found = {schedule is not None}. "
-            f"Time to find the schedule: {et-st}"
+            f"Time to find the schedule: {scheduling_time}"
         )
-        return schedule
+        return schedule, scheduling_time
 
     def _generate_schedule_iteratively(self):
         """Generate schedule for multiple requests iteratively."""
@@ -196,8 +197,10 @@ class ResourceManager:
             r for r in self.requests.keys() if r.status == JobRequestStatus.NEW
         ]
         new_schedule = None
+        total_sched_time = 0
         for request in new_requests:
-            schedule = self._generate_schedule([request])
+            schedule, sched_time = self._generate_schedule([request])
+            total_sched_time += sched_time
             if schedule:
                 log.debug(f"Request {request.app.name} is accepted")
                 request.status = JobRequestStatus.ACCEPTED
@@ -208,7 +211,7 @@ class ResourceManager:
                 log.debug(f"Request {request.app.name} is rejected")
                 request.status = JobRequestStatus.REFUSED
                 self._remove_request(request)
-        return new_schedule
+        return new_schedule, total_sched_time
 
     def _generate_schedule_jointly(self):
         """Generate schedule for multiple requests jointly."""
@@ -216,7 +219,7 @@ class ResourceManager:
         new_requests = [
             r for r in self.requests.keys() if r.status == JobRequestStatus.NEW
         ]
-        schedule = self._generate_schedule(
+        schedule, sched_time = self._generate_schedule(
             new_requests, allow_partial_solution=True
         )
         if not schedule:
@@ -225,7 +228,7 @@ class ResourceManager:
                 log.debug(f"Request {request.app.name} is rejected")
                 request.status = JobRequestStatus.REFUSED
                 self._remove_request(request)
-            return None
+            return None, sched_time
 
         scheduled_requests = schedule.get_requests()
         for request in list(self.requests.keys()):
@@ -246,7 +249,7 @@ class ResourceManager:
                 log.debug(f"Request {request.app.name} is rejected")
                 request.status = JobRequestStatus.REFUSED
                 self._remove_request(request)
-        return schedule
+        return schedule, sched_time
 
     def generate_schedule(self, force=False):
         """Generate a new schedule.
@@ -274,19 +277,19 @@ class ResourceManager:
             r for r in self.requests.keys() if r.status == JobRequestStatus.NEW
         ]
         if self._schedule_iteratively:
-            schedule = self._generate_schedule_iteratively()
+            schedule, sched_time = self._generate_schedule_iteratively()
         else:
-            schedule = self._generate_schedule_jointly()
+            schedule, sched_time = self._generate_schedule_jointly()
 
         if not schedule and force:
-            schedule = self._generate_schedule()
+            schedule, sched_time = self._generate_schedule()
             assert schedule
 
         if schedule:
             self._set_schedule(schedule)
-            return self.schedule
+            return self.schedule, sched_time
 
-        return None
+        return None, sched_time
 
     def _remove_request(self, request):
         """Remove finished or refused request."""

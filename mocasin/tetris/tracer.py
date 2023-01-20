@@ -59,7 +59,7 @@ class TracePlayer:
         self._simulation_start_time = time.time()
         log.info("Simulation started")
 
-        for event in self._events:
+        for event_no, event in enumerate(self._events):
             log.debug(f"Handling request {event.to_str()}")
             graph = event.app
             mappings = event.mappings
@@ -70,7 +70,16 @@ class TracePlayer:
                 graph, mappings, deadline - arrival
             )
             self._requests.append(request)
-            schedule = self.resource_manager.generate_schedule()
+            schedule, sched_time = self.resource_manager.generate_schedule()
+            accepted_str = "ACCEPTED" if schedule else "REFUSED"
+
+            log.info(
+                f"T={arrival:8.2f}: "
+                f"Req#{event_no+1:02} {graph.name:4} dl={deadline:8.3f} | "
+                f"ARs={len(self.resource_manager.requests)} "
+                f"st={sched_time:.3f}s "
+                f"=> {accepted_str}"
+            )
 
         while self.resource_manager.schedule:
             self.resource_manager.advance_segment()
