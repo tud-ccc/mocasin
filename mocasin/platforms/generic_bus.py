@@ -13,7 +13,7 @@ from mocasin.common.platform import (
     Storage,
 )
 from mocasin.common.platform.bus import Bus, primitives_from_buses
-from mocasin.platforms.platformDesigner import PlatformDesigner
+from mocasin.platforms.platformDesigner import PlatformDesigner, cluster
 from hydra.utils import instantiate
 
 
@@ -31,16 +31,18 @@ class DesignerPlatformFlatBus(Platform):
         communication via shared RAM is generated.
         """
         super().__init__(name, symmetries_json, embedding_json)
-
+        designer = PlatformDesigner(self)
         fd_pes = FrequencyDomain("fd_pes", 500000000)
         fd_ram = FrequencyDomain("fd_ram", 100000000)
 
         ram = Storage("RAM", fd_ram, 5, 7, 16, 12)
         self.add_communication_resource(ram)
+        designer.adjacentList.update({ram: []})
 
         bus = Bus("bus", fd_pes, 1, 8)
         self.add_communication_resource(bus)
         bus.connect_storage(ram)
+        designer.adjacentList.update({bus: []})
 
         policy = SchedulingPolicy("FIFO", 100)
 
@@ -50,10 +52,11 @@ class DesignerPlatformFlatBus(Platform):
             bus.connect_processor(processor)
             self.add_processor(processor)
             self.add_scheduler(Scheduler("sp_" + name, [processor], policy))
+            designer.adjacentList.update({processor: []})
+            designer.connectComponents(processor, bus)
+        designer.connectComponents(bus, ram)
 
-        primitives = primitives_from_buses([bus])
-        for p in primitives:
-            self.add_primitive(p)
+        self.generate_all_primitives()
 
 
 class GenericClusteredPlatform(Platform):
@@ -160,7 +163,7 @@ class DesignerPlatformBus(Platform):
         self, processor_0, name="bus", symmetries_json=None, embedding_json=None
     ):
         """Initializes an example platform with four processing
-        elements connected via an shared memory.
+        elements connected via a shared memory.
         :param processor_0: the processing element for the platform
         :type processor_0: Processor
         :param name: The name for the returned platform
@@ -174,15 +177,29 @@ class DesignerPlatformBus(Platform):
             processor_0 = instantiate(processor_0)
         designer = PlatformDesigner(self)
         designer.setSchedulingPolicy("FIFO", 1000)
-        designer.newElement("test_chip")
-        designer.addPeClusterForProcessor("cluster_0", processor_0, 4)
-        designer.addCommunicationResource(
+        test_chip = cluster("test_chip", designer)
+        cluster0 = cluster("cluster0", designer)
+        test_chip.addCluster(cluster0)
+
+        # Add memory
+        shared_memory = cluster0.addStorage(
             "shared_memory",
-            ["cluster_0"],
-            100,
-            100,
-            1000,
-            1000,
-            frequencyDomain=2000,
+            readLatency=100,
+            writeLatency=100,
+            readThroughput=1000,
+            writeThroughput=1000,
+            frequency=2000,
         )
-        designer.finishElement()
+        for i in range(4):
+            pe = cluster0.addPeToCluster(
+                f"processor_{i}",
+                processor_0.type,
+                processor_0.frequency_domain,
+                processor_0.power_model,
+                processor_0.context_load_cycles,
+                processor_0.context_store_cycles,
+            )
+            # Connect pe to shared memory
+            designer.connectComponents(pe, shared_memory)
+
+        self.generate_all_primitives()

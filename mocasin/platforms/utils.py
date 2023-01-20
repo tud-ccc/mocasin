@@ -1,7 +1,7 @@
 # Copyright (C) 2019 TU Dresden
 # Licensed under the ISC license (see LICENSE.txt)
 #
-# Authors: Felix Teweleit, Andres Goens
+# Authors: Felix Teweleit, Andres Goens, Julian Robledo
 
 """
 This script contains helpful independent methods, which are needed for
@@ -9,6 +9,7 @@ functionality in other scripts of the platform package.
 """
 import numpy as np
 import logging
+from collections import OrderedDict
 
 log = logging.getLogger(__name__)
 
@@ -126,8 +127,15 @@ def yxRouting(adjacency_list, source, target):
         raise RuntimeError
     if source == target:
         return [source]
-    source_val = int(source.replace("processor_", ""))
-    target_val = int(target.replace("processor_", ""))
+
+    keys = list(OrderedDict(adjacency_list))
+
+    source_val = keys.index(source)
+    source_val = (source_val % n) * n + int(source_val / n)
+
+    target_val = keys.index(target)
+    target_val = (target_val % n) * n + int(target_val / n)
+
     source_x, source_y = valToXY(source_val, n)
     target_x, target_y = valToXY(target_val, n)
     route = []
@@ -136,11 +144,15 @@ def yxRouting(adjacency_list, source, target):
 
     for y in range_y:
         val = XYToVal(source_x, y, n)
-        route.append(f"processor_{val:04d}")
+        val = (val % n) * n + int(val / n)
+        val = int(val)
+        route.append(keys[val])
     # do not count the value of the change of direction twice
     for x in range_x[1:]:
         val = XYToVal(x, target_y, n)
-        route.append(f"processor_{val:04d}")
+        val = (val % n) * n + int(val / n)
+        val = int(val)
+        route.append(keys[val])
 
     # sanity check
     last_proc = source

@@ -1,12 +1,18 @@
 # Copyright (C) 2020 TU Dresden
 # Licensed under the ISC license (see LICENSE.txt)
 #
-# Authors: Felix Teweleit, Andres Goens
+# Authors: Felix Teweleit, Andres Goens, Julian Robledo
 
-from mocasin.common.platform import Platform, Processor
+from mocasin.common.platform import (
+    Platform,
+    Processor,
+    FrequencyDomain,
+    CommunicationResource,
+    CommunicationResourceType,
+)
 from mocasin.platforms.topologies import fullyConnectedTopology
 from mocasin.platforms.platformDesigner import PlatformDesigner
-from mocasin.platforms.utils import simpleDijkstra as sd
+from mocasin.platforms.platformDesigner import cluster
 from hydra.utils import instantiate
 
 
@@ -30,74 +36,124 @@ class DesignerPlatformCoolidge(Platform):
             processor_0 = instantiate(processor_0)
         if not isinstance(processor_1, Processor):
             processor_1 = instantiate(processor_1)
+
         designer = PlatformDesigner(self)
         designer.setSchedulingPolicy("FIFO", 1000)
-        designer.newElement("coolidge")
+        coolidge = cluster("coolidge", designer)
 
         # create five chips with 16 cores, NoC, +Security Core
-        clusters = []
+        l2_list = list()
         for i in range(5):
-            cluster = "cluster_{0}".format(i)
-            designer.newElement(cluster)
-            clusters.append(cluster)
+            chip = makeChip(f"chip{i}", designer, processor_0, processor_1)
+            l2_list = l2_list + chip.getCommunicationResources()
 
-            designer.addPeClusterForProcessor(f"cluster_{i}_0", processor_0, 16)
+        # RAM
+        ram = coolidge.addStorage("RAM", *ramParams())
+        for l2 in l2_list:
+            designer.connectComponents(l2, ram)
 
-            topology = fullyConnectedTopology(
-                [
-                    "processor_{:04d}".format(i * 17),
-                    "processor_{:04d}".format(i * 17 + 1),
-                    "processor_{:04d}".format(i * 17 + 2),
-                    "processor_{:04d}".format(i * 17 + 3),
-                    "processor_{:04d}".format(i * 17 + 4),
-                    "processor_{:04d}".format(i * 17 + 5),
-                    "processor_{:04d}".format(i * 17 + 6),
-                    "processor_{:04d}".format(i * 17 + 7),
-                    "processor_{:04d}".format(i * 17 + 8),
-                    "processor_{:04d}".format(i * 17 + 9),
-                    "processor_{:04d}".format(i * 17 + 10),
-                    "processor_{:04d}".format(i * 17 + 11),
-                    "processor_{:04d}".format(i * 17 + 12),
-                    "processor_{:04d}".format(i * 17 + 13),
-                    "processor_{:04d}".format(i * 17 + 14),
-                    "processor_{:04d}".format(i * 17 + 15),
-                ]
-            )
+        self.generate_all_primitives()
 
-            designer.createNetworkForCluster(
-                f"cluster_{i}_0",
-                f"noc_{i}",
-                topology,
-                sd,
-                40000.0,
-                100,
-                150,
-                100,
-                60,
-            )
 
-            designer.addPeClusterForProcessor(f"cluster_{i}_1", processor_1, 1)
+class makeChip(cluster):
+    def __init__(self, name, designer, pe0, pe1):
+        super(makeChip, self).__init__(name, designer)
 
-            designer.addCommunicationResource(
-                f"L2_{i}",
-                [f"cluster_{i}_0", f"cluster_{i}_1"],
-                500,
-                1500,
-                float("inf"),
-                float("inf"),
-                frequencyDomain=600000.0,
-            )
+        pe0 = peParams(pe0)
+        pe1 = peParams(pe1)
+        router = routerParams()
 
-            designer.finishElement()
+        cluster_0 = makeCluster0(f"cluster0_{name}", designer, pe0, router)
+        cluster_1 = makeCluster1(f"cluster1_{name}", designer, pe1)
+        self.addCluster(cluster_0)
+        self.addCluster(cluster_1)
 
-        designer.addCommunicationResource(
-            "RAM",
-            clusters,
-            1000,
-            3000,
-            float("inf"),
-            float("inf"),
-            frequencyDomain=10000,
+        # L2 memory
+        l2 = self.addStorage("l2", *l2Params())
+        pe0_list = cluster_0.getProcessors()
+        pe1_list = cluster_1.getProcessors()
+        pes = pe0_list + pe1_list
+        for pe in pes:
+            designer.connectComponents(pe, l2)
+
+
+class makeCluster0(cluster):
+    def __init__(self, name, designer, pe0, router):
+        super(makeCluster0, self).__init__(name, designer)
+
+        nocList = list()
+        for j in range(16):
+            pe = self.addPeToCluster(f"pe_{(j):04d}", *pe0)
+            noc = self.addRouter(f"noc_{(j):04d}", *router)
+
+            # connect pes to routers and l1s
+            designer.connectComponents(pe, noc)
+            nocList.append(noc)
+
+        fd = FrequencyDomain("fd_electric", 6000000.0)
+        pl = CommunicationResource("pl", *plParams(fd))
+        designer.createNetwork(
+            f"noc_{name}", nocList, fullyConnectedTopology, pl
         )
 
-        designer.finishElement()
+
+class makeCluster1(cluster):
+    def __init__(self, name, designer, pe1):
+        super(makeCluster1, self).__init__(name, designer)
+
+        self.addPeToCluster("pe", *pe1)
+
+
+# get parameters for pes
+def peParams(processor):
+    return (
+        processor.type,
+        processor.frequency_domain,
+        processor.power_model,
+        processor.context_load_cycles,
+        processor.context_store_cycles,
+        processor.n_threads,
+    )
+
+
+# readLatency, writeLatency, readThroughput, writeThroughput. frequency
+def routerParams():
+    return (
+        100,
+        150,
+        100,
+        60,
+        40000.0,
+    )
+
+
+def l2Params():
+    return (
+        500,
+        1500,
+        float("inf"),
+        float("inf"),
+        600000.0,
+    )
+
+
+def ramParams():
+    return (
+        1000,
+        3000,
+        float("inf"),
+        float("inf"),
+        10000.0,
+    )
+
+
+def plParams(fd):
+    return (
+        "electric",
+        fd,
+        CommunicationResourceType.PhysicalLink,
+        100,
+        150,
+        100,
+        60,
+    )

@@ -81,7 +81,7 @@ def test_mapping_table_writer(platform, graph, tmpdir, expected_csv):
     mapping1.metadata.exec_time = 10.2
     mapping1.metadata.energy = 21.45
 
-    mapping2 = mapper.generate_mapping([0, 5])
+    mapping2 = mapper.generate_mapping([0, 3])
     mapping2.metadata.exec_time = 5.2
     mapping2.metadata.energy = 31.15
 
@@ -106,7 +106,7 @@ def test_mapping_table_writer_with(platform, graph, tmpdir, expected_csv):
     mapping1.metadata.exec_time = 10.2
     mapping1.metadata.energy = 21.45
 
-    mapping2 = mapper.generate_mapping([0, 5])
+    mapping2 = mapper.generate_mapping([0, 3])
     mapping2.metadata.exec_time = 5.2
     mapping2.metadata.energy = 31.15
 
@@ -117,5 +117,4 @@ def test_mapping_table_writer_with(platform, graph, tmpdir, expected_csv):
         writer.write_header()
         writer.write_mapping(mapping1)
         writer.write_mapping(mapping2)
-
     assert filecmp.cmp(output_file, expected_csv, shallow=False)

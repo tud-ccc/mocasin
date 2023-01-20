@@ -1,10 +1,10 @@
 # Copyright (C) 2020 TU Dresden
 # Licensed under the ISC license (see LICENSE.txt)
 #
-# Authors: Felix Teweleit, Andres Goens
+# Authors: Felix Teweleit, Andres Goens, Julian Robledo
 
 from mocasin.common.platform import Platform
-from mocasin.platforms.platformDesigner import PlatformDesigner
+from mocasin.platforms.platformDesigner import PlatformDesigner, cluster
 from hydra.utils import instantiate
 from mocasin.common.platform import Processor
 
@@ -32,109 +32,116 @@ class DesignerPlatformExynos990(Platform):
             processor_2 = instantiate(processor_2)
         if not isinstance(processor_3, Processor):
             processor_3 = instantiate(processor_3)
+
+        # get parameters for components
+        pe0Params = self.peParams(processor_0)
+        pe1Params = self.peParams(processor_1)
+        pe2Params = self.peParams(processor_2)
+        pe3Params = self.peParams(processor_3)
+        l1c0Params = self.l1c0Params()
+        l2c0Params = self.l2c0Params()
+        l1c1Params = self.l1c1Params()
+        l2c1Params = self.l2c1Params()
+        l1c2Params = self.l1c2Params()
+        l2c2Params = self.l2c2Params()
+        l1c3Params = self.l1c3Params()
+        dramParams = self.dramParams()
+        busParams = self.busParams()
+
+        # Start platform designer
         designer = PlatformDesigner(self)
+        exynos990 = cluster("exynos990", designer)
 
+        # Schedulers
         designer.setSchedulingPolicy("FIFO", 1000)
-        designer.newElement("test_chip")
 
-        # cluster 0 with l2 cache
-        designer.addPeClusterForProcessor("cluster_0", processor_0, 2)
-        # Add L1/L2 caches
-        designer.addCacheForPEs(
-            "cluster_0",
-            5,
-            7,
-            float("inf"),
-            float("inf"),
-            frequencyDomain=6000000.0,
-            name="L1",
+        # clusters with l2 cache
+        cluster0 = makeCluster(
+            "cluster_0", designer, pe0Params, l1c0Params, l2c0Params, 2
         )
-        designer.addCommunicationResource(
-            "lvl2_cl0",
-            ["cluster_0"],
-            225,
-            300,
-            float("inf"),
-            float("inf"),
-            frequencyDomain=600000000.0,
+        cluster1 = makeCluster(
+            "cluster_1", designer, pe1Params, l1c1Params, l2c1Params, 2
         )
-
-        # cluster 1, with l2 cache
-        designer.addPeClusterForProcessor("cluster_1", processor_1, 2)
-        # Add L1/L2 caches
-        designer.addCacheForPEs(
-            "cluster_1",
-            5,
-            7,
-            float("inf"),
-            float("inf"),
-            frequencyDomain=6670000.0,
-            name="L1",
+        cluster2 = makeCluster(
+            "cluster_2", designer, pe2Params, l1c2Params, l2c2Params, 4
         )
-        designer.addCommunicationResource(
-            "lvl2_cl1",
-            ["cluster_1"],
-            225,
-            300,
-            float("inf"),
-            float("inf"),
-            frequencyDomain=667000000.0,
-        )
-
-        # cluster 2, with l2 cache
-        designer.addPeClusterForProcessor("cluster_2", processor_2, 4)
-        # Add L1/L2 caches
-        designer.addCacheForPEs(
-            "cluster_2",
-            5,
-            7,
-            float("inf"),
-            float("inf"),
-            frequencyDomain=6670000.0,
-            name="L1",
-        )
-        designer.addCommunicationResource(
-            "lvl2_cl2",
-            ["cluster_2"],
-            225,
-            300,
-            float("inf"),
-            float("inf"),
-            frequencyDomain=667000000.0,
-        )
-
-        # RAM connecting all clusters
-        designer.addCommunicationResource(
-            "RAM",
-            ["cluster_0", "cluster_1", "cluster_2"],
-            800,
-            2000,
-            float("inf"),
-            float("inf"),
-            frequencyDomain=6000000.0,
-        )
-
         # single GPU
-        designer.addPeClusterForProcessor("GPU", processor_3, 1)
-        designer.addCacheForPEs(
-            "GPU",
-            5,
-            7,
-            float("inf"),
-            float("inf"),
-            frequencyDomain=6670000.0,
-            name="GPU_MEM",
-        )
+        cluster3 = makeCluster("cluster_3", designer, pe3Params, l1c3Params)
+
+        # add clusters to exynos
+        exynos990.addCluster(cluster0)
+        exynos990.addCluster(cluster1)
+        exynos990.addCluster(cluster2)
+        exynos990.addCluster(cluster3)
+
+        # add ram
+        ram = exynos990.addStorage("RAM", *dramParams)
+        l2c0 = cluster0.findComRes("l2")
+        l2c1 = cluster1.findComRes("l2")
+        l2c2 = cluster2.findComRes("l2")
+        designer.connectComponents(l2c0, ram)
+        designer.connectComponents(l2c1, ram)
+        designer.connectComponents(l2c2, ram)
 
         # another memory, simulating BUS
-        designer.addCommunicationResource(
-            "BUS",
-            ["cluster_0", "cluster_1", "cluster_2", "GPU"],
-            2000,
-            6000,
-            float("inf"),
-            float("inf"),
-            frequencyDomain=4000000.0,
+        l1c3 = cluster3.findComRes("l1_0")
+        bus = exynos990.addCommunicationResource("BUS", *busParams)
+        designer.connectComponents(ram, bus)
+        designer.connectComponents(l1c3, bus)
+
+        self.generate_all_primitives()
+
+    # get parameters for pes
+    def peParams(self, processor):
+        return (
+            processor.type,
+            processor.frequency_domain,
+            processor.power_model,
+            processor.context_load_cycles,
+            processor.context_store_cycles,
+            processor.n_threads,
         )
 
-        designer.finishElement()
+    # returns (readLatency, writeLatency, readThroughput, writeThroughput, freq)
+    def l1c0Params(self):
+        return (5, 7, float("inf"), float("inf"), 6000000.0)
+
+    def l2c0Params(self):
+        return (225, 300, float("inf"), float("inf"), 600000000.0)
+
+    def l1c1Params(self):
+        return (5, 7, float("inf"), float("inf"), 6670000.0)
+
+    def l2c1Params(self):
+        return (225, 300, float("inf"), float("inf"), 667000000.0)
+
+    def l1c2Params(self):
+        return (5, 7, float("inf"), float("inf"), 6670000.0)
+
+    def l2c2Params(self):
+        return (225, 300, float("inf"), float("inf"), 667000000.0)
+
+    def l1c3Params(self):
+        return (5, 7, float("inf"), float("inf"), 6670000.0)
+
+    def dramParams(self):
+        return (800, 2000, float("inf"), float("inf"), 6000000.0)
+
+    def busParams(self):
+        return (2000, 6000, float("inf"), float("inf"), 4000000.0)
+
+
+class makeCluster(cluster):
+    def __init__(
+        self, name, designer, peParams, l1Params, l2Params=None, num_pes=1
+    ):
+        super(makeCluster, self).__init__(name, designer)
+
+        if l2Params:
+            l2c0 = self.addStorage("l2", *l2Params)
+        for i in range(num_pes):
+            pe = self.addPeToCluster(f"pe{i}", *peParams)
+            l1 = self.addStorage(f"l1_{i}", *l1Params)
+            designer.connectComponents(pe, l1)
+            if l2Params:
+                designer.connectComponents(l1, l2c0)
