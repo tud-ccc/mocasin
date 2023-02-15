@@ -15,7 +15,6 @@ from mocasin.platforms.topologies import meshTopology
 
 log = logging.getLogger(__name__)
 
-
 class CommunicationResourceType(Enum):
     PhysicalLink = 1
     LogicalLink = 2
@@ -691,7 +690,7 @@ class Platform(object):
         platform = self
 
         # check if nodes are in the same noc
-        nocResources = self.generate_primitive_for_Noc(src, sink)
+        nocResources = self.find_resources_for_Noc(src, sink)
         resources = nocResources
 
         # if not in the same noc, apply simpleDijkstra routing algorithm
@@ -748,7 +747,7 @@ class Platform(object):
 
     # checks if nodes are in a same Noc and returns communication
     # resources
-    def generate_primitive_for_Noc(self, src, sink):
+    def find_resources_for_Noc(self, src, sink):
         platform = self
 
         # get all routers the src is connected to
@@ -802,6 +801,7 @@ class Platform(object):
 
         return resources
 
+
     # fill resources with physical links
     def find_physical_links(self, resources):
         for i in range(len(resources) - 1, 1, -1):
@@ -809,6 +809,9 @@ class Platform(object):
             target = resources[i].name
             pl_name = "pl_" + source + "_" + target
             pl = self.find_communication_resource(pl_name)
+            if not pl:
+                pl_name = "pl_" + target + "_" + source
+                pl = self.find_communication_resource(pl_name)
             if pl:
                 resources.insert(i, pl)
         return resources
