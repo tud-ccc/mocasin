@@ -8,6 +8,7 @@ from mocasin.common.mapping import (
     Mapping,
     ProcessMappingInfo,
 )
+from mocasin.common.platform import Primitive, CommunicationPhase
 from mocasin.mapper import BaseMapper
 from mocasin.util import logging
 
@@ -111,20 +112,36 @@ class ComPartialMapper(BaseMapper):
             suitable_primitives = []
             src = partial_mapping.process_info(c.source).affinity
             sinks = [partial_mapping.process_info(s).affinity for s in c.sinks]
-            for p in partial_mapping.platform.primitives():
-                if p.is_suitable(src, sinks):
-                    suitable_primitives.append(p)
-            if len(suitable_primitives) == 0:
-                raise RuntimeError(
-                    "com_map: Mapping failed! No suitable primitive for "
-                    "communication from %s to %s found!"
-                    % (src.name, str(sinks))
-                )
 
-            primitive = ComPartialMapper._get_minimal_costs(
-                suitable_primitives, c, src, sinks
-            )
-            info = ChannelMappingInfo(primitive, capacity)
+            prim = Primitive(c.name)
+            producer_phase = [CommunicationPhase("produce", [], "write")]
+            prim.add_producer(src, producer_phase)
+            sinks = list(dict.fromkeys(sinks))
+
+            for sink in sinks:
+                sink_primitives = list()
+                for p in partial_mapping.platform.primitives():
+                    if p.is_suitable(src, [sink]):
+                        sink_primitives.append(p)
+
+                if len(sink_primitives) == 0:
+                    raise RuntimeError(
+                        "com_map: Mapping failed! No suitable primitive for "
+                        "communication from %s to %s found!"
+                        % (src.name, str(sink))
+                    )
+                else:
+                    primitive = ComPartialMapper._get_minimal_costs(
+                        sink_primitives, c, src, [sink]
+                    )
+                    suitable_primitives.append(primitive)
+
+            for p, sink in zip(suitable_primitives, sinks):
+                if sink in p.consumers:
+                    prim.add_consumer(sink, p.consume_phases[sink.name])
+            platform.add_primitive(prim)
+
+            info = ChannelMappingInfo(prim, capacity)
             partial_mapping.add_channel_info(c, info)
             log.debug(
                 "com_map: map channel %s to the primitive %s and bound to %d "
