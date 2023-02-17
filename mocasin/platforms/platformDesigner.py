@@ -131,7 +131,6 @@ class PlatformDesigner:
         """Returns the platform, created with the designer."""
         return self.platform
 
-
     def generatePrimitivesForStorage(self, storage):
         platform = self.platform
 
@@ -150,17 +149,25 @@ class PlatformDesigner:
                     consumerList[element] = resources
 
                 # if element is a communication resource, look for already existing primitives
-                elif (element.resource_type() == CommunicationResourceType.Storage or
-                    element.resource_type() == CommunicationResourceType.Router):
-
-                    innerPrimitive = platform.find_primitive(f"prim_{element.name}")
+                elif (
+                    element.resource_type() == CommunicationResourceType.Storage
+                    or element.resource_type()
+                    == CommunicationResourceType.Router
+                ):
+                    innerPrimitive = platform.find_primitive(
+                        f"prim_{element.name}"
+                    )
                     # extract resources from existing primitives
                     for producer in innerPrimitive.producers:
-                        for phase in innerPrimitive.produce_phases[producer.name]:
+                        for phase in innerPrimitive.produce_phases[
+                            producer.name
+                        ]:
                             resources = phase.resources + [storage]
                             producerList[producer] = resources
                     for consumer in innerPrimitive.consumers:
-                        for phase in innerPrimitive.consume_phases[consumer.name]:
+                        for phase in innerPrimitive.consume_phases[
+                            consumer.name
+                        ]:
                             resources = [storage] + phase.resources
                             consumerList[consumer] = resources
 
@@ -174,7 +181,6 @@ class PlatformDesigner:
                 prim.add_consumer(pe, [consume])
 
             platform.add_primitive(prim)
-
 
     def generatePrimitivesForNoc(self, noc):
         platform = self.platform
@@ -212,7 +218,9 @@ class PlatformDesigner:
                                     produce_resources = resources[:]
                                     produce_resources.insert(0, sink)
                                     produce_resources.append(src)
-                                    platform.find_physical_links(produce_resources)
+                                    platform.find_physical_links(
+                                        produce_resources
+                                    )
                                     produce_resources.pop(0)
                                     produce_resources.pop()
 
@@ -220,10 +228,14 @@ class PlatformDesigner:
                                         "produce", produce_resources, "write"
                                     )
 
-                                    consume_resources = list(reversed(resources))
+                                    consume_resources = list(
+                                        reversed(resources)
+                                    )
                                     consume_resources.insert(0, src)
                                     consume_resources.append(sink)
-                                    platform.find_physical_links(consume_resources)
+                                    platform.find_physical_links(
+                                        consume_resources
+                                    )
                                     consume_resources.pop(0)
                                     consume_resources.pop()
 
@@ -240,7 +252,9 @@ class PlatformDesigner:
                                         "produce", resources, "write"
                                     )
                                     consume = CommunicationPhase(
-                                        "consume", list(reversed(resources)), "read"
+                                        "consume",
+                                        list(reversed(resources)),
+                                        "read",
                                     )
                                     prim.add_producer(sink, [produce])
                                     prim.add_consumer(sink, [consume])
@@ -469,4 +483,3 @@ class cluster:
         resources contained in inner clusters.
         """
         return self.commResources
-
