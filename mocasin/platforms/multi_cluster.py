@@ -50,8 +50,7 @@ class DesignerPlatformMultiCluster(Platform):
         cl1_l2 = cluster_1.findComRes("l2")
         designer.connectComponents(cl0_l2, ram)
         designer.connectComponents(cl1_l2, ram)
-
-        self.generate_all_primitives()
+        designer.generatePrimitivesForStorage(ram)
 
 
 class makeCluster(cluster):
@@ -80,3 +79,4 @@ class makeCluster(cluster):
         )
         for pe in pe_list:
             designer.connectComponents(pe, l2)
+        designer.generatePrimitivesForStorage(l2)

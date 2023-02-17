@@ -31,8 +31,7 @@ class Exynos2Chips(Platform):
         RAM = exynos2chips.addStorage("RAM", 120, 120, 8, 8, 933000000)
         designer.connectComponents(l3_exynos1, RAM)
         designer.connectComponents(l3_exynos2, RAM)
-
-        self.generate_all_primitives()
+        designer.generatePrimitivesForStorage(RAM)
 
 
 class makeExynos(cluster):
@@ -58,6 +57,7 @@ class makeExynos(cluster):
         l3 = self.addStorage(f"l3", l3_latency, 21, 8, 8, 1400000000)
         designer.connectComponents(l2_cluster1, l3)
         designer.connectComponents(l2_cluster2, l3)
+        designer.generatePrimitivesForStorage(l3)
 
     # get parameters for pes
     def peParams(self, processor):
@@ -81,4 +81,6 @@ class makeCluster(cluster):
             pe = self.addPeToCluster(f"pe{k}", *processor)
             l1 = self.addStorage(f"l1_{k}", 1, 4, 8, 8, freq)
             designer.connectComponents(pe, l1)
+            designer.generatePrimitivesForStorage(l1)
             designer.connectComponents(l1, l2)
+        designer.generatePrimitivesForStorage(l2)

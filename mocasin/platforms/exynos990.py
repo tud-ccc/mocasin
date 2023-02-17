@@ -82,14 +82,14 @@ class DesignerPlatformExynos990(Platform):
         designer.connectComponents(l2c0, ram)
         designer.connectComponents(l2c1, ram)
         designer.connectComponents(l2c2, ram)
+        designer.generatePrimitivesForStorage(ram)
 
         # another memory, simulating BUS
         l1c3 = cluster3.findComRes("l1_0")
         bus = exynos990.addCommunicationResource("BUS", *busParams)
         designer.connectComponents(ram, bus)
         designer.connectComponents(l1c3, bus)
-
-        self.generate_all_primitives()
+        designer.generatePrimitivesForStorage(bus)
 
     # get parameters for pes
     def peParams(self, processor):
@@ -143,5 +143,8 @@ class makeCluster(cluster):
             pe = self.addPeToCluster(f"pe{i}", *peParams)
             l1 = self.addStorage(f"l1_{i}", *l1Params)
             designer.connectComponents(pe, l1)
+            designer.generatePrimitivesForStorage(l1)
             if l2Params:
                 designer.connectComponents(l1, l2c0)
+        if l2Params:
+            designer.generatePrimitivesForStorage(l2c0)

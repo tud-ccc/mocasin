@@ -50,8 +50,6 @@ class DesignerPlatformOdroid(Platform):
             num_big,
         )
 
-        self.generate_all_primitives()
-
 
 class makeOdroid(cluster):
     def __init__(
@@ -85,9 +83,12 @@ class makeOdroid(cluster):
         L2_A7 = cluster_a7.addStorage("L2_A7", *l2a7Params)
         for i in range(num_little):
             pe = cluster_a7.addPeToCluster(f"pe{i:02d}", *pe0Params)
-            l1 = cluster_a7.addStorage("L1_" + pe.name, *l1a7Params)
+            l1 = cluster_a7.addStorage("L1_" + f"pe{i:02d}", *l1a7Params)
             designer.connectComponents(pe, l1)
+            designer.generatePrimitivesForStorage(l1)
+            #designer.printPrimitives()
             designer.connectComponents(l1, L2_A7)
+        designer.generatePrimitivesForStorage(L2_A7)
 
         # cluster 1, with l2 cache
         cluster_a15 = cluster(f"cluster_a15_{name}", designer)
@@ -96,14 +97,18 @@ class makeOdroid(cluster):
         L2_A15 = cluster_a15.addStorage("L2_A15", *l2a15Params)
         for i in range(num_big):
             pe = cluster_a15.addPeToCluster(f"pe{i:02d}", *pe1Params)
-            l1 = cluster_a15.addStorage("L1_" + pe.name, *l1a15Params)
+            l1 = cluster_a15.addStorage("L1_" + f"pe{i:02d}", *l1a15Params)
             designer.connectComponents(pe, l1)
+            designer.generatePrimitivesForStorage(l1)
             designer.connectComponents(l1, L2_A15)
+        designer.generatePrimitivesForStorage(L2_A15)
 
         # RAM connecting all clusters
         DRAM = self.addStorage("DRAM", *ramParams)
         designer.connectComponents(L2_A7, DRAM)
         designer.connectComponents(L2_A15, DRAM)
+        designer.generatePrimitivesForStorage(DRAM)
+
 
         # Set peripheral static power of the platform.
         designer.setPeripheralStaticPower(peripheral_static_power)
