@@ -67,7 +67,7 @@ def tetris_scheduler(cfg):
     print("Scheduling time: {:.5f} s".format(scheduling_time))
     print("Found schedule: {}".format(scheduling.found_schedule))
     if scheduling.found_schedule:
-        print("Schedule time: {:.5f} s".format(scheduling.schedule.end_time))
+        print("Makespan: {:.5f} s".format(scheduling.schedule.end_time))
         print("Energy consumption: {:.5f} J".format(scheduling.schedule.energy))
         print(f"Number of segments: {len(scheduling.schedule.segments())}")
         if cfg["output_schedule"] is not None:
