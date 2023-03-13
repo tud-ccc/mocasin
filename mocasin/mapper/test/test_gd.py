@@ -55,7 +55,7 @@ def test_gradient(
     good = 0
     bad = 0
 
-    for (x, y) in product(range(1, 6), range(1, 6)):
+    for x, y in product(range(1, 6), range(1, 6)):
         # > max(evaluation_function)
         mapper.best_exec_time = 3
         mapper.best_mapping = np.zeros(mapper.dim)

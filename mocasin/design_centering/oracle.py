@@ -27,7 +27,6 @@ class Oracle(object):
         threshold,
         threads=None,
     ):
-
         self.oracle_type = oracle_type
 
         if oracle_type == "TestSet":

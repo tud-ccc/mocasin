@@ -397,7 +397,6 @@ class platformOperations(object):
         lastAppended = 0  # keep the amount of neighbors of the last appended PE and the PE before that, to check if new row had begun
         lastlastAppended = 0
         while len(peValues) > 0:
-
             if len(organizedPEs) == 0:
                 for entry in peValues:
                     if entry[1] == 2:

@@ -312,7 +312,7 @@ class RuntimeChannel(object):
             yield self.env.timeout(ticks)
 
             # release all resources that we requested before
-            for (res, req) in zip(phase.resources, requests):
+            for res, req in zip(phase.resources, requests):
                 if req is not None:
                     log.debug("release resource %s", r.name)
                     res.simpy_resource.release(req)
@@ -404,7 +404,7 @@ class RuntimeChannel(object):
             yield self.env.timeout(ticks)
 
             # release all resources that we requested before
-            for (res, req) in zip(phase.resources, requests):
+            for res, req in zip(phase.resources, requests):
                 if req is not None:
                     log.debug("release resource %s", r.name)
                     res.simpy_resource.release(req)

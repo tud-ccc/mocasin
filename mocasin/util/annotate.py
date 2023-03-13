@@ -50,9 +50,7 @@ class AnnoteFinder(object):
         return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
 
     def __call__(self, event):
-
         if event.inaxes:
-
             clickX = event.xdata
             clickY = event.ydata
             if (self.ax is None) or (self.ax is event.inaxes):

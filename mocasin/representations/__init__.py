@@ -876,7 +876,6 @@ class SymmetryEmbeddingRepresentation(
         disable_symmetries_test=False,
         disable_embedding_test=False,
     ):
-
         self.sym = SymmetryRepresentation(
             graph,
             platform,

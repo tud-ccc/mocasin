@@ -65,7 +65,6 @@ class SegLRSegmentMapper(SegmentMapperBase):
         lr_constraints=LRConstraint.RESOURCE,
         lr_rounds=1000,
     ):
-
         super().__init__(scheduler, platform)
 
         self.__sorting_key = sorting_key

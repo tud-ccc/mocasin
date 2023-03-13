@@ -22,7 +22,6 @@ class SegMedfSegmentMapper(SegmentMapperBase):
     """TODO: Add a description"""
 
     def __init__(self, scheduler, platform):
-
         super().__init__(scheduler, platform)
 
     def _filter_job_mappings_by_deadline_resources(self, job, free_cores):

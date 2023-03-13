@@ -606,7 +606,6 @@ class Platform(object):
                 num_vertices = num_vertices + 1
 
         for p in self.primitives():
-
             for x in p.producers:
                 if x.name not in adjacency_dict:
                     adjacency_dict[x.name] = {}
@@ -667,7 +666,6 @@ class Platform(object):
             latency_dict[p.name] = {}
             for x in p.producers:
                 for y in p.consumers:
-
                     cost = p.static_costs(x, y, token_size=8)
                     if precision < 0 or cost == 0:
                         pass

@@ -119,7 +119,7 @@ class FiniteMetricSpaceLP(FiniteMetricSpace):
         logging.debug("Populating D...")
         stdout.flush()
         self.D = np.zeros((self.n, self.n))
-        for (x, y) in product(
+        for x, y in product(
             product(range(self.M.n), repeat=self.d),
             product(range(self.M.n), repeat=self.d),
         ):
@@ -209,7 +209,7 @@ class FiniteMetricSpaceSym(FiniteMetricSpace):
             )  # should I remove this per default? Could be very expensive!
         stdout.flush()
         self.D = np.zeros((self.n, self.n))
-        for (x, y) in product(range(self.n), repeat=2):
+        for x, y in product(range(self.n), repeat=2):
             self.D[x, y] = self._distCalc(
                 list(self.elem2orb[x]), list(self.elem2orb[y])
             )
@@ -328,7 +328,7 @@ def dijkstra(graph, node_from):
     current = node_from
 
     while len(unvisited) != 0:
-        for (neighbor, dist) in graph[current]:
+        for neighbor, dist in graph[current]:
             if neighbor in unvisited:
                 tentative_distance = distances[current] + dist
                 if tentative_distance < distances[neighbor]:
@@ -350,7 +350,7 @@ def make_graph_symmetric(graph):
     graph_dict = {}
     for node_from in graph:
         graph_dict[node_from] = {}
-        for (node_to, cost) in graph[node_from]:
+        for node_to, cost in graph[node_from]:
             graph_dict[node_from][node_to] = cost
 
     symmetric_graph = {}
