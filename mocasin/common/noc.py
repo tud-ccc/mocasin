@@ -121,7 +121,6 @@ class TorusNoc(Noc):
             return self.get_route_yx(a, b)
 
     def get_route_xy(self, a, b):
-
         a_loc, a_ni, b_loc, b_ni, b_link = find(self, a, b)
         x_diff = [a_loc[0] - b_loc[0]]
         x_diff.append(np.sign(x_diff[0]))
@@ -138,7 +137,6 @@ class TorusNoc(Noc):
             y_diff[1] *= -1
         out = [a_ni.outgoing_link]
         for i in range(x_diff[0] * x_diff[1]):
-
             if x_diff[1] == -1:
                 out.append(
                     self.routers[(a_loc[0] - i * x_diff[1]) % self.width][
@@ -153,7 +151,6 @@ class TorusNoc(Noc):
                 )
 
         for j in range(y_diff[0] * y_diff[1]):
-
             if y_diff[1] == -1:
                 out.append(
                     self.routers[b_loc[0]][
@@ -171,7 +168,6 @@ class TorusNoc(Noc):
         return out
 
     def get_route_yx(self, a, b):
-
         a_loc, a_ni, b_loc, b_ni, b_link = find(self, a, b)
         x_diff = [a_loc[0] - b_loc[0]]
         x_diff.append(np.sign(x_diff[0]))
@@ -275,7 +271,6 @@ class MeshNoc(Noc):
             return self.get_route_yx(a, b)
 
     def get_route_xy(self, a, b):
-
         a_loc, a_ni, b_loc, b_ni, b_link = find(self, a, b)
         x_diff = [a_loc[0] - b_loc[0]]
         x_diff.append(np.sign(x_diff[0]))
@@ -284,7 +279,6 @@ class MeshNoc(Noc):
 
         out = [a_ni.outgoing_link]
         for i in range(x_diff[0] * x_diff[1]):
-
             if x_diff[1] == -1:
                 out.append(
                     self.routers[a_loc[0] - i * x_diff[1]][
@@ -299,7 +293,6 @@ class MeshNoc(Noc):
                 )
 
         for j in range(y_diff[0] * y_diff[1]):
-
             if y_diff[1] == -1:
                 out.append(
                     self.routers[b_loc[0]][
@@ -367,7 +360,6 @@ def find(noc, a, b):
         for j in i:
             for ni in j.ni:
                 for e in ni.eps:
-
                     if e.name == a:
                         a_loc = [j.x, j.y]
                         a_ni = ni

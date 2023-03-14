@@ -87,7 +87,6 @@ def write_to_h5(results, h5_out):
 def read_multirun(
     path, outputs_parsers=None, output_format="csv", output_filename=None
 ):
-
     if outputs_parsers is None:
         outputs_parsers = []
     multirun_file = os.path.abspath(path) + "/multirun.yaml"

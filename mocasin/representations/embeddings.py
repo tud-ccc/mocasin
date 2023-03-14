@@ -29,6 +29,7 @@ log = logging.getLogger(__name__)
 #  However: the idea is to do this for the small space M
 #  and then handle the case M^d \hat \iota R^{kd} specially.
 
+
 #  from: https://jeremykun.com/2016/02/08/big-dimensions-and-what-you-can-do-about-it/0/
 def randomSubspace(subspaceDimension, ambientDimension):
     return np.random.normal(0, 1, size=(subspaceDimension, ambientDimension))

@@ -34,7 +34,6 @@ class PerturbationManager(object):
         radius=2.0,
         perturbation_type="classic",
     ):
-
         self.platform = platform
         self.graph = graph
         self.threshold = threshold

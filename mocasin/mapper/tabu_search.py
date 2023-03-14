@@ -157,7 +157,6 @@ class TabuSearchMapper(BaseMapper):
             # no need to re-sort:
             # https://stackoverflow.com/questions/1286167/is-the-order-of-results-coming-from-a-list-comprehension-guaranteed # noqa
             if len(non_tabu) > 0:
-
                 self.tabu_moves[non_tabu[0][0]] = self.tabu_tenure
                 return non_tabu[0]
             else:

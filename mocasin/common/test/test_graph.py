@@ -91,7 +91,6 @@ def graph_multiple_roots():
 
 
 def test_graph_sort_for_multiple_roots(graph_multiple_roots):
-
     processes, channels = graph_multiple_roots.sort()
 
     process_names = []

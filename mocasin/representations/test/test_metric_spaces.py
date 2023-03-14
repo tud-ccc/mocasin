@@ -58,7 +58,7 @@ class TestMetricSpaces(object):
                 ),
             )
         )
-        for (i, prob) in result:
+        for i, prob in result:
             dist = testSpace.dist(i, p)
             if np.isclose(prob, 0):
                 assert dist > r or (dist == 0 and i == p)

@@ -26,7 +26,6 @@ class DesignerPlatformOdroid(Platform):
         peripheral_static_power=None,
         **kwargs,
     ):
-
         # workaraound for Hydra < 1.1
         if not isinstance(processor_0, Processor):
             processor_0 = instantiate(processor_0)

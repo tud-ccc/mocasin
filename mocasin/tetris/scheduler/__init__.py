@@ -34,7 +34,7 @@ class SchedulerBase(ABC):
         migrations=True,
         preemptions=True,
         rotations=False,
-        **kwargs
+        **kwargs,
     ):
         """A base class for tetris scheduler.
 

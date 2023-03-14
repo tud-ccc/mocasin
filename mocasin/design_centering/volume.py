@@ -293,7 +293,6 @@ class LPVolume(Volume):
         self.adapt_covariance()
 
     def adapt_covariance(self):
-
         vals, vecs = np.linalg.eig(self.transformation)
 
         idx = (

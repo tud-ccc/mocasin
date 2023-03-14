@@ -274,7 +274,6 @@ class PlatformInformation:
                     smallestPrim = prim
 
         if len(smallestPrim.producers) > 1:
-
             toAdd = True
             belongingClusters = []
 

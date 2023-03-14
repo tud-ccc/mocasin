@@ -54,7 +54,6 @@ class TgffTrace(DataflowTrace):
 
         # iterate over all repetitions
         for _ in range(0, self._repetitions):
-
             # First, the task reads from all input channels
             for channel_name, properties in self._tgff_graph.channels.items():
                 # properties[1] is the name of the channel's sink task
