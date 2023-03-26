@@ -1,16 +1,56 @@
 # Copyright (C) 2019 TU Dresden
 # Licensed under the ISC license (see LICENSE.txt)
 #
-# Authors: Christian Menard
+# Authors: Christian Menard, Robert Khasanov
+
+from mocasin.util.mapping_table import MappingTableReader, MappingTableWriter
+from mocasin.mapper.utils import SimulationManagerConfig, SimulationManager
 
 import hydra
 import logging
 import timeit
 import os
+from pathlib import Path
 import csv
 
 
 log = logging.getLogger(__name__)
+
+
+def simulate_mapping_table(cfg):
+    """Simulate multiple mappings."""
+    platform = hydra.utils.instantiate(cfg["platform"])
+    trace = hydra.utils.instantiate(cfg["trace"])
+    graph = hydra.utils.instantiate(cfg["graph"])
+    rep = hydra.utils.instantiate(cfg["representation"], graph, platform)
+    mapping_file = Path(cfg["mapping_table"])
+    mappings_reader = MappingTableReader(platform, graph, mapping_file)
+    mappings = [m[0] for m in mappings_reader.form_mappings()]
+    # Invalidate simulation results
+    for m in mappings:
+        m.metadata.exec_time = None
+        m.metadata.energy = None
+
+    sim_config = SimulationManagerConfig(
+        jobs=cfg["jobs"],
+        parallel=True,
+        progress=True,
+        chunk_size=4,
+    )
+    simulation_manager = SimulationManager(platform, sim_config)
+    simulation_manager.simulate(graph, trace, rep, mappings)
+
+    output_path = Path(cfg["output"])
+
+    # Save simulation results in seconds and Joules
+    for m in mappings:
+        m.metadata.exec_time /= 1000.0
+        m.metadata.energy /= 1000.0
+
+    with MappingTableWriter(platform, graph, output_path) as writer:
+        writer.write_header()
+        for m in mappings:
+            writer.write_mapping(m)
 
 
 def simulate(cfg):
@@ -41,6 +81,11 @@ def simulate(cfg):
     """
 
     trace_cfg = cfg["simtrace"]
+
+    if cfg["mapping_table"] is not None:
+        simulate_mapping_table(cfg)
+        return
+
     simulation = hydra.utils.instantiate(cfg.simulation_type, cfg)
 
     with simulation:
