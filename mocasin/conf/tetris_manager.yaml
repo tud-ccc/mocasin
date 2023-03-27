@@ -15,8 +15,7 @@ input_jobs: ???
 # Output trace
 output_trace:
 
-# Output file for summary
-summary_csv:
-
-# Allow migration of the tasks
-allow_migration: true
+# Output statistics and summary results
+stats_jobs: "stats_jobs.csv"
+stats_manager: "stats_manager.csv"
+summary: "summary.csv"

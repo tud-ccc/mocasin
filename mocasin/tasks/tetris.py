@@ -78,7 +78,9 @@ def tetris_scheduler(cfg):
 def tetris_manager(cfg):
     """Tetris manager
 
-    This task runs tetris manager for the input trace of jobs
+    This task simulates the scheduling of multiple applications with Tetris.
+    The input trace is represented as a list of arrival events: arrival time,
+    application and deadline.
 
     Args:
         cfg(~omegaconf.dictconfig.DictConfig): the hydra configuration object
@@ -87,8 +89,19 @@ def tetris_manager(cfg):
         * **platform:** the input platform. The task expects a configuration
           dict that can be instantiated to a
           :class:`~mocasin.common.platform.Platform` object.
-        TODO: Write down
+        * **resource_manager:** the resource_manager.
+        * **tetris_apps_dir:** the base directory with applications and mappings
+          info
+        * **input_jobs:** the input trace of jobs
+        * **output_trace:** the output file with the generated trace
+        * **stats_jobs:** the output file for job statistics
+        * **stats_manager:** the output file for manager statistics
+        * **summary:** the output file for the summary results
     """
+    # TODO: Change the name to `input_trace`
+    # TODO: Change the task name to `simulate_tetris`
+    # TODO: Generate output trace
+
     # Suppress logs from mocasin module
     init_logging()
 
@@ -99,3 +112,13 @@ def tetris_manager(cfg):
     management.run()
     stop = timeit.default_timer()
     log.info("Tetris management done")
+
+    stats = management.stats
+    summary = management.summary
+
+    print(f"Total simulation time: {stop - start} s")
+    summary.print()
+
+    stats.dump_applications(cfg["stats_jobs"])
+    stats.dump_activations(cfg["stats_manager"])
+    summary.to_csv(cfg["summary"])

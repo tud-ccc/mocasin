@@ -6,6 +6,7 @@
 import csv
 from dataclasses import asdict, dataclass, field
 import logging
+import numpy as np
 
 from mocasin.simulate.adapter import SimulateLoggerAdapter
 
@@ -51,7 +52,7 @@ class ManagerStatistics:
     """Collection and export of statistics after simulation."""
 
     def __init__(self):
-        self.applications = {}
+        self.applications = []
         self.activations = []
 
     def new_application(self, graph, arrival=None, deadline=None):
@@ -60,7 +61,7 @@ class ManagerStatistics:
         entry = ManagerStatisticsApplicationEntry(
             name=graph.name, arrival=arrival, deadline=deadline
         )
-        self.applications[entry.name] = entry
+        self.applications.append(entry)
         return entry
 
     def new_activation(
@@ -83,7 +84,7 @@ class ManagerStatistics:
 
     def total_accepted(self):
         """Returns the number of accepted applications."""
-        return sum([1 for x in self.applications.values() if x.accepted])
+        return sum([1 for x in self.applications if x.accepted])
 
     def total_rejected(self):
         """Returns the number of rejected applications."""
@@ -91,7 +92,7 @@ class ManagerStatistics:
 
     def total_missed(self):
         """Returns the number of applications missed the deadline."""
-        return sum([1 for x in self.applications.values() if x.missed_deadline])
+        return sum([1 for x in self.applications if x.missed_deadline])
 
     def total_activations(self):
         """Returns the total number of activations."""
@@ -101,14 +102,53 @@ class ManagerStatistics:
         """Returns the total scheduling time."""
         return sum(x.scheduling_time for x in self.activations)
 
-    def average_scheduling_time(self):
-        """Returns the average scheduling time."""
-        if self.total_activations() == 0:
-            return 0.0
-        return self.total_scheduling_time() / self.total_activations()
+    def scheduling_time_stats(self):
+        """
+        Returns the average and the standard deviation of scheduling times.
+
+        Returns:
+            tuple: A tuple containing the average and the standard deviation
+                   of scheduling times.
+        """
+        total_activations = self.total_activations()
+        if total_activations == 0:
+            return 0.0, 0.0
+
+        scheduling_times = [x.scheduling_time for x in self.activations]
+
+        return np.mean(scheduling_times), np.std(scheduling_times)
+
+    def active_requests_stats(self, only_prev=False):
+        """
+        Returns the average number and the standard deviation of active
+        requests per activation.
+
+        Args:
+            only_prev (bool): If True, count only active requests accepted in
+                              the previous activations. Defaults to False.
+
+        Returns:
+            tuple: A tuple containing the average number and the standard deviation
+                   of active requests per activation.
+        """
+        total_activations = self.total_activations()
+        if total_activations == 0:
+            return 0.0, 0.0
+
+        if only_prev:
+            active_requests = [x.num_prev_apps for x in self.activations]
+        else:
+            active_requests = [
+                x.num_new_apps + x.num_prev_apps for x in self.activations
+            ]
+
+        return np.mean(active_requests), np.std(active_requests)
 
     def find_application(self, name):
         """Find the entry by the applications name."""
+        assert (
+            False
+        ), "This function is not updated to the list container, or removed"
         return self.applications.get(name, None)
 
     def dump_applications(self, filename):
@@ -119,12 +159,12 @@ class ManagerStatistics:
                 "Skip dumping."
             )
             return
-        elem = next(iter(self.applications.values()))
+        elem = next(iter(self.applications))
         fieldnames = list(elem.to_dict().keys())
         with open(filename, "w", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
-            for entry in self.applications.values():
+            for entry in self.applications:
                 writer.writerow(entry.to_dict())
 
     def dump_activations(self, filename):
