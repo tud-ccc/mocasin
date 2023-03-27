@@ -178,6 +178,7 @@ class ResourceManager:
             schedule = self.scheduler.schedule(
                 jobs,
                 scheduling_start_time=self.state_time,
+                current_schedule=self.schedule,
             )
 
         et = time.time()
