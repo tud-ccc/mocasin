@@ -16,6 +16,8 @@ from mocasin.tetris.schedule import (
 
 log = logging.getLogger(__name__)
 
+EPS = 0.0001
+
 
 class ResourceManager:
     def __init__(self, platform, scheduler, schedule_iteratively=True):
@@ -321,7 +323,12 @@ class ResourceManager:
                     f"The end time ({till_time}) must be within the segment "
                     f"({segment.start_time}..{segment.end_time})"
                 )
-            segment, rest = segment.split(till_time)
+            if abs(segment.start_time - till_time) < EPS:
+                return segment
+            elif abs(segment.end_time - till_time) < EPS:
+                rest = None
+            else:
+                segment, rest = segment.split(till_time)
 
         jobs = [j for _, j in self.requests.items() if j]
         schedule = Schedule(self.platform, [segment])
@@ -385,13 +392,17 @@ class ResourceManager:
             # advance by the whole segment
             if new_time >= segment.end_time:
                 self._advance_segment(segment)
+                continue
             # tne new_time is in the middle of the segment
-            if segment.start_time <= new_time < segment.end_time:
+            if segment.start_time < new_time < segment.end_time:
                 rest = self._advance_segment(segment, new_time)
-                new_schedule.add_segment(rest)
+                if rest is not None:
+                    new_schedule.add_segment(rest)
+                continue
             # the segments after new_time
-            if new_time < segment.start_time:
+            if new_time <= segment.start_time:
                 new_schedule.add_segment(segment)
+                continue
 
         self._set_schedule(new_schedule)
         if not self.schedule:
