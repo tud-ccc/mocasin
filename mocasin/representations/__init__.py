@@ -93,7 +93,7 @@ class MappingRepresentation(type):
             cls._instances[(cls, graph_names, platform_names)] = super(
                 MappingRepresentation, cls
             ).__call__(*args, **kwargs)
-            log.info(
+            log.debug(
                 f"Initializing representation {cls} of graph with processes: "
                 f"{graph_names} on platform with cores {platform_names}"
             )
