@@ -144,13 +144,6 @@ class ManagerStatistics:
 
         return np.mean(active_requests), np.std(active_requests)
 
-    def find_application(self, name):
-        """Find the entry by the applications name."""
-        assert (
-            False
-        ), "This function is not updated to the list container, or removed"
-        return self.applications.get(name, None)
-
     def dump_applications(self, filename):
         """Dump application entries to a CSV file."""
         if not self.applications:

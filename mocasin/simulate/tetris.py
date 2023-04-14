@@ -41,6 +41,12 @@ class RuntimeTetrisManager(RuntimeManager):
         # keep track of runtime applications
         # {(request: RuntimeDataflowApplication)}
         self._runtime_applications = {}
+
+        # keep track of application stats entries
+        # {(request: ManagerStatisticsApplicationEntry}
+        # TODO: Consider putting it into the Request structure
+        self._request_stats = {}
+
         # keep track of all finished events
         self._finished_events = []
 
@@ -149,6 +155,7 @@ class RuntimeTetrisManager(RuntimeManager):
             entry = self.statistics.new_application(
                 graph, arrival=self.env.now, deadline=request.deadline
             )
+            self._request_stats.update({request: entry})
             if request.status == JobRequestStatus.ACCEPTED:
                 self._log.debug(f"Application {graph.name} is accepted")
                 app = self._create_runtime_application(request, trace)
@@ -278,6 +285,6 @@ class RuntimeTetrisManager(RuntimeManager):
             for request, segments in schedule.per_requests().items():
                 assert segments[-1].finished
                 expected_end_time = segments[-1].end_time
-                entry = self.statistics.find_application(request.app.name)
+                entry = self._request_stats[request]
                 assert entry.accepted
                 entry.expected_end_time = expected_end_time * 1000000000.0
