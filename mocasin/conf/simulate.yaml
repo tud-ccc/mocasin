@@ -12,10 +12,6 @@ defaults:
   - override hydra/job_logging: mocasin
   - _self_
 
-mapping_table:
-jobs: 1
-output: "mappings.csv"
-
 simtrace:
   file: "trace.json"
   app: True
