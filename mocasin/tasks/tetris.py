@@ -98,10 +98,6 @@ def tetris_manager(cfg):
         * **stats_manager:** the output file for manager statistics
         * **summary:** the output file for the summary results
     """
-    # TODO: Change the name to `input_trace`
-    # TODO: Change the task name to `simulate_tetris`
-    # TODO: Generate output trace
-
     # Suppress logs from mocasin module
     init_logging()
 
