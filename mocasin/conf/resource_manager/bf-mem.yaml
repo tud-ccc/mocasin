@@ -1,6 +1,9 @@
 
 _target_: mocasin.tetris.scheduler.bruteforce_memo.BruteforceMemoScheduler
 
+# Reuse previous schedules
+schedule_reuse: False
+
 migrations: True
 preemptions: True
 rotations: False

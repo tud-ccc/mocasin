@@ -2,12 +2,13 @@
 # Licensed under the ISC license (see LICENSE.txt)
 #
 # Authors: Robert Khasanov
-import csv
 import logging
 import os
 import time
 
+from mocasin.simulate.manager import ManagerStatistics
 from mocasin.tetris.job_request import JobRequestStatus
+
 
 log = logging.getLogger(__name__)
 
@@ -40,6 +41,9 @@ class TracePlayer:
         # Initialize time
         self._time = 0.0
 
+        # Statistics
+        self.stats = ManagerStatistics()
+
         # Initialize dump paramerers
         self._dump_summary = dump_summary
         self._dump_path = dump_path
@@ -59,18 +63,53 @@ class TracePlayer:
         self._simulation_start_time = time.time()
         log.info("Simulation started")
 
-        for event in self._events:
+        for event_no, event in enumerate(self._events):
             log.debug(f"Handling request {event.to_str()}")
             graph = event.app
             mappings = event.mappings
             arrival = event.arrival
             deadline = event.deadline
             self._simulate_to(arrival)
+
+            num_prev_apps = len(self.resource_manager.requests)
+
             request = self.resource_manager.new_request(
                 graph, mappings, deadline - arrival
             )
+            stats_entry = self.stats.new_application(
+                graph, arrival=arrival, deadline=deadline
+            )
+
             self._requests.append(request)
-            schedule = self.resource_manager.generate_schedule()
+            (
+                schedule,
+                scheduling_time,
+            ) = self.resource_manager.generate_schedule()
+
+            accepted = schedule is not None
+
+            if accepted:
+                # Job is accepted
+                accepted_str = "ACCEPTED"
+                stats_entry.accepted = True
+                num_accepted = 1
+            else:
+                # Job is refused
+                accepted_str = "REFUSED"
+                stats_entry.accepted = False
+                num_accepted = 0
+
+            self.stats.new_activation(
+                arrival, 1, num_accepted, num_prev_apps, scheduling_time
+            )
+
+            log.info(
+                f"T={arrival:8.2f}: "
+                f"Req#{event_no + 1:02} {graph.name:4} dl={deadline:8.3f} | "
+                f"ARs={len(self.resource_manager.requests)} "
+                f"st={scheduling_time:.3f}s "
+                f"=> {accepted_str}"
+            )
 
         while self.resource_manager.schedule:
             self.resource_manager.advance_segment()
@@ -86,64 +125,3 @@ class TracePlayer:
         assert all(
             r.status != JobRequestStatus.ACCEPTED for r in self._requests
         )
-
-        self._generate_stats()
-        self._print_stats()
-        self._dump_stats()
-
-    def _generate_stats(self):
-        self._stats = {
-            "requests": len(self._requests),
-            "accepted": sum(
-                r.status == JobRequestStatus.FINISHED for r in self._requests
-            ),
-            "dynamic_energy": self.resource_manager.dynamic_energy,
-            "scheduler": self.resource_manager.scheduler.name,
-        }
-
-    def _print_stats(self):
-        log.info("==================================")
-        log.info("Results:")
-        log.info("Total requests: {}".format(self._stats["requests"]))
-        log.info(
-            "Accepted requests (rate): {} ({:.2f}%)".format(
-                self._stats["accepted"],
-                100 * self._stats["accepted"] / self._stats["requests"],
-            )
-        )
-        log.info(f"Dynamic energy: {self._stats['dynamic_energy']:.3f}J")
-        log.info("Simulated time: {:.2f}s".format(self._time))
-        log.info(
-            "Simulation time: {:.2f}s".format(
-                self._simulation_end_time - self._simulation_start_time
-            )
-        )
-
-    def _dump_stats(self):
-        if not self._dump_summary:
-            return
-        if os.path.exists(self._dump_path):
-            assert os.path.isfile(self._dump_path)
-            mod = "a"
-        else:
-            mod = "w"
-
-        with open(self._dump_path, mod) as f:
-            if mod == "w":
-                print(
-                    "input_scenario,scheduler,requests,accepted,energy,"
-                    "time_simulated,time_simulation",
-                    file=f,
-                )
-            print(
-                "{},{},{},{},{},{},{}".format(
-                    self._scenario,
-                    self._stats["scheduler"],
-                    self._stats["requests"],
-                    self._stats["accepted"],
-                    self._stats["energy"],
-                    self._time,
-                    self._simulation_end_time - self._simulation_start_time,
-                ),
-                file=f,
-            )

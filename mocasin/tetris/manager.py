@@ -16,9 +16,16 @@ from mocasin.tetris.schedule import (
 
 log = logging.getLogger(__name__)
 
+EPS = 0.0001
+
 
 class ResourceManager:
-    def __init__(self, platform, scheduler, schedule_iteratively=True):
+    def __init__(
+        self,
+        platform,
+        scheduler,
+        schedule_iteratively=True,
+    ):
         self.platform = platform
         self.scheduler = scheduler
 
@@ -54,7 +61,7 @@ class ResourceManager:
             self._schedule = None
         else:
             self._schedule = new_schedule
-            log.debug("Applied a new schedule:")
+            log.debug("Current active schedule:")
             log.debug(new_schedule.to_str(verbose=True))
 
     def _is_schedule_adjusted(self, schedule):
@@ -162,9 +169,11 @@ class ResourceManager:
         # Create a copy of the current job list with the new request
         # Ensure that jobs are immutable
         jobs = [j for _, j in self.requests.items() if j]
+
         if new_requests:
             for request in new_requests:
                 jobs.append(Job.from_request(request).dispatch())
+
         # Generate scheduling with the new job
         st = time.time()
         if allow_partial_solution:
@@ -178,14 +187,16 @@ class ResourceManager:
             schedule = self.scheduler.schedule(
                 jobs,
                 scheduling_start_time=self.state_time,
+                current_schedule=self.schedule,
             )
 
         et = time.time()
+        scheduling_time = et - st
         log.debug(
             f"Schedule found = {schedule is not None}. "
-            f"Time to find the schedule: {et-st}"
+            f"Time to find the schedule: {scheduling_time}"
         )
-        return schedule
+        return schedule, scheduling_time
 
     def _generate_schedule_iteratively(self):
         """Generate schedule for multiple requests iteratively."""
@@ -193,8 +204,10 @@ class ResourceManager:
             r for r in self.requests.keys() if r.status == JobRequestStatus.NEW
         ]
         new_schedule = None
+        total_sched_time = 0
         for request in new_requests:
-            schedule = self._generate_schedule([request])
+            schedule, sched_time = self._generate_schedule([request])
+            total_sched_time += sched_time
             if schedule:
                 log.debug(f"Request {request.app.name} is accepted")
                 request.status = JobRequestStatus.ACCEPTED
@@ -205,7 +218,7 @@ class ResourceManager:
                 log.debug(f"Request {request.app.name} is rejected")
                 request.status = JobRequestStatus.REFUSED
                 self._remove_request(request)
-        return new_schedule
+        return new_schedule, total_sched_time
 
     def _generate_schedule_jointly(self):
         """Generate schedule for multiple requests jointly."""
@@ -213,7 +226,7 @@ class ResourceManager:
         new_requests = [
             r for r in self.requests.keys() if r.status == JobRequestStatus.NEW
         ]
-        schedule = self._generate_schedule(
+        schedule, sched_time = self._generate_schedule(
             new_requests, allow_partial_solution=True
         )
         if not schedule:
@@ -222,7 +235,7 @@ class ResourceManager:
                 log.debug(f"Request {request.app.name} is rejected")
                 request.status = JobRequestStatus.REFUSED
                 self._remove_request(request)
-            return None
+            return None, sched_time
 
         scheduled_requests = schedule.get_requests()
         for request in list(self.requests.keys()):
@@ -243,7 +256,7 @@ class ResourceManager:
                 log.debug(f"Request {request.app.name} is rejected")
                 request.status = JobRequestStatus.REFUSED
                 self._remove_request(request)
-        return schedule
+        return schedule, sched_time
 
     def generate_schedule(self, force=False):
         """Generate a new schedule.
@@ -271,19 +284,19 @@ class ResourceManager:
             r for r in self.requests.keys() if r.status == JobRequestStatus.NEW
         ]
         if self._schedule_iteratively:
-            schedule = self._generate_schedule_iteratively()
+            schedule, sched_time = self._generate_schedule_iteratively()
         else:
-            schedule = self._generate_schedule_jointly()
+            schedule, sched_time = self._generate_schedule_jointly()
 
         if not schedule and force:
-            schedule = self._generate_schedule()
+            schedule, sched_time = self._generate_schedule()
             assert schedule
 
         if schedule:
             self._set_schedule(schedule)
-            return self.schedule
+            return self.schedule, sched_time
 
-        return None
+        return None, sched_time
 
     def _remove_request(self, request):
         """Remove finished or refused request."""
@@ -320,7 +333,12 @@ class ResourceManager:
                     f"The end time ({till_time}) must be within the segment "
                     f"({segment.start_time}..{segment.end_time})"
                 )
-            segment, rest = segment.split(till_time)
+            if abs(segment.start_time - till_time) < EPS:
+                return segment
+            elif abs(segment.end_time - till_time) < EPS:
+                rest = None
+            else:
+                segment, rest = segment.split(till_time)
 
         jobs = [j for _, j in self.requests.items() if j]
         schedule = Schedule(self.platform, [segment])
@@ -384,13 +402,17 @@ class ResourceManager:
             # advance by the whole segment
             if new_time >= segment.end_time:
                 self._advance_segment(segment)
+                continue
             # tne new_time is in the middle of the segment
-            if segment.start_time <= new_time < segment.end_time:
+            if segment.start_time < new_time < segment.end_time:
                 rest = self._advance_segment(segment, new_time)
-                new_schedule.add_segment(rest)
+                if rest is not None:
+                    new_schedule.add_segment(rest)
+                continue
             # the segments after new_time
-            if new_time < segment.start_time:
+            if new_time <= segment.start_time:
                 new_schedule.add_segment(segment)
+                continue
 
         self._set_schedule(new_schedule)
         if not self.schedule:

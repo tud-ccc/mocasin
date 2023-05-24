@@ -296,9 +296,14 @@ class SegLRScheduler(SegmentedScheduler):
             lr_constraints=self.__lr_constraints,
             lr_rounds=self.__lr_rounds,
         )
-        super().__init__(platform, segment_mapper)
+        super().__init__(platform, segment_mapper, **kwargs)
 
         self.__name = self.__generate_name()
+
+        if self.schedule_reuse:
+            log.warning(
+                f"{self.__class__.__name__} does not reuse existing schedules"
+            )
 
     def __generate_name(self):
         res = "Segmented LR (sorting="

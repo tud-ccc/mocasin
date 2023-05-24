@@ -74,11 +74,12 @@ class MappingTableReader:
         self.com_mapper = ComFullMapper(platform)
         self.mapper = ProcPartialMapper(graph, platform, self.com_mapper)
 
-        self._process_names = [p.name for p in self.graph.processes()]
+        self._process_names = sorted([p.name for p in self.graph.processes()])
 
         self._processor_numbers = {}
-        for i, pe in enumerate(self.platform.processors()):
-            self._processor_numbers[pe.name] = i
+        pe_names = sorted([pe.name for pe in self.platform.processors()])
+        for i, pe in enumerate(pe_names):
+            self._processor_numbers[pe] = i
 
         self._read_csv()
 

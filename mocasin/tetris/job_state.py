@@ -266,12 +266,12 @@ class Job:
         assert self.request == job_segment.request
         assert abs(self.cratio - job_segment.start_cratio) < CRATIO_EPS, (
             "Cannot apply job to a job segment:\n"
-            "job: {}\n"
-            "segment: {}".format(self.to_str(), job_segment.to_str())
+            f"job: {self.to_str()}\n"
+            f"segment: {job_segment.to_str()}"
         )
         assert (
             self.is_ready() or self.is_running()
-        ), "Cannot advance the job with a state {}".format(self.state)
+        ), f"Cannot advance the job with a state {self.state}"
 
         # Advance the job state
         self.__mapping = job_segment.mapping
