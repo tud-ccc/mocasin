@@ -28,7 +28,7 @@ dependencies = [
     "matplotlib",
     "more_itertools",
     "mpsym",
-    "numba>=0.53.0rc1",
+    "numba>=0.53.0rc1,<0.58",
     "numpy",
     "pint",
     "pydot",
