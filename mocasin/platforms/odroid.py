@@ -85,7 +85,7 @@ class makeOdroid(cluster):
             l1 = cluster_a7.addStorage("L1_" + f"pe{i:02d}", *l1a7Params)
             designer.connectComponents(pe, l1)
             designer.generatePrimitivesForStorage(l1)
-            #designer.printPrimitives()
+            # designer.printPrimitives()
             designer.connectComponents(l1, L2_A7)
         designer.generatePrimitivesForStorage(L2_A7)
 
@@ -107,7 +107,6 @@ class makeOdroid(cluster):
         designer.connectComponents(L2_A7, DRAM)
         designer.connectComponents(L2_A15, DRAM)
         designer.generatePrimitivesForStorage(DRAM)
-
 
         # Set peripheral static power of the platform.
         designer.setPeripheralStaticPower(peripheral_static_power)

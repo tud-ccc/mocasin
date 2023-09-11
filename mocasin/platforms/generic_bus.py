@@ -202,4 +202,3 @@ class DesignerPlatformBus(Platform):
             # Connect pe to shared memory
             designer.connectComponents(pe, shared_memory)
         designer.generatePrimitivesForStorage(shared_memory)
-

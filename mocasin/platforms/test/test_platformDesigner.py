@@ -26,7 +26,7 @@ class TestPlatformDesigner(object):
         designer.generatePrimitivesForStorage(ram)
 
         platform = designer.getPlatform()
-        #platform.generate_all_primitives()
+        # platform.generate_all_primitives()
 
         num_processors = len(platform.processors())
         assert num_processors == 4

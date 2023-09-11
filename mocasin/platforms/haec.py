@@ -74,7 +74,9 @@ class makeCluster(cluster):
             nocList.append(noc)
 
         pl = getPlForRouter()
-        noc = designer.createNetwork(f"electric_{name}", nocList, meshTopology, pl)
+        noc = designer.createNetwork(
+            f"electric_{name}", nocList, meshTopology, pl
+        )
         designer.generatePrimitivesForNoc(noc)
 
     def getWirelessRouter(self):

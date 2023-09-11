@@ -98,7 +98,6 @@ class makeCluster0(cluster):
         designer.generatePrimitivesForNoc(noc)
 
 
-
 class makeCluster1(cluster):
     def __init__(self, name, designer, pe1):
         super(makeCluster1, self).__init__(name, designer)

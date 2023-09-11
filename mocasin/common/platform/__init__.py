@@ -15,6 +15,7 @@ from mocasin.platforms.topologies import meshTopology
 
 log = logging.getLogger(__name__)
 
+
 class CommunicationResourceType(Enum):
     PhysicalLink = 1
     LogicalLink = 2
@@ -798,7 +799,6 @@ class Platform(object):
                     resources.pop(i)
 
         return resources
-
 
     # fill resources with physical links
     def find_physical_links(self, resources):
