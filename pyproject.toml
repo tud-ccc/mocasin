@@ -28,8 +28,8 @@ dependencies = [
     "matplotlib",
     "more_itertools",
     "mpsym",
-    "numba>=0.53.0rc1",
-    "numpy<1.22",
+    "numba>=0.53.0rc1,<0.58",
+    "numpy",
     "pint",
     "pydot",
     # pynauty is not binary compatible to some systems including Ubuntu 22.10

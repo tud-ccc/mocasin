@@ -96,6 +96,11 @@ class BruteforceMemoScheduler(SchedulerBase):
                 "Non-preemptable workload is not yet supported by bruteforce-memo scheduler"
             )
 
+        if self.schedule_reuse:
+            log.warning(
+                f"{self.__class__.__name__} does not reuse existing schedules"
+            )
+
     @property
     def name(self):
         return "Exact-Memo"

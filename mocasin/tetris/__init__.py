@@ -8,6 +8,8 @@ from mocasin.tetris.manager import ResourceManager
 from mocasin.tetris.tracer import TracePlayer
 from mocasin.tetris.tetris_reader import read_applications, read_requests
 
+import csv
+from dataclasses import dataclass, field, fields
 import hydra
 import logging
 import sys
@@ -130,6 +132,61 @@ class TetrisScheduling:
         return scheduling
 
 
+@dataclass
+class TetrisManagementSummary:
+    input_trace: str
+    scheduler: str
+    total_requests: int
+    accepted_requests: int
+    rejected_requests: int = field(init=False)
+    total_activations: int = field(default=None, init=False)
+    active_requests_mean: float = field(default=None, init=False)
+    active_requests_std: float = field(default=None, init=False)
+    dynamic_energy: float = field(default=None, init=False)
+    scheduling_time_mean: float = field(default=None, init=False)
+    scheduling_time_std: float = field(default=None, init=False)
+
+    def __post_init__(self):
+        self.rejected_requests = self.total_requests - self.accepted_requests
+
+    def print(self):
+        accepted_ratio = 0
+        rejected_ratio = 0
+        if self.total_requests:
+            accepted_ratio = self.accepted_requests / self.total_requests
+            rejected_ratio = self.rejected_requests / self.total_requests
+        print(f"Input trace: {self.input_trace}")
+        print(f"Scheduler: {self.scheduler}")
+        print(f"Total requests: {self.total_requests}")
+        print(
+            f"Accepted requests: {self.accepted_requests} "
+            f"({accepted_ratio * 100:.2f} %)"
+        )
+        print(
+            f"Rejected requests: {self.rejected_requests} "
+            f"({rejected_ratio * 100:.2f} %)"
+        )
+        print(f"Total runtime manager activations: {self.total_activations}")
+        print(
+            f"Average active requests: {self.active_requests_mean} "
+            f"(std={self.active_requests_std:.2f})"
+        )
+        print(f"Dynamic energy: {self.dynamic_energy:.3f} J")
+        print(
+            f"Average scheduling time: {self.scheduling_time_mean * 1000:.6f} ms "
+            f"(std={self.scheduling_time_std * 1000:.6f} ms)"
+        )
+
+    def to_csv(self, file_name):
+        field_names = [f.name for f in fields(self)]
+        field_values = [getattr(self, f.name) for f in fields(self)]
+
+        with open(file_name, "w", newline="") as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(field_names)
+            writer.writerow(field_values)
+
+
 class TetrisManagement:
     """Class for handling tetris management.
 
@@ -138,13 +195,36 @@ class TetrisManagement:
     tasks, we dedicate a static method to handle hydra configuration object.
     """
 
-    def __init__(self, manager, tracer, reqs):
+    def __init__(self, manager, tracer, reqs, input_trace=None):
         self.manager = manager
         self.tracer = tracer
         self.requests = reqs
+        self.input_trace = input_trace
+        self.stats = None
+        self.summary = None
 
     def run(self):
         self.tracer.run()
+        self.stats = self.tracer.stats
+        self.build_summary()
+
+    def build_summary(self):
+        """Build simulation summary."""
+        assert self.stats
+        total_reqs = self.stats.total_applications()
+        accepted = self.stats.total_accepted()
+        summary = TetrisManagementSummary(
+            self.input_trace, self.manager.scheduler.name, total_reqs, accepted
+        )
+        summary.total_activations = self.stats.total_activations()
+        ar_mean, ar_std = self.stats.active_requests_stats()
+        summary.active_requests_mean = ar_mean
+        summary.active_requests_std = ar_std
+        summary.dynamic_energy = self.manager.dynamic_energy
+        st_mean, st_std = self.stats.scheduling_time_stats()
+        summary.scheduling_time_mean = st_mean
+        summary.scheduling_time_std = st_std
+        self.summary = summary
 
     @staticmethod
     def from_hydra(cfg):
@@ -163,14 +243,18 @@ class TetrisManagement:
         apps = read_applications(base_apps_dir, platform)
 
         # Read jobs file
-        reqs = read_requests(to_absolute_path(cfg["input_jobs"]), apps)
+        trace_filename = cfg["input_jobs"]
+        reqs = read_requests(to_absolute_path(trace_filename), apps)
 
         # Initialize tetris scheduler
         scheduler = hydra.utils.instantiate(cfg["resource_manager"], platform)
 
+        # TODO: add a flag to the config: "schedule_iteratively"
         manager = ResourceManager(platform, scheduler)
 
         tracer = TracePlayer(manager, reqs)
 
-        management = TetrisManagement(manager, tracer, reqs)
+        management = TetrisManagement(
+            manager, tracer, reqs, input_trace=trace_filename
+        )
         return management

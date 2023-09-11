@@ -31,6 +31,7 @@ class SchedulerBase(ABC):
         self,
         platform,
         orbit_lookup_manager=None,
+        schedule_reuse=False,
         migrations=True,
         preemptions=True,
         rotations=False,
@@ -56,6 +57,9 @@ class SchedulerBase(ABC):
         """
         super().__init__()
         self.platform = platform
+
+        self.schedule_reuse = schedule_reuse
+
         self._migrations = migrations
         self._preemptions = preemptions
         self._rotations = rotations
@@ -117,8 +121,8 @@ class SegmentedScheduler(SchedulerBase):
         segment_mapper: A segment scheduler
     """
 
-    def __init__(self, platform, segment_mapper):
-        super().__init__(platform)
+    def __init__(self, platform, segment_mapper, **kwargs):
+        super().__init__(platform, **kwargs)
         assert isinstance(segment_mapper, SegmentMapperBase)
         self.segment_mapper = segment_mapper
 

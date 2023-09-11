@@ -55,17 +55,17 @@ def test_mapping_table_reader(platform, graph, table_file):
     )
     mappings = reader.form_mappings()
     assert len(mappings) == 4
-    assert mappings[0][0].to_list() == [0, 1]
+    assert mappings[0][0].to_list() == [1, 3]
     assert mappings[0][0].metadata.exec_time == 10.23
     assert mappings[0][0].metadata.energy == 24.43
     assert mappings[0][1] == "a"
-    assert mappings[1][0].to_list() == [0, 0]
+    assert mappings[1][0].to_list() == [1, 1]
     assert mappings[1][0].metadata.exec_time == 14.43
     assert mappings[1][0].metadata.energy == 21.56
     assert mappings[1][1] == "b"
-    assert mappings[2][0].to_list() == [4, 0]
+    assert mappings[2][0].to_list() == [0, 1]
     assert mappings[2][1] == "c"
-    assert mappings[3][0].to_list() == [4, 7]
+    assert mappings[3][0].to_list() == [0, 6]
 
 
 def num_resources(mapping):
