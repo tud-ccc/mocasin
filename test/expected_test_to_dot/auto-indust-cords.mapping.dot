@@ -41,40 +41,25 @@ process_can2 [label=can2];
 
 }
 
-primitive_prim_processor_0_cluster0_processor_0_cluster0 [label=prim_processor_0_cluster0_processor_0_cluster0];
-primitive_prim_processor_0_cluster0_processor_1_cluster0 [label=prim_processor_0_cluster0_processor_1_cluster0];
-primitive_prim_processor_0_cluster0_processor_2_cluster0 [label=prim_processor_0_cluster0_processor_2_cluster0];
-primitive_prim_processor_0_cluster0_processor_3_cluster0 [label=prim_processor_0_cluster0_processor_3_cluster0];
-primitive_prim_processor_1_cluster0_processor_0_cluster0 [label=prim_processor_1_cluster0_processor_0_cluster0];
-primitive_prim_processor_1_cluster0_processor_1_cluster0 [label=prim_processor_1_cluster0_processor_1_cluster0];
-primitive_prim_processor_1_cluster0_processor_2_cluster0 [label=prim_processor_1_cluster0_processor_2_cluster0];
-primitive_prim_processor_1_cluster0_processor_3_cluster0 [label=prim_processor_1_cluster0_processor_3_cluster0];
-primitive_prim_processor_2_cluster0_processor_0_cluster0 [label=prim_processor_2_cluster0_processor_0_cluster0];
-primitive_prim_processor_2_cluster0_processor_1_cluster0 [label=prim_processor_2_cluster0_processor_1_cluster0];
-primitive_prim_processor_2_cluster0_processor_2_cluster0 [label=prim_processor_2_cluster0_processor_2_cluster0];
-primitive_prim_processor_2_cluster0_processor_3_cluster0 [label=prim_processor_2_cluster0_processor_3_cluster0];
-primitive_prim_processor_3_cluster0_processor_0_cluster0 [label=prim_processor_3_cluster0_processor_0_cluster0];
-primitive_prim_processor_3_cluster0_processor_1_cluster0 [label=prim_processor_3_cluster0_processor_1_cluster0];
-primitive_prim_processor_3_cluster0_processor_2_cluster0 [label=prim_processor_3_cluster0_processor_2_cluster0];
-primitive_prim_processor_3_cluster0_processor_3_cluster0 [label=prim_processor_3_cluster0_processor_3_cluster0];
+primitive_prim_shared_memory_cluster0 [label=prim_shared_memory_cluster0];
 channel_a0_0 [label=a0_0, shape=diamond];
 process_src -> channel_a0_0  [minlen=4];
 channel_a0_0 -> process_can1  [minlen=4];
-channel_a0_0 -> primitive_prim_processor_0_cluster0_processor_1_cluster0  [arrowhead=none, style=dashed];
+channel_a0_0 -> primitive_prim_shared_memory_cluster0  [arrowhead=none, style=dashed];
 channel_a0_1 [label=a0_1, shape=diamond];
 process_can1 -> channel_a0_1  [minlen=4];
 channel_a0_1 -> process_fp  [minlen=4];
-channel_a0_1 -> primitive_prim_processor_1_cluster0_processor_0_cluster0  [arrowhead=none, style=dashed];
+channel_a0_1 -> primitive_prim_shared_memory_cluster0  [arrowhead=none, style=dashed];
 channel_a0_1_0 [label=a0_1_0, shape=diamond];
 process_fp -> channel_a0_1_0  [minlen=4];
 channel_a0_1_0 -> process_can2  [minlen=4];
-channel_a0_1_0 -> primitive_prim_processor_0_cluster0_processor_3_cluster0  [arrowhead=none, style=dashed];
+channel_a0_1_0 -> primitive_prim_shared_memory_cluster0  [arrowhead=none, style=dashed];
 channel_a0_2 [label=a0_2, shape=diamond];
 process_can2 -> channel_a0_2  [minlen=4];
 channel_a0_2 -> process_pulse  [minlen=4];
-channel_a0_2 -> primitive_prim_processor_3_cluster0_processor_0_cluster0  [arrowhead=none, style=dashed];
+channel_a0_2 -> primitive_prim_shared_memory_cluster0  [arrowhead=none, style=dashed];
 channel_a0_3 [label=a0_3, shape=diamond];
 process_pulse -> channel_a0_3  [minlen=4];
 channel_a0_3 -> process_sink  [minlen=4];
-channel_a0_3 -> primitive_prim_processor_0_cluster0_processor_0_cluster0  [arrowhead=none, style=dashed];
+channel_a0_3 -> primitive_prim_shared_memory_cluster0  [arrowhead=none, style=dashed];
 }

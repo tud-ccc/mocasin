@@ -51,8 +51,7 @@ class DesignerPlatformCoolidge(Platform):
         ram = coolidge.addStorage("RAM", *ramParams())
         for l2 in l2_list:
             designer.connectComponents(l2, ram)
-
-        self.generate_all_primitives()
+        designer.generatePrimitivesForStorage(ram)
 
 
 class makeChip(cluster):
@@ -75,6 +74,7 @@ class makeChip(cluster):
         pes = pe0_list + pe1_list
         for pe in pes:
             designer.connectComponents(pe, l2)
+        designer.generatePrimitivesForStorage(l2)
 
 
 class makeCluster0(cluster):
@@ -91,10 +91,11 @@ class makeCluster0(cluster):
             nocList.append(noc)
 
         fd = FrequencyDomain("fd_electric", 6000000.0)
-        pl = CommunicationResource("pl", *plParams(fd))
-        designer.createNetwork(
+        pl = CommunicationResource(*plParams(fd))
+        noc = designer.createNetwork(
             f"noc_{name}", nocList, fullyConnectedTopology, pl
         )
+        designer.generatePrimitivesForNoc(noc)
 
 
 class makeCluster1(cluster):

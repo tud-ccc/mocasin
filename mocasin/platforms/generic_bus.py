@@ -54,9 +54,9 @@ class DesignerPlatformFlatBus(Platform):
             self.add_scheduler(Scheduler("sp_" + name, [processor], policy))
             designer.adjacentList.update({processor: []})
             designer.connectComponents(processor, bus)
+        designer.generatePrimitivesForStorage(bus)
         designer.connectComponents(bus, ram)
-
-        self.generate_all_primitives()
+        designer.generatePrimitivesForStorage(ram)
 
 
 class GenericClusteredPlatform(Platform):
@@ -201,5 +201,4 @@ class DesignerPlatformBus(Platform):
             )
             # Connect pe to shared memory
             designer.connectComponents(pe, shared_memory)
-
-        self.generate_all_primitives()
+        designer.generatePrimitivesForStorage(shared_memory)

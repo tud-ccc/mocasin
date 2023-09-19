@@ -52,11 +52,12 @@ class DesignerPlatformHAEC(Platform):
             wirelessList.append(cluster_i.getWirelessRouter())
             for pe in pes:
                 designer.connectComponents(pe, ram)
+        designer.generatePrimitivesForStorage(ram)
 
-        designer.createNetwork(
+        noc = designer.createNetwork(
             "optic", wirelessList, fullyConnectedTopology, getPlForWireless()
         )
-        self.generate_all_primitives()
+        designer.generatePrimitivesForNoc(noc)
 
 
 class makeCluster(cluster):
@@ -73,15 +74,13 @@ class makeCluster(cluster):
             nocList.append(noc)
 
         pl = getPlForRouter()
-        designer.createNetwork(f"electric_{name}", nocList, meshTopology, pl)
+        noc = designer.createNetwork(
+            f"electric_{name}", nocList, meshTopology, pl
+        )
+        designer.generatePrimitivesForNoc(noc)
 
     def getWirelessRouter(self):
         return self.wireless
-
-
-class makeWireless(cluster):
-    def __init__(self, name, designer, pe0, router):
-        super(makeCluster, self).__init__(name, designer)
 
 
 def peParams(processor):

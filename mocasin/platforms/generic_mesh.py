@@ -60,8 +60,7 @@ class DesignerPlatformMesh(Platform):
         l2 = cluster1.getCommunicationResources()
         for component in pes + l2:
             designer.connectComponents(component, ram)
-
-        self.generate_all_primitives()
+        designer.generatePrimitivesForStorage(ram)
 
 
 class makeCluster0(cluster):
@@ -95,7 +94,8 @@ class makeCluster0(cluster):
         )
 
         # create network
-        designer.createNetwork("electric", noc_list, meshTopology, pl)
+        noc = designer.createNetwork("electric", noc_list, meshTopology, pl)
+        designer.generatePrimitivesForNoc(noc)
 
 
 class makeCluster1(cluster):
@@ -113,6 +113,7 @@ class makeCluster1(cluster):
         for i in range(2):
             pe = self.addPeToCluster(f"processor1_{i:04d}", *peParams(pe1))
             designer.connectComponents(pe, l1)
+        designer.generatePrimitivesForStorage(l1)
 
 
 # get parameters for pes

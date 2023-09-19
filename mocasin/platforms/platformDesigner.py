@@ -12,7 +12,11 @@ from mocasin.common.platform import (
     ProcessorPowerModel,
     CommunicationResource,
     CommunicationResourceType,
+    Primitive,
+    CommunicationPhase,
 )
+from mocasin.platforms.utils import simpleDijkstra, yxRouting
+from mocasin.platforms.topologies import meshTopology
 from mocasin.util import logging
 import sys
 
@@ -108,6 +112,8 @@ class PlatformDesigner:
                     self.adjacentList[k].append(i)
             self.nocList[networkName][0].update({k: v})
 
+        return {networkName: self.nocList[networkName]}
+
     def setSchedulingPolicy(self, policy, cycles):
         """Sets a new scheduling policy, which will be applied to all schedulers of new PE Clusters."""
         try:
@@ -124,6 +130,136 @@ class PlatformDesigner:
     def getPlatform(self):
         """Returns the platform, created with the designer."""
         return self.platform
+
+    def generatePrimitivesForStorage(self, storage):
+        platform = self.platform
+
+        # look for memories in cluster
+        if not f"prim_{storage.name}" in platform.primitives():
+            producerList = {}
+            consumerList = {}
+            # find elements connected to that memory
+            adjacencyList = platform.network[storage]
+
+            for element in adjacencyList:
+                # if element is pe, calculate path and find resources
+                if type(element) is Processor:
+                    resources = [storage]
+                    producerList[element] = resources
+                    consumerList[element] = resources
+
+                # if element is a communication resource, look for already existing primitives
+                elif (
+                    element.resource_type() == CommunicationResourceType.Storage
+                    or element.resource_type()
+                    == CommunicationResourceType.Router
+                ):
+                    innerPrimitive = platform.find_primitive(
+                        f"prim_{element.name}"
+                    )
+                    # extract resources from existing primitives
+                    for producer in innerPrimitive.producers:
+                        for phase in innerPrimitive.produce_phases[
+                            producer.name
+                        ]:
+                            resources = phase.resources + [storage]
+                            producerList[producer] = resources
+                    for consumer in innerPrimitive.consumers:
+                        for phase in innerPrimitive.consume_phases[
+                            consumer.name
+                        ]:
+                            resources = [storage] + phase.resources
+                            consumerList[consumer] = resources
+
+            prim = Primitive(f"prim_{storage.name}")
+            for pe, resources in producerList.items():
+                produce = CommunicationPhase("produce", resources, "write")
+                prim.add_producer(pe, [produce])
+
+            for pe, resources in consumerList.items():
+                consume = CommunicationPhase("consume", resources, "read")
+                prim.add_consumer(pe, [consume])
+
+            platform.add_primitive(prim)
+
+    def generatePrimitivesForNoc(self, noc):
+        platform = self.platform
+        noc_name = list(noc.keys())[0]
+
+        # extract routers in noc
+        adjacencyList = noc[noc_name][0]
+        router_list = list(noc[noc_name][0].keys())
+
+        if noc[noc_name][1] == meshTopology:
+            routingFunction = yxRouting
+        else:
+            routingFunction = simpleDijkstra
+
+        for router in router_list:
+            # extract the associated pe for each router
+            for element in platform.network[router]:
+                if type(element) is Processor:
+                    src = element
+                    prim = Primitive("prim_" + noc_name + "_" + src.name)
+
+                    for innerRouter in router_list:
+                        # extract the associated pe for inner router
+                        for element in platform.network[innerRouter]:
+                            if type(element) is Processor:
+                                sink = element
+
+                                if src != sink:
+                                    resources = routingFunction(
+                                        adjacencyList,
+                                        innerRouter,
+                                        router,
+                                    )
+
+                                    produce_resources = resources[:]
+                                    produce_resources.insert(0, sink)
+                                    produce_resources.append(src)
+                                    platform.find_physical_links(
+                                        produce_resources
+                                    )
+                                    produce_resources.pop(0)
+                                    produce_resources.pop()
+
+                                    produce = CommunicationPhase(
+                                        "produce", produce_resources, "write"
+                                    )
+
+                                    consume_resources = list(
+                                        reversed(resources)
+                                    )
+                                    consume_resources.insert(0, src)
+                                    consume_resources.append(sink)
+                                    platform.find_physical_links(
+                                        consume_resources
+                                    )
+                                    consume_resources.pop(0)
+                                    consume_resources.pop()
+
+                                    consume = CommunicationPhase(
+                                        "consume", consume_resources, "read"
+                                    )
+
+                                    prim.add_producer(sink, [produce])
+                                    prim.add_consumer(sink, [consume])
+
+                                else:
+                                    resources = [router]
+                                    produce = CommunicationPhase(
+                                        "produce", resources, "write"
+                                    )
+                                    consume = CommunicationPhase(
+                                        "consume",
+                                        list(reversed(resources)),
+                                        "read",
+                                    )
+                                    prim.add_producer(sink, [produce])
+                                    prim.add_consumer(sink, [consume])
+
+                    platform.add_primitive(prim)
 
 
 class genericProcessor(Processor):
