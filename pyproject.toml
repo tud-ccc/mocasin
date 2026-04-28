@@ -13,7 +13,7 @@ authors = [
 ]
 description = "A framework for modeling dataflow applications and their execution on MPSoC platforms."
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.8,<3.11"
 license = {text = "ISC"}
 dependencies = [
     "arpeggio",
