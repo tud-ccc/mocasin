@@ -1,0 +1,87 @@
+name: Tests
+
+on: [push, pull_request]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.8", "3.9", "3.10"]
+
+    container:
+      image: python:${{ matrix.python-version }}
+
+    steps:
+      - name: Install tools required by actions and system dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            git \
+            nodejs \
+            ca-certificates \
+            build-essential \
+            cmake \
+            libboost-dev \
+            libboost-graph-dev \
+            lua5.3 \
+            liblua5.3-dev \
+            luarocks
+          rm -rf /var/lib/apt/lists/*
+
+      - name: Upgrade Python packaging tools
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+
+      - name: Show versions
+        run: |
+          python --version
+          pip --version
+          node --version
+          git --version
+
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build wheels
+        run: |
+          python -m pip wheel -w wheels ".[dev]"
+
+      - name: Install mocasin from wheels
+        run: |
+          python -m pip install "mocasin[dev]" --no-index --find-links=./wheels
+
+      - name: Run tests
+        run: |
+          python -m pytest
+
+  check-formatting:
+    runs-on: ubuntu-latest
+
+    container:
+      image: python:3.10
+
+    steps:
+      - name: Install tools required by actions
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            git \
+            nodejs \
+            ca-certificates
+          rm -rf /var/lib/apt/lists/*
+
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install black
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install black
+          black --version
+
+      - name: Check formatting
+        run: |
+          black --check .
