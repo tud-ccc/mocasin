@@ -10,7 +10,6 @@ from hydra.utils import to_absolute_path
 from mocasin.tgff.trace import TgffTrace
 from mocasin.tgff.tgffParser.parser import Parser
 
-
 log = logging.getLogger(__name__)
 
 _parsed_tgff_files = {}

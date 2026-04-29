@@ -12,7 +12,6 @@ from mocasin.util import logging
 from mocasin.simulate.adapter import SimulateLoggerAdapter
 from mocasin.simulate.process import ProcessState, RuntimeProcess
 
-
 log = logging.getLogger(__name__)
 
 

@@ -16,7 +16,6 @@ from mocasin.simulate.process import RuntimeDataflowProcess
 
 import pytest
 
-
 context_load_ticks = 4
 context_store_ticks = 6
 scheduling_delay = 7

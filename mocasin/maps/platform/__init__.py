@@ -11,7 +11,6 @@ from .convert import convert
 from .parse import parse
 from mocasin.common.platform import Platform
 
-
 log = logging.getLogger(__name__)
 
 

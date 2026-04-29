@@ -9,7 +9,6 @@ from mocasin.simulate.channel import RuntimeChannel
 from mocasin.simulate.process import RuntimeDataflowProcess
 from mocasin.simulate.adapter import SimulateLoggerAdapter
 
-
 log = logging.getLogger(__name__)
 
 

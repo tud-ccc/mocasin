@@ -9,7 +9,6 @@ import time
 from mocasin.simulate.manager import ManagerStatistics
 from mocasin.tetris.job_request import JobRequestStatus
 
-
 log = logging.getLogger(__name__)
 
 

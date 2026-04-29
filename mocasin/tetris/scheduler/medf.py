@@ -296,12 +296,14 @@ class MedfScheduler(SchedulerBase):
                         "Job_mappings: {}".format(
                             [
                                 (
-                                    j.to_str(),
-                                    m.get_used_processor_types(),
-                                    m.metadata.energy * (1.0 - j.cratio),
+                                    (
+                                        j.to_str(),
+                                        m.get_used_processor_types(),
+                                        m.metadata.energy * (1.0 - j.cratio),
+                                    )
+                                    if m
+                                    else (j.to_str(), None)
                                 )
-                                if m
-                                else (j.to_str(), None)
                                 for j, m in job_mappings.items()
                             ]
                         )

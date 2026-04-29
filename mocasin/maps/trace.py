@@ -18,7 +18,6 @@ from mocasin.common.trace import (
     WriteTokenSegment,
 )
 
-
 log = logging.getLogger(__name__)
 
 

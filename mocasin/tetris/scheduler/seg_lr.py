@@ -11,6 +11,7 @@ and run-time management for predictable many-core systems,”
 in 2015 IEEE International Symposium on Object/Component/Service-Oriented
 Real-Time Distributed Computing Workshops, April 2015, pp. 103–110.
 """
+
 from enum import Enum
 import logging
 import math

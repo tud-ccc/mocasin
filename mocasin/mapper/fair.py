@@ -11,7 +11,6 @@ from mocasin.mapper.partial import ComPartialMapper
 from mocasin.mapper.random import RandomPartialMapper
 from mocasin.util import logging
 
-
 log = logging.getLogger(__name__)
 
 

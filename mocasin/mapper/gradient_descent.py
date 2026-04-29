@@ -16,7 +16,6 @@ from mocasin.mapper.random import RandomPartialMapper
 from mocasin.mapper.utils import SimulationManager, SimulationManagerConfig
 from mocasin.util import logging
 
-
 log = logging.getLogger(__name__)
 eps = 1e-8
 

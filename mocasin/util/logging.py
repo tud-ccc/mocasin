@@ -16,7 +16,6 @@ import logging as l
 import copy
 from termcolor import colored
 
-
 COLORS = {"INFO": "green", "WARNING": "yellow", "ERROR": "red", "DEBUG": "blue"}
 """Maps logging levels to colors"""
 

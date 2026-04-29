@@ -11,7 +11,6 @@ from hydra.utils import to_absolute_path
 from mocasin.util import logging
 from mocasin.common.graph import DataflowChannel, DataflowGraph, DataflowProcess
 
-
 log = logging.getLogger(__name__)
 
 

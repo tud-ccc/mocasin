@@ -244,7 +244,7 @@ def test_all_infeasible(lp_vol, num_samples, mocker):
 def visualize_s_sets(points, num_procs):
     ns = [num_procs, num_procs]
     fig, ax = plt.subplots()
-    (x, y, colors) = points[0]
+    x, y, colors = points[0]
     plot = plt.scatter(x, y, c=colors, alpha=0.5)
     axes = plt.gca()
     axes.set_xlim([0, ns[0] - 1])
@@ -252,9 +252,9 @@ def visualize_s_sets(points, num_procs):
 
     def animate(i):
         if i < len(points):
-            (x, y, colors) = points[i]
+            x, y, colors = points[i]
         else:
-            (x, y, colors) = points[len(points)]
+            x, y, colors = points[len(points)]
 
         plot.set_offsets(np.c_[x, y])
         return (plot,)

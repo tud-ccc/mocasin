@@ -16,7 +16,6 @@ from mocasin.common.mapping import (
 from mocasin.mapper import BaseMapper
 from mocasin.maps.mapping import mapsmapping
 
-
 log = logging.getLogger(__name__)
 
 

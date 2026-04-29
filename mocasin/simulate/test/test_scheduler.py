@@ -11,7 +11,6 @@ from mocasin.simulate.process import RuntimeDataflowProcess
 
 import pytest
 
-
 context_load_ticks = 4
 context_store_ticks = 6
 scheduling_delay = 7
@@ -118,9 +117,11 @@ class TestRuntimeScheduler:
         # initialize the ready queue
         self.test_processes_become_ready(runtime_scheduler, processes, env)
         runtime_scheduler.schedule = mocker.Mock(
-            side_effect=lambda: runtime_scheduler._ready_queue[0]
-            if len(runtime_scheduler._ready_queue) > 0
-            else None
+            side_effect=lambda: (
+                runtime_scheduler._ready_queue[0]
+                if len(runtime_scheduler._ready_queue) > 0
+                else None
+            )
         )
         env.process(runtime_scheduler.run())
         env.run()
@@ -179,9 +180,11 @@ class TestRuntimeScheduler:
 
         # also mock up the schedule function
         runtime_scheduler.schedule = mocker.Mock(
-            side_effect=lambda: runtime_scheduler._ready_queue[0]
-            if len(runtime_scheduler._ready_queue) > 0
-            else None
+            side_effect=lambda: (
+                runtime_scheduler._ready_queue[0]
+                if len(runtime_scheduler._ready_queue) > 0
+                else None
+            )
         )
 
         env.run(1)  # start simulation to initialize the processes

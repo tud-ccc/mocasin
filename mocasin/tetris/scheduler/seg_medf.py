@@ -107,10 +107,10 @@ class SegMedfSegmentMapper(SegmentMapperBase):
                 # Skip jobs with found mappings
                 if job in job_mappings:
                     continue
-                to_finish[
-                    job
-                ] = self._filter_job_mappings_by_deadline_resources(
-                    job, avl_core_types
+                to_finish[job] = (
+                    self._filter_job_mappings_by_deadline_resources(
+                        job, avl_core_types
+                    )
                 )
                 to_finish[job].sort(key=lambda m: m.metadata.energy)
                 log.debug(
@@ -148,12 +148,14 @@ class SegMedfSegmentMapper(SegmentMapperBase):
                 "Job_mappings: {}".format(
                     [
                         (
-                            j.to_str(),
-                            m.get_used_processor_types(),
-                            m.metadata.energy * (1.0 - j.cratio),
+                            (
+                                j.to_str(),
+                                m.get_used_processor_types(),
+                                m.metadata.energy * (1.0 - j.cratio),
+                            )
+                            if m is not None
+                            else (j.to_str(), None)
                         )
-                        if m is not None
-                        else (j.to_str(), None)
                         for j, m in job_mappings.items()
                     ]
                 )

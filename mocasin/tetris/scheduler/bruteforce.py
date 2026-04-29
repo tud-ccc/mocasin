@@ -276,7 +276,7 @@ class BruteforceSegmentGenerator:
         Args:
             current_mappings (list): list of the chosen mappings for jobs.
         """
-        (used_cores, e) = self.__eval_core_energy_usage(current_mappings)
+        used_cores, e = self.__eval_core_energy_usage(current_mappings)
         total_cores = self.scheduler.platform.get_processor_types()
 
         # Check whether the current used cores do not exceed available cores

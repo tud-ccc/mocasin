@@ -167,9 +167,11 @@ class BruteforceMemoScheduler(SchedulerBase):
         # Look up in the mem_state_table
         req_schedules = cschedule.per_requests()
         cratio_list = [
-            req_schedules[j.request][-1].end_cratio
-            if j.request in req_schedules
-            else j.cratio
+            (
+                req_schedules[j.request][-1].end_cratio
+                if j.request in req_schedules
+                else j.cratio
+            )
             for j in self.__jobs
         ]
 
@@ -214,7 +216,7 @@ class BruteforceMemoScheduler(SchedulerBase):
                 continue
 
             # If non-finished jobs exist
-            (child_e) = self.__schedule_step(nsegment, njobs)
+            child_e = self.__schedule_step(nsegment, njobs)
             current_child_energy = nsegment.energy + child_e - cschedule.energy
             min_child_energy = min(current_child_energy, min_child_energy)
 

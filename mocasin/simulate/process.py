@@ -20,7 +20,6 @@ import weakref
 from mocasin.common.trace import SegmentType
 from mocasin.simulate.adapter import SimulateLoggerAdapter
 
-
 log = logging.getLogger(__name__)
 
 

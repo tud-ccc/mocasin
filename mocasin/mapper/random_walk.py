@@ -14,7 +14,6 @@ from mocasin.mapper.random import RandomMapper
 from mocasin.mapper.utils import SimulationManager, SimulationManagerConfig
 from mocasin.util import logging
 
-
 log = logging.getLogger(__name__)
 
 

@@ -84,9 +84,9 @@ class SimpleVectorMapper:
     def nextMapping(self):
         if not self.__reachedLastIteration():
             for idx in range(0, len(self.__stateVector)):
-                self.__frameMapping[
-                    self.__unmappedProcesses[idx]
-                ] = self.__stateVector[idx]
+                self.__frameMapping[self.__unmappedProcesses[idx]] = (
+                    self.__stateVector[idx]
+                )
                 idx += 1
 
             for key in self.__sharedCoreDict:

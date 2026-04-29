@@ -21,7 +21,6 @@ from mocasin.common.platform import (
     Storage,
 )
 
-
 ur = UnitRegistry()
 log = logging.getLogger(__name__)
 

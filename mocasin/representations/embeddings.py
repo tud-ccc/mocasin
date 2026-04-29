@@ -18,7 +18,6 @@ from mocasin.representations import metric_spaces as metric
 from mocasin.util import logging
 import mocasin.util.random_distributions.lp as lp
 
-
 log = logging.getLogger(__name__)
 
 

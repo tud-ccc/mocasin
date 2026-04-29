@@ -12,7 +12,6 @@ from mocasin.simulate.process import ProcessState
 from mocasin.simulate.scheduler import create_scheduler
 from mocasin.simulate.trace_writer import TraceWriter
 
-
 log = logging.getLogger(__name__)
 
 

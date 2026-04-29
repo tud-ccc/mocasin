@@ -7,6 +7,7 @@
 This script contains helpful independent methods, which are needed for
 functionality in other scripts of the platform package.
 """
+
 import numpy as np
 import logging
 from collections import OrderedDict

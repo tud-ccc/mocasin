@@ -6,7 +6,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-
 n = 16
 p = 0.5
 trials = 100000

@@ -9,7 +9,6 @@ import timeit
 import os
 import csv
 
-
 log = logging.getLogger(__name__)
 
 
