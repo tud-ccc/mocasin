@@ -57,6 +57,152 @@ jobs:
         run: |
           python -m pytest
 
+  test-maps-examples:
+    runs-on: ubuntu-latest
+    #needs:
+    #  - build-and-test
+
+    env:
+      API: https://git.cc.inf.tu-dresden.de/api/v1
+      REPO: mocasin/mocasin-maps-examples
+      WORKFLOW: tests.yaml
+      MOCASIN_BRANCH: ${{ github.ref_name }}
+      MOCASIN_CI_USER: ${{ secrets.MOCASIN_CI_USER }}
+      MOCASIN_CI_TOKEN: ${{ secrets.MOCASIN_CI_TOKEN }}
+
+    steps:
+      - name: Select maps plugin branch
+        run: |
+          PLUGIN_BRANCH="master"
+
+          if [ "$MOCASIN_BRANCH" != "master" ] && \
+             curl --fail --silent \
+               --user "${MOCASIN_CI_USER}:${MOCASIN_CI_TOKEN}" \
+               "${API}/repos/${REPO}/branches/${MOCASIN_BRANCH}" > /dev/null; then
+            PLUGIN_BRANCH="$MOCASIN_BRANCH"
+          fi
+
+          echo "Mocasin branch: ${MOCASIN_BRANCH}"
+          echo "MAPS Examples Plugin branch: ${PLUGIN_BRANCH}"
+
+          echo "PLUGIN_BRANCH=${PLUGIN_BRANCH}" >> "$GITHUB_ENV"
+
+      - name: Trigger mocasin-maps-examples plugin workflow
+        run: |
+          RUN_TOKEN="${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-maps"
+
+          PAYLOAD=$(printf \
+            '{"ref":"%s","inputs":{"mocasin_branch":"%s","run_token":"%s"}}' \
+            "$PLUGIN_BRANCH" "$MOCASIN_BRANCH" "$RUN_TOKEN")
+
+          curl --fail-with-body -X POST \
+            --user "${MOCASIN_CI_USER}:${MOCASIN_CI_TOKEN}" \
+            -H "Content-Type: application/json" \
+            "${API}/repos/${REPO}/actions/workflows/${WORKFLOW}/dispatches" \
+            -d "${PAYLOAD}"
+          
+          echo "RUN_TOKEN=${RUN_TOKEN}" >> "$GITHUB_ENV"
+
+      - name: Find maps plugin workflow run
+        run: |
+          RUN_ID=$(
+            curl --fail-with-body -s \
+              --user "${MOCASIN_CI_USER}:${MOCASIN_CI_TOKEN}" \
+              "${API}/repos/${REPO}/actions/runs" \
+            | jq -r --arg token "$RUN_TOKEN" '
+                .workflow_runs
+                | map(select(
+                    .workflow_id == "tests.yaml"
+                    and .trigger_event == "workflow_dispatch"
+                    and ((.event_payload | fromjson).inputs.run_token // "") == $token
+                ))
+                | sort_by(.id)
+                | last
+                | .id
+              '
+          )
+
+          if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
+            echo "Could not find downstream maps plugin workflow run."
+            exit 1
+          fi
+
+          echo "RUN_ID=${RUN_ID}" >> "$GITHUB_ENV"
+          echo "Maps plugin run id: ${RUN_ID}"
+
+          RUN_JSON=$(
+            curl --fail-with-body -s \
+              --user "${MOCASIN_CI_USER}:${MOCASIN_CI_TOKEN}" \
+              "${API}/repos/${REPO}/actions/runs/${RUN_ID}"
+          )
+
+          RUN_URL=$(echo "$RUN_JSON" | jq -r '.html_url')
+
+          echo "Maps plugin workflow URL: ${RUN_URL}"
+
+      - name: Wait for maps plugin workflow result
+        run: |
+          MAX_ATTEMPTS=120
+          ATTEMPT=1
+          ATTEMPT_PERIOD=60
+
+          echo "Polling maps plugin workflow every ${ATTEMPT_PERIOD} seconds"
+
+          print_summary () {
+            RUN_JSON="$1"
+
+            CREATED=$(echo "$RUN_JSON" | jq -r '.created // "n/a"')
+            STARTED=$(echo "$RUN_JSON" | jq -r '.started // "n/a"')
+            STOPPED=$(echo "$RUN_JSON" | jq -r '.stopped // "n/a"')
+            DURATION_NS=$(echo "$RUN_JSON" | jq -r '.duration // 0')
+            RUN_URL=$(echo "$RUN_JSON" | jq -r '.html_url // "n/a"')
+
+            DURATION_SEC=$((DURATION_NS / 1000000000))
+            DURATION_MIN=$((DURATION_SEC / 60))
+            DURATION_REST_SEC=$((DURATION_SEC % 60))
+
+            echo "Maps plugin workflow summary:"
+            echo "  URL:      ${RUN_URL}"
+            echo "  Created:  ${CREATED}"
+            echo "  Started:  ${STARTED}"
+            echo "  Stopped:  ${STOPPED}"
+            echo "  Duration: ${DURATION_MIN}m ${DURATION_REST_SEC}s"
+          }
+
+          while [ "$ATTEMPT" -le "$MAX_ATTEMPTS" ]; do
+            sleep ${ATTEMPT_PERIOD}
+
+            RUN_JSON=$(
+              curl --fail-with-body -s \
+                --user "${MOCASIN_CI_USER}:${MOCASIN_CI_TOKEN}" \
+                "${API}/repos/${REPO}/actions/runs/${RUN_ID}"
+            )
+
+            STATUS=$(echo "$RUN_JSON" | jq -r '.status')
+
+            echo "Attempt ${ATTEMPT}/${MAX_ATTEMPTS}: workflow run ${RUN_ID}: status=${STATUS}"
+
+            if [ "$STATUS" = "success" ]; then
+              print_summary "$RUN_JSON"
+              echo "Maps plugin workflow succeeded."
+              exit 0
+            elif [ "$STATUS" = "failure" ]; then
+              print_summary "$RUN_JSON"
+              echo "Maps plugin workflow failed."
+              exit 1
+            elif [ "$STATUS" = "waiting" ] || [ "$STATUS" = "running" ]; then 
+              ATTEMPT=$((ATTEMPT + 1))
+              continue
+            else
+              print_summary "$RUN_JSON"
+              echo "Unknown status: $STATUS"
+              exit 1
+            fi
+          done
+
+          echo "Timed out waiting for maps plugin workflow."
+          exit 1
+
   check-formatting:
     runs-on: ubuntu-latest
 
