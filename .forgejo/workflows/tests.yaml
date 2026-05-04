@@ -64,7 +64,7 @@ jobs:
 
     env:
       API: https://git.cc.inf.tu-dresden.de/api/v1
-      MOCASIN_BRANCH: ${{ github.ref_name }}
+      MOCASIN_BRANCH: ${{ github.head_ref || github.ref_name }}
       MOCASIN_CI_USER: ${{ secrets.MOCASIN_CI_USER }}
       MOCASIN_CI_TOKEN: ${{ secrets.MOCASIN_CI_TOKEN }}
 
