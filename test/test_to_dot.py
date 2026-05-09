@@ -1,7 +1,7 @@
 # Copyright (C) 2020 TU Dresden
 # Licensed under the ISC license (see LICENSE.txt)
 #
-# Authors: Christian Menard
+# Authors: Christian Menardi, Robert Khasanov
 
 
 import filecmp
@@ -78,6 +78,24 @@ def test_sdf3_graph_to_dot(datadir, expected_dir):
             "graph_to_dot",
             "graph=sdf3_reader",
             "sdf3.file=sdf3/medium_cyclic.xml",
+            f"output_file={out_file}",
+        ],
+        cwd=datadir,
+    )
+    assert filecmp.cmp(
+        os.path.join(expected_dir, dot_file), out_file, shallow=False
+    )
+
+
+def test_yaml_graph_to_dot(datadir, expected_dir):
+    dot_file = "yaml_small_cyclic.dot"
+    out_file = os.path.join(datadir, dot_file)
+    subprocess.check_call(
+        [
+            "mocasin",
+            "graph_to_dot",
+            "graph=yaml_reader",
+            "yaml.file=yaml/small_cyclic.yaml",
             f"output_file={out_file}",
         ],
         cwd=datadir,

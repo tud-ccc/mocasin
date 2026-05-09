@@ -4,6 +4,7 @@ defaults:
   - tgff: default
   - graph: default
   - sdf3: default
+  - yaml: default
   - override hydra/job_logging: mocasin
   - _self_
 

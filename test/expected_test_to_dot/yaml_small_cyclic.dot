@@ -1,0 +1,11 @@
+digraph G {
+process_src [label=src];
+process_mul [label=mul];
+process_add [label=add];
+process_sink [label=sink];
+process_src -> process_mul [label=ch0];
+process_src -> process_mul [label=ch1];
+process_mul -> process_add [label=ch2];
+process_add -> process_add [label=ch3];
+process_add -> process_sink [label=ch4];
+}

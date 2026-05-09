@@ -23,6 +23,9 @@ def datadir(tmpdir):
     os.symlink(
         os.path.join(examples_path, "sdf3"), os.path.join(tmpdir, "sdf3")
     )
+    os.symlink(
+        os.path.join(examples_path, "yaml"), os.path.join(tmpdir, "yaml")
+    )
     os.symlink(os.path.join(examples_path, "csv"), os.path.join(tmpdir, "csv"))
     os.symlink(
         os.path.join(module_path, "..", "mocasin", "platforms"),
