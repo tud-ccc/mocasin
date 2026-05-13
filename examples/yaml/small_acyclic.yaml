@@ -1,21 +1,23 @@
-name: test
-nodes:
-  - name: src
-    ports:
-      out: [output]
-  - name: compute
-    ports:
-      in: [input]
-      out: [output]
-  - name: sink
-    ports:
-      in: [input]
-channels:
-  - name: ch0
-    src: {node: src, port: output}
-    dst: {node: compute, port: input}
-    token_size: 4
-  - name: ch1
-    src: {node: compute, port: output}
-    dst: {node: sink, port: input}
-    token_size: 4
+name: small_acyclic
+
+graph:
+  processes:
+    src:
+      ports:
+        out: [output]
+    compute:
+      ports:
+        in: [input]
+        out: [output]
+    sink:
+      ports:
+        in: [input]
+  channels:
+    ch0:
+      src: {process: src, port: output}
+      dst: {process: compute, port: input}
+      token_size: 4
+    ch1:
+      src: {process: compute, port: output}
+      dst: {process: sink, port: input}
+      token_size: 4

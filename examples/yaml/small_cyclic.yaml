@@ -1,38 +1,40 @@
-name: test
-nodes:
-  - name: src
-    ports:
-      out: [op1, op2]
-  - name: mul
-    ports:
-      in: [in1, in2]
-      out: [product]
-    # exec_cycles: 2
-  - name: add
-    ports:
-      in: [in1, in2]
-      out: [sum0, sum1]
-  - name: sink
-    ports:
-      in: [mac]
-channels:
-  - name: ch0
-    src: {node: src, port: op1}
-    dst: {node: mul, port: in1}
-    token_size: 4
-  - name: ch1
-    src: {node: src, port: op2}
-    dst: {node: mul, port: in2}
-    token_size: 4
-  - name: ch2
-    src: {node: mul, port: product}
-    dst: {node: add, port: in1}
-    token_size: 4
-  - name: ch3
-    src: {node: add, port: sum0}
-    dst: {node: add, port: in2}
-    token_size: 4
-  - name: ch4
-    src: {node: add, port: sum1}
-    dst: {node: sink, port: mac}
-    token_size: 4
+name: small_cyclic
+
+graph:
+  processes:
+    src:
+      ports:
+        out: [op1, op2]
+    mul:
+      ports:
+        in: [in1, in2]
+        out: [product]
+      # exec_cycles: 2
+    add:
+      ports:
+        in: [in1, in2]
+        out: [sum0, sum1]
+    sink:
+      ports:
+        in: [mac]
+  channels:
+    ch0:
+      src: {process: src, port: op1}
+      dst: {process: mul, port: in1}
+      token_size: 4
+    ch1:
+      src: {process: src, port: op2}
+      dst: {process: mul, port: in2}
+      token_size: 4
+    ch2:
+      src: {process: mul, port: product}
+      dst: {process: add, port: in1}
+      token_size: 4
+    ch3:
+      src: {process: add, port: sum0}
+      dst: {process: add, port: in2}
+      token_size: 4
+    ch4:
+      src: {process: add, port: sum1}
+      dst: {process: sink, port: mac}
+      token_size: 4

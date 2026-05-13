@@ -12,7 +12,7 @@ from omegaconf import OmegaConf, DictConfig
 
 log = logging.getLogger(__name__)
 
-PortKey = Tuple[str, str, str]  # (node_name, direction, port_name)
+PortKey = Tuple[str, str, str]  # (process_name, direction, port_name)
 
 
 class YamlGraph(DataflowGraph):
@@ -33,87 +33,89 @@ class YamlGraph(DataflowGraph):
         if graph_name is None:
             raise RuntimeError("YAML graph is missing required key 'name'")
 
-        self._validate_graph(self.yaml_graph)
+        self._validate_application(self.yaml_graph)
+
+        graph = self.yaml_graph.graph
 
         super().__init__(graph_name)
 
-        for node in self.yaml_graph.nodes:
-            log.debug(f"Add process {name}.{node.name}")
-            self.add_process(DataflowProcess(node.name))
+        for process_name, process_cfg in graph.processes.items():
+            log.debug(f"Add process {graph_name}.{process_name}")
+            self.add_process(DataflowProcess(process_name))
 
-        for channel in self.yaml_graph.channels:
-            token_size = channel.get("token_size")
-
-            log.debug(f"Add channel {name}.{channel.name}")
-            df_channel = DataflowChannel(channel.name, token_size)
+        for channel_name, channel_cfg in graph.channels.items():
+            log.debug(f"Add channel {graph_name}.{channel_name}")
+            df_channel = DataflowChannel(channel_name, channel_cfg.token_size)
             self.add_channel(df_channel)
 
-            src_process = self.find_process(channel.src.node)
+            src_process = self.find_process(channel_cfg.src.process)
             src_process.connect_to_outgoing_channel(df_channel)
             log.debug(
                 f"Process {graph_name}.{src_process.name} writes to channel "
-                f"{graph_name}.{channel.name}"
+                f"{graph_name}.{channel_name}"
             )
 
-            dst_process = self.find_process(channel.dst.node)
+            dst_process = self.find_process(channel_cfg.dst.process)
             dst_process.connect_to_incomming_channel(df_channel)
             log.debug(
                 f"Process {graph_name}.{dst_process.name} reads from channel "
-                f"{graph_name}.{channel.name}"
+                f"{graph_name}.{channel_name}"
             )
 
         log.info("Done parsing graph from YAML")
 
+    def _validate_application(self, app: DictConfig) -> None:
+        self._require_key(app, "graph", "YAML application")
+        self._validate_graph(app.graph)
+
+        if "execution" in app:
+            self._validate_execution(app.graph, app.execution)
+
     def _validate_graph(self, graph: DictConfig) -> None:
-        self._require_key(graph, "nodes", "YAML graph")
+        self._require_key(graph, "processes", "YAML graph")
         self._require_key(graph, "channels", "YAML graph")
 
-        node_names: Set[str] = set()
+        process_names: Set[str] = set()
         declared_ports: Set[PortKey] = set()
 
-        for node in graph.nodes:
-            self._validate_node(node, node_names, declared_ports)
+        for process_name, process_cfg in graph.processes.items():
+            self._validate_process(process_name, process_cfg, declared_ports)
 
         channel_names: Set[str] = set()
         connected_ports: Set[PortKey] = set()
 
-        for channel in graph.channels:
+        for channel_name, channel_cfg in graph.channels.items():
             self._validate_channel(
-                channel, declared_ports, channel_names, connected_ports
+                channel_name, channel_cfg, declared_ports, connected_ports
             )
 
         missing_ports = declared_ports - connected_ports
         if missing_ports:
             formatted = ", ".join(
-                f"{node}.{port} ({direction})"
-                for node, direction, port in sorted(missing_ports)
+                f"{process}.{port} ({direction})"
+                for process, direction, port in sorted(missing_ports)
             )
             raise RuntimeError(
                 f"Some declared ports are not connected: {formatted}"
             )
 
-    def _validate_node(
+    def _validate_process(
         self,
-        node: DictConfig,
-        node_names: Set[str],
+        process_name: str,
+        process_cfg: DictConfig,
         declared_ports: Set[PortKey],
     ):
-        self._require_key(node, "name", "node")
-        self._require_key(node, "ports", f"node {node.name}")
+        self._require_key(process_cfg, "ports", f"process {process_name}")
 
-        if node.name in node_names:
-            raise RuntimeError(f"Duplicate node name: {node.name}")
-        node_names.add(node.name)
+        in_ports = process_cfg.ports.get("in", [])
+        out_ports = process_cfg.ports.get("out", [])
 
-        in_ports = node.ports.get("in", [])
-        out_ports = node.ports.get("out", [])
-
-        self._validate_port_list(node.name, "in", in_ports, declared_ports)
-        self._validate_port_list(node.name, "out", out_ports, declared_ports)
+        self._validate_port_list(process_name, "in", in_ports, declared_ports)
+        self._validate_port_list(process_name, "out", out_ports, declared_ports)
 
     def _validate_port_list(
         self,
-        node_name: str,
+        process_name: str,
         direction: str,
         ports: List[str],
         declared_ports: Set[PortKey],
@@ -123,49 +125,44 @@ class YamlGraph(DataflowGraph):
         for port in ports:
             if port in seen_ports:
                 raise RuntimeError(
-                    f"Duplicate {direction} port {node_name}.{port}"
+                    f"Duplicate {direction} port {process_name}.{port}"
                 )
             seen_ports.add(port)
 
-            key = (node_name, direction, port)
+            key = (process_name, direction, port)
             declared_ports.add(key)
 
     def _validate_channel(
         self,
-        channel: DictConfig,
+        channel_name: str,
+        channel_cfg: DictConfig,
         declared_ports: Set[PortKey],
-        channel_names: Set[str],
         connected_ports: Set[PortKey],
     ) -> None:
-        self._require_key(channel, "name", "channel")
-
-        if channel.name in channel_names:
-            raise RuntimeError(f"Duplicate channel name: {channel.name}")
-        channel_names.add(channel.name)
-
-        self._require_key(channel, "src", f"channel {channel.name}")
-        self._require_key(channel, "dst", f"channel {channel.name}")
+        self._require_key(channel_cfg, "src", f"channel {channel_name}")
+        self._require_key(channel_cfg, "dst", f"channel {channel_name}")
+        self._require_key(channel_cfg, "token_size", f"channel {channel_name}")
 
         src_key = self._validate_endpoint(
-            channel.name,
+            channel_name,
             "src",
-            channel.src,
+            channel_cfg.src,
             "out",
             declared_ports,
         )
         dst_key = self._validate_endpoint(
-            channel.name,
+            channel_name,
             "dst",
-            channel.dst,
+            channel_cfg.dst,
             "in",
             declared_ports,
         )
 
         for key in (src_key, dst_key):
             if key in connected_ports:
-                node_name, direction, port_name = key
+                process_name, direction, port_name = key
                 raise RuntimeError(
-                    f"Port {node_name}.{port_name} ({direction}) is connected "
+                    f"Port {process_name}.{port_name} ({direction}) is connected "
                     "to more than one channel"
                 )
             connected_ports.add(key)
@@ -179,22 +176,49 @@ class YamlGraph(DataflowGraph):
         declared_ports: Set[PortKey],
     ) -> PortKey:
         self._require_key(
-            endpoint, "node", f"channel {channel_name}.{endpoint_name}"
+            endpoint, "process", f"channel {channel_name}.{endpoint_name}"
         )
         self._require_key(
             endpoint, "port", f"channel {channel_name}.{endpoint_name}"
         )
 
-        key = (endpoint.node, expected_direction, endpoint.port)
+        key = (endpoint.process, expected_direction, endpoint.port)
 
         if key not in declared_ports:
             raise RuntimeError(
                 f"Channel {channel_name} uses invalid {endpoint_name} endpoint "
-                f"{endpoint.node}.{endpoint.port}: expected an "
+                f"{endpoint.process}.{endpoint.port}: expected an "
                 f"{expected_direction} port"
             )
 
         return key
+
+    def _validate_execution(
+        self,
+        graph: DictConfig,
+        execution: DictConfig,
+    ) -> None:
+        """Validate optional execution annotations.
+
+        The graph parser does not use execution data directly, but validating
+        references here helps catch malformed application files early.
+        """
+        graph_processes = set(graph.processes.keys())
+        graph_channels = set(graph.channels.keys())
+
+        if "processes" in execution and "instances" in execution.processes:
+            for process_name in execution.processes.instances.keys():
+                if process_name not in graph_processes:
+                    raise RuntimeError(
+                        f"Execution references unknown process {process_name}"
+                    )
+
+        if "channels" in execution:
+            for channel_name in execution.channels.keys():
+                if channel_name not in graph_channels:
+                    raise RuntimeError(
+                        f"Execution references unknown channel {channel_name}"
+                    )
 
     @staticmethod
     def _require_key(obj: DictConfig, key: str, context: str) -> None:
