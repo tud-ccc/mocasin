@@ -44,3 +44,22 @@ def test_generate_mapping_sdf3(datadir, fast_mapper, large_platform):
 
     assert os.path.isfile(os.path.join(datadir, "best_time.txt"))
     assert os.path.isfile(os.path.join(datadir, "mapping.pickle"))
+
+
+def test_generate_mapping_yaml(datadir, fast_mapper, large_platform):
+    subprocess.check_call(
+        [
+            "mocasin",
+            "generate_mapping",
+            "graph=yaml_reader",
+            f"platform={large_platform}",
+            f"mapper={fast_mapper}",
+            "yaml.file=yaml/small_acyclic.yaml",
+            f"outdir={datadir}",
+            "trace=yaml_reader",
+        ],
+        cwd=datadir,
+    )
+
+    assert os.path.isfile(os.path.join(datadir, "best_time.txt"))
+    assert os.path.isfile(os.path.join(datadir, "mapping.pickle"))

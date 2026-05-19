@@ -38,3 +38,74 @@ graph:
       src: {process: add, port: sum1}
       dst: {process: sink, port: mac}
       token_size: 4
+
+execution:
+  processes:
+    profiles:
+      src_sink:
+        ARM_CORTEX_A7:
+          cycles: 1500000
+        ARM_CORTEX_A15:
+          cycles: 1000000
+        proc_type_0:
+          cycles: 1500000
+        proc_type_1:
+          cycles: 1000000
+      mul:
+        ARM_CORTEX_A7:
+          cycles: 3000000
+        ARM_CORTEX_A15:
+          cycles: 2000000
+        proc_type_0:
+          cycles: 3000000
+        proc_type_1:
+          cycles: 2000000
+      add:
+        ARM_CORTEX_A7:
+          cycles: 1500000
+        ARM_CORTEX_A15:
+          cycles: 1000000
+        proc_type_0:
+          cycles: 1500000
+        proc_type_1:
+          cycles: 1000000
+
+    instances:
+      src:
+        model: static
+        profile: src_sink
+        rates:
+          op1: 1
+          op2: 1
+      mul:
+        model: static
+        profile: mul
+        rates:
+          in1: 1
+          in2: 1
+          product: 1
+      add:
+        model: static
+        profile: add
+        rates:
+          in1: 1
+          in2: 1
+          sum0: 1
+          sum1: 1
+      sink:
+        model: static
+        profile: src_sink
+        rates:
+          mac: 1
+
+  channels:
+    ch0:
+      initial_tokens: 0
+    ch1:
+      initial_tokens: 0
+    ch2:
+      initial_tokens: 0
+    ch3:
+      initial_tokens: 1
+    ch4:
+      initial_tokens: 0

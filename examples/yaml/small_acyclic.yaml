@@ -21,3 +21,49 @@ graph:
       src: {process: compute, port: output}
       dst: {process: sink, port: input}
       token_size: 4
+
+execution:
+  processes:
+    profiles:
+      src_sink:
+        ARM_CORTEX_A7:
+          cycles: 1500000
+        ARM_CORTEX_A15:
+          cycles: 1000000
+        proc_type_0:
+          cycles: 1500000
+        proc_type_1:
+          cycles: 1000000
+      compute:
+        ARM_CORTEX_A7:
+          cycles: 3000000
+        ARM_CORTEX_A15:
+          cycles: 2000000
+        proc_type_0:
+          cycles: 3000000
+        proc_type_1:
+          cycles: 2000000
+
+    instances:
+      src:
+        model: static
+        profile: src_sink
+        rates:
+          output: 1
+      compute:
+        model: static
+        profile: compute
+        rates:
+          input: 1
+          output: 1
+      sink:
+        model: static
+        profile: src_sink
+        rates:
+          input: 1
+
+  channels:
+    ch0:
+      initial_tokens: 0
+    ch1:
+      initial_tokens: 0
