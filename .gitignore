@@ -34,3 +34,6 @@ dump.json
 
 # yapf
 .style.yapf
+
+# GA dump
+evolutionary_logbook.txt
