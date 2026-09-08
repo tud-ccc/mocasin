@@ -27,7 +27,7 @@ dependencies = [
     "lxml",
     "matplotlib",
     "more_itertools",
-    "mpsym",
+    "mpsym @ git+https://github.com/tud-ccc/mpsym.git@fix-nauty-download",
     "numba>=0.53.0rc1,<0.58",
     "numpy",
     "pint",
