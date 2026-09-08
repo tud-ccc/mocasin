@@ -183,7 +183,7 @@ class GradientDescentMapper(BaseMapper):
         )
 
         # main loop
-        for _ in iterations_range:
+        for iteration in iterations_range:
             old_grads = copy.copy(grads)
             for i in active_points:
                 grads[i] = self.momentum_decay * old_grads[
@@ -199,12 +199,15 @@ class GradientDescentMapper(BaseMapper):
             # Barzilai–Borwein. Note that before_last_mappings here holds the
             # value for the last mappings still, since we are currently updating
             # the mappigs
-            gammas = _calculate_gammas(
-                [grads[i] for i in active_points],
-                [old_grads[i] for i in active_points],
-                [np.array(mappings[i]) for i in active_points],
-                [np.array(before_last_mappings[i]) for i in active_points],
-            )
+            if iteration == 0:
+                gammas = [1.0] * len(active_points)
+            else:
+                gammas = _calculate_gammas(
+                    [grads[i] for i in active_points],
+                    [old_grads[i] for i in active_points],
+                    [np.array(mappings[i]) for i in active_points],
+                    [np.array(before_last_mappings[i]) for i in active_points],
+                )
             for idx, i in enumerate(active_points):
                 # note that gamma has lost the ordering
                 # due to that we enumerate
