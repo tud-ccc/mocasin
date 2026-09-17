@@ -355,36 +355,44 @@ class ComFullMapper(BaseMapper):
         )
 
 
-class InputTupleFullMapper:
+class InputTupleFullMapper(BaseMapper):
     """Generates a mapping from a list given as input.
 
     If (some) channels are missing, they are mapped in a best-effort fashion.
 
     Args:
-        graph (DataflowGraph): a dataflow graph
         platform (Platform): a platform
+        input_tuple (list[int]): processor indices followed optionally by
+            communication primitive indices
     """
 
-    def __init__(self, graph, platform, trace, representation, input_tuple):
-        self.full_mapper = True
-        self.platform = platform
-        self.graph = graph
-        if (
-            len(graph.processes())
-            <= len(input_tuple)
-            < len(graph.processes()) + len(graph.channels())
-        ):
-            self.mapping_list = input_tuple
-            com_mapper = ComFullMapper(graph, platform)
-            self.proc_mapper = ProcPartialMapper(graph, platform, com_mapper)
-        else:
-            log.error(
-                f"Invalid mapping list size: {len(input_tuple)} "
-                f"(expected between {len(graph.processes())} and"
-                f"{len(graph.processes())+len(graph.channels())} )"
-            )
-            raise RuntimeError
+    def __init__(self, platform, input_tuple):
+        super().__init__(platform, full_mapper=True)
+        self.mapping_list = list(input_tuple)
 
-    def generate_mapping(self):
-        """Generates a mapping from the input list."""
-        return self.proc_mapper.generate_mapping(self.mapping_list)
+    def generate_mapping(
+        self,
+        graph,
+        trace=None,
+        representation=None,
+        processors=None,
+        partial_mapping=None,
+    ):
+        """Generate a mapping from the configured list."""
+        if processors or partial_mapping:
+            raise NotImplementedError(
+                "InputTupleFullMapper does not support partial mappings or "
+                "processor restrictions"
+            )
+
+        num_processes = len(graph.processes())
+        full_size = num_processes + len(graph.channels())
+        if len(self.mapping_list) not in (num_processes, full_size):
+            raise RuntimeError(
+                f"Invalid mapping list size: {len(self.mapping_list)} "
+                f"(expected {num_processes} or {full_size})"
+            )
+
+        com_mapper = ComFullMapper(self.platform)
+        proc_mapper = ProcPartialMapper(graph, self.platform, com_mapper)
+        return proc_mapper.generate_mapping(self.mapping_list)
