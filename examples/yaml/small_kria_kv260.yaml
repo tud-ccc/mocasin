@@ -1,0 +1,75 @@
+name: small_kria_kv260
+
+graph:
+  processes:
+    source:
+      ports:
+        out: [output]
+    stage_a:
+      ports:
+        in: [input]
+        out: [output]
+    stage_b:
+      ports:
+        in: [input]
+        out: [output]
+    sink:
+      ports:
+        in: [input]
+  channels:
+    ch0:
+      src: {process: source, port: output}
+      dst: {process: stage_a, port: input}
+      token_size: 4
+    ch1:
+      src: {process: stage_a, port: output}
+      dst: {process: stage_b, port: input}
+      token_size: 4
+    ch2:
+      src: {process: stage_b, port: output}
+      dst: {process: sink, port: input}
+      token_size: 4
+
+execution:
+  processes:
+    profiles:
+      endpoint:
+        CortexA53:
+          cycles: 10000
+      stage:
+        CortexA53:
+          cycles: 100000
+        K26_PL:
+          cycles: 5000
+
+    instances:
+      source:
+        model: static
+        profile: endpoint
+        rates:
+          output: 1
+      stage_a:
+        model: static
+        profile: stage
+        rates:
+          input: 1
+          output: 1
+      stage_b:
+        model: static
+        profile: stage
+        rates:
+          input: 1
+          output: 1
+      sink:
+        model: static
+        profile: endpoint
+        rates:
+          input: 1
+
+  channels:
+    ch0:
+      initial_tokens: 0
+    ch1:
+      initial_tokens: 0
+    ch2:
+      initial_tokens: 0

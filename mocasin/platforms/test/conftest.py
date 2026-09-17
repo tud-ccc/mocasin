@@ -17,6 +17,7 @@ from mocasin.platforms.mppa_coolidge import DesignerPlatformCoolidge
 from mocasin.platforms.multi_cluster import DesignerPlatformMultiCluster
 from mocasin.platforms.generic_bus import DesignerPlatformBus
 from mocasin.platforms.generic_bus import DesignerPlatformFlatBus
+from mocasin.platforms.kria_kv260 import DesignerPlatformKriaKV260
 
 
 @pytest.fixture(
@@ -29,6 +30,7 @@ from mocasin.platforms.generic_bus import DesignerPlatformFlatBus
         "multi_cluster",
         "haec",
         "coolidge",
+        "kria_kv260",
     ]
 )
 def platform(request):
@@ -55,6 +57,8 @@ def platform(request):
         return DesignerPlatformHAEC(processor0)
     elif request.param == "coolidge":
         return DesignerPlatformCoolidge(processor0, processor1)
+    elif request.param == "kria_kv260":
+        return DesignerPlatformKriaKV260()
     else:
         assert False, "wrong parameter"
 

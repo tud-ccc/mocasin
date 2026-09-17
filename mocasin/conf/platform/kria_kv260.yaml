@@ -1,0 +1,38 @@
+_target_: mocasin.platforms.kria_kv260.DesignerPlatformKriaKV260
+
+name: kria_kv260
+symmetries_json: "${mocasin_path:platforms/symmetries/kria_kv260.json}"
+
+# Frequencies in Hz.
+a53_frequency: 1333000000
+
+# The complete programmable logic is represented as one processing unit.
+# Set this to the clock used by the generated accelerator.
+pl_frequency: 100000000
+
+# Cache latency is in cycles; throughput is in bytes per cycle.
+l1_read_latency: 1  # placeholder
+l1_write_latency: 1  # placeholder
+l1_read_throughput: 8  # placeholder
+l1_write_throughput: 8  # placeholder
+l2_read_latency: 21  # placeholder
+l2_write_latency: 21  # placeholder
+l2_read_throughput: 8  # placeholder
+l2_write_throughput: 8  # placeholder
+
+# PL-local storage represents HLS streams, FIFOs, registers, and BRAM buffers.
+pl_local_read_latency: 1  # placeholder
+pl_local_write_latency: 1  # placeholder
+pl_local_read_throughput: 4  # placeholder
+pl_local_write_throughput: 4  # placeholder
+
+# DDR4 costs include the PS interconnect and PL AXI path.
+memory_frequency: 1200000000  # placeholder
+memory_read_latency: 120  # placeholder
+memory_write_latency: 120  # placeholder
+memory_read_throughput: 16  # placeholder
+memory_write_throughput: 16  # placeholder
+
+# Scheduler decision costs in cycles.
+a53_scheduling_cycles: 1000  # placeholder
+pl_scheduling_cycles: 0

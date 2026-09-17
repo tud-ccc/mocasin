@@ -73,3 +73,32 @@ def test_sdf3_simulate(datadir):
             found_flags |= 0x10
 
     assert found_flags == 0x1F
+
+
+def test_kria_kv260_yaml_simulate(datadir):
+    # Processes sorted by name: sink -> A53_1, source -> A53_0, stages -> PL.
+    res = subprocess.run(
+        [
+            "mocasin",
+            "simulate",
+            "platform=kria_kv260",
+            "graph=yaml_reader",
+            "trace=yaml_reader",
+            "mapper=input_tuple",
+            "mapper.input_tuple=[1,0,4,4]",
+            "yaml.file=yaml/small_kria_kv260.yaml",
+        ],
+        cwd=datadir,
+        check=True,
+        stdout=subprocess.PIPE,
+    )
+
+    total_time = next(
+        (
+            line[22:]
+            for line in res.stdout.decode().splitlines()
+            if line.startswith("Total simulated time: ")
+        ),
+        None,
+    )
+    assert total_time == "0.1169783 ms"
