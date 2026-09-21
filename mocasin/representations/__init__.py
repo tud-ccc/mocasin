@@ -316,8 +316,9 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
             if i in crossover_points:
                 swap = not swap
             if swap:
+                old_m1 = m1[i]
                 m1[i] = m2[i]
-                m2[i] = m2[i]
+                m2[i] = old_m1
         log.debug(f"crossover: {m1},{m2}")
 
         return m1, m2
