@@ -116,6 +116,25 @@ def test_pareto_front_tgff_exynos990(datadir):
     assert check_pareto_optimality(out_csv_file, "[exec_time,resources]")
 
 
+def test_pareto_front_yaml(datadir):
+    out_csv_file = Path(datadir).joinpath("mappings.csv")
+    subprocess.check_call(
+        [
+            "mocasin",
+            "pareto_front",
+            "graph=yaml_reader",
+            "platform=generic_bus",
+            "mapper=static_cfs",
+            "yaml.file=yaml/small_acyclic.yaml",
+            f"mapping_table={out_csv_file}",
+            "trace=yaml_reader",
+        ],
+        cwd=datadir,
+    )
+
+    assert out_csv_file.is_file()
+
+
 @pytest.mark.parametrize(
     "objectives", ["[exec_time,resources]", "[exec_time,resources,energy]"]
 )
