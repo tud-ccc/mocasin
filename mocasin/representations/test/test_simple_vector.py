@@ -21,6 +21,26 @@ def test_crossover_exchanges_both_parents(mocker):
     assert second == [1, 0]
 
 
+def test_sample_eligible_from_ball_projects_candidates(mocker):
+    representation = object.__new__(SimpleVectorRepresentation)
+    candidates = [[3.4, 0], [0, 0]]
+    projected = [[5, 0], [1, 0]]
+    mocker.patch.object(
+        representation, "_uniformFromBall", return_value=candidates
+    )
+    approximate_eligible = mocker.patch.object(
+        representation, "approximate_eligible", side_effect=projected
+    )
+
+    result = representation.sample_eligible_from_ball([2, 0], 3, 2)
+
+    representation._uniformFromBall.assert_called_once_with([2, 0], 3, 2)
+    assert approximate_eligible.call_args_list == [
+        mocker.call(candidate) for candidate in candidates
+    ]
+    assert result == projected
+
+
 def test_approximate_eligible_uses_nearest_mapping(mocker):
     graph = DataflowGraph("graph")
     graph.add_process(DataflowProcess("a"))

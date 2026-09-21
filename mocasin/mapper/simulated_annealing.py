@@ -110,11 +110,12 @@ class SimulatedAnnealingMapper(BaseMapper):
     def move(self, representation, mapping, temperature):
         radius = self.radius
         while 1:
-            new_mappings = representation._uniformFromBall(mapping, radius, 20)
+            new_mappings = representation.sample_eligible_from_ball(
+                mapping, radius, 20
+            )
             for candidate in new_mappings:
-                projected = representation.approximate_eligible(candidate)
-                if list(projected) != list(mapping):
-                    return projected
+                if list(candidate) != list(mapping):
+                    return candidate
             radius *= 1.1
             if radius > 10000 * self.radius:
                 log.error("Could not mutate mapping")

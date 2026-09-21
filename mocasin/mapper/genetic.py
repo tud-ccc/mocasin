@@ -206,15 +206,14 @@ class _GeneticMapperEngine:
     def _mapping_mutation(self, mapping):
         radius = self.config.radius
         while 1:
-            new_mappings = self.representation._uniformFromBall(
+            new_mappings = self.representation.sample_eligible_from_ball(
                 mapping, radius, 20
             )
             for candidate in new_mappings:
-                projected = self.representation.approximate_eligible(candidate)
-                if list(projected) != list(mapping):
+                if list(candidate) != list(mapping):
                     # Preserve the DEAP Individual object while replacing its
                     # representation.
-                    mapping[:] = projected
+                    mapping[:] = candidate
                     return (mapping,)
             radius *= 1.1
             if radius > 10000 * self.config.radius:

@@ -198,6 +198,13 @@ class MappingRepresentationBase:
             )
         return projected
 
+    def sample_eligible_from_ball(self, center, radius, npoints=1):
+        """Sample points from a ball and project them to eligible mappings."""
+        candidates = self._uniformFromBall(center, radius, npoints)
+        return [
+            self.approximate_eligible(candidate) for candidate in candidates
+        ]
+
 
 def init_app_ncs(self, graph):
     n = 0
