@@ -87,7 +87,7 @@ class TabuSearchMapper(BaseMapper):
         self._record_statistics = record_statistics
 
     def update_candidate_moves(self, graph, trace, representation, mapping):
-        new_mappings = representation._uniformFromBall(
+        new_mappings = representation.sample_eligible_from_ball(
             mapping, self.radius, self.move_set_size
         )
         new_mappings = list(map(np.array, new_mappings))
@@ -107,9 +107,10 @@ class TabuSearchMapper(BaseMapper):
         missing = self.move_set_size - len(moves)
         retries = 0
         while missing > 0 and retries < 10:
-            new_mappings = representation._uniformFromBall(
+            new_mappings = representation.sample_eligible_from_ball(
                 mapping, self.radius, missing
             )
+            new_mappings = list(map(np.array, new_mappings))
             sim_results = self._simulation_manager.simulate(
                 graph, trace, representation, new_mappings
             )
@@ -163,7 +164,7 @@ class TabuSearchMapper(BaseMapper):
                 return moves_sorted[0]
 
     def diversify(self, graph, trace, representation, mapping):
-        new_mappings = representation._uniformFromBall(
+        new_mappings = representation.sample_eligible_from_ball(
             mapping, 3 * self.radius, self.move_set_size
         )
         new_mappings = list(map(np.array, new_mappings))
@@ -201,11 +202,20 @@ class TabuSearchMapper(BaseMapper):
             processors (:obj:`list` of :obj:`Processor`, optional): a list of
                 processors to map to.
             partial_mapping (Mapping, optional): a partial mapping to complete
+            mapping_constraints (MappingConstraints, optional): restrictions
+                on the processors to which each process may be mapped
 
         Returns:
             Mapping: the generated mapping.
         """
         self._simulation_manager.reset_statistics()
+        if mapping_constraints is None:
+            mapping_constraints = representation.mapping_constraints
+        elif representation.mapping_constraints is not mapping_constraints:
+            raise ValueError(
+                "Tabu search and its representation must use the same "
+                "mapping constraints"
+            )
         if processors:
             raise NotImplementedError(
                 "This mapper does not support `processors` argument"
@@ -217,7 +227,10 @@ class TabuSearchMapper(BaseMapper):
             )
 
         mapping_obj = self.random_mapper.generate_mapping(
-            graph, trace=trace, representation=representation
+            graph,
+            trace=trace,
+            representation=representation,
+            mapping_constraints=mapping_constraints,
         )
         if (
             hasattr(representation, "canonical_operations")
