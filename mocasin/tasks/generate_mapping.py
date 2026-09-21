@@ -60,7 +60,10 @@ def generate_mapping(cfg):
 
     # Run mapper
     result = mapper.generate_mapping(
-        graph, trace=trace, representation=representation
+        graph,
+        trace=trace,
+        representation=representation,
+        mapping_constraints=mapping_constraints,
     )
 
     # export the best mapping

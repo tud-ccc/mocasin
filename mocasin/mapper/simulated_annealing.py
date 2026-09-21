@@ -126,6 +126,7 @@ class SimulatedAnnealingMapper(BaseMapper):
         representation=None,
         processors=None,
         partial_mapping=None,
+        mapping_constraints=None,
     ):
         """Generate a full mapping using simulated annealing.
 

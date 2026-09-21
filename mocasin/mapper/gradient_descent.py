@@ -126,6 +126,7 @@ class GradientDescentMapper(BaseMapper):
         representation=None,
         processors=None,
         partial_mapping=None,
+        mapping_constraints=None,
     ):
         """Generate a full mapping using gradient descent.
 

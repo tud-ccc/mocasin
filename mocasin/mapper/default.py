@@ -34,6 +34,7 @@ class DefaultFullMapper(BaseMapper):
         representation=None,
         processors=None,
         partial_mapping=None,
+        mapping_constraints=None,
     ):
         """Generates a random mapping
 

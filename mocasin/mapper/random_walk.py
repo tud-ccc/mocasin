@@ -95,6 +95,7 @@ class RandomWalkMapper(BaseMapper):
         representation=None,
         processors=None,
         partial_mapping=None,
+        mapping_constraints=None,
     ):
         """Generate a mapping via a random walk.
 

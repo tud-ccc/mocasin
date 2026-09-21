@@ -367,6 +367,7 @@ class GeneticMapper(BaseMapper):
         representation=None,
         processors=None,
         partial_mapping=None,
+        mapping_constraints=None,
     ):
         """Generate a full mapping using a genetic algorithm.
 
@@ -406,7 +407,12 @@ class GeneticMapper(BaseMapper):
         return result
 
     def generate_pareto_front(
-        self, graph, trace=None, representation=None, **kwargs
+        self,
+        graph,
+        trace=None,
+        representation=None,
+        mapping_constraints=None,
+        **kwargs,
     ):
         """Generates a pareto front of (full) mappings using a genetic algorithm
         the input parameters determine the criteria with which the pareto

@@ -66,6 +66,7 @@ def pareto_front(cfg):
         graph,
         trace=trace,
         representation=representation,
+        mapping_constraints=mapping_constraints,
         evaluate_metadata=evaluate_metadata,
     )
 

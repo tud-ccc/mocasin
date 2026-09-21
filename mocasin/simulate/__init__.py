@@ -232,7 +232,10 @@ class DataflowSimulation(BaseSimulation):
         rep = hydra.utils.instantiate(cfg["representation"], graph, platform)
         mapper = hydra.utils.instantiate(cfg["mapper"], platform)
         mapping = mapper.generate_mapping(
-            graph, trace=trace, representation=rep
+            graph,
+            trace=trace,
+            representation=rep,
+            mapping_constraints=mapping_constraints,
         )
         simulation = DataflowSimulation(
             platform, graph, mapping, trace, wait_for_initial_tokens

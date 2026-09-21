@@ -122,6 +122,7 @@ class StaticCFSMapper(StaticCFS):
         representation=None,
         processors=None,
         partial_mapping=None,
+        mapping_constraints=None,
     ):
         trace_summary = gen_trace_summary(graph, self.platform, trace)
         mapping = Mapping(graph, self.platform)

@@ -40,6 +40,7 @@ class ComPartialMapper(BaseMapper):
         representation=None,
         processors=None,
         partial_mapping=None,
+        mapping_constraints=None,
     ):
         if processors:
             raise NotImplementedError(
@@ -54,6 +55,7 @@ class ComPartialMapper(BaseMapper):
             representation=representation,
             processors=processors,
             partial_mapping=res,
+            mapping_constraints=mapping_constraints,
         )
 
     @staticmethod
@@ -331,6 +333,7 @@ class ComFullMapper(BaseMapper):
         representation=None,
         processors=None,
         partial_mapping=None,
+        mapping_constraints=None,
     ):
         """Generate mapping.
 
@@ -377,6 +380,7 @@ class InputTupleFullMapper(BaseMapper):
         representation=None,
         processors=None,
         partial_mapping=None,
+        mapping_constraints=None,
     ):
         """Generate a mapping from the configured list."""
         if processors or partial_mapping:

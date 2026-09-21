@@ -44,6 +44,7 @@ class RandomPartialMapper(BaseMapper):
         representation=None,
         processors=None,
         partial_mapping=None,
+        mapping_constraints=None,
     ):
         """Generate a random mapping.
 

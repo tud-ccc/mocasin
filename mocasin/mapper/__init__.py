@@ -31,6 +31,7 @@ class BaseMapper:
         representation=None,
         processors=None,
         partial_mapping=None,
+        mapping_constraints=None,
     ):
         """Generate mapping.
 
@@ -50,6 +51,8 @@ class BaseMapper:
             processors (:obj:`list` of :obj:`Processor`, optional): a list of
                 processors to map to.
             partial_mapping (Mapping, optional): a partial mapping to complete
+            mapping_constraints (MappingConstraints, optional): restrictions
+                on the processors eligible for each process
 
         Returns:
             Mapping: the generated mapping.
@@ -63,7 +66,12 @@ class BaseMapper:
         raise NotImplementedError()
 
     def generate_pareto_front(
-        self, graph, trace=None, representation=None, evaluate_metadata=False
+        self,
+        graph,
+        trace=None,
+        representation=None,
+        mapping_constraints=None,
+        evaluate_metadata=False,
     ):
         """Generate a Pareto front.
 
@@ -76,6 +84,8 @@ class BaseMapper:
             trace (TraceGenerator, optional): a trace generator
             representation (MappingRepresentation, optional): a mapping
                 representation object
+            mapping_constraints (MappingConstraints, optional): restrictions
+                on the processors eligible for each process
             evaluate_metadata (bool, optional): The flag whther the generated
                 mappings are evaluated with the simulator. After evaluation an
                 additional Pareto-filtering is performed.
@@ -110,6 +120,7 @@ class BaseMapper:
                 trace=trace,
                 representation=representation,
                 processors=allowed_processors,
+                mapping_constraints=mapping_constraints,
             )
             if mapping:
                 pareto.append(mapping)
