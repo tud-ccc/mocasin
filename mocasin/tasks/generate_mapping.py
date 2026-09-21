@@ -54,7 +54,10 @@ def generate_mapping(cfg):
         cfg["constraints"], graph, platform, trace
     )
     representation = hydra.utils.instantiate(
-        cfg["representation"], graph, platform
+        cfg["representation"],
+        graph,
+        platform,
+        mapping_constraints=mapping_constraints,
     )
     mapper = hydra.utils.instantiate(cfg["mapper"], platform)
 

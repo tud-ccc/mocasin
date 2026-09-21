@@ -21,6 +21,7 @@ except ModuleNotFoundError:
     pass
 
 
+from mocasin.common.mapping_constraints import MappingConstraints
 from mocasin.mapper.partial import ProcPartialMapper, ComFullMapper
 
 from .metric_spaces import (
@@ -114,6 +115,90 @@ class MappingRepresentation(type):
         return None
 
 
+class MappingRepresentationBase:
+    """Common functionality for mapping representations."""
+
+    def __init__(self, graph, platform, mapping_constraints=None):
+        self.graph = graph
+        self.platform = platform
+        self.set_mapping_constraints(mapping_constraints)
+
+    def set_mapping_constraints(self, mapping_constraints=None):
+        """Set restrictions used by :meth:`approximate_eligible`."""
+        if mapping_constraints is None:
+            mapping_constraints = MappingConstraints.unrestricted(
+                self.graph, self.platform
+            )
+        elif (
+            mapping_constraints.graph is not self.graph
+            or mapping_constraints.platform is not self.platform
+        ):
+            raise ValueError(
+                "Mapping constraints must refer to the representation's "
+                "graph and platform"
+            )
+        self.mapping_constraints = mapping_constraints
+
+    def _mapping_to_representation(self, mapping):
+        if (
+            hasattr(self, "canonical_operations")
+            and not self.canonical_operations
+        ):
+            return self.toRepresentationNoncanonical(mapping)
+        return self.toRepresentation(mapping)
+
+    def _distance_to_candidate(self, candidate_representation, candidate):
+        return np.linalg.norm(
+            np.array(candidate_representation) - np.array(candidate)
+        )
+
+    def approximate_eligible(self, candidate):
+        """Approximate a point by the nearest eligible representation."""
+        approximated = self.approximate(np.array(candidate))
+        mapping = self.fromRepresentation(approximated)
+        if self.mapping_constraints.is_mapping_eligible(mapping):
+            return approximated
+
+        schedulers = tuple(self.platform.schedulers())
+        for process in mapping.graph.processes():
+            info = mapping.process_info(process)
+            if self.mapping_constraints.is_processor_eligible(
+                process, info.affinity
+            ):
+                continue
+
+            best = None
+            for processor in self.mapping_constraints.eligible_processors(
+                process
+            ):
+                scheduler = next(
+                    scheduler
+                    for scheduler in schedulers
+                    if processor in scheduler.processors
+                )
+                info.affinity = processor
+                info.scheduler = scheduler
+                candidate_representation = self._mapping_to_representation(
+                    mapping
+                )
+                distance = self._distance_to_candidate(
+                    candidate_representation, candidate
+                )
+                if best is None or distance < best[0]:
+                    best = (distance, processor, scheduler)
+
+            _, info.affinity, info.scheduler = best
+
+        projected = self._mapping_to_representation(mapping)
+        projected = self.approximate(np.array(projected))
+        projected_mapping = self.fromRepresentation(projected)
+        if not self.mapping_constraints.is_mapping_eligible(projected_mapping):
+            raise RuntimeError(
+                "Could not project mapping to the mapping constraints"
+            )
+        return projected
+
+
 def init_app_ncs(self, graph):
     n = 0
     self._app_nc = {}
@@ -123,7 +208,9 @@ def init_app_ncs(self, graph):
         self._app_nc_inv[proc] = n
 
 
-class SimpleVectorRepresentation(metaclass=MappingRepresentation):
+class SimpleVectorRepresentation(
+    MappingRepresentationBase, metaclass=MappingRepresentation
+):
     """Simple Vector Representation
 
     This representation treats mappings as vectors. The first dimensions (or
@@ -156,9 +243,11 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         channels=False,
         periodic_boundary_conditions=False,
         norm_p=2,
+        mapping_constraints=None,
     ):
-        self.graph = graph
-        self.platform = platform
+        MappingRepresentationBase.__init__(
+            self, graph, platform, mapping_constraints
+        )
         self.channels = channels
         self.boundary_conditions = periodic_boundary_conditions
         self.p = norm_p
@@ -303,6 +392,27 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
             res = list(map(lambda t: max(0, min(t, P - 1)), approx))
         return res
 
+    def _distance_to_candidate(self, candidate_representation, candidate):
+        candidate_representation = np.array(candidate_representation)
+        candidate = np.array(candidate)
+        process_dimensions = len(self.graph.processes())
+        num_processors = len(self.platform.processors())
+
+        if self.boundary_conditions:
+            delta = np.abs(candidate_representation - candidate)
+            process_delta = delta[:process_dimensions] % num_processors
+            delta[:process_dimensions] = np.minimum(
+                process_delta, num_processors - process_delta
+            )
+        else:
+            candidate = candidate.copy()
+            candidate[:process_dimensions] = np.clip(
+                candidate[:process_dimensions], 0, num_processors - 1
+            )
+            delta = np.abs(candidate_representation - candidate)
+
+        return np.linalg.norm(delta)
+
     def crossover(self, m1, m2, k):
         return self._crossover(
             self.toRepresentation(m1), self.toRepresentation(m2), k
@@ -324,7 +434,9 @@ class SimpleVectorRepresentation(metaclass=MappingRepresentation):
         return m1, m2
 
 
-class SymmetryRepresentation(metaclass=MappingRepresentation):
+class SymmetryRepresentation(
+    MappingRepresentationBase, metaclass=MappingRepresentation
+):
     """Symmetry Representation
 
     This representation considers the *archtiecture* symmetries for mappings.
@@ -401,12 +513,14 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         canonical_operations=True,
         disable_mpsym=False,
         disable_symmetries_test=False,
+        mapping_constraints=None,
     ):
         self._topologyGraph = platform.to_adjacency_dict(
             include_proc_type_labels=True
         )
-        self.graph = graph
-        self.platform = platform
+        MappingRepresentationBase.__init__(
+            self, graph, platform, mapping_constraints
+        )
         self._d = len(graph.processes())
         init_app_ncs(self, graph)
         self._arch_nc_inv = {}
@@ -645,9 +759,16 @@ class SymmetryRepresentation(metaclass=MappingRepresentation):
         approx = SimpleVectorRepresentation.approximate(self, x)
         return self._simpleVec2Elem(approx)
 
+    def _distance_to_candidate(self, candidate_representation, candidate):
+        return SimpleVectorRepresentation._distance_to_candidate(
+            self, candidate_representation, candidate
+        )
+
 
 class MetricEmbeddingRepresentation(
-    MetricSpaceEmbedding, metaclass=MappingRepresentation
+    MappingRepresentationBase,
+    MetricSpaceEmbedding,
+    metaclass=MappingRepresentation,
 ):
     """Metric Space Representation
 
@@ -706,14 +827,16 @@ class MetricEmbeddingRepresentation(
         jlt_tries=10,
         verbose=False,
         disable_embedding_test=False,
+        mapping_constraints=None,
     ):
         # todo: make sure the correspondence of cores is correct!
         M_matrix, self._arch_nc, self._arch_nc_inv = arch_to_distance_metric(
             platform, heterogeneity=extra_dimensions
         )
         self._M = FiniteMetricSpace(M_matrix)
-        self.graph = graph
-        self.platform = platform
+        MappingRepresentationBase.__init__(
+            self, graph, platform, mapping_constraints
+        )
         self.extra_dims = extra_dimensions
         self.jlt_tries = jlt_tries
         self.target_distortion = target_distortion
@@ -851,7 +974,9 @@ class MetricEmbeddingRepresentation(
 
 
 class SymmetryEmbeddingRepresentation(
-    MetricSpaceEmbedding, metaclass=MappingRepresentation
+    MappingRepresentationBase,
+    MetricSpaceEmbedding,
+    metaclass=MappingRepresentation,
 ):
     """Symmetry Embedding Representation
 
@@ -876,7 +1001,11 @@ class SymmetryEmbeddingRepresentation(
         disable_mpsym=False,
         disable_symmetries_test=False,
         disable_embedding_test=False,
+        mapping_constraints=None,
     ):
+        MappingRepresentationBase.__init__(
+            self, graph, platform, mapping_constraints
+        )
         self.sym = SymmetryRepresentation(
             graph,
             platform,
@@ -886,6 +1015,7 @@ class SymmetryEmbeddingRepresentation(
             periodic_boundary_conditions=periodic_boundary_conditions,
             canonical_operations=canonical_operations,
             disable_symmetries_test=disable_symmetries_test,
+            mapping_constraints=mapping_constraints,
         )
         self.emb = MetricEmbeddingRepresentation(
             graph,
@@ -898,6 +1028,7 @@ class SymmetryEmbeddingRepresentation(
             jlt_tries=jlt_tries,
             ignore_channels=ignore_channels,
             disable_embedding_test=disable_embedding_test,
+            mapping_constraints=mapping_constraints,
         )
         self.canonical_operations = canonical_operations
         log.warning(

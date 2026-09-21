@@ -229,7 +229,12 @@ class DataflowSimulation(BaseSimulation):
         mapping_constraints = MappingConstraints.from_hydra(
             cfg["constraints"], graph, platform, trace
         )
-        rep = hydra.utils.instantiate(cfg["representation"], graph, platform)
+        rep = hydra.utils.instantiate(
+            cfg["representation"],
+            graph,
+            platform,
+            mapping_constraints=mapping_constraints,
+        )
         mapper = hydra.utils.instantiate(cfg["mapper"], platform)
         mapping = mapper.generate_mapping(
             graph,

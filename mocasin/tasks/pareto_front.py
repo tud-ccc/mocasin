@@ -49,7 +49,10 @@ def pareto_front(cfg):
         cfg["constraints"], graph, platform, trace
     )
     representation = hydra.utils.instantiate(
-        cfg["representation"], graph, platform
+        cfg["representation"],
+        graph,
+        platform,
+        mapping_constraints=mapping_constraints,
     )
     mapper = hydra.utils.instantiate(cfg["mapper"], platform)
     evaluate_metadata = cfg["evaluate_metadata"]
