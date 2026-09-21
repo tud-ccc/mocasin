@@ -192,9 +192,41 @@ class DataflowTrace:
 
         return acc_cycles
 
+    def get_supported_processor_types(self, process):
+        """Get the processor types supported by every compute segment.
+
+        Args:
+            process (str): Name of the process to inspect.
+
+        Returns:
+            set[str]: Processor types present in every compute segment.
+
+        Raises:
+            RuntimeError: If the process trace has no compute segments.
+        """
+        supported_types = None
+        for segment in self.get_trace(process):
+            if segment.segment_type != SegmentType.COMPUTE:
+                continue
+            segment_types = set(segment.processor_cycles)
+            if supported_types is None:
+                supported_types = segment_types
+            else:
+                supported_types.intersection_update(segment_types)
+        if supported_types is None:
+            raise RuntimeError(
+                f"Trace for process '{process}' contains no compute segments"
+            )
+        return supported_types
+
 
 class EmptyTrace(DataflowTrace):
     """An empty application trace"""
+
+    def get_supported_processor_types(self, process):
+        """Do not restrict mapping when execution data is absent."""
+
+        return None
 
     def get_trace(self, process):
         """Get an empty trace

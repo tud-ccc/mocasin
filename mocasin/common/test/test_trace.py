@@ -16,6 +16,7 @@ def test_empty_trace():
     empty = EmptyTrace()
     trace = empty.get_trace("foo")
     assert len(list(trace)) == 0
+    assert empty.get_supported_processor_types("foo") is None
 
 
 def test_empty_accumulate_processor_cycles():
@@ -41,6 +42,9 @@ class TestTrace(DataflowTrace):
             yield ReadTokenSegment(None, None)
             yield ComputeSegment({"A": 100, "B": 1000})
             yield WriteTokenSegment(None, None)
+        if process == "partial":
+            yield ComputeSegment({"A": 100, "B": 1000})
+            yield ComputeSegment({"A": 50})
 
 
 def test_accumulate_processor_cycles():
@@ -49,3 +53,10 @@ def test_accumulate_processor_cycles():
     assert trace.accumulate_processor_cycles("empty") is None
     assert trace.accumulate_processor_cycles("baz") == {"A": 100, "B": 1000}
     assert trace.accumulate_processor_cycles("bar") == {"A": 200, "B": 2000}
+
+
+def test_get_supported_processor_types():
+    trace = TestTrace()
+
+    assert trace.get_supported_processor_types("baz") == {"A", "B"}
+    assert trace.get_supported_processor_types("partial") == {"A"}
