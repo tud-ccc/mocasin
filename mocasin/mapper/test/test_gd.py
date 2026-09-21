@@ -8,8 +8,10 @@ from itertools import product
 import pytest
 import numpy as np
 
+from mocasin.common.mapping_constraints import MappingConstraints
 from mocasin.mapper.gradient_descent import GradientDescentMapper
 from mocasin.mapper.test.mock_cache import MockMappingCache
+from mocasin.representations import SimpleVectorRepresentation
 
 
 @pytest.fixture
@@ -41,6 +43,50 @@ def test_gd(mapper, graph, trace, representation_pbc, evaluation_function):
 
     # result is top 3 best
     assert tuple(result_mapper.to_list()) in expected
+
+
+def test_gd_respects_mapping_constraints(
+    graph,
+    heterogeneous_platform,
+    trace,
+    simres_evaluation_function,
+    mocker,
+):
+    processors = tuple(heterogeneous_platform.processors())
+    cpu = next(processor for processor in processors if processor.type == "CPU")
+    constraints = MappingConstraints(
+        graph,
+        heterogeneous_platform,
+        {"a": (cpu,), "b": processors},
+    )
+    representation = SimpleVectorRepresentation(
+        graph,
+        heterogeneous_platform,
+        mapping_constraints=constraints,
+    )
+
+    def evaluate(candidate):
+        mapping = representation.fromRepresentation(candidate)
+        assert constraints.is_mapping_eligible(mapping)
+        return simres_evaluation_function(candidate)
+
+    mapper = GradientDescentMapper(
+        heterogeneous_platform,
+        gd_iterations=5,
+        parallel_points=2,
+        parallel=False,
+        progress=False,
+    )
+    mapper._simulation_manager = MockMappingCache(evaluate, mocker)
+
+    result = mapper.generate_mapping(
+        graph,
+        trace=trace,
+        representation=representation,
+        mapping_constraints=constraints,
+    )
+
+    assert constraints.is_mapping_eligible(result)
 
 
 def test_gradient(

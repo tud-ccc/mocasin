@@ -138,11 +138,20 @@ class GradientDescentMapper(BaseMapper):
             processors (:obj:`list` of :obj:`Processor`, optional): a list of
                 processors to map to.
             partial_mapping (Mapping, optional): a partial mapping to complete
+            mapping_constraints (MappingConstraints, optional): restrictions
+                on the processors to which each process may be mapped
 
         Returns:
             Mapping: the generated mapping.
         """
         self._simulation_manager.reset_statistics()
+        if mapping_constraints is None:
+            mapping_constraints = representation.mapping_constraints
+        elif representation.mapping_constraints is not mapping_constraints:
+            raise ValueError(
+                "Gradient descent and its representation must use the same "
+                "mapping constraints"
+            )
         mappings = []
 
         if (
@@ -155,7 +164,10 @@ class GradientDescentMapper(BaseMapper):
 
         for _ in range(self.parallel_points):
             mapping_obj = self.random_mapper.generate_mapping(
-                graph, trace=trace, representation=representation
+                graph,
+                trace=trace,
+                representation=representation,
+                mapping_constraints=mapping_constraints,
             )
             m = to_representation_fun(mapping_obj)
             mappings.append(m)
@@ -212,11 +224,11 @@ class GradientDescentMapper(BaseMapper):
             for idx, i in enumerate(active_points):
                 # note that gamma has lost the ordering
                 # due to that we enumerate
-                mappings[i] = (
+                candidate = (
                     mappings[i] + gammas[idx] * (-grads[i]) * self.stepsize
                 )
-                log.debug(f"moving mapping {i} to: {mappings[i]}")
-                mappings[i] = representation.approximate(np.array(mappings[i]))
+                log.debug(f"moving mapping {i} to: {candidate}")
+                mappings[i] = representation.approximate_eligible(candidate)
                 log.debug(f"approximating to: {mappings[i]}")
 
             cur_sim_results = self._simulation_manager.simulate(
@@ -260,7 +272,7 @@ class GradientDescentMapper(BaseMapper):
                 break
 
         self.best_mapping = np.array(
-            representation.approximate(np.array(self.best_mapping))
+            representation.approximate_eligible(self.best_mapping)
         )
         self._simulation_manager.statistics.log_statistics()
         if self._record_statistics:
@@ -279,8 +291,8 @@ class GradientDescentMapper(BaseMapper):
         for i in range(self.dim):
             evec = np.zeros(self.dim)
             evec[i] = 1
-            m_plus.append(mapping + evec)
-            m_minus.append(mapping - evec)
+            m_plus.append(representation.approximate_eligible(mapping + evec))
+            m_minus.append(representation.approximate_eligible(mapping - evec))
 
         sim_results = self._simulation_manager.simulate(
             graph, trace, representation, m_plus + m_minus
