@@ -15,7 +15,10 @@ import numpy as np
 from mocasin.mapper import BaseMapper
 from mocasin.mapper.pareto import filter_pareto_front
 from mocasin.mapper.random import RandomPartialMapper
-from mocasin.mapper.utils import SimulationManager, SimulationManagerConfig
+from mocasin.mapper.utils import (
+    SimulationManager,
+    SimulationManagerConfig,
+)
 from mocasin.util import logging
 
 log = logging.getLogger(__name__)
@@ -76,17 +79,26 @@ class _GeneticMapperEngine:
         graph (DataflowGraph): a dataflow graph
         trace (TraceGenerator): a trace generator
         representation (MappingRepresentation): a mapping representation object
+        mapping_constraints (MappingConstraints): process mapping restrictions
         simulation_manager (SimulationManager): a simulation manager
         config (_GeneticMapperConfig): a genetic mapper configuration
     """
 
     def __init__(
-        self, platform, graph, trace, representation, simulation_manager, config
+        self,
+        platform,
+        graph,
+        trace,
+        representation,
+        mapping_constraints,
+        simulation_manager,
+        config,
     ):
         self.platform = platform
         self.graph = graph
         self.trace = trace
         self.representation = representation
+        self.mapping_constraints = mapping_constraints
         self.simulation_manager = simulation_manager
         self.config = config
 
@@ -169,7 +181,10 @@ class _GeneticMapperEngine:
 
     def _random_mapping(self):
         mapping = self.random_mapper.generate_mapping(
-            self.graph, trace=self.trace, representation=self.representation
+            self.graph,
+            trace=self.trace,
+            representation=self.representation,
+            mapping_constraints=self.mapping_constraints,
         )
         if (
             hasattr(self.representation, "canonical_operations")
@@ -181,28 +196,30 @@ class _GeneticMapperEngine:
         return list(as_rep)
 
     def _mapping_crossover(self, m1, m2):
-        return self.representation._crossover(
+        children = self.representation._crossover(
             m1, m2, self.config.crossover_rate
         )
+        for child in children:
+            child[:] = self.representation.approximate_eligible(child)
+        return children
 
     def _mapping_mutation(self, mapping):
-        # m_obj = self.representation.fromRepresentation(list((mapping)))
         radius = self.config.radius
         while 1:
             new_mappings = self.representation._uniformFromBall(
                 mapping, radius, 20
             )
-            for m in new_mappings:
-                if list(m) != list(mapping):
-                    for i in range(len(mapping)):
-                        # we do this since mapping is a DEAP Individual data
-                        # structure
-                        mapping[i] = m[i]
+            for candidate in new_mappings:
+                projected = self.representation.approximate_eligible(candidate)
+                if list(projected) != list(mapping):
+                    # Preserve the DEAP Individual object while replacing its
+                    # representation.
+                    mapping[:] = projected
                     return (mapping,)
             radius *= 1.1
             if radius > 10000 * self.config.radius:
-                log.error("Could not mutate mapping")
-                raise RuntimeError("Could not mutate mapping")
+                log.debug("Could not find an eligible mutation")
+                return (mapping,)
 
     def run(self):
         if self.config.crossover_rate > len(self.graph.processes()):
@@ -379,16 +396,26 @@ class GeneticMapper(BaseMapper):
             processors (:obj:`list` of :obj:`Processor`, optional): a list of
                 processors to map to.
             partial_mapping (Mapping, optional): a partial mapping to complete
+            mapping_constraints (MappingConstraints, optional): restrictions
+                on the processors to which each process may be mapped
 
         Returns:
             Mapping: the generated mapping.
         """
         self._simulation_manager.reset_statistics()
+        if mapping_constraints is None:
+            mapping_constraints = representation.mapping_constraints
+        elif representation.mapping_constraints is not mapping_constraints:
+            raise ValueError(
+                "Genetic mapper and its representation must use the same "
+                "mapping constraints"
+            )
         engine = _GeneticMapperEngine(
             self.platform,
             graph,
             trace,
             representation,
+            mapping_constraints,
             self._simulation_manager,
             self._mapper_config,
         )
@@ -423,17 +450,27 @@ class GeneticMapper(BaseMapper):
             trace (TraceGenerator, optional): a trace generator
             representation (MappingRepresentation, optional): a mapping
                 representation object
+            mapping_constraints (MappingConstraints, optional): restrictions
+                on the processors to which each process may be mapped
             **kwargs: Arbitrary keyword arguments.
 
         Returns:
            :obj:`lst` of :obj:`Mapping`: the list of generated mappings
         """
         self._simulation_manager.reset_statistics()
+        if mapping_constraints is None:
+            mapping_constraints = representation.mapping_constraints
+        elif representation.mapping_constraints is not mapping_constraints:
+            raise ValueError(
+                "Genetic mapper and its representation must use the same "
+                "mapping constraints"
+            )
         engine = _GeneticMapperEngine(
             self.platform,
             graph,
             trace,
             representation,
+            mapping_constraints,
             self._simulation_manager,
             self._mapper_config,
         )

@@ -5,8 +5,10 @@
 
 import pytest
 
+from mocasin.common.mapping_constraints import MappingConstraints
 from mocasin.mapper.genetic import GeneticMapper, Objectives
 from mocasin.mapper.test.mock_cache import MockMappingCache
+from mocasin.representations import SimpleVectorRepresentation
 
 
 @pytest.fixture
@@ -25,6 +27,50 @@ def test_ga(mapper, graph, trace, representation):
 
     # minimum of 1 + cos(x-y) sin(2y-1)
     assert result.to_list() == [6, 6]
+
+
+def test_ga_respects_mapping_constraints(
+    graph,
+    heterogeneous_platform,
+    trace,
+    simres_evaluation_function,
+    mocker,
+):
+    processors = tuple(heterogeneous_platform.processors())
+    cpu = next(processor for processor in processors if processor.type == "CPU")
+    constraints = MappingConstraints(
+        graph,
+        heterogeneous_platform,
+        {"a": (cpu,), "b": processors},
+    )
+    representation = SimpleVectorRepresentation(
+        graph,
+        heterogeneous_platform,
+        mapping_constraints=constraints,
+    )
+
+    def evaluate(candidate):
+        mapping = representation.fromRepresentation(candidate)
+        assert constraints.is_mapping_eligible(mapping)
+        return simres_evaluation_function(candidate)
+
+    mapper = GeneticMapper(
+        heterogeneous_platform,
+        pop_size=4,
+        num_gens=2,
+        parallel=False,
+        progress=False,
+    )
+    mapper._simulation_manager = MockMappingCache(evaluate, mocker)
+
+    result = mapper.generate_mapping(
+        graph,
+        trace=trace,
+        representation=representation,
+        mapping_constraints=constraints,
+    )
+
+    assert constraints.is_mapping_eligible(result)
 
 
 def test_objectives():
