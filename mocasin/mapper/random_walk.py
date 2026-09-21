@@ -107,11 +107,20 @@ class RandomWalkMapper(BaseMapper):
             processors (:obj:`list` of :obj:`Processor`, optional): a list of
                 processors to map to.
             partial_mapping (Mapping, optional): a partial mapping to complete
+            mapping_constraints (MappingConstraints, optional): restrictions
+                on the processors to which each process may be mapped
 
         Returns:
             Mapping: the generated mapping.
         """
         self._simulation_manager.reset_statistics()
+        if mapping_constraints is None:
+            mapping_constraints = representation.mapping_constraints
+        elif representation.mapping_constraints is not mapping_constraints:
+            raise ValueError(
+                "Random walk and its representation must use the same "
+                "mapping constraints"
+            )
         start = timeit.default_timer()
         # Create a list of 'simulations'. These are later executed by multiple
         # worker processes.
@@ -123,7 +132,10 @@ class RandomWalkMapper(BaseMapper):
 
         for i in iterations_range:
             mapping = self.random_mapper.generate_mapping(
-                graph, trace=trace, representation=representation
+                graph,
+                trace=trace,
+                representation=representation,
+                mapping_constraints=mapping_constraints,
             )
             mappings.append(mapping)
 
