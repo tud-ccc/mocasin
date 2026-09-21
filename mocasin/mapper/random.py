@@ -10,6 +10,7 @@ from mocasin.common.mapping import (
     Mapping,
     ProcessMappingInfo,
 )
+from mocasin.common.mapping_constraints import MappingConstraints
 from mocasin.mapper import BaseMapper
 from mocasin.util import logging
 
@@ -48,9 +49,10 @@ class RandomPartialMapper(BaseMapper):
     ):
         """Generate a random mapping.
 
-        The generated mapping takes a partial mapping (that may also be empty)
-        as starting point. All open mapping decissions were taken by generated
-        randomness derived from the given seed.
+        The generated mapping takes a partial mapping (which may be empty) as
+        its starting point. All open mapping decisions are made using the
+        configured random seed. If mapping constraints are provided, the
+        mapper only considers processors eligible for each process.
 
         Args:
             graph (DataflowGraph): a dataflow graph
@@ -60,6 +62,8 @@ class RandomPartialMapper(BaseMapper):
             processors (:obj:`list` of :obj:`Processor`, optional): a list of
                 processors to map to.
             partial_mapping (Mapping, optional): a partial mapping to complete
+            mapping_constraints (MappingConstraints, optional): restrictions
+                on the processors eligible for each process
         """
         # generate new mapping if no partial mapping is given
         if not partial_mapping:
@@ -80,9 +84,39 @@ class RandomPartialMapper(BaseMapper):
         if not processors:
             processors = list(self.platform.processors())
 
+        if mapping_constraints is None:
+            mapping_constraints = MappingConstraints.unrestricted(
+                graph, self.platform
+            )
+
+        for process in graph.processes():
+            info = partial_mapping.process_info(process)
+            if (
+                info is not None
+                and not mapping_constraints.is_processor_eligible(
+                    process, info.affinity
+                )
+            ):
+                raise RuntimeError(
+                    f"rand_map: Process '{process.name}' is not eligible for "
+                    f"processor '{info.affinity.name}'"
+                )
+
         if self.resources_first:
             num = random.randint(1, len(processors))
-            processors = random.sample(processors, num)
+            available_processors = processors
+            processors = random.sample(available_processors, num)
+            for process in graph.processes():
+                eligible = mapping_constraints.eligible_processors(process)
+                if any(processor in eligible for processor in processors):
+                    continue
+                candidates = [
+                    processor
+                    for processor in available_processors
+                    if processor in eligible
+                ]
+                if candidates:
+                    processors.append(random.choice(candidates))
 
         # map processes
         processes = partial_mapping.get_unmapped_processes()
@@ -94,16 +128,24 @@ class RandomPartialMapper(BaseMapper):
                 i = random.randrange(0, len(scheduler_list))
                 scheduler = scheduler_list.pop(i)
                 procs = [
-                    proc for proc in scheduler.processors if proc in processors
+                    proc
+                    for proc in scheduler.processors
+                    if proc in processors
+                    and mapping_constraints.is_processor_eligible(p, proc)
                 ]
                 if len(procs) == 0:
                     continue
                 i = random.randrange(0, len(procs))
                 affinity = procs[i]
             if affinity is None:
+                eligible_processors = mapping_constraints.eligible_processors(p)
+                eligible = ", ".join(
+                    sorted(processor.name for processor in eligible_processors)
+                )
                 raise RuntimeError(
-                    f"Could not find an appropriate scheduler for any of "
-                    f"the processors: {processors}"
+                    f"rand_map: Could not map process '{p.name}': no "
+                    "eligible processor is available among the candidates "
+                    f"(eligible processors: {eligible})"
                 )
 
             priority = random.randrange(0, 20)

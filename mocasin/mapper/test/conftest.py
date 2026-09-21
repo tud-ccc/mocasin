@@ -46,6 +46,18 @@ def platform(num_procs, mocker):
 
 
 @pytest.fixture
+def heterogeneous_platform(mocker):
+    p = Platform("heterogeneous")
+    cpu = Processor("cpu", "CPU", mocker.Mock(), mocker.Mock())
+    fpga = Processor("fpga", "FPGA", mocker.Mock(), mocker.Mock())
+    p.add_processor(cpu)
+    p.add_processor(fpga)
+    p.add_scheduler(Scheduler("cpu_scheduler", [cpu], [mocker.Mock()]))
+    p.add_scheduler(Scheduler("fpga_scheduler", [fpga], [mocker.Mock()]))
+    return p
+
+
+@pytest.fixture
 def representation(graph, platform):
     return SimpleVectorRepresentation(graph, platform)
 
