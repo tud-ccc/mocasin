@@ -5,6 +5,7 @@ defaults:
   - graph: default
   - platform: default
   - trace: empty
+  - constraints: default
   - representation: SimpleVector
   - mapper: default
   - sdf3: default

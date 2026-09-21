@@ -1,0 +1,4 @@
+source:
+  _target_: mocasin.common.mapping_constraints.MappingConstraints.unrestricted
+
+filter_by_trace: true

@@ -54,6 +54,22 @@ class MappingConstraints:
             eligible_processors[process.name] = processors
         return cls(graph, platform, eligible_processors)
 
+    @classmethod
+    def from_hydra(cls, config, graph, platform, trace):
+        """Create constraints according to a Hydra configuration."""
+        from hydra.utils import instantiate
+
+        constraints = instantiate(config.source, graph, platform)
+        if not isinstance(constraints, cls):
+            raise TypeError(
+                "The configured constraints source must create "
+                "MappingConstraints"
+            )
+        if config.filter_by_trace:
+            trace_constraints = cls.from_trace(graph, platform, trace)
+            constraints = constraints.intersection(trace_constraints)
+        return constraints
+
     def intersection(self, other):
         """Intersect constraints for the same graph and platform objects."""
         if self.graph is not other.graph or self.platform is not other.platform:

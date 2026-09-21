@@ -9,6 +9,7 @@ import pickle
 
 import hydra
 
+from mocasin.common.mapping_constraints import MappingConstraints
 from mocasin.maps.mapping import export_maps_mapping
 from mocasin.simulate import DataflowSimulation
 
@@ -49,6 +50,9 @@ def generate_mapping(cfg):
     platform = hydra.utils.instantiate(cfg["platform"])
     trace = hydra.utils.instantiate(cfg["trace"])
     graph = hydra.utils.instantiate(cfg["graph"])
+    mapping_constraints = MappingConstraints.from_hydra(
+        cfg["constraints"], graph, platform, trace
+    )
     representation = hydra.utils.instantiate(
         cfg["representation"], graph, platform
     )

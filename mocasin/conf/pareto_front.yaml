@@ -4,6 +4,7 @@ defaults:
   - graph: default
   - platform: default
   - trace: empty
+  - constraints: default
   - representation: SimpleVector
   - mapper : genetic
   - sdf3: default

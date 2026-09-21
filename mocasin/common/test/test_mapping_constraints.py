@@ -4,6 +4,7 @@
 # Author: Robert Khasanov
 
 import pytest
+from omegaconf import OmegaConf
 
 from mocasin.common.graph import DataflowGraph, DataflowProcess
 from mocasin.common.mapping import Mapping, ProcessMappingInfo
@@ -36,9 +37,7 @@ def heterogeneous_platform(mocker):
     platform.add_processor(cpu)
     platform.add_processor(fpga)
     platform.add_scheduler(Scheduler("cpu_scheduler", [cpu], [mocker.Mock()]))
-    platform.add_scheduler(
-        Scheduler("fpga_scheduler", [fpga], [mocker.Mock()])
-    )
+    platform.add_scheduler(Scheduler("fpga_scheduler", [fpga], [mocker.Mock()]))
     return platform
 
 
@@ -58,9 +57,7 @@ def test_mapping_constraints_expand_processor_types(
 
 
 def test_mapping_constraints_unrestricted(graph, heterogeneous_platform):
-    constraints = MappingConstraints.unrestricted(
-        graph, heterogeneous_platform
-    )
+    constraints = MappingConstraints.unrestricted(graph, heterogeneous_platform)
 
     assert set(constraints.eligible_processors("a")) == set(
         heterogeneous_platform.processors()
@@ -81,6 +78,31 @@ def test_mapping_constraints_intersection(graph, heterogeneous_platform):
 
     assert constraints.eligible_processor_types("a") == {"CPU"}
     assert constraints.eligible_processor_types("b") == {"FPGA"}
+
+
+@pytest.mark.parametrize("filter_by_trace", [False, True])
+def test_mapping_constraints_from_hydra(
+    graph, heterogeneous_platform, filter_by_trace
+):
+    config = OmegaConf.create(
+        {
+            "source": {
+                "_target_": (
+                    "mocasin.common.mapping_constraints."
+                    "MappingConstraints.unrestricted"
+                )
+            },
+            "filter_by_trace": filter_by_trace,
+        }
+    )
+    trace = ProfileTrace({"a": {"CPU": 10}, "b": {"FPGA": 20}})
+
+    constraints = MappingConstraints.from_hydra(
+        config, graph, heterogeneous_platform, trace
+    )
+
+    expected_types = {"CPU"} if filter_by_trace else {"CPU", "FPGA"}
+    assert constraints.eligible_processor_types("a") == expected_types
 
 
 def test_mapping_constraints_treat_empty_trace_as_unrestricted(

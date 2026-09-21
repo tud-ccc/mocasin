@@ -8,6 +8,7 @@ from dataclasses import dataclass
 import hydra
 import simpy
 
+from mocasin.common.mapping_constraints import MappingConstraints
 from mocasin.simulate.application import RuntimeDataflowApplication
 from mocasin.simulate.system import RuntimeSystem
 
@@ -225,6 +226,9 @@ class DataflowSimulation(BaseSimulation):
         platform = hydra.utils.instantiate(cfg["platform"])
         trace = hydra.utils.instantiate(cfg["trace"])
         graph = hydra.utils.instantiate(cfg["graph"])
+        mapping_constraints = MappingConstraints.from_hydra(
+            cfg["constraints"], graph, platform, trace
+        )
         rep = hydra.utils.instantiate(cfg["representation"], graph, platform)
         mapper = hydra.utils.instantiate(cfg["mapper"], platform)
         mapping = mapper.generate_mapping(

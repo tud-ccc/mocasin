@@ -6,6 +6,7 @@ defaults:
   - platform: default
   - mapper: default
   - trace: default
+  - constraints: default
   - representation: SimpleVector
   - simulation_type: dataflow
   - sdf3: default

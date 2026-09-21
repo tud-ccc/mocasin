@@ -8,6 +8,7 @@ from pathlib import Path
 
 import hydra
 
+from mocasin.common.mapping_constraints import MappingConstraints
 from mocasin.util.mapping_table import MappingTableWriter
 
 log = logging.getLogger(__name__)
@@ -44,6 +45,9 @@ def pareto_front(cfg):
     graph = hydra.utils.instantiate(cfg["graph"])
     platform = hydra.utils.instantiate(cfg["platform"])
     trace = hydra.utils.instantiate(cfg["trace"])
+    mapping_constraints = MappingConstraints.from_hydra(
+        cfg["constraints"], graph, platform, trace
+    )
     representation = hydra.utils.instantiate(
         cfg["representation"], graph, platform
     )
