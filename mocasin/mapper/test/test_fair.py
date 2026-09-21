@@ -3,9 +3,12 @@
 #
 # Authors: Felix Teweleit, Andres Goens
 
-from mocasin.mapper.fair import StaticCFS, gen_trace_summary
+import pytest
+
 from mocasin.common.mapping import Mapping
+from mocasin.common.mapping_constraints import MappingConstraints
 from mocasin.common.trace import ComputeSegment, DataflowTrace
+from mocasin.mapper.fair import StaticCFS, StaticCFSMapper, gen_trace_summary
 
 
 class MockTrace(DataflowTrace):
@@ -22,6 +25,14 @@ class MockTrace(DataflowTrace):
                 processor_cycles[core] = self.lookup((core, proc_name))
 
             yield ComputeSegment(processor_cycles)
+
+
+class ProfileTrace(DataflowTrace):
+    def __init__(self, profiles):
+        self.profiles = profiles
+
+    def get_trace(self, process):
+        yield ComputeSegment(self.profiles[process])
 
 
 def test_gen_trace_summary(graph, platform):
@@ -65,3 +76,78 @@ def test_map_to_core(graph, platform):
             mapping = Mapping(graph, platform)
             cfs.map_to_core(mapping, proc, core)
             assert mapping._process_info[proc.name].affinity == core
+
+
+def test_static_cfs_uses_only_eligible_processors(
+    graph, heterogeneous_platform
+):
+    trace = ProfileTrace({"a": {"CPU": 10}, "b": {"FPGA": 20}})
+    constraints = MappingConstraints.from_trace(
+        graph, heterogeneous_platform, trace
+    )
+
+    mapping = StaticCFSMapper(heterogeneous_platform).generate_mapping(
+        graph, trace=trace, mapping_constraints=constraints
+    )
+
+    assert mapping.affinity(graph.find_process("a")).type == "CPU"
+    assert mapping.affinity(graph.find_process("b")).type == "FPGA"
+    for process in graph.processes():
+        info = mapping.process_info(process)
+        assert process in mapping.scheduler_processes(info.scheduler)
+
+
+def test_static_cfs_continues_after_an_eligible_queue_becomes_empty(
+    graph, heterogeneous_platform
+):
+    trace = ProfileTrace({"a": {"CPU": 10}, "b": {"CPU": 20}})
+    constraints = MappingConstraints.from_trace(
+        graph, heterogeneous_platform, trace
+    )
+
+    mapping = StaticCFSMapper(heterogeneous_platform).generate_mapping(
+        graph, trace=trace, mapping_constraints=constraints
+    )
+
+    assert all(
+        mapping.affinity(process).type == "CPU" for process in graph.processes()
+    )
+
+
+def test_static_cfs_requires_cycle_data_for_an_eligible_processor(
+    graph, heterogeneous_platform
+):
+    trace = ProfileTrace({"a": {"CPU": 10}, "b": {"CPU": 20}})
+    constraints = MappingConstraints.unrestricted(graph, heterogeneous_platform)
+
+    mapping = StaticCFSMapper(heterogeneous_platform).generate_mapping(
+        graph, trace=trace, mapping_constraints=constraints
+    )
+
+    assert all(
+        mapping.affinity(process).type == "CPU" for process in graph.processes()
+    )
+
+
+def test_static_cfs_reports_missing_eligible_processor(
+    graph, heterogeneous_platform
+):
+    cpu = heterogeneous_platform.find_processor("cpu")
+    fpga = heterogeneous_platform.find_processor("fpga")
+    trace = ProfileTrace({"a": {"CPU": 10}, "b": {"CPU": 20}})
+    constraints = MappingConstraints(
+        graph,
+        heterogeneous_platform,
+        {"a": [cpu], "b": [cpu]},
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="No eligible processor available for processes: a, b",
+    ):
+        StaticCFSMapper(heterogeneous_platform).generate_mapping(
+            graph,
+            trace=trace,
+            processors=[fpga],
+            mapping_constraints=constraints,
+        )
