@@ -125,6 +125,7 @@ def test_pareto_front_yaml(datadir):
             "graph=yaml_reader",
             "platform=generic_bus",
             "mapper=static_cfs",
+            "trace.repetitions=2",
             "yaml.file=yaml/small_acyclic.yaml",
             f"mapping_table={out_csv_file}",
             "trace=yaml_reader",

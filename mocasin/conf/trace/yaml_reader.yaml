@@ -1,2 +1,3 @@
 _target_: mocasin.yaml.trace.YamlTrace
 yaml_file: "${yaml.file}"
+repetitions: 1
