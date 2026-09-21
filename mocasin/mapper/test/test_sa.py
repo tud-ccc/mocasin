@@ -8,8 +8,10 @@ from itertools import product
 import pytest
 import numpy as np
 
+from mocasin.common.mapping_constraints import MappingConstraints
 from mocasin.mapper.test.mock_cache import MockMappingCache
 from mocasin.mapper.simulated_annealing import SimulatedAnnealingMapper
+from mocasin.representations import SimpleVectorRepresentation
 
 
 @pytest.fixture
@@ -56,6 +58,53 @@ def test_sa(mapper, graph, trace, representation, evaluation_function):
 
     # result is top 5 best
     assert tuple(result_mapper.to_list()) in expected
+
+
+def test_sa_respects_mapping_constraints(
+    graph,
+    heterogeneous_platform,
+    trace,
+    simres_evaluation_function,
+    mocker,
+):
+    processors = tuple(heterogeneous_platform.processors())
+    cpu = next(processor for processor in processors if processor.type == "CPU")
+    constraints = MappingConstraints(
+        graph,
+        heterogeneous_platform,
+        {"a": (cpu,), "b": processors},
+    )
+    representation = SimpleVectorRepresentation(
+        graph,
+        heterogeneous_platform,
+        mapping_constraints=constraints,
+    )
+
+    def evaluate(candidate):
+        mapping = representation.fromRepresentation(candidate)
+        assert constraints.is_mapping_eligible(mapping)
+        return simres_evaluation_function(candidate)
+
+    mapper = SimulatedAnnealingMapper(
+        heterogeneous_platform,
+        random_seed=42,
+        initial_temperature=1.0,
+        final_temperature=0.1,
+        temperature_proportionality_constant=0.5,
+        radius=2,
+        parallel=False,
+        progress=False,
+    )
+    mapper._simulation_manager = MockMappingCache(evaluate, mocker)
+
+    result = mapper.generate_mapping(
+        graph,
+        trace=trace,
+        representation=representation,
+        mapping_constraints=constraints,
+    )
+
+    assert constraints.is_mapping_eligible(result)
 
 
 def test_temperature_cooling(conf, mapper):

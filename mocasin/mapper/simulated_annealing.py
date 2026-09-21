@@ -111,9 +111,10 @@ class SimulatedAnnealingMapper(BaseMapper):
         radius = self.radius
         while 1:
             new_mappings = representation._uniformFromBall(mapping, radius, 20)
-            for m in new_mappings:
-                if list(m) != list(mapping):
-                    return m
+            for candidate in new_mappings:
+                projected = representation.approximate_eligible(candidate)
+                if list(projected) != list(mapping):
+                    return projected
             radius *= 1.1
             if radius > 10000 * self.radius:
                 log.error("Could not mutate mapping")
@@ -138,18 +139,30 @@ class SimulatedAnnealingMapper(BaseMapper):
             processors (:obj:`list` of :obj:`Processor`, optional): a list of
                 processors to map to.
             partial_mapping (Mapping, optional): a partial mapping to complete
+            mapping_constraints (MappingConstraints, optional): restrictions
+                on the processors to which each process may be mapped
 
         Returns:
             Mapping: the generated mapping.
         """
         self._simulation_manager.reset_statistics()
+        if mapping_constraints is None:
+            mapping_constraints = representation.mapping_constraints
+        elif representation.mapping_constraints is not mapping_constraints:
+            raise ValueError(
+                "Simulated annealing and its representation must use the same "
+                "mapping constraints"
+            )
         # R_max = L
         max_rejections = len(graph.processes()) * (
             len(self.platform.processors()) - 1
         )
 
         mapping_obj = self.random_mapper.generate_mapping(
-            graph, trace=trace, representation=representation
+            graph,
+            trace=trace,
+            representation=representation,
+            mapping_constraints=mapping_constraints,
         )
         if (
             hasattr(representation, "canonical_operations")
