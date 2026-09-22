@@ -21,6 +21,8 @@ def _discrete_random(dims, mu, r, Q, func):
     Sigma = float(r**2) * Q @ np.transpose(Q)
     # T eigenvectors as transformation matrix
     eigenvals, T = np.linalg.eig(Sigma)
+    eigenvals = np.real_if_close(eigenvals)
+    T = np.real_if_close(T)
 
     transformed, median_vec = func(
         dims, eigenvals
@@ -33,7 +35,7 @@ def _discrete_random(dims, mu, r, Q, func):
 
     res = []
     for i, dim in enumerate(dims):
-        moved = int(mu[i] + retransformed[i]) % dim
+        moved = int(mu[i] + retransformed[i, 0]) % dim
         res.append(moved)
 
     # transform back to the original basis

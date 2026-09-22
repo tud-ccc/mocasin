@@ -13,7 +13,7 @@ authors = [
 ]
 description = "A framework for modeling dataflow applications and their execution on MPSoC platforms."
 readme = "README.md"
-requires-python = ">=3.8,<3.11"
+requires-python = ">=3.8,<3.13,!=3.11.*"
 license = {text = "ISC"}
 dependencies = [
     "arpeggio",
@@ -22,13 +22,16 @@ dependencies = [
     "cvxpy!=1.1.8",
     "deap",
     "h5py",
-    "hydra-core>=1.2,<1.3",
+    "hydra-core>=1.2,<1.3; python_version < '3.11'",
+    "hydra-core>=1.3,<1.4; python_version >= '3.12'",
     "scipy",
     "lxml",
     "matplotlib",
     "more_itertools",
-    "mpsym @ git+https://github.com/tud-ccc/mpsym.git@fix-nauty-download",
-    "numba>=0.53.0rc1,<0.58",
+    "mpsym @ git+https://github.com/tud-ccc/mpsym.git@fix-nauty-download ; python_version < '3.11'",
+    "mpsym @ git+https://github.com/tud-ccc/mpsym.git@support-python-3.12 ; python_version >= '3.12'",
+    "numba>=0.53.0rc1,<0.58; python_version < '3.11'",
+    "numba>=0.59; python_version >= '3.12'",
     "numpy",
     "pint",
     "pydot",

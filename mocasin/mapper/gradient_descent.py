@@ -40,16 +40,15 @@ else:
     # See: https://github.com/numba/numba/pull/6286
     @nb.jit(fastmath=True, parallel=True, cache=True)
     def _calculate_gammas(grads, old_grads, xs, old_xs):
-        gammas = []
+        gammas = np.empty(len(grads), dtype=np.float64)
         for i in nb.prange(len(grads)):
             if np.allclose(grads[i], old_grads[i]):
-                gammas.append(np.int64(1))
+                gammas[i] = 1.0
                 continue
             grad_diff = old_grads[i] - grads[i]
-            gamma = np.dot(old_xs[i] - xs[i], grad_diff) / np.dot(
-                grad_diff, grad_diff
-            )
-            gammas.append(gamma)
+            step_diff = (old_xs[i] - xs[i]).astype(grad_diff.dtype)
+            gamma = np.dot(step_diff, grad_diff) / np.dot(grad_diff, grad_diff)
+            gammas[i] = gamma
         return gammas
 
 

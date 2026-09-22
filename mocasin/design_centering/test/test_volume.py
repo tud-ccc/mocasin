@@ -236,9 +236,9 @@ def test_all_infeasible(lp_vol, num_samples, mocker):
     center = lp_vol.center
     lp_vol.adapt_volume(sample_set, 0.65, mocker.Mock())
     # nothing should change, but algorithm should not crash
-    assert np.alltrue(cov == lp_vol.covariance)
+    assert np.all(cov == lp_vol.covariance)
     assert radius == lp_vol.radius
-    assert np.alltrue(center == lp_vol.center)
+    assert np.all(center == lp_vol.center)
 
 
 def visualize_s_sets(points, num_procs):

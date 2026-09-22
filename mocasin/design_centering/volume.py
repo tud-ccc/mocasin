@@ -303,7 +303,7 @@ class LPVolume(Volume):
         vals_sqrt_diag = vals_sqrt_diag * 1 / norm
         Q = vecs[idx] * vals_sqrt_diag
         # Q @ Q.transpose() is approx. self.transformation (modulo norm)
-        self.covariance = Q
+        self.covariance = np.real(Q)
         norm = np.abs(np.linalg.det(self.covariance))
         cnt = 0
         while not np.allclose(norm, 1, atol=0.1 ** (11 - cnt)) and cnt < 10:

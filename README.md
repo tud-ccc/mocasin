@@ -7,7 +7,7 @@ platforms.
 Installation
 ------------
 
-It is recommended to install mocasin within a virtual environment. Currently we support Python versions 3.8, 3.9, and 3.10.
+It is recommended to install mocasin within a virtual environment. Currently we support Python versions 3.8, 3.9, 3.10, and 3.12.
 You can create a new environment with
 ```
 virtualenv -p python3 ~/virtualenvs/mocasin
@@ -144,6 +144,4 @@ Publications
   and RAPIDO 2021, System Engineering for constrained embedded systems,
   January 18-20, 2021, Virtual event*. ACM, New York, NY, USA, 8 pages.
   ([PDF](https://cfaed.tu-dresden.de/files/Images/people/chair-cc/publications/2101_Menard_RAPIDO.pdf), [Video Presentation](https://www.youtube.com/watch?v=JOrdIn_kWBs&t=8981s), [doi](https://doi.org/10.1145/3444950.3447285))
-
-
 
