@@ -18,7 +18,12 @@ globally. This significantly speeds up the runtime of individual tasks as well
 as the shell auto completion.
 """
 
+import warnings
+
 import hydra
+from hydra.errors import Hydra14MigrationWarning
+
+warnings.filterwarnings("ignore", category=Hydra14MigrationWarning)
 
 
 @hydra.main(
